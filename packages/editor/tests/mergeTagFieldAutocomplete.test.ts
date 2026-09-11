@@ -40,6 +40,42 @@ afterEach(() => {
 });
 
 describe("MergeTagInput autocomplete", () => {
+  // Hosts with keys of their own (the link dialog submits on Enter) listen
+  // for the keys the popup declined. Re-emitting an Enter the popup just
+  // consumed would submit the dialog on the keystroke that picked a tag.
+  it("re-emits a keydown the popup did not consume", async () => {
+    const wrapper = mountEditor(MergeTagInput, {
+      props: { modelValue: "https://example.com" },
+      provides: { [MERGE_TAGS_KEY]: TAGS },
+    });
+    const input = wrapper.find("input");
+
+    await input.trigger("keydown", { key: "Enter" });
+
+    const emitted = wrapper.emitted("keydown");
+    expect(emitted).toHaveLength(1);
+    expect((emitted![0][0] as KeyboardEvent).key).toBe("Enter");
+
+    wrapper.unmount();
+  });
+
+  it("does not re-emit the Enter that selected a tag", async () => {
+    const wrapper = mountEditor(MergeTagInput, {
+      props: { modelValue: "" },
+      provides: { [MERGE_TAGS_KEY]: TAGS },
+    });
+    const input = wrapper.find("input");
+    await type(input.element as HTMLInputElement, "{{fir");
+    await input.trigger("input");
+    expect(popup()).not.toBeNull();
+
+    await input.trigger("keydown", { key: "Enter" });
+
+    expect(wrapper.emitted("keydown")).toBeUndefined();
+
+    wrapper.unmount();
+  });
+
   it("opens the shared popup with filtered tags when the trigger is typed", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },

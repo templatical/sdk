@@ -1,0 +1,19 @@
+<mjml>
+  <mj-body width="600px" background-color="#f5f5f5">
+    <mj-section padding="24px">
+      <mj-column>
+        <mj-text>
+          <h1 style="color:#1a1a1a;text-align:center">Hello from MJML</h1>
+        </mj-text>
+        <mj-text>
+          <p style="font-size:14px;color:#444444">Imported via the MJML e2e fixture.</p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-button href="https://example.test" background-color="#4f46e5">Click me</mj-button>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

@@ -64,7 +64,7 @@ interface VersionHistoryProvider {
 }
 ```
 
-`list` and `get` cannot be turned off — the editor must always be able to show a version and fetch its content. `create` and `restore` each take `false` in place of a function, and are **required** rather than optional: `false` states that the action is unavailable, and the editor hides it rather than disabling it. `restore: false` leaves the history browsable with no Restore button; `create: false` means only your `save` records versions.
+`list` and `get` cannot be turned off — the editor must always be able to show a version and fetch its content. `create` and `restore` each take `false` in place of a function: `false` states that the action is unavailable, and the editor hides it rather than disabling it. `restore: false` leaves the history browsable with no Restore button; `create: false` means only your `save` records versions.
 
 The editor renders `list()`'s order verbatim and never re-sorts. Ordering is your store's call.
 

@@ -161,7 +161,7 @@ When it looks right, hit **Export** for the MJML or HTML and send it through you
 
 ### Import an existing template
 
-Already have a template in another editor? The skill can convert **Unlayer**, **BeeFree**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks. To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [HTML](/guide/migration-from-html).
+Already have a template in another editor? The skill can convert **Unlayer**, **BeeFree**, **Stripo**, **Topol**, **Chamaileon**, **Easy Email Pro**, **MJML**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks. To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [Stripo](/guide/migration-from-stripo), [Topol](/guide/migration-from-topol), [Chamaileon](/guide/migration-from-chamaileon), [Easy Email Pro](/guide/migration-from-easy-email-pro), [MJML](/guide/migration-from-mjml), [HTML](/guide/migration-from-html).
 
 ### Bring your own brand and rules
 
@@ -174,7 +174,7 @@ Custom blocks are the one exception: they are consumer-registered runtime extens
 The agent already runs this validator itself (step 3 above), so you don't have to. But it's just the published CLI, so you can also run it yourself whenever you want — in CI, or to spot-check a template:
 
 ```bash
-npx -y @templatical/template-tools@0.30.0 validate path/to/template.json
+npx -y @templatical/template-tools@0.36.0 validate path/to/template.json
 ```
 
 It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
@@ -207,6 +207,6 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 
 Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against the known failure modes.
 
-Its knowledge is a generated copy of this documentation site, bundled directly in the skill and regenerated every release, so most questions need no network access at all. The exceptions: an exact schema lookup runs the same published CLI `templatical-email` uses (`npx -y @templatical/template-tools@0.30.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than the reference describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — ask it directly, or read `SKILL.md` in the repository.
+Its knowledge is a generated copy of this documentation site, bundled directly in the skill and regenerated every release, so most questions need no network access at all. The exceptions: an exact schema lookup runs the same published CLI `templatical-email` uses (`npx -y @templatical/template-tools@0.36.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than the reference describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — ask it directly, or read `SKILL.md` in the repository.
 
 It doesn't run the live preview above — that's `templatical-email`'s — and it never touches git.

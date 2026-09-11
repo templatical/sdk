@@ -15,6 +15,415 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.36.0
+
+<time datetime="2026-09-11">2026-09-11</time>
+
+### Features
+
+**Add `@templatical/import-stripo`, a converter from Stripo plugin HTML (`getTemplateData`) and compiled File→HTML exports to Templatical template JSON. Auto-detects the surface from class attributes; pass `{ css }` for the plugin stylesheet.**
+
+`@templatical/import-stripo`
+
+**Add `@templatical/import-chamaileon`, a converter from Chamaileon `getDocument()` JSON to Templatical template JSON.**
+
+`@templatical/import-chamaileon`
+
+`convertChamaileonTemplate(doc)` returns `{ content, report }` with the same shape as the other `@templatical/import-*` packages. It accepts Email JSON 2.0 through 4.1 (kebab-case and camelCase, `{ reference, default }` color variables), maps `fullwidth` / `multicolumn` / leaves, and reports what it approximated: nested columns flattened, 4+ columns folded to three, outlined buttons, loops whose children converted without their expressions.
+
+**Bring-your-own media library. Cloud is the adapter; `onRequestMedia` remains a UI override.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/types`
+
+The editor compiles the Browse modal into a lazy chunk of `@templatical/editor` — `init({ media })` and Cloud's store no longer need `@templatical/media-library` installed, and that install no longer pulls Vue into an editor consumer. The media-library package remains for standalone `init()` / `MediaLibraryModal` in a host Vue app (`vue` peer; `tailwindcss` is build-time only).
+
+The editor's image picker (Browse, drop, crop, folders, search) is now backed by a `MediaProvider` you implement — a CMS gallery, a DAM, or the bundled `createLocalStorageMediaProvider()`. Templatical Cloud is one adapter behind the same contract (`createCloudMediaProvider` from `@templatical/core/cloud`). `initCloud({ media })` omitted uses Cloud's store, `false` turns it off, an events-only object keeps Cloud plus your handlers, and a full provider is yours and not plan-gated.
+
+`onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
+
+Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
+Origin: [#700](https://github.com/templatical/sdk/issues/700).
+
+**Add `@templatical/import-easy-email-pro`, a converter from Easy Email Pro persist JSON to Templatical template JSON.**
+
+`@templatical/import-easy-email-pro`
+
+`convertEasyEmailProTemplate(doc)` returns `{ content, report }` with the same shape as the other `@templatical/import-*` packages. It accepts the `{ subject, content }` envelope or a bare `type: "page"` element, resolves `$var()` design tokens, maps `standard-section` / `standard-column` / leaves, and reports what it approximated: 4+ columns folded to three, outlined buttons, hero overlays, countdown GIFs, widgets, and logic whose children converted without their expressions.
+
+## 0.35.0
+
+<time datetime="2026-09-10">2026-09-10</time>
+
+### Features
+
+**Add first-class email content direction (`settings.direction`: `"ltr"` | `"rtl"`). The canvas, previews, and `<mjml dir>` follow it independently of the editor chrome; when unset, RTL content languages (`ar`, `he`, `fa`, `ur`, …) resolve as RTL. New title and table blocks start at the start edge. The all-caps accessibility rule skips caseless scripts so Arabic and Hebrew copy is not flagged as shouting.**
+
+`@templatical/editor` · `@templatical/quality` · `@templatical/renderer` · `@templatical/types`
+
+## 0.34.3
+
+<time datetime="2026-09-09">2026-09-09</time>
+
+### Fixes and improvements
+
+**Recognise social platforms from icon-pack filenames and `alt`.**
+
+`@templatical/import-mjml`
+
+An `mj-social-element` whose `src` was `facebook-round-outlined.png` (or
+`youtube-round-outlined.png`) imported as platform `"website"`, because
+`normalizePlatform` only accepted a bare slug or a `-noshare` variant. Pack
+suffixes (`-round`, `-outlined`, and the same tokens MJML uses for `-noshare`)
+are now stripped until a known platform remains. When `name` and `src` still
+do not match, `alt` is tried. `SocialIcon` is still `{ platform, url }` — `alt`
+is a name signal, not a stored field.
+
+## 0.34.2
+
+<time datetime="2026-09-09">2026-09-09</time>
+
+### Fixes and improvements
+
+**Keep prose around inline links as a paragraph.**
+
+`@templatical/import-mjml`
+
+An `mj-text` of copy plus a trailing `<a>` imported as a `menu` labelled from
+the links, and the surrounding words were discarded. `looksLikeMenu` walked
+element children only, so text-node siblings never vetoed. It now refuses when
+a non-whitespace text node sits next to the anchors, and the block imports as
+a `paragraph` that keeps both the prose and the `<a>`. Whitespace-only text
+nodes (newlines between `<a>`/`<span>`) still do not veto, so a span-separated
+menu stays a menu. Anchors separated by a text-node `|` become a paragraph —
+same veto, not a second rule.
+
+The dropped footer and body words now survive: `receive`, `message`,
+`unsubscribe`, `smilesdavis`, and the Dropbox copy (`important`, `available`,
+`exclusively`, `accidentally`, `targeted`, `ransomware`).
+
+## 0.34.1
+
+<time datetime="2026-09-09">2026-09-09</time>
+
+### Fixes and improvements
+
+**Keep a linked image as an `image` block with its href.**
+
+`@templatical/import-html`
+
+An `<a>` wrapping an `<img>` imported as a `paragraph` of raw markup, and the
+link target was dropped. A styled linked image — padding or a background on the
+anchor — imported as a button labelled `"Button"`, with the `src` and `alt`
+discarded entirely. That is the cell-as-button path matching `"" === ""` on an
+image-only anchor. Both now import as `image` with `linkUrl` from a non-empty
+href, reported `converted` with no `note`. `target="_blank"` sets
+`linkOpenInNewTab`; otherwise the key is omitted. An empty `href` omits
+`linkUrl`. An `<a>` that wraps both an image and text becomes that `image` plus
+a sibling `paragraph` that keeps the remaining `<a>`.
+
+Measured on the wide corpus, before and after:
+
+|                                                | before        | after         |
+| ---------------------------------------------- | ------------- | ------------- |
+| converted / approximated / html-fallback       | 525 / 49 / 88 | 541 / 31 / 90 |
+| `image` blocks with `linkUrl`                  | 0             | 16            |
+| buttons labelled `"Button"`                    | 12            | 0             |
+| sections                                       | 155           | 155           |
+| multi-column sections                          | 39            | 39            |
+| empty columns inside a multi-column section    | 0             | 0             |
+| source words absent from the imported template | 0             | 0             |
+
+The files that moved: `konsav-general`, `konsav-promotional`,
+`swu-goldstar-invoice`, `swu-meow-digest-left`, `swu-meow-two-column`,
+`swu-oxygen-progress`. `swu-oxygen-progress` is twelve `<a href=""><img></a>`
+(empty href, so no `linkUrl`) that stop being approximated paragraphs wrapping
+a raw `<img>`. `swu-meow-digest-left` and `swu-meow-two-column` each pick up one
+extra `center` html-fallback: a `<center>` around a linked image is no longer
+swallowed into a `"Button"`, and `center` is not a mapped tag. The image
+survives as markup inside that fallback.
+
+The ground-truth oracle — block factories, `@templatical/renderer`, `mjml`, then
+import — still recovers columns `1, 2, 3, 2-1, 1-2` with per-slot occupancy
+`[[2], [2, 2], [1, 1, 1], [1, 1], [1, 1]]`.
+
+Merge and flatten report notes now say "columns" rather than "cells", because
+the count is layout cells or sibling column `<div>`s. The note strings changed
+on `ac-receipt-inlined`, `konsav-general`, `mc-gallery-1-4`,
+`mc-simple-leftsidebar`, `swu-goldstar-invoice`, `swu-meow-digest-left`, and
+`swu-oxygen-progress`; content and every other report field did not. Filter
+code that matches the old "cells" wording will miss those entries.
+
+## 0.34.0
+
+<time datetime="2026-09-08">2026-09-08</time>
+
+### Features
+
+**Merge tags in rich-text link URLs**
+
+`@templatical/editor`
+
+The **Insert Link** dialog in a title or paragraph block now takes merge tags in its URL field, through the same insert button, picker, chip display and type-ahead as every other URL field in the editor. It was the only URL field without them, and a link is often the field most in need of one — a per-recipient or per-event URL.
+
+Three fixes come with it:
+
+- A URL that opens with a merge tag is stored verbatim instead of being prefixed with `https://`. A tag supplies its own scheme, so the prefix produced `https://https://…` once the sending system resolved it. The scheme allowlist still runs first, so `javascript:` and friends are rejected as before, and a bare host without a tag is still completed.
+- The semantic z-index scale compiled to nothing. Tailwind 4 derives z utilities from the `--z-index-*` theme namespace, but the layers were declared as `--z-panel` / `--z-toast` / `--z-overlay` / `--z-popover` / `--z-modal`, so all twelve `tpl:z-*` classes computed `auto` while reading like stacking decisions. The two cloud overlays and the collaboration toast now carry real numbers — they sit beside the `z-50` header, which was painting over them. The other nine need none, with one exception: `TplModal` takes a small real `z-10` so a picker opened from the link dialog paints above it — inside `.tpl-popover-root` order follows teleport-anchor order, and the dialog's anchor is created later than the pickers'.
+- The in-flight flag behind the merge-tag and logic pickers is now shared per editor rather than per composable instance. The rich-text click-outside guard reads it to keep a block in edit mode while a picker is open; with a private flag it only ever saw requests from one host, so a picker opened anywhere else would close the block mid-insert and drop the tag.
+
+**Recover the copy and the column layouts that HTML import was discarding.**
+
+`@templatical/import-html`
+
+Measured across 24 real-world templates from seven open-source template libraries, before and after:
+
+|                                                | before      | after     |
+| ---------------------------------------------- | ----------- | --------- |
+| sections                                       | 42          | 155       |
+| multi-column sections                          | 2           | 39        |
+| empty columns inside a multi-column section    | 4           | 0         |
+| source words absent from the imported template | 557 of 2012 | 0         |
+| entries kept as HTML fallback                  | 152 of 370  | 88 of 662 |
+
+Run against a template whose layouts are known — built from the block factories, rendered with
+`@templatical/renderer`, compiled by `mjml`, then imported back — the conversion now recovers all
+five of `1`, `2`, `3`, `2-1` and `1-2`, and puts every block in the slot its source section
+declared. That template previously imported as a single one-column section holding five blocks, with
+all ten of its headings left as raw `<h3>` markup inside paragraphs. The report called that
+`5 of 5 converted` and raised no warning, which is the reason several of these were worth finding.
+
+#### Copy that was being discarded
+- **Inline formatting no longer becomes its own block, and the text around it survives.** `<br>`,
+  `<em>`, `<strong>` and their siblings became standalone HTML blocks, and because the cell walk
+  visited only element children, the bare text between them was dropped. A cell reading
+  `Hello<br>World <strong>bold</strong> tail` imported as two HTML blocks, one holding `<br>` and one
+  holding `<strong>bold</strong>`, with `Hello`, `World` and `tail` gone. Consecutive inline nodes now
+  fold into the surrounding rich text, so that cell becomes one paragraph carrying all of it.
+- **A sentence containing a link is no longer read as a button.** A cell counted as a button whenever
+  it carried padding and held a single anchor, and the conversion kept only the anchor's text,
+  discarding the rest of the cell. Across four Mailchimp templates, nine of the eleven buttons
+  produced were prose cells swallowed this way — labelled things like "get a little fancy"; those
+  templates now produce two buttons, both of them real. A cell is a button when the anchor is its
+  entire content.
+- **A plain anchor keeps its `href`.** The paragraph was built from the anchor's inner HTML, so the
+  `<a>` element never reached the block and the link was gone. The anchor now stays inside the
+  paragraph its sentence became, target and all.
+- **Bare text at body level and directly inside a layout container is kept.** Only element children
+  were visited, so a loose sentence beside a table was not seen at all.
+- **A text-only cell reads as text.** It became an HTML block wrapping an orphan `<td>` — markup that
+  is invalid once exported, since a cell cannot stand outside a table.
+
+#### Structure that was being lost
+- **Tables nested more than one container deep are reached.** The container walk descended a single
+  level, so a table inside a nested `<div>` was turned into a paragraph holding raw table markup.
+  This is what recovers per-section wrappers: compiled MJML nests a body wrapper around one `<div>`
+  per section around each section's table.
+- **A one-cell wrapper row is descended instead of becoming a section.** Table-based emails wrap
+  their real layout in one-cell tables; each wrapper became a one-column section and the genuine
+  multi-column row inside it was flattened away. A wrapper row that carries no background and no
+  padding, and whose cell holds nothing but tables, is now descended, so the column count is read off
+  the row that declares it.
+- **Gutter rows are no longer read as columns.** A row placing an `&nbsp;` cell either side of the
+  content, a common centring idiom, became a three-column section whose outer two columns were empty
+  and whose middle column held everything. A false positive, worse than the single column a naive
+  reading gives.
+- **Column ratios are recovered from declared widths.** `2-1` and `1-2` were unreachable: the layout
+  came from counting cells, so every two-cell row imported as an even `2`. Widths now choose between
+  the layouts of that cell count, snapped to the nearest, and a ratio the model cannot express is
+  reported as `approximated` with a note naming the widths.
+- **A cell of sibling column `<div>`s reads as a column set.** This is how hybrid and MJML-compiled
+  emails state columns, and it is the one column shape with no cell count to read — a single `<td>`
+  holding one inline-block `<div>` per column. Such a row imported as a single column holding every
+  column's blocks in order.
+- **A heading wrapped in a container is typed as a heading.** The container was mapped instead, so
+  the heading arrived as a paragraph carrying raw `<h2>` markup rather than as a `title` with a level.
+
+#### Report changes you can observe
+- **Sections now appear in `report.entries`**, with `sourceTag: 'tr'`, or `'body'` for the synthetic
+  section that holds loose top-level content. Only leaf blocks were reported before, so a caller
+  could not reconcile the entries against `content.blocks`. Entry totals rise accordingly.
+- **A lost layout is now an entry, not only a warning.** A nested row whose columns a section cannot
+  hold, and a row of more cells than any layout has, each add an `approximated` entry with a note.
+  Previously a flattened row produced a `warnings` string at best, and a nested row's loss was
+  reported nowhere.
+- **New `approximated` notes name a column ratio the model cannot express**, giving the measured
+  widths and the layout used instead.
+- **A text anchor no longer produces an entry of its own.** It folds into the paragraph its sentence
+  became, reported `converted` under the cell's tag. The `approximated` entry noted `Inline anchor
+
+### Fixes and improvements
+
+**Send test emails through the configured render provider**
+
+`@templatical/editor`
+
+`testEmail.includeMjml` rendered with the bundled `@templatical/renderer`
+even when `render.toMjml` was configured, so a consumer with an authoritative
+backend renderer received a test built from a different pipeline than the real
+send — the one thing a test email exists to rule out. Anything the backend adds
+that the browser cannot (a platform footer, a server-composited block) was
+absent from the test and present in the delivered message.
+
+`editor.toMjml()` was always correct; only the test-email payload took the
+local path. The entry point now hands the editor the same resolution ladder
+both use, so a test carries byte-identical MJML to an export.
+
+The `includeMjml` degradation ladder gains two rows for the provider path. A
+missing `@templatical/renderer` explains a failed render only when the bundled
+renderer is what ran, so a consumer whose backend renders — and who therefore
+has no reason to install the package at all — no longer has their backend's own
+error read as an absent dependency, swallowed into a JSON-only send and answered
+with advice to install something that would change nothing. A throwing render
+provider now fails the send, exactly as a broken template already did.
+
+Unaffected: consumers with no `render` provider, those supplying only
+`compileMjml`, and Cloud, whose `testEmail` key excludes `includeMjml` at the
+type level.
+
+## 0.33.0
+
+<time datetime="2026-09-08">2026-09-08</time>
+
+### Features
+
+**Let a consumer choose which template settings the Settings panel exposes**
+
+`@templatical/editor` · `@templatical/types`
+
+The right sidebar's Settings tab offered all eight members of
+`TemplateSettings` unconditionally. An embedder whose application owns one of
+them — the content locale chosen before the editor opens, a preheader edited
+in a field next to the subject line — had no way to take it out, and was left
+hiding fields with CSS against internal markup.
+
+New `templateSettings.fields` on both `init()` and `initCloud()`:
+
+```ts
+init({
+  container,
+  templateSettings: {
+    fields: ["width", "backgroundColor", "fontFamily"],
+  },
+});
+```
+
+The list only narrows: omit the key, or pass `true`, and every setting stays
+editable. A card renders while at least one of its settings survives, so
+excluding `locale` removes the Language card and excluding `preheaderText`
+removes the Preheader card; `fields: false` (or `[]`) removes the Settings tab
+itself. The list never reorders — settings sit in fixed cards, so unlike
+`paletteBlocks` there is no order to express. An entry that isn't a
+`TemplateSettings` member is a compile error for TypeScript callers, and is
+warned and skipped at runtime, so a typo narrows the panel rather than
+restoring every setting.
+
+Presentation only. Hiding a setting never changes its value: whatever the
+loaded content carries keeps rendering and keeps round-tripping through
+`getContent()` and the export. Set the ones you hide from the content you hand
+the editor — `init({ content })`, or your own `templates.load`.
+`templateDefaults` cannot do it, since it applies only when no content is
+provided.
+
+Settings cards now space their contents with a flex gap rather than a bottom
+margin on every child but the last, because which field is last depends on the
+allowlist. Every field control and card also carries a `data-testid`.
+
+Closes #674.
+
+## 0.32.0
+
+<time datetime="2026-09-07">2026-09-07</time>
+
+### Features
+
+**Localize the text new blocks start with, and stop the editor's locale being**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library`
+
+ignored by everything `Intl` formats.
+
+**New blocks carry localized placeholder text** (#673). A Button dragged into a
+German editor read "Click Here", a Paragraph "Enter your text here", and a Title
+"Enter your title". Which locale a default follows depends on who the text is
+for:
+
+- **Author-facing prompts** — Title, Paragraph and Button text — follow
+  `init({ locale })`. They exist to be overwritten, so they match the interface
+  around them.
+- **Recipient-facing text** — the video `alt`, and the countdown's unit labels
+  and expired message — follows the template's own `settings.locale`, because it
+  ships in the delivered email. A German-speaking author building an English
+  campaign does not get German countdown labels.
+
+`blockDefaults` wins over both, and the merge is deep, so overriding
+`button.backgroundColor` keeps the translated label. With no locale configured
+the defaults are byte-identical to the factory values, so nothing changes for
+consumers who never set one.
+
+**A fresh template declares the editor's language.** `init({ locale: 'de' })`
+now seeds `settings.locale`, so a new template stops rendering
+`<mjml lang="en">` over German copy — an accessibility defect in the delivered
+email, not just the editor. A consumer's own `templateDefaults.locale` still
+wins, and a malformed tag is ignored rather than emitted into a `lang`
+attribute. Applies only when no `content` is supplied; supplied content owns the
+language it declares.
+
+**Absolute dates follow the editor's locale, not the browser's.** Version
+history entries, saved-block tooltips, the template write-time line, and the
+media library's date captions were formatted by `toLocaleString()` with no
+locale, so they read in the browser's language beside fully translated chrome.
+A malformed `locale` falls back instead of throwing.
+
+**The canvas declares the content language.** Every block-rendering surface now
+carries `settings.locale` as a `lang` attribute, so the browser's spellchecker
+and hyphenation judge the copy by the rules of the language it is written in
+rather than the host page's.
+
+**An unusable `locale` now warns.** `init({ locale: 'gr' })` fell back to
+English in silence, so a typo looked exactly like the option being ignored. It
+warns once and lists the locales that would have worked, matching what
+`paletteBlocks` and `colors` already do. The cloud chunk still falls back
+quietly — it ships fewer locales on purpose.
+
+`useBlockActions`' `blockDefaults` option also accepts a getter
+(`BlockDefaults | (() => BlockDefaults)`), re-read on each insert so a
+mid-session change to the content language reaches the next block. Passing a
+plain object behaves as before.
+
+**Add `@templatical/import-topol`, a converter from Topol.io design JSON to Templatical template JSON.**
+
+`@templatical/import-topol`
+
+`convertTopolTemplate(design)` returns `{ content, report }` with the same shape as the BeeFree, Unlayer, HTML and MJML importers. It resolves Topol's global-style cascade — the per-tag and per-selector defaults on the design root — maps every tag Topol emits, and reports what it approximated: a four-column section folded to three, a GIF block imported as an image, a social platform with no Templatical equivalent.
+
+Pass the design object itself, or a JSON string of it. Topol's editor hands it to you directly from its `onSave` callback; its REST APIs wrap it — under `data.definition` on the template endpoint, `json` on the predefined-templates endpoint.
+
+## 0.31.0
+
+<time datetime="2026-09-06">2026-09-06</time>
+
+### Features
+
+**Add `@templatical/import-mjml`, a converter from MJML documents to**
+
+`@templatical/import-mjml`
+
+Templatical template JSON — alongside the existing BeeFree, Unlayer and HTML
+importers.
+
+`convertMjmlTemplate(mjml)` returns `{ content, report }`, the same shape as
+the other three importers. It resolves MJML's `mj-attributes` / `mj-class` /
+`mj-all` attribute cascade before mapping tags, and recovers block visibility
+and display conditions from the markup `@templatical/renderer` emits for
+them. Tags with no Templatical equivalent — `mj-hero`, `mj-carousel`,
+`mj-accordion`, and any custom component — fall back to HTML blocks holding
+the original markup.
+
+MJML produced by `@templatical/renderer` converts back with no
+approximations, which a round-trip test asserts over a fixture covering
+every round-trippable block type.
+
 ## 0.30.0
 
 <time datetime="2026-09-02">2026-09-02</time>

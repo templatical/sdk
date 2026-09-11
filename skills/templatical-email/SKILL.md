@@ -80,7 +80,7 @@ the references, picking an example, validating, generating file names, managing
 **Every command below runs through one pinned CLI, and the invocation always
 starts the same way:**
 ```
-npx -y @templatical/template-tools@0.30.0 validate <file> --json
+npx -y @templatical/template-tools@0.36.0 validate <file> --json
 ```
 `npx`, then `-y`, then the package name pinned to `0.30.0`, is the fixed
 prefix — identical for `validate`, `render`, `edit`, `import`, `live`, and
@@ -139,7 +139,7 @@ mode](#live-mode), and build mode is unaffected.
    `.templatical/<name>.json` (see [Working files](#working-files) — generate a
    fresh three-word name for a new template; create the folder if needed) and run:
    ```
-   npx -y @templatical/template-tools@0.30.0 validate .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
    ```
    Fix every structural error reported and re-run until it exits `0` or `1`
    (see [Requirements](#requirements)), and resolve the reported accessibility
@@ -171,7 +171,7 @@ unrelated sessions.
   ("keep working on the welcome email", "open misty-copper-otter"), list what's
   there:
   ```
-  npx -y @templatical/template-tools@0.30.0 list --json
+  npx -y @templatical/template-tools@0.36.0 list --json
   ```
   Each entry carries a title hint pulled from the template's first heading
   block — use it to figure out which one the user means.
@@ -191,21 +191,34 @@ route by what you were actually handed, not by a fixed list of named formats:
 
 | What you have | Route |
 |---|---|
-| HTML — a file, an editor's HTML export, or a page you can fetch and save | `import`, for a deterministic first pass, then refine the `html`-fallback blocks into native ones in [live mode](#live-mode) |
-| A JSON export from an editor with no converter (Mailchimp, Klaviyo, Stripo, HubSpot…) | Read the export, hand-map it to blocks against `reference/schema.json`, validate, then refine |
+| A design or export from an email builder, or any HTML email | `import`, for a deterministic first pass, then refine the `html`-fallback blocks into native ones in [live mode](#live-mode) |
+| A JSON export from an editor with no converter (Mailchimp, Klaviyo, HubSpot…) | Read the export, hand-map it to blocks against `reference/schema.json`, validate, then refine |
 | An image or PDF of an email | Read it visually and compose blocks from scratch against the schema |
 
-For the first route:
+**Always try `import` first, and ask it rather than guessing what it supports** —
+converters are added often, and `--list-formats --json` reports exactly what is
+resolvable right now:
 
 ```
-npx -y @templatical/template-tools@0.30.0 import <source-file> [--format <fmt>] --json
+npx -y @templatical/template-tools@0.36.0 import --list-formats --json
 ```
 
-It auto-detects the format from the file's content when `--format` is
+Then:
+
+```
+npx -y @templatical/template-tools@0.36.0 import <source-file> [--format <fmt>] --json
+```
+
+It auto-detects the format from the file's name and content when `--format` is
 omitted, writes the result to a working file `.templatical/<name>.json` (same
 as a generated template — `--out <name>` overrides the default, which is the
 source file's own name), and reports how many blocks converted cleanly vs.
 were approximated vs. fell back to `html` vs. were skipped, plus warnings.
+
+One detail worth knowing, because it changes which file you point at: some
+builders export a stylesheet beside the HTML rather than inlining it. If a
+`.css` sits next to the source file, pass the **HTML** file — the converter
+picks up the sibling itself. Handing it the `.css` converts nothing.
 
 Two rules keep this from going stale:
 
@@ -213,7 +226,7 @@ Two rules keep this from going stale:
   converters ship over time, and a hardcoded list drifts the moment one does.
   Ask the CLI instead:
   ```
-  npx -y @templatical/template-tools@0.30.0 import --list-formats --json
+  npx -y @templatical/template-tools@0.36.0 import --list-formats --json
   ```
   which reports exactly what's resolvable right now, per format, in the
   current project.
@@ -239,16 +252,16 @@ swap a headline, delete a block, reorder two sections — apply an operation
 instead of regenerating and rewriting the whole document:
 
 ```
-npx -y @templatical/template-tools@0.30.0 edit .templatical/<name>.json --op '{"operation":"update_block","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}' --json
+npx -y @templatical/template-tools@0.36.0 edit .templatical/<name>.json --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}' --json
 ```
 
 `edit` applies the operation, validates the result, and writes the file — all
 in one step, and nothing is written if the result isn't structurally valid.
-The vocabulary: `add_block`, `update_block`, `update_block_style`,
-`delete_block`, `move_block`, `update_settings`, and `set_content` (a full
+The vocabulary: `addBlock`, `updateBlock`, `updateBlockStyle`,
+`deleteBlock`, `moveBlock`, `updateSettings`, and `setContent` (a full
 replacement — the operation-shaped equivalent of a rewrite, not a scoped
-change). **Use `update_block_style` for a block's `styles`** — it merges, so
-setting one property doesn't drop `padding`; `update_block`'s `updates`
+change). **Use `updateBlockStyle` for a block's `styles`** — it merges, so
+setting one property doesn't drop `padding`; `updateBlock`'s `updates`
 replaces whichever top-level keys you pass, `styles` included, so passing
 `styles` there clobbers the rest of it. Batch several operations with `--ops
 <file>` (a JSON array of the same objects) instead of one `--op` per call —
@@ -270,8 +283,8 @@ the user needs the email in a sendable format instead — to paste into an ESP,
 or because they have no editor integration to load JSON into — render it:
 
 ```
-npx -y @templatical/template-tools@0.30.0 render .templatical/<name>.json --format mjml -o .templatical/<name>.mjml
-npx -y @templatical/template-tools@0.30.0 render .templatical/<name>.json --format html -o .templatical/<name>.html
+npx -y @templatical/template-tools@0.36.0 render .templatical/<name>.json --format mjml -o .templatical/<name>.mjml
+npx -y @templatical/template-tools@0.36.0 render .templatical/<name>.json --format html -o .templatical/<name>.html
 ```
 
 Drop `-o <file>` to print the rendered output to stdout instead, if you'd
@@ -328,6 +341,14 @@ install mjml` the environment would need.
   meaningful `alt` text.
 - **Settings** must include `width` (usually `600`), `backgroundColor`,
   `textColor`, `fontFamily`, `linkUnderline`, and `locale` (BCP-47, e.g. `"en"`).
+  Set `locale` to **the language of the copy you are writing**, not to `"en"`
+  by default — it becomes `<html lang>` in the delivered email, so a German
+  message labelled `"en"` is mispronounced by every screen reader that opens
+  it. The examples are English, so they all read `"en"`; a German email needs
+  `"de"`, Brazilian Portuguese `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
+  and other RTL copy, also set `direction: "rtl"` (or omit it — those locales
+  resolve as RTL). That value is the canvas `dir` and the exported
+  `<mjml dir>`.
 
 ## Composing with project context
 
@@ -392,7 +413,7 @@ template first. A mid-session switch just points the bridge at that file.
 2. Start the bridge in the background (from the project root), pointing it at
    the session's template with `--file`:
    ```
-   npx -y @templatical/template-tools@0.30.0 live --file .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.36.0 live --file .templatical/<name>.json --json
    ```
    Read the URL and working-file path from the JSON line on stdout (`url`,
    `workingFile`) rather than pattern-matching prose — the bridge also opens
@@ -435,17 +456,17 @@ When the user asks for a change:
    in one step, composing on top of whatever's currently in the working file
    rather than discarding it:
    ```
-   npx -y @templatical/template-tools@0.30.0 edit .templatical/<name>.json --op '<json>' --json
+   npx -y @templatical/template-tools@0.36.0 edit .templatical/<name>.json --op '<json>' --json
    ```
    For a genuine rebuild, regenerate the document and **validate it before
    writing** — never push invalid content to the editor:
    ```
-   npx -y @templatical/template-tools@0.30.0 validate .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
    ```
    then write it to `.templatical/<name>.json` yourself.
 3. **Push the write** to the browser:
    ```
-   npx -y @templatical/template-tools@0.30.0 live reload --json
+   npx -y @templatical/template-tools@0.36.0 live reload --json
    ```
    The page updates live (over Server-Sent Events) — no refresh. This also
    clears `annotations`, so a note is never acted on twice.
@@ -464,7 +485,7 @@ Stop the bridge when the user is done (or the session ends) so no process or por
 is orphaned:
 
 ```
-npx -y @templatical/template-tools@0.30.0 live stop --json
+npx -y @templatical/template-tools@0.36.0 live stop --json
 ```
 
 ### Notes & limits

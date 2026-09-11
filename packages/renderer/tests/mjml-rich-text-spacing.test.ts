@@ -52,8 +52,12 @@ describe("rich text spacing in the compiled email", () => {
     const tags = paragraphTags(await compile(contentWith(block)));
 
     expect(tags).toHaveLength(3);
-    expect(tags[0]).toContain(`margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`);
-    expect(tags[1]).toContain(`margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`);
+    expect(tags[0]).toContain(
+      `margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`,
+    );
+    expect(tags[1]).toContain(
+      `margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`,
+    );
   });
 
   it("zeroes the trailing gap so the block's own padding is the only bottom space", async () => {
@@ -106,9 +110,30 @@ describe("rich text spacing in the compiled email", () => {
     const lis = compiled.match(/<li\b[^>]*>/g) ?? [];
 
     expect(ul).toContain(`margin: ${RICH_TEXT_SPACING.listMarginY}px 0`);
-    expect(ul).toContain(`padding-left: ${RICH_TEXT_SPACING.listPaddingLeft}px`);
+    expect(ul).toContain(
+      `padding-left: ${RICH_TEXT_SPACING.listPaddingLeft}px`,
+    );
     expect(lis).toHaveLength(2);
-    expect(lis[0]).toContain(`margin: ${RICH_TEXT_SPACING.listItemMarginY}px 0`);
+    expect(lis[0]).toContain(
+      `margin: ${RICH_TEXT_SPACING.listItemMarginY}px 0`,
+    );
+  });
+
+  it("inlines list padding on the end edge when the template is RTL", async () => {
+    const block = createParagraphBlock();
+    block.content = "<ul><li>واحد</li></ul>";
+    const content = contentWith(block);
+    content.settings.direction = "rtl";
+
+    const compiled = await compile(content);
+    const [ul] = compiled.match(/<ul\b[^>]*>/g) ?? [];
+
+    expect(ul).toContain(
+      `padding-right: ${RICH_TEXT_SPACING.listPaddingLeft}px`,
+    );
+    expect(ul).not.toContain(
+      `padding-left: ${RICH_TEXT_SPACING.listPaddingLeft}px`,
+    );
   });
 
   it("spaces the paragraphs of a multi-paragraph title too", async () => {
@@ -120,7 +145,9 @@ describe("rich text spacing in the compiled email", () => {
     const tags = paragraphTags(await compile(contentWith(block)));
 
     expect(tags).toHaveLength(2);
-    expect(tags[0]).toContain(`margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`);
+    expect(tags[0]).toContain(
+      `margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`,
+    );
   });
 
   it("overrides MJML's own 13px paragraph rule rather than racing it", async () => {

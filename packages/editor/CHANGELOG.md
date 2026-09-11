@@ -1,5 +1,230 @@
 # @templatical/editor
 
+## 0.36.0
+
+### Minor Changes
+
+- d8e38e4: Bring-your-own media library. Cloud is the adapter; `onRequestMedia` remains a UI override.
+
+  The editor compiles the Browse modal into a lazy chunk of `@templatical/editor` — `init({ media })` and Cloud's store no longer need `@templatical/media-library` installed, and that install no longer pulls Vue into an editor consumer. The media-library package remains for standalone `init()` / `MediaLibraryModal` in a host Vue app (`vue` peer; `tailwindcss` is build-time only).
+
+  The editor's image picker (Browse, drop, crop, folders, search) is now backed by a `MediaProvider` you implement — a CMS gallery, a DAM, or the bundled `createLocalStorageMediaProvider()`. Templatical Cloud is one adapter behind the same contract (`createCloudMediaProvider` from `@templatical/core/cloud`). `initCloud({ media })` omitted uses Cloud's store, `false` turns it off, an events-only object keeps Cloud plus your handlers, and a full provider is yours and not plan-gated.
+
+  `onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
+
+  Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
+  Origin: [#700](https://github.com/templatical/sdk/issues/700).
+
+### Patch Changes
+
+- @templatical/quality@0.36.0
+  - @templatical/renderer@0.36.0
+
+## 0.35.0
+
+### Minor Changes
+
+- 703193a: Add first-class email content direction (`settings.direction`: `"ltr"` | `"rtl"`). The canvas, previews, and `<mjml dir>` follow it independently of the editor chrome; when unset, RTL content languages (`ar`, `he`, `fa`, `ur`, …) resolve as RTL. New title and table blocks start at the start edge. The all-caps accessibility rule skips caseless scripts so Arabic and Hebrew copy is not flagged as shouting.
+
+### Patch Changes
+
+- Updated dependencies [703193a]
+  - @templatical/renderer@0.35.0
+  - @templatical/quality@0.35.0
+  - @templatical/media-library@0.35.0
+
+## 0.34.3
+
+### Patch Changes
+
+- @templatical/media-library@0.34.3
+  - @templatical/quality@0.34.3
+  - @templatical/renderer@0.34.3
+
+## 0.34.2
+
+### Patch Changes
+
+- @templatical/media-library@0.34.2
+  - @templatical/quality@0.34.2
+  - @templatical/renderer@0.34.2
+
+## 0.34.1
+
+### Patch Changes
+
+- @templatical/media-library@0.34.1
+  - @templatical/quality@0.34.1
+  - @templatical/renderer@0.34.1
+
+## 0.34.0
+
+### Minor Changes
+
+- 63faafe: Merge tags in rich-text link URLs
+
+  The **Insert Link** dialog in a title or paragraph block now takes merge tags in its URL field, through the same insert button, picker, chip display and type-ahead as every other URL field in the editor. It was the only URL field without them, and a link is often the field most in need of one — a per-recipient or per-event URL.
+
+  Three fixes come with it:
+
+  - A URL that opens with a merge tag is stored verbatim instead of being prefixed with `https://`. A tag supplies its own scheme, so the prefix produced `https://https://…` once the sending system resolved it. The scheme allowlist still runs first, so `javascript:` and friends are rejected as before, and a bare host without a tag is still completed.
+  - The semantic z-index scale compiled to nothing. Tailwind 4 derives z utilities from the `--z-index-*` theme namespace, but the layers were declared as `--z-panel` / `--z-toast` / `--z-overlay` / `--z-popover` / `--z-modal`, so all twelve `tpl:z-*` classes computed `auto` while reading like stacking decisions. The two cloud overlays and the collaboration toast now carry real numbers — they sit beside the `z-50` header, which was painting over them. The other nine need none, with one exception: `TplModal` takes a small real `z-10` so a picker opened from the link dialog paints above it — inside `.tpl-popover-root` order follows teleport-anchor order, and the dialog's anchor is created later than the pickers'.
+  - The in-flight flag behind the merge-tag and logic pickers is now shared per editor rather than per composable instance. The rich-text click-outside guard reads it to keep a block in edit mode while a picker is open; with a private flag it only ever saw requests from one host, so a picker opened anywhere else would close the block mid-insert and drop the tag.
+
+### Patch Changes
+
+- e75ef72: Send test emails through the configured render provider
+
+  `testEmail.includeMjml` rendered with the bundled `@templatical/renderer`
+  even when `render.toMjml` was configured, so a consumer with an authoritative
+  backend renderer received a test built from a different pipeline than the real
+  send — the one thing a test email exists to rule out. Anything the backend adds
+  that the browser cannot (a platform footer, a server-composited block) was
+  absent from the test and present in the delivered message.
+
+  `editor.toMjml()` was always correct; only the test-email payload took the
+  local path. The entry point now hands the editor the same resolution ladder
+  both use, so a test carries byte-identical MJML to an export.
+
+  The `includeMjml` degradation ladder gains two rows for the provider path. A
+  missing `@templatical/renderer` explains a failed render only when the bundled
+  renderer is what ran, so a consumer whose backend renders — and who therefore
+  has no reason to install the package at all — no longer has their backend's own
+  error read as an absent dependency, swallowed into a JSON-only send and answered
+  with advice to install something that would change nothing. A throwing render
+  provider now fails the send, exactly as a broken template already did.
+
+  Unaffected: consumers with no `render` provider, those supplying only
+  `compileMjml`, and Cloud, whose `testEmail` key excludes `includeMjml` at the
+  type level.
+
+- @templatical/media-library@0.34.0
+  - @templatical/quality@0.34.0
+  - @templatical/renderer@0.34.0
+
+## 0.33.0
+
+### Minor Changes
+
+- d76c343: Let a consumer choose which template settings the Settings panel exposes
+
+  The right sidebar's Settings tab offered all eight members of
+  `TemplateSettings` unconditionally. An embedder whose application owns one of
+  them — the content locale chosen before the editor opens, a preheader edited
+  in a field next to the subject line — had no way to take it out, and was left
+  hiding fields with CSS against internal markup.
+
+  New `templateSettings.fields` on both `init()` and `initCloud()`:
+
+  ```ts
+  init({
+    container,
+    templateSettings: {
+      fields: ["width", "backgroundColor", "fontFamily"],
+    },
+  });
+  ```
+
+  The list only narrows: omit the key, or pass `true`, and every setting stays
+  editable. A card renders while at least one of its settings survives, so
+  excluding `locale` removes the Language card and excluding `preheaderText`
+  removes the Preheader card; `fields: false` (or `[]`) removes the Settings tab
+  itself. The list never reorders — settings sit in fixed cards, so unlike
+  `paletteBlocks` there is no order to express. An entry that isn't a
+  `TemplateSettings` member is a compile error for TypeScript callers, and is
+  warned and skipped at runtime, so a typo narrows the panel rather than
+  restoring every setting.
+
+  Presentation only. Hiding a setting never changes its value: whatever the
+  loaded content carries keeps rendering and keeps round-tripping through
+  `getContent()` and the export. Set the ones you hide from the content you hand
+  the editor — `init({ content })`, or your own `templates.load`.
+  `templateDefaults` cannot do it, since it applies only when no content is
+  provided.
+
+  Settings cards now space their contents with a flex gap rather than a bottom
+  margin on every child but the last, because which field is last depends on the
+  allowlist. Every field control and card also carries a `data-testid`.
+
+  Closes #674.
+
+### Patch Changes
+
+- @templatical/media-library@0.33.0
+  - @templatical/quality@0.33.0
+  - @templatical/renderer@0.33.0
+
+## 0.32.0
+
+### Minor Changes
+
+- 2ef4f27: Localize the text new blocks start with, and stop the editor's locale being
+  ignored by everything `Intl` formats.
+
+  **New blocks carry localized placeholder text** (#673). A Button dragged into a
+  German editor read "Click Here", a Paragraph "Enter your text here", and a Title
+  "Enter your title". Which locale a default follows depends on who the text is
+  for:
+
+  - **Author-facing prompts** — Title, Paragraph and Button text — follow
+    `init({ locale })`. They exist to be overwritten, so they match the interface
+    around them.
+  - **Recipient-facing text** — the video `alt`, and the countdown's unit labels
+    and expired message — follows the template's own `settings.locale`, because it
+    ships in the delivered email. A German-speaking author building an English
+    campaign does not get German countdown labels.
+
+  `blockDefaults` wins over both, and the merge is deep, so overriding
+  `button.backgroundColor` keeps the translated label. With no locale configured
+  the defaults are byte-identical to the factory values, so nothing changes for
+  consumers who never set one.
+
+  **A fresh template declares the editor's language.** `init({ locale: 'de' })`
+  now seeds `settings.locale`, so a new template stops rendering
+  `<mjml lang="en">` over German copy — an accessibility defect in the delivered
+  email, not just the editor. A consumer's own `templateDefaults.locale` still
+  wins, and a malformed tag is ignored rather than emitted into a `lang`
+  attribute. Applies only when no `content` is supplied; supplied content owns the
+  language it declares.
+
+  **Absolute dates follow the editor's locale, not the browser's.** Version
+  history entries, saved-block tooltips, the template write-time line, and the
+  media library's date captions were formatted by `toLocaleString()` with no
+  locale, so they read in the browser's language beside fully translated chrome.
+  A malformed `locale` falls back instead of throwing.
+
+  **The canvas declares the content language.** Every block-rendering surface now
+  carries `settings.locale` as a `lang` attribute, so the browser's spellchecker
+  and hyphenation judge the copy by the rules of the language it is written in
+  rather than the host page's.
+
+  **An unusable `locale` now warns.** `init({ locale: 'gr' })` fell back to
+  English in silence, so a typo looked exactly like the option being ignored. It
+  warns once and lists the locales that would have worked, matching what
+  `paletteBlocks` and `colors` already do. The cloud chunk still falls back
+  quietly — it ships fewer locales on purpose.
+
+  `useBlockActions`' `blockDefaults` option also accepts a getter
+  (`BlockDefaults | (() => BlockDefaults)`), re-read on each insert so a
+  mid-session change to the content language reaches the next block. Passing a
+  plain object behaves as before.
+
+### Patch Changes
+
+- Updated dependencies [2ef4f27]
+  - @templatical/media-library@0.32.0
+  - @templatical/quality@0.32.0
+  - @templatical/renderer@0.32.0
+
+## 0.31.0
+
+### Patch Changes
+
+- @templatical/media-library@0.31.0
+  - @templatical/quality@0.31.0
+  - @templatical/renderer@0.31.0
+
 ## 0.30.0
 
 ### Minor Changes

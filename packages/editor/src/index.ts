@@ -12,6 +12,8 @@ import type {
   EditorUser,
   FontsConfig,
   LogicTagsConfig,
+  MediaProvider,
+  MediaRequestContext,
   MediaResult,
   MergeTagsConfig,
   RenderProvider,
@@ -20,6 +22,7 @@ import type {
   Template,
   TemplateContent,
   TemplateDefaults,
+  TemplateSettingsConfig,
   TemplatesProvider,
   ThemeOverrides,
   VersionHistoryProvider,
@@ -27,13 +30,19 @@ import type {
   ResolvePreview,
 } from "@templatical/types";
 import { createDefaultTemplateContent, safeClone } from "@templatical/types";
-import type { MediaRequestContext } from "@templatical/media-library";
+import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 
 import Editor from "./Editor.vue";
 import type { CloudRuntime } from "./cloud/runtime";
 import type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
 import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
-import { loadTranslations, loadCloudTranslations } from "./i18n";
+import {
+  getSupportedLocales,
+  isLocaleSupported,
+  loadTranslations,
+  loadCloudTranslations,
+} from "./i18n";
+import { logger } from "./utils/logger";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
@@ -245,6 +254,28 @@ export interface TemplaticalEditorConfig {
    */
   changeDebounce?: number;
 
+  /**
+   * Storage backend for the **media library** — the picker behind Browse on
+   * image fields, video thumbnails, and custom-block image fields.
+   *
+   * The editor owns the modal, grid, crop and insertion; you own persistence.
+   * `list` is required; every other method is `false | fn`. All mutations
+   * `false` is a read-only library: browse, search and pick still work.
+   *
+   * Implement the methods of `MediaProvider` against your own API, or use
+   * the bundled browser-local provider for demos and prototypes:
+   *
+   * ```ts
+   * import { init, createLocalStorageMediaProvider } from "@templatical/editor";
+   *
+   * init({ container, media: createLocalStorageMediaProvider() });
+   * ```
+   *
+   * **Omitted by default.** Image fields stay URL-only. `onRequestMedia` is
+   * the UI override (a host widget) and wins when both are set.
+   */
+  media?: MediaProvider;
+
   onRequestMedia?: OnRequestMedia;
 
   /**
@@ -363,6 +394,36 @@ export interface TemplaticalEditorConfig {
    * configured, since that would leave the picker with no way to set a color.
    */
   colors?: ColorsConfig;
+
+  /**
+   * Which template settings the Settings panel exposes — an allowlist over the
+   * members of `TemplateSettings`.
+   *
+   * ```ts
+   * // Layout and Appearance only: no Language card, no Preheader card.
+   * templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] }
+   *
+   * templateSettings: { fields: false }   // no Settings tab at all
+   * ```
+   *
+   * **Omitted by default**, in which case every setting is editable. The list
+   * only narrows: a card renders while at least one of its settings survives,
+   * and the tab itself stops rendering once none do. It never reorders —
+   * settings sit in fixed cards, so unlike {@link paletteBlocks} there is no
+   * order to express.
+   *
+   * Presentation only, and not a security boundary. Hiding a setting never
+   * changes its value: whatever the loaded content carries keeps rendering and
+   * keeps round-tripping through `getContent()`. Set the ones you hide from the
+   * content you hand the editor — `init({ content })`, or the `templates`
+   * provider's own `load`, which is the seam for "this template's locale comes
+   * from my application, not from the author".
+   *
+   * Sibling restrictions live on their own keys: {@link paletteBlocks} for the
+   * block palette, `fonts.builtIns` for the font picker, `colors.allowCustom`
+   * for free-form colors, and `templates.nameField` for the header's name.
+   */
+  templateSettings?: TemplateSettingsConfig;
 
   /**
    * Storage backend for **saved blocks** — reusable groups of blocks a user
@@ -843,6 +904,22 @@ async function mountEditor(
     );
   }
 
+  // An unusable `locale` fell back to English in silence, so a typo — "gr" for
+  // Greek (the country code, not the language code "el"), or "english" — was
+  // indistinguishable from the option being ignored. Regions and stray
+  // whitespace are NOT typos: they resolve to a base language by design.
+  // `paletteBlocks` and `colors` both warn on input they cannot use; this makes
+  // the third config option behave the same. Deliberately NOT extended to the
+  // cloud chunk, which ships fewer locales on purpose (`guide/i18n.md` tells
+  // contributors not to translate it) — warning there would fire for every
+  // fr/es/nl/ca consumer, who did nothing wrong.
+  if (config.locale !== undefined && !isLocaleSupported(config.locale)) {
+    logger.warn(
+      `config.locale: "${config.locale}" has no translations — falling back ` +
+        `to English. Supported: ${getSupportedLocales().sort().join(", ")}.`,
+    );
+  }
+
   // Load translations before mounting so child components can use useI18n synchronously
   const translations = await loadTranslations(config.locale ?? "en");
 
@@ -886,6 +963,12 @@ async function mountEditor(
           fontsManager,
           shadowRoot: mount.shadowRoot ?? undefined,
           cloud,
+          // The test-email dialog's `includeMjml` payload comes off the same
+          // ladder as `editor.toMjml()`, so a consumer's `render.toMjml` is what
+          // a test carries when they configured one. `render` is declared below
+          // and read at send time, never during this render.
+          renderMjml: () => render.toMjml(),
+          usesLocalRenderer: () => render.usesLocalRenderer(),
           ref: editorRef,
         });
     },
@@ -904,7 +987,16 @@ async function mountEditor(
       if (editorRef.value) {
         return safeClone(editorRef.value.getContent());
       }
-      return safeClone(config.content ?? createDefaultTemplateContent());
+      // Same defaults the mounted editor would have used, `locale` included:
+      // a caller reading content before mount must not get a different
+      // template than the one about to render.
+      return safeClone(
+        config.content ??
+          createDefaultTemplateContent(
+            config.fonts?.defaultFont,
+            resolveTemplateDefaults(config),
+          ),
+      );
     },
     setContent(content: TemplateContent) {
       // Normalized once and used for both writes: `getContent()` falls back to
@@ -1044,13 +1136,14 @@ async function mountEditor(
  * server-side for test email, sends and exports, so a supplied renderer
  * would change only what you preview and export, never what Cloud delivers.
  * `resolvePreview` is the same key with the same type on both entry points,
- * so upgrading an OSS integration is a deletion. `savedBlocks` and
- * `testEmail` are the same key on both entry points too, but Cloud widens
+ * so upgrading an OSS integration is a deletion. `savedBlocks`, `testEmail`
+ * and `media` are the same key on both entry points too, but Cloud widens
  * each type to also accept an events-only shape — `boolean |
- * SavedBlocksOptions | SavedBlocksProvider` and `Pick<TestEmailOptions,
- * "onSent" | "defaultRecipient"> | TestEmailProvider` — so upgrading is
- * still a deletion: drop the key to adopt Cloud's store or sender, or leave
- * it exactly as it is to keep your own.
+ * SavedBlocksOptions | SavedBlocksProvider`, `Pick<TestEmailOptions,
+ * "onSent" | "defaultRecipient"> | TestEmailProvider`, and
+ * `false | MediaOptions | MediaProvider` — so upgrading is still a
+ * deletion: drop the key to adopt Cloud's store or sender, or leave it
+ * exactly as it is to keep your own.
  *
  * `user` is not a key either: Cloud signs comment writes against the auth token's
  * `user` claim, so it fills `init({ user })` from there rather than letting a
@@ -1087,6 +1180,7 @@ export async function initCloud(
       paletteBlocks: config.paletteBlocks,
       htmlBlockPreview: config.htmlBlockPreview,
       colors: config.colors,
+      templateSettings: config.templateSettings,
       fonts: config.fonts,
       mergeTags: config.mergeTags,
       logicTags: config.logicTags,
@@ -1115,6 +1209,8 @@ export async function initCloud(
       savedBlocks: providers.savedBlocks,
       testEmail: providers.testEmail,
       comments: providers.comments,
+      media: providers.media,
+      onRequestMedia: config.onRequestMedia,
       // From the JWT. Undefined when the project's token carries no `user` claim,
       // which leaves comments unavailable rather than anonymous.
       user,
@@ -1169,6 +1265,7 @@ export type {
   TemplatePatch,
   TemplatesOptions,
   TemplateSaveTrigger,
+  TemplateSettingsConfig,
   TemplatesProvider,
   TestEmailOptions,
   TestEmailPayload,
@@ -1176,13 +1273,20 @@ export type {
   VersionHistoryOptions,
   CommentsOptions,
   CommentEventMeta,
+  MediaAsset,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
 } from "@templatical/types";
 
-// Bundled browser-local saved-blocks provider. Re-exported here (rather than
-// leaving it to `@templatical/core`) because consumers install only this
-// package — core is bundled inline and isn't resolvable on their side.
+// Bundled browser-local saved-blocks / media providers. Re-exported here
+// (rather than leaving them to `@templatical/core`) because consumers
+// install only this package — core is bundled inline and isn't resolvable
+// on their side.
 export { createLocalStorageSavedBlocksProvider } from "@templatical/core";
 export type { LocalStorageSavedBlocksOptions } from "@templatical/core";
+export { createLocalStorageMediaProvider } from "@templatical/core";
+export type { LocalStorageMediaProviderOptions } from "@templatical/core";
 
 export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";

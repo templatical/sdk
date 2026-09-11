@@ -137,31 +137,31 @@ export function applyOperation(
   const data = (payload.data ?? {}) as Data;
 
   switch (payload.operation) {
-    case "set_content": {
+    case "setContent": {
       const next = data.content as TemplateContent | undefined;
       if (!next || typeof next !== "object" || !Array.isArray(next.blocks)) {
         return reject(
           content,
-          "set_content needs `content` with a blocks array.",
+          "setContent needs `content` with a blocks array.",
         );
       }
       return { ok: true, content: safeClone(next) };
     }
 
-    case "update_settings": {
+    case "updateSettings": {
       const updates = data.settings as Partial<TemplateSettings> | undefined;
       if (!updates || typeof updates !== "object") {
-        return reject(content, "update_settings needs a `settings` object.");
+        return reject(content, "updateSettings needs a `settings` object.");
       }
       const draft = safeClone(content);
       draft.settings = { ...draft.settings, ...updates };
       return { ok: true, content: draft };
     }
 
-    case "add_block": {
+    case "addBlock": {
       const block = data.block as Block | undefined;
       if (!block || typeof block !== "object" || typeof block.id !== "string") {
-        return reject(content, "add_block needs a `block` with an id.");
+        return reject(content, "addBlock needs a `block` with an id.");
       }
       const targetSectionId = data.targetSectionId as string | undefined;
 
@@ -190,12 +190,12 @@ export function applyOperation(
       return { ok: true, content: draft };
     }
 
-    case "update_block": {
+    case "updateBlock": {
       const blockId = data.blockId as string | undefined;
       const updates = data.updates as Partial<Block> | undefined;
-      if (!blockId) return reject(content, "update_block needs a `blockId`.");
+      if (!blockId) return reject(content, "updateBlock needs a `blockId`.");
       if (!updates || typeof updates !== "object") {
-        return reject(content, "update_block needs an `updates` object.");
+        return reject(content, "updateBlock needs an `updates` object.");
       }
       const draft = safeClone(content);
       const block = findBlockById(draft.blocks, blockId);
@@ -212,14 +212,14 @@ export function applyOperation(
       return { ok: true, content: draft };
     }
 
-    case "update_block_style": {
+    case "updateBlockStyle": {
       const blockId = data.blockId as string | undefined;
       const styles = data.styles as Record<string, unknown> | undefined;
       if (!blockId) {
-        return reject(content, "update_block_style needs a `blockId`.");
+        return reject(content, "updateBlockStyle needs a `blockId`.");
       }
       if (!styles || typeof styles !== "object") {
-        return reject(content, "update_block_style needs a `styles` object.");
+        return reject(content, "updateBlockStyle needs a `styles` object.");
       }
       const draft = safeClone(content);
       const block = findBlockById(draft.blocks, blockId);
@@ -233,9 +233,9 @@ export function applyOperation(
       return { ok: true, content: draft };
     }
 
-    case "delete_block": {
+    case "deleteBlock": {
       const blockId = data.blockId as string | undefined;
-      if (!blockId) return reject(content, "delete_block needs a `blockId`.");
+      if (!blockId) return reject(content, "deleteBlock needs a `blockId`.");
       const draft = safeClone(content);
       const parent = findBlockParent(draft.blocks, blockId);
       if (!parent) return reject(content, `No block with id "${blockId}".`);
@@ -244,12 +244,12 @@ export function applyOperation(
       return { ok: true, content: draft };
     }
 
-    case "move_block": {
+    case "moveBlock": {
       const blockId = data.blockId as string | undefined;
       const index = data.index as number | undefined;
-      if (!blockId) return reject(content, "move_block needs a `blockId`.");
+      if (!blockId) return reject(content, "moveBlock needs a `blockId`.");
       if (typeof index !== "number" || index < 0) {
-        return reject(content, "move_block needs a non-negative `index`.");
+        return reject(content, "moveBlock needs a non-negative `index`.");
       }
       const targetSectionId = data.targetSectionId as string | undefined;
 

@@ -199,7 +199,7 @@ undiagnosable, since nothing throws and nothing logs.
 
 <!-- BEGIN GENERATED INDEX -->
 
-_Generated from `@templatical/editor@0.30.0` — 65 pages. Regenerate with `pnpm --filter @templatical/sdk-skill run generate-reference` (wired into the release's `changeset:version` step)._
+_Generated from `@templatical/editor@0.36.0` — 70 pages. Regenerate with `pnpm --filter @templatical/sdk-skill run generate-reference` (wired into the release's `changeset:version` step)._
 
 ## Overview
 
@@ -227,8 +227,12 @@ _Generated from `@templatical/editor@0.30.0` — 65 pages. Regenerate with `pnpm
 - [Logic Tags](reference/guide/logic-tags.md): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](reference/guide/merge-tags.md): Dynamic content via merge tags in Templatical email templates.
 - [Migration from BeeFree](reference/guide/migration-from-beefree.md): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.
+- [Migrating from Chamaileon](reference/guide/migration-from-chamaileon.md): Convert Chamaileon email templates to Templatical format using @templatical/import-chamaileon.
+- [Migrating from Easy Email Pro](reference/guide/migration-from-easy-email-pro.md): Convert Easy Email Pro email templates to Templatical format using @templatical/import-easy-email-pro.
 - [Migration from HTML](reference/guide/migration-from-html.md): Convert HTML email templates to Templatical format using @templatical/import-html.
-- [Migrating from hand-written MJML](reference/guide/migration-from-mjml.md): How to move existing MJML email templates into Templatical's visual editor — mapping table, rebuild approach, and what's coming next.
+- [Migrating from MJML](reference/guide/migration-from-mjml.md): Convert MJML email templates to Templatical format using @templatical/import-mjml.
+- [Migrating from Stripo](reference/guide/migration-from-stripo.md): Convert Stripo email templates to Templatical format using @templatical/import-stripo.
+- [Migrating from Topol](reference/guide/migration-from-topol.md): Convert Topol.io email templates to Templatical format using @templatical/import-topol.
 - [Migration from Unlayer](reference/guide/migration-from-unlayer.md): Convert Unlayer email templates to Templatical format using @templatical/import-unlayer.
 - [Preview Rendering](reference/guide/preview-rendering.md): Control what the editor's preview surfaces show — labels, sample values, or real data resolved by your backend.
 - [Programmatic Templates](reference/guide/programmatic-templates.md): Build email template content programmatically using factory functions.
@@ -247,7 +251,8 @@ _Generated from `@templatical/editor@0.30.0` — 65 pages. Regenerate with `pnpm
 ## Connect your backend
 
 - [Comments](reference/backend/comments.md): A threaded review conversation on a template — over your own storage, or Templatical Cloud's.
-- [Connect your backend](reference/backend/index.md): Saving, version history, comments, saved blocks, test emails and rendering are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+- [Connect your backend](reference/backend/index.md): Saving, version history, comments, saved blocks, media, test emails and rendering are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+- [Media](reference/backend/media.md): Back the editor's image picker with your own gallery, DAM or CMS — or use the bundled browser-local store.
 - [Rendering & Export](reference/backend/render.md): Turn a template into MJML or sending-ready HTML — locally, on your own backend, or with a single mjml2html endpoint.
 - [Saved Blocks](reference/backend/saved-blocks.md): Let users save reusable groups of blocks and insert them into other templates, backed by your own storage.
 - [Saving & Loading Templates](reference/backend/templates.md): Wire the editor's save/load lifecycle to your own storage — name, save button, autosave and unsaved-changes guard included.
@@ -264,7 +269,7 @@ _Generated from `@templatical/editor@0.30.0` — 65 pages. Regenerate with `pnpm
 - [Headless API](reference/cloud/headless-api.md): Full programmatic access to templates, media, and rendering.
 - [Templatical Cloud](reference/cloud/index.md): Premium hosted features for teams building email tooling at scale.
 - [MCP Integration](reference/cloud/mcp.md): Connect AI agents to build and modify templates programmatically via Model Context Protocol.
-- [Media Library](reference/cloud/media-library.md): Upload, organize, and manage images with folders and search.
+- [Media Library](reference/cloud/media-library.md): Templatical Cloud as one implementation of the media storage contract.
 - [Multi-Tenant Architecture](reference/cloud/multi-tenant.md): Project and tenant isolation with API keys.
 - [Rendering](reference/cloud/rendering.md): How Templatical Cloud renders a template to MJML and HTML, and why it does not take a render provider.
 - [Saved Blocks](reference/cloud/saved-blocks.md): Templatical Cloud as one implementation of the saved-blocks storage contract.

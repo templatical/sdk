@@ -54,6 +54,26 @@ export default defineConfig({
                 packagesDir,
                 'import-html/src/index.ts',
             ),
+            '@templatical/import-mjml': resolve(
+                packagesDir,
+                'import-mjml/src/index.ts',
+            ),
+            '@templatical/import-topol': resolve(
+                packagesDir,
+                'import-topol/src/index.ts',
+            ),
+            '@templatical/import-stripo': resolve(
+                packagesDir,
+                'import-stripo/src/index.ts',
+            ),
+            '@templatical/import-chamaileon': resolve(
+                packagesDir,
+                'import-chamaileon/src/index.ts',
+            ),
+            '@templatical/import-easy-email-pro': resolve(
+                packagesDir,
+                'import-easy-email-pro/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',

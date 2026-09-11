@@ -44,7 +44,7 @@ const editor = await initCloud({
 
 ## Autoren-Identität
 
-Cloud sendet bei jedem Schreibvorgang `user_id` / `user_name` / `user_signature` mit, entnommen aus dem `user`-Claim des Auth-Tokens und von seinem Backend geprüft. Daher nimmt `initCloud()` **keinen `user`-Schlüssel** an: Es füllt `init({ user })` aus genau diesem Claim, und eine vom Browser gelieferte Identität könnte der vom Server geprüften nur widersprechen.
+Cloud sendet bei jedem Schreibvorgang `userId` / `userName` / `userSignature` mit, entnommen aus dem `user`-Claim des Auth-Tokens und von seinem Backend geprüft. Daher nimmt `initCloud()` **keinen `user`-Schlüssel** an: Es füllt `init({ user })` aus genau diesem Claim, und eine vom Browser gelieferte Identität könnte der vom Server geprüften nur widersprechen.
 
 Ein Projekt, dessen Token-Endpunkt den `user`-Claim weglässt, erhält überhaupt keine Kommentar-Funktion — [nicht verfügbar, niemals anonym](/de/backend/comments#autoren-identitat).
 

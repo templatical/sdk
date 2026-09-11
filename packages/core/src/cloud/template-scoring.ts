@@ -72,8 +72,8 @@ export function useTemplateScoring(
           Accept: "text/event-stream",
         },
         body: JSON.stringify({
-          current_content: content,
-          merge_tags: mergeTags.map((p) => ({
+          currentContent: content,
+          mergeTags: mergeTags.map((p) => ({
             label: p.label,
             value: p.value,
           })),
@@ -82,7 +82,7 @@ export function useTemplateScoring(
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error("ai_generation_not_available");
+          throw new Error("aiGenerationNotAvailable");
         }
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || "Failed to score template");
@@ -186,7 +186,7 @@ export function useTemplateScoring(
             suggestion: finding.suggestion,
             category: finding.category,
           },
-          merge_tags: mergeTags.map((p) => ({
+          mergeTags: mergeTags.map((p) => ({
             label: p.label,
             value: p.value,
           })),
@@ -195,7 +195,7 @@ export function useTemplateScoring(
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error("ai_generation_not_available");
+          throw new Error("aiGenerationNotAvailable");
         }
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || "Failed to fix finding");

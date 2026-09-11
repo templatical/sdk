@@ -13,12 +13,18 @@ export default {
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
-      headline: "Schon in BeeFree, Unlayer oder eigenem HTML?",
+      headline:
+        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML oder HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
       importFromUnlayer: "Aus Unlayer importieren",
       importFromHtml: "Aus HTML importieren",
+      importFromMjml: "Aus MJML importieren",
+      importFromTopol: "Aus Topol importieren",
+      importFromStripo: "Aus Stripo importieren",
+      importFromChamaileon: "Aus Chamaileon importieren",
+      importFromEasyEmailPro: "Aus Easy Email Pro importieren",
     },
   },
   cloudBanner: {
@@ -52,7 +58,7 @@ export default {
       content: "Vorlagen-Blockstruktur",
       theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
       defaults: "blockDefaults, templateDefaults",
-      callbacks: "onRequestMedia, mergeTags.onRequest",
+      callbacks: "media, mergeTags.onRequest",
       locale: "SDK-Sprache, die an init({ locale }) \u00fcbergeben wird",
     },
     localeHint:
@@ -70,7 +76,7 @@ export default {
     callbacksHint:
       'Callback-Handler f\u00fcr den Editor umschalten. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
     onRequestMediaDesc:
-      '\u00d6ffnet eine Demo-Bildauswahl, wenn der Benutzer auf "Medien durchsuchen" klickt',
+      'Stellt "Durchsuchen" \u00fcber eine lokale Medienbibliothek bereit. Deaktivieren f\u00fcr nur-URL-Feld.',
     onRequestMergeTag:
       "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer ein Merge-Tag einf\u00fcgt",
     cancel: "Abbrechen",
@@ -79,8 +85,13 @@ export default {
   importModal: {
     title: "Bestehende Vorlage importieren",
     sources: {
-      beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
+      beefree: "Aus BeeFree",
+      stripo: "Aus Stripo",
+      topol: "Aus Topol",
+      chamaileon: "Aus Chamaileon",
+      easyEmailPro: "Aus Easy Email Pro",
+      mjml: "Aus MJML",
       html: "Aus HTML",
     },
     chooseFile: "Datei w\u00e4hlen",
@@ -105,12 +116,39 @@ export default {
       emptyError:
         "F\u00fcgen Sie Ihren HTML-Quelltext ein oder laden Sie eine Datei hoch.",
     },
+    mjml: {
+      description:
+        "F\u00fcgen Sie unten ein MJML-Dokument ein. Von Templatical erzeugtes MJML wird exakt zur\u00fcckgelesen; handgeschriebenes MJML deckt die g\u00e4ngigen Tags ab und f\u00e4llt f\u00fcr den Rest auf HTML-Bl\u00f6cke zur\u00fcck.",
+      emptyError:
+        "F\u00fcgen Sie Ihren MJML-Quelltext ein oder laden Sie eine Datei hoch.",
+    },
+    topol: {
+      description:
+        'F\u00fcgen Sie unten ein Topol-Design-JSON ein \u2014 das Design selbst, nicht eine gesamte API-Antwort. Topols Editor \u00fcbergibt es Ihnen direkt; \u00fcber die API liegt es unter "definition" oder "json".',
+      emptyError:
+        "F\u00fcgen Sie Ihr Topol-Design-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    stripo: {
+      description:
+        "F\u00fcgen Sie unten Stripo-HTML ein \u2014 einen Datei \u2192 HTML-Export oder das { html, css }-Objekt aus getTemplateData(). Der Konverter erkennt selbst, welche Variante Sie \u00fcbergeben.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Stripo-HTML ein oder laden Sie eine Datei hoch.",
+    },
+    chamaileon: {
+      description:
+        "F\u00fcgen Sie unten ein Chamaileon-getDocument()-JSON ein \u2014 das persistierte Dokument, kein getEmailHtml()-Markup.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Chamaileon-Dokument-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    easyEmailPro: {
+      description:
+        "F\u00fcgen Sie unten ein Easy-Email-Pro-JSON ein \u2014 die persistierte Seite { subject, content }, keine EditorCore.toMJML()-Ausgabe.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Easy-Email-Pro-JSON ein oder laden Sie eine Datei hoch.",
+    },
   },
   mergeTagModal: {
     title: "Merge-Tag einf\u00fcgen",
-  },
-  mediaModal: {
-    title: "Bild ausw\u00e4hlen",
   },
   dataSourceModal: {
     fetching: "Daten vom Endpunkt abrufen\u2026",
@@ -198,6 +236,11 @@ export default {
     sale: {
       name: "Black Friday Sale",
       description: "Aktion mit Produktauswahl und Rabattcode",
+    },
+    rtl: {
+      name: "Arabische Einladung",
+      description:
+        "RTL-Einladung mit Merge-Tags und einem zweispaltigen Abschnitt",
     },
   },
   onboarding: {
@@ -287,11 +330,6 @@ export default {
     loopItemsDescription:
       "Wiederholt den umschlossenen Inhalt für jede Bestellposition",
   },
-  demoImages: {
-    productShot: "Produktfoto",
-    teamPhoto: "Teamfoto",
-    abstract: "Abstrakt",
-  },
   a11y: {
     backToTemplates: "Zur\u00fcck zu Vorlagen",
     startFromScratch: "Neu beginnen mit leerer Leinwand",
@@ -304,6 +342,11 @@ export default {
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
     htmlSourceContent: "HTML-Quelltext-Inhalt",
+    mjmlSourceContent: "MJML-Quelltext-Inhalt",
+    topolSourceContent: "Topol-Design-JSON-Inhalt",
+    stripoSourceContent: "Stripo-HTML-Inhalt",
+    chamaileonSourceContent: "Chamaileon-Dokument-JSON-Inhalt",
+    easyEmailProSourceContent: "Easy-Email-Pro-Seiten-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",

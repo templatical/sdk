@@ -101,17 +101,17 @@ const comments = await api.getComments('template-id');
 // Add a comment
 const comment = await api.createComment('template-id', {
   body: 'This section needs a stronger CTA',
-  block_id: 'block-uuid',
-  user_id: 'user-123',
-  user_name: 'Jane Smith',
-  user_signature: 'hmac-signature',
+  blockId: 'block-uuid',
+  userId: 'user-123',
+  userName: 'Jane Smith',
+  userSignature: 'hmac-signature',
 });
 
 // Resolve a comment
 await api.resolveComment('template-id', 'comment-id', {
-  user_id: 'user-123',
-  user_name: 'Jane Smith',
-  user_signature: 'hmac-signature',
+  userId: 'user-123',
+  userName: 'Jane Smith',
+  userSignature: 'hmac-signature',
 });
 ```
 
@@ -144,7 +144,7 @@ editor-side feature and the storage-provider interface, see
 await api.sendTestEmail('template-id', {
   recipient: 'test@example.com',
   html: '<html>...</html>',
-  allowed_emails: ['test@example.com'],
+  allowedEmails: ['test@example.com'],
   signature: 'hmac-signature',
 });
 ```

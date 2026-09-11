@@ -123,8 +123,10 @@ export function resolveWorkspaceClosure(roots, manifests) {
  * because a package's `dist/` must exist before a dependent's `vue-tsc` /
  * api-extractor step resolves it through the workspace symlink — and the editor
  * reaches `renderer` and `quality` only as peers. That edge set is acyclic
- * across the whole workspace; `devDependencies` are excluded because types
- * dev-depends on media-library, which is the one documented cycle.
+ * across the whole workspace. `devDependencies` are excluded because they are
+ * never a publish-time edge — a workspace devDep is either bundled into the
+ * dependent's own output (the editor's core/types/quality) or pure tooling, so
+ * it never needs a sibling's `dist/` on disk first.
  */
 export function buildOrder(closure, manifests) {
   const inClosure = new Set(closure);

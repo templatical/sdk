@@ -16,7 +16,7 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
  */
 export function renderParagraph(
   block: ParagraphBlock,
-  _context: RenderContext,
+  context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
     return "";
@@ -45,8 +45,13 @@ export function renderParagraph(
     richTextGapClass(resolveParagraphGap(block.paragraphSpacing)),
   ]);
 
+  // RTL templates need a start-edge default on the wrapper. Inner
+  // `<p style="text-align:…">` from TipTap still wins per paragraph.
+  const alignAttr =
+    context.contentDirection === "rtl" ? '\n  align="right"' : "";
+
   return `<mj-text
-  line-height="1.5"
+  line-height="1.5"${alignAttr}
   padding="${padding}"${bgColor}${cssClassAttr}
 >${content}</mj-text>`;
 }

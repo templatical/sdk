@@ -15,6 +15,7 @@ import type { TemplateContent, UiTheme } from "@templatical/types";
 import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
+import { useMediaFeature } from "./composables/useMediaFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
 import { useTemplatesFeature } from "./composables/useTemplatesFeature";
 import { useTestEmailFeature } from "./composables/useTestEmailFeature";
@@ -22,9 +23,8 @@ import { useVersionHistoryFeature } from "./composables/useVersionHistoryFeature
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
+import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import { logger } from "./utils/logger";
-import { toMjmlForInstance } from "./utils/toMjml";
-import { resolveRenderFonts } from "./utils/renderProvider";
 import {
   withNormalizedContentWrites,
   withNormalizedTemplateLoads,
@@ -69,6 +69,19 @@ const props = defineProps<{
    * ordinary config keys an OSS consumer would fill in themselves.
    */
   cloud?: CloudRuntime;
+  /**
+   * Render the current template to MJML, for `testEmail`'s `includeMjml` option.
+   *
+   * Supplied by the entry point, which owns the resolution ladder behind
+   * `editor.toMjml()` — a consumer's `render.toMjml` first, the bundled renderer
+   * otherwise. Rendering here instead would attach a message the send pipeline
+   * never produces, which is the one thing a test email exists to rule out.
+   *
+   * Absent means no MJML: a directly-mounted editor has no entry point to ask.
+   */
+  renderMjml?: () => Promise<string>;
+  /** Whether {@link renderMjml} reaches the bundled `@templatical/renderer`. */
+  usesLocalRenderer?: () => boolean;
 }>();
 
 // The fourth place consumer content enters (the other three are the entry
@@ -88,7 +101,10 @@ const editor = useEditor({
   // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
   // reached a blank template.
   defaultFontFamily: props.config.fonts?.defaultFont,
-  templateDefaults: props.config.templateDefaults,
+  // Not `props.config.templateDefaults` raw: the editor's own `locale` seeds
+  // the template's content language when the consumer left it unset, so a
+  // German editor stops producing `<mjml lang="en">` on a fresh template.
+  templateDefaults: resolveTemplateDefaults(props.config),
   templates: templatesProvider,
   onError: props.config.onError,
   // Cloud's collaborators lock the blocks they are editing. The map is
@@ -155,16 +171,33 @@ const SavedBlocksPanels = defineAsyncComponent(
   () => import("./components/SavedBlocksPanels.vue"),
 );
 
+// --- Media (opt-in: a provider and/or an `onRequestMedia` override) ---
+// Instantiated before `useEditorCore` so the synthesized function is what
+// gets provided as `ON_REQUEST_MEDIA_KEY`. The modal mounts only on the
+// provider path — a callback-only config never downloads it.
+const mediaFeature =
+  props.config.media || props.config.onRequestMedia
+    ? useMediaFeature({
+        provider: props.config.media,
+        onRequestMedia: props.config.onRequestMedia,
+        getTemplateId: () => editor.state.template?.id,
+        onError: props.config.onError,
+      })
+    : null;
+
+const MediaPanels = defineAsyncComponent(
+  () => import("./components/MediaPanels.vue"),
+);
+
 // --- Test email (opt-in: only when a sending provider is configured) ---
 // Created before `useEditorCore` so its capability can be passed in, same as
-// saved blocks. `renderCurrentMjml` is a hoisted function declaration, so it can
-// be referenced here and still read `core` — which is declared below — because
-// it isn't called until the user sends.
+// saved blocks.
 const testEmail = props.config.testEmail
   ? useTestEmailFeature({
       provider: props.config.testEmail,
       getContent: () => editor.content.value,
-      renderMjml: renderCurrentMjml,
+      renderMjml: props.renderMjml,
+      usesLocalRenderer: props.usesLocalRenderer,
       onError: props.config.onError,
       // Cloud folds in the plan feature and "the template must be saved", both
       // constraints of *its* sending path rather than of the contract.
@@ -317,15 +350,21 @@ const core = useEditorCore({
     paletteBlocks: props.config.paletteBlocks,
     htmlBlockPreview: props.config.htmlBlockPreview,
     colors: props.config.colors,
+    templateSettings: props.config.templateSettings,
     mergeTags: props.config.mergeTags,
     logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
-    // Cloud swaps in its own media browser. Not plan-gated: an entitlement here
-    // would fire when a consumer is *not* using Cloud storage, i.e. backwards.
-    onRequestMedia: props.cloud?.onRequestMedia ?? props.config.onRequestMedia,
+    // The synthesized Browse/drop handler. Null when neither a provider nor a
+    // callback is configured, which is what keeps image fields URL-only.
+    onRequestMedia: mediaFeature?.requestMedia ?? null,
+    // Distinct from Browse: a read-only provider still opens the library.
+    canDropMedia: mediaFeature?.canDrop ?? null,
     resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
+    // For Intl-built labels (dates), which would otherwise format in the
+    // BROWSER's locale and disagree with the translated chrome beside them.
+    locale: props.config.locale,
   },
   translations: props.translations,
   fontsManager: props.fontsManager,
@@ -388,24 +427,6 @@ const versionHistory = props.config.versionHistory
   : null;
 
 if (versionHistory) capabilities.versionHistory = versionHistory.capability;
-
-/**
- * Render the current template to MJML for `testEmail`'s `includeMjml` option.
- *
- * Assembles the same three members `defineExpose` hands to the public instance,
- * so a test email carries byte-identical MJML to `editor.toMjml()`. Only reached
- * when a provider opted in; the dynamic renderer import inside
- * `toMjmlForInstance` means an OSS consumer who didn't opt in never loads it.
- */
-function renderCurrentMjml(): Promise<string> {
-  return toMjmlForInstance({
-    getContent: () => editor.content.value,
-    renderCustomBlock: core.registry.renderCustomBlock,
-    getCustomBlockStylesheet: (customType: string) =>
-      core.registry.getDefinition(customType)?.stylesheet,
-    getFonts: () => resolveRenderFonts(props.fontsManager),
-  });
-}
 
 /**
  * Left/right insets for the canvas body and the footer, which must always agree.
@@ -704,6 +725,18 @@ defineExpose({
       :feature="savedBlocks"
     />
 
+    <!-- Media library modal. Only mounted when a storage provider is
+         configured; the modal's chunk loads on first Browse. A callback-only
+         `onRequestMedia` never mounts this — the host brought a widget. -->
+    <MediaPanels
+      v-if="config.media && mediaFeature"
+      :feature="mediaFeature"
+      :provider="config.media"
+      :locale="config.locale"
+      :ui-theme="core.resolvedTheme.value"
+      :popover-target="core.popoverRoot.value"
+    />
+
     <TestEmailPanel v-if="testEmail?.isAvailable.value" :feature="testEmail" />
 
     <!-- The comments sidebar. Only mounted when a provider and a `user` are
@@ -727,7 +760,6 @@ defineExpose({
       :runtime="cloud"
       :cloud="cloudAttachment"
       :ready="cloudReady"
-      :locale="config.locale"
     />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the

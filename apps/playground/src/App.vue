@@ -24,8 +24,12 @@ import {
   init,
   unmount,
   createLocalStorageSavedBlocksProvider,
+  createLocalStorageMediaProvider,
 } from "@templatical/editor";
-import type { TemplaticalEditor } from "@templatical/editor";
+import type {
+  TemplaticalEditor,
+  TemplateSettingsConfig,
+} from "@templatical/editor";
 import type {
   PreviewResolveContext,
   TemplateContent,
@@ -39,6 +43,8 @@ import type {
   CommentsProvider,
   EditorUser,
   FontsConfig,
+  MediaAsset,
+  MediaProvider,
   SavedBlock,
   SavedBlocksProvider,
   TemplateVersion,
@@ -47,11 +53,7 @@ import type {
   TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
-import {
-  createDefaultTemplateContent,
-  DEFAULT_BLOCK_DEFAULTS,
-  DEFAULT_TEMPLATE_DEFAULTS,
-} from "@templatical/types";
+import { createDefaultTemplateContent } from "@templatical/types";
 import {
   templates,
   customBlockDefinitions,
@@ -100,6 +102,19 @@ import {
 } from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
+
+/**
+ * A blank template in the language the editor is about to be initialized with.
+ *
+ * `createDefaultTemplateContent()` bare stamps `locale: "en"` from
+ * `DEFAULT_TEMPLATE_DEFAULTS`, and because this content is handed to
+ * `init({ content })`, the editor's own seeding of the content language is
+ * bypassed — a German editor produced `<mjml lang="en">` over German copy. A
+ * consumer that supplies content owns the language it declares.
+ */
+function createBlankTemplate() {
+  return createDefaultTemplateContent(undefined, { locale: sdkLocale.value });
+}
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
 
@@ -122,15 +137,33 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-type ImportSource = "beefree" | "unlayer" | "html";
+type ImportSource =
+  | "beefree"
+  | "unlayer"
+  | "html"
+  | "mjml"
+  | "topol"
+  | "stripo"
+  | "chamaileon"
+  | "easyEmailPro";
 const showImport = ref(false);
-const importSource = ref<ImportSource>("beefree");
+const importSource = ref<ImportSource>("unlayer");
 const beefreeJson = ref("");
 const beefreeError = ref("");
 const unlayerJson = ref("");
 const unlayerError = ref("");
 const htmlSource = ref("");
 const htmlError = ref("");
+const mjmlSource = ref("");
+const mjmlError = ref("");
+const topolSource = ref("");
+const topolError = ref("");
+const stripoSource = ref("");
+const stripoError = ref("");
+const chamaileonSource = ref("");
+const chamaileonError = ref("");
+const easyEmailProSource = ref("");
+const easyEmailProError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -311,6 +344,63 @@ function savedBlocksProviderFor(
 
   savedBlocksProviders.set(name, provider);
   return provider;
+}
+
+const MEDIA_STORAGE_KEY = "templatical:media";
+
+/**
+ * Remote HTTPS images so a first open is not an empty library. Data-URL
+ * uploads from `create` eat `localStorage` quota; these do not.
+ *
+ * Seeded only when the key is absent — never when it holds `[]`. An empty
+ * array is the user having cleared the library, and re-seeding would make
+ * delete look broken.
+ */
+const PLAYGROUND_MEDIA_SEED: MediaAsset[] = [
+  {
+    id: "seed-product-shot",
+    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
+    filename: "product-shot.jpg",
+    alt: "Product shot",
+    mimeType: "image/jpeg",
+  },
+  {
+    id: "seed-team-photo",
+    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
+    filename: "team-photo.jpg",
+    alt: "Team photo",
+    mimeType: "image/jpeg",
+  },
+  {
+    id: "seed-abstract",
+    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
+    filename: "abstract.jpg",
+    alt: "Abstract",
+    mimeType: "image/jpeg",
+  },
+];
+
+function seedMediaLibrary(): void {
+  if (localStorage.getItem(MEDIA_STORAGE_KEY) !== null) return;
+  localStorage.setItem(
+    MEDIA_STORAGE_KEY,
+    JSON.stringify(PLAYGROUND_MEDIA_SEED),
+  );
+}
+
+let mediaProvider: MediaProvider | undefined;
+
+function mediaProviderFor(): MediaProvider {
+  if (mediaProvider) return mediaProvider;
+  seedMediaLibrary();
+  mediaProvider = createLocalStorageMediaProvider({ key: MEDIA_STORAGE_KEY });
+  return mediaProvider;
 }
 
 /**
@@ -937,7 +1027,9 @@ const configDarkThemeJson = ref("");
 const configThemeMode = ref<"light" | "dark">("light");
 const configError = ref("");
 const configTab = ref<(typeof configTabs)[number]>("options");
-const enableRequestMedia = ref(true);
+const enableRequestMedia = ref(
+  localStorage.getItem("tpl-playground-media") !== "false",
+);
 const enableRequestMergeTag = ref(true);
 
 // --- Block & Template Defaults ---
@@ -950,9 +1042,16 @@ interface DefaultsPreset {
 
 const defaultsPresets: DefaultsPreset[] = [
   {
+    // "Templatical Default" means *no* overrides — the SDK's own defaults, as a
+    // consumer who passes neither key would get them. It used to restate
+    // DEFAULT_BLOCK_DEFAULTS / DEFAULT_TEMPLATE_DEFAULTS verbatim, which reads
+    // as harmless but is not: a consumer value wins over the SDK's, so pinning
+    // the English placeholder text here overrode the localized defaults and
+    // pinned `settings.locale` to "en" — making this app unable to demonstrate
+    // either, which is exactly what it exists to do.
     key: "templatical",
-    blockDefaults: DEFAULT_BLOCK_DEFAULTS,
-    templateDefaults: DEFAULT_TEMPLATE_DEFAULTS,
+    blockDefaults: {},
+    templateDefaults: {},
   },
   {
     key: "corporate",
@@ -1393,6 +1492,11 @@ function closeImportModal(): void {
   beefreeError.value = "";
   unlayerError.value = "";
   htmlError.value = "";
+  mjmlError.value = "";
+  topolError.value = "";
+  stripoError.value = "";
+  chamaileonError.value = "";
+  easyEmailProError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -1446,6 +1550,89 @@ async function importHtmlFromString(raw: string): Promise<void> {
   }
 }
 
+async function importMjmlFromString(raw: string): Promise<void> {
+  mjmlError.value = "";
+
+  try {
+    const { convertMjmlTemplate } = await import("@templatical/import-mjml");
+    const { content } = convertMjmlTemplate(raw);
+    closeImportModal();
+    mjmlSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    mjmlError.value = e instanceof Error ? e.message : "Invalid MJML";
+  }
+}
+
+async function importTopolFromString(raw: string): Promise<void> {
+  topolError.value = "";
+
+  try {
+    const { convertTopolTemplate } = await import("@templatical/import-topol");
+    const { content } = convertTopolTemplate(raw);
+    closeImportModal();
+    topolSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    topolError.value = e instanceof Error ? e.message : "Invalid Topol JSON";
+  }
+}
+
+async function importStripoFromString(raw: string): Promise<void> {
+  stripoError.value = "";
+
+  try {
+    let html = raw;
+    let css: string | undefined;
+    if (raw.trimStart().startsWith("{")) {
+      const obj = JSON.parse(raw) as { html?: unknown; css?: unknown };
+      if (typeof obj.html === "string") {
+        html = obj.html;
+        css = typeof obj.css === "string" ? obj.css : undefined;
+      }
+    }
+    const { convertStripoTemplate } =
+      await import("@templatical/import-stripo");
+    const { content } = convertStripoTemplate(html, css ? { css } : undefined);
+    closeImportModal();
+    stripoSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    stripoError.value = e instanceof Error ? e.message : "Invalid Stripo HTML";
+  }
+}
+
+async function importChamaileonFromString(raw: string): Promise<void> {
+  chamaileonError.value = "";
+
+  try {
+    const { convertChamaileonTemplate } =
+      await import("@templatical/import-chamaileon");
+    const { content } = convertChamaileonTemplate(raw);
+    closeImportModal();
+    chamaileonSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    chamaileonError.value =
+      e instanceof Error ? e.message : "Invalid Chamaileon JSON";
+  }
+}
+
+async function importEasyEmailProFromString(raw: string): Promise<void> {
+  easyEmailProError.value = "";
+  try {
+    const { convertEasyEmailProTemplate } =
+      await import("@templatical/import-easy-email-pro");
+    const { content } = convertEasyEmailProTemplate(raw);
+    closeImportModal();
+    easyEmailProSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    easyEmailProError.value =
+      e instanceof Error ? e.message : "Invalid Easy Email Pro JSON";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -1467,6 +1654,56 @@ function confirmImport(): void {
     return;
   }
 
+  if (importSource.value === "mjml") {
+    const raw = mjmlSource.value.trim();
+    if (!raw) {
+      mjmlError.value = t.value.importModal.mjml.emptyError;
+      return;
+    }
+    importMjmlFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "topol") {
+    const raw = topolSource.value.trim();
+    if (!raw) {
+      topolError.value = t.value.importModal.topol.emptyError;
+      return;
+    }
+    importTopolFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "stripo") {
+    const raw = stripoSource.value.trim();
+    if (!raw) {
+      stripoError.value = t.value.importModal.stripo.emptyError;
+      return;
+    }
+    importStripoFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "chamaileon") {
+    const raw = chamaileonSource.value.trim();
+    if (!raw) {
+      chamaileonError.value = t.value.importModal.chamaileon.emptyError;
+      return;
+    }
+    importChamaileonFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "easyEmailPro") {
+    const raw = easyEmailProSource.value.trim();
+    if (!raw) {
+      easyEmailProError.value = t.value.importModal.easyEmailPro.emptyError;
+      return;
+    }
+    importEasyEmailProFromString(raw);
+    return;
+  }
+
   const raw = unlayerJson.value.trim();
   if (!raw) {
     unlayerError.value = t.value.importModal.unlayer.emptyError;
@@ -1476,7 +1713,7 @@ function confirmImport(): void {
 }
 
 const { open: openImportFile, onChange: onImportFileChange } = useFileDialog({
-  accept: ".json,.html,.htm",
+  accept: ".json,.html,.htm,.mjml",
   multiple: false,
 });
 
@@ -1488,6 +1725,16 @@ onImportFileChange(async (files) => {
     importBeefreeFromJson(text);
   } else if (importSource.value === "html") {
     importHtmlFromString(text);
+  } else if (importSource.value === "mjml") {
+    importMjmlFromString(text);
+  } else if (importSource.value === "topol") {
+    importTopolFromString(text);
+  } else if (importSource.value === "stripo") {
+    importStripoFromString(text);
+  } else if (importSource.value === "chamaileon") {
+    importChamaileonFromString(text);
+  } else if (importSource.value === "easyEmailPro") {
+    importEasyEmailProFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -1579,6 +1826,30 @@ let currentDarkTheme: Record<string, string> = {
   ...readThemeOverride("tpl-playground-dark-theme-override"),
 };
 
+/**
+ * `tpl-playground-settings-fields` narrows the Settings panel before the first
+ * `init()` — a comma-separated allowlist of `TemplateSettings` members
+ * (`"width,backgroundColor"`), or the literal `none` for `fields: false`.
+ *
+ * Storage-only, no UI, invisible to visitors — the same shape as the
+ * saved-blocks `…-readonly` flag. Absent means the key is omitted entirely,
+ * which is the case that has to keep every setting editable, so the demo's
+ * default is the SDK's default rather than some restricted variant.
+ */
+function readTemplateSettingsConfig(): TemplateSettingsConfig | undefined {
+  const raw = localStorage.getItem("tpl-playground-settings-fields");
+  if (!raw) return undefined;
+  if (raw === "none") return { fields: false };
+  // Cast, not validate: the flag is free text, and an entry that isn't a
+  // template setting is exactly what the SDK's own warn-and-skip path covers.
+  // Validating here would hide that path from the e2e that exercises it.
+  return {
+    fields: raw.split(",").map((entry) => entry.trim()),
+  } as TemplateSettingsConfig;
+}
+
+const currentTemplateSettings = readTemplateSettingsConfig();
+
 function buildSerializableConfig() {
   return {
     content: selectedContent ?? createDefaultTemplateContent(),
@@ -1593,69 +1864,6 @@ function buildSerializableConfig() {
 }
 
 let currentSerializableConfig = buildSerializableConfig();
-
-// --- Media picker ---
-const mediaPickerOpen = ref(false);
-let mediaResolve:
-  ((result: { url: string; alt?: string } | null) => void) | null = null;
-
-const demoImages = computed(() => [
-  {
-    label: t.value.demoImages.productShot,
-    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
-  },
-  {
-    label: t.value.demoImages.teamPhoto,
-    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
-  },
-  {
-    label: t.value.demoImages.abstract,
-    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
-  },
-]);
-
-function requestMedia(context?: {
-  accept?: string[];
-  files?: File[];
-}): Promise<{ url: string; alt?: string } | null> {
-  // Drag-and-drop upload (#229): when the editor passes a dropped File, a real
-  // consumer uploads it to their backend and returns the hosted URL. The
-  // playground has no backend, so it reads the file into a serializable data
-  // URL to stand in for that uploaded URL — never a `blob:` object URL, which
-  // would break export/serialization.
-  const file = context?.files?.[0];
-  if (file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () =>
-        resolve({ url: String(reader.result), alt: file.name });
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
-  }
-  mediaPickerOpen.value = true;
-  return new Promise((resolve) => {
-    mediaResolve = resolve;
-  });
-}
-
-function selectMedia(url: string, alt?: string): void {
-  mediaPickerOpen.value = false;
-  mediaResolve?.({ url, alt });
-  mediaResolve = null;
-}
-
-function cancelMediaPicker(): void {
-  mediaPickerOpen.value = false;
-  mediaResolve?.(null);
-  mediaResolve = null;
-}
 
 const initError = ref("");
 
@@ -1756,10 +1964,14 @@ async function initEditor(): Promise<void> {
       htmlBlockPreview: currentHtmlBlockPreview,
       fonts: currentFonts,
       colors: currentColors,
+      templateSettings: currentTemplateSettings,
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
-      onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
+      // Media library when the flag is on — the bundled localStorage adapter,
+      // with `onRequestMedia` left unset so Browse opens the real modal.
+      // Off omits both keys: image fields stay URL-only (e2e coverage).
+      ...(enableRequestMedia.value ? { media: mediaProviderFor() } : {}),
       // Always on in the playground: saved blocks are backed by the bundled
       // browser-local provider, so the OSS path is exercised on every run
       // without needing a backend. Entries persist in this browser profile.
@@ -1929,7 +2141,6 @@ function useModalTrap(isOpen: typeof showConfig | typeof exportTabValue) {
 const configModalRef = useModalTrap(showConfig);
 const importModalRef = useModalTrap(showImport);
 const mergeTagModalRef = useModalTrap(mergeTagPickerOpen);
-const mediaModalRef = useModalTrap(mediaPickerOpen);
 const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
@@ -1948,7 +2159,6 @@ watch(
     showConfig.value ||
     showImport.value ||
     mergeTagPickerOpen.value ||
-    mediaPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
     showFeatureOverlay.value ||
     shareModalOpen.value ||
@@ -2631,6 +2841,27 @@ onUnmounted(() => {
                     class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"
                   ></div>
                 </div>
+                <!-- Arabic invitation wireframe (RTL) -->
+                <div
+                  v-else-if="tpl.preview === 'rtl'"
+                  class="flex flex-col items-end gap-1.5 w-[60%]"
+                >
+                  <div
+                    class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div class="my-1 h-5 w-[45%] rounded bg-blue-500/40"></div>
+                  <div class="flex w-full gap-1">
+                    <div
+                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
+                    ></div>
+                    <div
+                      class="h-7 w-[38%] rounded-[3px] bg-gray-200/60 dark:bg-gray-500/40"
+                    ></div>
+                  </div>
+                </div>
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
@@ -2647,7 +2878,7 @@ onUnmounted(() => {
               :aria-label="t.a11y.startFromScratch"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
-              @click="chooseTemplate(createDefaultTemplateContent())"
+              @click="chooseTemplate(createBlankTemplate())"
             >
               <div
                 class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"
@@ -2692,6 +2923,18 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
+                data-testid="chooser-import-unlayer"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('unlayer')"
+              >
+                {{ t.chooser.migration.importFromUnlayer }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
                 data-testid="chooser-import-beefree"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('beefree')"
@@ -2704,11 +2947,59 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-unlayer"
+                data-testid="chooser-import-stripo"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('unlayer')"
+                @click="openImportFromSource('stripo')"
               >
-                {{ t.chooser.migration.importFromUnlayer }}
+                {{ t.chooser.migration.importFromStripo }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-topol"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('topol')"
+              >
+                {{ t.chooser.migration.importFromTopol }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-chamaileon"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('chamaileon')"
+              >
+                {{ t.chooser.migration.importFromChamaileon }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-easy-email-pro"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('easyEmailPro')"
+              >
+                {{ t.chooser.migration.importFromEasyEmailPro }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-mjml"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('mjml')"
+              >
+                {{ t.chooser.migration.importFromMjml }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -3400,11 +3691,12 @@ onUnmounted(() => {
                     v-model="enableRequestMedia"
                     type="checkbox"
                     class="size-4 accent-primary cursor-pointer"
+                    data-testid="enable-media"
                   />
                   <div>
                     <span
                       class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
-                      >onRequestMedia</span
+                      >media</span
                     >
                     <p
                       class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400"
@@ -3487,7 +3779,7 @@ onUnmounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- Import Template Modal (BeeFree / Unlayer) -->
+    <!-- Import Template Modal -->
     <Teleport to="body">
       <Transition name="pg-modal">
         <div
@@ -3519,7 +3811,17 @@ onUnmounted(() => {
                       ? t.importModal.beefree.description
                       : importSource === "html"
                         ? t.importModal.html.description
-                        : t.importModal.unlayer.description
+                        : importSource === "mjml"
+                          ? t.importModal.mjml.description
+                          : importSource === "topol"
+                            ? t.importModal.topol.description
+                            : importSource === "stripo"
+                              ? t.importModal.stripo.description
+                              : importSource === "chamaileon"
+                                ? t.importModal.chamaileon.description
+                                : importSource === "easyEmailPro"
+                                  ? t.importModal.easyEmailPro.description
+                                  : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -3538,6 +3840,20 @@ onUnmounted(() => {
             >
               <button
                 role="tab"
+                :aria-selected="importSource === 'unlayer'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'unlayer'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-unlayer"
+                @click="importSource = 'unlayer'"
+              >
+                {{ t.importModal.sources.unlayer }}
+              </button>
+              <button
+                role="tab"
                 :aria-selected="importSource === 'beefree'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
@@ -3552,17 +3868,73 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'unlayer'"
+                :aria-selected="importSource === 'stripo'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'unlayer'
+                  importSource === 'stripo'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-unlayer"
-                @click="importSource = 'unlayer'"
+                data-testid="import-tab-stripo"
+                @click="importSource = 'stripo'"
               >
-                {{ t.importModal.sources.unlayer }}
+                {{ t.importModal.sources.stripo }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'topol'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'topol'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-topol"
+                @click="importSource = 'topol'"
+              >
+                {{ t.importModal.sources.topol }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'chamaileon'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'chamaileon'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-chamaileon"
+                @click="importSource = 'chamaileon'"
+              >
+                {{ t.importModal.sources.chamaileon }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'easyEmailPro'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'easyEmailPro'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-easy-email-pro"
+                @click="importSource = 'easyEmailPro'"
+              >
+                {{ t.importModal.sources.easyEmailPro }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'mjml'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'mjml'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-mjml"
+                @click="importSource = 'mjml'"
+              >
+                {{ t.importModal.sources.mjml }}
               </button>
               <button
                 role="tab"
@@ -3613,12 +3985,52 @@ onUnmounted(() => {
                 placeholder='{"body": {"rows": [...], "values": {...}}}'
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'html'"
                 v-model="htmlSource"
                 :aria-label="t.a11y.htmlSourceContent"
                 data-testid="import-textarea-html"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder="<!doctype html>&#10;<html>&#10;  <body>&#10;    <table>...</table>&#10;  </body>&#10;</html>"
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'mjml'"
+                v-model="mjmlSource"
+                :aria-label="t.a11y.mjmlSourceContent"
+                data-testid="import-textarea-mjml"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder="<mjml>&#10;  <mj-body>&#10;    <mj-section>...</mj-section>&#10;  </mj-body>&#10;</mjml>"
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'topol'"
+                v-model="topolSource"
+                :aria-label="t.a11y.topolSourceContent"
+                data-testid="import-textarea-topol"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"tagName": "mj-global-style", "children": [{"tagName": "mj-container", "children": [...]}]}'
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'stripo'"
+                v-model="stripoSource"
+                :aria-label="t.a11y.stripoSourceContent"
+                data-testid="import-textarea-stripo"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='<table class="es-wrapper">...</table>'
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'chamaileon'"
+                v-model="chamaileonSource"
+                :aria-label="t.a11y.chamaileonSourceContent"
+                data-testid="import-textarea-chamaileon"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"body": {"type": "body", "children": [{"type": "fullwidth", "children": [...]}]}}'
+              ></textarea>
+              <textarea
+                v-else
+                v-model="easyEmailProSource"
+                :aria-label="t.a11y.easyEmailProSourceContent"
+                data-testid="import-textarea-easy-email-pro"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"subject": "...", "content": {"type": "page", "children": [{"type": "standard-section", "children": [...]}]}}'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -3640,6 +4052,41 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ htmlError }}
+              </p>
+              <p
+                v-if="importSource === 'mjml' && mjmlError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ mjmlError }}
+              </p>
+              <p
+                v-if="importSource === 'topol' && topolError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ topolError }}
+              </p>
+              <p
+                v-if="importSource === 'stripo' && stripoError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ stripoError }}
+              </p>
+              <p
+                v-if="importSource === 'chamaileon' && chamaileonError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ chamaileonError }}
+              </p>
+              <p
+                v-if="importSource === 'easyEmailPro' && easyEmailProError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ easyEmailProError }}
               </p>
             </div>
             <div
@@ -3732,62 +4179,6 @@ onUnmounted(() => {
                   >
                 </button>
               </template>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Media Picker Modal -->
-    <Teleport to="body">
-      <Transition name="pg-modal">
-        <div
-          v-if="mediaPickerOpen"
-          class="pg-modal-backdrop"
-          @click.self="cancelMediaPicker"
-          @keydown.escape="cancelMediaPicker"
-        >
-          <div
-            ref="mediaModalRef"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="media-modal-title"
-            class="pg-modal-dialog w-[460px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
-          >
-            <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700"
-            >
-              <span
-                id="media-modal-title"
-                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ t.mediaModal.title }}</span
-              >
-              <button
-                :aria-label="t.common.close"
-                class="pg-modal-close"
-                @click="cancelMediaPicker"
-              >
-                &times;
-              </button>
-            </div>
-            <div class="grid grid-cols-3 gap-3 p-4">
-              <button
-                v-for="img in demoImages"
-                :key="img.url"
-                class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
-                @click="selectMedia(img.url, img.label)"
-              >
-                <img
-                  :src="img.thumb"
-                  :alt="img.label"
-                  loading="lazy"
-                  class="w-full h-24 object-cover"
-                />
-                <span
-                  class="text-[12px] font-medium text-gray-700 pb-2 dark:text-gray-300"
-                  >{{ img.label }}</span
-                >
-              </button>
             </div>
           </div>
         </div>

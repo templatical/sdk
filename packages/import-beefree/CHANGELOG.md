@@ -1,5 +1,62 @@
 # @templatical/import-beefree
 
+## 0.36.0
+
+### Patch Changes
+
+- Updated dependencies [d8e38e4]
+  - @templatical/types@0.36.0
+
+## 0.35.0
+
+### Patch Changes
+
+- Updated dependencies [703193a]
+  - @templatical/types@0.35.0
+
+## 0.34.3
+
+### Patch Changes
+
+- @templatical/types@0.34.3
+
+## 0.34.2
+
+### Patch Changes
+
+- @templatical/types@0.34.2
+
+## 0.34.1
+
+### Patch Changes
+
+- @templatical/types@0.34.1
+
+## 0.34.0
+
+### Patch Changes
+
+- @templatical/types@0.34.0
+
+## 0.33.0
+
+### Patch Changes
+
+- Updated dependencies [d76c343]
+  - @templatical/types@0.33.0
+
+## 0.32.0
+
+### Patch Changes
+
+- @templatical/types@0.32.0
+
+## 0.31.0
+
+### Patch Changes
+
+- @templatical/types@0.31.0
+
 ## 0.30.0
 
 ### Minor Changes

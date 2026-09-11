@@ -75,6 +75,16 @@ export default {
     countdown: "Countdown",
   },
 
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Enter your title",
+    paragraph: "Enter your text here",
+    button: "Click Here",
+  },
+
   // Right sidebar
   sidebar: {
     content: "Content",
@@ -466,6 +476,9 @@ export default {
     contentLocale: "Content language",
     contentLocaleHint:
       "BCP 47 code (e.g. en, de, pt-BR). Sets the rendered email's lang attribute so screen readers pronounce content correctly.",
+    contentDirection: "Right-to-left",
+    contentDirectionHint:
+      "Writing direction of the email, independent of the editor's own language. When unset, follows the content language (Arabic, Hebrew, …).",
     tips: "Tips",
     tip1: "600px is the standard width for email templates",
     tip2: "Use web-safe fonts for best compatibility",

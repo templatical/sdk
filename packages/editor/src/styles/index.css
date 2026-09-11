@@ -62,18 +62,17 @@
     --default-transition-duration: 120ms;
     --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* Z-index scale — semantic layers for stacking context */
-    --z-panel: 45;
-    --z-toast: 60;
-    --z-overlay: 100;
-    --z-popover: 9999;
-    --z-modal: 10000;
+    /* No named z-index layers here. Tailwind 4 derives z utilities from the
+     * `--z-index-*` namespace, so a `--z-modal` token emits no utility and the
+     * class that reads it computes `auto` — see the z-index group in
+     * `tests/design-system-conformance.test.ts`. Write a number Tailwind
+     * emits, or nothing. */
 }
 
 /* SDK-specific source paths for Tailwind scanning */
 @source '../**/*.vue';
 @source '../**/*.ts';
-/* Media library components (imported via @templatical/media-library) */
+/* Media library components (compiled into the editor's Browse chunk) */
 @source '../../../media-library/src/**/*.vue';
 @source '../../../media-library/src/**/*.ts';
 
@@ -443,8 +442,11 @@
    popover root lives inside the editor container rather than at document.body. */
 .tpl-popover-root {
     position: relative;
-    /* Literal — `var(--z-modal)` resolves to :root which is unreachable
-       from inside a shadow root, dropping the stacking context. */
+    /* Literal, not a token: a `var()` declared in `@theme` lands on `:root`,
+       which is unreachable from inside a shadow root — the declaration would
+       resolve to nothing and drop the stacking context. This element is what
+       puts every teleported popup above the editor chrome, and because it is a
+       stacking context, its residents need no z-index of their own. */
     z-index: 10000;
 }
 
@@ -457,6 +459,7 @@
     text-decoration: underline dotted;
     text-underline-offset: 3px;
     text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+    unicode-bidi: isolate;
 }
 
 .tpl-pulse {
@@ -710,7 +713,7 @@
 .tpl-text-editable .tiptap ul,
 .tpl-text-editable .tiptap ol {
     margin: 8px 0;
-    padding-left: 24px;
+    padding-inline-start: 24px;
 }
 
 .tpl-text-content li,
@@ -750,11 +753,13 @@
     @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium;
     background-color: color-mix(in srgb, var(--tpl-primary) 20%, transparent);
     color: var(--tpl-primary);
+    unicode-bidi: isolate;
 }
 
 /* Logic merge tag styles - Outlined border style */
 .tpl-text-content span[data-logic-merge-tag],
 .tpl-text-editable span[data-logic-merge-tag] {
+    unicode-bidi: isolate;
     @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.8em] tpl:font-bold tpl:tracking-wide tpl:uppercase;
     background-color: transparent;
     border: 1.5px solid color-mix(in srgb, var(--tpl-primary) 50%, transparent);

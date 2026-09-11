@@ -25,7 +25,6 @@ import { init as initLexer, parse } from "es-module-lexer";
 const DIST = join(import.meta.dirname, "..", "dist");
 
 const ALLOWED_EXTERNALS = new Set([
-  "@templatical/media-library",
   "@templatical/quality",
   "@templatical/renderer",
   "pusher-js",
@@ -115,11 +114,13 @@ describe("editor bundle topology", () => {
       "@templatical/core",
       "@templatical/core/cloud",
       "@templatical/types",
+      "@templatical/media-library",
       "@vueuse/core",
       "vue-draggable-plus",
       "@tiptap/core",
       "@tiptap/vue-3",
       "@lucide/vue",
+      "vue-advanced-cropper",
     ];
     const found = new Set<string>();
     for (const specs of bareImportsByFile.values()) {
@@ -179,6 +180,26 @@ describe("editor bundle topology", () => {
       (k) => pkg.peerDependenciesMeta[k]?.optional === true,
     );
     expect(peers.sort()).toEqual(optionalPeers.sort());
+    expect(peers).not.toContain("@templatical/media-library");
+  });
+
+  it("ships the media library modal in an npm chunk", () => {
+    // Browse UI is compiled into the editor, not left as a consumer peer.
+    // The testid is the stable marker; Vite may split the chunk as it likes.
+    const matchingChunks = allFiles.filter((file) => {
+      const src = readFileSync(file, "utf8");
+      return src.includes("media-library-modal");
+    });
+    expect(matchingChunks.length).toBeGreaterThan(0);
+  });
+
+  it("does not stamp the standalone media SDK global", () => {
+    // The editor aliases `@templatical/media-library` to `editor-modal.ts`
+    // (the picker only). Pulling `standalone/visual.ts` would assign
+    // `window.TemplaticalMedia` the first time someone opens Browse.
+    for (const file of allFiles) {
+      expect(readFileSync(file, "utf8")).not.toContain("TemplaticalMedia");
+    }
   });
 
   it("the merge tag picker modal ships somewhere in the bundle", () => {

@@ -1,6 +1,7 @@
 import type { Block } from "./blocks";
 import { DEFAULT_TEMPLATE_DEFAULTS } from "./defaults";
 import type { TemplateDefaults } from "./defaults";
+import type { ContentDirection } from "./direction";
 
 export interface TemplateSettings {
   width: number;
@@ -39,6 +40,15 @@ export interface TemplateSettings {
    * screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`.
    */
   locale: string;
+  /**
+   * Writing direction of the delivered email: the canvas `dir` and the
+   * rendered `<mjml dir>`. Independent of the editor chrome
+   * (`init({ locale })`). Optional: when unset, `resolveContentDirection`
+   * falls through to the content language (`ar` / `he` / `fa` / … → `"rtl"`,
+   * otherwise `"ltr"`). An explicit `"ltr"` on an Arabic template is a
+   * stated decision, not a missing value.
+   */
+  direction?: ContentDirection;
 }
 
 export interface TemplateContent {

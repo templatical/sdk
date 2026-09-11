@@ -54,6 +54,24 @@ export type {
   TestEmailProvider,
 } from "./test-email";
 
+// Media (the bring-your-own DAM / gallery contract)
+export type {
+  MediaAsset,
+  MediaAssetPatch,
+  MediaCategory,
+  MediaCreateInput,
+  MediaFolder,
+  MediaFolderInput,
+  MediaFoldersProvider,
+  MediaListPage,
+  MediaListParams,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
+  MediaStorageInfo,
+  MediaUsageInfo,
+} from "./media";
+
 // Templates (the bring-your-own save/load contract)
 export type {
   Template,
@@ -113,6 +131,12 @@ export {
 // Template
 export type { TemplateContent, TemplateSettings } from "./template";
 export { createDefaultTemplateContent } from "./template";
+export type { ContentDirection } from "./direction";
+export {
+  RTL_LANGUAGE_PRIMARY_SUBTAGS,
+  isRtlLanguageTag,
+  resolveContentDirection,
+} from "./direction";
 
 // Defaults
 export type { BlockDefaults, TemplateDefaults } from "./defaults";
@@ -223,6 +247,7 @@ export type {
   MediaResult,
   MergeTag,
   MergeTagsConfig,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   ViewportSize,
@@ -250,8 +275,8 @@ export type {
   SdkAuthConfig,
   HealthCheckResult,
   McpConfig,
-  TemplateOperation,
-  TemplateOperationPayload,
+  MediaCategoryData,
+  MediaConfig,
   PlanConfig,
   PlanFeatures,
   PlanLimits,
@@ -260,6 +285,9 @@ export type {
   ScoringCategory,
   ScoringFinding,
   ScoringResult,
+  StorageInfo,
+  TemplateOperation,
+  TemplateOperationPayload,
   TemplateVersionResponse,
   TestEmailConfig,
   TokenData,

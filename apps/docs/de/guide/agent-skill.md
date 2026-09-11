@@ -161,7 +161,7 @@ Wenn es passt, klicken Sie auf **Export** für das MJML oder HTML und versenden 
 
 ### Eine bestehende Vorlage importieren
 
-Sie haben bereits eine Vorlage in einem anderen Editor? Der Skill kann **Unlayer**-, **BeeFree**- und **HTML**-E-Mails in Templatical-JSON umwandeln — zeigen Sie ihm die Datei, und er schreibt eine Arbeitsvorlage plus einen kurzen Bericht darüber, was sauber konvertiert wurde und was auf rohes HTML zurückgefallen ist (der Import ist naturgemäß verlustbehaftet). Sehen Sie sie sich anschließend live an und verfeinern Sie die groben Stellen zu nativen Blöcken. Um die Konverter direkt in Ihrem eigenen Code zu verwenden, siehe die Migrationsleitfäden: [Unlayer](/de/guide/migration-from-unlayer), [BeeFree](/de/guide/migration-from-beefree), [HTML](/de/guide/migration-from-html).
+Sie haben bereits eine Vorlage in einem anderen Editor? Der Skill kann **Unlayer**-, **BeeFree**-, **Stripo**-, **Topol**-, **Chamaileon**-, **Easy Email Pro**-, **MJML**- und **HTML**-E-Mails in Templatical-JSON umwandeln — zeigen Sie ihm die Datei, und er schreibt eine Arbeitsvorlage plus einen kurzen Bericht darüber, was sauber konvertiert wurde und was auf rohes HTML zurückgefallen ist (der Import ist naturgemäß verlustbehaftet). Sehen Sie sie sich anschließend live an und verfeinern Sie die groben Stellen zu nativen Blöcken. Um die Konverter direkt in Ihrem eigenen Code zu verwenden, siehe die Migrationsleitfäden: [Unlayer](/de/guide/migration-from-unlayer), [BeeFree](/de/guide/migration-from-beefree), [Stripo](/de/guide/migration-from-stripo), [Topol](/de/guide/migration-from-topol), [Chamaileon](/de/guide/migration-from-chamaileon), [Easy Email Pro](/de/guide/migration-from-easy-email-pro), [MJML](/de/guide/migration-from-mjml), [HTML](/de/guide/migration-from-html).
 
 ### Bringen Sie Ihre eigene Marke und Regeln mit
 
@@ -174,7 +174,7 @@ Benutzerdefinierte Blöcke sind die einzige Ausnahme: Sie sind zur Laufzeit regi
 Der Agent führt diesen Validator bereits selbst aus (Schritt 3 oben), Sie müssen es also nicht tun. Es ist aber nur die veröffentlichte CLI, die Sie bei Bedarf auch selbst ausführen können — in CI oder um ein Template zu prüfen:
 
 ```bash
-npx -y @templatical/template-tools@0.30.0 validate pfad/zum/template.json
+npx -y @templatical/template-tools@0.36.0 validate pfad/zum/template.json
 ```
 
 Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Anschließend kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.
@@ -207,6 +207,6 @@ Bitten Sie ihn, eine komplett neue Integration aufzusetzen, einer bestehenden ei
 
 Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-/`initCloud()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen die bekannten Fehlerbilder.
 
-Sein Wissen ist eine generierte Kopie dieser Dokumentationsseite, direkt im Skill gebündelt und bei jedem Release neu erzeugt — die meisten Fragen brauchen dadurch überhaupt keinen Netzwerkzugriff. Die Ausnahmen: Ein exakter Schema-Lookup läuft über dieselbe veröffentlichte CLI, die auch `templatical-email` nutzt (`npx -y @templatical/template-tools@0.30.0 schema`), und eine Prüfung auf Versionsabweichung — wenn Ihr installiertes `@templatical/editor` älter ist als die beschriebene Referenz — liest den gepinnten Quellcode direkt vom passenden Git-Tag auf GitHub. Alle Details, einschließlich der Fehlerbild-Tabelle und der sechs Provider-Verträge (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), finden Sie [im Skill selbst](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — fragen Sie ihn direkt, oder lesen Sie die `SKILL.md` im Repository.
+Sein Wissen ist eine generierte Kopie dieser Dokumentationsseite, direkt im Skill gebündelt und bei jedem Release neu erzeugt — die meisten Fragen brauchen dadurch überhaupt keinen Netzwerkzugriff. Die Ausnahmen: Ein exakter Schema-Lookup läuft über dieselbe veröffentlichte CLI, die auch `templatical-email` nutzt (`npx -y @templatical/template-tools@0.36.0 schema`), und eine Prüfung auf Versionsabweichung — wenn Ihr installiertes `@templatical/editor` älter ist als die beschriebene Referenz — liest den gepinnten Quellcode direkt vom passenden Git-Tag auf GitHub. Alle Details, einschließlich der Fehlerbild-Tabelle und der sechs Provider-Verträge (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), finden Sie [im Skill selbst](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — fragen Sie ihn direkt, oder lesen Sie die `SKILL.md` im Repository.
 
 Er führt nicht die Live-Vorschau von oben aus — die gehört zu `templatical-email` — und er fasst nie Git an.

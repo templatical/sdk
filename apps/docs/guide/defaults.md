@@ -38,6 +38,33 @@ Defaults do **not** apply when:
 - Duplicating an existing block (the source block's values are preserved)
 - Loading saved content from the API
 
+### Placeholder text
+
+The text a new block starts with is localized, so `blockDefaults` is an override
+of a *localized* value rather than of an English one:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  locale: 'de',
+  blockDefaults: {
+    // Without these, a new Title reads "Geben Sie Ihren Titel ein" and a new
+    // Button "Hier klicken".
+    title: { content: '<p>Ihre Überschrift</p>' },
+    paragraph: { content: '<p>Ihr Text</p>' },
+    button: { text: 'Jetzt kaufen' },
+    video: { alt: 'Produktvideo' },
+  },
+});
+```
+
+`title.content` and `paragraph.content` are rich-text HTML — wrap the text in
+`<p>…</p>`. Every other field above is a plain string.
+
+Which locale a default follows depends on whether the text is for the author or
+for the recipient; [Internationalization](/guide/i18n) has the table. Values you
+set here win over both.
+
 ### Deep Merge Behavior
 
 Nested objects are **deep-merged**, not shallow-replaced. This means you can override a single padding value without losing the rest:
@@ -114,6 +141,8 @@ In other words, `templateDefaults` are fallbacks for missing content, not overri
 | `width` | `600` | Template width in pixels |
 | `backgroundColor` | `#ffffff` | Template background color |
 | `fontFamily` | `Arial` | Default font family |
+| `locale` | `en` | BCP-47 content language (`<html lang>`) |
+| `direction` | — | `"ltr"` or `"rtl"`. Unset follows the content language |
 | `preheaderText` | — | Email preheader text |
 
 ### TypeScript Type
@@ -123,6 +152,20 @@ import type { TemplateDefaults } from '@templatical/editor';
 // or
 import type { TemplateDefaults } from '@templatical/types';
 ```
+
+### Hiding a Setting
+
+`templateDefaults` sets a starting value; it does not decide whether the author can change it. To take a setting out of the Settings panel, pass an allowlist to `templateSettings.fields`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  // The author picks a width; locale and preheader come from the application.
+  templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] },
+});
+```
+
+The two compose in one direction only. `templateDefaults` applies when no content is provided, so it cannot pin a setting on a template you load — set that from the content itself (`init({ content })`, or your `templates` provider's `load`). See [Restricting the settings panel](/api/editor#restricting-the-settings-panel) for the full list of fields and how cards follow them.
 
 ## Built-in Default Constants
 

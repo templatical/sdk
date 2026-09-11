@@ -50,9 +50,10 @@ what an installed skill does.
 Both modes run through the one CLI, so there is nothing extra to install for
 either. See the "Live mode" section of [`SKILL.md`](./SKILL.md).
 
-You can also **import** an existing Unlayer / BeeFree / HTML template as a
-starting point (via the `@templatical/import-*` converters, installed on
-demand) — see "Importing an existing template" in [`SKILL.md`](./SKILL.md).
+You can also **import** an existing Unlayer / BeeFree / Stripo / Topol /
+Chamaileon / Easy Email Pro / MJML / HTML template as a starting point (via the
+`@templatical/import-*` converters, installed on demand) — see "Importing an
+existing template" in [`SKILL.md`](./SKILL.md).
 
 ## Requirements
 

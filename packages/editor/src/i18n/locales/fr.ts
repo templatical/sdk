@@ -70,6 +70,16 @@ const fr: typeof en = {
     table: "Tableau",
     countdown: "Compte à rebours",
   },
+
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Saisissez votre titre",
+    paragraph: "Saisissez votre texte ici",
+    button: "Cliquez ici",
+  },
   sidebar: {
     content: "Contenu",
     settings: "Paramètres",
@@ -413,6 +423,9 @@ const fr: typeof en = {
     contentLocale: "Langue du contenu",
     contentLocaleHint:
       "Code BCP 47 (ex. fr, de, pt-BR). Définit l'attribut lang de l'e-mail rendu pour que les lecteurs d'écran prononcent correctement le contenu.",
+    contentDirection: "De droite à gauche",
+    contentDirectionHint:
+      "Sens d'écriture de l'e-mail, indépendant de la langue de l'éditeur. S'il n'est pas défini, il suit la langue du contenu (arabe, hébreu, …).",
     tips: "Conseils",
     tip1: "600px est la largeur standard des modèles d'e-mail",
     tip2: "Utilisez des polices web sûres pour une compatibilité maximale",

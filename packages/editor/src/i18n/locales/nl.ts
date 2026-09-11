@@ -70,6 +70,16 @@ const nl: typeof en = {
     table: "Tabel",
     countdown: "Aftelklok",
   },
+
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Voer uw titel in",
+    paragraph: "Voer hier uw tekst in",
+    button: "Klik hier",
+  },
   sidebar: {
     content: "Inhoud",
     settings: "Instellingen",
@@ -414,6 +424,9 @@ const nl: typeof en = {
     contentLocale: "Taal van de inhoud",
     contentLocaleHint:
       "BCP 47-code (bv. nl, de, pt-BR). Bepaalt het lang-attribuut van de gerenderde e-mail zodat schermlezers de inhoud correct uitspreken.",
+    contentDirection: "Rechts-naar-links",
+    contentDirectionHint:
+      "Schrijfrichting van de e-mail, onafhankelijk van de taal van de editor. Zonder waarde volgt dit de inhoudstaal (Arabisch, Hebreeuws, …).",
     tips: "Tips",
     tip1: "600px is de standaardbreedte voor e-mailsjablonen",
     tip2: "Gebruik webveilige lettertypen voor de beste compatibiliteit",

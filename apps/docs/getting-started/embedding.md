@@ -89,7 +89,7 @@ This matters most for the canvas. A page-wide `text-transform: uppercase` reachi
 Shadow DOM blocks host *rules* — a selector in your stylesheet never matches inside the editor's shadow root. It does not block *inheritance*, which follows the flattened tree, so inheritable properties cross the boundary regardless. The editor's own reset is what stops them, and it works identically with `shadowDom: false`.
 :::
 
-**`direction` is deliberately allowed to inherit.** An RTL page propagates its writing direction into the editor, which is what an RTL embedder wants. `visibility` is likewise left alone.
+**`direction` is deliberately allowed to inherit onto the editor chrome.** An RTL page propagates its writing direction into the header and rails, which is what an RTL embedder wants. The email canvas sets its own `dir` from `settings.direction` (falling back to the content language), so the host does not decide how the email reads. `visibility` is likewise left alone.
 
 ### You do not need a CSS reset on the container
 

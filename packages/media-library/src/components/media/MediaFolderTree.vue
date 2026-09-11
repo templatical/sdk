@@ -2,15 +2,18 @@
 import MediaFolderTreeNode from "./MediaFolderTreeNode.vue";
 import { useI18n } from "../../composables/useI18n";
 import type { MediaViewMode } from "../../composable";
-import type { MediaFolder } from "../../types";
+import type { MediaFolderNode } from "../../utils/treeFolders";
 import { File, Plus, Star } from "@lucide/vue";
 import { ref } from "vue";
 
 defineProps<{
-  folders: MediaFolder[];
+  folders: MediaFolderNode[];
   currentFolderId: string | null;
   viewMode: MediaViewMode;
   hasFrequentlyUsed: boolean;
+  canCreateFolder?: boolean;
+  canRenameFolder?: boolean;
+  canDeleteFolder?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -46,7 +49,10 @@ function cancelCreate(): void {
 </script>
 
 <template>
-  <div class="tpl:flex tpl:h-full tpl:flex-col tpl:overflow-y-auto">
+  <div
+    data-testid="media-folder-tree"
+    class="tpl:flex tpl:h-full tpl:flex-col tpl:overflow-y-auto"
+  >
     <!-- All Images root -->
     <button
       class="tpl:flex tpl:w-full tpl:items-center tpl:gap-2 tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -73,6 +79,9 @@ function cancelCreate(): void {
       :folder="folder"
       :current-folder-id="currentFolderId"
       :depth="0"
+      :can-create-folder="canCreateFolder"
+      :can-rename-folder="canRenameFolder"
+      :can-delete-folder="canDeleteFolder"
       @navigate="emit('navigate', $event)"
       @create-folder="(name, parentId) => emit('createFolder', name, parentId)"
       @rename-folder="(id, name) => emit('renameFolder', id, name)"
@@ -100,7 +109,7 @@ function cancelCreate(): void {
 
     <!-- New folder button -->
     <button
-      v-if="!isCreating"
+      v-if="!isCreating && canCreateFolder"
       class="tpl:flex tpl:w-full tpl:items-center tpl:gap-2 tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:transition-all tpl:duration-150"
       style="color: var(--tpl-text-muted)"
       @click="startCreateFolder"
@@ -115,6 +124,7 @@ function cancelCreate(): void {
     <!-- Frequently Used -->
     <button
       v-if="hasFrequentlyUsed"
+      data-testid="media-frequently-used"
       class="tpl:flex tpl:w-full tpl:items-center tpl:gap-2 tpl:border-t tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
       :style="{
         borderColor: 'var(--tpl-border)',

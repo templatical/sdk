@@ -52,7 +52,7 @@ unmount();
 | `comments`          | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `user`              | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts |
 | `changeDebounce`    | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave) |
-| `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | Called when user wants to pick an image. Return `{ url, alt? }` or `null`                                                                                                                                                                                                                  |
+| `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media) |
 | `resolveImageUrl`   | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution) |
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. See [Merge Tags](/guide/merge-tags) |
 | `resolvePreview`    | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering) |
@@ -60,6 +60,7 @@ unmount();
 | `logicTags`         | `LogicTagsConfig`                                                 | No       | Logic tag configuration — template-language control flow (conditionals, loops) inserted inline in rich text and text inputs. See [Logic Tags](/guide/logic-tags)                                                                                                                            |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks)                                                                                                                                                                                                                   |
 | `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Storage backend for saved blocks — reusable block groups users save and re-insert. The editor provides the UI; you provide persistence. The same object also carries the `onCreated`, `onUpdated` and `onDeleted` events. Omit to disable the feature entirely. Use `createLocalStorageSavedBlocksProvider()` for a zero-backend option. See [Saved Blocks](/backend/saved-blocks) |
+| `media`             | `MediaProvider`                                                   | No       | Storage backend for the media library — the picker behind Browse on image fields, video thumbnails and custom-block image fields. The editor provides the modal, grid, crop and insertion; you provide persistence. `list` is required; every other method is `false \| fn`. The same object also carries `onCreated` / `onUpdated` / `onDeleted`. Omit and image fields stay URL-only unless `onRequestMedia` is set. Use `createLocalStorageMediaProvider()` for a zero-backend option. See [Media](/backend/media) |
 | `testEmail`         | `TestEmailProvider`                                               | No       | Sending backend for test emails — lets users mail themselves the template they are editing. The editor provides the trigger, dialog, validation and states; you provide delivery. The same object also carries the `onSent` event. Omit to disable the feature entirely. `allowedRecipients` restricts the picker but is **not** a security boundary — validate server-side. See [Test Emails](/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Render each HTML block's content as a live preview in the canvas — inside a sandboxed `<iframe>` with no script execution — instead of the static placeholder. Defaults to `false`. Preview-only; the MJML/HTML export renders HTML blocks regardless. See [Previewing HTML blocks](#previewing-html-blocks) |
@@ -67,6 +68,7 @@ unmount();
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
 | `fonts`             | `FontsConfig`                                                     | No       | Font configuration. See [Custom Fonts](/guide/fonts)                                                                                                                                                                                                                                       |
 | `colors`            | `ColorsConfig`                                                    | No       | Color-picker palette. `presets` render as a clickable grid in every picker; `allowCustom: false` locks authors to them. See [Preset colors](#preset-colors)                                                                                                                                |
+| `templateSettings`  | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over the members of `TemplateSettings`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel) |
 | `theme`             | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                        |
 | `uiTheme`           | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                  |
 | `locale`            | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`). Defaults to `'en'`                                                                                                                                                                                                                                      |
@@ -142,6 +144,46 @@ const editor = await init({
 - **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input. Each entry must be a `#rgb` or `#rrggbb` hex string — 4-/8-digit alpha hex and other formats are skipped with a console warning listing the offending entries.
 - **`allowCustom`** — defaults to `true`. Set to `false` (together with `presets`) to hide the wheel and hex input so authors can only pick from the palette — useful when embedding the editor as a white-label / brand-kit tool. In this locked mode the palette leads with a "no colour" chip that restores the unset (inherit) state, since the hex field's clear button is hidden. Also in locked mode, the editor logs a development warning when any `blockDefaults` / `templateDefaults` colour falls outside `presets` — new blocks would otherwise start on a colour no picker can reselect, so set those defaults from the same palette. Ignored with a warning when no `presets` are configured, since that would leave the picker with no way to set a color.
 - **Per-field narrowing.** A custom block's `color` field can carry its own `presets` / `allowCustom` — see [per-field color presets](/guide/custom-blocks#color). A field may swap in its own palette, or lock one field while the rest of the editor stays free-form; its `presets` replace this grid for that field rather than intersecting it, so a locked field can offer colors that appear nowhere in `presets` here. What a field can never do is unlock the editor: `allowCustom: false` here still locks every picker.
+
+### Restricting the settings panel {#restricting-the-settings-panel}
+
+The right sidebar's Settings tab exposes every member of `TemplateSettings`. Pass `templateSettings.fields` to narrow that to an allowlist — for settings your application owns rather than the author:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  templateSettings: {
+    fields: [
+      "width",
+      "backgroundColor",
+      "textColor",
+      "linkColor",
+      "linkUnderline",
+      "fontFamily",
+    ],
+  },
+});
+```
+
+| Value | Result |
+|---|---|
+| omitted, or `fields: true` | every setting is editable |
+| `fields: [...]` | only the listed settings |
+| `fields: false` or `fields: []` | none — the Settings tab does not render |
+
+The fields are `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale`, `direction` and `preheaderText`.
+
+- **Cards follow their fields.** A card renders while at least one of its settings survives, so excluding both `locale` and `direction` removes the Language card and excluding `preheaderText` removes the Preheader card. `width` is the Layout card; the five colour and font settings are the Appearance card.
+- **The list narrows, it never reorders.** Settings sit in fixed cards, so unlike [`paletteBlocks`](#customizing-the-block-palette) there is no order to express.
+- **An unknown entry is skipped with a console warning.** TypeScript rejects one at compile time; a JavaScript caller's typo narrows the panel rather than silently restoring every setting.
+- **Hiding a setting never changes its value.** Whatever the loaded content carries keeps rendering and keeps round-tripping through `getContent()` and the export. Set the ones you hide from the content you hand the editor — `init({ content })`, or the `templates` provider's own `load`, which is the seam for "this template's locale comes from my application". [`templateDefaults`](/guide/defaults) will not do it for a template you **load**: it applies only when no content is provided. For a *blank* template it does, and `locale` has a shortcut there — `init({ locale })` seeds the content language when you set no `templateDefaults.locale`, so hiding the field still yields the right `<html lang>`.
+- **Not a security boundary.** The allowlist lives in the user's browser, like every other client-side constraint. Validate what you persist.
+- **Excluding `locale` also pins the language of new blocks.** A template's `locale` drives the recipient-facing defaults a newly inserted block starts with — a video's `alt`, a countdown's labels and expired message — so with the field gone, those follow whatever locale the loaded content carries and the author can no longer move them. That is usually the point, but it means the value you set matters for more than `<html lang>`.
+- **Excluding `preheaderText` leaves one linter rule unactionable.** `a11y.missing-preheader` (severity `info`) reports a template with no preheader, and with the field gone the author cannot act on it. Either set a preheader in the content you load, or turn the rule off: `lint: { accessibility: { rules: { 'a11y.missing-preheader': 'off' } } }`. No other rule reads a template setting.
+
+::: tip Related restrictions
+Other parts of the editor's chrome have their own keys: [`paletteBlocks`](#customizing-the-block-palette) for the block palette, [`fonts.builtIns`](/guide/fonts) for the font picker, [`colors.allowCustom`](#preset-colors) for free-form colours, and `templates.nameField` for the header's name field.
+:::
 
 ## TemplaticalEditor
 

@@ -7,10 +7,10 @@ export default defineConfig({
   target: 'es2022',
   sourcemap: true,
   clean: true,
-  // tsconfig.build.json mirrors the old tsup setup: excludes tests and carries
-  // the `paths` to @templatical/media-library source, so its type-only imports
-  // (TemplaticalConfig/PlanConfig) inline into the bundled .d.ts as before.
-  // declarationMap stays off — sources aren't published.
+  // tsconfig.build.json excludes tests. PlanConfig's media/storage types are
+  // local Cloud wire types, so they inline in the bundled .d.ts rather than
+  // becoming an external import. declarationMap stays off — sources aren't
+  // published.
   dts: {
     resolver: 'tsc',
     tsconfig: 'tsconfig.build.json',

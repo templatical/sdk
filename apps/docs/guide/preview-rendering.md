@@ -164,6 +164,29 @@ Something already renders your sends — your sending platform, your own service
 
 It is also the only route when your template language can't be evaluated client-side at all, which includes any custom `syntax` you configure.
 
+### Show what your platform appends at send time
+
+If your application adds something to every email after it leaves the editor — a branding badge, a legal footer, an unsubscribe line, a logo header — the author never sees it while composing, so nothing tells them how the finished message ends. Have your backend append the same blocks it will append for real, and the preview shows the whole email.
+
+```ts
+resolvePreview: async ({ content, recipient }) => {
+  // Your backend resolves the template and appends the same chrome it
+  // adds at send time, so the unsubscribe link is that recipient's real one.
+  const res = await fetch("/api/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template: content, recipient }),
+  });
+  return res.json();
+},
+```
+
+Return a whole `TemplateContent`, not just its `blocks`. An object carrying only `blocks` is accepted — that is all the shape check looks for — but it arrives without `settings`, and the preview loses the template's width, background and fonts. The appended blocks otherwise render through the canvas like any others, picking up the template's fonts and link styles, the dark-mode preview and the viewport switch.
+
+Appending server-side is what keeps the two in step. The chrome is defined once, in the code path that appends it for real, so the preview cannot drift from the delivered email the way a second copy in the browser would. It also means the values are resolved rather than approximated: a real unsubscribe URL for `recipient`, not a token.
+
+None of it can double up. Resolved content reaches preview surfaces only, so what your endpoint appends is never saved by `getContent()`, never exported by `toMjml()`, and never part of what the test-email feature sends — your send pipeline stays the only thing that appends for real.
+
 ### Pull in live data
 
 Prices, stock levels, a personalised product grid. Anything the template references but doesn't store can be fetched at preview time, so the preview reflects reality rather than whatever was authored.

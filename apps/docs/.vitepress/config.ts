@@ -139,6 +139,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Version History", link: "/backend/version-history" },
         { text: "Comments", link: "/backend/comments" },
         { text: "Saved Blocks", link: "/backend/saved-blocks" },
+        { text: "Media", link: "/backend/media" },
         { text: "Test Emails", link: "/backend/test-email" },
         { text: "Rendering & Export", link: "/backend/render" },
       ],
@@ -155,10 +156,17 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Migration",
       items: [
-        { text: "From BeeFree", link: "/guide/migration-from-beefree" },
         { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
+        { text: "From BeeFree", link: "/guide/migration-from-beefree" },
+        { text: "From Stripo", link: "/guide/migration-from-stripo" },
+        { text: "From Topol", link: "/guide/migration-from-topol" },
+        { text: "From Chamaileon", link: "/guide/migration-from-chamaileon" },
+        {
+          text: "From Easy Email Pro",
+          link: "/guide/migration-from-easy-email-pro",
+        },
+        { text: "From MJML", link: "/guide/migration-from-mjml" },
         { text: "From HTML", link: "/guide/migration-from-html" },
-        { text: "From hand-written MJML", link: "/guide/migration-from-mjml" },
       ],
     },
     {
@@ -318,6 +326,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Versionsverlauf", link: "/de/backend/version-history" },
         { text: "Kommentare", link: "/de/backend/comments" },
         { text: "Gespeicherte Blöcke", link: "/de/backend/saved-blocks" },
+        { text: "Medien", link: "/de/backend/media" },
         { text: "Test-E-Mails", link: "/de/backend/test-email" },
         { text: "Rendering & Export", link: "/de/backend/render" },
       ],
@@ -334,13 +343,17 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Migration",
       items: [
-        { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
         { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
-        { text: "Von HTML", link: "/de/guide/migration-from-html" },
+        { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
+        { text: "Von Stripo", link: "/de/guide/migration-from-stripo" },
+        { text: "Von Topol", link: "/de/guide/migration-from-topol" },
+        { text: "Von Chamaileon", link: "/de/guide/migration-from-chamaileon" },
         {
-          text: "Von handgeschriebenem MJML",
-          link: "/de/guide/migration-from-mjml",
+          text: "Von Easy Email Pro",
+          link: "/de/guide/migration-from-easy-email-pro",
         },
+        { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
+        { text: "Von HTML", link: "/de/guide/migration-from-html" },
       ],
     },
     {

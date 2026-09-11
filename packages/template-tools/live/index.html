@@ -863,6 +863,12 @@
 
         editor = await init({
           container: "#editor",
+          // The browser that opens this harness belongs to whoever is
+          // hand-editing in it, so its language is the right one for the
+          // chrome. Optional-chained: a runtime that exposes no `navigator`
+          // must not abort the mount, and the editor falls back to English for
+          // any tag it has no bundle for.
+          locale: navigator?.language || undefined,
           content, // undefined → editor starts from its default empty template
           uiTheme: readTheme(),
           onChange: () => {

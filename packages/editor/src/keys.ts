@@ -68,7 +68,27 @@ export const THEME_STYLES_KEY: InjectionKey<
 export const UI_THEME_KEY: InjectionKey<ComputedRef<string>> =
   Symbol("tplUiTheme");
 
-export const BLOCK_DEFAULTS_KEY: InjectionKey<BlockDefaults | undefined> =
+/**
+ * The editor's UI locale, exactly as the consumer passed it to
+ * `init({ locale })` — unresolved, so it may be unsupported or malformed.
+ *
+ * For `Intl` formatting only. Translated *strings* come from
+ * `TRANSLATIONS_KEY`, which is already resolved to a supported bundle; this is
+ * for the labels `Intl` builds itself (dates), where the browser's own locale
+ * would otherwise win and disagree with the surrounding chrome. Always format
+ * through `formatAbsoluteDateTime`, which guards the malformed case.
+ *
+ * Not the template's `settings.locale` — that is the *email's* language and
+ * belongs to content, not chrome.
+ */
+export const UI_LOCALE_KEY: InjectionKey<string | undefined> =
+  Symbol("tplUiLocale");
+
+// A ref, not a plain object: the recipient-facing half of these defaults
+// (video alt, countdown labels) tracks the template's own `settings.locale`,
+// which the author can change while the editor is open. Read it at insert
+// time — a value destructured at setup goes stale.
+export const BLOCK_DEFAULTS_KEY: InjectionKey<ComputedRef<BlockDefaults>> =
   Symbol("blockDefaults");
 
 export const BLOCK_REGISTRY_KEY: InjectionKey<UseBlockRegistryReturn> =
@@ -104,6 +124,21 @@ export const HTML_BLOCK_PREVIEW_KEY: InjectionKey<boolean> =
 export const COLORS_KEY: InjectionKey<
   import("./utils/resolveColorsConfig").ResolvedColors
 > = Symbol("colors");
+
+/**
+ * The template settings the panel may render (`config.templateSettings.fields`),
+ * resolved to a set of `TemplateSettings` member names by
+ * `resolveTemplateSettingsFields`. Provided by `useEditorCore`, consumed by
+ * `TemplateSettings.vue` for its cards and by `RightSidebar.vue` for the
+ * Settings tab.
+ *
+ * Consumers inject with `ALL_TEMPLATE_SETTINGS_FIELDS` as the default, never an
+ * empty set: the key is absent for anyone who configured nothing, and this
+ * config only ever narrows.
+ */
+export const TEMPLATE_SETTINGS_FIELDS_KEY: InjectionKey<
+  ReadonlySet<import("./utils/templateSettingsFields").TemplateSettingsField>
+> = Symbol("templateSettingsFields");
 
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
@@ -179,6 +214,25 @@ export const MERGE_TAG_PICKER_KEY: InjectionKey<
   import("./composables/useMergeTagPicker").UseMergeTagPickerReturn
 > = Symbol("mergeTagPicker");
 
+/**
+ * One "a merge tag request is in flight" flag per editor, provided by
+ * `useEditorCore` and injected by every `useMergeTag()` call.
+ *
+ * Shared, not per-call: `useRichTextEditor.handleClickOutside` suppresses
+ * editor teardown while this is set, because the picker modal mounts in the
+ * popover root — outside `.tpl-text-editor-wrapper`. A ref private to one
+ * `useMergeTag()` instance leaves that guard blind to a picker opened from
+ * any other host (the link dialog's URL field), so the click on a picker row
+ * tears the block out of edit mode and the pending insert then no-ops on its
+ * own disposal guard. Falls back to a private ref for headless callers.
+ */
+export const MERGE_TAG_REQUESTING_KEY: InjectionKey<Ref<boolean>> =
+  Symbol("mergeTagRequesting");
+
+/** Logic-tag counterpart of {@link MERGE_TAG_REQUESTING_KEY}. */
+export const LOGIC_TAG_REQUESTING_KEY: InjectionKey<Ref<boolean>> =
+  Symbol("logicTagRequesting");
+
 // ---------------------------------------------------------------------------
 // Logic tags — a standalone feature, separate from merge tags. Native
 // highlighting (LogicMergeTagNode) is always on; these drive the dedicated
@@ -204,6 +258,19 @@ export const ON_REQUEST_LOGIC_TAG_KEY: InjectionKey<
 
 export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");
+
+/**
+ * Whether a dropped image file may be uploaded. Distinct from Browse: a
+ * read-only provider (`create: false`) still opens the library, but the
+ * drop zone must not highlight. True when a host `onRequestMedia` is set
+ * (the callback receives `files`) or when `provider.create` is a function.
+ *
+ * `null` when neither a provider nor a callback is configured — image
+ * fields stay URL-only and drop is off. Injected as a computed; consumed
+ * by ImageBlock / ImageToolbar / ImageField with a `null` default.
+ */
+export const CAN_DROP_MEDIA_KEY: InjectionKey<ComputedRef<boolean> | null> =
+  Symbol("canDropMedia");
 
 /**
  * Per-editor display-only image URL resolver (`config.resolveImageUrl`),

@@ -13,6 +13,11 @@
       "@templatical/import-beefree",
       "@templatical/import-unlayer",
       "@templatical/import-html",
+      "@templatical/import-mjml",
+      "@templatical/import-topol",
+      "@templatical/import-stripo",
+      "@templatical/import-chamaileon",
+      "@templatical/import-easy-email-pro",
       "@templatical/template-tools"
     ]
   ],

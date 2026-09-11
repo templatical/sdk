@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/media-library?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/media-library)
 [![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
-Browse, upload, organize, crop, and replace media assets. Used by [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)'s Cloud build, and available as a standalone SDK for any app that needs a media manager.
+Browse, upload, organize, crop, and replace media assets. Used by [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) behind a `MediaProvider` (the editor bundles the Browse UI — you do not install this package for `init({ media })`), and available as a standalone SDK for any app that needs a media manager.
 
 ## Install
 
@@ -13,9 +13,9 @@ Browse, upload, organize, crop, and replace media assets. Used by [`@templatical
 npm install @templatical/media-library
 ```
 
-Peer deps: `vue@^3.5`, `tailwindcss@^4`.
+Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package already contains the modal.
 
-> **Authentication.** The media library connects to Templatical Cloud and authenticates against your backend. Your server exposes a token endpoint (returning a short-lived JWT for the current user/project), and you pass that endpoint URL as `auth.url`. See the [authentication guide](https://docs.templatical.com/cloud/authentication) for the full setup.
+> **Storage.** The library is storage-agnostic. Pass a `MediaProvider` — Cloud's adapter is `createCloudMediaProvider` from `@templatical/core/cloud`. See the [media contract](https://docs.templatical.com/backend/media) and the [Cloud adapter](https://docs.templatical.com/cloud/media-library).
 
 ## Usage
 
@@ -23,21 +23,22 @@ Peer deps: `vue@^3.5`, `tailwindcss@^4`.
 
 ```ts
 import { init } from '@templatical/media-library';
+import { createCloudMediaProvider } from '@templatical/core/cloud';
 import '@templatical/media-library/style.css';
 
 const media = await init({
   container: '#media',
-  auth: {
-    url: 'https://your-app.com/api/templatical/token',
-  },
-  onSelect(item) {
-    console.log('Picked:', item.url);
+  provider: createCloudMediaProvider(authManager),
+  onSelect(asset) {
+    console.log('Picked:', asset.url);
   },
 });
 
 // Later
 media.unmount();
 ```
+
+`onSelect` is optional. `accept` narrows categories; omit it for every category. Any object implementing `MediaProvider` works — Cloud is one adapter.
 
 ### Vue component
 
@@ -48,31 +49,42 @@ import { MediaLibraryModal } from '@templatical/media-library';
 import '@templatical/media-library/style.css';
 ```
 
+```vue
+<MediaLibraryModal
+  :visible="open"
+  :provider="provider"
+  :on-error="onError"
+  @select="onSelect"
+  @close="open = false"
+/>
+```
+
 ### Composable (build your own UI)
 
 ```ts
-import { AuthManager } from '@templatical/core/cloud';
 import { useMediaLibrary } from '@templatical/media-library';
-
-const authManager = new AuthManager({
-  url: 'https://your-app.com/api/templatical/token',
-});
-await authManager.initialize();
+import { createCloudMediaProvider } from '@templatical/core/cloud';
 
 const lib = useMediaLibrary({
-  projectId: authManager.projectId,
-  authManager,
+  provider: createCloudMediaProvider(authManager),
+  onError(error) {
+    console.error(error);
+  },
 });
 ```
 
 ### API client (low-level)
 
-```ts
-import { AuthManager } from '@templatical/core/cloud';
-import { MediaApiClient } from '@templatical/media-library';
+For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. `createCloudMediaProvider` maps the response onto `MediaProvider`.
 
-const api = new MediaApiClient(authManager);
-const response = await api.browseMedia({ folder_id: null });
+```ts
+import { MediaApiClient, createCloudMediaProvider } from '@templatical/core/cloud';
+
+const client = new MediaApiClient(authManager);
+const response = await client.browseMedia({ folderId: null });
+
+const provider = createCloudMediaProvider(authManager);
+const page = await provider.list();
 ```
 
 ## Exports
@@ -80,18 +92,20 @@ const response = await api.browseMedia({ folder_id: null });
 - **Standalone SDK** — `init()`, `unmount()`
 - **Vue components** — `MediaLibraryModal` + 12 sub-components (grid, upload zone, folder tree, preview panel, edit/replace/import modals)
 - **Composables** — `useMediaLibrary`, `useMediaCategories`, `useMediaPicker`, `useI18n`
-- **API client** — `MediaApiClient`
-- **Types** — `MediaItem`, `MediaFolder`, `MediaCategory`, `MediaConversion`, `MediaBrowseParams/Response`, `MediaUsageInfo/Response`, `MediaConfig`, etc.
+- **Types** — `MediaAsset`, `MediaFolder`, `MediaCategory`, `MediaRequestContext`, `MediaUsageInfo`, `MediaResult` (re-exported from `@templatical/types`)
+
+The `MediaProvider` / `MediaAsset` contract lives in [`@templatical/types`](https://www.npmjs.com/package/@templatical/types).
 
 ## Inside the editor's Shadow DOM
 
-When the editor mounts in its default shadow-DOM mode (`shadowDom: true`), the media library invocation teleports into the editor's shadow-aware popover root rather than `document.body`. The `MediaLibraryModal` accepts an optional `popoverTarget?: HTMLElement | null` prop and provides it to its three nested sub-modals (replace, edit, import-url) so the entire media UI lives inside the editor's shadow root. Standalone-SDK consumers (`init({ container })`) keep the previous body-level mount.
+When the editor mounts in its default shadow-DOM mode (`shadowDom: true`), the media library invocation teleports into the editor's shadow-aware popover root rather than `document.body`. The `MediaLibraryModal` accepts an optional `popoverTarget?: HTMLElement | null` prop and provides it to its three nested sub-modals (replace, edit, import-url) so the entire media UI lives inside the editor's shadow root. Standalone-SDK consumers (`init({ container })`) mount at `document.body`.
 
 If you embed `MediaLibraryModal` manually inside another shadow-DOM-mounted UI, pass `popoverTarget` to keep its sub-modals scoped to your shadow root.
 
 ## Documentation
 
-- [Media library guide](https://docs.templatical.com/cloud/media-library)
+- [Media contract](https://docs.templatical.com/backend/media)
+- [Cloud media library](https://docs.templatical.com/cloud/media-library)
 - [Shadow DOM (editor)](https://docs.templatical.com/guide/shadow-dom)
 
 Full reference at **[docs.templatical.com](https://docs.templatical.com)**.

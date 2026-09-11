@@ -65,6 +65,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// The root element carries the template's own language, and may carry further
+// attributes the renderer derives from settings — `dir` arrived with RTL
+// support. Match the tag and the language rather than one exact spelling, so a
+// new attribute is not a test failure in four places.
+const MJML_ROOT = /<mjml[^>]*\blang="en"[^>]*>/;
+
 describe("render command", () => {
   it("renders MJML with no optional dependency installed", async () => {
     expect(await runRender(parseArgs(["render", file, "--format", "mjml"]))).toBe(0);
@@ -76,7 +82,7 @@ describe("render command", () => {
     // The renderer always stamps `settings.locale` onto the root tag, so the
     // fixture's `locale: "en"` makes this the exact opening tag — a bare
     // `<mjml>` never appears in real output.
-    expect(stdout.join("")).toContain('<mjml lang="en">');
+    expect(stdout.join("")).toMatch(MJML_ROOT);
   });
 
   it("writes to -o and keeps stdout clean", async () => {
@@ -85,7 +91,7 @@ describe("render command", () => {
       await runRender(parseArgs(["render", file, "--format", "mjml", "-o", out])),
     ).toBe(0);
     expect(stdout.join("")).toBe("");
-    expect(readFileSync(out, "utf8")).toContain('<mjml lang="en">');
+    expect(readFileSync(out, "utf8")).toMatch(MJML_ROOT);
   });
 
   it("creates the parent directory for -o when it does not exist yet", async () => {
@@ -93,7 +99,7 @@ describe("render command", () => {
     expect(
       await runRender(parseArgs(["render", file, "--format", "mjml", "-o", out])),
     ).toBe(0);
-    expect(readFileSync(out, "utf8")).toContain('<mjml lang="en">');
+    expect(readFileSync(out, "utf8")).toMatch(MJML_ROOT);
   });
 
   it("wraps the MJML in a json envelope under --json", async () => {
@@ -101,7 +107,7 @@ describe("render command", () => {
     await runRender(parseArgs(["render", file, "--format", "mjml", "--json"]));
     const out = JSON.parse(stdout.join(""));
     expect(out.format).toBe("mjml");
-    expect(out.output).toContain('<mjml lang="en">');
+    expect(out.output).toMatch(MJML_ROOT);
   });
 
   it("rejects an unknown format with a usage error", async () => {
@@ -140,10 +146,7 @@ describe("render command", () => {
     // npx it would not, which is the branch the next case covers.
     expect(await runRender(parseArgs(["render", file, "--format", "html"]))).toBe(0);
     expect(stdout.join("").toLowerCase()).toContain("<!doctype html");
-    // 30s, not the 5s default: compiling MJML is the slowest thing this
-    // package does, and `pnpm run test` runs 13 packages concurrently — which
-    // is what CI does, so the default flakes under load.
-  }, 30_000);
+  });
 
   it("exits 3 and names the install command when mjml is missing", async () => {
     optionalAvailable = false;

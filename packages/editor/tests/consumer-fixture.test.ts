@@ -205,6 +205,48 @@ describe("buildOrder", () => {
   });
 });
 
+/**
+ * The first workspace dependency cycle reachable in `manifests`, as an arrow
+ * chain, or `null` when the graph is acyclic.
+ *
+ * pnpm 12+ refuses to run a recursive script whose selection contains a cycle
+ * (`ERR_PNPM_TASK_CYCLE`), and it aborts before executing anything — so one
+ * cycle among `packages/*` takes out `pnpm run typecheck` and `pnpm run test`
+ * wholesale. Unlike `buildOrder`, this walks `devDependencies` too, because
+ * pnpm's task graph does.
+ */
+const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => {
+  const DONE = 1;
+  const VISITING = 0;
+  const state = new Map<string, number>();
+  const path: string[] = [];
+
+  const visit = (name: string): string | null => {
+    if (state.get(name) === DONE) return null;
+    if (state.get(name) === VISITING) {
+      return [...path.slice(path.indexOf(name)), name].join(" -> ");
+    }
+    state.set(name, VISITING);
+    path.push(name);
+    const edges = (["dependencies", "devDependencies", "peerDependencies"] as const)
+      .flatMap((field) => Object.keys(manifests.get(name)?.[field] ?? {}))
+      .filter((dep) => manifests.has(dep));
+    for (const dep of edges) {
+      const cycle = visit(dep);
+      if (cycle) return cycle;
+    }
+    path.pop();
+    state.set(name, DONE);
+    return null;
+  };
+
+  for (const name of manifests.keys()) {
+    const cycle = visit(name);
+    if (cycle) return cycle;
+  }
+  return null;
+};
+
 describe("the real workspace and fixtures", () => {
   const manifests = readWorkspacePackages(REPO_ROOT);
 
@@ -213,7 +255,12 @@ describe("the real workspace and fixtures", () => {
       "@templatical/core",
       "@templatical/editor",
       "@templatical/import-beefree",
+      "@templatical/import-chamaileon",
+      "@templatical/import-easy-email-pro",
       "@templatical/import-html",
+      "@templatical/import-mjml",
+      "@templatical/import-stripo",
+      "@templatical/import-topol",
       "@templatical/import-unlayer",
       "@templatical/media-library",
       "@templatical/quality",
@@ -229,6 +276,33 @@ describe("the real workspace and fixtures", () => {
     );
   });
 
+  it("has no workspace dependency cycle, so pnpm can order recursive tasks", () => {
+    expect(findWorkspaceCycle(manifests)).toBe(null);
+  });
+
+  it("detects a cycle when one exists", () => {
+    // Positive control, and the shape to never reintroduce: a types
+    // dependency on media-library closes types -> media-library -> core ->
+    // types.
+    expect(
+      findWorkspaceCycle(
+        fake({
+          "@templatical/types": {
+            devDependencies: { "@templatical/media-library": "workspace:*" },
+          },
+          "@templatical/media-library": {
+            dependencies: { "@templatical/core": "workspace:*" },
+          },
+          "@templatical/core": {
+            dependencies: { "@templatical/types": "workspace:*" },
+          },
+        }),
+      ),
+    ).toBe(
+      "@templatical/types -> @templatical/media-library -> @templatical/core -> @templatical/types",
+    );
+  });
+
   it("confirms the editor is the only package that bundles types", () => {
     const externalizes = [...manifests.values()]
       .filter((m: any) => m.dependencies?.["@templatical/types"])
@@ -237,7 +311,12 @@ describe("the real workspace and fixtures", () => {
     expect(externalizes).toEqual([
       "@templatical/core",
       "@templatical/import-beefree",
+      "@templatical/import-chamaileon",
+      "@templatical/import-easy-email-pro",
       "@templatical/import-html",
+      "@templatical/import-mjml",
+      "@templatical/import-stripo",
+      "@templatical/import-topol",
       "@templatical/import-unlayer",
       "@templatical/media-library",
       "@templatical/quality",

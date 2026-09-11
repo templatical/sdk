@@ -2094,6 +2094,76 @@ export interface TemplateOption {
   templateDefaults?: TemplateDefaults;
 }
 
+// ─── Arabic Invitation ───────────────────────────────────────
+// Showcases: content direction (RTL canvas + export)
+
+export function createArabicInvitationTemplate(): TemplateContent {
+  return {
+    settings: {
+      width: 600,
+      backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
+      linkUnderline: true,
+      fontFamily: "Arial",
+      preheaderText: "دعوة لحضور الحدث — أكّد حضورك اليوم.",
+      locale: "ar",
+      direction: "rtl",
+    },
+    blocks: [
+      createTitleBlock({
+        content: "<p>دعوة الحدث</p>",
+        level: 2,
+        color: "#111827",
+        textAlign: "right",
+        styles: white(32, 24, 8, 24),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align: right"><span style="font-size: 15px; color: #4b5563">مرحبًا <span data-merge-tag="{{first_name}}">الاسم الأول</span>، نتشرف بدعوتك لحضور الحدث. أكّد حضورك بالزر أدناه.</span></p>',
+        styles: white(0, 24, 16, 24),
+      }),
+      createButtonBlock({
+        text: "تأكيد الحضور",
+        url: "https://example.com/rsvp",
+        backgroundColor: "#1d4ed8",
+        textColor: "#ffffff",
+        borderRadius: 6,
+        fontSize: 16,
+        align: "center",
+        buttonPadding: { top: 14, right: 32, bottom: 14, left: 32 },
+        styles: white(0, 24, 24, 24),
+      }),
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [
+            createParagraphBlock({
+              content:
+                '<p style="text-align: right"><span style="font-size: 14px; color: #111827"><strong>عمود البداية</strong></span></p><p style="text-align: right"><span style="font-size: 14px; color: #4b5563">التاريخ والمكان يظهران هنا.</span></p>',
+              styles: pad(8, 8, 8, 8),
+            }),
+          ],
+          [
+            createImageBlock({
+              src: "https://placehold.co/260x160/eff6ff/1d4ed8?text=Event",
+              alt: "صورة توضيحية للحدث",
+              width: "full",
+              align: "center",
+              styles: pad(8, 8, 8, 8),
+            }),
+          ],
+        ],
+        styles: white(0, 16, 24, 16),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af"><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
+        styles: white(0, 24, 32, 24),
+      }),
+    ],
+  };
+}
+
 export const templates: TemplateOption[] = [
   {
     name: "Product Launch",
@@ -2367,6 +2437,20 @@ export const templates: TemplateOption[] = [
         icon: "display-condition",
         description:
           'The dark-themed banner after the sale countdown has an Enterprise-only block offering 15% off bulk orders.\nTo try it: select the block and check Settings \u2192 Display Condition \u2014 it uses {% if plan == "enterprise" %}. Only enterprise customers see this in the final email.',
+      },
+    ],
+  },
+  {
+    name: "Arabic Invitation",
+    description: "RTL invitation with merge tags and a two-column section",
+    create: createArabicInvitationTemplate,
+    preview: "rtl",
+    customBlocks: [],
+    features: [
+      {
+        label: "Content direction (RTL)",
+        description:
+          'This template sets settings.locale to ar and settings.direction to rtl. The canvas, previews, and exported MJML follow that value: text starts at the right, two-column sections put column 0 on the right on desktop, and <mjml dir="rtl"> is what mail clients read.\nTo try it: open Template Settings — the Right-to-left toggle is on. Turn it off and the canvas flips to LTR without rewriting the copy. The editor chrome stays LTR; only the email is inverted.',
       },
     ],
   },

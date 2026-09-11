@@ -68,11 +68,11 @@ Your token endpoint must return a JSON response with this structure:
 ```json
 {
   "token": "eyJhbGciOiJSUzI1NiIs...",
-  "expires_at": 1720000000,
-  "project_id": "proj_abc123",
+  "expiresAt": 1720000000,
+  "projectId": "proj_abc123",
   "tenant": "acme-corp",
-  "test_email": {
-    "allowed_emails": ["team@example.com"],
+  "testEmail": {
+    "allowedEmails": ["team@example.com"],
     "signature": "hmac-signature-here"
   },
   "user": {
@@ -86,16 +86,16 @@ Your token endpoint must return a JSON response with this structure:
 | Field | Type | Description |
 |-------|------|-------------|
 | `token` | `string` | **Required.** The JWT access token |
-| `expires_at` | `number` | **Required.** Unix timestamp when the token expires |
-| `project_id` | `string` | **Required.** The project ID |
+| `expiresAt` | `number` | **Required.** Unix timestamp when the token expires |
+| `projectId` | `string` | **Required.** The project ID |
 | `tenant` | `string` | **Required.** The tenant slug |
 | `user` | `object` | Optional. Used for collaboration presence and comment attribution |
 | `user.id` | `string` | User identifier |
 | `user.name` | `string` | Display name shown in collaboration UI |
 | `user.signature` | `string` | HMAC signature for user verification |
-| `test_email` | `object` | Optional. Configuration for the test email feature |
-| `test_email.allowed_emails` | `string[]` | Email addresses allowed to receive test emails |
-| `test_email.signature` | `string` | HMAC signature for test email verification |
+| `testEmail` | `object` | Optional. Configuration for the test email feature |
+| `testEmail.allowedEmails` | `string[]` | Email addresses allowed to receive test emails |
+| `testEmail.signature` | `string` | HMAC signature for test email verification |
 
 ## Direct Authentication
 

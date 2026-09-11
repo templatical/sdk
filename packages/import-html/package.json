@@ -1,7 +1,7 @@
 {
   "name": "@templatical/import-html",
   "description": "Convert HTML email templates to Templatical format",
-  "version": "0.30.0",
+  "version": "0.36.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
@@ -9,9 +9,11 @@
     "domhandler": "^6.0.1"
   },
   "devDependencies": {
+    "@templatical/renderer": "workspace:*",
     "@types/node": "^25.9.5",
+    "mjml": "^5.4.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "exports": {
     ".": {

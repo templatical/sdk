@@ -1,5 +1,95 @@
 # @templatical/types
 
+## 0.36.0
+
+### Minor Changes
+
+- d8e38e4: Bring-your-own media library. Cloud is the adapter; `onRequestMedia` remains a UI override.
+
+  The editor compiles the Browse modal into a lazy chunk of `@templatical/editor` — `init({ media })` and Cloud's store no longer need `@templatical/media-library` installed, and that install no longer pulls Vue into an editor consumer. The media-library package remains for standalone `init()` / `MediaLibraryModal` in a host Vue app (`vue` peer; `tailwindcss` is build-time only).
+
+  The editor's image picker (Browse, drop, crop, folders, search) is now backed by a `MediaProvider` you implement — a CMS gallery, a DAM, or the bundled `createLocalStorageMediaProvider()`. Templatical Cloud is one adapter behind the same contract (`createCloudMediaProvider` from `@templatical/core/cloud`). `initCloud({ media })` omitted uses Cloud's store, `false` turns it off, an events-only object keeps Cloud plus your handlers, and a full provider is yours and not plan-gated.
+
+  `onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
+
+  Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
+  Origin: [#700](https://github.com/templatical/sdk/issues/700).
+
+## 0.35.0
+
+### Minor Changes
+
+- 703193a: Add first-class email content direction (`settings.direction`: `"ltr"` | `"rtl"`). The canvas, previews, and `<mjml dir>` follow it independently of the editor chrome; when unset, RTL content languages (`ar`, `he`, `fa`, `ur`, …) resolve as RTL. New title and table blocks start at the start edge. The all-caps accessibility rule skips caseless scripts so Arabic and Hebrew copy is not flagged as shouting.
+
+## 0.34.3
+
+No changes in this release.
+
+## 0.34.2
+
+No changes in this release.
+
+## 0.34.1
+
+No changes in this release.
+
+## 0.34.0
+
+No changes in this release.
+
+## 0.33.0
+
+### Minor Changes
+
+- d76c343: Let a consumer choose which template settings the Settings panel exposes
+
+  The right sidebar's Settings tab offered all eight members of
+  `TemplateSettings` unconditionally. An embedder whose application owns one of
+  them — the content locale chosen before the editor opens, a preheader edited
+  in a field next to the subject line — had no way to take it out, and was left
+  hiding fields with CSS against internal markup.
+
+  New `templateSettings.fields` on both `init()` and `initCloud()`:
+
+  ```ts
+  init({
+    container,
+    templateSettings: {
+      fields: ["width", "backgroundColor", "fontFamily"],
+    },
+  });
+  ```
+
+  The list only narrows: omit the key, or pass `true`, and every setting stays
+  editable. A card renders while at least one of its settings survives, so
+  excluding `locale` removes the Language card and excluding `preheaderText`
+  removes the Preheader card; `fields: false` (or `[]`) removes the Settings tab
+  itself. The list never reorders — settings sit in fixed cards, so unlike
+  `paletteBlocks` there is no order to express. An entry that isn't a
+  `TemplateSettings` member is a compile error for TypeScript callers, and is
+  warned and skipped at runtime, so a typo narrows the panel rather than
+  restoring every setting.
+
+  Presentation only. Hiding a setting never changes its value: whatever the
+  loaded content carries keeps rendering and keeps round-tripping through
+  `getContent()` and the export. Set the ones you hide from the content you hand
+  the editor — `init({ content })`, or your own `templates.load`.
+  `templateDefaults` cannot do it, since it applies only when no content is
+  provided.
+
+  Settings cards now space their contents with a flex gap rather than a bottom
+  margin on every child but the last, because which field is last depends on the
+  allowlist. Every field control and card also carries a `data-testid`.
+
+  Closes #674.
+
+## 0.32.0
+
+No changes in this release.
+
+## 0.31.0
+
 ## 0.30.0
 
 ### Minor Changes

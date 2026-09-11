@@ -78,6 +78,16 @@ const es: typeof en = {
     countdown: "Cuenta atrás",
   },
 
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Escribe tu título",
+    paragraph: "Escribe tu texto aquí",
+    button: "Haz clic aquí",
+  },
+
   // Right sidebar
   sidebar: {
     content: "Contenido",
@@ -470,6 +480,9 @@ const es: typeof en = {
     contentLocale: "Idioma del contenido",
     contentLocaleHint:
       "Código BCP 47 (por ejemplo, es, en, de). Establece el atributo lang del correo electrónico renderizado para que los lectores de pantalla pronuncien el contenido correctamente.",
+    contentDirection: "De derecha a izquierda",
+    contentDirectionHint:
+      "Dirección de escritura del correo, independiente del idioma del editor. Si no se indica, sigue el idioma del contenido (árabe, hebreo, …).",
     tips: "Consejos",
     tip1: "600px es el ancho estándar para las plantillas de correo electrónico",
     tip2: "Usa fuentes seguras para la web para una mejor compatibilidad",

@@ -109,7 +109,7 @@ interface CommentsProvider {
 }
 ```
 
-`list` cannot be turned off — without it the panel has nothing to show. Each of the four mutations takes `false` in place of a function, and is **required** rather than optional: `false` states that the action is unavailable, and the editor hides it rather than disabling it. See [Read-only review](#read-only-review).
+`list` cannot be turned off — without it the panel has nothing to show. Each of the four mutations takes `false` in place of a function: `false` states that the action is unavailable, and the editor hides it rather than disabling it. See [Read-only review](#read-only-review).
 
 The editor renders `list()`'s order verbatim and never re-sorts. Ordering is your store's call.
 

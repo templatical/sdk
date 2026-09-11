@@ -8,6 +8,7 @@ import type {
   TemplateContent,
   ViewportSize,
 } from "@templatical/types";
+import { resolveContentDirection } from "@templatical/types";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, provide, ref, type Component } from "vue";
 import {
@@ -122,12 +123,12 @@ provide(
 
 const canUseAiChat = computed(
   () =>
-    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
     (caps.ai?.isFeatureEnabled("chat") ?? false),
 );
 const canUseDesignToTemplate = computed(
   () =>
-    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
     (caps.ai?.isFeatureEnabled("designToTemplate") ?? false),
 );
 
@@ -174,6 +175,23 @@ const stageWidth = computed(() => viewportWidth.value + EMAIL_GUTTER * 2);
 // Shared with every other surface that renders blocks (the saved-block
 // previews), so a block looks the same wherever it is drawn.
 const canvasStyle = computed(() => getDocumentStyle(props.content.settings));
+// The email's own language, for the browser's spellchecker and hyphenation.
+// Without it the canvas inherits the HOST page's `lang`, so German copy is
+// spellchecked by English rules — every word underlined. `settings.locale`,
+// never `config.locale`: the chrome's language says nothing about the content's,
+// and an author writing English in a German editor must not have their copy
+// declared German. Undefined rather than `""`, which would explicitly declare
+// "unknown language" and suppress spellcheck outright.
+const contentLang = computed(
+  () => props.content.settings?.locale?.trim() || undefined,
+);
+// Always a real token: an empty `dir` inherits the host page and the email
+// stage would follow chrome instead of `settings.direction`. Flex `row` on
+// sections follows this inline axis, so column 0 lands on the start edge
+// with no extra reverse class (which would also ship in every LTR stylesheet).
+const contentDir = computed(() =>
+  resolveContentDirection(props.content.settings),
+);
 
 // Empty canvas: the whole dashed placeholder IS the Sortable drop zone.
 // `isEmptyCanvas` toggles the styling + the inline empty-state content.
@@ -310,6 +328,8 @@ function handleFetchData(
     >
       <div
         class="tpl-canvas tpl:relative tpl:rounded-lg"
+        :lang="contentLang"
+        :dir="contentDir"
         :class="{
           'tpl-canvas--dark-mode': darkMode,
           'tpl-preview-mode': previewMode,

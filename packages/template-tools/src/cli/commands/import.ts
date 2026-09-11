@@ -3,7 +3,7 @@
 // and `--list-formats` answers what is resolvable at runtime. That is what lets
 // a new importer ship without a skill edit or a plugin version bump.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, extname } from "node:path";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit } from "../output";
@@ -21,8 +21,12 @@ interface FormatSpec {
   pkg: string;
   /** The converter's exported function name. */
   fn: string;
-  /** Whether the converter takes parsed JSON or the raw text. */
-  input: "json" | "text";
+  /**
+   * What the converter is handed. `json` parses the source first, `text` passes
+   * it through, and `stripo` unpacks a `{ html, css }` envelope — Stripo is the
+   * one format whose export may arrive as either shape.
+   */
+  input: "json" | "text" | "stripo";
 }
 
 export const FORMATS: Record<string, FormatSpec> = {
@@ -36,6 +40,31 @@ export const FORMATS: Record<string, FormatSpec> = {
     fn: "convertBeeFreeTemplate",
     input: "json",
   },
+  stripo: {
+    pkg: "@templatical/import-stripo",
+    fn: "convertStripoTemplate",
+    input: "stripo",
+  },
+  topol: {
+    pkg: "@templatical/import-topol",
+    fn: "convertTopolTemplate",
+    input: "json",
+  },
+  chamaileon: {
+    pkg: "@templatical/import-chamaileon",
+    fn: "convertChamaileonTemplate",
+    input: "json",
+  },
+  "easy-email-pro": {
+    pkg: "@templatical/import-easy-email-pro",
+    fn: "convertEasyEmailProTemplate",
+    input: "json",
+  },
+  mjml: {
+    pkg: "@templatical/import-mjml",
+    fn: "convertMjmlTemplate",
+    input: "text",
+  },
   html: {
     pkg: "@templatical/import-html",
     fn: "convertHtmlTemplate",
@@ -43,14 +72,109 @@ export const FORMATS: Record<string, FormatSpec> = {
   },
 };
 
+/** Strip a tag and its contents, so class scanning never reads CSS or script. */
+function withoutElements(html: string, tag: string): string {
+  const open = `<${tag}`;
+  const close = `</${tag}`;
+  const lower = html.toLowerCase();
+  let out = "";
+  let pos = 0;
+  while (pos < html.length) {
+    const start = lower.indexOf(open, pos);
+    if (start === -1) {
+      out += html.slice(pos);
+      break;
+    }
+    const next = lower[start + open.length];
+    // `<style` matches `<styles>` too unless the next char ends the tag name.
+    if (next !== undefined && /[a-z0-9-]/.test(next)) {
+      out += html.slice(pos, start + open.length);
+      pos = start + open.length;
+      continue;
+    }
+    out += html.slice(pos, start);
+    const gt = html.indexOf(">", start);
+    if (gt === -1) break;
+    const closeAt = lower.indexOf(close, gt + 1);
+    if (closeAt === -1) break;
+    const closeGt = html.indexOf(">", closeAt);
+    if (closeGt === -1) break;
+    out += " ";
+    pos = closeGt + 1;
+  }
+  return out;
+}
+
+/** Every class token in the markup, ignoring <style> and <script> contents. */
+function markupClassTokens(html: string): string[] {
+  const stripped = withoutElements(withoutElements(html, "style"), "script");
+  const tokens: string[] = [];
+  const re = /\bclass\s*=\s*(["'])([^"']*)\1/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(stripped))) {
+    tokens.push(...m[2].trim().split(/\s+/).filter(Boolean));
+  }
+  return tokens;
+}
+
+/** Stripo's own class prefixes, which survive both of its export shapes. */
+function looksLikeStripoHtml(html: unknown): boolean {
+  if (typeof html !== "string" || html.trim().length === 0) return false;
+  const tokens = markupClassTokens(html);
+  if (
+    tokens.some(
+      (t) =>
+        t === "esd-stripe" ||
+        t === "esd-structure" ||
+        t === "esd-container-frame" ||
+        t.startsWith("esd-block-"),
+    )
+  ) {
+    return true;
+  }
+  return tokens.some(
+    (t) =>
+      t === "es-wrapper" || t === "es-content-body" || t === "es-header-body",
+  );
+}
+
+/** Easy Email Pro marks its own nodes `standard-*`; OSS Easy Email does not. */
+function hasStandardType(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false;
+  const n = node as { type?: unknown; children?: unknown };
+  if (typeof n.type === "string" && n.type.startsWith("standard-")) return true;
+  if (Array.isArray(n.children)) return n.children.some(hasStandardType);
+  return false;
+}
+
 /** Guess the source format, or null when the caller must pass --format. */
 export function detectFormat(fileName: string, content: string): string | null {
   const ext = extname(fileName).toLowerCase();
-  if (ext === ".html" || ext === ".htm") return "html";
   const trimmed = content.trimStart();
+
+  // MJML is decided before both the extension check and the generic `<` branch:
+  // an MJML document saved as .html is still MJML, and reading it as HTML
+  // silently produces a table-soup import that looks like a bad converter.
+  if (ext === ".mjml") return "mjml";
+  if (/^<(\?xml[^>]*\?>\s*)?<?\s*mjml[\s>]/i.test(trimmed)) return "mjml";
+  if (/^<\s*mj-body[\s>]/i.test(trimmed)) return "mjml";
+
+  // Stripo's compiled File→HTML and its plugin storage are both `.html` (or a
+  // JSON `{ html, css }` blob), so the class check must run before the generic
+  // html branch or every Stripo export imports as table soup.
+  if (looksLikeStripoHtml(content)) return "stripo";
+
+  if (ext === ".html" || ext === ".htm") return "html";
   if (trimmed.startsWith("<")) return "html";
   if (trimmed.startsWith("{")) {
-    let obj: { body?: { rows?: unknown }; page?: { rows?: unknown } };
+    let obj: {
+      body?: { rows?: unknown; type?: unknown };
+      page?: { rows?: unknown };
+      tagName?: unknown;
+      content?: { type?: unknown };
+      type?: unknown;
+      html?: unknown;
+    };
     try {
       obj = JSON.parse(content);
     } catch {
@@ -60,9 +184,58 @@ export function detectFormat(fileName: string, content: string): string | null {
     if (obj?.body?.rows) return "unlayer";
     // BeeFree templates: { page: { rows } }.
     if (obj?.page?.rows) return "beefree";
+    // Topol designs are an MJML-shaped tree rooted at the global style.
+    if (obj?.tagName === "mj-global-style") return "topol";
+    // Chamaileon getDocument(): { body: { type: "body" } }. Unlayer's
+    // { body: { rows } } is matched above, so the order between them matters.
+    if (obj?.body?.type === "body") return "chamaileon";
+    // Easy Email Pro persist: { content: { type: "page" } } or a bare page,
+    // distinguished from OSS Easy Email by its `standard-*` node types.
+    const page =
+      obj?.content?.type === "page"
+        ? obj.content
+        : obj?.type === "page"
+          ? obj
+          : null;
+    if (page && hasStandardType(page)) return "easy-email-pro";
+    // A plugin host often persists the whole getTemplateData() object.
+    if (typeof obj?.html === "string" && looksLikeStripoHtml(obj.html)) {
+      return "stripo";
+    }
     return null;
   }
   return null;
+}
+
+/** Split a Stripo source into html + css, whichever shape it arrived in. */
+export function unpackStripoSource(source: string): {
+  html: string;
+  css?: string;
+} {
+  const trimmed = source.trimStart();
+  if (trimmed.startsWith("{")) {
+    try {
+      const obj = JSON.parse(source) as { html?: unknown; css?: unknown };
+      if (typeof obj?.html === "string") {
+        return {
+          html: obj.html,
+          css: typeof obj.css === "string" ? obj.css : undefined,
+        };
+      }
+    } catch {
+      // Not an envelope after all — treat the whole thing as markup.
+    }
+  }
+  return { html: source };
+}
+
+/** The stylesheet a plugin host wrote beside an HTML export, if there is one. */
+function siblingCss(sourcePath: string, source: string): string | undefined {
+  // A JSON envelope carries its own css; only a bare .html file has a sibling.
+  if (source.trimStart().startsWith("{")) return undefined;
+  const cssPath = sourcePath.replace(/\.[^.]+$/, ".css");
+  if (cssPath === sourcePath || !existsSync(cssPath)) return undefined;
+  return readFileSync(cssPath, "utf8");
 }
 
 export interface ReportCounts {
@@ -117,7 +290,7 @@ async function listFormats(cwd: string): Promise<number> {
     formats
       .map(
         (f) =>
-          `  ${f.format.padEnd(8)} ${f.package}${f.available ? "" : "  (not installed)"}`,
+          `  ${f.format.padEnd(14)} ${f.package}${f.available ? "" : "  (not installed)"}`,
       )
       .join("\n"),
   );
@@ -161,12 +334,28 @@ export async function runImport(args: ParsedArgs): Promise<number> {
       `Importing ${format} needs ${spec.pkg}, which isn't installed.\n  npm install ${spec.pkg}`,
     );
   }
-  const convert = mod[spec.fn] as (input: unknown) => {
+  const convert = mod[spec.fn] as (
+    input: unknown,
+    options?: unknown,
+  ) => {
     content: unknown;
     report: unknown;
   };
-  const input = spec.input === "json" ? JSON.parse(source) : source;
-  const { content, report } = convert(input);
+
+  let content: unknown;
+  let report: unknown;
+  if (spec.input === "stripo") {
+    // Plugin storage keeps the stylesheet out of the markup — either beside the
+    // html in one JSON envelope, or as a sibling .css file the host wrote next
+    // to it. Without the CSS every block imports unstyled, which reads as a
+    // broken converter rather than a missing file.
+    const unpacked = unpackStripoSource(source);
+    const css = unpacked.css ?? siblingCss(path, source);
+    ({ content, report } = convert(unpacked.html, css ? { css } : undefined));
+  } else {
+    const input = spec.input === "json" ? JSON.parse(source) : source;
+    ({ content, report } = convert(input));
+  }
 
   const outName = flagValue(args, "out") ?? basename(path, extname(path));
   const written = writeTemplateFile(

@@ -1,26 +1,33 @@
+import type { MediaCategory, MediaOptions } from "@templatical/types";
 import type { InjectionKey, Ref } from "vue";
-import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 import type { MediaTranslations } from "./i18n";
 
 /**
- * The active plan's config, for the media limits every surface in this package
- * reads: accepted MIME types, `max_file_size`, the storage gauge.
+ * Client pre-check limits plus the host's `accept` filter.
  *
- * **Provided by whichever component roots the tree** — `MediaLibraryModal` from
- * its `planConfig` prop, `standalone/MediaLibrary.vue` from its own — and
- * consumed by `useMediaCategories`, which five descendants call. It is a
- * provide rather than prop-drilling *only* because of that depth; the values
- * themselves cross the package boundary as props.
+ * `maxFileSize` / `mimeTypes` are {@link MediaOptions} fields and may be
+ * getters — Cloud fills them after construction — so every reader must
+ * access them inside a computed, never by destructuring at setup.
  *
- * That distinction is the whole point of this key existing. Vue matches injection
- * keys by identity, so a bare-string `inject("planConfig")` never resolves the
- * `Symbol` a host provided — it yields `undefined` silently, and the browser is
- * inert with nothing to debug. Props make the cross-package boundary typed; a
- * single exported key makes the intra-package hop impossible to spell two
+ * **Provided by whichever component roots the tree** — `MediaLibraryModal`
+ * and `standalone/MediaLibrary.vue` — and consumed by `useMediaCategories`,
+ * which five descendants call. It is a provide rather than prop-drilling
+ * *only* because of that depth; the values themselves cross the package
+ * boundary as props.
+ *
+ * Vue matches injection keys by identity, so a bare-string
+ * `inject("mediaLimits")` never resolves the `Symbol` a host provided — it
+ * yields `undefined` silently, and the library opens with no limits and
+ * nothing to debug. Props make the cross-package boundary typed; a single
+ * exported key makes the intra-package hop impossible to spell two
  * different ways.
  */
-export const PLAN_CONFIG_KEY: InjectionKey<UsePlanConfigReturn> = Symbol(
-  "templaticalMediaPlanConfig",
+export type MediaLimits = Pick<MediaOptions, "maxFileSize" | "mimeTypes"> & {
+  accept?: MediaCategory[];
+};
+
+export const MEDIA_LIMITS_KEY: InjectionKey<MediaLimits> = Symbol(
+  "templaticalMediaLimits",
 );
 
 /**
@@ -50,7 +57,7 @@ export const POPOVER_TARGET_KEY: InjectionKey<Ref<HTMLElement | null>> = Symbol(
  * the translations it loads for its `locale` prop, `standalone/MediaLibrary.vue`
  * from its own `translations` prop.
  *
- * A `Symbol` for the same reason {@link PLAN_CONFIG_KEY} is one, and this key
+ * A `Symbol` for the same reason {@link MEDIA_LIMITS_KEY} is one, and this key
  * exists because that reason was learned the hard way: translations used to be
  * injected under the bare string `"translations"`, which never resolves the
  * `Symbol` `@templatical/editor` provides under the same name. A modal mounted
@@ -69,7 +76,7 @@ export const TRANSLATIONS_KEY: InjectionKey<Ref<MediaTranslations | null>> =
  * too and teleport away from the modal's own DOM, so it travels by provide
  * rather than by prop-drilling through the markup.
  *
- * A `Symbol` for the reason `PLAN_CONFIG_KEY` is one, and the third key added
+ * A `Symbol` for the reason `MEDIA_LIMITS_KEY` is one, and the third key added
  * after learning it: these modals injected the bare string `"tplUiTheme"`, which
  * never resolves the identically-named `Symbol` `@templatical/editor` provides.
  * `data-tpl-theme` was therefore always `undefined` and the media library stayed
@@ -80,3 +87,20 @@ export const TRANSLATIONS_KEY: InjectionKey<Ref<MediaTranslations | null>> =
  */
 export const UI_THEME_KEY: InjectionKey<Readonly<Ref<string | undefined>>> =
   Symbol("templaticalMediaUiTheme");
+
+/**
+ * The host's BCP-47 locale, exactly as it arrived on `MediaLibraryModal`'s
+ * `locale` prop — unresolved, so it may be unsupported or malformed.
+ *
+ * For `Intl` formatting only. Translated *strings* come from
+ * `TRANSLATIONS_KEY`, already resolved to a bundle this package ships; this is
+ * for the labels `Intl` builds itself (dates), where the browser's own locale
+ * would otherwise win and disagree with every string beside them.
+ *
+ * Travels by provide for the reason `UI_THEME_KEY` does: the grid and the
+ * preview panel are deep descendants, and the sub-modals teleport away from the
+ * modal's own DOM. Always format through `formatAbsoluteDate`, which guards the
+ * malformed case.
+ */
+export const UI_LOCALE_KEY: InjectionKey<Readonly<Ref<string | undefined>>> =
+  Symbol("templaticalMediaUiLocale");

@@ -6,16 +6,11 @@ import { schema as committed } from "../src/validate";
 
 describe("schema.json freshness", () => {
   it("matches a fresh generation from @templatical/types", () => {
-    // 30s, not the 5s default: this spawns a TypeScript program over
-    // packages/types via ts-json-schema-generator. It finishes in well under
-    // a second alone, but `pnpm run test` runs 13 packages concurrently and
-    // that is what CI does, so the default timeout flakes under load — a
-    // failure that reads as a stale schema rather than a busy machine.
     // Regenerating in-memory and deep-equalling the committed file makes a
     // stale schema impossible to merge: any block-model change that isn't
     // followed by `generate-schema` fails here.
     expect(committed).toEqual(buildSchema());
-  }, 30_000);
+  });
 
   it("is written exactly as the generator serializes it", () => {
     const onDisk = readFileSync(SCHEMA_PATH, "utf8");

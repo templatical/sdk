@@ -12,9 +12,11 @@ import StorageProgressRing from "../components/media/StorageProgressRing.vue";
 import { useMediaLibrary } from "../composable";
 import { useMediaCategories } from "../composables/useMediaCategories";
 import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
-import type { PlanConfig, PlanFeatures } from "@templatical/types";
-import type { MediaItem } from "../types";
-import type { AuthManager } from "@templatical/core/cloud";
+import type {
+  MediaAsset,
+  MediaCategory,
+  MediaProvider,
+} from "@templatical/types";
 import type { MediaTranslations } from "../i18n";
 import {
   Check,
@@ -25,16 +27,20 @@ import {
   PanelLeft,
   Search,
 } from "@lucide/vue";
-import { computed, onMounted, provide, ref } from "vue";
-import { PLAN_CONFIG_KEY, TRANSLATIONS_KEY } from "../keys";
+import { computed, onMounted, provide, ref, toRef } from "vue";
+import { MEDIA_LIMITS_KEY, TRANSLATIONS_KEY, UI_LOCALE_KEY } from "../keys";
 
 const props = defineProps<{
-  authManager: AuthManager;
-  projectId: string;
-  planConfig: PlanConfig;
+  /**
+   * Storage backend. **A prop, not an injection.** A bare string never
+   * resolves the `Symbol` a host provides, and the miss is silent. A prop
+   * is checked at compile time.
+   */
+  provider: MediaProvider;
   translations: MediaTranslations;
-  onSelect?: (item: MediaItem) => void;
-  onError?: (error: Error) => void;
+  onSelect?: (asset: MediaAsset) => void;
+  accept?: MediaCategory[];
+  locale?: string;
 }>();
 
 const emit = defineEmits<{
@@ -43,48 +49,38 @@ const emit = defineEmits<{
 
 const t = computed(() => props.translations);
 
-// `TRANSLATIONS_KEY`, not the bare string it used to be: a string never
-// resolves the `Symbol` a host provides under the same name. Wrapped in a ref
-// because the key carries one — this shell always has its strings up front.
+// `TRANSLATIONS_KEY`, not the bare string: a string never resolves the
+// `Symbol` a host provides under the same name. Wrapped in a ref because
+// the key carries one — this shell always has its strings up front.
 provide(TRANSLATIONS_KEY, ref(props.translations));
 
-// `useMediaCategories` (called by five descendants) needs a `UsePlanConfigReturn`;
-// the standalone SDK is handed a plain `PlanConfig`, so it adapts one here. Under
-// the shared `PLAN_CONFIG_KEY` — the same key `MediaLibraryModal` provides — so
-// the two hosts cannot drift on how it is spelled. `authManager` and `projectId`
-// are deliberately not provided alongside it: the modal takes them as props, and
-// nothing else in this package injects them.
-const planConfigRef = ref<PlanConfig | null>(props.planConfig);
-const planConfig = {
-  config: planConfigRef,
-  isLoading: ref(false),
-  hasFeature: (feature: keyof PlanFeatures) =>
-    props.planConfig.features[feature] ?? false,
-  features: computed(() => props.planConfig.features),
-  fetchConfig: async () => {},
+provide(
+  UI_LOCALE_KEY,
+  toRef(() => props.locale),
+);
+
+// Getters, not a snapshot: Cloud implements maxFileSize / mimeTypes as
+// getters over plan config that arrives after this component's setup.
+const mediaLimits = {
+  get maxFileSize() {
+    return props.provider.maxFileSize;
+  },
+  get mimeTypes() {
+    return props.provider.mimeTypes;
+  },
+  get accept() {
+    return props.accept;
+  },
 };
-provide(PLAN_CONFIG_KEY, planConfig);
+provide(MEDIA_LIMITS_KEY, mediaLimits);
 
-// Folders and URL import render on every plan: gating Cloud's media *UI* meters
-// no resource Cloud buys, so the media tier is limits-only and every plan gets
-// the same library.
-
-// Storage info
-const storageUsedBytes = computed(
-  () => props.planConfig.storage.used_bytes ?? 0,
-);
-const storageLimitBytes = computed(
-  () => props.planConfig.storage.limit_bytes ?? 0,
-);
-
-// `planConfig` directly, not the provide above: a component never sees its own
-// `provide` (Vue resolves `inject` against the parent chain).
-const { availableCategories } = useMediaCategories(planConfig);
+// `mediaLimits` directly, not the provide above: a component never sees its
+// own `provide` (Vue resolves `inject` against the parent chain).
+const { isAcceptedMimeType, availableCategories } =
+  useMediaCategories(mediaLimits);
 
 const library = useMediaLibrary({
-  projectId: props.projectId,
-  authManager: props.authManager,
-  onError: props.onError,
+  provider: props.provider,
 });
 
 const ui = useMediaLibraryUI({
@@ -92,23 +88,94 @@ const ui = useMediaLibraryUI({
   translations: t,
 });
 
-// Standalone-specific: confirm selection via callback
+const canCreate = computed(() => typeof props.provider.create === "function");
+const canFolders = computed(() => props.provider.folders !== false);
+const canImport = computed(
+  () => typeof props.provider.importFromUrl === "function",
+);
+const canDelete = computed(() => typeof props.provider.delete === "function");
+const canUpdate = computed(() => typeof props.provider.update === "function");
+const canReplace = computed(() => typeof props.provider.replace === "function");
+const canFrequentlyUsed = computed(
+  () => typeof props.provider.frequentlyUsed === "function",
+);
+const canMove = computed(() => {
+  const folders = props.provider.folders;
+  return folders !== false && typeof folders.move === "function";
+});
+const canCreateFolder = computed(() => {
+  const folders = props.provider.folders;
+  return folders !== false && typeof folders.create === "function";
+});
+const canRenameFolder = computed(() => {
+  const folders = props.provider.folders;
+  return folders !== false && typeof folders.update === "function";
+});
+const canDeleteFolder = computed(() => {
+  const folders = props.provider.folders;
+  return folders !== false && typeof folders.delete === "function";
+});
+
+const isInitialLoad = computed(
+  () => library.isLoading.value && ui.displayItems.value.length === 0,
+);
+
+const isConfirmable = computed(() => {
+  const item = library.previewItem.value;
+  if (!item) {
+    return false;
+  }
+  if (!props.accept?.length) {
+    return true;
+  }
+  return isAcceptedMimeType(item.mimeType ?? "", props.accept);
+});
+
+const selectedDeletableCount = computed(() => {
+  if (!canDelete.value) {
+    return 0;
+  }
+  let count = 0;
+  for (const id of library.selectedItems.value) {
+    const item = ui.displayItems.value.find((entry) => entry.id === id);
+    if (item?.canDelete !== false) {
+      count += 1;
+    }
+  }
+  return count;
+});
+
 function confirmSelection(): void {
-  if (!library.previewItem.value) {
+  if (!props.onSelect || !isConfirmable.value || !library.previewItem.value) {
     return;
   }
+  props.onSelect(library.previewItem.value);
+}
 
-  const item = library.previewItem.value;
-  const itemWithSelectedUrl: MediaItem = {
-    ...item,
-    url: ui.selectedUrl.value || item.url,
-  };
-  props.onSelect?.(itemWithSelectedUrl);
+function handleCategoryChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  library.filterByCategory(value ? (value as MediaCategory) : null);
+}
+
+async function handleDeleteClick(): Promise<void> {
+  const next = new Set<string>();
+  for (const id of library.selectedItems.value) {
+    const item = ui.displayItems.value.find((entry) => entry.id === id);
+    if (item?.canDelete !== false) {
+      next.add(id);
+    }
+  }
+  library.selectedItems.value = next;
+  await ui.handleDeleteClick();
 }
 
 onMounted(() => {
+  if (props.accept?.length === 1) {
+    library.categoryFilter.value = props.accept[0];
+  }
   library.loadItems();
   library.loadFrequentlyUsed();
+  library.loadStorage();
   emit("ready");
 });
 </script>
@@ -123,7 +190,6 @@ onMounted(() => {
       border: 1px solid var(--tpl-border);
     "
   >
-    <!-- Header -->
     <div
       class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-between tpl:border-b tpl:px-5 tpl:py-3.5"
       style="border-color: var(--tpl-border)"
@@ -133,15 +199,17 @@ onMounted(() => {
       </h2>
       <div class="tpl:flex tpl:items-center tpl:gap-3">
         <StorageProgressRing
-          :used-bytes="storageUsedBytes"
-          :limit-bytes="storageLimitBytes"
+          v-if="library.storageInfo.value"
+          :used-bytes="library.storageInfo.value.usedBytes"
+          :limit-bytes="library.storageInfo.value.limitBytes"
           :size="22"
         />
         <div class="tpl:relative">
           <input
             :value="ui.searchInput.value"
             type="text"
-            class="tpl:w-52 tpl:rounded-md tpl:border tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-xs tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:outline-none tpl:focus:shadow-[var(--tpl-ring)]"
+            :disabled="isInitialLoad"
+            class="tpl:w-52 tpl:rounded-md tpl:border tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-xs tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:outline-none tpl:focus:shadow-[var(--tpl-ring)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
             style="
               border-color: var(--tpl-border);
               background-color: var(--tpl-bg);
@@ -162,9 +230,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Body -->
     <div class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:overflow-hidden">
-      <!-- Sidebar (only when media folders feature is enabled and toggled on) -->
       <Transition
         enter-active-class="tpl:transition-all tpl:duration-200 tpl:ease-out"
         enter-from-class="tpl:-ml-48 tpl:opacity-0"
@@ -174,7 +240,7 @@ onMounted(() => {
         leave-to-class="tpl:-ml-48 tpl:opacity-0"
       >
         <div
-          v-if="ui.showSidebar.value"
+          v-if="canFolders && ui.showSidebar.value"
           class="tpl:flex tpl:w-48 tpl:shrink-0 tpl:flex-col tpl:border-r"
           style="
             border-color: var(--tpl-border);
@@ -182,10 +248,15 @@ onMounted(() => {
           "
         >
           <MediaFolderTree
-            :folders="library.folders.value"
+            :folders="ui.folderTree.value"
             :current-folder-id="library.currentFolderId.value"
             :view-mode="library.viewMode.value"
-            :has-frequently-used="ui.hasFrequentlyUsed.value"
+            :has-frequently-used="
+              canFrequentlyUsed && ui.hasFrequentlyUsed.value
+            "
+            :can-create-folder="canCreateFolder"
+            :can-rename-folder="canRenameFolder"
+            :can-delete-folder="canDeleteFolder"
             @navigate="library.navigateToFolder"
             @create-folder="ui.handleCreateFolder"
             @rename-folder="ui.handleRenameFolder"
@@ -195,16 +266,15 @@ onMounted(() => {
         </div>
       </Transition>
 
-      <!-- Content area -->
       <div class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:flex-col">
-        <!-- Breadcrumb + Upload -->
         <div
           class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-between tpl:border-b tpl:px-4 tpl:py-2.5"
           style="border-color: var(--tpl-border)"
         >
           <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <!-- Sidebar toggle (only when media folders feature is enabled) -->
             <button
+              v-if="canFolders"
+              data-testid="media-folder-toggle"
               class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:transition-all tpl:duration-150"
               :style="{
                 color: ui.showSidebar.value
@@ -237,13 +307,12 @@ onMounted(() => {
             </template>
             <template v-else>
               <MediaBreadcrumb
-                :folders="library.folders.value"
+                :folders="ui.folderTree.value"
                 :current-folder-id="library.currentFolderId.value"
                 @navigate="library.navigateToFolder"
               />
             </template>
 
-            <!-- Layout toggle -->
             <div
               class="tpl:flex tpl:rounded-md tpl:p-0.5"
               style="
@@ -298,11 +367,7 @@ onMounted(() => {
                 color: var(--tpl-text);
               "
               :value="library.categoryFilter.value ?? ''"
-              @change="
-                library.filterByCategory(
-                  ($event.target as HTMLSelectElement).value || null,
-                )
-              "
+              @change="handleCategoryChange"
             >
               <option value="">
                 {{ t.mediaLibrary.filterAll }}
@@ -315,53 +380,25 @@ onMounted(() => {
                 {{ ui.getCategoryLabel(category) }}
               </option>
             </select>
-            <select
-              class="tpl:rounded-md tpl:border tpl:py-1.5 tpl:pr-7 tpl:pl-2.5 tpl:text-xs tpl:transition-all tpl:duration-150 tpl:outline-none"
-              style="
-                border-color: var(--tpl-border);
-                background-color: var(--tpl-bg);
-                color: var(--tpl-text);
-              "
-              :value="library.sortOption.value"
-              @change="
-                library.sortBy(($event.target as HTMLSelectElement).value)
-              "
-            >
-              <option value="newest">
-                {{ t.mediaLibrary.sortNewest }}
-              </option>
-              <option value="oldest">
-                {{ t.mediaLibrary.sortOldest }}
-              </option>
-              <option value="name_asc">
-                {{ t.mediaLibrary.sortNameAsc }}
-              </option>
-              <option value="name_desc">
-                {{ t.mediaLibrary.sortNameDesc }}
-              </option>
-              <option value="size_asc">
-                {{ t.mediaLibrary.sortSizeAsc }}
-              </option>
-              <option value="size_desc">
-                {{ t.mediaLibrary.sortSizeDesc }}
-              </option>
-            </select>
           </div>
         </div>
 
-        <!-- Scrollable content area -->
         <div class="tpl:min-h-0 tpl:flex-1 tpl:overflow-y-auto">
-          <!-- Upload zone (only in files mode) -->
           <div
-            v-if="library.viewMode.value === 'files'"
+            v-if="
+              library.viewMode.value === 'files' && (canCreate || canImport)
+            "
             class="tpl:px-4 tpl:pt-3"
           >
             <MediaUploadZone
+              v-if="canCreate"
               :is-uploading="library.isUploading.value"
               :upload-progress="library.uploadProgress.value"
               @upload="ui.handleUpload"
             />
             <button
+              v-if="canImport"
+              data-testid="media-import-url"
               class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
               style="
                 border-color: var(--tpl-border);
@@ -375,7 +412,6 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Image grid -->
           <MediaGrid
             :items="ui.displayItems.value"
             :selected-ids="library.selectedItems.value"
@@ -383,18 +419,22 @@ onMounted(() => {
             :has-more="
               library.viewMode.value === 'files' && library.hasMore.value
             "
+            :accept="accept"
             :layout="ui.layoutMode.value"
+            :search-query="library.searchQuery.value"
+            :can-update="canUpdate"
+            :can-replace="canReplace"
             @select="ui.handleSelect"
             @toggle="library.toggleSelection"
             @load-more="library.loadMore"
             @edit="ui.handleEditItem"
             @replace="ui.handleReplaceItem"
+            @confirm="confirmSelection"
           />
         </div>
       </div>
     </div>
 
-    <!-- Import from URL Modal -->
     <MediaImportUrlModal
       :visible="ui.showImportUrlModal.value"
       :is-importing="library.isImportingFromUrl.value"
@@ -403,7 +443,6 @@ onMounted(() => {
       @close="ui.showImportUrlModal.value = false"
     />
 
-    <!-- Edit Modal -->
     <MediaEditModal
       :visible="!!ui.editingItem.value"
       :item="ui.editingItem.value"
@@ -411,7 +450,6 @@ onMounted(() => {
       @close="ui.editingItem.value = null"
     />
 
-    <!-- Replace Modal -->
     <MediaReplaceModal
       :visible="library.showReplaceWarning.value"
       :item="library.pendingReplaceItem.value"
@@ -422,7 +460,6 @@ onMounted(() => {
       @close="library.cancelReplace"
     />
 
-    <!-- Delete Warning Dialog -->
     <Transition
       enter-active-class="tpl:transition tpl:ease-out tpl:duration-150"
       enter-from-class="tpl:opacity-0"
@@ -435,7 +472,7 @@ onMounted(() => {
         v-if="library.showDeleteWarning.value"
         class="tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-lg)]"
         style="
-          background-color: rgba(0, 0, 0, 0.5);
+          background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
         "
@@ -463,6 +500,7 @@ onMounted(() => {
           </p>
           <p
             v-if="ui.hasUsedFiles.value"
+            data-testid="media-delete-usage"
             class="tpl:mb-4 tpl:text-xs"
             style="color: var(--tpl-text-muted)"
           >
@@ -480,7 +518,7 @@ onMounted(() => {
               class="tpl:text-xs"
               style="color: var(--tpl-text)"
             >
-              <template v-if="info.template_count > 0">
+              <template v-if="info.templateCount > 0">
                 <span class="tpl:font-medium">
                   {{
                     ui.displayItems.value.find((i) => i.id === mediaId)
@@ -492,7 +530,7 @@ onMounted(() => {
                   {{
                     t.mediaLibrary.usedInTemplates.replace(
                       "{count}",
-                      info.template_count.toString(),
+                      info.templateCount.toString(),
                     )
                   }}
                 </span>
@@ -532,7 +570,6 @@ onMounted(() => {
       </div>
     </Transition>
 
-    <!-- Footer -->
     <div
       class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-between tpl:border-t tpl:px-5 tpl:py-3"
       style="border-color: var(--tpl-border)"
@@ -540,13 +577,11 @@ onMounted(() => {
       <div class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:items-center tpl:gap-3">
         <MediaPreviewPanel
           v-if="library.previewItem.value"
-          v-model:selected-conversion="ui.selectedConversion.value"
           :item="library.previewItem.value"
-          :folders="library.folders.value"
+          :folders="ui.folderTree.value"
         />
       </div>
       <div class="tpl:flex tpl:items-center tpl:gap-5">
-        <!-- Copy URL + Move group -->
         <div
           v-if="library.selectedItems.value.size > 0"
           class="tpl:flex tpl:items-center tpl:gap-2"
@@ -569,7 +604,7 @@ onMounted(() => {
               ui.copied.value ? t.mediaLibrary.copied : t.mediaLibrary.copyUrl
             }}
           </button>
-          <div class="tpl:relative">
+          <div v-if="canMove" class="tpl:relative">
             <button
               class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
               style="
@@ -583,35 +618,40 @@ onMounted(() => {
             </button>
             <MediaMovePicker
               v-if="ui.showMovePicker.value"
-              :folders="library.folders.value"
+              :folders="ui.folderTree.value"
               :current-folder-id="library.currentFolderId.value"
               @select="ui.handleMoveToFolder"
               @close="ui.showMovePicker.value = false"
             />
           </div>
         </div>
-        <!-- Delete + Select group -->
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <button
-            v-if="library.selectedItems.value.size > 0"
+            v-if="selectedDeletableCount > 0"
+            data-testid="media-delete"
             class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
             style="
               border-color: var(--tpl-danger);
               color: var(--tpl-danger);
               background-color: var(--tpl-danger-light);
             "
-            @click="ui.handleDeleteClick"
+            @click="handleDeleteClick"
           >
             {{ t.mediaLibrary.deleteSelected }}
           </button>
           <button
             v-if="onSelect"
+            data-testid="media-select"
             class="tpl:cursor-pointer tpl:rounded-md tpl:px-4 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
             style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
-            :disabled="!library.previewItem.value"
+            :disabled="!isConfirmable"
             @click="confirmSelection"
           >
-            {{ t.mediaLibrary.selectFile }}
+            {{
+              accept?.length
+                ? t.mediaLibrary.selectImage
+                : t.mediaLibrary.selectFile
+            }}
           </button>
         </div>
       </div>

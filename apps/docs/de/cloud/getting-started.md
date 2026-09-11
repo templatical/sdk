@@ -18,10 +18,10 @@ Dieser Leitfaden führt Sie durch die Einrichtung von Templatical Cloud in Ihrer
 Wenn Sie den Editor noch nicht installiert haben, fügen Sie ihn zusammen mit den Cloud-Abhängigkeiten hinzu:
 
 ```bash
-npm install @templatical/editor @templatical/media-library pusher-js
+npm install @templatical/editor pusher-js
 ```
 
-`@templatical/media-library` stellt den integrierten Medien-Browser bereit und `pusher-js` ermöglicht die Echtzeit-Zusammenarbeit. Beide sind optionale Peer-Abhängigkeiten – nur bei Verwendung von `initCloud()` erforderlich.
+Das Durchsuchen-Modal liegt im Editor. `pusher-js` ermöglicht die Echtzeit-Zusammenarbeit und ist Cloud-only. Installieren Sie [`@templatical/media-library`](/de/backend/media#installation) nur, wenn Sie das eigenständige Medien-SDK außerhalb des Editors einbinden.
 
 ::: info Shadow DOM
 `initCloud()` erbt das gesamte Shadow-DOM-Verhalten vom Editor — standardmäßig innerhalb eines Shadow DOM gemountet für Host-CSS-Isolation. Der Medien-Browser, KI-Panels, Kommentare und die Versionsverlauf-UI teleportieren alle in den Shadow-bewussten Popover-Root des Editors, sodass keine besondere Behandlung erforderlich ist. Übergeben Sie `shadowDom: false`, um zu deaktivieren. Siehe den [Shadow-DOM-Leitfaden](/de/guide/shadow-dom).
@@ -88,7 +88,7 @@ const editor = await initCloud({
 `auth.url` sollte auf den oben erstellten Token-Endpunkt verweisen. Das SDK übernimmt die Token-Erneuerung automatisch.
 
 ::: info `initCloud()` ist `init()` mit Clouds Adaptern
-Es authentifiziert, lädt Ihren Plan, baut Clouds Provider für `templates` / `render` / `versionHistory` / `savedBlocks` / `testEmail` und ruft damit `init()` auf. Hinter beiden Einstiegspunkten stehen dieselbe Editor-Komponente, derselbe Editor-Kern und derselbe Header, und beide liefern denselben Typ zurück — das macht „Cloud implementiert dieselben Schnittstellen, die auch Sie implementieren würden“ überprüfbar statt nur behauptet.
+Es authentifiziert, lädt Ihren Plan, baut Clouds Provider für `templates` / `render` / `versionHistory` / `savedBlocks` / `media` / `testEmail` und ruft damit `init()` auf. Hinter beiden Einstiegspunkten stehen dieselbe Editor-Komponente, derselbe Editor-Kern und derselbe Header, und beide liefern denselben Typ zurück — das macht „Cloud implementiert dieselben Schnittstellen, die auch Sie implementieren würden“ überprüfbar statt nur behauptet.
 
 Eine Folge davon: Der Bootstrap läuft *vor* dem Mounten des Editors. Ein fehlgeschlagener Handshake führt daher zu einem **Reject** von `initCloud()`, statt einen Editor mit Fehler-Overlay zu mounten. Behandeln Sie das wie jedes andere abgelehnte Promise. Bricht die Sitzung später ab — etwa wenn ein Token nicht mehr erneuert werden kann —, erscheint weiterhin ein Overlay, denn dann gibt es einen Editor, der überdeckt werden kann.
 :::

@@ -11,12 +11,18 @@ export default {
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
     migration: {
-      headline: "Already using BeeFree, Unlayer, or hand-coded HTML?",
+      headline:
+        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
       importFromUnlayer: "Import from Unlayer",
       importFromHtml: "Import from HTML",
+      importFromMjml: "Import from MJML",
+      importFromTopol: "Import from Topol",
+      importFromStripo: "Import from Stripo",
+      importFromChamaileon: "Import from Chamaileon",
+      importFromEasyEmailPro: "Import from Easy Email Pro",
     },
   },
   cloudBanner: {
@@ -50,7 +56,7 @@ export default {
       content: "Template block structure",
       theme: "Colors and visual overrides (OKLch)",
       defaults: "blockDefaults, templateDefaults",
-      callbacks: "onRequestMedia, mergeTags.onRequest",
+      callbacks: "media, mergeTags.onRequest",
       locale: "SDK locale passed to init({ locale })",
     },
     localeHint:
@@ -68,7 +74,7 @@ export default {
     callbacksHint:
       'Toggle callback handlers passed to the editor. Changes apply on "Apply & Reload".',
     onRequestMediaDesc:
-      'Opens a demo image picker when the user clicks "Browse Media"',
+      "Backs Browse with a browser-local media library. Uncheck for URL-field-only.",
     onRequestMergeTag:
       "Opens a merge tag picker when the user inserts a merge tag",
     cancel: "Cancel",
@@ -77,8 +83,13 @@ export default {
   importModal: {
     title: "Import existing template",
     sources: {
-      beefree: "From BeeFree",
       unlayer: "From Unlayer",
+      beefree: "From BeeFree",
+      stripo: "From Stripo",
+      topol: "From Topol",
+      chamaileon: "From Chamaileon",
+      easyEmailPro: "From Easy Email Pro",
+      mjml: "From MJML",
       html: "From HTML",
     },
     chooseFile: "Choose file",
@@ -99,12 +110,34 @@ export default {
         "Paste the raw HTML source of an email (MJML output, ESP export, or hand-coded). Best results with table-based layouts.",
       emptyError: "Paste your HTML source or upload a file.",
     },
+    mjml: {
+      description:
+        "Paste an MJML document below. Templatical-generated MJML round-trips exactly; hand-written MJML converts the common tags and falls back to HTML blocks for the rest.",
+      emptyError: "Paste your MJML source or upload a file.",
+    },
+    topol: {
+      description:
+        'Paste a Topol design JSON below — the design itself, not a whole API response. Topol\'s editor hands it to you directly; from its API it sits under "definition" or "json".',
+      emptyError: "Paste your Topol design JSON or upload a file.",
+    },
+    stripo: {
+      description:
+        "Paste Stripo HTML below — a File → HTML export, or the { html, css } object from getTemplateData(). The converter auto-detects which one you passed.",
+      emptyError: "Paste your Stripo HTML or upload a file.",
+    },
+    chamaileon: {
+      description:
+        "Paste a Chamaileon getDocument() JSON below — the persist document, not getEmailHtml() markup.",
+      emptyError: "Paste your Chamaileon document JSON or upload a file.",
+    },
+    easyEmailPro: {
+      description:
+        "Paste an Easy Email Pro JSON below — the persist { subject, content } page, not EditorCore.toMJML() output.",
+      emptyError: "Paste your Easy Email Pro JSON or upload a file.",
+    },
   },
   mergeTagModal: {
     title: "Insert Merge Tag",
-  },
-  mediaModal: {
-    title: "Select Image",
   },
   dataSourceModal: {
     fetching: "Fetching data from endpoint\u2026",
@@ -214,11 +247,6 @@ export default {
     loopItems: "Loop items",
     loopItemsDescription: "Repeat the wrapped content for each order line item",
   },
-  demoImages: {
-    productShot: "Product Shot",
-    teamPhoto: "Team Photo",
-    abstract: "Abstract",
-  },
   templates: {
     product: {
       name: "Product Launch",
@@ -247,6 +275,10 @@ export default {
     sale: {
       name: "Black Friday Sale",
       description: "Promo with product picks and discount code",
+    },
+    rtl: {
+      name: "Arabic Invitation",
+      description: "RTL invitation with merge tags and a two-column section",
     },
   },
   onboarding: {
@@ -295,6 +327,11 @@ export default {
     beefreeJsonContent: "BeeFree JSON content",
     unlayerJsonContent: "Unlayer JSON content",
     htmlSourceContent: "HTML source content",
+    mjmlSourceContent: "MJML source content",
+    topolSourceContent: "Topol design JSON content",
+    stripoSourceContent: "Stripo HTML content",
+    chamaileonSourceContent: "Chamaileon document JSON content",
+    easyEmailProSourceContent: "Easy Email Pro page JSON content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

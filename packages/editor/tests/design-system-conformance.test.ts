@@ -75,6 +75,51 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("Z-index — only utilities Tailwind actually emits", () => {
+    /**
+     * Tailwind 4 derives z-index utilities from the `--z-index-*` theme
+     * namespace. A named layer declared as `--z-modal` therefore emits NO
+     * utility at all, so `tpl:z-modal` compiles to nothing and the element
+     * silently computes `z-index: auto` — while the class string still reads
+     * like a stacking decision. Twelve of these had accumulated, and two
+     * components (`SmallScreenNotice`, `.tpl-popover-root`) had already worked
+     * around it with literal z-index values rather than the scale.
+     *
+     * The rule is to write a number Tailwind emits (`tpl:z-50`, `tpl:z-[100]`)
+     * or nothing at all.
+     *
+     * Inside `.tpl-popover-root` the answer is usually nothing: it is one
+     * stacking context, so DOM order decides and a large number only creates
+     * ties — giving the link dialog a real `10000` puts the merge-tag
+     * suggestion popup (inline 9999) behind it, measured.
+     *
+     * `TplModal` is the exception, and the reason "usually" is not "always":
+     * within that context, paint order is teleport-anchor order, and a modal's
+     * anchor is established when the editor mounts while a link dialog's is
+     * established later, on entering edit mode. So a picker opened FROM the
+     * dialog rendered behind it until `TplModal` took a small real `z-10`.
+     * Ordering that DOM order gets wrong is what earns a number here — never
+     * "raise it until it looks right".
+     */
+    it("no named z-index utilities — they compile to nothing", () => {
+      expect(
+        offenders(/\btpl:(?:[a-z][a-z0-9-]*:)*z-(?![0-9]|\[|auto\b)[a-z][a-z0-9-]*/g),
+      ).toEqual([]);
+    });
+
+    it("no named z layer survives in the theme block", () => {
+      // The tokens are what make the dead utilities look plausible; leaving
+      // them behind invites the classes back.
+      expect(INDEX_CSS()).not.toMatch(/--z-(?:panel|toast|overlay|popover|modal)\s*:/);
+    });
+
+    it("numeric z utilities are actually in use (positive control)", () => {
+      // Without this, the first assertion would also pass if every z utility
+      // were deleted rather than corrected.
+      expect(offenders(/\btpl:z-(?:[0-9]+|\[[0-9]+\])/g).length).toBeGreaterThan(8);
+    });
+  });
+
   describe("Shadow Vocabulary — the five --tpl-shadow-* steps", () => {
     /**
      * DESIGN.md §5 defines depth as five tokens. Tailwind's own shadow scale
@@ -305,6 +350,27 @@ describe("design system conformance", () => {
       // Two wrappers use it today; a bare `:focus-within :is(...)` rule without
       // the marker class would strip the ring from every input in the editor.
       expect(offenders(/tpl-focus-ring-host/g).length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  describe("RTL extras are not scanned into the LTR CSS", () => {
+    /**
+     * Tailwind emits a utility the moment it appears in Vue/CSS source, even
+     * behind a `v-if` / `:class` gate. An RTL-only class therefore ships in
+     * every LTR session's stylesheet. Canvas `dir` already reverses flex
+     * `row` along the inline axis, so the extra class is also a double-reverse
+     * on an RTL canvas.
+     */
+    it("no tpl:flex-row-reverse — dir on the canvas reverses flex row", () => {
+      expect(offenders(/\btpl:flex-row-reverse\b/g)).toEqual([]);
+    });
+
+    it("no tpl:rtl: variant — it would emit into every session's CSS", () => {
+      expect(offenders(/\btpl:rtl:/g)).toEqual([]);
+    });
+
+    it("flex utilities are actually in use (positive control)", () => {
+      expect(offenders(/\btpl:flex\b/g).length).toBeGreaterThan(20);
     });
   });
 

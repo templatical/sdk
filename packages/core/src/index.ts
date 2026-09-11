@@ -36,6 +36,10 @@ export type {
 export { createLocalStorageSavedBlocksProvider } from "./saved-blocks-local";
 export type { LocalStorageSavedBlocksOptions } from "./saved-blocks-local";
 
+// Media (flat gallery over a consumer-supplied storage provider)
+export { createLocalStorageMediaProvider } from "./media-local";
+export type { LocalStorageMediaProviderOptions } from "./media-local";
+
 // Version history (over a consumer-supplied storage provider)
 export { useVersionHistory } from "./version-history";
 export type {

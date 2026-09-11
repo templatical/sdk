@@ -65,7 +65,7 @@ export function useAiRewrite(options: UseAiRewriteOptions): UseAiRewriteReturn {
         body: JSON.stringify({
           content,
           instruction,
-          merge_tags: mergeTags.map((p) => ({
+          mergeTags: mergeTags.map((p) => ({
             label: p.label,
             value: p.value,
           })),
@@ -74,7 +74,7 @@ export function useAiRewrite(options: UseAiRewriteOptions): UseAiRewriteReturn {
 
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error("ai_generation_not_available");
+          throw new Error("aiGenerationNotAvailable");
         }
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || "Failed to rewrite text");

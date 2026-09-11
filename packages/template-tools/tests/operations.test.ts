@@ -56,7 +56,7 @@ describe("purity", () => {
   it("never mutates the input document on success", () => {
     const before = doc([title("t1")]);
     const snapshot = JSON.stringify(before);
-    const result = applyOperation(before, op("add_block", { block: title("t2") }));
+    const result = applyOperation(before, op("addBlock", { block: title("t2") }));
 
     expect(result.ok).toBe(true);
     expect(result.content.blocks).toHaveLength(2);
@@ -65,7 +65,7 @@ describe("purity", () => {
 
   it("returns the original document untouched on failure", () => {
     const before = doc([title("t1")]);
-    const result = applyOperation(before, op("delete_block", { blockId: "nope" }));
+    const result = applyOperation(before, op("deleteBlock", { blockId: "nope" }));
 
     expect(result.ok).toBe(false);
     expect(result.content).toBe(before);
@@ -73,22 +73,22 @@ describe("purity", () => {
 
   it("deep-clones an added block so later edits cannot reach back", () => {
     const block = title("t2");
-    const result = applyOperation(doc([]), op("add_block", { block }));
+    const result = applyOperation(doc([]), op("addBlock", { block }));
     block.content = "mutated after the call";
     expect((result.content.blocks[0] as typeof block).content).toBe("Hi");
   });
 });
 
-describe("add_block", () => {
+describe("addBlock", () => {
   it("appends at the top level by default", () => {
-    const r = applyOperation(doc([title("t1")]), op("add_block", { block: paragraph("p1") }));
+    const r = applyOperation(doc([title("t1")]), op("addBlock", { block: paragraph("p1") }));
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t1", "p1"]);
   });
 
   it("inserts at an explicit index", () => {
     const r = applyOperation(
       doc([title("t1"), title("t2")]),
-      op("add_block", { block: paragraph("p1"), index: 1 }),
+      op("addBlock", { block: paragraph("p1"), index: 1 }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t1", "p1", "t2"]);
   });
@@ -96,7 +96,7 @@ describe("add_block", () => {
   it("appends when the index is past the end", () => {
     const r = applyOperation(
       doc([title("t1")]),
-      op("add_block", { block: paragraph("p1"), index: 99 }),
+      op("addBlock", { block: paragraph("p1"), index: 99 }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t1", "p1"]);
   });
@@ -104,7 +104,7 @@ describe("add_block", () => {
   it("adds into a section column", () => {
     const r = applyOperation(
       doc([section("s1", "2", [[], []])]),
-      op("add_block", {
+      op("addBlock", {
         block: paragraph("p1"),
         targetSectionId: "s1",
         columnIndex: 1,
@@ -116,13 +116,13 @@ describe("add_block", () => {
   });
 
   it("rejects a duplicate id", () => {
-    const r = applyOperation(doc([title("t1")]), op("add_block", { block: title("t1") }));
+    const r = applyOperation(doc([title("t1")]), op("addBlock", { block: title("t1") }));
     expect(r.ok).toBe(false);
     expect(r.error).toContain('id "t1" already exists');
   });
 
   it("rejects a missing block", () => {
-    const r = applyOperation(doc([]), op("add_block", {}));
+    const r = applyOperation(doc([]), op("addBlock", {}));
     expect(r.ok).toBe(false);
     expect(r.error).toContain("needs a `block`");
   });
@@ -130,7 +130,7 @@ describe("add_block", () => {
   it("rejects an out-of-range column", () => {
     const r = applyOperation(
       doc([section("s1", "2", [[], []])]),
-      op("add_block", { block: paragraph("p1"), targetSectionId: "s1", columnIndex: 5 }),
+      op("addBlock", { block: paragraph("p1"), targetSectionId: "s1", columnIndex: 5 }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain("out of range");
@@ -139,7 +139,7 @@ describe("add_block", () => {
   it("rejects targeting a non-section block", () => {
     const r = applyOperation(
       doc([title("t1")]),
-      op("add_block", { block: paragraph("p1"), targetSectionId: "t1" }),
+      op("addBlock", { block: paragraph("p1"), targetSectionId: "t1" }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain("not a section");
@@ -148,18 +148,18 @@ describe("add_block", () => {
   it("rejects an unknown target section", () => {
     const r = applyOperation(
       doc([]),
-      op("add_block", { block: paragraph("p1"), targetSectionId: "ghost" }),
+      op("addBlock", { block: paragraph("p1"), targetSectionId: "ghost" }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain('No block with id "ghost"');
   });
 });
 
-describe("update_block", () => {
+describe("updateBlock", () => {
   it("merges updates into the block", () => {
     const r = applyOperation(
       doc([title("t1", "Before")]),
-      op("update_block", { blockId: "t1", updates: { content: "After" } }),
+      op("updateBlock", { blockId: "t1", updates: { content: "After" } }),
     );
     expect((r.content.blocks[0] as { content: string }).content).toBe("After");
     expect((r.content.blocks[0] as { level: number }).level).toBe(1);
@@ -168,7 +168,7 @@ describe("update_block", () => {
   it("reaches a block nested in a section column", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[title("t1", "Before")]])]),
-      op("update_block", { blockId: "t1", updates: { content: "After" } }),
+      op("updateBlock", { blockId: "t1", updates: { content: "After" } }),
     );
     const s = r.content.blocks[0] as unknown as { children: { content: string }[][] };
     expect(s.children[0][0].content).toBe("After");
@@ -177,7 +177,7 @@ describe("update_block", () => {
   it("refuses to change a block's type", () => {
     const r = applyOperation(
       doc([title("t1")]),
-      op("update_block", { blockId: "t1", updates: { type: "paragraph" } }),
+      op("updateBlock", { blockId: "t1", updates: { type: "paragraph" } }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain("Cannot change a block's type");
@@ -186,18 +186,18 @@ describe("update_block", () => {
   it("rejects an unknown block", () => {
     const r = applyOperation(
       doc([]),
-      op("update_block", { blockId: "ghost", updates: { content: "x" } }),
+      op("updateBlock", { blockId: "ghost", updates: { content: "x" } }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain('No block with id "ghost"');
   });
 });
 
-describe("update_block_style", () => {
+describe("updateBlockStyle", () => {
   it("merges styles instead of replacing them", () => {
     const r = applyOperation(
       doc([title("t1")]),
-      op("update_block_style", {
+      op("updateBlockStyle", {
         blockId: "t1",
         styles: { backgroundColor: "#eeeeee" },
       }),
@@ -208,17 +208,17 @@ describe("update_block_style", () => {
   });
 
   it("rejects a missing styles object", () => {
-    const r = applyOperation(doc([title("t1")]), op("update_block_style", { blockId: "t1" }));
+    const r = applyOperation(doc([title("t1")]), op("updateBlockStyle", { blockId: "t1" }));
     expect(r.ok).toBe(false);
     expect(r.error).toContain("needs a `styles`");
   });
 });
 
-describe("delete_block", () => {
+describe("deleteBlock", () => {
   it("removes a top-level block", () => {
     const r = applyOperation(
       doc([title("t1"), title("t2")]),
-      op("delete_block", { blockId: "t1" }),
+      op("deleteBlock", { blockId: "t1" }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t2"]);
   });
@@ -226,7 +226,7 @@ describe("delete_block", () => {
   it("removes a block from inside a section column", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[title("t1"), paragraph("p1")]])]),
-      op("delete_block", { blockId: "t1" }),
+      op("deleteBlock", { blockId: "t1" }),
     );
     const s = r.content.blocks[0] as unknown as { children: { id: string }[][] };
     expect(s.children[0].map((b) => b.id)).toEqual(["p1"]);
@@ -235,17 +235,17 @@ describe("delete_block", () => {
   it("removes a section together with its children", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[title("t1")]]), title("t2")]),
-      op("delete_block", { blockId: "s1" }),
+      op("deleteBlock", { blockId: "s1" }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t2"]);
   });
 });
 
-describe("move_block", () => {
+describe("moveBlock", () => {
   it("reorders within the top level", () => {
     const r = applyOperation(
       doc([title("t1"), title("t2"), title("t3")]),
-      op("move_block", { blockId: "t3", index: 0 }),
+      op("moveBlock", { blockId: "t3", index: 0 }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["t3", "t1", "t2"]);
   });
@@ -253,7 +253,7 @@ describe("move_block", () => {
   it("moves a top-level block into a section column", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[]]), paragraph("p1")]),
-      op("move_block", { blockId: "p1", index: 0, targetSectionId: "s1" }),
+      op("moveBlock", { blockId: "p1", index: 0, targetSectionId: "s1" }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["s1"]);
     const s = r.content.blocks[0] as unknown as { children: { id: string }[][] };
@@ -263,15 +263,15 @@ describe("move_block", () => {
   it("moves a block out of a column back to the top level", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[paragraph("p1")]])]),
-      op("move_block", { blockId: "p1", index: 0 }),
+      op("moveBlock", { blockId: "p1", index: 0 }),
     );
     expect(r.content.blocks.map((b) => b.id)).toEqual(["p1", "s1"]);
   });
 
   it("rejects a negative or missing index", () => {
     const base = doc([title("t1")]);
-    expect(applyOperation(base, op("move_block", { blockId: "t1" })).ok).toBe(false);
-    expect(applyOperation(base, op("move_block", { blockId: "t1", index: -1 })).ok).toBe(
+    expect(applyOperation(base, op("moveBlock", { blockId: "t1" })).ok).toBe(false);
+    expect(applyOperation(base, op("moveBlock", { blockId: "t1", index: -1 })).ok).toBe(
       false,
     );
   });
@@ -279,7 +279,7 @@ describe("move_block", () => {
   it("rejects moving a block into itself", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[]])]),
-      op("move_block", { blockId: "s1", index: 0, targetSectionId: "s1" }),
+      op("moveBlock", { blockId: "s1", index: 0, targetSectionId: "s1" }),
     );
     expect(r.ok).toBe(false);
   });
@@ -290,38 +290,38 @@ describe("move_block", () => {
     const before = doc([section("s1", "2", [[], []]), paragraph("p1")]);
     const r = applyOperation(
       before,
-      op("move_block", { blockId: "p1", index: 0, targetSectionId: "s1", columnIndex: 9 }),
+      op("moveBlock", { blockId: "p1", index: 0, targetSectionId: "s1", columnIndex: 9 }),
     );
     expect(r.ok).toBe(false);
     expect(r.content.blocks.map((b) => b.id)).toEqual(["s1", "p1"]);
   });
 });
 
-describe("update_settings", () => {
+describe("updateSettings", () => {
   it("merges into existing settings", () => {
     const r = applyOperation(
       doc([]),
-      op("update_settings", { settings: { backgroundColor: "#000000" } }),
+      op("updateSettings", { settings: { backgroundColor: "#000000" } }),
     );
     expect(r.content.settings.backgroundColor).toBe("#000000");
     expect(r.content.settings.width).toBe(600);
   });
 
   it("rejects a missing settings object", () => {
-    const r = applyOperation(doc([]), op("update_settings", {}));
+    const r = applyOperation(doc([]), op("updateSettings", {}));
     expect(r.ok).toBe(false);
   });
 });
 
-describe("set_content", () => {
+describe("setContent", () => {
   it("replaces the whole document", () => {
     const next = doc([title("new")]);
-    const r = applyOperation(doc([title("old")]), op("set_content", { content: next }));
+    const r = applyOperation(doc([title("old")]), op("setContent", { content: next }));
     expect(r.content.blocks.map((b) => b.id)).toEqual(["new"]);
   });
 
   it("rejects content without a blocks array", () => {
-    const r = applyOperation(doc([]), op("set_content", { content: { settings: {} } }));
+    const r = applyOperation(doc([]), op("setContent", { content: { settings: {} } }));
     expect(r.ok).toBe(false);
     expect(r.error).toContain("blocks array");
   });
@@ -344,7 +344,7 @@ describe("section-into-column refusal (issue #292)", () => {
   it("refuses to ADD a section into a column", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[]])]),
-      op("add_block", { block: section("s2", "1", [[]]), targetSectionId: "s1" }),
+      op("addBlock", { block: section("s2", "1", [[]]), targetSectionId: "s1" }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain("cannot be nested inside a section column");
@@ -353,7 +353,7 @@ describe("section-into-column refusal (issue #292)", () => {
   it("refuses to MOVE a section into a column", () => {
     const r = applyOperation(
       doc([section("s1", "1", [[]]), section("s2", "1", [[]])]),
-      op("move_block", { blockId: "s2", index: 0, targetSectionId: "s1" }),
+      op("moveBlock", { blockId: "s2", index: 0, targetSectionId: "s1" }),
     );
     expect(r.ok).toBe(false);
     expect(r.error).toContain("cannot be moved into a section column");
@@ -362,7 +362,7 @@ describe("section-into-column refusal (issue #292)", () => {
   it("still allows a section at the top level", () => {
     const r = applyOperation(
       doc([]),
-      op("add_block", { block: section("s1", "1", [[]]) }),
+      op("addBlock", { block: section("s1", "1", [[]]) }),
     );
     expect(r.ok).toBe(true);
     expect(r.content.blocks.map((b) => b.id)).toEqual(["s1"]);
@@ -373,12 +373,12 @@ describe("operations produce schema-valid documents", () => {
   it("a sequence of operations still validates", () => {
     let content = doc([]);
     const steps = [
-      op("add_block", { block: section("s1", "2", [[], []]) }),
-      op("add_block", { block: title("t1", "Left"), targetSectionId: "s1", columnIndex: 0 }),
-      op("add_block", { block: paragraph("p1", "Right"), targetSectionId: "s1", columnIndex: 1 }),
-      op("update_block", { blockId: "t1", updates: { content: "Updated" } }),
-      op("update_block_style", { blockId: "p1", styles: { backgroundColor: "#f5f5f5" } }),
-      op("update_settings", { settings: { backgroundColor: "#fafafa" } }),
+      op("addBlock", { block: section("s1", "2", [[], []]) }),
+      op("addBlock", { block: title("t1", "Left"), targetSectionId: "s1", columnIndex: 0 }),
+      op("addBlock", { block: paragraph("p1", "Right"), targetSectionId: "s1", columnIndex: 1 }),
+      op("updateBlock", { blockId: "t1", updates: { content: "Updated" } }),
+      op("updateBlockStyle", { blockId: "p1", styles: { backgroundColor: "#f5f5f5" } }),
+      op("updateSettings", { settings: { backgroundColor: "#fafafa" } }),
     ];
     for (const step of steps) {
       const result = applyOperation(content, step);

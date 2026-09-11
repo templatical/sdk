@@ -19,6 +19,8 @@
 
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { Ref } from "vue";
 import { resolveAutoSave } from "../src/types/auto-save";
 
@@ -47,6 +49,7 @@ const fakeProviders = {
   },
   savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
   testEmail: { send: vi.fn() },
+  media: { list: vi.fn(), create: false, update: false, delete: false },
 };
 
 let initFn: typeof import("../src/index").init;
@@ -198,6 +201,19 @@ describe("initCloud — a thin wrapper over init()", () => {
     expect(config.versionHistory).toBe(fakeProviders.versionHistory);
     expect(config.savedBlocks).toBe(fakeProviders.savedBlocks);
     expect(config.testEmail).toBe(fakeProviders.testEmail);
+    expect(config.media).toBe(fakeProviders.media);
+  });
+
+  it("forwards onRequestMedia as the UI override", async () => {
+    const onRequestMedia = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const p = initCloudFn(cloudConfig(container, { onRequestMedia }));
+    await vi.waitFor(() => expect(captured.props).not.toBeNull());
+    await p;
+    const config = captured.props!.config as Record<string, unknown>;
+    expect(config.onRequestMedia).toBe(onRequestMedia);
+    expect(config.media).toBe(fakeProviders.media);
   });
 
   it("defaults autosave on, at the shared default cadence", async () => {
@@ -495,6 +511,43 @@ describe("OSS init — instance methods", () => {
       await expect(instance.toHtml()).resolves.toBe(
         "<html><mjml>mock</mjml></html>",
       );
+    });
+
+    // The test-email dialog's `includeMjml` payload must come off the same
+    // resolution ladder as `editor.toMjml()`. Rendering it locally instead would
+    // mean testing a message the send pipeline never produces.
+    it("hands the test-email feature the resolved MJML path, not the bundled renderer", async () => {
+      const toMjml = vi.fn(() => Promise.resolve("<mjml>provider</mjml>"));
+      await mountWithRender({ toMjml });
+
+      const renderMjml = captured.props!.renderMjml as () => Promise<string>;
+      await expect(renderMjml()).resolves.toBe("<mjml>provider</mjml>");
+
+      const usesLocalRenderer = captured.props!
+        .usesLocalRenderer as () => boolean;
+      expect(usesLocalRenderer()).toBe(false);
+    });
+
+    it("reports the bundled renderer as the MJML path when the provider omits toMjml", async () => {
+      await mountWithRender({ compileMjml: vi.fn() });
+
+      const usesLocalRenderer = captured.props!
+        .usesLocalRenderer as () => boolean;
+      expect(usesLocalRenderer()).toBe(true);
+    });
+
+    // The behavioural test above still passes if someone reintroduces a local
+    // render inside Editor.vue as a *fallback* (`props.renderMjml ?? local`),
+    // which is the shape the bug had. Owning no render path at all is what makes
+    // the divergence unreachable rather than merely unused.
+    it("leaves Editor.vue with no MJML path of its own", () => {
+      const source = readFileSync(
+        join(import.meta.dirname, "..", "src", "Editor.vue"),
+        "utf8",
+      );
+
+      expect(source).not.toContain("toMjmlForInstance");
+      expect(source).toContain("props.renderMjml");
     });
 
     it("rejects toHtml with no render provider — there is no local HTML path", async () => {

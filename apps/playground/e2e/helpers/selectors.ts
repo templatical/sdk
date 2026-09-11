@@ -22,6 +22,7 @@ export const SELECTORS = {
   editorContainer: '[data-testid="editor-container"]',
   canvasWrapper: '[data-testid="canvas-wrapper"]',
   canvasBody: ".tpl-body",
+  canvas: ".tpl-canvas",
   canvasBlocks: ".tpl-canvas-blocks",
   canvasEmpty: ".tpl-canvas-empty",
   canvasEmptyIcon: ".tpl-canvas-empty-icon",
@@ -128,6 +129,13 @@ export const SELECTORS = {
   savedBlocksBrowserClose: '[data-testid="saved-blocks-browser-close"]',
   savedBlocksPreviewCanvas: '[data-testid="block-preview-canvas"]',
 
+  // Media library (BYO; playground's localStorage provider is on by default)
+  imageDropZone: '[data-testid="image-drop-zone"]',
+  imageBrowseMedia: 'button[aria-label="Browse Media"]',
+  mediaLibraryModal: '[data-testid="media-library-modal"]',
+  mediaLibraryItem: '[data-testid="media-library-item"]',
+  mediaConfirm: '[data-testid="media-confirm"]',
+
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',
 
@@ -140,6 +148,18 @@ export const SELECTORS = {
   paragraphSpacing: '[data-testid="paragraph-spacing"]',
   rightPanelSettings: "#tpl-tabpanel-settings",
   templateSettingsBackground: '[data-testid="template-settings-background"]',
+  // Settings-panel cards and fields. `templateSettings.fields` narrows which of
+  // them render, so a spec asserting the allowlist needs both levels: a card
+  // goes only when every one of its fields does.
+  templateSettingsCard: (card: string) =>
+    `[data-testid="template-settings-card-${card}"]`,
+  templateSettingsLocale: '[data-testid="template-settings-locale"]',
+  templateSettingsDirection: '[data-testid="template-settings-direction"]',
+  templateSettingsPreheader: '[data-testid="template-settings-preheader"]',
+  templateSettingsTextColor: '[data-testid="template-settings-text-color"]',
+  templateSettingsLinkColor: '[data-testid="template-settings-link-color"]',
+  templateSettingsFontFamily: '[data-testid="template-settings-font-family"]',
+  templateSettingsWidthPreset: '[data-testid="template-settings-width-preset"]',
   rightPanelIssues: "#tpl-tabpanel-issues",
 
   // Text editing
@@ -214,6 +234,7 @@ export const SELECTORS = {
 
   // Built-in merge tag picker (SDK)
   mergeTagPickerModal: '[data-testid="merge-tag-picker-modal"]',
+  logicPickerModal: '[data-testid="logic-picker-modal"]',
   mergeTagPickerSearch: '[data-testid="merge-tag-picker-search"]',
   mergeTagPickerList: '[data-testid="merge-tag-picker-list"]',
   mergeTagPickerItem: '[data-testid="merge-tag-picker-item"]',
@@ -221,6 +242,12 @@ export const SELECTORS = {
   mergeTagPickerCancel: '[data-testid="merge-tag-picker-cancel"]',
   mergeTagPickerClose: '[data-testid="merge-tag-picker-close"]',
   mergeTagPickerEmpty: '[data-testid="merge-tag-picker-empty"]',
+
+  // Rich-text link dialog (paragraph + title share it)
+  linkDialog: '[data-testid="link-dialog"]',
+  /** The URL field's MergeTagInput wrapper — its `input` is the text box. */
+  linkDialogUrl: '[data-testid="link-dialog-url"]',
+  linkDialogSubmit: '[data-testid="link-dialog-submit"]',
 
   // Playground's consumer-owned onRequest modal (separate from SDK picker)
   playgroundMergeTagModal: '[data-testid="playground-merge-tag-modal"]',
@@ -232,18 +259,33 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer)
+  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
   chooserImportHtml: '[data-testid="chooser-import-html"]',
+  chooserImportMjml: '[data-testid="chooser-import-mjml"]',
+  chooserImportTopol: '[data-testid="chooser-import-topol"]',
+  chooserImportStripo: '[data-testid="chooser-import-stripo"]',
+  chooserImportChamaileon: '[data-testid="chooser-import-chamaileon"]',
+  chooserImportEasyEmailPro: '[data-testid="chooser-import-easy-email-pro"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
   importTabHtml: '[data-testid="import-tab-html"]',
+  importTabMjml: '[data-testid="import-tab-mjml"]',
+  importTabTopol: '[data-testid="import-tab-topol"]',
+  importTabStripo: '[data-testid="import-tab-stripo"]',
+  importTabChamaileon: '[data-testid="import-tab-chamaileon"]',
+  importTabEasyEmailPro: '[data-testid="import-tab-easy-email-pro"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
+  importTextareaMjml: '[data-testid="import-textarea-mjml"]',
+  importTextareaTopol: '[data-testid="import-textarea-topol"]',
+  importTextareaStripo: '[data-testid="import-textarea-stripo"]',
+  importTextareaChamaileon: '[data-testid="import-textarea-chamaileon"]',
+  importTextareaEasyEmailPro: '[data-testid="import-textarea-easy-email-pro"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;

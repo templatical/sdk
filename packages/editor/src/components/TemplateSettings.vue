@@ -3,7 +3,10 @@ import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import { useI18n } from "../composables/useI18n";
-import type { TemplateSettings } from "@templatical/types";
+import {
+  resolveContentDirection,
+  type TemplateSettings,
+} from "@templatical/types";
 import {
   cardClass,
   inputClass,
@@ -13,8 +16,18 @@ import {
   DEFAULT_BG_COLOR,
 } from "../constants/styleConstants";
 import { Circle, Eye, Globe, Info, Square } from "@lucide/vue";
-import { computed } from "vue";
-import { FONTS_MANAGER_KEY, requireInject } from "../keys";
+import { computed, inject } from "vue";
+import {
+  FONTS_MANAGER_KEY,
+  TEMPLATE_SETTINGS_FIELDS_KEY,
+  requireInject,
+} from "../keys";
+import {
+  ALL_TEMPLATE_SETTINGS_FIELDS,
+  TEMPLATE_SETTINGS_FIELD_CARDS,
+  type TemplateSettingsCard,
+  type TemplateSettingsField,
+} from "../utils/templateSettingsFields";
 
 const props = defineProps<{
   settings: TemplateSettings;
@@ -47,6 +60,40 @@ const widthPresets = [
   { value: 700, label: "700px" },
   { value: 800, label: "800px" },
 ];
+
+// Default to every field: the key is absent whenever a consumer configured no
+// `templateSettings`, and that config only ever narrows.
+const allowedFields = inject(
+  TEMPLATE_SETTINGS_FIELDS_KEY,
+  new Set(ALL_TEMPLATE_SETTINGS_FIELDS),
+);
+
+function shows(field: TemplateSettingsField): boolean {
+  return allowedFields.has(field);
+}
+
+// A card earns its heading only if it still has something to hold. Derived from
+// the field→card map rather than hand-listed per card, so a new setting joins
+// its card's gate the moment it joins the map.
+function showsCard(card: TemplateSettingsCard): boolean {
+  return ALL_TEMPLATE_SETTINGS_FIELDS.some(
+    (field) => TEMPLATE_SETTINGS_FIELD_CARDS[field] === card && shows(field),
+  );
+}
+
+// Tips is advice about the settings, so it rides on there being at least one:
+// a Settings tab holding nothing but advice reads as a bug. Plain const, like
+// the two helpers above — the allowlist is init-time config, not reactive
+// state, and a `computed` here would imply it can change.
+const showsAnyField = allowedFields.size > 0;
+
+const isRtl = computed(() => resolveContentDirection(props.settings) === "rtl");
+
+// Cards lay their contents out with a flex gap rather than a bottom margin on
+// every child but the last. A margin leaves dead space under whichever field
+// became last once an excluded one is dropped, and which field that is depends
+// on the consumer's allowlist — so there is no "last" to special-case.
+const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
 </script>
 
 <template>
@@ -57,9 +104,13 @@ const widthPresets = [
       class="tpl:flex tpl:flex-1 tpl:flex-col tpl:gap-3 tpl:overflow-y-auto tpl:p-4"
     >
       <!-- Layout card -->
-      <div :class="cardClass">
+      <div
+        v-if="showsCard('layout')"
+        :class="cardStackClass"
+        data-testid="template-settings-card-layout"
+      >
         <div
-          class="tpl:mb-3.5 tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <Square
             class="tpl:text-[var(--tpl-text-muted)]"
@@ -69,7 +120,7 @@ const widthPresets = [
           <span>{{ t.templateSettings.layout }}</span>
         </div>
 
-        <div class="tpl:mb-3.5">
+        <div v-if="shows('width')" data-testid="template-settings-width-preset">
           <label :class="labelClass">{{
             t.templateSettings.widthPreset
           }}</label>
@@ -101,7 +152,7 @@ const widthPresets = [
           </div>
         </div>
 
-        <div>
+        <div v-if="shows('width')" data-testid="template-settings-width-custom">
           <label :class="labelClass">{{
             t.templateSettings.customWidth
           }}</label>
@@ -124,9 +175,13 @@ const widthPresets = [
       </div>
 
       <!-- Appearance card -->
-      <div :class="cardClass">
+      <div
+        v-if="showsCard('appearance')"
+        :class="cardStackClass"
+        data-testid="template-settings-card-appearance"
+      >
         <div
-          class="tpl:mb-3.5 tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <Circle
             class="tpl:text-[var(--tpl-text-muted)]"
@@ -136,7 +191,10 @@ const widthPresets = [
           <span>{{ t.templateSettings.appearance }}</span>
         </div>
 
-        <div class="tpl:mb-3.5" data-testid="template-settings-background">
+        <div
+          v-if="shows('backgroundColor')"
+          data-testid="template-settings-background"
+        >
           <label :class="labelClass">{{
             t.templateSettings.backgroundColor
           }}</label>
@@ -147,7 +205,10 @@ const widthPresets = [
           />
         </div>
 
-        <div class="tpl:mb-3.5">
+        <div
+          v-if="shows('textColor')"
+          data-testid="template-settings-text-color"
+        >
           <label :class="labelClass">{{ t.templateSettings.textColor }}</label>
           <ColorPicker
             :model-value="settings.textColor ?? ''"
@@ -156,7 +217,10 @@ const widthPresets = [
           />
         </div>
 
-        <div class="tpl:mb-3.5">
+        <div
+          v-if="shows('linkColor')"
+          data-testid="template-settings-link-color"
+        >
           <label :class="labelClass">{{ t.templateSettings.linkColor }}</label>
           <ColorPicker
             :model-value="settings.linkColor ?? ''"
@@ -167,7 +231,10 @@ const widthPresets = [
           />
         </div>
 
-        <div class="tpl:mb-3.5">
+        <div
+          v-if="shows('linkUnderline')"
+          data-testid="template-settings-link-underline"
+        >
           <ToggleSwitch
             class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             :model-value="settings.linkUnderline"
@@ -176,7 +243,10 @@ const widthPresets = [
           />
         </div>
 
-        <div>
+        <div
+          v-if="shows('fontFamily')"
+          data-testid="template-settings-font-family"
+        >
           <label :class="labelClass">{{ t.templateSettings.fontFamily }}</label>
           <select
             :class="inputClass"
@@ -199,9 +269,13 @@ const widthPresets = [
       </div>
 
       <!-- Language card -->
-      <div :class="cardClass">
+      <div
+        v-if="showsCard('language')"
+        :class="cardStackClass"
+        data-testid="template-settings-card-language"
+      >
         <div
-          class="tpl:mb-3.5 tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <Globe
             class="tpl:text-[var(--tpl-text-muted)]"
@@ -211,7 +285,7 @@ const widthPresets = [
           <span>{{ t.templateSettings.language }}</span>
         </div>
 
-        <div>
+        <div v-if="shows('locale')" data-testid="template-settings-locale">
           <label :class="labelClass">{{
             t.templateSettings.contentLocale
           }}</label>
@@ -236,12 +310,35 @@ const widthPresets = [
             {{ t.templateSettings.contentLocaleHint }}
           </p>
         </div>
+
+        <div
+          v-if="shows('direction')"
+          data-testid="template-settings-direction"
+        >
+          <ToggleSwitch
+            class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+            :model-value="isRtl"
+            :label="t.templateSettings.contentDirection"
+            @update:model-value="
+              emit('update', { direction: $event ? 'rtl' : 'ltr' })
+            "
+          />
+          <p
+            class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.templateSettings.contentDirectionHint }}
+          </p>
+        </div>
       </div>
 
       <!-- Preheader card -->
-      <div :class="cardClass">
+      <div
+        v-if="showsCard('preheader')"
+        :class="cardStackClass"
+        data-testid="template-settings-card-preheader"
+      >
         <div
-          class="tpl:mb-3.5 tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <Eye
             class="tpl:text-[var(--tpl-text-muted)]"
@@ -251,7 +348,10 @@ const widthPresets = [
           <span>{{ t.templateSettings.preheaderText }}</span>
         </div>
 
-        <div>
+        <div
+          v-if="shows('preheaderText')"
+          data-testid="template-settings-preheader"
+        >
           <MergeTagTextarea
             :model-value="settings.preheaderText ?? ''"
             :placeholder="t.templateSettings.preheaderTextPlaceholder"
@@ -283,7 +383,9 @@ const widthPresets = [
 
       <!-- Tips card -->
       <div
+        v-if="showsAnyField"
         class="tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-3"
+        data-testid="template-settings-card-tips"
       >
         <div
           class="tpl:mb-2.5 tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text-muted)]"

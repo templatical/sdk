@@ -20,7 +20,13 @@
 // assert both committed copies are fresh and identical
 // (tests/schema-freshness.test.ts, tests/schema-parity.test.ts) — that guard
 // makes a stale or diverged schema impossible to merge.
-import { createGenerator } from "ts-json-schema-generator";
+import ts from "typescript";
+import {
+  DEFAULT_CONFIG,
+  SchemaGenerator,
+  createFormatter,
+  createParser,
+} from "ts-json-schema-generator";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -40,7 +46,14 @@ export const SKILL_SCHEMA_PATH = resolve(
 // packages/types/src, so an isolated program built from the entry file is
 // sufficient. `skipTypeCheck` avoids failing on lib types absent in isolation.
 // `sortProps` keeps output deterministic so the freshness test is stable.
+//
+// Spreading DEFAULT_CONFIG is load-bearing and its absence is SILENT:
+// building the generator by hand (below) skips the merge `createGenerator`
+// does for us, and an unset `jsDoc` drops every `description` from the
+// output — a schema that still validates the same templates, so only the
+// freshness diff catches it.
 const config = {
+  ...DEFAULT_CONFIG,
   path: resolve(repoRoot, "packages/types/src/template.ts"),
   type: "TemplateContent",
   schemaId: "https://templatical.com/schema/template-content.json",
@@ -50,9 +63,42 @@ const config = {
   skipTypeCheck: true,
 };
 
+// TemplateContent is JSON-serializable data — objects, arrays, unions, string
+// and number literals — so `lib.es5.d.ts` covers every global it can reference.
+// Anything needing a later lib (Map, Promise, Date) could not survive a JSON
+// round-trip and does not belong in the block model.
+//
+// This is why the program is built here instead of via `createGenerator`, whose
+// own program loads TypeScript's full default lib: 63 `lib.*.d.ts` files of DOM
+// and ESNext declarations, none of which this schema reads. Measured 66 source
+// files -> 6, and the cost is I/O, so it is worst exactly where it matters — on
+// a cold CI runner, where the test that regenerates this schema was landing at
+// 4902ms against vitest's 5000ms default.
+const COMPILER_OPTIONS = {
+  target: ts.ScriptTarget.ES2022,
+  module: ts.ModuleKind.ESNext,
+  moduleResolution: ts.ModuleResolutionKind.Bundler,
+  lib: ["lib.es5.d.ts"],
+  types: [],
+  skipLibCheck: true,
+  strict: true,
+  noEmit: true,
+};
+
+/** The TypeScript program the schema is derived from. */
+export function createSchemaProgram() {
+  return ts.createProgram([config.path], COMPILER_OPTIONS);
+}
+
 /** Build the JSON Schema for TemplateContent from the canonical types. */
 export function buildSchema() {
-  return createGenerator(config).createSchema(config.type);
+  const program = createSchemaProgram();
+  return new SchemaGenerator(
+    program,
+    createParser(program, config),
+    createFormatter(config),
+    config,
+  ).createSchema(config.type);
 }
 
 /** Serialize a schema object the same way the committed file is written. */

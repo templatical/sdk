@@ -58,7 +58,9 @@ const editor = await init({
 
 ### `onRequestMedia`
 
-Wird aufgerufen, wenn der Benutzer klickt, um ein Bild auszuwählen (z. B. in den Einstellungen des Bild-Blocks), **oder eine Bilddatei auf einen Bildblock bzw. ein Bildfeld zieht**. Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alt-Text des Bildes automatisch aus.
+UI-Überschreibung für die Medienauswahl. Wird aufgerufen, wenn der Benutzer auf Durchsuchen klickt (z. B. in den Einstellungen des Bild-Blocks), **oder eine Bilddatei auf einen Bildblock bzw. ein Bildfeld zieht**. Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alt-Text des Bildes automatisch aus.
+
+Sie hat Vorrang vor einem `media`-Provider, wenn beide gesetzt sind — der Host hat ein Widget mitgebracht, das eingebaute Modal öffnet sich also nie. Der Speicher selbst ist der Schlüssel [`media`](/de/backend/media).
 
 Bei Drag-and-Drop landet die abgelegte Datei in `context.files` — laden Sie sie hoch und geben Sie die gehostete URL zurück. Siehe [Per Drag-and-Drop hochladen](/de/guide/images#per-drag-and-drop-hochladen) für das vollständige Muster.
 
@@ -75,7 +77,7 @@ const editor = await init({
 });
 ```
 
-Wenn Sie `onRequestMedia` nicht bereitstellen, zeigt der Editor ein Texteingabefeld an, in dem Benutzer Bild-URLs direkt eingeben oder einfügen können.
+Wenn Sie weder `onRequestMedia` noch `media` bereitstellen, zeigt der Editor ein Texteingabefeld an, in dem Benutzer Bild-URLs direkt eingeben oder einfügen können.
 
 ### `mergeTags.onRequest`
 
@@ -174,6 +176,24 @@ const editor = await init({
 ```
 
 `onRestored` erhält das resultierende `Template`, zu dem `restore()` auflöst, nicht die `TemplateVersion`, aus der wiederhergestellt wurde. Die vollständige Referenz finden Sie unter [Events](/de/backend/version-history#events).
+
+## Medien-Ereignisse
+
+Ein `media`-Provider trägt Events über `list` / `create` / `update` / `delete` hinaus — `onCreated`, `onUpdated` und `onDeleted` —, die ausgelöst werden, sobald die zugehörige Mutation auflöst. Es gibt keine medienbezogene Liste auf Editor-Ebene: ein Drop-`create` löst `onCreated` mit dem gespeicherten Asset aus und stellt keine Listenzeile voran.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  media: {
+    ...myMediaProvider,
+    onDeleted(asset) {
+      logRemoval(asset.id);
+    },
+  },
+});
+```
+
+`onDeleted` erhält das entfernte `MediaAsset` selbst, keine ID — `delete` löst zu nichts auf, daher erhält der Handler den Eintrag, den das Modal vor dem Entfernen aus seiner geladenen Listing erfasst hat. Die vollständige Referenz finden Sie unter [Events](/de/backend/media#events).
 
 ## Test-E-Mail-Ereignisse
 

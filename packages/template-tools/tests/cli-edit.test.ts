@@ -70,7 +70,7 @@ const read = () => JSON.parse(readFileSync(file, "utf8"));
 describe("edit command", () => {
   it("applies a single operation and writes the file", () => {
     const op = JSON.stringify({
-      operation: "update_block",
+      operation: "updateBlock",
       data: { blockId: "button_1", updates: { text: "Shop now" } },
     });
     expect(runEdit(parseArgs(["edit", file, "--op", op]))).toBe(0);
@@ -82,8 +82,8 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "update_block", data: { blockId: "title_1", updates: { content: "One" } } },
-        { operation: "update_block", data: { blockId: "title_1", updates: { content: "Two" } } },
+        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "One" } } },
+        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "Two" } } },
       ]),
     );
     expect(runEdit(parseArgs(["edit", file, "--ops", ops]))).toBe(0);
@@ -96,9 +96,9 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "update_block", data: { blockId: "title_1", updates: { content: "One" } } },
-        { operation: "update_block", data: { blockId: "does_not_exist", updates: { content: "x" } } },
-        { operation: "update_block", data: { blockId: "button_1", updates: { text: "Three" } } },
+        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "One" } } },
+        { operation: "updateBlock", data: { blockId: "does_not_exist", updates: { content: "x" } } },
+        { operation: "updateBlock", data: { blockId: "button_1", updates: { text: "Three" } } },
       ]),
     );
     expect(() => runEdit(parseArgs(["edit", file, "--ops", ops]))).toThrow(
@@ -118,7 +118,7 @@ describe("edit command", () => {
     writeFileSync(file, `${JSON.stringify(withSection, null, 2)}\n`, "utf8");
     const before = readFileSync(file, "utf8");
     const op = JSON.stringify({
-      operation: "add_block",
+      operation: "addBlock",
       data: {
         targetSectionId: "sec_1",
         block: { id: "sec_2", type: "section", columns: "1", children: [[]], styles: { padding: pad } },
@@ -131,7 +131,7 @@ describe("edit command", () => {
   it("writes nothing when the result fails structural validation", () => {
     const before = readFileSync(file, "utf8");
     const op = JSON.stringify({
-      operation: "update_block",
+      operation: "updateBlock",
       data: { blockId: "button_1", updates: { url: 42 } },
     });
     expect(() => runEdit(parseArgs(["edit", file, "--op", op]))).toThrow(
@@ -143,7 +143,7 @@ describe("edit command", () => {
   it("reports the applied count under --json", () => {
     setJsonMode(true);
     const op = JSON.stringify({
-      operation: "update_block",
+      operation: "updateBlock",
       data: { blockId: "title_1", updates: { content: "X" } },
     });
     runEdit(parseArgs(["edit", file, "--op", op, "--json"]));
@@ -170,7 +170,7 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "update_block", data: { blockId: "title_1", updates: { content: "Should not apply" } } },
+        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "Should not apply" } } },
       ]),
     );
     expect(() =>

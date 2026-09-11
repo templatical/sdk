@@ -24,11 +24,11 @@ Nothing to configure — this one is on by default. Cloud supplies the provider,
 
 **One library per project**, shared by everyone on it — a block one teammate saves is in another's browser on their next open. That is the part with no OSS equivalent: not the storage, but the fact that it is already shared.
 
-All four are enabled. Cloud's library is gated on the `saved_modules` plan feature.
+All four are enabled. Cloud's library is gated on the `savedModules` plan feature.
 
 ## Bringing your own
 
-You can, and this is one of only two providers `initCloud()` accepts as a full swap — `testEmail` is the other. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
+You can, and `initCloud()` accepts this as a full swap, the same way it accepts `testEmail` and `media`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
 
 ```ts
 await initCloud({ container, auth });                             // Cloud's library

@@ -178,7 +178,7 @@ Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanw
 
 Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
 
-Die Autovervollständigung funktioniert sowohl in Titel- und Absatz-Rich-Text-Blöcken **als auch** in jedem Eingabe- und Textbereichsfeld mit Merge-Tag-Unterstützung (Schaltflächen- und Bild-URLs, Bild-Alt-Text, Video- und Menü-Links, Template-Einstellungen und Textfelder benutzerdefinierter Blöcke). Popup, Filterung, Tastaturnavigation und Positionierung sind auf beiden Oberflächen identisch.
+Die Autovervollständigung funktioniert sowohl in Titel- und Absatz-Rich-Text-Blöcken **als auch** in jedem Eingabe- und Textbereichsfeld mit Merge-Tag-Unterstützung (Schaltflächen- und Bild-URLs, Bild-Alt-Text, Video- und Menü-Links, das URL-Feld des Rich-Text-Link-Dialogs, Template-Einstellungen und Textfelder benutzerdefinierter Blöcke). Popup, Filterung, Tastaturnavigation und Positionierung sind auf beiden Oberflächen identisch.
 
 Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `label` als auch `value` ab. Die Liste ist auf 10 Ergebnisse begrenzt.
 
@@ -316,6 +316,25 @@ Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten,
 Merge-Tags sind nicht auf Titel- und Absatzblöcke beschränkt. Der Editor erkennt und hebt Merge-Tags auch in anderen Blockeingaben hervor — Schaltflächentext, Schaltflächen-URL, Bild-URL, Bild-Alternativtext und Link-href-Werte. Das gleiche Label-Ersetzungs- und Tooltip-Verhalten gilt in diesen Feldern.
 
 <img src="/images/button-merge-tag.png" alt="Merge-Tag in einer Schaltflächen-URL" style="max-width: 360px;" />
+
+### Link-URLs
+
+Der Dialog **Link einfügen** in einem Titel- oder Absatzblock nimmt Merge-Tags in seinem URL-Feld entgegen — über dieselbe Einfüge-Schaltfläche, denselben Picker und dieselbe Autovervollständigung wie jedes andere URL-Feld. Ein Link ist häufig empfänger- oder ereignisspezifisch, seine URL also oft ein Tag statt eines Literals.
+
+Eine ohne Schema eingegebene URL wird mit `https://` vervollständigt — außer sie beginnt mit einem Merge-Tag, dann wird sie genau so gespeichert, wie Sie sie geschrieben haben:
+
+```text
+Eingabe                          gespeicherter href
+──────────────────────────────   ──────────────────────────────
+{{event_url}}                 →  {{event_url}}
+{{base_url}}/events/42        →  {{base_url}}/events/42
+https://acme.com/{{event_id}} →  https://acme.com/{{event_id}}
+acme.com/promo                →  https://acme.com/promo
+```
+
+Das Tag liefert sein eigenes Schema; ein vorangestelltes Schema ergäbe `https://https://…`. Die Schema-Positivliste greift weiterhin zuerst, ein Tag kann also kein abgelehntes Schema (`javascript:`, `data:`) daran vorbeischmuggeln.
+
+Ein Tag in einem `href` bleibt beim Export unverändert — siehe [Tokens in geladenen Inhalten](#tokens-in-geladenen-inhalten) — das sendende System löst es also auf, genau wie bei einer Schaltflächen-URL.
 
 ## Merge-Tags außerhalb des Editors verwenden
 

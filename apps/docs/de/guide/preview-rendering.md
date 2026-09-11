@@ -165,6 +165,29 @@ Irgendetwas rendert Ihre Aussendungen bereits — Ihre Versandplattform, Ihr eig
 
 Es ist außerdem der einzige Weg, wenn sich Ihre Template-Sprache im Browser überhaupt nicht auswerten lässt — was jede von Ihnen konfigurierte eigene `syntax` einschließt.
 
+### Zeigen, was Ihre Plattform beim Versand anhängt
+
+Wenn Ihre Anwendung jeder E-Mail nach dem Editor etwas hinzufügt — ein Marken-Abzeichen, eine rechtliche Fußzeile, einen Abmelde-Hinweis, eine Logo-Kopfzeile —, sieht die bearbeitende Person davon beim Schreiben nichts und erfährt nicht, wie die fertige Nachricht endet. Lassen Sie Ihr Backend dieselben Blöcke anhängen, die es auch tatsächlich anhängt, und die Vorschau zeigt die vollständige E-Mail.
+
+```ts
+resolvePreview: async ({ content, recipient }) => {
+  // Ihr Backend löst die Vorlage auf und hängt dieselben Blöcke an wie
+  // beim Versand — der Abmelde-Link ist also der echte dieses Empfängers.
+  const res = await fetch("/api/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template: content, recipient }),
+  });
+  return res.json();
+},
+```
+
+Geben Sie ein vollständiges `TemplateContent` zurück, nicht nur dessen `blocks`. Ein Objekt mit ausschließlich `blocks` wird akzeptiert — mehr prüft die Formatkontrolle nicht —, kommt aber ohne `settings` an, und der Vorschau fehlen dann Breite, Hintergrund und Schriften der Vorlage. Ansonsten werden die angehängten Blöcke wie alle anderen über die Leinwand gerendert und übernehmen Schriften und Link-Stile der Vorlage, die Dunkelmodus-Vorschau und den Viewport-Umschalter.
+
+Serverseitig anzuhängen ist es, was beides im Gleichlauf hält. Die Blöcke sind genau einmal definiert — in dem Code-Pfad, der sie tatsächlich anhängt —, sodass die Vorschau nicht von der zugestellten E-Mail abweichen kann, wie es eine zweite Kopie im Browser täte. Außerdem sind die Werte damit aufgelöst statt angenähert: eine echte Abmelde-URL für `recipient` statt eines Tokens.
+
+Doppelt anhängen können Sie dabei nicht. Aufgelöste Inhalte erreichen ausschließlich Vorschauflächen: was Ihr Endpunkt anhängt, wird nie von `getContent()` gespeichert, nie von `toMjml()` exportiert und ist nie Teil dessen, was die Test-E-Mail-Funktion versendet — nur Ihre Versand-Pipeline hängt tatsächlich etwas an.
+
 ### Live-Daten einbeziehen
 
 Preise, Lagerbestände, ein personalisiertes Produktraster. Alles, worauf die Vorlage verweist, ohne es zu speichern, kann zum Vorschauzeitpunkt geladen werden — so spiegelt die Vorschau die Realität und nicht den Stand bei der Erstellung.

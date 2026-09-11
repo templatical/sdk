@@ -55,7 +55,7 @@ unmount();
 | `comments`          | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `user`              | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts |
 | `changeDebounce`    | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave) |
-| `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | Called when user wants to pick an image. Return `{ url, alt? }` or `null`                                                                                                                                                                                                                  |
+| `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media) |
 | `resolveImageUrl`   | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution) |
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. See [Merge Tags](/guide/merge-tags) |
 | `resolvePreview`    | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering) |
@@ -63,6 +63,7 @@ unmount();
 | `logicTags`         | `LogicTagsConfig`                                                 | No       | Logic tag configuration — template-language control flow (conditionals, loops) inserted inline in rich text and text inputs. See [Logic Tags](/guide/logic-tags)                                                                                                                            |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks)                                                                                                                                                                                                                   |
 | `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Storage backend for saved blocks — reusable block groups users save and re-insert. The editor provides the UI; you provide persistence. The same object also carries the `onCreated`, `onUpdated` and `onDeleted` events. Omit to disable the feature entirely. Use `createLocalStorageSavedBlocksProvider()` for a zero-backend option. See [Saved Blocks](/backend/saved-blocks) |
+| `media`             | `MediaProvider`                                                   | No       | Storage backend for the media library — the picker behind Browse on image fields, video thumbnails and custom-block image fields. The editor provides the modal, grid, crop and insertion; you provide persistence. `list` is required; every other method is `false \| fn`. The same object also carries `onCreated` / `onUpdated` / `onDeleted`. Omit and image fields stay URL-only unless `onRequestMedia` is set. Use `createLocalStorageMediaProvider()` for a zero-backend option. See [Media](/backend/media) |
 | `testEmail`         | `TestEmailProvider`                                               | No       | Sending backend for test emails — lets users mail themselves the template they are editing. The editor provides the trigger, dialog, validation and states; you provide delivery. The same object also carries the `onSent` event. Omit to disable the feature entirely. `allowedRecipients` restricts the picker but is **not** a security boundary — validate server-side. See [Test Emails](/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Render each HTML block's content as a live preview in the canvas — inside a sandboxed `<iframe>` with no script execution — instead of the static placeholder. Defaults to `false`. Preview-only; the MJML/HTML export renders HTML blocks regardless. See [Previewing HTML blocks](#previewing-html-blocks) |
@@ -70,6 +71,7 @@ unmount();
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
 | `fonts`             | `FontsConfig`                                                     | No       | Font configuration. See [Custom Fonts](/guide/fonts)                                                                                                                                                                                                                                       |
 | `colors`            | `ColorsConfig`                                                    | No       | Color-picker palette. `presets` render as a clickable grid in every picker; `allowCustom: false` locks authors to them. See [Preset colors](#preset-colors)                                                                                                                                |
+| `templateSettings`  | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over the members of `TemplateSettings`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel) |
 | `theme`             | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                        |
 | `uiTheme`           | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                  |
 | `locale`            | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`). Defaults to `'en'`                                                                                                                                                                                                                                      |
@@ -145,6 +147,46 @@ const editor = await init({
 - **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input. Each entry must be a `#rgb` or `#rrggbb` hex string — 4-/8-digit alpha hex and other formats are skipped with a console warning listing the offending entries.
 - **`allowCustom`** — defaults to `true`. Set to `false` (together with `presets`) to hide the wheel and hex input so authors can only pick from the palette — useful when embedding the editor as a white-label / brand-kit tool. In this locked mode the palette leads with a "no colour" chip that restores the unset (inherit) state, since the hex field's clear button is hidden. Also in locked mode, the editor logs a development warning when any `blockDefaults` / `templateDefaults` colour falls outside `presets` — new blocks would otherwise start on a colour no picker can reselect, so set those defaults from the same palette. Ignored with a warning when no `presets` are configured, since that would leave the picker with no way to set a color.
 - **Per-field narrowing.** A custom block's `color` field can carry its own `presets` / `allowCustom` — see [per-field color presets](/guide/custom-blocks#color). A field may swap in its own palette, or lock one field while the rest of the editor stays free-form; its `presets` replace this grid for that field rather than intersecting it, so a locked field can offer colors that appear nowhere in `presets` here. What a field can never do is unlock the editor: `allowCustom: false` here still locks every picker.
+
+### Restricting the settings panel {#restricting-the-settings-panel}
+
+The right sidebar's Settings tab exposes every member of `TemplateSettings`. Pass `templateSettings.fields` to narrow that to an allowlist — for settings your application owns rather than the author:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  templateSettings: {
+    fields: [
+      "width",
+      "backgroundColor",
+      "textColor",
+      "linkColor",
+      "linkUnderline",
+      "fontFamily",
+    ],
+  },
+});
+```
+
+| Value | Result |
+|---|---|
+| omitted, or `fields: true` | every setting is editable |
+| `fields: [...]` | only the listed settings |
+| `fields: false` or `fields: []` | none — the Settings tab does not render |
+
+The fields are `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale`, `direction` and `preheaderText`.
+
+- **Cards follow their fields.** A card renders while at least one of its settings survives, so excluding both `locale` and `direction` removes the Language card and excluding `preheaderText` removes the Preheader card. `width` is the Layout card; the five colour and font settings are the Appearance card.
+- **The list narrows, it never reorders.** Settings sit in fixed cards, so unlike [`paletteBlocks`](#customizing-the-block-palette) there is no order to express.
+- **An unknown entry is skipped with a console warning.** TypeScript rejects one at compile time; a JavaScript caller's typo narrows the panel rather than silently restoring every setting.
+- **Hiding a setting never changes its value.** Whatever the loaded content carries keeps rendering and keeps round-tripping through `getContent()` and the export. Set the ones you hide from the content you hand the editor — `init({ content })`, or the `templates` provider's own `load`, which is the seam for "this template's locale comes from my application". [`templateDefaults`](/guide/defaults) will not do it for a template you **load**: it applies only when no content is provided. For a *blank* template it does, and `locale` has a shortcut there — `init({ locale })` seeds the content language when you set no `templateDefaults.locale`, so hiding the field still yields the right `<html lang>`.
+- **Not a security boundary.** The allowlist lives in the user's browser, like every other client-side constraint. Validate what you persist.
+- **Excluding `locale` also pins the language of new blocks.** A template's `locale` drives the recipient-facing defaults a newly inserted block starts with — a video's `alt`, a countdown's labels and expired message — so with the field gone, those follow whatever locale the loaded content carries and the author can no longer move them. That is usually the point, but it means the value you set matters for more than `<html lang>`.
+- **Excluding `preheaderText` leaves one linter rule unactionable.** `a11y.missing-preheader` (severity `info`) reports a template with no preheader, and with the field gone the author cannot act on it. Either set a preheader in the content you load, or turn the rule off: `lint: { accessibility: { rules: { 'a11y.missing-preheader': 'off' } } }`. No other rule reads a template setting.
+
+::: tip Related restrictions
+Other parts of the editor's chrome have their own keys: [`paletteBlocks`](#customizing-the-block-palette) for the block palette, [`fonts.builtIns`](/guide/fonts) for the font picker, [`colors.allowCustom`](#preset-colors) for free-form colours, and `templates.nameField` for the header's name field.
+:::
 
 ## TemplaticalEditor
 
@@ -428,7 +470,9 @@ const editor = await init({
 
 ### `onRequestMedia`
 
-Called when the user clicks to select an image (e.g. in the image block settings) **or drags an image file onto an image block/field**. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+UI override for the media picker. Called when the user clicks Browse (e.g. in the image block settings) **or drags an image file onto an image block/field**. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+
+It wins over a `media` provider when both are set — the host brought a widget, so the built-in modal never opens. The store itself is the [`media`](/backend/media) key.
 
 On a drag-and-drop, the dropped file arrives in `context.files` — upload it and return the hosted URL. See [Drag and drop to upload](/guide/images#drag-and-drop-to-upload) for the full pattern.
 
@@ -445,7 +489,7 @@ const editor = await init({
 });
 ```
 
-If you don't provide `onRequestMedia`, the editor shows a text input where users type or paste image URLs directly.
+If you provide neither `onRequestMedia` nor `media`, the editor shows a text input where users type or paste image URLs directly.
 
 ### `mergeTags.onRequest`
 
@@ -544,6 +588,24 @@ const editor = await init({
 ```
 
 `onRestored` takes the resulting `Template` that `restore()` resolves to, not the `TemplateVersion` that was restored from. See [Events](/backend/version-history#events) for the full reference.
+
+## Media Events
+
+A `media` provider carries events beyond `list` / `create` / `update` / `delete` — `onCreated`, `onUpdated` and `onDeleted` — fired once the matching mutation resolves. There is no editor-level media list: a drop-create fires `onCreated` with the stored asset and never prepends a listing row.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  media: {
+    ...myMediaProvider,
+    onDeleted(asset) {
+      logRemoval(asset.id);
+    },
+  },
+});
+```
+
+`onDeleted` receives the removed `MediaAsset` itself, not an id — `delete` resolves to nothing, so the handler gets the entry captured from the modal's loaded listing before removing it. See [Events](/backend/media#events) for the full reference.
 
 ## Test Email Events
 
@@ -1506,7 +1568,7 @@ interface CommentsProvider {
 }
 ```
 
-`list` cannot be turned off — without it the panel has nothing to show. Each of the four mutations takes `false` in place of a function, and is **required** rather than optional: `false` states that the action is unavailable, and the editor hides it rather than disabling it. See [Read-only review](#read-only-review).
+`list` cannot be turned off — without it the panel has nothing to show. Each of the four mutations takes `false` in place of a function: `false` states that the action is unavailable, and the editor hides it rather than disabling it. See [Read-only review](#read-only-review).
 
 The editor renders `list()`'s order verbatim and never re-sorts. Ordering is your store's call.
 
@@ -1661,7 +1723,7 @@ Source: https://docs.templatical.com/backend/
 
 The editor edits a template. Where that template is stored, what its past looks like, who commented on it, where a test send goes, how it becomes sending-ready HTML — all of that lives in your stack, and the editor reaches it through a plain object you pass to `init()`.
 
-That object is a **provider**. There are six, they are all optional, and they all work the same way.
+That object is a **provider**. They are all optional, and they all work the same way.
 
 ## The providers
 
@@ -1675,6 +1737,7 @@ await init({
   versionHistory: myVersionStore, // past states — browse, preview, restore
   comments: myCommentStore, // threaded review, anchored per block
   savedBlocks: myBlockLibrary, // reusable groups of blocks
+  media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
 });
@@ -1693,12 +1756,13 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Version history](/backend/version-history) | header control, version list, preview on the canvas with its own banner, restore with confirmation | `list` · `get` · `create` · `restore` |
 | [Comments](/backend/comments) | review panel, threads and replies, per-block count badges, resolve and reopen | `list` · `create` · `update` · `delete` · `setResolved` |
 | [Saved blocks](/backend/saved-blocks) | pick session on the canvas, searchable browser with live preview, insert-at-position, rename, delete | `list` · `create` · `update` · `delete` |
+| [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
-On the four storage providers every mutation is `false | fn` and **required**, not optional: passing `false` states that the action is unavailable. Calling it rejects, and wherever the editor renders a control for it, that control is hidden rather than disabled. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) has the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`.
+On `templates`, `versionHistory`, `comments`, `savedBlocks` and `media` every mutation is `false | fn`. Passing `false` states that the action is unavailable: calling it rejects, and wherever the editor renders a control for it, that control is hidden rather than disabled. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) and [media](/backend/media#controlling-permissions) have the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`.
 
 ::: warning Not a security boundary
 Providers run in the user's browser. These flags shape the UI; they do not protect your API. Who may open a template, who may delete a shared saved block, which address a test may reach — enforce all of it on your server as well.
@@ -1725,16 +1789,16 @@ type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | n
 type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateContent>;
 ```
 
-- **`onRequestMedia`** opens your own media picker and returns what the user chose. Documented with the rest of image handling in [Images](/guide/images).
+- **`onRequestMedia`** is a **UI override** for the media picker (Bynder, Cloudinary widget, a host modal). It is not the store — that is the [`media`](/backend/media) provider. When both are set, the callback wins. Documented with the rest of image handling in [Images](/guide/images).
 - **`resolvePreview`** hands the template to your backend and renders what comes back, so a preview shows real recipient data instead of merge-tag labels. Display-only: the result reaches preview surfaces and is never saved, sent or exported. See [Preview rendering](/guide/preview-rendering).
 
 ## Headless use
 
-`useSavedBlocks`, `useVersionHistory` and `useComments` are exported from `@templatical/core`, so a provider can drive your own interface with no editor mounted at all. Each page's *Headless use* section has the surface.
+`useSavedBlocks`, `useVersionHistory` and `useComments` are exported from `@templatical/core`, so a provider can drive your own interface with no editor mounted at all. Media state is modal-scoped: `useMediaLibrary` lives in `@templatical/media-library`, and the provider methods themselves are the headless API. Each page's *Headless use* section has the surface.
 
 ## Templatical Cloud
 
-Don't want to build any of this? Templatical Cloud implements all of them. Point `initCloud()` at an auth endpoint and saving, version history, comments, saved blocks, test sending and rendering all work — no storage to run, no endpoints to write, no MJML compiler to host.
+Don't want to build any of this? Templatical Cloud implements all of them. Point `initCloud()` at an auth endpoint and saving, version history, comments, saved blocks, media, test sending and rendering all work — no storage to run, no endpoints to write, no MJML compiler to host.
 
 ```ts
 import { initCloud } from '@templatical/editor';
@@ -1749,12 +1813,371 @@ It also adds what the open-source editor has no contract for at all:
 
 - **AI** — generate content from a prompt, rewrite a selection, turn a design into a template
 - **Real-time collaboration** — live cursors, presence and block locking over a managed WebSocket
-- **Media library** — uploads, folders, search and cropping
 - **Template scoring** — automated deliverability and accessibility checks
 
-Same editor, same block model, same contracts: Cloud is a first-party implementation of the interfaces on this page, not a fork. You can still bring your own block library or your own sender and let Cloud handle the rest.
+Same editor, same block model, same contracts: Cloud is a first-party implementation of the interfaces on this page, not a fork. You can still bring your own block library, gallery or sender and let Cloud handle the rest.
 
 [Explore Templatical Cloud →](/cloud/)
+
+---
+
+# Media
+
+Source: https://docs.templatical.com/backend/media
+
+The editor owns the picker: Browse on image fields, video thumbnails and custom-block image fields, drag-and-drop upload, crop, folders, search. **You own storage.**
+
+`onRequestMedia` is a separate seam — a UI override for a host widget (Bynder, Cloudinary, a modal of your own). It is not this store. When both are set, the callback wins and the built-in modal never opens. See [Images](/guide/images).
+
+## Quick start
+
+The bundled browser-local provider needs no backend:
+
+```js
+import { init, createLocalStorageMediaProvider } from '@templatical/editor';
+
+const editor = await init({
+  container: '#editor',
+  media: createLocalStorageMediaProvider(),
+});
+```
+
+Entries go into `localStorage` under `templatical:media`. `create` stores the file as a data URL — a demo-sized model. `localStorage` quotas are typically around 5 MB, and a few large images will fill it. Folders, replace, import, usage, frequently-used and quota are `false`. Supply a provider for anything beyond demos, prototypes and a single device.
+
+## Installation
+
+::: warning Only needed standalone
+Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` and Cloud's store already ship Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+:::
+
+::: code-group
+
+```bash [npm]
+npm install @templatical/media-library
+```
+
+```bash [pnpm]
+pnpm add @templatical/media-library
+```
+
+```bash [yarn]
+yarn add @templatical/media-library
+```
+
+```bash [bun]
+bun add @templatical/media-library
+```
+
+:::
+
+That package takes `vue` as a peer. Skip it when:
+
+- you pass `onRequestMedia` and no `media` key — the host widget never mounts the modal
+- you omit `media` entirely — image fields stay URL-only
+- you call provider methods yourself — they are ordinary functions
+
+::: tip Loading the editor from the CDN?
+There is nothing to install. The CDN editor inlines the same chunk that the npm editor ships.
+:::
+
+## The contract
+
+`media` takes any object implementing `MediaProvider`. `list` is a method; every other member is **either a function or `false`**:
+
+```ts
+interface MediaProvider {
+  list(params?: MediaListParams): Promise<MediaListPage>;
+
+  create: false | ((input: MediaCreateInput) => Promise<MediaAsset>);
+  update: false | ((id: string, patch: MediaAssetPatch) => Promise<MediaAsset>);
+  delete: false | ((ids: string[]) => Promise<void>);
+  folders: false | MediaFoldersProvider;
+  replace: false | ((id: string, file: File) => Promise<MediaAsset>);
+  importFromUrl:
+    | false
+    | ((url: string, folderId?: string | null, templateId?: string) => Promise<MediaAsset>);
+  checkUsage: false | ((ids: string[]) => Promise<Record<string, MediaUsageInfo>>);
+  frequentlyUsed: false | (() => Promise<MediaAsset[]>);
+  storage: false | (() => Promise<MediaStorageInfo | null>);
+}
+
+interface MediaFoldersProvider {
+  list(): Promise<MediaFolder[]>; // FLAT; the UI trees via parentId
+  create: false | ((input: MediaFolderInput) => Promise<MediaFolder>);
+  update: false | ((id: string, patch: { name: string }) => Promise<MediaFolder>);
+  delete: false | ((id: string) => Promise<void>);
+  move: false | ((ids: string[], folderId: string | null) => Promise<MediaAsset[]>);
+}
+```
+
+`false` means the current user may not perform that action, and the editor hides the affordance.
+
+`list` cannot be `false`: without it the picker has nothing to show. Search, folder, category and cursor are sent on every listing — galleries outgrow one response. A provider that returns everything at once omits `nextCursor`.
+
+`delete` and `checkUsage` are bulk: the grid is multi-select. `folders` is nested so a gallery without folders writes `folders: false` once; `folders.list()` returns a **flat** array and the UI trees it via `parentId`.
+
+Cropping is client-side. Persist a crop by calling `create` or `replace` with the resulting `File`. There is no crop method on the provider, and no upload-progress callback: `create` takes a `File` and resolves with the asset.
+
+Confirm always inserts `asset.url`. The grid uses `thumbnailUrl`, falling back to `url`. There is no conversion set (`small` / `medium` / `large`) on `MediaAsset` — if a derivative belongs in the email, put that URL on `url`.
+
+### The data shape
+
+```ts
+interface MediaAsset {
+  id: string;              // assigned by the provider, returned from create()
+  url: string;             // lands on the block
+  alt?: string;
+  filename?: string;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+  size?: number;           // bytes
+  thumbnailUrl?: string;   // grid; falls back to url
+  folderId?: string | null;
+  canUpdate?: boolean;     // optional — absent means allowed; set false to forbid
+  canDelete?: boolean;
+  createdAt?: string;      // optional — display only, never affects ordering
+  updatedAt?: string;
+}
+
+interface MediaListParams {
+  search?: string;
+  cursor?: string;
+  folderId?: string | null;
+  category?: MediaCategory;   // "images" | "documents" | "videos" | "audio"
+  templateId?: string;        // when a template is loaded; Cloud ignores
+}
+
+interface MediaListPage {
+  items: MediaAsset[];
+  nextCursor?: string;
+}
+
+interface MediaCreateInput {
+  file: File;
+  folderId?: string | null;
+  alt?: string;
+  filename?: string;
+  templateId?: string;
+}
+```
+
+- **`id` comes from the provider.** The editor never generates one; it uses whatever `create()` returns.
+- **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. Cloud ignores it; a CMS that scopes a gallery per template reads it here.
+- **Ordering comes from the provider.** The editor renders `list()`'s order and never re-sorts.
+- **Timestamps are display only.** Omit both and no label renders.
+- **`maxFileSize` / `mimeTypes`** on the provider are a client pre-check, not a security boundary — the backend must enforce too.
+
+```ts
+interface MediaOptions {
+  maxFileSize?: number; // bytes
+  mimeTypes?: Partial<Record<MediaCategory, string[]>>;
+  onCreated?: (asset: MediaAsset) => void;
+  onUpdated?: (asset: MediaAsset) => void;
+  onDeleted?: (asset: MediaAsset) => void;
+}
+```
+
+`MediaProvider` extends `MediaOptions`, so one object carries storage and events.
+
+## Controlling permissions
+
+**Withhold a whole capability** by passing `false` instead of a function. The editor hides what it can't do: no upload zone and no drop when `create` is off, no edit when `update` is off, no delete when `delete` is off, no folder tree when `folders` is off.
+
+```ts
+const media: MediaProvider = {
+  list: ({ search, cursor, templateId }) =>
+    myCms.page({ search, cursor, templateId }),
+  create: ({ file }) => myCms.upload(file),
+  update: false,
+  delete: false,
+  folders: false,
+  replace: false,
+  importFromUrl: false,
+  checkUsage: false,
+  frequentlyUsed: false,
+  storage: false,
+};
+```
+
+**Withhold a single entry** with `canUpdate` / `canDelete` on it. Absent means allowed, so set them only on the exceptions. The two levers compose in one direction: `canUpdate: true` cannot re-enable an `update` the provider passed as `false`.
+
+### A read-only library
+
+Every mutation `false` gives a curated gallery users browse, search and pick from but never modify:
+
+```ts
+const media: MediaProvider = {
+  list: async () => {
+    const res = await fetch('/api/media');
+    return json(res);
+  },
+  create: false,
+  update: false,
+  delete: false,
+  folders: false,
+  replace: false,
+  importFromUrl: false,
+  checkUsage: false,
+  frequentlyUsed: false,
+  storage: false,
+};
+```
+
+Picking still works — it copies `{ url, alt }` onto the canvas, and nothing reaches the provider. Drop does not: drop needs `create`. `list` is the one member that can't be disabled.
+
+::: warning Not a security boundary
+Hiding a control stops the editor offering an action; it doesn't stop a determined caller. Provider methods run in the user's browser, so enforce permissions server-side too — including who may read, change or delete an asset in a library shared across a team.
+:::
+
+## Error handling
+
+Any method may reject. The editor reports the failure through `onError` and leaves its in-memory list untouched, so a failed delete doesn't make an asset vanish from the UI. The modal stays open. Provider messages are user-presentable: they reach the UI verbatim.
+
+Failed `create` does not prepend. `importFromUrl` keeps an inline field error.
+
+## In the editor
+
+The surface is a **picker**. There is no sidebar rail and no "manage media" chrome.
+
+- **Browse** — an image field (and the video thumbnail, and a custom-block image field) shows a browse button when `media` **or** `onRequestMedia` is configured. With a `media` provider and no callback, the click opens the library modal. With `onRequestMedia`, the callback runs instead — the modal never mounts. Image fields and the video thumbnail pass `accept: ["images"]`; custom blocks may pass other categories. The modal forces `list({ category })` to that set and hides other tabs.
+- **Confirm** — Confirm or double-click commits **one** previewed asset that matches `accept`, as `{ url: asset.url, alt: asset.alt }`. Multi-select is for bulk delete and move only. Close, Escape or backdrop returns `null`.
+- **Drop** — dragging an image file onto an image block or field:
+
+  | Config | Drop |
+  | --- | --- |
+  | `onRequestMedia` | yes — `context.files` |
+  | provider, `create` is a function | yes — `provider.create({ file, templateId? })` |
+  | provider, `create: false` | no |
+  | neither | no |
+
+  The drop zone pre-filters to `image/` MIME types. Size and type after that are `MediaOptions`, then the server. Don't return a `blob:` URL: `URL.createObjectURL(file)` is session-local and breaks export.
+- **Lazy load** — omit `media` and none of the library UI is downloaded. `onRequestMedia` alone never mounts the modal.
+
+## Off by default
+
+Omit `media` and image fields stay URL-only, unless you passed `onRequestMedia`.
+
+## Events
+
+```ts
+media: {
+  // ...list, create, update, delete, …
+  onCreated: (asset) => {},
+  onUpdated: (asset) => {},
+  onDeleted: (asset) => {},
+}
+```
+
+Each fires once the matching mutation resolves, with the stored asset:
+
+- **`onCreated`** after `create` or `importFromUrl`. A drop calls `create` and fires this without opening the modal and without prepending a listing row — the URL lands on the block.
+- **`onUpdated`** after `update` or `replace`.
+- **`onDeleted`** after `delete`.
+
+There is no editor-level media list. The modal's own listing (when it is open) prepends, replaces and filters on success; a drop never touches that listing.
+
+::: tip `onDeleted` carries the asset, not an id
+`delete` resolves to nothing, so the handler receives the entry captured from the modal's loaded listing immediately before removing it.
+:::
+
+::: tip A delete outside the loaded listing fires no event
+The captured entry has to already be in the modal's listing. Deleting an id that listing never held still deletes successfully; there is nothing to pass to `onDeleted`, so it does not fire.
+:::
+
+A handler that throws is caught and reported to `onError` — it never fails the create, update or delete that triggered it.
+
+## Headless use
+
+There is no `useMedia` in `@templatical/core`. Media state is modal-scoped; the provider methods **are** the headless API. Call them from your own UI, or drive the bundled modal's state machine:
+
+```ts
+import { useMediaLibrary } from '@templatical/media-library';
+
+const {
+  items,          // Ref<MediaAsset[]>
+  isLoading,      // Ref<boolean>
+  hasMore,        // Ref<boolean>
+  loadItems,      // () => Promise<void>
+  loadMore,       // () => Promise<void>
+  uploadFile,     // (file: File) => Promise<MediaAsset | null>
+  confirmDelete,  // () => Promise<void>
+} = useMediaLibrary({
+  provider,
+  onError: (error) => {
+    /* handle */
+  },
+});
+```
+
+It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and reports to `onError` without mutating the list on failure. A stale `list` / `loadMore` response is discarded.
+
+**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Media Library on Cloud](/cloud/media-library).
+
+## Bringing your own
+
+A minimal REST implementation:
+
+```ts
+import { init } from '@templatical/editor';
+import type { MediaProvider } from '@templatical/editor';
+
+const json = async (res: Response) => {
+  if (!res.ok) throw new Error(`Media request failed: ${res.status}`);
+  return res.json();
+};
+
+const media: MediaProvider = {
+  list: async (params) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.cursor) query.set('cursor', params.cursor);
+    if (params?.folderId) query.set('folderId', params.folderId);
+    if (params?.category) query.set('category', params.category);
+    if (params?.templateId) query.set('templateId', params.templateId);
+    const res = await fetch(`/api/media?${query}`);
+    return json(res);
+  },
+
+  create: async (input) => {
+    const body = new FormData();
+    body.append('file', input.file);
+    if (input.folderId) body.append('folderId', input.folderId);
+    if (input.templateId) body.append('templateId', input.templateId);
+    const res = await fetch('/api/media', { method: 'POST', body });
+    return json(res);
+  },
+
+  update: async (id, patch) => {
+    const res = await fetch(`/api/media/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    return json(res);
+  },
+
+  delete: async (ids) => {
+    const res = await fetch('/api/media', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+  },
+
+  folders: false,
+  replace: false,
+  importFromUrl: false,
+  checkUsage: false,
+  frequentlyUsed: false,
+  storage: false,
+};
+
+await init({ container: '#editor', media });
+```
+
+A CMS gallery that lists and uploads, and nothing else, is the same shape as the permissions example above. Shared and per-template galleries merge inside `list({ templateId })`.
 
 ---
 
@@ -1928,6 +2351,43 @@ npm install @templatical/renderer
 There is nothing to install. The CDN build is self-contained, so `@templatical/renderer` ships with it as a code-split chunk that loads on the first `toMjml()` call.
 :::
 
+### Wrapping the bundled renderer
+
+`toMjml` replaces the local render, and one thing it can replace it with is the local render plus your own additions. Chrome every email must carry — an Impressum, an unsubscribe block, a legal footer — then composes as ordinary blocks instead of string surgery on the output:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const editor = await init({
+  container,
+  render: {
+    toMjml: ({ content, fonts }) =>
+      renderToMjml(
+        {
+          settings: { ...content.settings, backgroundColor: '#f3f4f6' },
+          blocks: [...headerBlocks, ...content.blocks, ...footerBlocks],
+        },
+        {
+          customFonts: fonts?.customFonts,
+          defaultFallbackFont: fonts?.defaultFallback,
+        },
+      ),
+  },
+});
+```
+
+`headerBlocks` and `footerBlocks` are plain `Block[]` — author them in the editor and export the JSON. Because they never enter editor state, they cannot be selected, edited, undone or saved, and `getContent()` returns the template without them. `toHtml()` composes through `toMjml()`, so both export paths carry them, as does the test-email dialog's `includeMjml` payload.
+
+What to watch for:
+
+- This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
+- `getCustomBlockStylesheet` is not part of the payload. Pass your own resolver if your custom blocks carry definition-level CSS — otherwise their `<mj-style>` rules are dropped.
+- `initCloud()` ignores `render`, so this is an `init()` arrangement. See [Rendering on Cloud](/cloud/rendering).
+
+::: tip Showing it in the preview too
+The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
+:::
+
 ## Headless rendering
 
 Outside the editor, call the renderer directly:
@@ -2038,10 +2498,6 @@ interface SavedBlocksProvider {
 ```
 
 `false` means the current user may not perform that action, and the editor hides the affordance.
-
-::: tip Why required, and not optional
-An optional method would make "I decided against delete" indistinguishable from "I haven't written delete yet". A `false` cannot be arrived at by forgetting. Every storage provider in this section is shaped the same way.
-:::
 
 A minimal REST implementation:
 
@@ -2356,7 +2812,7 @@ A handler that throws is caught and reported to `onError` — it never fails the
 
 ## Disabling create or save
 
-`create` and `save` are `false | fn` and **required**, not optional. `load` cannot be turned off — without it there is nothing to open.
+`create` and `save` take `false | fn`. `load` cannot be turned off — without it there is nothing to open.
 
 ```ts
 templates: {
@@ -2758,7 +3214,7 @@ interface VersionHistoryProvider {
 }
 ```
 
-`list` and `get` cannot be turned off — the editor must always be able to show a version and fetch its content. `create` and `restore` each take `false` in place of a function, and are **required** rather than optional: `false` states that the action is unavailable, and the editor hides it rather than disabling it. `restore: false` leaves the history browsable with no Restore button; `create: false` means only your `save` records versions.
+`list` and `get` cannot be turned off — the editor must always be able to show a version and fetch its content. `create` and `restore` each take `false` in place of a function: `false` states that the action is unavailable, and the editor hides it rather than disabling it. `restore: false` leaves the history browsable with no Restore button; `create: false` means only your `save` records versions.
 
 The editor renders `list()`'s order verbatim and never re-sorts. Ordering is your store's call.
 
@@ -3105,11 +3561,11 @@ Your token endpoint must return a JSON response with this structure:
 ```json
 {
   "token": "eyJhbGciOiJSUzI1NiIs...",
-  "expires_at": 1720000000,
-  "project_id": "proj_abc123",
+  "expiresAt": 1720000000,
+  "projectId": "proj_abc123",
   "tenant": "acme-corp",
-  "test_email": {
-    "allowed_emails": ["team@example.com"],
+  "testEmail": {
+    "allowedEmails": ["team@example.com"],
     "signature": "hmac-signature-here"
   },
   "user": {
@@ -3123,16 +3579,16 @@ Your token endpoint must return a JSON response with this structure:
 | Field | Type | Description |
 |-------|------|-------------|
 | `token` | `string` | **Required.** The JWT access token |
-| `expires_at` | `number` | **Required.** Unix timestamp when the token expires |
-| `project_id` | `string` | **Required.** The project ID |
+| `expiresAt` | `number` | **Required.** Unix timestamp when the token expires |
+| `projectId` | `string` | **Required.** The project ID |
 | `tenant` | `string` | **Required.** The tenant slug |
 | `user` | `object` | Optional. Used for collaboration presence and comment attribution |
 | `user.id` | `string` | User identifier |
 | `user.name` | `string` | Display name shown in collaboration UI |
 | `user.signature` | `string` | HMAC signature for user verification |
-| `test_email` | `object` | Optional. Configuration for the test email feature |
-| `test_email.allowed_emails` | `string[]` | Email addresses allowed to receive test emails |
-| `test_email.signature` | `string` | HMAC signature for test email verification |
+| `testEmail` | `object` | Optional. Configuration for the test email feature |
+| `testEmail.allowedEmails` | `string[]` | Email addresses allowed to receive test emails |
+| `testEmail.signature` | `string` | HMAC signature for test email verification |
 
 ## Direct Authentication
 
@@ -3313,7 +3769,7 @@ const editor = await initCloud({
 
 ## Author identity
 
-Cloud sends `user_id` / `user_name` / `user_signature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
+Cloud sends `userId` / `userName` / `userSignature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
 
 A project whose token endpoint omits the `user` claim gets no comments feature at all — [unavailable, never anonymous](/backend/comments#author-identity).
 
@@ -3383,10 +3839,10 @@ This guide walks you through setting up Templatical Cloud in your application.
 If you haven't already installed the editor, add it along with the cloud dependencies:
 
 ```bash
-npm install @templatical/editor @templatical/media-library pusher-js
+npm install @templatical/editor pusher-js
 ```
 
-`@templatical/media-library` provides the built-in media browser and `pusher-js` enables real-time collaboration. Both are optional peer dependencies — only needed when using `initCloud()`.
+The Browse modal ships in the editor. `pusher-js` enables real-time collaboration and is Cloud-only. Install [`@templatical/media-library`](/backend/media#installation) only if you mount the standalone media SDK outside the editor.
 
 ::: info Shadow DOM
 `initCloud()` inherits all shadow-DOM behavior from the editor — mounted inside a Shadow DOM by default for host-CSS isolation. The media browser, AI panels, comments, and version-history UI all teleport into the editor's shadow-aware popover root, so no special handling is needed. Pass `shadowDom: false` to opt out. See the [Shadow DOM guide](/guide/shadow-dom).
@@ -3453,7 +3909,7 @@ const editor = await initCloud({
 The `auth.url` should point to the token endpoint you created above. The SDK handles token refresh automatically.
 
 ::: info `initCloud()` is `init()` with Cloud's adapters
-It authenticates, fetches your plan, builds Cloud's `templates` / `render` / `versionHistory` / `savedBlocks` / `testEmail` providers, and then calls `init()` with them. There is one editor component, one editor core and one header behind both entry points, and the two return the **same** type — which is what makes "Cloud implements the same interfaces you would" checkable rather than just claimed.
+It authenticates, fetches your plan, builds Cloud's `templates` / `render` / `versionHistory` / `savedBlocks` / `media` / `testEmail` providers, and then calls `init()` with them. There is one editor component, one editor core and one header behind both entry points, and the two return the **same** type — which is what makes "Cloud implements the same interfaces you would" checkable rather than just claimed.
 
 One consequence: the bootstrap runs *before* the editor mounts, so a failed handshake **rejects** `initCloud()` instead of mounting an editor showing an error overlay. Handle it like any other rejected promise. A session that dies later — a token refresh that cannot renew — still surfaces as an overlay, because by then there is an editor to cover.
 :::
@@ -3669,17 +4125,17 @@ const comments = await api.getComments('template-id');
 // Add a comment
 const comment = await api.createComment('template-id', {
   body: 'This section needs a stronger CTA',
-  block_id: 'block-uuid',
-  user_id: 'user-123',
-  user_name: 'Jane Smith',
-  user_signature: 'hmac-signature',
+  blockId: 'block-uuid',
+  userId: 'user-123',
+  userName: 'Jane Smith',
+  userSignature: 'hmac-signature',
 });
 
 // Resolve a comment
 await api.resolveComment('template-id', 'comment-id', {
-  user_id: 'user-123',
-  user_name: 'Jane Smith',
-  user_signature: 'hmac-signature',
+  userId: 'user-123',
+  userName: 'Jane Smith',
+  userSignature: 'hmac-signature',
 });
 ```
 
@@ -3712,7 +4168,7 @@ editor-side feature and the storage-provider interface, see
 await api.sendTestEmail('template-id', {
   recipient: 'test@example.com',
   html: '<html>...</html>',
-  allowed_emails: ['test@example.com'],
+  allowedEmails: ['test@example.com'],
   signature: 'hmac-signature',
 });
 ```
@@ -3819,13 +4275,13 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 ## Bringing your own
 
-Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks and test emails can still be yours while Cloud handles the rest:
+Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks, test emails and media can still be yours while Cloud handles the rest:
 
 ```ts
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
+await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
 ```
 
-They mix safely because Cloud never independently uses either. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
+They mix safely because Cloud never independently uses them. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
 
 <!-- prettier-ignore -->
 | Key | What `initCloud()` does with it |
@@ -3899,84 +4355,107 @@ Both are available from `@templatical/core/cloud` for custom integrations.
 
 Source: https://docs.templatical.com/cloud/media-library
 
-The Cloud media library provides a full image management system built into the editor. Users can upload, organize, browse, and insert images without leaving the editor.
+Media is an [open contract](/backend/media). Templatical Cloud implements it, the same way your own backend would.
 
-## Features
+```ts
+const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
+```
 
-- **Upload** — Drag-and-drop or click to upload images directly in the editor
-- **Folders** — Organize images in a folder hierarchy
-- **Search** — Find images by name or metadata
-- **Image Editing** — Crop, resize, and replace images
-- **Usage Tracking** — See which templates use an image before deleting
-- **Import from URL** — Pull images from external URLs into the library
-- **Storage Info** — Monitor storage usage per plan
+Nothing to configure — this one is on by default. Cloud supplies the provider, and Browse appears on image fields, video thumbnails and custom-block image fields. The modal ships in the editor; Cloud is the store.
 
-The media library is automatically available when using `initCloud()`. No additional configuration is needed.
+## The adapter
 
-## Custom Media Picker
+| Method | Cloud |
+| --- | --- |
+| `list` | Project library, search / folder / category / cursor forwarded |
+| `create` | Uploads the file into the project |
+| `update` | Filename and alt |
+| `delete` | Bulk remove |
+| `folders` | Nested folders; Cloud flattens a tree payload into the contract's flat list |
+| `replace` | Replaces the file in place |
+| `importFromUrl` | Pulls a remote URL into the library |
+| `checkUsage` | Templates that reference the assets |
+| `frequentlyUsed` | Recents for the current user |
+| `storage` | Quota ring; `null` until plan config has loaded |
 
-If you want to use your own media picker instead of the built-in library, provide the `onRequestMedia` callback:
+**One library per project**, shared by everyone on it. Cloud **ignores `templateId`**: the store is project-scoped.
 
-```js
+Every method is a function. `storage`, `maxFileSize` and `mimeTypes` are **live getters** over plan config — they fill in after construction, so a snapshot at setup would pin quota to `null` for the whole session.
+
+When Cloud's store is in play, consumer `maxFileSize` / `mimeTypes` on an events-only object are ignored (Cloud's plan owns those limits). Only `onCreated` / `onUpdated` / `onDeleted` forward.
+
+## Bringing your own
+
+You can, and `initCloud()` accepts this as a full swap, the same way it accepts `savedBlocks` and `testEmail`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
+
+```ts
+await initCloud({ container, auth });                        // Cloud's library
+await initCloud({ container, auth, media: { onCreated } });  // Cloud's library, plus your events
+await initCloud({ container, auth, media: mine });           // your own, on Cloud
+await initCloud({ container, auth, media: false });          // off — URL field only
+```
+
+<!-- prettier-ignore -->
+| `media` | Store |
+| --- | --- |
+| omitted | Cloud |
+| `false` | off |
+| options (`{ onCreated }`) | Cloud, plus those handlers |
+| full provider | yours, **not** plan-gated |
+
+Cloud tells them apart by `list`, never by whether the value is an object: something with a working `list` replaces Cloud's store outright, and anything else — `false`, an events-only object — keeps Cloud's own store and forwards whatever events it carries onto it.
+
+A provider you supply is **not** plan-gated — the plan licenses Cloud's *storage*, not the editor's UI. An events-only object still uses Cloud's store.
+
+A malformed object that has `create` (or other mutations) but no working `list` falls through to Cloud's store, with a warning naming the ignored methods.
+
+## UI override
+
+`onRequestMedia` is a host widget (Bynder, Cloudinary, a modal of your own). It is not the store. When both are set, the callback wins and Cloud's modal never opens. It returns `{ url, alt? }` — see [Images](/guide/images).
+
+```ts
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
   onRequestMedia: async (context) => {
-    // Open your custom media picker
-    const selected = await myMediaPicker.open();
-
+    const selected = await myMediaPicker.open(context);
     if (!selected) return null;
-
-    return {
-      id: selected.id,
-      url: selected.url,
-      filename: selected.filename,
-      width: selected.width,
-      height: selected.height,
-    };
+    return { url: selected.url, alt: selected.alt };
   },
 });
 ```
 
-## Standalone Media Library SDK
+## Standalone
 
-The media library is also available as a standalone component for use outside the editor via the `@templatical/media-library` package:
+The same UI, without Confirm, via `@templatical/media-library`. Pass a `provider` — Cloud is `createCloudMediaProvider` from `@templatical/core/cloud`:
 
-```js
+```ts
 import { init } from '@templatical/media-library';
+import { createCloudMediaProvider } from '@templatical/core/cloud';
 
-const mediaLibrary = init({
+const mediaLibrary = await init({
   container: '#media-library',
-  auth: {
-    mode: 'proxy',
-    url: '/api/templatical/token',
-  },
-  onSelect: (item) => {
-    console.log('Selected:', item.url);
+  provider: createCloudMediaProvider(authManager),
+  onSelect: (asset) => {
+    console.log('Selected:', asset.url);
   },
 });
 ```
 
-## API Client
+`onSelect` is optional. `accept` narrows categories; omit it for every category.
 
-For server-side or programmatic media operations:
+## Headless use
 
-```js
-import { MediaApiClient } from '@templatical/media-library';
+For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. `createCloudMediaProvider` maps the response onto `MediaProvider`.
+
+```ts
+import { MediaApiClient } from '@templatical/core/cloud';
 
 const client = new MediaApiClient(authManager);
 
-// Browse images
-const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
-// response: { data: MediaItem[], meta: { path, per_page, next_cursor, prev_cursor } }
-
-// Upload
+const response = await client.browseMedia({ folderId: 'folder-id', search: 'hero', category: 'images' });
 const item = await client.uploadMedia(file, folderId);
-
-// Delete (accepts an array of IDs)
 await client.deleteMedia(['item-id-1', 'item-id-2']);
-
-// Check usage before deleting (accepts an array of IDs)
 const usage = await client.checkMediaUsage(['item-id-1']);
 ```
 
@@ -4134,11 +4613,11 @@ Nothing to configure — this one is on by default. Cloud supplies the provider,
 
 **One library per project**, shared by everyone on it — a block one teammate saves is in another's browser on their next open. That is the part with no OSS equivalent: not the storage, but the fact that it is already shared.
 
-All four are enabled. Cloud's library is gated on the `saved_modules` plan feature.
+All four are enabled. Cloud's library is gated on the `savedModules` plan feature.
 
 ## Bringing your own
 
-You can, and this is one of only two providers `initCloud()` accepts as a full swap — `testEmail` is the other. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
+You can, and `initCloud()` accepts this as a full swap, the same way it accepts `testEmail` and `media`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
 
 ```ts
 await initCloud({ container, auth });                             // Cloud's library
@@ -4324,7 +4803,7 @@ Test email is a **shared feature**: the trigger, the dialog, recipient validatio
 
 Three conditions gate the button, and none implies another — all must hold for it to appear:
 
-- the `test_email` plan feature;
+- the `testEmail` plan feature;
 - a test-email config on the project's auth token (the allowed recipients plus their signature);
 - a **saved** template, because Cloud renders from the stored copy.
 
@@ -4373,7 +4852,7 @@ await initCloud({
 });
 ```
 
-Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `test_email` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
+Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `testEmail` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
 
 Cloud also accepts a narrower shape that keeps its own sender: `{ onSent?, defaultRecipient? }`. `includeMjml` and `allowedRecipients` are excluded from it — Cloud renders server-side rather than from a client MJML pass, and its allowlist is the signed one from your project's JWT, not one a client value could override. `defaultRecipient` is ignored unless it's already on that signed allowlist.
 
@@ -4594,7 +5073,7 @@ This matters most for the canvas. A page-wide `text-transform: uppercase` reachi
 Shadow DOM blocks host *rules* — a selector in your stylesheet never matches inside the editor's shadow root. It does not block *inheritance*, which follows the flattened tree, so inheritable properties cross the boundary regardless. The editor's own reset is what stops them, and it works identically with `shadowDom: false`.
 :::
 
-**`direction` is deliberately allowed to inherit.** An RTL page propagates its writing direction into the editor, which is what an RTL embedder wants. `visibility` is likewise left alone.
+**`direction` is deliberately allowed to inherit onto the editor chrome.** An RTL page propagates its writing direction into the header and rails, which is what an RTL embedder wants. The email canvas sets its own `dir` from `settings.direction` (falling back to the content language), so the host does not decide how the email reads. `visibility` is likewise left alone.
 
 ### You do not need a CSS reset on the container
 
@@ -4743,7 +5222,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
 - **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [Embedding the editor](./embedding) for what each one breaks and how to work around it.
-- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
 
 ## Network requests
 
@@ -4835,27 +5314,31 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
 | `@templatical/quality`         | Template linters (accessibility, structure, links) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
-| `@templatical/media-library`   | Standalone media library (types, composable, API client, Vue components) used by `initCloud()`.                                          | Optional — required only when using `initCloud()` for the media browser                             |
+| `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
 | `@templatical/import-beefree`  | Converts BeeFree JSON templates to Templatical format.                                                                                   | Optional                                                                                            |
 | `@templatical/import-unlayer`  | Converts Unlayer JSON design templates to Templatical format.                                                                            | Optional                                                                                            |
 | `@templatical/import-html`     | Converts existing HTML email templates (table-based) to Templatical format.                                                              | Optional                                                                                            |
+| `@templatical/import-mjml`     | Converts MJML email templates to Templatical format.                                                                                     | Optional                                                                                            |
+| `@templatical/import-topol`    | Converts Topol JSON templates to Templatical format.                                                                                     | Optional                                                                                            |
+| `@templatical/import-stripo`   | Converts Stripo plugin HTML and compiled File→HTML exports to Templatical format.                                                        | Optional                                                                                            |
+| `@templatical/import-chamaileon` | Converts Chamaileon `getDocument()` JSON to Templatical format.                                                                        | Optional                                                                                            |
+| `@templatical/import-easy-email-pro` | Converts Easy Email Pro persist JSON to Templatical format.                                                                        | Optional                                                                                            |
 
 `@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 
 ## Optional peers
 
-The editor lazy-loads four optional peers via dynamic `import()` at runtime, gated by feature use:
+The editor lazy-loads three optional peers via dynamic `import()` at runtime, gated by feature use:
 
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
 | `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, and link lint in the Issues sidebar |
-| `@templatical/media-library` | First open of the media browser | Use `initCloud()`                 |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
-If you don't install them, the corresponding feature disables itself — the editor still mounts and runs.
+If you don't install them, the editor still mounts. Quality's Issues tab and Pusher stay off. `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
 
 ### A note on bundler output
 
@@ -4870,7 +5353,7 @@ module.exports = {
     {
       module: /@templatical[\\/]editor/,
       message:
-        /Can't resolve '(pusher-js|@templatical\/(quality|media-library|renderer))'/,
+        /Can't resolve '(pusher-js|@templatical\/(quality|renderer))'/,
     },
   ],
 };
@@ -5067,7 +5550,7 @@ Every GitHub release carries the same tarballs that go to npm, one per package. 
 
 Three things to know:
 
-**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the three importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the importers all depend on `@templatical/types`. Point each one you pull in at a tarball:
 
 ```yaml
 # pnpm-workspace.yaml
@@ -5077,7 +5560,7 @@ overrides:
 
 npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`. `@templatical/editor` needs none of this — it bundles everything it uses.
 
-**Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree` and `@templatical/import-unlayer` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html` needs `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
+**Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-topol`, `@templatical/import-chamaileon` and `@templatical/import-easy-email-pro` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html`, `@templatical/import-mjml` and `@templatical/import-stripo` need `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
 
 **The source archives on that page are not a substitute.** "Source code (zip)" and "Source code (tar.gz)" are snapshots of the repository, as is a `github:templatical/sdk` dependency. Neither contains a built `dist/`, and both refer to sibling packages as `workspace:*`, which resolves to nothing outside this repo.
 
@@ -5339,7 +5822,7 @@ When it looks right, hit **Export** for the MJML or HTML and send it through you
 
 ### Import an existing template
 
-Already have a template in another editor? The skill can convert **Unlayer**, **BeeFree**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks. To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [HTML](/guide/migration-from-html).
+Already have a template in another editor? The skill can convert **Unlayer**, **BeeFree**, **Stripo**, **Topol**, **Chamaileon**, **Easy Email Pro**, **MJML**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks. To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [Stripo](/guide/migration-from-stripo), [Topol](/guide/migration-from-topol), [Chamaileon](/guide/migration-from-chamaileon), [Easy Email Pro](/guide/migration-from-easy-email-pro), [MJML](/guide/migration-from-mjml), [HTML](/guide/migration-from-html).
 
 ### Bring your own brand and rules
 
@@ -5352,7 +5835,7 @@ Custom blocks are the one exception: they are consumer-registered runtime extens
 The agent already runs this validator itself (step 3 above), so you don't have to. But it's just the published CLI, so you can also run it yourself whenever you want — in CI, or to spot-check a template:
 
 ```bash
-npx -y @templatical/template-tools@0.30.0 validate path/to/template.json
+npx -y @templatical/template-tools@0.36.0 validate path/to/template.json
 ```
 
 It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
@@ -5385,7 +5868,7 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 
 Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against the known failure modes.
 
-Its knowledge is a generated copy of this documentation site, bundled directly in the skill and regenerated every release, so most questions need no network access at all. The exceptions: an exact schema lookup runs the same published CLI `templatical-email` uses (`npx -y @templatical/template-tools@0.30.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than the reference describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — ask it directly, or read `SKILL.md` in the repository.
+Its knowledge is a generated copy of this documentation site, bundled directly in the skill and regenerated every release, so most questions need no network access at all. The exceptions: an exact schema lookup runs the same published CLI `templatical-email` uses (`npx -y @templatical/template-tools@0.36.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than the reference describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — ask it directly, or read `SKILL.md` in the repository.
 
 It doesn't run the live preview above — that's `templatical-email`'s — and it never touches git.
 
@@ -6278,6 +6761,33 @@ Defaults do **not** apply when:
 - Duplicating an existing block (the source block's values are preserved)
 - Loading saved content from the API
 
+### Placeholder text
+
+The text a new block starts with is localized, so `blockDefaults` is an override
+of a *localized* value rather than of an English one:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  locale: 'de',
+  blockDefaults: {
+    // Without these, a new Title reads "Geben Sie Ihren Titel ein" and a new
+    // Button "Hier klicken".
+    title: { content: '<p>Ihre Überschrift</p>' },
+    paragraph: { content: '<p>Ihr Text</p>' },
+    button: { text: 'Jetzt kaufen' },
+    video: { alt: 'Produktvideo' },
+  },
+});
+```
+
+`title.content` and `paragraph.content` are rich-text HTML — wrap the text in
+`<p>…</p>`. Every other field above is a plain string.
+
+Which locale a default follows depends on whether the text is for the author or
+for the recipient; [Internationalization](/guide/i18n) has the table. Values you
+set here win over both.
+
 ### Deep Merge Behavior
 
 Nested objects are **deep-merged**, not shallow-replaced. This means you can override a single padding value without losing the rest:
@@ -6354,6 +6864,8 @@ In other words, `templateDefaults` are fallbacks for missing content, not overri
 | `width` | `600` | Template width in pixels |
 | `backgroundColor` | `#ffffff` | Template background color |
 | `fontFamily` | `Arial` | Default font family |
+| `locale` | `en` | BCP-47 content language (`<html lang>`) |
+| `direction` | — | `"ltr"` or `"rtl"`. Unset follows the content language |
 | `preheaderText` | — | Email preheader text |
 
 ### TypeScript Type
@@ -6363,6 +6875,20 @@ import type { TemplateDefaults } from '@templatical/editor';
 // or
 import type { TemplateDefaults } from '@templatical/types';
 ```
+
+### Hiding a Setting
+
+`templateDefaults` sets a starting value; it does not decide whether the author can change it. To take a setting out of the Settings panel, pass an allowlist to `templateSettings.fields`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  // The author picks a width; locale and preheader come from the application.
+  templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] },
+});
+```
+
+The two compose in one direction only. `templateDefaults` applies when no content is provided, so it cannot pin a setting on a template you load — set that from the content itself (`init({ content })`, or your `templates` provider's `load`). See [Restricting the settings panel](/api/editor#restricting-the-settings-panel) for the full list of fields and how cards follow them.
 
 ## Built-in Default Constants
 
@@ -6697,7 +7223,11 @@ If you exclude the family that new templates start on — Arial by default, or w
 
 Source: https://docs.templatical.com/guide/i18n
 
-The editor UI supports locale switching. All labels, tooltips, placeholders, and messages are driven by translation keys — no hardcoded strings.
+The editor UI supports locale switching. Every label, tooltip, placeholder and message is driven by a translation key — no hardcoded strings.
+
+Two languages are in play, and they are not the same thing. `init({ locale })` sets the language of the **editor's own interface**. A template's `settings.locale` — the "Content language" field in Template Settings — sets the language of the **email being written**, and becomes `<html lang>` in the rendered output. A German-speaking marketer writing an English campaign sets the first to `de` and the second to `en`.
+
+Writing direction is a third, independent setting. `settings.direction` (`"ltr"` or `"rtl"`) is the canvas `dir` and the rendered `<mjml dir>`. When unset, it follows the content language (`ar`, `he`, `fa`, `ur`, … → RTL). It does not follow `init({ locale })` or the host page. The "Right-to-left" toggle in Template Settings writes an explicit value; after that, locale no longer drives it.
 
 ## Setting the locale
 
@@ -6737,7 +7267,7 @@ The editor normalizes locale codes by stripping region suffixes:
 | `'fr-BE'` | `fr` |
 | `'it'` | `en` (unsupported, falls back to English) |
 
-If the resolved locale is not supported, the editor falls back to English silently.
+If the resolved locale is not supported, the editor falls back to English and warns once on the console, naming the locales that would have worked. The fallback is silent only for the cloud chunk, which ships fewer locales on purpose (see below).
 
 ## Async loading
 
@@ -6791,6 +7321,53 @@ Some strings support placeholder interpolation using `{placeholder}` syntax:
   },
 }
 ```
+
+## Default block text
+
+New blocks start with placeholder text, and it follows the locale — a Button
+dragged in under `locale: 'de'` reads "Hier klicken", not "Click Here".
+
+Which locale depends on who the text is for:
+
+| Default | Follows | Why |
+|---|---|---|
+| Title, Paragraph, Button text | `init({ locale })` | Author-facing prompts. They exist to be overwritten, so they match the interface around them. |
+| Video `alt`, Countdown unit labels and expired message | the template's `settings.locale` | This text ships in the delivered email, so it follows the email's language — not the language of whoever is editing. |
+
+Override any of it with [`blockDefaults`](/guide/defaults), which wins over both:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  locale: 'de',
+  blockDefaults: {
+    // Your own wording, in any language you like.
+    button: { text: 'Jetzt kaufen' },
+    paragraph: { content: '<p>Text hier eingeben</p>' },
+  },
+});
+```
+
+The merge is deep, so overriding one field leaves the rest localized —
+`button: { backgroundColor: '#ff6600' }` keeps the translated label.
+
+::: tip
+An unset locale behaves exactly as before this existed: the English defaults are
+byte-identical to the factory values.
+:::
+
+## Dates
+
+Relative labels ("5m ago") come from translation keys. Absolute dates and times —
+version history entries, saved-block tooltips, the template's write-time line —
+are built by `Intl` from `init({ locale })`, so they read in the same language as
+the chrome beside them rather than in the browser's language.
+
+The canvas also carries the template's `settings.locale` as a `lang` attribute,
+so the browser's spellchecker and hyphenation judge the copy by the rules of the
+language it is actually written in. It binds `dir` from `settings.direction`
+(resolved as above) so an RTL host page cannot leak into an LTR email, and an
+LTR host cannot keep Arabic copy LTR.
 
 ## Contributing a new locale
 
@@ -6846,13 +7423,13 @@ When a user adds an image block, the editor shows a text field where they can pa
 
 <img src="/images/image-fields.png" alt="Image block fields" style="max-width: 360px;" />
 
-## Custom Media Picker
+## Browse and pick
 
-When the `onRequestMedia` callback is provided, a browse button appears alongside the URL input.
+A browse button appears alongside the URL input when **either** a [`media`](/backend/media) provider **or** `onRequestMedia` is configured.
 
 <img src="/images/image-picker.png" alt="Media picker button" style="max-width: 360px;" />
 
-The editor calls this function whenever the user clicks the button. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+`media` opens the built-in library modal. `onRequestMedia` is a **UI override** (Bynder, Cloudinary widget, a host modal): the editor calls it instead of opening the library, and it wins when both are set. Return a `MediaResult`, or `null` if the user cancels. When `alt` is provided, the editor fills in the image's alt text.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -6868,6 +7445,8 @@ const editor = await init({
   },
 });
 ```
+
+A gallery of your own is the `media` key — see [Media](/backend/media).
 
 The type signature:
 
@@ -6892,7 +7471,9 @@ type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | n
 
 ## Drag and drop to upload
 
-Users can drag an image file from their computer straight onto an image block (empty or filled), the sidebar image field, or a custom block's image field. When they do, the editor calls the **same** `onRequestMedia` handler — but with the dropped file in `context.files`:
+Users can drag an image file from their computer straight onto an image block (empty or filled), the sidebar image field, or a custom block's image field.
+
+With `onRequestMedia`, the editor calls that handler with the dropped file in `context.files`:
 
 ```ts
 const editor = await init({
@@ -6911,14 +7492,16 @@ const editor = await init({
 });
 ```
 
-The editor never uploads anything itself — it hands you the `File` and uses whatever URL you return, exactly like the Browse Media path. A few notes:
+With a `media` provider and no callback, drop goes to `provider.create({ file, templateId? })` when `create` is a function. `create: false` hides the drop affordance: the library is still browsable.
+
+A few notes:
 
 - **One file per drop.** `files` is an array for forward-compatibility, but the editor currently sends a single file (`files[0]`).
 - **Images only.** The editor pre-filters dropped files to image MIME types before calling you.
-- **No handler, no drop.** If `onRequestMedia` isn't provided, the drop affordance doesn't appear and drops are ignored.
+- **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
 - **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
 
-For [Cloud editors](/cloud/media-library), dropped files upload to your Templatical media library automatically — no `onRequestMedia` needed (a custom handler still takes precedence).
+For [Cloud editors](/cloud/media-library), dropped files upload to Cloud's library automatically — no `onRequestMedia` needed. A custom handler still takes precedence.
 
 ## Display-only URL resolution
 
@@ -7309,7 +7892,7 @@ The `value` regex detects data tags. The `logic` regex detects control flow stat
 
 When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript), the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
 
-Autocomplete works both inside title/paragraph rich-text blocks **and** in every merge-tag-enabled input and textarea field (button and image URLs, image alt text, video and menu links, template settings, and custom-block text fields). The popup, filtering, keyboard navigation, and positioning are identical across both surfaces.
+Autocomplete works both inside title/paragraph rich-text blocks **and** in every merge-tag-enabled input and textarea field (button and image URLs, image alt text, video and menu links, the rich-text link dialog's URL field, template settings, and custom-block text fields). The popup, filtering, keyboard navigation, and positioning are identical across both surfaces.
 
 Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
 
@@ -7447,6 +8030,25 @@ Your [`resolvePreview`](/guide/preview-rendering) callback receives tag nodes, i
 Merge tags aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
 
 <img src="/images/button-merge-tag.png" alt="Merge tag in a button URL" style="max-width: 360px;" />
+
+### Link URLs
+
+The **Insert Link** dialog in a title or paragraph block takes merge tags in its URL field, through the same insert button, picker and autocomplete as every other URL field. A link is often per-recipient or per-event, so its URL is frequently a tag rather than a literal.
+
+A URL you type without a scheme is completed with `https://` — except when it opens with a merge tag, which is stored exactly as written:
+
+```text
+you type                         stored href
+──────────────────────────────   ──────────────────────────────
+{{event_url}}                 →  {{event_url}}
+{{base_url}}/events/42        →  {{base_url}}/events/42
+https://acme.com/{{event_id}} →  https://acme.com/{{event_id}}
+acme.com/promo                →  https://acme.com/promo
+```
+
+The tag supplies its own scheme, so prefixing one would produce `https://https://…`. The scheme allowlist still runs first, so a tag cannot smuggle a rejected scheme (`javascript:`, `data:`) past it.
+
+A tag in an `href` is left byte-identical on export — see [Tokens in loaded content](#tokens-in-loaded-content) — so the sending system resolves it, exactly as it does in a button URL.
 
 ## Using merge tags outside the editor
 
@@ -7626,6 +8228,391 @@ After conversion, review the output in the editor to check for:
 
 ---
 
+# Migrating from Chamaileon
+
+Source: https://docs.templatical.com/guide/migration-from-chamaileon
+
+This guide is for teams who've built email templates in [Chamaileon](https://chamaileon.io) — in the hosted editor, or through a product that embeds the SDK — and want to move to Templatical's visual editor. **`@templatical/import-chamaileon`** converts a Chamaileon persist document into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
+
+The input is `editorInstance.methods.getDocument()`, not `getEmailHtml()` / the HTML generator.
+
+## Installation
+
+```bash
+npm install @templatical/import-chamaileon
+```
+
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertChamaileonTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-chamaileon/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+## Usage
+
+```ts
+import { convertChamaileonTemplate } from '@templatical/import-chamaileon';
+
+const document = await editorInstance.methods.getDocument();
+
+const { content, report } = convertChamaileonTemplate(document);
+
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+console.log(report);
+```
+
+`convertChamaileonTemplate` is synchronous and returns an `ImportResult` with:
+
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each produced block (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+It also accepts the document serialized as a JSON string, for callers that store or transmit it that way.
+
+::: tip
+Pass the persist document from `getDocument()`. That object is `{ body, variables?, components?, title?, previewText?, subjectLine?, fontFiles? }` with `body.type === "body"`. The HTML generator (`getEmailHtml()`) is a different surface — compiled table markup that belongs to [`@templatical/import-html`](/guide/migration-from-html), not this package. Guessing between the two would send markup through the wrong converter.
+
+Email JSON 2.0 through 4.1 is accepted after a key normalizer. Kebab-case styles (`background-color`) and camelCase (`backgroundColor`) are the same property, two versions. Inline `{ reference, default }` colour objects resolve to `default`, or to the matching `variables[]` entry when `default` is missing. The `reference` name is a design token, not a recipient field, so it is not stored as a merge tag.
+:::
+
+## Report
+
+Each `report.entries` item describes one produced block:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped to the right block, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent exists; the raw node is preserved as JSON inside an `HtmlBlock`. |
+| `skipped` | An empty loop or conditional — there were no children to convert. |
+
+```ts
+console.log(report.summary);
+// { total: 24, converted: 18, approximated: 5, htmlFallback: 0, skipped: 1 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`${entry.sourceTag} approximated:`, entry.note);
+  }
+}
+```
+
+A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subjectLine` or `fontFiles`, and a count of colour variables resolved to their defaults.
+
+## Document shape
+
+Chamaileon stores a design as a tree of typed nodes under `body`:
+
+```
+document
+  body (type "body")
+    children: fullwidth | block-level-loop | block-level-conditional
+      fullwidth.children: box | multicolumn | leaf
+        box.children: box | multicolumn | leaf
+        multicolumn.children: column only
+          column.children: box | multicolumn | leaf
+```
+
+Leaves in the documented element list: `text`, `typed-text`, `button`, `image`, `dynamic-image`, `divider`, `social`, `video`, `code`. `eid` is discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped. `customData` is ignored.
+
+- **Chamaileon** stores this persist tree, plus optional `variables[]` (design tokens) and `fontFiles`.
+- **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
+
+`@templatical/import-chamaileon` walks `body.children`, flattens `box` and nested `multicolumn`, and constructs the equivalent Templatical blocks. The mapping table below is what it implements.
+
+## Visual rebuild
+
+For a handful of templates, rebuilding by hand next to a Chamaileon preview is often faster than installing a package:
+
+1. Open the Chamaileon design — the editor itself, or a preview of `getEmailHtml()` — in one window.
+2. Open the Templatical editor (or [the playground](https://play.templatical.com)) side-by-side.
+3. Use that preview as your visual target. Do not feed `getEmailHtml()` into this converter.
+4. Drag in the equivalent Templatical blocks (see the [mapping table](#chamaileon-node-mapping) below).
+5. Copy text content directly. Re-host images via your media library.
+6. Reproduce styling using Templatical's [design tokens](/guide/theming).
+
+Most Chamaileon templates port in 10–20 minutes once you've done one or two. For a larger batch, run `@templatical/import-chamaileon` first and use this path only to finish off what it left `approximated`, `skipped`, or as an `html-fallback` block.
+
+## Renderer verification
+
+Once you have a template in Templatical — imported or rebuilt by hand:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const mjml = await renderToMjml(content);
+```
+
+A visual comparison against Chamaileon's own preview catches what the report cannot. Several of the losses below — `hoverBackgroundColor`, per-side borders on leaves — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
+
+There is no round-trip oracle. Templatical does not render Chamaileon JSON, and this package does not consume `getEmailHtml()`.
+
+## Node mapping {#chamaileon-node-mapping}
+
+| Chamaileon | Templatical block | Notes |
+|---|---|---|
+| `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty. |
+| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. |
+| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. |
+| `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's five layouts. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
+| `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
+| `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
+| `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
+| `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. |
+| `dynamic-image` | `ImageBlock` | `approximated`; the note names the source type. |
+| `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` and 4.1 `style.width` / `type` / `color` (line thickness, not block width). |
+| `social` | `SocialIconsBlock` | `elements[]` is the source of truth. Unknown platform names become `website`. Icon size snaps to 24 / 32 / 48 px. |
+| `video` | `VideoBlock` | `link` → `url`; `src` → `thumbnailUrl`. A missing thumbnail stays the factory empty string. |
+| `code` | `HtmlBlock` | From `attrs.html` / `attrs.code` / `attrs.content` (first set). |
+| `block-level-loop`, `block-level-conditional`, `branch`, `loop`, `conditional` | Children, or skip | Empty → `skipped`. Non-empty → children convert as if the wrapper were not there; every produced entry is `approximated`. The expression is not mapped onto `displayCondition`. |
+| Any other `type` | `HtmlBlock` | The raw node is preserved as JSON, flagged `html-fallback`. |
+
+`hideOnMobile` / `hideOnDesktop` map onto `visibility`. Absent when both flags are false.
+
+## Lossy conversions
+
+- **Nested `multicolumn`** — a row inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested multicolumn flattened (N columns)"`. Leaves convert; geometry is the loss.
+- **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column `multicolumn` folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
+- **Outlined buttons** — `background-color` unset plus a coloured border has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
+- **Loops and conditionals** — Chamaileon `attrs.expression` is not Liquid and is not MJML display-condition syntax. Empty nodes `skipped`. Populated nodes convert their children and drop the branching; stuffing the expression into `displayCondition` would lie about the dialect.
+- **Box paint among siblings** — a nested box with a real fill, padding, or radius that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`. A new top-level section would split the row; a nested section is illegal in a column.
+- **Variable references** — `{ reference, default }` resolves to a concrete colour. The reference name does not survive as a merge tag.
+- **Social icon sizes and unknown platforms** — size snaps to small / medium / large; an unknown `type` becomes `website`.
+- **Heading levels** — `TitleBlock` supports levels 1 through 4. A sole `<h5>` or `<h6>` clamps to 4.
+- **Block IDs** — every imported block gets a freshly generated ID. Chamaileon `eid` is discarded.
+
+::: tip
+Nested columns and painted boxes flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render; inventing extra top-level sections would split a row that was one band. Leaves convert either way. Empty loops skip rather than become one opaque `HtmlBlock`, so a populated loop of product rows stays as converted children.
+:::
+
+## Unmapped fields
+
+- **`subjectLine`** — Templatical templates have no subject-line field. A non-empty value is named in `report.warnings`.
+- **`fontFiles`** — no document-level font-file table. A non-empty object is named in `report.warnings`. Text that depended on it renders in the fallback face.
+- **`title`** (the document name) — silent; it is not recipient-facing.
+- **`hoverBackgroundColor`** — no hover fill on `ButtonBlock`.
+- **Per-side borders on leaves** — dropped at the site they are read.
+- **`fullWidthOnMobile` as a mobile-only flag** — not expressed on Templatical blocks.
+- **`components[]`** — 4.x style-preset library. Out of v1; own style on the node still applies.
+- **`lock` / `marker`** — editor chrome; ignored.
+- **`placeholder`** — block-library chrome on `fullwidth`; skipped.
+
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Chamaileon typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+
+## Further coverage
+
+[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Chamaileon `getDocument()` JSON and what you're trying to achieve. We use these reports to improve `@templatical/import-chamaileon`'s coverage.
+
+---
+
+# Migrating from Easy Email Pro
+
+Source: https://docs.templatical.com/guide/migration-from-easy-email-pro
+
+This guide is for teams who've built email templates in [Easy Email Pro](https://www.easyemail.pro) — in the hosted editor, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-easy-email-pro`** converts an Easy Email Pro persist page into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
+
+The input is the persist JSON — `{ subject, content }` with `content.type === "page"`, or a bare page element. It is not `EditorCore.toMJML()` and not the compiled HTML.
+
+## Installation
+
+```bash
+npm install @templatical/import-easy-email-pro
+```
+
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertEasyEmailProTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-easy-email-pro/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+## Usage
+
+```ts
+import { convertEasyEmailProTemplate } from '@templatical/import-easy-email-pro';
+
+const { content, report } = convertEasyEmailProTemplate(emailTemplate);
+
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+console.log(report);
+```
+
+`convertEasyEmailProTemplate` is synchronous and returns an `ImportResult` with:
+
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each produced block (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+It accepts:
+
+- the persist envelope `{ subject, content }` where `content.type === "page"`
+- a bare page element `{ type: "page", children, attributes, data }`
+- either shape serialized as a JSON string
+
+Extra `html` / `mjml` / `thumbnail` / `id` keys on the envelope are ignored.
+
+::: tip
+Pass the persist page, not `EditorCore.toMJML()` output. `toMJML` is a compile path — MJML markup that belongs to [`@templatical/import-mjml`](/guide/migration-from-mjml), not this package. Compiled HTML belongs to [`@templatical/import-html`](/guide/migration-from-html). Guessing between the three would send markup through the wrong converter.
+
+`$var(name)` is a design token, not a merge tag. Values resolve against the nearest table (widget `data.input` first, then page `data.variables[]`). Unresolved leftovers stay unset rather than being stored as recipient fields.
+
+Open-source Easy Email is a different JSON (`type: "section"` / `"text"` without the `standard-` prefix). This package throws a dedicated error rather than mis-import it. Zalify ships `easyEmailToEasyEmailPro()` for that direction.
+:::
+
+## Report
+
+Each `report.entries` item describes one produced block:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped to the right block, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent exists; the raw node is preserved as JSON inside an `HtmlBlock`. |
+| `skipped` | Empty `logic` — there were no children to convert. |
+
+```ts
+console.log(report.summary);
+// { total: 24, converted: 18, approximated: 5, htmlFallback: 0, skipped: 1 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`${entry.sourceTag} approximated:`, entry.note);
+  }
+}
+```
+
+A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subject` or `fonts[]`, leftover `$var()` counts, and `mobileAttributes` when any node carried them.
+
+## Document shape
+
+Easy Email Pro stores a design as a tree of typed nodes under a `page`:
+
+```
+EmailTemplate { subject, content }
+  content: page
+    data: { globalAttributes, blockAttributes, categoryAttributes, fonts, preheader, variables[] }
+    attributes: { width, background-color, content-background-color, link-color, … }
+    children: standard-section | standard-wrapper | standard-hero | *_widget | AMP_* | custom
+      standard-section.children: standard-column | standard-group
+        standard-group.children: standard-column
+          standard-column.children: leaf | nested structure
+```
+
+Leaves in the documented element list: `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `line-break`, `html-block-node`, `marketing-countdown`, `placeholder`. `uid` / `id` / `thumbnail` are discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped.
+
+- **Easy Email Pro** stores this persist tree, plus optional `variables[]` (design tokens) and page `data`.
+- **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
+
+`@templatical/import-easy-email-pro` walks `page.children`, flattens `standard-group` and widgets, and constructs the equivalent Templatical blocks. The mapping table below is what it implements.
+
+## Visual rebuild
+
+For a handful of templates, rebuilding by hand next to an Easy Email Pro preview is faster than installing a package:
+
+1. Open the Easy Email Pro design — the editor itself, or a preview of its compiled HTML — in one window.
+2. Open the Templatical editor (or [the playground](https://play.templatical.com)) side-by-side.
+3. Use that preview as your visual target. Do not feed `EditorCore.toMJML()` into this converter.
+4. Drag in the equivalent Templatical blocks (see the [mapping table](#easy-email-pro-node-mapping) below).
+5. Copy text content directly. Re-host images via your media library.
+6. Reproduce styling using Templatical's [design tokens](/guide/theming).
+
+For a larger batch, run `@templatical/import-easy-email-pro` first and use this path only to finish off what it left `approximated`, `skipped`, or as an `html-fallback` block.
+
+## Renderer verification
+
+Once you have a template in Templatical — imported or rebuilt by hand:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const mjml = await renderToMjml(content);
+```
+
+A visual comparison against Easy Email Pro's own preview catches what the report cannot. Several of the losses below — `mobileAttributes`, hero overlay, page `fonts[]` — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
+
+There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, and this package does not consume `EditorCore.toMJML()`.
+
+## Node mapping {#easy-email-pro-node-mapping}
+
+| Easy Email Pro | Templatical block | Notes |
+|---|---|---|
+| `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
+| `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. |
+| `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
+| `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
+| `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
+| `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
+| `placeholder` | Skip | Editor chrome. No entry. |
+| `standard-paragraph` | `ParagraphBlock` | Content from Slate children. Stays a paragraph even at a large `font-size`. |
+| `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
+| `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
+| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
+| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. |
+| `standard-spacer` | `SpacerBlock` | Height from `height` px. |
+| `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
+| `standard-social` + `standard-social-element` | `SocialIconsBlock` | Platform inferred from `href` hostname, then `src` path. Custom PNG `src` is dropped, `approximated`. |
+| `standard-table2` / `tr` / `td` | `TableBlock` | Converted. |
+| `line-break` | `<br>` | Inside the parent rich-text. No entry. |
+| `html-block-node` | HTML fragment | Inside the parent rich-text. No entry. |
+| `marketing-countdown` | Overlay text + `ImageBlock` of `src` | The GIF is the timer. Does not emit `type: "countdown"` (Cloud-only). `approximated`. |
+| kit `common-video` | `VideoBlock` | Converted when a URL is present; otherwise `html-fallback`. |
+| kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
+| `section_widget` / `wrapper_widget` | Children | `$var` from `data.input`; every produced entry `approximated`. |
+| AMP_* | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
+| `logic` | Children, or skip | Empty → `skipped`. Non-empty → children convert as if the wrapper were not there; every produced entry `approximated`. The expression is not mapped onto `displayCondition`. |
+| Any other `type` | `HtmlBlock` | The raw node is preserved as JSON, flagged `html-fallback`. |
+
+`visible: "desktop"` / `"mobile"` maps onto `visibility`. Absent when the key is missing.
+
+## Lossy conversions
+
+- **`$var` unresolved leftovers** — `$var(name)` resolves against widget `data.input`, then page `variables[]`. A name with no value is unset (`""` / leftover `$var(…)` do not become merge tags). One document-level warning names how many values resolved and how many were left unresolved.
+- **`mobileAttributes`** — a second attribute bag for the mobile viewport. Templatical has no per-viewport padding. Dropped. One document-level warning when any node carried them.
+- **Hero overlay** — `standard-hero` has no block equivalent. Children walk into a 1-col section; `background-url` becomes a leading `ImageBlock`, stacked, not overlaid. Overlay-on-image is the loss; editable CTAs survive. `approximated`.
+- **Outlined buttons** — `border-enabled: true` plus an unset fill has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
+- **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column section folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
+- **Nested group flatten** — a `standard-group` inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested group flattened (N columns)"`. Leaves convert; geometry is the loss.
+- **Custom social PNGs** — `standard-social-element` carries a custom PNG `src`. `SocialIconsBlock` has no custom src — it picks an icon from `platform` + `iconStyle`. The PNG is the loss; the entry is `approximated` when a custom `src` was present.
+- **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
+- **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
+- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block is Cloud-only and blank on OSS, so this package does not emit it. The GIF is a static image; the timer does not tick.
+
+::: tip
+Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk rather than html-fallback the whole subtree so editable CTAs survive; overlay-on-image is what Templatical cannot express. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
+:::
+
+## Unmapped fields
+
+- **`subject`** — Templatical templates have no subject-line field. A non-empty value is named in `report.warnings`.
+- **`fonts[]`** — no document-level font-file table. A non-empty array is named in `report.warnings`. Text that depended on it renders in the fallback face.
+- **`headStyles`** — no document-level head-style table. A non-empty value is named in `report.warnings`.
+- **`thumbnail` / `id`** — silent; they are not recipient-facing.
+- **`classAttributes`** — skipped in v1. One warning when the object is non-empty.
+- **`breakpoint`** — silent. Templatical mobile is 375 / MJML 480; this package does not invent a setting.
+
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Easy Email Pro typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+
+## Further coverage
+
+[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Easy Email Pro persist JSON and what you're trying to achieve. We use these reports to improve `@templatical/import-easy-email-pro`'s coverage.
+
+---
+
 # Migration from HTML
 
 Source: https://docs.templatical.com/guide/migration-from-html
@@ -7687,31 +8674,80 @@ HTML elements map to Templatical equivalents:
 |---|---|---|
 | `<h1>` – `<h4>` | `title` | Converted (level preserved) |
 | `<h5>` – `<h6>` | `title` | Converted (clamped to level 4) |
+| A heading wrapped in a `<div>`, `<center>` or `<main>` | `title` | Converted (wrapper unwrapped) |
 | `<p>` / text-only `<div>` / `<span>` | `paragraph` | Converted |
+| Text-only `<td>` in a layout table | `paragraph` | Converted |
+| Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
 | `<img>` | `image` | Converted |
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
-| `<a>` (plain inline link) | `paragraph` | Approximated (wrapped in a paragraph) |
+| `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
+| `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider` | Converted |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` containing a single styled `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |
 
 Anything that can't be mapped is preserved verbatim inside an HTML block, so no visible content is lost.
 
+A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell whose entire content is one styled text `<a>` reads as a button.
+
+A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
+
+## Inline Formatting
+
+`<br>`, `<em>`, `<strong>`, `<i>`, `<b>`, `<u>`, `<small>`, `<sub>` and `<sup>` stay inside the text they belong to. A run of them, together with the bare text around it, becomes one `paragraph` whose colour, size and alignment come from the containing cell — so `Hello<br>World` in a `<td>` imports as a single paragraph holding both words and the line break.
+
+A text `<a>` folds into that run, keeping its `href`, so a sentence containing a link arrives as one paragraph rather than as a link torn out of its copy. An `<a>` wrapping an `<img>` becomes an `image` with `linkUrl` from a non-empty href. An `<a>` wrapping both an image and text becomes that `image` plus a sibling `paragraph` that keeps the remaining `<a>`.
+
+::: tip
+Bare text counts as content here. A cell walk that visited only element children dropped the words between two inline tags, and dropped a loose sentence sitting beside a table at body or wrapper level. Both are now kept.
+:::
+
 ## Column Layout Conversion
 
-Each `<tr>` in a layout table becomes a `SectionBlock`. Cell counts map directly:
+Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` / `<th>` children are the layout:
 
 | Cells per row | Templatical Layout |
 |---|---|
 | 1 | `'1'` |
-| 2 | `'2'` |
+| 2 | `'2'` or `'2-1'` / `'1-2'`, by declared width |
 | 3 | `'3'` |
-| 4+ | flattened to `'1'` with a warning |
+| 4+ | merged into `'1'`, with a warning and an `approximated` report entry |
 
-Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell.
+### Column ratios
+
+A two-cell row picks between `'2'`, `'2-1'` and `'1-2'` from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. The closest of those layouts wins, so `350` / `190` reads as `'2-1'` and `33.33%` / `66.66%` as `'1-2'`.
+
+A ratio no layout expresses is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
+
+```txt
+Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent.
+The section was imported as 3 equal columns.
+```
+
+### Wrapper rows
+
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row carries no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+
+### Gutter rows
+
+A row that pads its content with empty cells — `&nbsp;` either side of a centred container — is read as the single column it lays out, not as one column per cell. The signal is content: a cell holding nothing takes part in no layout.
+
+### Sibling column containers
+
+A single `<td>` holding one `display: inline-block` container per column is read as a column set, with the column count taken from the number of containers and the ratio from their declared widths. This is how hybrid templates and compiled MJML state their columns — MJML puts a whole section's columns into one cell as sibling `<div class="mj-column-per-*">` elements — so such a row has no cell count to read.
+
+Every container must be laid out side by side, none may be empty, and no text of the cell's own may sit beside them. A cell failing any of those is a single column.
+
+::: tip
+`display: inline-block` is what makes a set of containers a set of columns, since a block-level `<div>` stacks instead. Requiring it keeps two stacked divs from being read as a layout the source never stated.
+:::
+
+### Nesting
+
+Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell. A nested row with more than one cell loses its columns that way, and `report.entries` records it as `approximated` with a note.
 
 ## CSS Handling
 
@@ -7743,6 +8779,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
+- **Rows of more than three cells** — `ColumnLayout` holds at most three columns, so a wider row is merged into one and reported. Ratios outside `'2'` / `'2-1'` / `'1-2'` / `'3'`, such as a `1-2-1` sidebar pair, have no equivalent either and import as the equal split.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -7777,19 +8814,95 @@ for (const warning of report.warnings) {
 }
 ```
 
+### Sections in the report
+
+`report.entries` accounts for the sections alongside the leaf blocks, so the entries reconcile against `content.blocks`:
+
+- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged or when the ratio had no equivalent.
+- One entry with `sourceTag: 'body'` and a note when loose top-level content is grouped into a synthetic single-column section.
+- One entry with `templaticalBlockType: null` and a note for a nested row whose columns were dropped.
+
+A wrapper the importer descends through contributes no entry of its own: nothing is created and nothing lost. So a heading lifted out of a `<div>` is reported under its own tag, and a cell's column containers appear nowhere.
+
+::: warning Entry counts changed
+Sections and lost layouts are reported where they previously were not, so `report.summary.total` is higher for the same document, and `approximated` now covers cases that raised only a `warnings` string or went unreported. Code that asserts on exact totals needs updating; code that filters by `status` or `templaticalBlockType` does not.
+:::
+
 ---
 
-# Migrating from hand-written MJML
+# Migrating from MJML
 
 Source: https://docs.templatical.com/guide/migration-from-mjml
 
-This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor.
+This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor. **`@templatical/import-mjml`** converts an MJML document into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 
-::: tip Automated importer in development
-We're building an automated **`@templatical/import-mjml`** package that parses an MJML document and produces a Templatical `TemplateContent` tree. It's actively in development. Until it ships, this page documents the manual path.
+## Installation
 
-MJML → Templatical is harder to fully automate than BeeFree → Templatical, because MJML is a strict superset of what Templatical's JSON tree expresses (you can write valid MJML that has no Templatical block equivalent). The importer will cover the common patterns and fall back to `HtmlBlock` for anything outside the mapping.
-:::
+```bash
+npm install @templatical/import-mjml
+```
+
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertMjmlTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-mjml/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+## Usage
+
+```ts
+import { convertMjmlTemplate } from '@templatical/import-mjml';
+
+// Load the raw MJML source of an email
+const res = await fetch('/path/to/email.mjml');
+const mjml = await res.text();
+
+// Convert to Templatical format
+const { content, report } = convertMjmlTemplate(mjml);
+
+// Use in the editor
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+// Check the conversion report for any issues
+console.log(report);
+```
+
+`convertMjmlTemplate` is synchronous and returns an `ImportResult` with:
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each source element (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+## Reading the report
+
+Each `report.entries` item describes one source element:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Every attribute with a Templatical home was carried across. |
+| `approximated` | Mapped to the right block, but a value was coerced to fit a closed range — `note` states the original value. |
+| `html-fallback` | No block equivalent exists; the original markup is preserved in an `HtmlBlock`. |
+| `skipped` | Nothing was produced (`templaticalBlockType: null`). |
+
+```ts
+console.log(report.summary);
+// { total: 24, converted: 21, approximated: 2, htmlFallback: 1, skipped: 0 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
+  }
+}
+// <mj-section> approximated: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+```
+
+A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
 
 ## What's actually happening here
 
@@ -7798,11 +8911,11 @@ This is a slightly counter-intuitive migration. Templatical's renderer produces 
 - **MJML** is a markup language. You write XML-like tags (`<mj-section>`, `<mj-column>`, `<mj-text>`) and the MJML compiler turns them into table-based HTML.
 - **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
 
-To bring an MJML template into Templatical, you need to **parse the MJML** and **construct an equivalent JSON tree**. There's no built-in tool for that yet — see "automated importer in development" above.
+To bring an MJML template into Templatical, you parse the MJML and construct an equivalent JSON tree — including resolving MJML's own attribute-inheritance rules (`mj-all`, per-tag defaults, `mj-class`) before mapping each element. `@templatical/import-mjml` does exactly that; the mapping table below is what it implements.
 
-## Path 1 — Rebuild visually using your MJML as a reference (recommended)
+## Path 1 — Rebuild visually using your MJML as a reference
 
-If you have **fewer than 20 MJML templates**, this is by far the fastest path:
+For a handful of templates, rebuilding by hand next to your MJML source is often faster than installing a package:
 
 1. Open your MJML source in your editor of choice.
 2. Open the Templatical editor (or [the playground](https://play.templatical.com)) side-by-side.
@@ -7811,11 +8924,11 @@ If you have **fewer than 20 MJML templates**, this is by far the fastest path:
 5. Copy text content directly. Re-host images via your media library.
 6. Reproduce styling using Templatical's [design tokens](/guide/theming) instead of inline `mj-attributes`.
 
-Most MJML templates port in 10–20 minutes once you've done one or two.
+Most MJML templates port in 10–20 minutes once you've done one or two. For a larger batch, run `@templatical/import-mjml` first and use this path only to finish off anything it left as an HTML-fallback block.
 
 ## Path 2 — Use Templatical's renderer to verify your work
 
-Once you've rebuilt a template visually:
+Once you have a template in Templatical — imported or rebuilt by hand:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -7826,86 +8939,354 @@ const mjml = await renderToMjml(content);
 
 Run a diff between the original and Templatical-generated MJML to spot structural differences. This is a useful sanity check before bulk-migrating.
 
-## Path 3 — Write a one-off conversion script
-
-If you have hundreds of MJML templates and want to attempt automated conversion before the official importer ships, the practical approach is to use a small XML/HTML parser (`htmlparser2`, `node-html-parser`) and walk the MJML tree, calling Templatical's [block factories](/api/types) for each tag.
-
-Here's the rough shape:
-
-```ts
-import { parse } from 'node-html-parser';
-import {
-  createSectionBlock,
-  createTitleBlock,
-  createParagraphBlock,
-  createImageBlock,
-  createButtonBlock,
-} from '@templatical/types';
-import type { TemplateContent, Block } from '@templatical/types';
-
-function mjmlToTemplate(mjml: string): TemplateContent {
-  const root = parse(mjml);
-  const body = root.querySelector('mj-body');
-
-  const blocks: Block[] = (body?.childNodes ?? [])
-    .map((node) => convertNode(node))
-    .filter((b): b is Block => b !== null);
-
-  return {
-    blocks,
-    settings: {
-      width: parseInt(body?.getAttribute('width') ?? '600'),
-      backgroundColor: body?.getAttribute('background-color') ?? '#ffffff',
-    },
-  };
-}
-
-function convertNode(node: any): Block | null {
-  switch (node.tagName?.toLowerCase()) {
-    case 'mj-section':
-      return convertSection(node);
-    case 'mj-text':
-      return convertText(node);
-    // …more cases — see the mapping table below
-    default:
-      return null; // or fall back to HtmlBlock
-  }
-}
-```
-
-::: warning
-A handwritten parser will miss edge cases — nested `mj-wrapper`, custom components, conditional tags, includes (`mj-include`), and attribute inheritance via `mj-attributes`. Run any conversion on a small sample first and compare visually before bulk-converting.
-:::
-
 ## MJML tag mapping {#mjml-tag-mapping}
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
 | `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
-| `mj-text` | `ParagraphBlock` (or `TitleBlock` if it's a heading) | Use heading-level inline styles to decide between Title and Paragraph. |
+| `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, padding. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
-| `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. |
+| `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
-| `mj-table` | `TableBlock` | Map `<tr>` and `<td>` rows/cells to Templatical's table data. |
-| `mj-raw` | `HtmlBlock` | Pass-through HTML. |
-| `mj-wrapper` | `SectionBlock` (often) | A wrapper without columns becomes a section with one column. |
-| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` (fallback) | Templatical doesn't have direct equivalents yet — convert the rendered HTML to a raw HTML block, or wait for the importer. |
-| `mj-head` content | Template `settings` | `mj-title`, `mj-preview`, `mj-attributes`, `mj-font`, `mj-style` map to `TemplateSettings.preheaderText`, custom fonts, and theme overrides. |
+| `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
+| `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
+| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. |
+| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
+| `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
+
+## Where the mapping is lossy
+
+MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
+
+- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML allows any number of columns at any width, so a ratio outside those five resolves to the nearest layout, and a fourth or later column's content folds into the last column.
+- **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
+- **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
+- **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
+- **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
 
 ## Things that don't map automatically
 
-- **`mj-attributes` defaults** — MJML lets you set defaults for any tag globally. Translate these into Templatical's [block defaults](/guide/defaults) and [theme overrides](/guide/theming) instead.
-- **`mj-include`** — MJML's include directive has no direct equivalent. Inline the included content during conversion.
-- **Custom MJML components** — if you've registered custom MJML components, you'll need to either (a) implement them as [Templatical custom blocks](/guide/custom-blocks), or (b) fall back to `HtmlBlock` with the rendered HTML.
-- **Conditional MSO tags inside `mj-raw`** — preserve them by including the original markup in an `HtmlBlock`.
+- **`mj-include`** — the importer reads a single MJML string with no filesystem access, so an unresolved `<mj-include>` is skipped with a warning naming its `path` attribute. Inline the included content before importing.
+- **Custom MJML components** — an unrecognized `mj-*` tag lands as an `HtmlBlock` holding its rendered markup automatically. Reimplement it as a [Templatical custom block](/guide/custom-blocks) if you want it editable as a native block instead.
 
 ## What to do if you hit something this guide doesn't cover
 
-[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your MJML and what you're trying to achieve. We're using these reports to prioritize which MJML patterns the automated importer covers first.
+[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your MJML and what you're trying to achieve. We use these reports to improve `@templatical/import-mjml`'s coverage.
+
+---
+
+# Migrating from Stripo
+
+Source: https://docs.templatical.com/guide/migration-from-stripo
+
+This guide is for teams who've built email templates in [Stripo](https://stripo.email) — in the hosted editor, or through a product that embeds the Stripo Plugin — and want to move to Templatical's visual editor. **`@templatical/import-stripo`** converts Stripo HTML into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
+
+Stripo stores two different HTML surfaces. The converter auto-detects which one you passed. There is no mode flag.
+
+| Surface | Where it comes from | Discriminator |
+|---|---|---|
+| Plugin / editor storage | `getTemplateData()` → `{ html, css }` | `esd-stripe`, `esd-structure`, `esd-block-*` on elements |
+| Compiled export | File → HTML, or `compileEmail({ callback })` | `es-wrapper`, `es-content-body`, `es-header-body` — no `esd-*` on elements |
+
+A leftover `.esd-block-html` rule inside a stylesheet is not a discriminator. CSS-only leftovers convert as generic HTML.
+
+## Installation
+
+```bash
+npm install @templatical/import-stripo
+```
+
+### Without a build step (CDN)
+
+```html
+<script type="module">
+  import { convertStripoTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-stripo/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+## Usage
+
+```ts
+import { convertStripoTemplate } from '@templatical/import-stripo';
+
+// Plugin host — what you stored from getTemplateData():
+const { html, css } = await window.StripoApi.getTemplateData();
+const { content, report } = convertStripoTemplate(html, { css });
+
+// Marketer File → HTML export:
+const exported = await fetch('/path/to/export.html').then((r) => r.text());
+const compiled = convertStripoTemplate(exported);
+
+const editor = await init({
+  container: '#editor',
+  content: compiled.content,
+});
+```
+
+`convertStripoTemplate` is synchronous and returns an `ImportResult` with:
+
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each source element (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+Pass `options.css` when converting plugin storage. It is ignored on compiled exports (those already inline their styles).
+
+Unrecognized HTML (no Stripo class attributes) is converted through `@templatical/import-html` and the report carries a warning naming that fallback.
+
+## Reading the report
+
+Each `report.entries` item describes one source element:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped to a Templatical block, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent; the original markup is preserved in an `HtmlBlock`. |
+| `skipped` | Reserved for parity with the other `@templatical/import-*` packages; this converter does not currently produce it. |
+
+```ts
+console.log(report.summary);
+// { total: 18, converted: 16, approximated: 1, htmlFallback: 1, skipped: 0 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
+  }
+}
+```
+
+## Path 1 — Rebuild visually using your Stripo export as a reference
+
+For a handful of templates, rebuilding by hand next to a compiled preview is often faster than installing a package:
+
+1. Export File → HTML from Stripo and open it in a browser — that's your visual target.
+2. Open the Templatical editor (or [the playground](https://play.templatical.com)) side-by-side.
+3. Drag in the equivalent Templatical blocks (see the mapping tables below).
+4. Copy text content directly. Re-host images via your media library.
+
+Most Stripo templates port in 10–20 minutes once you've done one or two. For a larger batch, run `@templatical/import-stripo` first and use this path only to finish off what it left `approximated` or as an `html-fallback` block.
+
+## Plugin HTML mapping {#plugin-mapping}
+
+Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structure` becomes a `SectionBlock`; its `esd-container-frame` children are the columns.
+
+| Stripo marker | Templatical block | Notes |
+|---|---|---|
+| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. |
+| `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
+| `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
+| `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`. |
+| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
+| `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
+| `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
+| `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
+| `esd-block-spacer` | `spacer` | Height from `style` or the `height` attribute. |
+| `esd-block-html` | `html` | Inner markup preserved. |
+
+## Compiled HTML mapping {#compiled-mapping}
+
+Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Stripes (`es-header` / `es-content` / `es-footer`) become sections. Columns are sibling floated tables (`es-left` / `es-right`), not cell counts.
+
+| Stripo marker | Templatical block | Notes |
+|---|---|---|
+| `es-header` / `es-content` / `es-footer` | `SectionBlock` | One section per top-level stripe. Fill comes from the inner `es-*-body` `background-color` (style wins over `bgcolor`). |
+| 1–3 `es-left` / `es-right` siblings | `columns` `"1"` / `"2"` / `"3"` | Floated tables, not `<td>` count. |
+| 4+ floated siblings | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. |
+| `table.es-menu` (2+ item cells) | `menu` | |
+| `table.es-menu` (1 item cell) | inner mapping, not `menu` | Same stacked-step rule as the plugin path. |
+| `table.es-social` | `social` | Same platform mapping as the plugin path. |
+| `es-spacer` | `spacer` | |
+
+Everything else in a stripe goes through `@templatical/import-html` (headings, paragraphs, images, dividers).
+
+## Where the mapping is lossy
+
+- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables keeps three slots and folds the rest into the last.
+- **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
+- **Block IDs** — every imported block gets a freshly generated ID.
+- **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.
+- **Inline CSS vs. plugin CSS** — compiled exports already inline. Plugin CSS must be passed as `options.css` or styles that lived only in that stylesheet are missing from the conversion.
+
+## Things that don't map automatically
+
+- **A round-trip back into Stripo** — the output is Templatical JSON, not Stripo editor HTML.
+- **Generic HTML that was never a Stripo document** — use [`@templatical/import-html`](/guide/migration-from-html) directly. Passing it here still converts, with a warning.
+
+## What to do if you hit something this guide doesn't cover
+
+[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Stripo HTML and what you're trying to achieve. We use these reports to improve `@templatical/import-stripo`'s coverage.
+
+---
+
+# Migrating from Topol
+
+Source: https://docs.templatical.com/guide/migration-from-topol
+
+This guide is for teams who've built email templates in [Topol.io](https://topol.io)'s drag-and-drop editor — directly, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-topol`** converts a Topol design into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
+
+## Installation
+
+```bash
+npm install @templatical/import-topol
+```
+
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertTopolTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-topol/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+## Usage
+
+```ts
+import { convertTopolTemplate } from '@templatical/import-topol';
+
+// Topol hands you the design directly from its editor's onSave callback.
+// Fetched from its REST API instead, it sits under "definition" (the
+// template endpoint) or "json" (the predefined-templates endpoint) — not
+// the response object itself.
+const res = await fetch('https://app.topol.io/api/templates/123').then((r) => r.json());
+
+// Convert to Templatical format
+const { content, report } = convertTopolTemplate(res.data.definition);
+
+// Use in the editor
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+// Check the conversion report for any issues
+console.log(report);
+```
+
+`convertTopolTemplate` is synchronous and returns an `ImportResult` with:
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each source node (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+It also accepts the design serialized as a JSON string, for callers that store or transmit it that way.
+
+::: tip
+Pass the design object itself, not Topol's whole API response. Topol's editor hands it to you directly, as the first of four arguments to `onSave` — no envelope to unwrap there. Its REST APIs do wrap it, and which field holds the design depends on the endpoint: the template-retrieval endpoint returns `{ data: { id, name, screenshot_url, definition, html } }`, so use `.data.definition`; the predefined-templates endpoint returns the design under `json`, alongside `html`. Passing either envelope by mistake, as an object or as a JSON string, is recognised — the converter sees a `json` or `definition` key on a root with the wrong shape and names both fields in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds it risks importing an envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
+:::
+
+## Reading the report
+
+Each `report.entries` item describes one source node:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Every attribute with a Templatical home was carried across. |
+| `approximated` | Mapped to the right block, but a value was coerced to fit a closed range — `note` states what was coerced. |
+| `html-fallback` | No block equivalent exists; the raw node is preserved as JSON inside an `HtmlBlock`. |
+| `skipped` | Reserved for parity with the other `@templatical/import-*` packages — this converter does not currently produce it. |
+
+```ts
+console.log(report.summary);
+// { total: 161, converted: 152, approximated: 9, htmlFallback: 0, skipped: 0 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`<${entry.sourceTag}> approximated:`, entry.note);
+  }
+}
+// <mj-social> approximated: Icon size 35px is not one of 24/32/48px; resolved to "medium".
+```
+
+A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed. `report.warnings` carries the handful of document-level drops that don't attach to a single entry — a dropped document line-height, for instance, covered under "Things that don't map automatically" below.
+
+## What's actually happening here
+
+Topol's own JSON tree already speaks in MJML-shaped tags — `mj-section`, `mj-column`, `mj-text`, `mj-button`, and so on — even though Topol is not MJML itself. Its root node is `mj-global-style`, not MJML's `<mjml>`/`<mj-body>` pair, and a few tags pack information differently: a single `mj-social` node carries every icon as `<platform>-href` attributes, rather than nesting child `mj-social-element`s the way hand-written MJML does. Rich content sits in a `content` field beside each node's `attributes`, not inside it.
+
+- **Topol** stores a design as this tree of tag-shaped nodes, plus a root-level `attributes` object holding per-tag and per-selector style defaults — the same role MJML's `<mj-attributes>` plays, flattened onto the root instead of nested under `<mj-head>`.
+- **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
+
+`@templatical/import-topol` walks the Topol tree, resolves each node's own attributes against the root's per-tag and per-selector defaults, and constructs the equivalent Templatical block. The tag-mapping table below is what it implements.
+
+## Path 1 — Rebuild visually using your Topol export as a reference
+
+For a handful of templates, rebuilding by hand next to your Topol export is often faster than installing a package:
+
+1. Open your Topol design — the editor itself, or the JSON export — in one window.
+2. Open the Templatical editor (or [the playground](https://play.templatical.com)) side-by-side.
+3. Use Topol's own preview, or the `html` field from its API response, as your visual target.
+4. Drag in the equivalent Templatical blocks (see the [mapping table](#topol-tag-mapping) below).
+5. Copy text content directly. Re-host images via your media library.
+6. Reproduce styling using Templatical's [design tokens](/guide/theming) instead of Topol's attribute defaults.
+
+Most Topol templates port in 10–20 minutes once you've done one or two. For a larger batch, run `@templatical/import-topol` first and use this path only to finish off what it left `approximated` or as an `html-fallback` block.
+
+## Path 2 — Use Templatical's renderer to verify your work
+
+Once you have a template in Templatical — imported or rebuilt by hand:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const mjml = await renderToMjml(content);
+// Compile with your own MJML library and compare the result against
+// Topol's own `html` field, from the same API response that carries `json`.
+```
+
+A visual comparison catches what the report can't. Several of the losses below — the section background image most visibly — are never read by the importer at all, so nothing in `report.entries` points at them.
+
+## Topol tag mapping {#topol-tag-mapping}
+
+| Topol tag | Templatical block | Notes |
+|---|---|---|
+| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's five layouts resolves to the nearest one. |
+| `mj-column` | Section column | Holds a list of nested blocks. |
+| `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
+| `mj-gif` | `ImageBlock` | Same fields as `mj-image` — Templatical has no dedicated GIF block. |
+| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
+| `mj-spacer` | `SpacerBlock` | `height`. |
+| `mj-social` | `SocialIconsBlock` | Each platform named in the node's `display` list with a matching `<platform>-href` becomes a `SocialIcon`. Topol packs every icon onto this one node's attributes, rather than nesting `mj-social-element` children the way hand-written MJML does. |
+| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. |
+| Anything else | `HtmlBlock` | No Templatical block exists for the tag; the raw node is preserved as JSON, flagged `html-fallback`. |
+
+## Where the mapping is lossy
+
+Every leaf tag in the mapping table above converts — Topol's own editor doesn't emit anything this importer treats as `html-fallback` in practice. Within that, a few conversions are approximations rather than exact matches, each recorded as an `approximated` entry with a `note` in `report.entries`:
+
+- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol allows any column count at any width, so a shape outside those five — most often four equal columns — resolves to the nearest layout, and any column past the third folds its content into the last one.
+- **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
+- **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
+- **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for Google+, a network retired years ago.
+- **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `icon-size` outside those three resolves to the nearest one — and Topol's own default is 35px, so this is the common case for social blocks, not the exception.
+- **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a Cloud comment thread, for example — survives an import.
+
+## Things that don't map automatically
+
+- **Section background images** — `SectionWrapper` carries only `backgroundColor`, `padding`, and `borderRadius`; Templatical has no background-image field on any block, and the renderer emits no `background-url`. A Topol section's `background-url` is never read, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
+- **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
+- **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
+- **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.
+- **Per-icon social details** — `SocialIcon` carries only `id`, `platform`, and `url`. A `mj-social` icon's per-platform `alt` text, `*-icon-color`, and `text-mode` have nowhere to go. The `alt` text is worth checking after import — it's the same accessibility gap as the images below, on a different block.
+- **Document line-height** — Templatical has no document-level line-height setting. Topol's root-level default is dropped, and the importer pushes a note into `report.warnings` naming the value — the one loss on this list that surfaces at runtime.
+- **Unrecognized tags** — a Topol node the importer doesn't handle explicitly becomes an `HtmlBlock` holding the raw node as JSON, not markup, since Topol nodes aren't markup. Every leaf tag Topol's own editor produces is handled explicitly, so this is a safety net for hand-edited or third-party JSON more than something a normal export triggers. Reimplement the tag as a [Templatical custom block](/guide/custom-blocks) for a native, editable equivalent.
+
+::: tip
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Topol typically carry no `alt` text, and the importer copies that gap across faithfully — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+:::
+
+## What to do if you hit something this guide doesn't cover
+
+[Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Topol design and what you're trying to achieve. We use these reports to improve `@templatical/import-topol`'s coverage.
 
 ---
 
@@ -8188,6 +9569,29 @@ The manual filter steps aside while your resolver is showing, along with its res
 Something already renders your sends — your sending platform, your own service, a template engine on your server. It holds the data and speaks your template language, so posting the template to it and returning its output makes the preview agree with the delivered email by construction instead of approximating it in the browser.
 
 It is also the only route when your template language can't be evaluated client-side at all, which includes any custom `syntax` you configure.
+
+### Show what your platform appends at send time
+
+If your application adds something to every email after it leaves the editor — a branding badge, a legal footer, an unsubscribe line, a logo header — the author never sees it while composing, so nothing tells them how the finished message ends. Have your backend append the same blocks it will append for real, and the preview shows the whole email.
+
+```ts
+resolvePreview: async ({ content, recipient }) => {
+  // Your backend resolves the template and appends the same chrome it
+  // adds at send time, so the unsubscribe link is that recipient's real one.
+  const res = await fetch("/api/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ template: content, recipient }),
+  });
+  return res.json();
+},
+```
+
+Return a whole `TemplateContent`, not just its `blocks`. An object carrying only `blocks` is accepted — that is all the shape check looks for — but it arrives without `settings`, and the preview loses the template's width, background and fonts. The appended blocks otherwise render through the canvas like any others, picking up the template's fonts and link styles, the dark-mode preview and the viewport switch.
+
+Appending server-side is what keeps the two in step. The chrome is defined once, in the code path that appends it for real, so the preview cannot drift from the delivered email the way a second copy in the browser would. It also means the values are resolved rather than approximated: a real unsubscribe URL for `recipient`, not a token.
+
+None of it can double up. Resolved content reaches preview surfaces only, so what your endpoint appends is never saved by `getContent()`, never exported by `toMjml()`, and never part of what the test-email feature sends — your send pipeline stays the only thing that appends for real.
 
 ### Pull in live data
 
@@ -9305,7 +10709,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 - **You can use Templatical for free in any commercial product**, including paid SaaS, internal tools, and on-premise installs.
 - **The only thing you can't do** is repackage Templatical itself as a competing email-editor product or service.
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
-- **Six of the nine packages are pure MIT today** — types, renderer, quality, and all three importers. Only the editor, core and media library are FSL.
+- **Only the editor, core and media library are FSL-licensed** — every other package is pure MIT today.
 
 ## What is FSL-1.1-MIT?
 
@@ -9331,6 +10735,11 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-html` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-mjml` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-topol` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers) is permissive MIT and free of any future-license consideration.
 
@@ -9399,7 +10808,7 @@ The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://ww
 
 **Yes, please.** Community contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
 
-By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
+By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`, `import-easy-email-pro`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
 
 There is currently **no separate Contributor License Agreement (CLA)** to sign — your PR alone is enough.
 
@@ -9988,7 +11397,7 @@ The two layers complement each other:
 | Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeRichTextHtml` | `lintLinks` |
 |---|---|---|---|
 | User typing in the rich-text link dialog | ✅ blocks at insert | n/a (never reaches content) | n/a |
-| Imported BeeFree / Unlayer / HTML JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
+| Imported BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
 | Programmatic `setContent()` with bad anchor | ❌ | ✅ stripped at render | ✅ surfaces to author |
 | `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer only scans rich-text HTML | ✅ surfaces to author |
 
@@ -10397,7 +11806,7 @@ Source: https://docs.templatical.com/quality/structure/
 
 ## Why
 
-Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
+Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
 
 The structure linter catches these before save / before send:
 

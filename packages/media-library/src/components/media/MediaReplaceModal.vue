@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
-import type { MediaItem, MediaUsageInfo } from "../../types";
+import type { MediaAsset, MediaUsageInfo } from "@templatical/types";
 import { computed, inject, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
-  item: MediaItem | null;
+  item: MediaAsset | null;
   usageInfo: MediaUsageInfo | null;
   isReplacing: boolean;
   error: string | null;
@@ -29,7 +29,7 @@ const extension = computed(() => {
     return "";
   }
 
-  const parts = props.item.filename.split(".");
+  const parts = (props.item.filename ?? "").split(".");
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "";
 });
 
@@ -38,7 +38,7 @@ const acceptPattern = computed(() => {
 });
 
 const hasUsage = computed(() => {
-  return (props.usageInfo?.template_count ?? 0) > 0;
+  return (props.usageInfo?.templateCount ?? 0) > 0;
 });
 
 watch(
@@ -86,7 +86,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible && item"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"
         @keydown="handleKeydown"
@@ -121,7 +121,7 @@ function handleKeydown(event: KeyboardEvent): void {
             {{
               t.mediaLibrary.replaceWarningUsageNote.replace(
                 "{count}",
-                usageInfo!.template_count.toString(),
+                usageInfo!.templateCount.toString(),
               )
             }}
           </p>

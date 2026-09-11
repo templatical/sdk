@@ -7,11 +7,14 @@ import { useI18n } from "../composables/useI18n";
 // chrome (header z-50, sidebars z-40) AND `.tpl-popover-root` (z 10000), so the
 // opaque overlay covers everything including any open popover/modal.
 //
-// The z-index is a LITERAL, deliberately not `var(--z-modal)` or a `tpl:z-*`
-// utility: the semantic z tokens live on `:root`, unreachable from inside the
-// shadow root, and Tailwind 4 derives z utilities from `--z-index-*` (not the
-// project's `--z-*`), so `tpl:z-modal` compiles to nothing. `.tpl-popover-root`
-// uses the same literal trick for the same reason.
+// The z-index is a LITERAL rather than a token or a Tailwind utility, for two
+// separate reasons: a `var()` token would live on `:root`, unreachable from
+// inside the shadow root; and this notice must outrank `.tpl-popover-root`
+// (10000), which is itself a literal. Named z layers no longer exist — Tailwind
+// derives z utilities from `--z-index-*`, so a named one emits nothing (guarded
+// in `tests/design-system-conformance.test.ts`). Deliberately NOT written as a
+// class-like name in prose: that guard scans source text and cannot tell a
+// comment from a class attribute.
 const { t } = useI18n();
 </script>
 

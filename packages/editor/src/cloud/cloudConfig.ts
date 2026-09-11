@@ -9,6 +9,10 @@ import type {
   FontsConfig,
   LogicTagsConfig,
   McpConfig,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
+  MediaResult,
   MergeTagsConfig,
   SavedBlocksOptions,
   SavedBlocksProvider,
@@ -17,15 +21,12 @@ import type {
   TestEmailProvider,
   TemplateContent,
   TemplateDefaults,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   VersionHistoryOptions,
   ResolvePreview,
 } from "@templatical/types";
-import type {
-  MediaItem,
-  MediaRequestContext,
-} from "@templatical/media-library";
 import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
 
 export interface TemplaticalCloudEditorConfig {
@@ -102,7 +103,7 @@ export interface TemplaticalCloudEditorConfig {
    * Reusable saved blocks.
    *
    * - **omitted / `true`** — backed by Templatical Cloud, gated on the
-   *   `saved_modules` plan feature;
+   *   `savedModules` plan feature;
    * - **`false`** — off entirely; no UI renders;
    * - **a {@link SavedBlocksOptions}** — still backed by Cloud's store, plus
    *   your `onCreated`, `onUpdated` and `onDeleted` handlers;
@@ -115,6 +116,29 @@ export interface TemplaticalCloudEditorConfig {
    * leaving it exactly as-is (to keep your own) — never rewriting it.
    */
   savedBlocks?: boolean | SavedBlocksOptions | SavedBlocksProvider;
+  /**
+   * Storage backend for the **media library** — the picker behind Browse on
+   * image fields, video thumbnails, and custom-block image fields.
+   *
+   * - **omitted** — backed by Templatical Cloud. Not plan-gated;
+   * - **`false`** — off; image fields stay URL-only unless `onRequestMedia`
+   *   is set;
+   * - **a {@link MediaOptions}** — still backed by Cloud's store, plus your
+   *   `onCreated`, `onUpdated` and `onDeleted` handlers. `maxFileSize` and
+   *   `mimeTypes` are not honoured on this form — Cloud's plan owns those
+   *   limits. TypeScript does not flag passing them here (both are valid
+   *   members of the sibling {@link MediaProvider} arm, so the union
+   *   accepts them structurally); passing either logs a runtime warning
+   *   naming it instead;
+   * - **a {@link MediaProvider}** — backed by *your* store instead of
+   *   Cloud's, and **not plan-gated**, because the plan licenses Cloud's
+   *   storage rather than the editor's UI.
+   *
+   * The provider form is the same type `init()` takes, so moving an OSS
+   * integration to Cloud means deleting this key (to adopt Cloud's store) or
+   * leaving it exactly as-is (to keep your own) — never rewriting it.
+   */
+  media?: false | MediaOptions | MediaProvider;
   /**
    * Configuration and events for the template lifecycle. **The same key and
    * the same type as `init()`'s `templates`** — minus the storage methods,
@@ -207,6 +231,16 @@ export interface TemplaticalCloudEditorConfig {
    * config for details and an example.
    */
   colors?: ColorsConfig;
+
+  /**
+   * Which template settings the Settings panel exposes — an allowlist over the
+   * members of `TemplateSettings`, `false` for none (which also removes the
+   * tab). Omit for every setting. Presentation only, and accepted here for the
+   * same reason `paletteBlocks` and `colors` are: it constrains the editor's own
+   * chrome, and Cloud exercises none of it. See `templateSettings` on the OSS
+   * editor config for details and an example.
+   */
+  templateSettings?: TemplateSettingsConfig;
   onChange?: (content: TemplateContent) => void;
   /**
    * Called whenever the editor's unsaved-changes state flips. **The same key and
@@ -217,7 +251,14 @@ export interface TemplaticalCloudEditorConfig {
   onError?: (error: Error) => void;
   onUnmount?: () => void;
 
-  onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
+  /**
+   * UI override for Browse / drop. Same key and type as `init()`. Wins over
+   * `media` when both are set. Cloud still supplies its store as `media`
+   * unless you pass `media: false` or your own provider.
+   */
+  onRequestMedia?: (
+    context?: MediaRequestContext,
+  ) => Promise<MediaResult | null>;
   /**
    * Transform the rendered HTML just before Cloud sends a test email.
    *
@@ -230,7 +271,7 @@ export interface TemplaticalCloudEditorConfig {
   /**
    * Sending backend for test emails.
    *
-   * - **omitted** — sent by Templatical Cloud, gated on the `test_email` plan
+   * - **omitted** — sent by Templatical Cloud, gated on the `testEmail` plan
    *   feature and its signed allowed-recipient list;
    * - **`{ onSent?, defaultRecipient? }`** — still sent by Cloud, plus your
    *   `onSent` handler and/or a pre-filled recipient (ignored unless it's

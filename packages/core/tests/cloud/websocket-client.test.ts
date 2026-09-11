@@ -43,11 +43,11 @@ function pusherModuleMock() {
 vi.mock('pusher-js', () => pusherModuleMock());
 
 describe('resolveWebSocketConfig', () => {
-  it('maps snake_case app_key to camelCase appKey', () => {
+  it('copies appKey from the server config', () => {
     const serverConfig: WebSocketServerConfig = {
       host: 'ws.example.com',
       port: 6001,
-      app_key: 'my-app-key',
+      appKey: 'my-app-key',
     };
 
     const result = resolveWebSocketConfig(serverConfig);
@@ -59,7 +59,7 @@ describe('resolveWebSocketConfig', () => {
     const serverConfig: WebSocketServerConfig = {
       host: 'ws.example.com',
       port: 6001,
-      app_key: 'my-app-key',
+      appKey: 'my-app-key',
     };
 
     const result = resolveWebSocketConfig(serverConfig);
@@ -72,7 +72,7 @@ describe('resolveWebSocketConfig', () => {
     const serverConfig: WebSocketServerConfig = {
       host: 'localhost',
       port: 443,
-      app_key: 'key-abc',
+      appKey: 'key-abc',
     };
 
     const result = resolveWebSocketConfig(serverConfig);

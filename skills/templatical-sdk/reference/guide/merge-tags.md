@@ -178,7 +178,7 @@ The `value` regex detects data tags. The `logic` regex detects control flow stat
 
 When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript), the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
 
-Autocomplete works both inside title/paragraph rich-text blocks **and** in every merge-tag-enabled input and textarea field (button and image URLs, image alt text, video and menu links, template settings, and custom-block text fields). The popup, filtering, keyboard navigation, and positioning are identical across both surfaces.
+Autocomplete works both inside title/paragraph rich-text blocks **and** in every merge-tag-enabled input and textarea field (button and image URLs, image alt text, video and menu links, the rich-text link dialog's URL field, template settings, and custom-block text fields). The popup, filtering, keyboard navigation, and positioning are identical across both surfaces.
 
 Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
 
@@ -316,6 +316,25 @@ Your [`resolvePreview`](/guide/preview-rendering) callback receives tag nodes, i
 Merge tags aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
 
 <img src="/images/button-merge-tag.png" alt="Merge tag in a button URL" style="max-width: 360px;" />
+
+### Link URLs
+
+The **Insert Link** dialog in a title or paragraph block takes merge tags in its URL field, through the same insert button, picker and autocomplete as every other URL field. A link is often per-recipient or per-event, so its URL is frequently a tag rather than a literal.
+
+A URL you type without a scheme is completed with `https://` — except when it opens with a merge tag, which is stored exactly as written:
+
+```text
+you type                         stored href
+──────────────────────────────   ──────────────────────────────
+{{event_url}}                 →  {{event_url}}
+{{base_url}}/events/42        →  {{base_url}}/events/42
+https://acme.com/{{event_id}} →  https://acme.com/{{event_id}}
+acme.com/promo                →  https://acme.com/promo
+```
+
+The tag supplies its own scheme, so prefixing one would produce `https://https://…`. The scheme allowlist still runs first, so a tag cannot smuggle a rejected scheme (`javascript:`, `data:`) past it.
+
+A tag in an `href` is left byte-identical on export — see [Tokens in loaded content](#tokens-in-loaded-content) — so the sending system resolves it, exactly as it does in a button URL.
 
 ## Using merge tags outside the editor
 

@@ -18,7 +18,7 @@ Test email is a **shared feature**: the trigger, the dialog, recipient validatio
 
 Three conditions gate the button, and none implies another — all must hold for it to appear:
 
-- the `test_email` plan feature;
+- the `testEmail` plan feature;
 - a test-email config on the project's auth token (the allowed recipients plus their signature);
 - a **saved** template, because Cloud renders from the stored copy.
 
@@ -67,7 +67,7 @@ await initCloud({
 });
 ```
 
-Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `test_email` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
+Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `testEmail` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
 
 Cloud also accepts a narrower shape that keeps its own sender: `{ onSent?, defaultRecipient? }`. `includeMjml` and `allowedRecipients` are excluded from it — Cloud renders server-side rather than from a client MJML pass, and its allowlist is the signed one from your project's JWT, not one a client value could override. `defaultRecipient` is ignored unless it's already on that signed allowlist.
 

@@ -29,7 +29,11 @@ import {
   EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
-import type { Block, ViewportSize } from "@templatical/types";
+import {
+  resolveContentDirection,
+  type Block,
+  type ViewportSize,
+} from "@templatical/types";
 import { computed, inject, provide, type Component } from "vue";
 
 const props = withDefaults(
@@ -117,6 +121,24 @@ const documentStyle = computed(() =>
 );
 
 /**
+ * The email's own language, for the browser's spellchecker and hyphenation —
+ * the same binding the editing canvas carries, so a preview is checked by the
+ * same rules as the block it mirrors.
+ *
+ * From `settings.locale`, never `config.locale`: the chrome's language says
+ * nothing about the content's. Read from the *current* template for the same
+ * reason `documentStyle` is — a saved block stores only `Block[]`. Undefined
+ * rather than `""`, which would declare "unknown language" and suppress
+ * spellcheck instead of falling back.
+ */
+const contentLang = computed(
+  () => editor?.content.value.settings?.locale?.trim() || undefined,
+);
+const contentDir = computed(() =>
+  resolveContentDirection(editor?.content.value.settings ?? { locale: "en" }),
+);
+
+/**
  * The email's body background — `mj-body background-color` when sent, and the
  * `.tpl-canvas-bg` layer on the editing canvas.
  *
@@ -192,6 +214,8 @@ function getBlockComponent(block: Block): Component | null {
          what every viewport assertion measures. -->
     <div
       data-testid="block-preview-canvas"
+      :lang="contentLang"
+      :dir="contentDir"
       :style="{
         width: `${frameWidth}px`,
         transition: EMAIL_FRAME_WIDTH_TRANSITION,

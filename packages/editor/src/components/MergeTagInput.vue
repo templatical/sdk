@@ -22,6 +22,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
+  /**
+   * Keydown the autocomplete popup declined. Declared (rather than left to
+   * attribute fallthrough) so a host binding `@keydown` never sees the key
+   * that just picked a tag — the link dialog would submit on it.
+   */
+  (e: "keydown", event: KeyboardEvent): void;
 }>();
 
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -36,7 +42,7 @@ const {
   isEditing,
   startEditing,
   handleInput,
-  handleKeydown,
+  handleKeydown: handleFieldKeydown,
   handleClick,
   handleBlur,
   clearValue,
@@ -47,6 +53,12 @@ const {
   emit: (value) => emit("update:modelValue", value),
   elementRef: inputRef,
 });
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (!handleFieldKeydown(event)) {
+    emit("keydown", event);
+  }
+}
 
 const displayClass =
   "tpl:flex tpl:w-full tpl:min-h-10 tpl:cursor-pointer tpl:items-center tpl:flex-wrap tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:shadow-[var(--tpl-shadow-sm)] tpl:bg-[var(--tpl-bg)] tpl:border-[var(--tpl-border)] tpl:px-3.5 tpl:py-1.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]";

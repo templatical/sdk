@@ -174,7 +174,7 @@ describe('useTemplateScoring', () => {
       const result = await scoring.score(mockContent, mockMergeTags);
 
       expect(result).toBeNull();
-      expect(scoring.error.value).toBe('ai_generation_not_available');
+      expect(scoring.error.value).toBe('aiGenerationNotAvailable');
       expect(scoring.isScoring.value).toBe(false);
     });
 
@@ -334,7 +334,7 @@ describe('useTemplateScoring', () => {
       const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
 
       expect(result).toBeNull();
-      expect(scoring.fixError.value).toBe('ai_generation_not_available');
+      expect(scoring.fixError.value).toBe('aiGenerationNotAvailable');
       expect(scoring.fixingFindingId.value).toBeNull();
     });
 

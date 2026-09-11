@@ -79,8 +79,8 @@ describe('useMcpListener', () => {
     await nextTick();
 
     const payload = {
-      operation: 'update_block',
-      data: { block_id: 'b1', updates: { content: 'new' } },
+      operation: 'updateBlock',
+      data: { blockId: 'b1', updates: { content: 'new' } },
     };
     mockChannel._handlers['mcp-operation'](payload);
 
@@ -102,8 +102,8 @@ describe('useMcpListener', () => {
     await nextTick();
 
     const payload = {
-      operation: 'delete_block',
-      data: { block_id: 'b1' },
+      operation: 'deleteBlock',
+      data: { blockId: 'b1' },
     };
     mockChannel._handlers['mcp-operation'](payload);
 

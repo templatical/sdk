@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   defineComponent,
   h,
+  nextTick,
   reactive,
   ref,
   type InjectionKey,
@@ -48,6 +49,8 @@ import {
 import { useEventListener } from '@vueuse/core';
 import { useEditorCore } from '../src/composables/useEditorCore';
 import type { BaseEditorReturn } from '../src/composables/useEditorCore';
+import de from '../src/i18n/locales/de';
+import en from '../src/i18n/locales/en';
 import { _resetActiveEditorTrackerForTests } from '../src/utils/activeEditorTracker';
 import {
   TRANSLATIONS_KEY,
@@ -66,6 +69,7 @@ import {
   MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
+  CAN_DROP_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   CAPABILITIES_KEY,
@@ -89,6 +93,7 @@ const ALL_KEYS: Array<{ key: InjectionKey<unknown>; label: string }> = [
   { key: MERGE_TAG_PICKER_KEY, label: 'mergeTagPicker' },
   { key: ON_REQUEST_MERGE_TAG_KEY, label: 'onRequestMergeTag' },
   { key: ON_REQUEST_MEDIA_KEY, label: 'onRequestMedia' },
+  { key: CAN_DROP_MEDIA_KEY, label: 'canDropMedia' },
   { key: DISPLAY_CONDITIONS_KEY, label: 'displayConditions' },
   { key: ALLOW_CUSTOM_CONDITIONS_KEY, label: 'allowCustomConditions' },
   { key: CAPABILITIES_KEY, label: 'capabilities' },
@@ -169,7 +174,10 @@ function mountCore(
       captured.core = useEditorCore({
         editor: editor as any,
         config: optionsOverrides.config ?? {},
-        translations: optionsOverrides.translations ?? ({} as any),
+        // Real English locale, not `{}`: the palette's placeholder text is
+        // seeded from these strings, so a stub would prove nothing about which
+        // locale reached the block factory.
+        translations: optionsOverrides.translations ?? (en as any),
         fontsManager: fontsManager as any,
         ...optionsOverrides,
       });
@@ -228,13 +236,229 @@ describe('useEditorCore', () => {
       expect(useHistoryInterceptor).toHaveBeenCalledOnce();
     });
 
+    // Neither `toBe(blockDefaults)` nor a plain object any more: the config is
+    // merged ON TOP of the locale's text, and what reaches useBlockActions is a
+    // getter so a later content-language change still lands. Identity — or a
+    // snapshot — would only pass if one of those two were dropped.
     it('calls useBlockActions with editor methods and blockDefaults', () => {
       const blockDefaults = { title: { content: 'Default title' } } as any;
       mountCore({ config: { blockDefaults } });
       const arg = vi.mocked(useBlockActions).mock.calls[0][0];
-      expect(arg.blockDefaults).toBe(blockDefaults);
+      expect((arg.blockDefaults as any)().title.content).toBe('Default title');
       expect(typeof arg.addBlock).toBe('function');
       expect(typeof arg.removeBlock).toBe('function');
+    });
+  });
+
+  describe('localized block defaults', () => {
+    // A ref, not a plain object: the recipient-facing half tracks the
+    // template's own `settings.locale`, which the author can change while the
+    // editor is open.
+    function injectedDefaults(
+      captured: { injected?: Record<string, unknown> },
+    ): any {
+      return (captured.injected!.blockDefaults as any).value;
+    }
+
+    it('seeds the palette placeholder text from the editor locale', () => {
+      const { captured } = mountCore({ translations: de as any });
+      const defaults = injectedDefaults(captured);
+      expect(defaults.title.content).toBe('<p>Geben Sie Ihren Titel ein</p>');
+      expect(defaults.paragraph.content).toBe(
+        '<p>Geben Sie hier Ihren Text ein</p>',
+      );
+      expect(defaults.button.text).toBe('Hier klicken');
+    });
+
+    // Both consumers of the merged value must see the same thing — the palette
+    // injects it, `createAndAddBlock` receives it as an option.
+    it('hands useBlockActions the same localized defaults it provides', () => {
+      const { captured } = mountCore({ translations: de as any });
+      const arg = vi.mocked(useBlockActions).mock.calls[0][0];
+      expect((arg.blockDefaults as any)()).toEqual(injectedDefaults(captured));
+      expect((arg.blockDefaults as any)().button.text).toBe('Hier klicken');
+    });
+
+    it("lets a consumer's own text win over the localized default", () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        config: { blockDefaults: { button: { text: 'Jetzt kaufen' } } } as any,
+      });
+      expect(injectedDefaults(captured).button.text).toBe('Jetzt kaufen');
+    });
+
+    // Deep merge, not replace: overriding a colour must not silently revert the
+    // block's text to English.
+    it('keeps the localized text when a consumer overrides a sibling field', () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        config: {
+          blockDefaults: { button: { backgroundColor: '#ff6600' } },
+        } as any,
+      });
+      const button = injectedDefaults(captured).button;
+      expect(button.text).toBe('Hier klicken');
+      expect(button.backgroundColor).toBe('#ff6600');
+    });
+
+    it('leaves the English defaults byte-identical to the factory', () => {
+      const { captured } = mountCore({ translations: en as any });
+      const defaults = injectedDefaults(captured);
+      expect(defaults.title.content).toBe('<p>Enter your title</p>');
+      expect(defaults.paragraph.content).toBe('<p>Enter your text here</p>');
+      expect(defaults.button.text).toBe('Click Here');
+    });
+
+    it('seeds exactly the author prompts and the recipient-facing text', () => {
+      const { captured } = mountCore({ translations: de as any });
+      expect(Object.keys(injectedDefaults(captured)).sort()).toEqual([
+        'button',
+        'countdown',
+        'paragraph',
+        'title',
+        'video',
+      ]);
+    });
+  });
+
+  describe('recipient-facing defaults follow settings.locale', () => {
+    function editorWithContentLocale(locale: string | undefined) {
+      const editor = makeEditor();
+      (editor.content as any).value = {
+        blocks: [],
+        settings: locale === undefined ? {} : { locale },
+      };
+      return editor;
+    }
+
+    // The editing UI is German; the email is declared English. The countdown
+    // labels ship, so they must follow the email, not the chrome.
+    it('takes the email language, not the editor UI language', () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        editor: editorWithContentLocale('en') as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.countdown.labelDays).toBe('Days');
+      expect(defaults.video.alt).toBe('Video');
+      // ...while the author-facing prompts stay on the UI locale.
+      expect(defaults.button.text).toBe('Hier klicken');
+    });
+
+    it('localizes them when the email language matches', () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        editor: editorWithContentLocale('de') as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.countdown.labelDays).toBe('Tage');
+      expect(defaults.countdown.expiredMessage).toBe(
+        'Dieses Angebot ist abgelaufen',
+      );
+    });
+
+    // The content-language field is editable in Template Settings, so a value
+    // captured once at setup goes stale the moment the author changes it.
+    it('re-resolves when the author changes the content language', async () => {
+      const editor = editorWithContentLocale('en');
+      const { captured } = mountCore({
+        translations: de as any,
+        editor: editor as any,
+      });
+      const defaults = captured.injected!.blockDefaults as any;
+      expect(defaults.value.countdown.labelDays).toBe('Days');
+
+      (editor.content as any).value = {
+        blocks: [],
+        settings: { locale: 'fr' },
+      };
+      await nextTick();
+      expect(defaults.value.countdown.labelDays).toBe('Jours');
+      expect(defaults.value.video.alt).toBe('Vidéo');
+    });
+
+    it("lets a consumer's own value win over the content locale", () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        editor: editorWithContentLocale('de') as any,
+        config: { blockDefaults: { video: { alt: 'Produktvideo' } } } as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.video.alt).toBe('Produktvideo');
+    });
+
+    it('falls back to English when the template declares no language', () => {
+      const { captured } = mountCore({
+        translations: de as any,
+        editor: editorWithContentLocale(undefined) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.countdown.labelDays).toBe('Days');
+      expect(defaults.video.alt).toBe('Video');
+    });
+
+    // The palette reads the ref at insert time; `createAndAddBlock` gets a
+    // getter. Both have to see the same live value or one of the two insert
+    // paths ships stale text.
+    it('hands useBlockActions a getter, not a snapshot', () => {
+      const editor = editorWithContentLocale('en');
+      mountCore({ translations: de as any, editor: editor as any });
+      const arg = vi.mocked(useBlockActions).mock.calls[0][0];
+      expect(typeof arg.blockDefaults).toBe('function');
+      expect((arg.blockDefaults as any)().countdown.labelDays).toBe('Days');
+
+      (editor.content as any).value = {
+        blocks: [],
+        settings: { locale: 'de' },
+      };
+      expect((arg.blockDefaults as any)().countdown.labelDays).toBe('Tage');
+    });
+  });
+
+  describe('start-edge defaults follow content direction', () => {
+    function editorWithSettings(settings: Record<string, unknown>) {
+      const editor = makeEditor();
+      (editor.content as any).value = { blocks: [], settings };
+      return editor;
+    }
+
+    it('starts title and table at right when the email is RTL', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title.textAlign).toBe('right');
+      expect(defaults.table.textAlign).toBe('right');
+    });
+
+    it('does not override title and table align for an LTR email', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'en' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      // Factory defaults still supply `"left"` at insert; this layer only
+      // injects `"right"` when the email is RTL.
+      expect(defaults.title?.textAlign).not.toBe('right');
+      expect(defaults.table?.textAlign).not.toBe('right');
+    });
+
+    it("lets a consumer's textAlign win over RTL", () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar' }) as any,
+        config: {
+          blockDefaults: { title: { textAlign: 'left' } },
+        } as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title.textAlign).toBe('left');
+    });
+
+    it('does not inject right when an Arabic locale is explicitly ltr', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar', direction: 'ltr' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title?.textAlign).not.toBe('right');
     });
   });
 
@@ -260,7 +484,7 @@ describe('useEditorCore', () => {
   });
 
   describe('provides', () => {
-    it('provides all 20 shared injection keys', () => {
+    it('provides all shared injection keys', () => {
       const { captured } = mountCore();
       for (const { label } of ALL_KEYS) {
         expect(captured.injected![label]).not.toBe('MISSING');
@@ -293,6 +517,19 @@ describe('useEditorCore', () => {
     it('provides onRequestMergeTag null when not configured', () => {
       const { captured } = mountCore();
       expect(captured.injected!.onRequestMergeTag).toBeNull();
+    });
+
+    it('provides canDropMedia from config', () => {
+      const canDropMedia = { value: true };
+      const { captured } = mountCore({
+        config: { canDropMedia } as any,
+      });
+      expect(captured.injected!.canDropMedia).toBe(canDropMedia);
+    });
+
+    it('provides canDropMedia null when not configured', () => {
+      const { captured } = mountCore();
+      expect(captured.injected!.canDropMedia).toBeNull();
     });
 
     it('provides displayConditions.conditions array', () => {

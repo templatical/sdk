@@ -7,6 +7,7 @@ vi.mock("../src/composables/useFocusTrap", () => ({
 }));
 
 import { useRichTextLinkDialog } from "../src/composables/useRichTextLinkDialog";
+import { SYNTAX_PRESETS } from "@templatical/types";
 
 function createMockEditor(
   existingHref = "",
@@ -462,6 +463,123 @@ describe("useRichTextLinkDialog", () => {
       expect(result.linkUrl.value).toBe("https://example.com");
       expect(event.preventDefault).not.toHaveBeenCalled();
       expect(editor.value.chain).not.toHaveBeenCalled();
+    });
+  });
+
+  // A merge tag standing in for the whole URL has no scheme, so the bare
+  // fallback would prepend `https://` and ship `https://{{EVENT_LINK}}` — a
+  // tag resolving to a full URL then renders as `https://https://…`. Every
+  // other URL field in the editor stores such a value verbatim.
+  describe("insertLink with merge tags", () => {
+    it("preserves a liquid tag standing alone as the whole URL", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.liquid);
+
+      result.linkUrl.value = "{{EVENT_LINK}}";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "{{EVENT_LINK}}",
+      });
+    });
+
+    it("preserves a mailchimp tag standing alone as the whole URL", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.mailchimp);
+
+      result.linkUrl.value = "*|EVENT_LINK|*";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "*|EVENT_LINK|*",
+      });
+    });
+
+    it("preserves an ampscript tag standing alone as the whole URL", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.ampscript);
+
+      result.linkUrl.value = "%%=v(@event_link)=%%";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "%%=v(@event_link)=%%",
+      });
+    });
+
+    it("preserves a handlebars tag standing alone as the whole URL", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.handlebars);
+
+      result.linkUrl.value = "{{{event_link}}}";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "{{{event_link}}}",
+      });
+    });
+
+    it("preserves a leading tag followed by a path", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.liquid);
+
+      result.linkUrl.value = "{{BASE_URL}}/events/42";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "{{BASE_URL}}/events/42",
+      });
+    });
+
+    it("trims surrounding whitespace around a bare tag", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.liquid);
+
+      result.linkUrl.value = "  {{EVENT_LINK}}  ";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "{{EVENT_LINK}}",
+      });
+    });
+
+    // Only a *leading* tag skips the prefix. A host typed without a scheme is
+    // still a bare host and must be completed, tag in its path or not.
+    it("still prepends https:// when the tag is not leading", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.liquid);
+
+      result.linkUrl.value = "events.example.com/{{EVENT_ID}}";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "https://events.example.com/{{EVENT_ID}}",
+      });
+    });
+
+    // The scheme allowlist runs first, so a tag cannot be used to smuggle a
+    // rejected scheme past it.
+    it("still rejects a javascript: scheme carrying a tag", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor, SYNTAX_PRESETS.liquid);
+
+      result.linkUrl.value = "javascript:alert({{X}})";
+      result.insertLink();
+
+      expect(editor.value.chain).not.toHaveBeenCalled();
+      expect(result.showLinkDialog.value).toBe(false);
+    });
+
+    it("defaults to liquid syntax when none is supplied", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "{{EVENT_LINK}}";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "{{EVENT_LINK}}",
+      });
     });
   });
 });

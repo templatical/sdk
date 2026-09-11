@@ -44,10 +44,6 @@ interface SavedBlocksProvider {
 
 `false` means the current user may not perform that action, and the editor hides the affordance.
 
-::: tip Why required, and not optional
-An optional method would make "I decided against delete" indistinguishable from "I haven't written delete yet". A `false` cannot be arrived at by forgetting. Every storage provider in this section is shaped the same way.
-:::
-
 A minimal REST implementation:
 
 ```ts

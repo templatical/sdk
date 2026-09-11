@@ -132,8 +132,19 @@ export async function resolveOptional<T>(
   for (const anchor of anchors) {
     const pkgDir = findPackageDir(specifier, anchor);
     if (!pkgDir) continue; // not found from this anchor — try the next
+    // Deliberately outside the try below: a manifest that names no usable
+    // entry is a packaging fault the caller can act on, and it keeps throwing.
     const resolved = entryFileFor(pkgDir);
-    return (await import(pathToFileURL(resolved).href)) as T;
+    try {
+      return (await import(pathToFileURL(resolved).href)) as T;
+    } catch {
+      // The manifest is fine but the file it names isn't there — a workspace
+      // package whose dist/ hasn't been built is the everyday case. "Optional"
+      // has to cover this, or `import --list-formats`, whose whole job is to
+      // report which converters resolve, crashes on the first one that doesn't.
+      // Keep looking: a later anchor may hold a complete copy.
+      continue;
+    }
   }
   return null;
 }

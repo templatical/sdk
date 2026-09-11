@@ -36,12 +36,18 @@ import type {
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   ResolvePreview,
   ViewportSize,
 } from "@templatical/types";
-import { hasMergeTagSamples, resolveSyntax } from "@templatical/types";
+import {
+  deepMergeDefaults,
+  hasMergeTagSamples,
+  resolveContentDirection,
+  resolveSyntax,
+} from "@templatical/types";
 import {
   usePreviewResolution,
   type UsePreviewResolutionReturn,
@@ -59,17 +65,20 @@ import {
   FONTS_MANAGER_KEY,
   THEME_STYLES_KEY,
   UI_THEME_KEY,
+  UI_LOCALE_KEY,
   BLOCK_DEFAULTS_KEY,
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   HTML_BLOCK_PREVIEW_KEY,
   COLORS_KEY,
+  TEMPLATE_SETTINGS_FIELDS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_REQUESTING_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   RESOLVE_PREVIEW_KEY,
@@ -77,8 +86,10 @@ import {
   LOGIC_TAGS_KEY,
   LOGIC_PAIRS_KEY,
   LOGIC_TAG_PICKER_KEY,
+  LOGIC_TAG_REQUESTING_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
+  CAN_DROP_MEDIA_KEY,
   IMAGE_URL_RESOLVER_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
@@ -119,7 +130,13 @@ import {
   type HtmlBlockPreviewConfig,
 } from "../utils/resolveHtmlBlockPreview";
 import { resolveColorsConfig } from "../utils/resolveColorsConfig";
+import {
+  ALL_TEMPLATE_SETTINGS_FIELDS,
+  resolveTemplateSettingsFields,
+} from "../utils/templateSettingsFields";
 import { collectOffPaletteDefaults } from "../utils/collectOffPaletteDefaults";
+import { localizedBlockDefaults } from "../utils/localizedBlockDefaults";
+import { localizedContentDefaults } from "../i18n/contentDefaults";
 import { collectColorFieldIssues } from "../utils/collectColorFieldIssues";
 import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
@@ -224,13 +241,16 @@ export interface UseEditorCoreOptions {
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
     colors?: ColorsConfig;
+    templateSettings?: TemplateSettingsConfig;
     mergeTags?: MergeTagsConfig;
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
+    canDropMedia?: ComputedRef<boolean> | null;
     resolvePreview?: ResolvePreview;
     resolveImageUrl?: ResolveImageUrl | null;
     lint?: LintOptions;
+    locale?: string;
   };
 
   translations: Translations;
@@ -322,6 +342,41 @@ export function useEditorCore(
   // --- i18n ---
   const { t, format } = useI18n(translations);
 
+  // The text a newly inserted block starts with, from three layers, each
+  // beating the one before it:
+  //
+  //   1. author-facing prompts (title / paragraph / button) in the editor UI
+  //      locale — they exist to be overwritten, so the chrome's language is
+  //      right;
+  //   2. recipient-facing text (video alt, countdown labels + expired message)
+  //      in the TEMPLATE's `settings.locale` — this ships in the delivered
+  //      email, so it follows the email's declared language, which is a
+  //      different thing from the editing UI's;
+  //   3. the consumer's own `config.blockDefaults`.
+  //
+  // Deep, not shallow: overriding `button.backgroundColor` must not revert
+  // `button.text`. Layers 1 and 2 share no keys, so their order is immaterial;
+  // layer 3 must be last.
+  //
+  // A computed because layer 2's source is editable in Template Settings while
+  // the editor is open. Both readers must go through it — the palette injects
+  // it, `useBlockActions` gets it as a getter — since a surface left on
+  // `config.blockDefaults` silently keeps shipping English.
+  const resolvedBlockDefaults = computed<BlockDefaults>(() =>
+    deepMergeDefaults(
+      deepMergeDefaults(
+        deepMergeDefaults(
+          localizedBlockDefaults(translations),
+          localizedContentDefaults(editor.content.value.settings?.locale),
+        ),
+        resolveContentDirection(editor.content.value.settings) === "rtl"
+          ? { title: { textAlign: "right" }, table: { textAlign: "right" } }
+          : {},
+      ),
+      config.blockDefaults ?? {},
+    ),
+  );
+
   // --- UI Theme ---
   editor.setUiTheme(config.uiTheme ?? "auto");
   const uiThemeRef = computed(() => editor.state.uiTheme);
@@ -357,7 +412,7 @@ export function useEditorCore(
     updateBlock: editor.updateBlock,
     selectBlock: editor.selectBlock,
     findBlockLocation: editor.findBlockLocation,
-    blockDefaults: config.blockDefaults,
+    blockDefaults: () => resolvedBlockDefaults.value,
   });
 
   // --- Condition preview ---
@@ -435,6 +490,22 @@ export function useEditorCore(
           "the same palette.",
       );
     }
+  }
+
+  // --- Template settings panel ---
+  // Which settings the panel exposes. Resolved once here, at the config
+  // surface that owns it, so the warning for a bad entry is emitted once per
+  // editor rather than on every panel render — the same split as the colours
+  // above. `TemplateSettings.vue` and `RightSidebar.vue` both read the result.
+  const resolvedSettingsFields = resolveTemplateSettingsFields(
+    config.templateSettings,
+  );
+  for (const entry of resolvedSettingsFields.unknown) {
+    logger.warn(
+      `config.templateSettings.fields: "${entry}" is not a template setting ` +
+        `(expected one of ${ALL_TEMPLATE_SETTINGS_FIELDS.join(", ")}) — ` +
+        "skipping it.",
+    );
   }
 
   // --- Block registry ---
@@ -553,7 +624,8 @@ export function useEditorCore(
   provide(FONTS_MANAGER_KEY, fontsManager);
   provide(THEME_STYLES_KEY, themeStyles);
   provide(UI_THEME_KEY, resolvedTheme);
-  provide(BLOCK_DEFAULTS_KEY, config.blockDefaults);
+  provide(BLOCK_DEFAULTS_KEY, resolvedBlockDefaults);
+  provide(UI_LOCALE_KEY, config.locale);
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
   provide(PALETTE_BLOCKS_KEY, config.paletteBlocks);
@@ -564,6 +636,10 @@ export function useEditorCore(
   // Editor-wide color-picker palette (resolved + audited above, ahead of the
   // block registry).
   provide(COLORS_KEY, resolvedColors);
+  // Which template settings the Settings panel exposes (resolved + warned
+  // above). Read by `TemplateSettings.vue` for its cards and by
+  // `RightSidebar.vue` for the tab that opens them.
+  provide(TEMPLATE_SETTINGS_FIELDS_KEY, resolvedSettingsFields.fields);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
   // into the editor root so authored CSS previews live in the canvas. The
@@ -638,6 +714,12 @@ export function useEditorCore(
   const mergeTagPicker = useMergeTagPicker();
   provide(MERGE_TAG_PICKER_KEY, mergeTagPicker);
 
+  // One in-flight flag per editor, shared by every `useMergeTag()` /
+  // `useLogicTag()` call in the tree. The rich-text click-outside guard reads
+  // it to know a picker is open no matter which host opened it.
+  provide(MERGE_TAG_REQUESTING_KEY, ref(false));
+  provide(LOGIC_TAG_REQUESTING_KEY, ref(false));
+
   // Standalone logic tags — separate from merge tags. Native highlighting
   // (LogicMergeTagNode) is always on; these power the dedicated logic picker.
   provide(LOGIC_TAGS_KEY, config.logicTags?.tags ?? []);
@@ -646,6 +728,7 @@ export function useEditorCore(
   provide(LOGIC_TAG_PICKER_KEY, useLogicTagPicker());
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
+  provide(CAN_DROP_MEDIA_KEY, config.canDropMedia ?? null);
 
   // Display-only image src resolver (#415). Created once per editor so the
   // per-src cache spans all image-displaying blocks of the instance.

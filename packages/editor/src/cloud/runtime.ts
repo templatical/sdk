@@ -1,20 +1,16 @@
 import type { ComputedRef, Ref } from "vue";
 import type {
-  AuthManager,
   UseCollaborationReturn,
-  UsePlanConfigReturn,
   UseWebSocketReturn,
 } from "@templatical/core/cloud";
 import type { TemplateOperationPayload } from "@templatical/types";
 
 import type { UseEditorReturn } from "@templatical/core";
 
-import type { OnRequestMedia } from "../index";
 import type { UseEditorCoreReturn } from "../composables/useEditorCore";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 import type { UseCloudFeatureFlagsReturn } from "./composables/useCloudFeatureFlags";
 import type { UseCloudPanelStateReturn } from "./composables/useCloudPanelState";
-import type { UseCloudMediaLibraryReturn } from "./composables/useCloudMediaLibrary";
 import type { UseCloudSaveGateReturn } from "./composables/useCloudSaveGate";
 import type { UseCollabUndoWarningReturn } from "./composables/useCollabUndoWarning";
 
@@ -56,14 +52,7 @@ export interface CloudRuntime {
    */
   lockedBlocks: Ref<Map<string, unknown>>;
 
-  /**
-   * Cloud's media browser, standing in for the consumer's `onRequestMedia`. Not
-   * plan-gated: an entitlement here would fire when a consumer is *not* using
-   * Cloud's storage, i.e. backwards.
-   */
-  onRequestMedia: OnRequestMedia;
-
-  /** Whether the plan grants `saved_modules` — or `true` for a BYO provider. */
+  /** Whether the plan grants `savedModules` — or `true` for a BYO provider. */
   isSavedBlocksAvailable: () => boolean;
   /** Folds the plan feature, the signed allowlist and "a template exists". */
   isTestEmailAvailable: () => boolean;
@@ -112,28 +101,9 @@ export interface CloudAttachContext {
 export interface CloudAttachment {
   websocket: UseWebSocketReturn;
   panelState: UseCloudPanelStateReturn;
-  mediaLib: UseCloudMediaLibraryReturn;
-  /**
-   * The three values `@templatical/media-library`'s `MediaLibraryModal` needs,
-   * carried here so `CloudPanels` can bind them as **props**.
-   *
-   * Props rather than injection: Vue matches injection keys by identity, so a key
-   * the modal and the editor spell differently resolves to `undefined` silently
-   * and the media browser opens inert. Props make the boundary a compile-time
-   * contract; nothing outside this package injects them.
-   */
-  mediaBrowser: CloudMediaBrowserContext;
   featureFlags: UseCloudFeatureFlagsReturn;
   collaboration: CloudCollaborationInstance | null;
   isCollaborationEnabled: ComputedRef<boolean>;
-}
-
-export interface CloudMediaBrowserContext {
-  authManager: AuthManager;
-  /** Scopes every media request. Fixed for the session by the JWT. */
-  projectId: string;
-  /** Media limits and the storage gauge, read reactively inside the modal. */
-  planConfig: UsePlanConfigReturn;
 }
 
 export interface CloudReadyContext {

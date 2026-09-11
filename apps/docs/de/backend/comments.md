@@ -109,7 +109,7 @@ interface CommentsProvider {
 }
 ```
 
-`list` lässt sich nicht abschalten — ohne es hätte das Panel nichts anzuzeigen. Jede der vier Mutationen nimmt `false` anstelle einer Funktion und ist **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Siehe [Review nur zum Lesen](#review-nur-zum-lesen).
+`list` lässt sich nicht abschalten — ohne es hätte das Panel nichts anzuzeigen. Jede der vier Mutationen nimmt `false` anstelle einer Funktion: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Siehe [Review nur zum Lesen](#review-nur-zum-lesen).
 
 Der Editor rendert die Reihenfolge von `list()` unverändert und sortiert nie um. Die Reihenfolge entscheidet Ihr Speicher.
 

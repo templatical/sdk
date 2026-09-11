@@ -74,6 +74,25 @@ describe('RenderContext', () => {
     expect(narrow.allowHtmlBlocks).toBe(false);
   });
 
+  it('defaults contentDirection to ltr', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.contentDirection).toBe('ltr');
+  });
+
+  it('withContainerWidth preserves contentDirection', () => {
+    const ctx = new RenderContext(
+      600,
+      [],
+      'Arial, sans-serif',
+      true,
+      new Map(),
+      undefined,
+      {},
+      'rtl',
+    );
+    expect(ctx.withContainerWidth(200).contentDirection).toBe('rtl');
+  });
+
   it('resolveFontFamily returns empty string as-is when no custom fonts match', () => {
     const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
     expect(ctx.resolveFontFamily('')).toBe('');
