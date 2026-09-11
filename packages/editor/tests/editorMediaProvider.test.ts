@@ -141,9 +141,10 @@ describe("MediaPanels stays lazy", () => {
     expect(editor).not.toContain("@templatical/media-library");
   });
 
-  it("MediaPanels lazy-imports MediaLibraryModal from the optional peer", () => {
+  it("MediaPanels lazy-imports MediaLibraryModal from the bundled package", () => {
     expect(panels).toContain("defineAsyncComponent");
     expect(panels).toContain('import("@templatical/media-library")');
+    expect(panels).not.toContain("Please install it");
   });
 
   it("MediaPanels forwards the feature's onError to the modal", () => {

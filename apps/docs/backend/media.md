@@ -24,6 +24,42 @@ const editor = await init({
 
 Entries go into `localStorage` under `templatical:media`. `create` stores the file as a data URL — a demo-sized model. `localStorage` quotas are typically around 5 MB, and a few large images will fill it. Folders, replace, import, usage, frequently-used and quota are `false`. Supply a provider for anything beyond demos, prototypes and a single device.
 
+## Installation
+
+The Browse modal ships in `@templatical/editor` as a lazy chunk. `init({ media })` and Cloud's default store need no extra package — the first Browse click loads that chunk. Vue is not installed.
+
+Install [`@templatical/media-library`](/getting-started/installation#package-overview) only for the **standalone** SDK: `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+
+::: code-group
+
+```bash [npm]
+npm install @templatical/media-library
+```
+
+```bash [pnpm]
+pnpm add @templatical/media-library
+```
+
+```bash [yarn]
+yarn add @templatical/media-library
+```
+
+```bash [bun]
+bun add @templatical/media-library
+```
+
+:::
+
+That package takes `vue` as a peer. Skip it when:
+
+- you pass `onRequestMedia` and no `media` key — the host widget never mounts the modal
+- you omit `media` entirely — image fields stay URL-only
+- you call provider methods yourself — they are ordinary functions
+
+::: tip Loading the editor from the CDN?
+There is nothing to install. The CDN editor inlines the same chunk that the npm editor ships.
+:::
+
 ## The contract
 
 `media` takes any object implementing `MediaProvider`. `list` is a method; every other member is **either a function or `false`**:

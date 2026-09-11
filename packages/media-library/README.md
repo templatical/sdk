@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/media-library?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/media-library)
 [![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
-Browse, upload, organize, crop, and replace media assets. Used by [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) behind a `MediaProvider`, and available as a standalone SDK for any app that needs a media manager.
+Browse, upload, organize, crop, and replace media assets. Used by [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) behind a `MediaProvider` (the editor bundles the Browse UI — you do not install this package for `init({ media })`), and available as a standalone SDK for any app that needs a media manager.
 
 ## Install
 
@@ -13,7 +13,7 @@ Browse, upload, organize, crop, and replace media assets. Used by [`@templatical
 npm install @templatical/media-library
 ```
 
-Peer deps: `vue@^3.5`, `tailwindcss@^4`.
+Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package already contains the modal.
 
 > **Storage.** The library is storage-agnostic. Pass a `MediaProvider` — Cloud's adapter is `createCloudMediaProvider` from `@templatical/core/cloud`. See the [media contract](https://docs.templatical.com/backend/media) and the [Cloud adapter](https://docs.templatical.com/cloud/media-library).
 

@@ -24,6 +24,42 @@ const editor = await init({
 
 Einträge landen im `localStorage` unter `templatical:media`. `create` speichert die Datei als Data-URL — ein Modell in Demo-Größe. `localStorage`-Kontingente liegen typischerweise bei etwa 5 MB, und ein paar große Bilder füllen das. Ordner, Ersetzen, Import, Verwendung, häufig verwendet und Kontingent sind `false`. Für alles jenseits von Demos, Prototypen und einem einzelnen Gerät liefern Sie einen Provider.
 
+## Installation
+
+Das Durchsuchen-Modal liegt in `@templatical/editor` als Lazy-Chunk. `init({ media })` und Clouds Standard-Speicher brauchen kein Extra-Paket — der erste Klick auf Durchsuchen lädt diesen Chunk. Vue wird nicht installiert.
+
+Installieren Sie [`@templatical/media-library`](/de/getting-started/installation) nur für das **eigenständige** SDK: `init()`, `useMediaLibrary` oder `MediaLibraryModal` in Ihrer eigenen Vue-App.
+
+::: code-group
+
+```bash [npm]
+npm install @templatical/media-library
+```
+
+```bash [pnpm]
+pnpm add @templatical/media-library
+```
+
+```bash [yarn]
+yarn add @templatical/media-library
+```
+
+```bash [bun]
+bun add @templatical/media-library
+```
+
+:::
+
+Dieses Paket hat `vue` als Peer. Es entfällt, wenn:
+
+- Sie `onRequestMedia` ohne `media`-Schlüssel übergeben — das Host-Widget mountet das Modal nie
+- Sie `media` ganz weglassen — Bildfelder bleiben URL-only
+- Sie die Provider-Methoden selbst aufrufen — das sind gewöhnliche Funktionen
+
+::: tip Laden Sie den Editor über das CDN?
+Dann gibt es nichts zu installieren. Der CDN-Editor enthält denselben Chunk, den auch der npm-Editor mitliefert.
+:::
+
 ## Der Vertrag
 
 `media` akzeptiert jedes Objekt, das `MediaProvider` implementiert. `list` ist eine Methode; jedes andere Mitglied ist **entweder eine Funktion oder `false`**:

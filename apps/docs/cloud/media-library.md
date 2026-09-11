@@ -11,7 +11,7 @@ Media is an [open contract](/backend/media). Templatical Cloud implements it, th
 const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
 ```
 
-Nothing to configure — this one is on by default. Cloud supplies the provider, and Browse appears on image fields, video thumbnails and custom-block image fields.
+Nothing to configure — this one is on by default. Cloud supplies the provider, and Browse appears on image fields, video thumbnails and custom-block image fields. The modal ships in the editor; Cloud is the store.
 
 ## The adapter
 

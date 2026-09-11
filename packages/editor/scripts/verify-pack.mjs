@@ -57,6 +57,7 @@ const FORBIDDEN_PACKAGES = [
   "@tiptap/vue-3",
   "@tiptap/starter-kit",
   "@lucide/vue",
+  "vue-advanced-cropper",
 ];
 
 function logStep(msg) {

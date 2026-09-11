@@ -39,6 +39,14 @@ export default defineConfig({
     // silently dies). Vue re-exports the entire @vue/reactivity surface, so
     // when both are bundled together the bundler emits one shared module.
     dedupe: ['vue', '@vue/reactivity'],
+    alias: {
+      // Compile media-library source against this Vue, not the published
+      // dist (which externalizes `vue`). Same alias the CDN config uses.
+      '@templatical/media-library': resolve(
+        import.meta.dirname,
+        '../media-library/src/editor-modal.ts',
+      ),
+    },
   },
   build: {
     cssMinify: 'esbuild',
@@ -51,10 +59,10 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rolldownOptions: {
-      // Bundle Vue, @templatical/core, @templatical/types and all transitive Vue
-      // libs inline so the editor ships as a self-contained drop-in. The only
-      // externals are optional cloud/feature peers the consumer opts into.
-      external: ['@templatical/media-library', '@templatical/quality', '@templatical/renderer', 'pusher-js'],
+      // Bundle Vue, @templatical/core, @templatical/types, @templatical/media-library
+      // and all transitive Vue libs inline so the editor ships as a self-contained
+      // drop-in. The only externals are optional peers the consumer opts into.
+      external: ['@templatical/quality', '@templatical/renderer', 'pusher-js'],
     },
   },
 })

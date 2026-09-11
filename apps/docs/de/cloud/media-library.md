@@ -11,7 +11,7 @@ Medien sind ein [offener Vertrag](/de/backend/media). Templatical Cloud implemen
 const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
 ```
 
-Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt den Provider bereit, und Durchsuchen erscheint an Bildfeldern, Video-Thumbnails und Bildfeldern benutzerdefinierter Blöcke.
+Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt den Provider bereit, und Durchsuchen erscheint an Bildfeldern, Video-Thumbnails und Bildfeldern benutzerdefinierter Blöcke. Das Modal liegt im Editor; Cloud ist der Speicher.
 
 ## Der Adapter
 

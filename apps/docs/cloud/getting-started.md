@@ -18,10 +18,10 @@ This guide walks you through setting up Templatical Cloud in your application.
 If you haven't already installed the editor, add it along with the cloud dependencies:
 
 ```bash
-npm install @templatical/editor @templatical/media-library pusher-js
+npm install @templatical/editor pusher-js
 ```
 
-`@templatical/media-library` provides the built-in media browser and `pusher-js` enables real-time collaboration. Both are optional peer dependencies — only needed when using `initCloud()`.
+The Browse modal ships in the editor. `pusher-js` enables real-time collaboration and is Cloud-only. Install [`@templatical/media-library`](/backend/media#installation) only if you mount the standalone media SDK outside the editor.
 
 ::: info Shadow DOM
 `initCloud()` inherits all shadow-DOM behavior from the editor — mounted inside a Shadow DOM by default for host-CSS isolation. The media browser, AI panels, comments, and version-history UI all teleport into the editor's shadow-aware popover root, so no special handling is needed. Pass `shadowDom: false` to opt out. See the [Shadow DOM guide](/guide/shadow-dom).

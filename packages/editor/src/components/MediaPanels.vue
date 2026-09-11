@@ -10,12 +10,12 @@
  * downloads none of it. A callback-only `onRequestMedia` never mounts this.
  *
  * Never static-import `MediaLibraryModal` into `Editor.vue`: that collapses
- * the optional peer into the main entry for every consumer. Guarded by
- * `tests/editorMediaProvider.test.ts`.
+ * the modal into the main entry for every consumer. Guarded by
+ * `tests/editorMediaProvider.test.ts` and `tests/cdn-chunk-granularity.test.ts`.
  *
- * The try/catch around the dynamic import downgrades Webpack's
- * "Module not found" from error to warning when the optional peer isn't
- * installed. Consumers who configured a provider still need the package.
+ * The editor compiles `@templatical/media-library` into this async chunk
+ * (same Vue instance as the rest of the editor). Standalone `init()` /
+ * `MediaLibraryModal` in a host Vue app still live on that package.
  */
 import { defineAsyncComponent } from "vue";
 import type { MediaAsset, MediaProvider } from "@templatical/types";
@@ -30,14 +30,8 @@ const props = defineProps<{
 }>();
 
 const MediaLibraryModal = defineAsyncComponent(async () => {
-  try {
-    const m = await import("@templatical/media-library");
-    return m.MediaLibraryModal;
-  } catch {
-    throw new Error(
-      "[Templatical] The media library requires the optional peer dependency '@templatical/media-library'. Please install it.",
-    );
-  }
+  const m = await import("@templatical/media-library");
+  return m.MediaLibraryModal;
 });
 
 function handleSelect(asset: MediaAsset): void {

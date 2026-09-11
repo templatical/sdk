@@ -106,7 +106,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@templatical/media-library': resolve(import.meta.dirname, '../media-library/src/index.ts'),
+            '@templatical/media-library': resolve(import.meta.dirname, '../media-library/src/editor-modal.ts'),
             '@templatical/quality': resolve(import.meta.dirname, '../quality/src/index.ts'),
             '@templatical/renderer': resolve(import.meta.dirname, '../renderer/src/index.ts'),
             '@templatical/core/cloud': resolve(import.meta.dirname, '../core/src/cloud/index.ts'),
