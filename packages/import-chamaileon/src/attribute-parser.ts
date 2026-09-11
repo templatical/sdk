@@ -123,9 +123,7 @@ export function parseBorderShorthand(value: unknown): CssBorder | undefined {
 }
 
 /** Parse a 2.0 divider `attrs.lineStyle` string into thickness/lineStyle/color. */
-export function parseLineStyle(
-  value: unknown,
-):
+export function parseLineStyle(value: unknown):
   | {
       thickness: number;
       lineStyle: "solid" | "dashed" | "dotted";
