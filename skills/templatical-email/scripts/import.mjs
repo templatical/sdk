@@ -1,5 +1,6 @@
-// Import an existing Unlayer / BeeFree / HTML / MJML / Topol email template into Templatical
-// template JSON, using the deterministic `@templatical/import-*` converters.
+// Import an existing Unlayer / BeeFree / Stripo / Topol / Chamaileon /
+// Easy Email Pro / MJML / HTML email template into Templatical template JSON,
+// using the deterministic `@templatical/import-*` converters.
 // Writes the result to the shared working file (.templatical/<name>.json) so it
 // flows into validation + live mode exactly like a generated template.
 //
@@ -12,8 +13,8 @@
 // skipped — so the printed report tells you what to refine (ideally in live mode).
 //
 // Usage:
-//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol] [--cwd .] [--out <name>]
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+//   node scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|easy-email-pro|mjml|html] [--cwd .] [--out <name>]
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -28,22 +29,142 @@ const FORMATS = {
     fn: "convertBeeFreeTemplate",
     input: "json",
   },
-  html: {
-    pkg: "@templatical/import-html",
-    fn: "convertHtmlTemplate",
-    input: "text",
-  },
-  mjml: {
-    pkg: "@templatical/import-mjml",
-    fn: "convertMjmlTemplate",
-    input: "text",
+  stripo: {
+    pkg: "@templatical/import-stripo",
+    fn: "convertStripoTemplate",
+    input: "stripo",
   },
   topol: {
     pkg: "@templatical/import-topol",
     fn: "convertTopolTemplate",
     input: "json",
   },
+  chamaileon: {
+    pkg: "@templatical/import-chamaileon",
+    fn: "convertChamaileonTemplate",
+    input: "json",
+  },
+  "easy-email-pro": {
+    pkg: "@templatical/import-easy-email-pro",
+    fn: "convertEasyEmailProTemplate",
+    input: "json",
+  },
+  mjml: {
+    pkg: "@templatical/import-mjml",
+    fn: "convertMjmlTemplate",
+    input: "text",
+  },
+  html: {
+    pkg: "@templatical/import-html",
+    fn: "convertHtmlTemplate",
+    input: "text",
+  },
 };
+
+const FORMAT_LIST = Object.keys(FORMATS).join("|");
+
+function isTagNameEnd(ch) {
+  return ch === undefined || !/[A-Za-z0-9_]/.test(ch);
+}
+
+/**
+ * Drop every `tag` element, including a closer with extra attributes or
+ * whitespace. Linear `indexOf` — a regex here fails `js/bad-tag-filter` or
+ * `js/polynomial-redos`.
+ */
+function withoutElements(html, tag) {
+  const open = `<${tag}`;
+  const close = `</${tag}`;
+  const lower = html.toLowerCase();
+  let out = "";
+  let pos = 0;
+  while (pos < html.length) {
+    const start = lower.indexOf(open, pos);
+    if (start === -1) {
+      out += html.slice(pos);
+      break;
+    }
+    if (!isTagNameEnd(lower[start + open.length])) {
+      out += html.slice(pos, start + open.length);
+      pos = start + open.length;
+      continue;
+    }
+    out += html.slice(pos, start);
+    const gt = html.indexOf(">", start);
+    if (gt === -1) break;
+    const closeAt = lower.indexOf(close, gt + 1);
+    if (closeAt === -1) break;
+    const closeGt = html.indexOf(">", closeAt);
+    if (closeGt === -1) break;
+    out += " ";
+    pos = closeGt + 1;
+  }
+  return out;
+}
+
+/**
+ * Class tokens from attributes only. Stylesheets are stripped first so a
+ * compiled leftover `.esd-block-html table` rule cannot trip editor detection.
+ */
+function markupClassTokens(html) {
+  const stripped = withoutElements(withoutElements(html, "style"), "script");
+  const tokens = [];
+  const re = /\bclass\s*=\s*(["'])([^"']*)\1/gi;
+  let m;
+  while ((m = re.exec(stripped))) {
+    tokens.push(...m[2].trim().split(/\s+/).filter(Boolean));
+  }
+  return tokens;
+}
+
+function looksLikeStripoHtml(html) {
+  if (typeof html !== "string" || html.trim().length === 0) return false;
+  const tokens = markupClassTokens(html);
+  if (
+    tokens.some(
+      (t) =>
+        t === "esd-stripe" ||
+        t === "esd-structure" ||
+        t === "esd-container-frame" ||
+        t.startsWith("esd-block-"),
+    )
+  ) {
+    return true;
+  }
+  return tokens.some(
+    (t) =>
+      t === "es-wrapper" || t === "es-content-body" || t === "es-header-body",
+  );
+}
+
+function hasStandardType(node) {
+  if (!node || typeof node !== "object") return false;
+  if (typeof node.type === "string" && node.type.startsWith("standard-")) {
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    return node.children.some(hasStandardType);
+  }
+  return false;
+}
+
+function unpackStripoSource(source) {
+  const trimmed = source.trimStart();
+  if (trimmed.startsWith("{")) {
+    try {
+      const obj = JSON.parse(source);
+      if (typeof obj?.html === "string") {
+        return {
+          html: obj.html,
+          css: typeof obj.css === "string" ? obj.css : undefined,
+        };
+      }
+    } catch {
+      // fall through — treat as HTML
+    }
+  }
+  return { html: source };
+}
 
 /**
  * Guess the source format from the file name + content. Returns a FORMATS key,
@@ -60,6 +181,11 @@ export function detectFormat(fileName, content) {
   if (/^<(\?xml[^>]*\?>\s*)?<?\s*mjml[\s>]/i.test(trimmed)) return "mjml";
   if (/^<\s*mj-body[\s>]/i.test(trimmed)) return "mjml";
 
+  // Stripo compiled File→HTML and plugin storage are both .html (or a JSON
+  // { html, css } blob). The class-attribute check must run before the generic
+  // html branch, or every Stripo export is silently imported as table soup.
+  if (looksLikeStripoHtml(content)) return "stripo";
+
   if (ext === ".html" || ext === ".htm") return "html";
   if (trimmed.startsWith("<")) return "html";
   if (trimmed.startsWith("{")) {
@@ -75,6 +201,23 @@ export function detectFormat(fileName, content) {
     if (obj?.page?.rows) return "beefree";
     // Topol designs are an MJML-shaped tree whose root is the global style.
     if (obj?.tagName === "mj-global-style") return "topol";
+    // Chamaileon persist documents from getDocument(): { body: { type: "body" } }.
+    // Unlayer is { body: { rows } } and is matched first.
+    if (obj?.body?.type === "body") return "chamaileon";
+    // Easy Email Pro persist: { content: { type: "page", children: [standard-*] } }
+    // or a bare page element. OSS Easy Email is type "page" with "section"/"text"
+    // children and must not match. BeeFree is { page: { rows } }.
+    const page =
+      obj?.content?.type === "page"
+        ? obj.content
+        : obj?.type === "page"
+          ? obj
+          : null;
+    if (page && hasStandardType(page)) return "easy-email-pro";
+    // Plugin hosts often persist the whole getTemplateData() object.
+    if (typeof obj?.html === "string" && looksLikeStripoHtml(obj.html)) {
+      return "stripo";
+    }
     return null;
   }
   return null;
@@ -109,7 +252,7 @@ export function summarizeReport(report) {
  * `.missingPackage` set so callers can print an install hint / skip gracefully.
  * @returns {Promise<{ content: object, report: object }>}
  */
-export async function runImport(source, format) {
+export async function runImport(source, format, options = {}) {
   const spec = FORMATS[format];
   if (!spec) {
     throw new Error(
@@ -127,6 +270,11 @@ export async function runImport(source, format) {
     throw err;
   }
   const convert = mod[spec.fn];
+  if (spec.input === "stripo") {
+    const unpacked = unpackStripoSource(source);
+    const css = unpacked.css ?? options.css;
+    return convert(unpacked.html, css ? { css } : undefined);
+  }
   const input = spec.input === "json" ? JSON.parse(source) : source;
   return convert(input);
 }
@@ -143,13 +291,20 @@ function parseArgs(argv) {
   return args;
 }
 
+function siblingCss(sourcePath, source) {
+  if (source.trimStart().startsWith("{")) return undefined;
+  const cssPath = sourcePath.replace(/\.[^.]+$/, ".css");
+  if (cssPath === sourcePath || !existsSync(cssPath)) return undefined;
+  return readFileSync(cssPath, "utf8");
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cwd = resolve(args.cwd ?? process.cwd());
   const sourceArg = args._[0];
   if (!sourceArg) {
     console.error(
-      "Usage: node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol] [--out <name>]",
+      `Usage: node scripts/import.mjs <source-file> [--format ${FORMAT_LIST}] [--out <name>]`,
     );
     process.exit(2);
   }
@@ -168,14 +323,16 @@ async function main() {
   const format = args.format ?? detectFormat(basename(sourcePath), source);
   if (!format || !FORMATS[format]) {
     console.error(
-      `Couldn't detect the template format of ${sourceArg}. Pass --format unlayer|beefree|html|mjml|topol.`,
+      `Couldn't detect the template format of ${sourceArg}. Pass --format ${FORMAT_LIST}.`,
     );
     process.exit(2);
   }
 
   let result;
   try {
-    result = await runImport(source, format);
+    const extra =
+      format === "stripo" ? { css: siblingCss(sourcePath, source) } : {};
+    result = await runImport(source, format, extra);
   } catch (err) {
     console.error(err.message);
     process.exit(err.missingPackage ? 2 : 1);

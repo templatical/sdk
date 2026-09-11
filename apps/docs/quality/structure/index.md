@@ -4,7 +4,7 @@
 
 ## Why
 
-Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML, MJML, Topol) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
+Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
 
 The structure linter catches these before save / before send:
 

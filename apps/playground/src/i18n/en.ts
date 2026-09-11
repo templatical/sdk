@@ -12,7 +12,7 @@ export default {
     emptyCanvas: "Empty canvas with default settings",
     migration: {
       headline:
-        "Already using BeeFree, Unlayer, MJML, Topol, or hand-coded HTML?",
+        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
@@ -20,6 +20,9 @@ export default {
       importFromHtml: "Import from HTML",
       importFromMjml: "Import from MJML",
       importFromTopol: "Import from Topol",
+      importFromStripo: "Import from Stripo",
+      importFromChamaileon: "Import from Chamaileon",
+      importFromEasyEmailPro: "Import from Easy Email Pro",
     },
   },
   cloudBanner: {
@@ -80,11 +83,14 @@ export default {
   importModal: {
     title: "Import existing template",
     sources: {
-      beefree: "From BeeFree",
       unlayer: "From Unlayer",
-      html: "From HTML",
-      mjml: "From MJML",
+      beefree: "From BeeFree",
+      stripo: "From Stripo",
       topol: "From Topol",
+      chamaileon: "From Chamaileon",
+      easyEmailPro: "From Easy Email Pro",
+      mjml: "From MJML",
+      html: "From HTML",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
@@ -113,6 +119,21 @@ export default {
       description:
         'Paste a Topol design JSON below — the design itself, not a whole API response. Topol\'s editor hands it to you directly; from its API it sits under "definition" or "json".',
       emptyError: "Paste your Topol design JSON or upload a file.",
+    },
+    stripo: {
+      description:
+        "Paste Stripo HTML below — a File → HTML export, or the { html, css } object from getTemplateData(). The converter auto-detects which one you passed.",
+      emptyError: "Paste your Stripo HTML or upload a file.",
+    },
+    chamaileon: {
+      description:
+        "Paste a Chamaileon getDocument() JSON below — the persist document, not getEmailHtml() markup.",
+      emptyError: "Paste your Chamaileon document JSON or upload a file.",
+    },
+    easyEmailPro: {
+      description:
+        "Paste an Easy Email Pro JSON below — the persist { subject, content } page, not EditorCore.toMJML() output.",
+      emptyError: "Paste your Easy Email Pro JSON or upload a file.",
     },
   },
   mergeTagModal: {
@@ -308,6 +329,9 @@ export default {
     htmlSourceContent: "HTML source content",
     mjmlSourceContent: "MJML source content",
     topolSourceContent: "Topol design JSON content",
+    stripoSourceContent: "Stripo HTML content",
+    chamaileonSourceContent: "Chamaileon document JSON content",
+    easyEmailProSourceContent: "Easy Email Pro page JSON content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

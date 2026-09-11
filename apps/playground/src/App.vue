@@ -137,9 +137,17 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-type ImportSource = "beefree" | "unlayer" | "html" | "mjml" | "topol";
+type ImportSource =
+  | "beefree"
+  | "unlayer"
+  | "html"
+  | "mjml"
+  | "topol"
+  | "stripo"
+  | "chamaileon"
+  | "easyEmailPro";
 const showImport = ref(false);
-const importSource = ref<ImportSource>("beefree");
+const importSource = ref<ImportSource>("unlayer");
 const beefreeJson = ref("");
 const beefreeError = ref("");
 const unlayerJson = ref("");
@@ -150,6 +158,12 @@ const mjmlSource = ref("");
 const mjmlError = ref("");
 const topolSource = ref("");
 const topolError = ref("");
+const stripoSource = ref("");
+const stripoError = ref("");
+const chamaileonSource = ref("");
+const chamaileonError = ref("");
+const easyEmailProSource = ref("");
+const easyEmailProError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -1480,6 +1494,9 @@ function closeImportModal(): void {
   htmlError.value = "";
   mjmlError.value = "";
   topolError.value = "";
+  stripoError.value = "";
+  chamaileonError.value = "";
+  easyEmailProError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -1561,6 +1578,61 @@ async function importTopolFromString(raw: string): Promise<void> {
   }
 }
 
+async function importStripoFromString(raw: string): Promise<void> {
+  stripoError.value = "";
+
+  try {
+    let html = raw;
+    let css: string | undefined;
+    if (raw.trimStart().startsWith("{")) {
+      const obj = JSON.parse(raw) as { html?: unknown; css?: unknown };
+      if (typeof obj.html === "string") {
+        html = obj.html;
+        css = typeof obj.css === "string" ? obj.css : undefined;
+      }
+    }
+    const { convertStripoTemplate } =
+      await import("@templatical/import-stripo");
+    const { content } = convertStripoTemplate(html, css ? { css } : undefined);
+    closeImportModal();
+    stripoSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    stripoError.value = e instanceof Error ? e.message : "Invalid Stripo HTML";
+  }
+}
+
+async function importChamaileonFromString(raw: string): Promise<void> {
+  chamaileonError.value = "";
+
+  try {
+    const { convertChamaileonTemplate } =
+      await import("@templatical/import-chamaileon");
+    const { content } = convertChamaileonTemplate(raw);
+    closeImportModal();
+    chamaileonSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    chamaileonError.value =
+      e instanceof Error ? e.message : "Invalid Chamaileon JSON";
+  }
+}
+
+async function importEasyEmailProFromString(raw: string): Promise<void> {
+  easyEmailProError.value = "";
+  try {
+    const { convertEasyEmailProTemplate } =
+      await import("@templatical/import-easy-email-pro");
+    const { content } = convertEasyEmailProTemplate(raw);
+    closeImportModal();
+    easyEmailProSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    easyEmailProError.value =
+      e instanceof Error ? e.message : "Invalid Easy Email Pro JSON";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -1602,6 +1674,36 @@ function confirmImport(): void {
     return;
   }
 
+  if (importSource.value === "stripo") {
+    const raw = stripoSource.value.trim();
+    if (!raw) {
+      stripoError.value = t.value.importModal.stripo.emptyError;
+      return;
+    }
+    importStripoFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "chamaileon") {
+    const raw = chamaileonSource.value.trim();
+    if (!raw) {
+      chamaileonError.value = t.value.importModal.chamaileon.emptyError;
+      return;
+    }
+    importChamaileonFromString(raw);
+    return;
+  }
+
+  if (importSource.value === "easyEmailPro") {
+    const raw = easyEmailProSource.value.trim();
+    if (!raw) {
+      easyEmailProError.value = t.value.importModal.easyEmailPro.emptyError;
+      return;
+    }
+    importEasyEmailProFromString(raw);
+    return;
+  }
+
   const raw = unlayerJson.value.trim();
   if (!raw) {
     unlayerError.value = t.value.importModal.unlayer.emptyError;
@@ -1627,6 +1729,12 @@ onImportFileChange(async (files) => {
     importMjmlFromString(text);
   } else if (importSource.value === "topol") {
     importTopolFromString(text);
+  } else if (importSource.value === "stripo") {
+    importStripoFromString(text);
+  } else if (importSource.value === "chamaileon") {
+    importChamaileonFromString(text);
+  } else if (importSource.value === "easyEmailPro") {
+    importEasyEmailProFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -2815,18 +2923,6 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
-                data-testid="chooser-import-beefree"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('beefree')"
-              >
-                {{ t.chooser.migration.importFromBeefree }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
                 data-testid="chooser-import-unlayer"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('unlayer')"
@@ -2839,11 +2935,59 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-html"
+                data-testid="chooser-import-beefree"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('html')"
+                @click="openImportFromSource('beefree')"
               >
-                {{ t.chooser.migration.importFromHtml }}
+                {{ t.chooser.migration.importFromBeefree }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-stripo"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('stripo')"
+              >
+                {{ t.chooser.migration.importFromStripo }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-topol"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('topol')"
+              >
+                {{ t.chooser.migration.importFromTopol }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-chamaileon"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('chamaileon')"
+              >
+                {{ t.chooser.migration.importFromChamaileon }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-easy-email-pro"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('easyEmailPro')"
+              >
+                {{ t.chooser.migration.importFromEasyEmailPro }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -2863,11 +3007,11 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-topol"
+                data-testid="chooser-import-html"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('topol')"
+                @click="openImportFromSource('html')"
               >
-                {{ t.chooser.migration.importFromTopol }}
+                {{ t.chooser.migration.importFromHtml }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -3671,7 +3815,13 @@ onUnmounted(() => {
                           ? t.importModal.mjml.description
                           : importSource === "topol"
                             ? t.importModal.topol.description
-                            : t.importModal.unlayer.description
+                            : importSource === "stripo"
+                              ? t.importModal.stripo.description
+                              : importSource === "chamaileon"
+                                ? t.importModal.chamaileon.description
+                                : importSource === "easyEmailPro"
+                                  ? t.importModal.easyEmailPro.description
+                                  : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -3690,20 +3840,6 @@ onUnmounted(() => {
             >
               <button
                 role="tab"
-                :aria-selected="importSource === 'beefree'"
-                :class="[
-                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'beefree'
-                    ? 'border-primary text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
-                ]"
-                data-testid="import-tab-beefree"
-                @click="importSource = 'beefree'"
-              >
-                {{ t.importModal.sources.beefree }}
-              </button>
-              <button
-                role="tab"
                 :aria-selected="importSource === 'unlayer'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
@@ -3718,17 +3854,73 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'html'"
+                :aria-selected="importSource === 'beefree'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'html'
+                  importSource === 'beefree'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-html"
-                @click="importSource = 'html'"
+                data-testid="import-tab-beefree"
+                @click="importSource = 'beefree'"
               >
-                {{ t.importModal.sources.html }}
+                {{ t.importModal.sources.beefree }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'stripo'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'stripo'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-stripo"
+                @click="importSource = 'stripo'"
+              >
+                {{ t.importModal.sources.stripo }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'topol'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'topol'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-topol"
+                @click="importSource = 'topol'"
+              >
+                {{ t.importModal.sources.topol }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'chamaileon'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'chamaileon'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-chamaileon"
+                @click="importSource = 'chamaileon'"
+              >
+                {{ t.importModal.sources.chamaileon }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'easyEmailPro'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'easyEmailPro'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-easy-email-pro"
+                @click="importSource = 'easyEmailPro'"
+              >
+                {{ t.importModal.sources.easyEmailPro }}
               </button>
               <button
                 role="tab"
@@ -3746,17 +3938,17 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'topol'"
+                :aria-selected="importSource === 'html'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'topol'
+                  importSource === 'html'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-topol"
-                @click="importSource = 'topol'"
+                data-testid="import-tab-html"
+                @click="importSource = 'html'"
               >
-                {{ t.importModal.sources.topol }}
+                {{ t.importModal.sources.html }}
               </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
@@ -3809,12 +4001,36 @@ onUnmounted(() => {
                 placeholder="<mjml>&#10;  <mj-body>&#10;    <mj-section>...</mj-section>&#10;  </mj-body>&#10;</mjml>"
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'topol'"
                 v-model="topolSource"
                 :aria-label="t.a11y.topolSourceContent"
                 data-testid="import-textarea-topol"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"tagName": "mj-global-style", "children": [{"tagName": "mj-container", "children": [...]}]}'
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'stripo'"
+                v-model="stripoSource"
+                :aria-label="t.a11y.stripoSourceContent"
+                data-testid="import-textarea-stripo"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='<table class="es-wrapper">...</table>'
+              ></textarea>
+              <textarea
+                v-else-if="importSource === 'chamaileon'"
+                v-model="chamaileonSource"
+                :aria-label="t.a11y.chamaileonSourceContent"
+                data-testid="import-textarea-chamaileon"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"body": {"type": "body", "children": [{"type": "fullwidth", "children": [...]}]}}'
+              ></textarea>
+              <textarea
+                v-else
+                v-model="easyEmailProSource"
+                :aria-label="t.a11y.easyEmailProSourceContent"
+                data-testid="import-textarea-easy-email-pro"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"subject": "...", "content": {"type": "page", "children": [{"type": "standard-section", "children": [...]}]}}'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -3850,6 +4066,27 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ topolError }}
+              </p>
+              <p
+                v-if="importSource === 'stripo' && stripoError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ stripoError }}
+              </p>
+              <p
+                v-if="importSource === 'chamaileon' && chamaileonError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ chamaileonError }}
+              </p>
+              <p
+                v-if="importSource === 'easyEmailPro' && easyEmailProError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ easyEmailProError }}
               </p>
             </div>
             <div

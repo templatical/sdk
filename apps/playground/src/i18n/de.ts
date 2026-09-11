@@ -14,7 +14,7 @@ export default {
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
       headline:
-        "Nutzen Sie bereits BeeFree, Unlayer, MJML, Topol oder handgeschriebenes HTML?",
+        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML oder HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
@@ -22,6 +22,9 @@ export default {
       importFromHtml: "Aus HTML importieren",
       importFromMjml: "Aus MJML importieren",
       importFromTopol: "Aus Topol importieren",
+      importFromStripo: "Aus Stripo importieren",
+      importFromChamaileon: "Aus Chamaileon importieren",
+      importFromEasyEmailPro: "Aus Easy Email Pro importieren",
     },
   },
   cloudBanner: {
@@ -82,11 +85,14 @@ export default {
   importModal: {
     title: "Bestehende Vorlage importieren",
     sources: {
-      beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
-      html: "Aus HTML",
-      mjml: "Aus MJML",
+      beefree: "Aus BeeFree",
+      stripo: "Aus Stripo",
       topol: "Aus Topol",
+      chamaileon: "Aus Chamaileon",
+      easyEmailPro: "Aus Easy Email Pro",
+      mjml: "Aus MJML",
+      html: "Aus HTML",
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",
@@ -121,6 +127,24 @@ export default {
         'F\u00fcgen Sie unten ein Topol-Design-JSON ein \u2014 das Design selbst, nicht eine gesamte API-Antwort. Topols Editor \u00fcbergibt es Ihnen direkt; \u00fcber die API liegt es unter "definition" oder "json".',
       emptyError:
         "F\u00fcgen Sie Ihr Topol-Design-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    stripo: {
+      description:
+        "F\u00fcgen Sie unten Stripo-HTML ein \u2014 einen Datei \u2192 HTML-Export oder das { html, css }-Objekt aus getTemplateData(). Der Konverter erkennt selbst, welche Variante Sie \u00fcbergeben.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Stripo-HTML ein oder laden Sie eine Datei hoch.",
+    },
+    chamaileon: {
+      description:
+        "F\u00fcgen Sie unten ein Chamaileon-getDocument()-JSON ein \u2014 das persistierte Dokument, kein getEmailHtml()-Markup.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Chamaileon-Dokument-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    easyEmailPro: {
+      description:
+        "F\u00fcgen Sie unten ein Easy-Email-Pro-JSON ein \u2014 die persistierte Seite { subject, content }, keine EditorCore.toMJML()-Ausgabe.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Easy-Email-Pro-JSON ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -320,6 +344,9 @@ export default {
     htmlSourceContent: "HTML-Quelltext-Inhalt",
     mjmlSourceContent: "MJML-Quelltext-Inhalt",
     topolSourceContent: "Topol-Design-JSON-Inhalt",
+    stripoSourceContent: "Stripo-HTML-Inhalt",
+    chamaileonSourceContent: "Chamaileon-Dokument-JSON-Inhalt",
+    easyEmailProSourceContent: "Easy-Email-Pro-Seiten-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",

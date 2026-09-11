@@ -143,20 +143,26 @@ unrelated sessions.
 ## Importing an existing template
 
 If the user has a template from another editor in their project — **Unlayer**,
-**BeeFree**, an **HTML email**, an **MJML** template, or a **Topol** design —
-convert it to Templatical instead of building from scratch. `scripts/import.mjs`
-runs the matching `@templatical/import-*` converter:
+**BeeFree**, a **Stripo** export (plugin `getTemplateData` HTML, or compiled
+File → HTML), a **Topol** design, a **Chamaileon** `getDocument()` persist
+document, an **Easy Email Pro** persist document, an **MJML** template, or an
+**HTML email** — convert it to Templatical instead of building from scratch.
+`scripts/import.mjs` runs the matching `@templatical/import-*` converter:
 
 ```
-node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol]
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|easy-email-pro|mjml|html]
 ```
 
-It auto-detects the format (Unlayer / BeeFree / Topol JSON, `.html`, or MJML by
-its `.mjml` extension or an `<mjml>`/`<mj-body>` root), writes the result to a
-working file `.templatical/<name>.json` (same as a generated template —
-`--out <name>` overrides the default, which is the source file's name), and
-prints a **conversion report**: how many blocks converted cleanly vs. fell back
-to `html` vs. were skipped, plus warnings.
+It auto-detects the format (Unlayer / BeeFree / Topol / Chamaileon / Easy Email
+Pro JSON, Stripo HTML or `{ html, css }` JSON, `.html`, or MJML by its `.mjml`
+extension or an `<mjml>`/`<mj-body>` root). Stripo must be decided before the
+generic HTML branch: compiled File → HTML and plugin storage are both `.html`.
+Writes the result to a working file `.templatical/<name>.json` (same as a
+generated template — `--out <name>` overrides the default, which is the source
+file's name), and prints a **conversion report**: how many blocks converted
+cleanly vs. fell back to `html` vs. were skipped, plus warnings. For plugin
+storage, a sibling `.css` next to the HTML file is passed through as
+`options.css`.
 
 - **Optional, install-on-demand.** Each format needs its converter installed; the
   script prints the exact `npm install @templatical/import-<format>` if it's
