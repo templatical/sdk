@@ -1,15 +1,15 @@
 {
   "name": "@templatical/email-skill",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
   "description": "Agent Skill: generate and validate Templatical email template JSON",
-  "license": "MIT",
-  "scripts": {
-    "test": "vitest run --config vitest.config.ts"
-  },
+  "version": "0.0.0",
   "devDependencies": {
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
-  }
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "type": "module"
 }
