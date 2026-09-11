@@ -31,6 +31,7 @@ import {
   styleValue,
   unwrapValue,
 } from "./normalize";
+import { convertSocial } from "./social-mapper";
 import type {
   ChamaileonNode,
   ChamaileonVariable,
@@ -53,8 +54,8 @@ export interface Converted {
 /**
  * Convert one Chamaileon leaf into a Templatical block.
  *
- * Structure nodes (`fullwidth` / `box` / `multicolumn` / `column`) and
- * `social` html-fallback if they reach this function.
+ * Structure nodes (`fullwidth` / `box` / `multicolumn` / `column`)
+ * html-fallback if they reach this function.
  */
 export function convertLeaf(node: ChamaileonNode, ctx: MapContext): Converted {
   switch (node.type) {
@@ -79,6 +80,8 @@ export function convertLeaf(node: ChamaileonNode, ctx: MapContext): Converted {
       return convertVideo(node, ctx);
     case "code":
       return convertCode(node, ctx);
+    case "social":
+      return convertSocial(node, ctx);
     default:
       return convertUnknown(node, ctx);
   }
