@@ -66,6 +66,10 @@ export default defineConfig({
                 packagesDir,
                 'import-stripo/src/index.ts',
             ),
+            '@templatical/import-chamaileon': resolve(
+                packagesDir,
+                'import-chamaileon/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',

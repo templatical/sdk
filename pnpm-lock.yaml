@@ -297,6 +297,9 @@ importers:
       '@templatical/import-beefree':
         specifier: workspace:*
         version: link:../../packages/import-beefree
+      '@templatical/import-chamaileon':
+        specifier: workspace:*
+        version: link:../../packages/import-chamaileon
       '@templatical/import-html':
         specifier: workspace:*
         version: link:../../packages/import-html

@@ -252,7 +252,7 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo)
+  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
@@ -260,6 +260,7 @@ export const SELECTORS = {
   chooserImportMjml: '[data-testid="chooser-import-mjml"]',
   chooserImportTopol: '[data-testid="chooser-import-topol"]',
   chooserImportStripo: '[data-testid="chooser-import-stripo"]',
+  chooserImportChamaileon: '[data-testid="chooser-import-chamaileon"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
@@ -267,12 +268,14 @@ export const SELECTORS = {
   importTabMjml: '[data-testid="import-tab-mjml"]',
   importTabTopol: '[data-testid="import-tab-topol"]',
   importTabStripo: '[data-testid="import-tab-stripo"]',
+  importTabChamaileon: '[data-testid="import-tab-chamaileon"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
   importTextareaMjml: '[data-testid="import-textarea-mjml"]',
   importTextareaTopol: '[data-testid="import-textarea-topol"]',
   importTextareaStripo: '[data-testid="import-textarea-stripo"]',
+  importTextareaChamaileon: '[data-testid="import-textarea-chamaileon"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;

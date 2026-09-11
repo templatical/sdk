@@ -12,6 +12,7 @@
     "@lucide/vue": "^1.42.0",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
+    "@templatical/import-chamaileon": "workspace:*",
     "@templatical/import-html": "workspace:*",
     "@templatical/import-mjml": "workspace:*",
     "@templatical/import-stripo": "workspace:*",
