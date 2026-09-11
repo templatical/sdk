@@ -4,8 +4,11 @@ import type { ChamaileonNode } from "../types";
 import type {
   ButtonBlock,
   DividerBlock,
+  HtmlBlock,
   ImageBlock,
+  ParagraphBlock,
   TitleBlock,
+  VideoBlock,
 } from "@templatical/types";
 
 const ctx = (): MapContext => ({
@@ -161,6 +164,110 @@ describe("text", () => {
     expect(b.type).toBe("title");
     expect(b.level).toBe(1);
     expect(entry.templaticalBlockType).toBe("title");
+  });
+});
+
+describe("video", () => {
+  it("maps 4.x attrs.link to url and attrs.src to thumbnailUrl", () => {
+    const { block, entry } = convertLeaf(
+      node({
+        type: "video",
+        attrs: {
+          src: "https://placehold.co/600x338.png",
+          link: "https://youtube.com/watch?v=abc",
+          altText: "Clip",
+        },
+        style: {},
+      }),
+      ctx(),
+    );
+    const b = block as VideoBlock;
+    expect(b.type).toBe("video");
+    expect(b.url).toBe("https://youtube.com/watch?v=abc");
+    expect(b.thumbnailUrl).toBe("https://placehold.co/600x338.png");
+    expect(b.alt).toBe("Clip");
+    expect(JSON.stringify(b)).not.toContain("#333333");
+    expect(entry.sourceTag).toBe("video");
+    expect(entry.templaticalBlockType).toBe("video");
+    expect(entry.status).toBe("converted");
+  });
+});
+
+describe("typed-text", () => {
+  it("maps subType title to a TitleBlock", () => {
+    const { block, entry } = convertLeaf(
+      node({
+        type: "typed-text",
+        attrs: { text: "Welcome" },
+        style: { subType: "title" },
+      }),
+      ctx(),
+    );
+    const b = block as TitleBlock;
+    expect(b.type).toBe("title");
+    expect(b.content).toBe("Welcome");
+    expect(b.level).toBe(1);
+    expect(entry.sourceTag).toBe("typed-text");
+    expect(entry.templaticalBlockType).toBe("title");
+    expect(entry.status).toBe("converted");
+  });
+
+  it("maps subType list to an approximated Paragraph", () => {
+    const { block, entry } = convertLeaf(
+      node({
+        type: "typed-text",
+        attrs: { text: "<ul><li>One</li></ul>" },
+        style: { subType: "list" },
+      }),
+      ctx(),
+    );
+    const b = block as ParagraphBlock;
+    expect(b.type).toBe("paragraph");
+    expect(b.content).toBe("<ul><li>One</li></ul>");
+    expect(entry.sourceTag).toBe("typed-text");
+    expect(entry.templaticalBlockType).toBe("paragraph");
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toMatch(/list/);
+  });
+});
+
+describe("code", () => {
+  it("maps attrs.html onto HtmlBlock content", () => {
+    const { block, entry } = convertLeaf(
+      node({
+        type: "code",
+        attrs: { html: "<table><tr><td>X</td></tr></table>" },
+        style: {},
+      }),
+      ctx(),
+    );
+    const b = block as HtmlBlock;
+    expect(b.type).toBe("html");
+    expect(b.content).toBe("<table><tr><td>X</td></tr></table>");
+    expect(entry.sourceTag).toBe("code");
+    expect(entry.templaticalBlockType).toBe("html");
+    expect(entry.status).toBe("converted");
+  });
+});
+
+describe("dynamic-image", () => {
+  it("maps to an approximated ImageBlock naming the source type", () => {
+    const { block, entry } = convertLeaf(
+      node({
+        type: "dynamic-image",
+        attrs: { src: "https://cdn.test/dyn.png", altText: "Hero" },
+        style: {},
+      }),
+      ctx(),
+    );
+    const b = block as ImageBlock;
+    expect(b.type).toBe("image");
+    expect(b.src).toBe("https://cdn.test/dyn.png");
+    expect(b.alt).toBe("Hero");
+    expect(entry.sourceTag).toBe("dynamic-image");
+    expect(entry.templaticalBlockType).toBe("image");
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toMatch(/dynamic-image/);
   });
 });
 

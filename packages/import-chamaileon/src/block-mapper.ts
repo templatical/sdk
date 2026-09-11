@@ -321,7 +321,8 @@ function convertVideo(node: ChamaileonNode, ctx: MapContext): Converted {
 
   return finish(
     createVideoBlock({
-      url: asString(attrs.src) ?? asString(attrs.link) ?? "",
+      url: videoUrl(attrs),
+      thumbnailUrl: asString(attrs.src) ?? "",
       ...(alt !== undefined ? { alt } : {}),
       ...(width !== undefined ? { width } : {}),
       align: parseAlignment(attrs.align ?? style.align, "center"),
@@ -330,6 +331,21 @@ function convertVideo(node: ChamaileonNode, ctx: MapContext): Converted {
     attrs,
     report("video", "video", "converted"),
   );
+}
+
+function videoUrl(attrs: Record<string, unknown>): string {
+  const link = asString(attrs.link);
+  if (link) return link;
+  const videoId = asString(attrs.videoId);
+  if (!videoId) return "";
+  const provider = asString(attrs.videoProvider)?.trim().toLowerCase();
+  if (provider === "youtube") {
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  }
+  if (provider === "vimeo") {
+    return `https://vimeo.com/${videoId}`;
+  }
+  return "";
 }
 
 function convertCode(node: ChamaileonNode, ctx: MapContext): Converted {

@@ -143,7 +143,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 | `dynamic-image` | `ImageBlock` | `approximated`; die `note` nennt den Quelltyp. |
 | `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` und 4.1 `style.width` / `type` / `color` (Linienstärke, nicht Blockbreite). |
 | `social` | `SocialIconsBlock` | `elements[]` ist die Quelle der Wahrheit. Unbekannte Plattformnamen werden zu `website`. Icon-Größe rastet auf 24 / 32 / 48 px. |
-| `video` | `VideoBlock` | `src` → `url`. Ein fehlendes Thumbnail bleibt der leere Factory-String. |
+| `video` | `VideoBlock` | `link` → `url`; `src` → `thumbnailUrl`. Ein fehlendes Thumbnail bleibt der leere Factory-String. |
 | `code` | `HtmlBlock` | Aus `attrs.html` / `attrs.code` / `attrs.content` (erstes gesetztes Feld). |
 | `block-level-loop`, `block-level-conditional`, `branch`, `loop`, `conditional` | Kinder, oder Skip | Leer → `skipped`. Nicht leer → Kinder werden konvertiert, als wäre der Wrapper nicht da; jeder erzeugte Eintrag ist `approximated`. Der Ausdruck wird nicht auf `displayCondition` abgebildet. |
 | Jeder andere `type` | `HtmlBlock` | Der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
