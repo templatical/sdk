@@ -5671,99 +5671,29 @@ Templatical ships two [Agent Skills](https://agentskills.io) — **free, open-so
 - **`templatical-email`** — design a complete email from a natural-language prompt, preview it in the real editor, and export sendable MJML/HTML.
 - **`templatical-sdk`** — install, mount, configure, theme and troubleshoot an [`@templatical/editor`](/getting-started/quick-start) integration, and answer "how do I" / "is it possible" questions about the SDK.
 
-Most people want exactly one of the two — that's why they're separate skills, and separate Claude Code plugins (see [Install](#install)). Authoring or editing a template is `templatical-email`; wiring the editor into your own codebase is `templatical-sdk`. "Build a welcome email and wire it into my app" wants both, in that order: `templatical-email` builds and validates the template JSON first, then `templatical-sdk` mounts the editor and loads it in. Each skill's `SKILL.md` names the other, so an agent with both installed hands off between them on its own.
+Most people want exactly one of the two — that's why they're separate skills. Authoring or editing a template is `templatical-email`; wiring the editor into your own codebase is `templatical-sdk`. "Build a welcome email and wire it into my app" wants both, in that order: `templatical-email` builds and validates the template JSON first, then `templatical-sdk` mounts the editor and loads it in. Each skill's `SKILL.md` names the other, so an agent with both installed hands off between them on its own.
 
 There is no backend and no API key for either: your agent is the inference. Nothing is sent to Templatical.
 
 ## Install
 
-Both skills are plain [Agent Skills](https://agentskills.io) folders — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`.
-
-### `npx skills add` (recommended)
+Both skills are plain [Agent Skills](https://agentskills.io) folders, so any agent that reads `SKILL.md` can use them.
 
 ```bash
 npx skills add templatical/sdk
 ```
 
-One command installs **both** skills — [`skills`](https://github.com/vercel-labs/skills) detects which supported agent(s) you have and installs each straight into the right directory for it. It reports anonymous usage telemetry by default (which repo and skill you installed, for public repositories); set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you'd rather it didn't.
+One command installs **both** skills. [`skills`](https://github.com/vercel-labs/skills) detects which supported agents you have and installs each one straight into the directory that agent reads, so there is nothing to place by hand.
 
-### Claude Code plugin
-
-Each skill ships as its **own** plugin in the same marketplace, so this route is two installs, not one — get `templatical-email` for authoring, `templatical-sdk` for integration, or both:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-/plugin install templatical-sdk@templatical
-```
-
-They version and update independently, so installing one never pulls down the other's reference material. Add the marketplace from the git repository (not a raw file URL) so each plugin's source resolves.
-
-### Copy the folder manually
-
-Clone the repository once:
+It reports anonymous usage telemetry by default — which repository and skill you installed, for public repositories. Set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you would rather it didn't:
 
 ```bash
-git clone https://github.com/templatical/sdk.git
+DISABLE_TELEMETRY=1 npx skills add templatical/sdk
 ```
 
-`~/.agents/skills/` is the vendor-neutral location that Codex CLI, Gemini CLI and others read by default — installing there once covers all of them. Copy whichever skill (or both) you need:
+Re-run the same command to update.
 
-```bash
-mkdir -p ~/.agents/skills
-cp -r sdk/skills/templatical-email ~/.agents/skills/
-cp -r sdk/skills/templatical-sdk ~/.agents/skills/
-```
-
-For an agent that uses its own directory, or if you would rather keep skills separate:
-
-::: code-group
-
-```bash [Codex CLI]
-mkdir -p ~/.agents/skills
-cp -r sdk/skills/templatical-email ~/.agents/skills/
-cp -r sdk/skills/templatical-sdk ~/.agents/skills/
-```
-
-```bash [Cursor]
-mkdir -p ~/.cursor/skills
-cp -r sdk/skills/templatical-email ~/.cursor/skills/
-cp -r sdk/skills/templatical-sdk ~/.cursor/skills/
-```
-
-```bash [Gemini CLI]
-mkdir -p ~/.gemini/skills
-cp -r sdk/skills/templatical-email ~/.gemini/skills/
-cp -r sdk/skills/templatical-sdk ~/.gemini/skills/
-```
-
-```bash [Claude Code]
-# Only if you skipped the plugin route above.
-mkdir -p ~/.claude/skills
-cp -r sdk/skills/templatical-email ~/.claude/skills/
-cp -r sdk/skills/templatical-sdk ~/.claude/skills/
-```
-
-```bash [Project-scoped]
-# Committed with the repo, so teammates get it on clone.
-# Use .agents/skills/ for cross-agent, or .claude/skills/, .cursor/skills/, …
-mkdir -p .agents/skills
-cp -r /path/to/sdk/skills/templatical-email .agents/skills/
-cp -r /path/to/sdk/skills/templatical-sdk .agents/skills/
-```
-
-:::
-
-To keep a copy in step across several agents, symlink instead of copying:
-
-```bash
-ln -s ~/.agents/skills/templatical-email ~/.claude/skills/templatical-email
-ln -s ~/.agents/skills/templatical-sdk ~/.claude/skills/templatical-sdk
-```
-
-Copies do not auto-update — re-copy after pulling the repository.
-
-If your agent doesn't pick a skill up, check that its folder landed in a directory the agent actually reads, and that the skill is enabled in its skill list.
+If your agent doesn't pick a skill up afterwards, check that it is enabled in the agent's own skill list.
 
 ## `templatical-email`: design and validate a template
 
@@ -5789,7 +5719,6 @@ A few things need to be in place on your machine before you start.
 | **An internet connection** | Every command — including generating and validating JSON — runs through a small CLI fetched on demand via `npx`. The first run downloads the pinned version from npm; after that, npm caches it and there's no further network round trip until a future release moves the pin. Nothing is installed into your project: no `package.json` edit, no lockfile change, no `node_modules` entry. | Everything |
 | **A modern browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — you almost certainly have this. | [Live preview](#preview-it-live) |
 | **`npm`** | Fetches the converter for your source format the first time you import. Comes with Node.js. | [Importing](#import-an-existing-template) |
-| **`git`** | To clone the repository, or for the plugin install (the marketplace is a git repository). | Install |
 
 **Nothing else** — no Templatical account, no API key, and no backend.
 

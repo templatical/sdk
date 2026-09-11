@@ -10,99 +10,29 @@ Templatical bietet zwei [Agent Skills](https://agentskills.io) — **kostenlos, 
 - **`templatical-email`** — gestalten Sie eine komplette E-Mail aus einem natürlichsprachlichen Prompt, sehen Sie sie im echten Editor an und exportieren Sie versandfertiges MJML/HTML.
 - **`templatical-sdk`** — installieren, einbinden, konfigurieren, per Theming anpassen und Fehler beheben bei einer [`@templatical/editor`](/de/getting-started/quick-start)-Integration, sowie Fragen zur SDK beantworten wie „Wie mache ich …" oder „Ist … möglich".
 
-Die meisten Menschen wollen genau einen der beiden — deshalb sind es getrennte Skills und getrennte Claude-Code-Plugins (siehe [Installation](#installation)). Eine Vorlage zu verfassen oder zu bearbeiten ist Sache von `templatical-email`; den Editor in Ihre eigene Codebasis einzubinden ist Sache von `templatical-sdk`. „Baue mir eine Willkommens-E-Mail und binde sie in meine App ein" braucht beide, in dieser Reihenfolge: `templatical-email` baut und validiert zuerst das Template-JSON, dann bindet `templatical-sdk` den Editor ein und lädt es hinein. Die `SKILL.md` jedes Skills nennt den jeweils anderen, sodass ein Agent mit beiden installierten Skills selbstständig zwischen ihnen übergibt.
+Die meisten Menschen wollen genau einen der beiden — deshalb sind es getrennte Skills. Eine Vorlage zu verfassen oder zu bearbeiten ist Sache von `templatical-email`; den Editor in Ihre eigene Codebasis einzubinden ist Sache von `templatical-sdk`. „Baue mir eine Willkommens-E-Mail und binde sie in meine App ein" braucht beide, in dieser Reihenfolge: `templatical-email` baut und validiert zuerst das Template-JSON, dann bindet `templatical-sdk` den Editor ein und lädt es hinein. Die `SKILL.md` jedes Skills nennt den jeweils anderen, sodass ein Agent mit beiden installierten Skills selbstständig zwischen ihnen übergibt.
 
 Für keinen von beiden gibt es ein Backend oder einen API-Schlüssel: Ihr Agent ist die Inferenz. Nichts wird an Templatical gesendet.
 
 ## Installation
 
-Beide Skills sind einfache [Agent-Skills](https://agentskills.io)-Ordner — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot und weitere lesen alle `SKILL.md`.
-
-### `npx skills add` (empfohlen)
+Beide Skills sind schlichte [Agent-Skills](https://agentskills.io)-Ordner — jeder Agent, der `SKILL.md` liest, kann sie verwenden.
 
 ```bash
 npx skills add templatical/sdk
 ```
 
-Ein Befehl installiert **beide** Skills — [`skills`](https://github.com/vercel-labs/skills) erkennt, welche(n) unterstützten Agenten Sie installiert haben, und installiert jeden davon direkt in das passende Verzeichnis. Standardmäßig meldet es anonyme Nutzungstelemetrie (welches Repository und welchen Skill Sie installiert haben, bei öffentlichen Repositories); setzen Sie vorher `DISABLE_TELEMETRY=1` oder `DO_NOT_TRACK=1`, falls Sie das nicht möchten.
+Ein Befehl installiert **beide** Skills. [`skills`](https://github.com/vercel-labs/skills) erkennt, welche unterstützten Agenten Sie installiert haben, und legt jeden Skill direkt in das Verzeichnis, das der jeweilige Agent liest — Sie müssen nichts von Hand ablegen.
 
-### Claude-Code-Plugin
-
-Jeder Skill wird als **eigenes** Plugin im selben Marketplace ausgeliefert, dieser Weg ist also zwei Installationen statt einer — holen Sie sich `templatical-email` zum Verfassen, `templatical-sdk` zur Integration, oder beide:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-/plugin install templatical-sdk@templatical
-```
-
-Sie versionieren und aktualisieren sich unabhängig voneinander, die Installation des einen zieht also nie das Referenzmaterial des anderen mit. Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle jedes Plugins aufgelöst wird.
-
-### Ordner manuell kopieren
-
-Klonen Sie das Repository einmalig:
+Das Tool meldet standardmäßig anonyme Nutzungstelemetrie: welches Repository und welchen Skill Sie installiert haben, bei öffentlichen Repositories. Setzen Sie `DISABLE_TELEMETRY=1` oder `DO_NOT_TRACK=1`, falls Ihnen das lieber ist:
 
 ```bash
-git clone https://github.com/templatical/sdk.git
+DISABLE_TELEMETRY=1 npx skills add templatical/sdk
 ```
 
-`~/.agents/skills/` ist der herstellerneutrale Ort, den Codex CLI, Gemini CLI und weitere standardmäßig lesen — eine Installation dort deckt sie alle ab. Kopieren Sie den Skill, den Sie brauchen (oder beide):
+Für ein Update führen Sie denselben Befehl erneut aus.
 
-```bash
-mkdir -p ~/.agents/skills
-cp -r sdk/skills/templatical-email ~/.agents/skills/
-cp -r sdk/skills/templatical-sdk ~/.agents/skills/
-```
-
-Für einen Agenten mit eigenem Verzeichnis, oder wenn Sie Skills getrennt halten möchten:
-
-::: code-group
-
-```bash [Codex CLI]
-mkdir -p ~/.agents/skills
-cp -r sdk/skills/templatical-email ~/.agents/skills/
-cp -r sdk/skills/templatical-sdk ~/.agents/skills/
-```
-
-```bash [Cursor]
-mkdir -p ~/.cursor/skills
-cp -r sdk/skills/templatical-email ~/.cursor/skills/
-cp -r sdk/skills/templatical-sdk ~/.cursor/skills/
-```
-
-```bash [Gemini CLI]
-mkdir -p ~/.gemini/skills
-cp -r sdk/skills/templatical-email ~/.gemini/skills/
-cp -r sdk/skills/templatical-sdk ~/.gemini/skills/
-```
-
-```bash [Claude Code]
-# Nur falls Sie die Plugin-Installation oben übersprungen haben.
-mkdir -p ~/.claude/skills
-cp -r sdk/skills/templatical-email ~/.claude/skills/
-cp -r sdk/skills/templatical-sdk ~/.claude/skills/
-```
-
-```bash [Projektbezogen]
-# Wird mit dem Repository eingecheckt, Teammitglieder erhalten ihn beim Klonen.
-# .agents/skills/ für alle Agenten, oder .claude/skills/, .cursor/skills/, …
-mkdir -p .agents/skills
-cp -r /pfad/zu/sdk/skills/templatical-email .agents/skills/
-cp -r /pfad/zu/sdk/skills/templatical-sdk .agents/skills/
-```
-
-:::
-
-Um eine Kopie über mehrere Agenten hinweg aktuell zu halten, verlinken Sie sie statt zu kopieren:
-
-```bash
-ln -s ~/.agents/skills/templatical-email ~/.claude/skills/templatical-email
-ln -s ~/.agents/skills/templatical-sdk ~/.claude/skills/templatical-sdk
-```
-
-Kopien aktualisieren sich nicht von selbst — kopieren Sie sie nach einem Pull des Repositorys erneut.
-
-Erkennt Ihr Agent einen Skill nicht, prüfen Sie, ob dessen Ordner in einem Verzeichnis gelandet ist, das er tatsächlich liest, und ob der Skill in seiner Skill-Liste aktiviert ist.
+Falls Ihr Agent einen Skill danach nicht aufgreift, prüfen Sie, ob er in der Skill-Liste des Agenten aktiviert ist.
 
 ## `templatical-email`: eine Vorlage gestalten und validieren
 
@@ -128,7 +58,6 @@ Ein paar Dinge müssen auf Ihrem Rechner vorhanden sein, bevor Sie starten.
 | **Eine Internetverbindung** | Jeder Befehl — auch das Erzeugen und Validieren von JSON — läuft über eine kleine CLI, die bei Bedarf per `npx` geladen wird. Der erste Aufruf lädt die gepinnte Version von npm herunter; danach cacht npm sie, und es gibt keinen weiteren Netzwerk-Roundtrip mehr, bis ein künftiges Release den Pin verschiebt. In Ihr Projekt wird dabei nichts installiert: keine Änderung an der `package.json`, keine Änderung an der Lockfile, kein Eintrag in `node_modules`. | Alles |
 | **Ein moderner Browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — haben Sie mit hoher Wahrscheinlichkeit bereits. | [Live-Vorschau](#live-vorschau) |
 | **`npm`** | Lädt beim ersten Import den Konverter für Ihr Quellformat. Ist in Node.js enthalten. | [Import](#eine-bestehende-vorlage-importieren) |
-| **`git`** | Um das Repository zu klonen, oder für die Plugin-Installation (der Marketplace ist ein Git-Repository). | Installation |
 
 **Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel und kein Backend.
 

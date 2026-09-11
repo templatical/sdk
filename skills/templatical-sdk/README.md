@@ -1,7 +1,7 @@
 # @templatical/sdk-skill
 
-An [Agent Skill](https://templatical.com) that teaches any coding agent — Claude
-Code, Cursor, Claude Desktop, etc. — **integration guidance** for
+An [Agent Skill](https://templatical.com) that gives any coding agent that
+reads `SKILL.md` **integration guidance** for
 [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor): how
 to install, mount, configure, theme and troubleshoot the SDK in your own app,
 and how to answer "how do I" / "is it possible" questions about it. It is the
@@ -19,8 +19,6 @@ templatical-sdk/
   SKILL.md                          # the router: install/mount, failure modes,
                                      # providers, version awareness, scaffolding,
                                      # plus a generated index between two markers
-  .claude-plugin/
-    plugin.json                     # Claude Code plugin manifest
   reference/
     manifest.json                   # sha256 per file + the SDK version it was made from
     index.md, license-faq.md, showcase.md
@@ -40,30 +38,23 @@ templatical-sdk/
 ```
 
 No `scripts/`, no `vendor/` — the one script this skill carries is
-`tools/generate-reference.mjs`, which is maintainer-only tooling (exempt from
-the plugin-version check below, same as `templatical-email`'s `tests/` and
-`evals/`). Nothing here is a network dependency of the skill at answer time —
-`reference/` is a local, committed copy.
+`tools/generate-reference.mjs`, which is maintainer-only tooling. Nothing here
+is a network dependency of the skill at answer time — `reference/` is a local,
+committed copy.
 
 ## Two skills, not one
 
 `templatical-email` and `templatical-sdk` cover different jobs for different
-audiences — authoring a template vs. integrating the editor — so they ship as
-**two plugins in the one marketplace**, not one plugin holding two skills.
-That was a deliberate call, not the path of least resistance: a single plugin
-*can* hold multiple `skills/<name>/SKILL.md` folders, but doing that here
-would mean rooting the plugin at the repository root (a layout that isn't
-documented anywhere in Claude Code's plugin docs), and it would rename the
-existing `templatical-email` install — breaking every install already pinned
-to `templatical-email@templatical`. Two plugins also means two independent
-version streams: a change to this skill's reference tree doesn't force every
-`templatical-email` user to re-download it, and vice versa. Most readers want
-exactly one of the two skills; the second `/plugin install` is the cost of
-that choice, not a defect in it.
+audiences — authoring a template vs. integrating the editor — so they stay two
+skills rather than one that tries to do both. A skill is selected by matching
+intent against its description, and one description covering both jobs
+matches everything and discriminates nothing.
 
-`npx skills add templatical/sdk` still installs **both** in one command —
-that route reads the flat `skills/<name>/SKILL.md` layout directly off the
-repository and isn't affected by the plugin split at all.
+`npx skills add templatical/sdk` installs **both** in one command, and each
+skill's `SKILL.md` names the other and says when to hand over: authoring or
+editing a template is `templatical-email`; wiring `@templatical/editor` into a
+codebase is `templatical-sdk`. "Build a welcome email and wire it into my app"
+wants both, in that order.
 
 ## The reference tree
 
@@ -96,8 +87,8 @@ committed file under `reference/` and asserts it matches
 `manifest.json` — nothing in this skill's test suite re-reads the live docs
 source and diffs against it. That's deliberate: the docs change on nearly
 every feature PR in this monorepo, so a HEAD comparison would fail this
-skill's own CI on every docs typo, and would force a plugin-version bump for
-a change that has nothing to do with the skill itself. Regeneration instead
+skill's own CI on every docs typo, and would force this tree to be
+regenerated for a change that has nothing to do with the skill itself. Regeneration instead
 runs **once per release**, wired into the root `changeset:version` script
 after `changeset version` has already bumped `@templatical/editor`'s
 version — the number `manifest.json` and `SKILL.md`'s generated index both
@@ -134,46 +125,22 @@ Not needed: a Templatical account, an API key, or a backend.
 
 ## Install
 
-### Option A — `npx skills add` (any supported agent)
-
 ```
 npx skills add templatical/sdk
 ```
 
-Installs **both** `templatical-email` and `templatical-sdk` in one command,
-via the [`skills` CLI](https://github.com/vercel-labs/skills) (unrelated to
-`@templatical/template-tools`), which detects your agent and installs each
-skill into its skills directory. It reports anonymous usage telemetry by
-default (repo and skill identifiers, for GitHub-confirmed-public repos);
-disable with `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` if you'd rather not.
+Installs **both** `templatical-email` and `templatical-sdk` in one command, via
+the [`skills` CLI](https://github.com/vercel-labs/skills) (unrelated to
+`@templatical/template-tools`), which detects which supported agents you have
+and installs each skill into the directory that agent reads. Re-run it to
+update.
 
-### Option B — Claude Code plugin
+It reports anonymous usage telemetry by default (repository and skill
+identifiers, for repositories GitHub confirms are public); set
+`DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you'd rather it didn't.
 
-```
-/plugin marketplace add templatical/sdk
-/plugin install templatical-sdk@templatical
-```
-
-(Add the marketplace from the git repo, not a raw file URL, so the plugin's
-relative source resolves.) This installs only `templatical-sdk` — also run
-`/plugin install templatical-email@templatical` if you want the authoring
-skill too.
-
-### Option C — copy the folder (any agent)
-
-The `SKILL.md` format is an open standard, so this works in Claude Code, Claude
-Desktop, Cursor, OpenAI Codex, the Agent SDK, and other compatible agents. Copy
-the folder into your agent's skills directory:
-
-```
-# Claude Code / Claude Desktop
-cp -r skills/templatical-sdk ~/.claude/skills/
-# Cursor: use ~/.cursor/skills/  ·  vendor-neutral / Codex CLI: use ~/.agents/skills/
-```
-
-Your agent picks the skill up automatically the next time you ask an
-integration question, or ask it to scaffold or diagnose an
-`@templatical/editor` mount.
+Your agent picks the skill up on its own the next time you ask an integration
+question, or ask it to scaffold or diagnose an `@templatical/editor` mount.
 
 ## Never touches git
 

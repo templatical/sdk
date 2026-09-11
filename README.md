@@ -44,18 +44,13 @@ Describe the email you want and your AI coding agent builds it — then preview 
 
 The [`templatical-email` Agent Skill](./skills/templatical-email) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
 
-In **Claude Code**, two commands and you're done:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-```
-
-Every other agent takes the folder. `~/.agents/skills/` is the vendor-neutral location most of them read, so one copy covers Codex CLI, Gemini CLI and friends:
+One command and you're done:
 
 ```bash
-cp -r skills/templatical-email ~/.agents/skills/
+npx skills add templatical/sdk
 ```
+
+That detects which supported agents you have and installs into the directory each one reads.
 
 You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and installs nothing into your project (a small CLI fetched on demand via `npx`; the editor loads from the CDN).
 
@@ -65,11 +60,7 @@ You can also **preview it live**: ask to "show it live" and the skill opens your
 
 ### Wiring the editor into your own app
 
-A second skill, [`templatical-sdk`](./skills/templatical-sdk), covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app. Most people want only one of the two, which is why they're separate Claude Code plugins — `npx skills add templatical/sdk` still installs both in one command:
-
-```text
-/plugin install templatical-sdk@templatical
-```
+A second skill, [`templatical-sdk`](./skills/templatical-sdk), covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app. The command above installs both skills, and each one's `SKILL.md` names the other — so an agent hands off between authoring a template and wiring the editor on its own.
 
 The same [skill guide →](https://docs.templatical.com/guide/agent-skill) covers both.
 

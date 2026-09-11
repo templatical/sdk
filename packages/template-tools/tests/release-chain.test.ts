@@ -7,54 +7,11 @@ import { resolve } from "node:path";
 // own Version-Packages step. So a break in it passes every PR gate and
 // surfaces when a real release is attempted, aborting the whole `fixed`
 // group's publish. These tests stand in for that missing execution by
-// asserting the chain's *shape* — who it covers, what order it runs in, and
-// that the cross-package edges it depends on still resolve.
+// asserting the chain's *shape* — what order it runs in, that every step it
+// names exists, and that the cross-package edges it depends on still resolve.
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SKILLS_DIR = resolve(REPO_ROOT, "skills");
-const SYNC_PINS = resolve(import.meta.dirname, "../scripts/sync-pins.mjs");
-
-/** Every skill that ships a plugin manifest, read off disk. */
-function skillsWithAPluginManifest(): string[] {
-  return readdirSync(SKILLS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .filter((skill) => {
-      try {
-        readFileSync(
-          resolve(SKILLS_DIR, skill, ".claude-plugin/plugin.json"),
-          "utf8",
-        );
-        return true;
-      } catch {
-        return false;
-      }
-    })
-    .sort();
-}
-
-describe("sync-pins covers every plugin manifest", () => {
-  it("bumps every skill that ships one, not a hand-picked subset", () => {
-    // Claude Code caches an installed plugin by the version in its manifest,
-    // and `plugin-version.yml` — the check that would otherwise catch a
-    // missing bump — exempts Version Packages PRs, which is the only context
-    // sync-pins runs in. So a skill left out here ships rewritten content to
-    // new installs forever while existing installs stay frozen on stale
-    // content under an unchanged version string.
-    //
-    // Derived from the filesystem rather than compared against a literal
-    // list: a third skill added later fails this until sync-pins learns
-    // about it, which a hardcoded expectation could not do.
-    const onDisk = skillsWithAPluginManifest();
-    expect(onDisk.length).toBeGreaterThan(1);
-
-    const source = readFileSync(SYNC_PINS, "utf8");
-    const covered = onDisk.filter((skill) =>
-      new RegExp(`"${skill}"`).test(source),
-    );
-    expect(covered).toEqual(onDisk);
-  });
-});
 
 describe("changeset:version step order", () => {
   const script: string = JSON.parse(

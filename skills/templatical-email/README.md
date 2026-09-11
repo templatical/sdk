@@ -1,7 +1,7 @@
 # @templatical/email-skill
 
-An [Agent Skill](https://templatical.com) that teaches any coding agent — Claude
-Code, Cursor, Claude Desktop, etc. — to **generate and validate** email templates
+An [Agent Skill](https://templatical.com) that teaches any coding agent that
+reads `SKILL.md` to **generate and validate** email templates
 for the [Templatical](https://templatical.com) editor, with no backend and no API
 key. The agent is the inference; this skill supplies the format knowledge, and
 every mechanical operation — validate, render, edit, import, live-preview — runs
@@ -14,8 +14,6 @@ CLI via `npx`.
 ```
 templatical-email/
   SKILL.md                       # the skill: workflow + rules the agent follows
-  .claude-plugin/
-    plugin.json                  # Claude Code plugin manifest
   reference/
     schema.json                  # JSON Schema for TemplateContent — the validation contract
     block-guide.md               # concise per-block field reference
@@ -30,12 +28,7 @@ That's the whole skill — **no `scripts/`, no `tools/`, no `vendor/`, no
 `live/`.** Every command `SKILL.md` documents is
 `npx -y @templatical/template-tools@<pinned version> <command> …` against the
 published CLI (`packages/template-tools` in this monorepo) — not a script this
-folder carries. A change to `SKILL.md` or this `README.md` reaches installed
-users, so `.github/workflows/plugin-version.yml` requires a
-`.claude-plugin/plugin.json` version bump for it; changes confined to `tests/`,
-`evals/`, `vitest.config.ts` or `package.json` are exempt — `package.json`
-declares no runtime dependencies, so a devDependency bump there cannot change
-what an installed skill does.
+folder carries.
 
 ## Two modes
 
@@ -58,9 +51,9 @@ existing template" in [`SKILL.md`](./SKILL.md).
 ## Requirements
 
 - **A coding agent that supports Agent Skills, running on your own machine** —
-  and allowed to run commands and write files. Verified: Claude Code, Cursor
-  2.4+, OpenAI Codex CLI, the Claude Agent SDK. Build mode also works in hosted
-  agents (claude.ai, Claude Desktop); **live mode does not** — it needs a local
+  and allowed to run commands and write files. Verified across Claude Code,
+  Cursor 2.4+ and OpenAI Codex CLI. Build mode also works in hosted, browser-run
+  agents; **live mode does not** — it needs a local
   filesystem and a port you can open in your browser. (Codex CLI additionally
   needs its local-network access enabled for live mode — its sandbox blocks the
   agent's own `localhost` calls by default.)
@@ -75,8 +68,6 @@ existing template" in [`SKILL.md`](./SKILL.md).
   Safari 16.4+ (the editor mounts in shadow DOM).
 - **`npm`** — used implicitly by `npx`, and to install the one optional package
   `render --format html` or `import` may ask for. Ships with Node.
-- **`git`** — only to install as a Claude Code plugin (the marketplace is a git
-  repo) or to clone this repo for the folder-copy route.
 
 Not needed: a Templatical account, an API key, or a backend.
 
@@ -93,43 +84,20 @@ above is missing — install it and re-run, not a bug.
 
 ## Install
 
-### Option A — `npx skills add` (any supported agent)
-
 ```
 npx skills add templatical/sdk
 ```
 
 Uses the [`skills` CLI](https://github.com/vercel-labs/skills) (unrelated to
-`@templatical/template-tools`), which detects your agent and installs
-**both** this skill and `templatical-sdk` into its skills directory — no code
-change needed on our side for this to work. It reports anonymous usage telemetry by default (repo and skill
-identifiers, for GitHub-confirmed-public repos); disable with
-`DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` if you'd rather not.
+`@templatical/template-tools`), which detects which supported agents you have
+and installs **both** this skill and `templatical-sdk` into the directory each
+one reads. Re-run it to update.
 
-### Option B — Claude Code plugin
+It reports anonymous usage telemetry by default (repository and skill
+identifiers, for repositories GitHub confirms are public); set
+`DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you'd rather it didn't.
 
-```
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-```
-
-(Add the marketplace from the git repo, not a raw file URL, so the plugin's
-relative source resolves.) There is nothing to install afterwards — the skill
-auto-activates whenever you ask Claude Code to build a Templatical email.
-
-### Option C — copy the folder (any agent)
-
-The `SKILL.md` format is an open standard, so this works in Claude Code, Claude
-Desktop, Cursor, OpenAI Codex, the Agent SDK, and other compatible agents. Copy
-the folder into your agent's skills directory:
-
-```
-# Claude Code / Claude Desktop
-cp -r skills/templatical-email ~/.claude/skills/
-# Cursor: use ~/.cursor/skills/  ·  vendor-neutral / Codex CLI: use ~/.agents/skills/
-```
-
-Your agent picks the skill up automatically when you ask it to build a
+The skill activates on its own whenever you ask your agent to build a
 Templatical email.
 
 ## Validate a template manually

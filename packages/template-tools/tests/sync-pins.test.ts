@@ -3,8 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   applyCliPin,
   applyEditorVersion,
-  applyPluginPatchBump,
-  bumpPatch,
 } from "../scripts/sync-pins.mjs";
 
 // Fixture strings below are built from parts, like tests/cdn-pin.test.ts's own
@@ -88,42 +86,5 @@ describe("applyCliPin", () => {
     const out = applyCliPin(src, "2.0.0").next;
     expect(out).toContain("before");
     expect(out).toContain("after");
-  });
-});
-
-describe("bumpPatch", () => {
-  it("increments the patch component", () => {
-    expect(bumpPatch("0.2.0")).toBe("0.2.1");
-    expect(bumpPatch("1.9.9")).toBe("1.9.10");
-  });
-
-  it("throws on a non-plain-semver input, rather than silently no-oping", () => {
-    expect(() => bumpPatch("0.2")).toThrow(/plain x\.y\.z/);
-    expect(() => bumpPatch("0.2.0-beta")).toThrow(/plain x\.y\.z/);
-    expect(() => bumpPatch(undefined)).toThrow(/plain x\.y\.z/);
-  });
-});
-
-describe("applyPluginPatchBump", () => {
-  it("bumps the version field and reports from/to", () => {
-    const src = '{\n  "name": "x",\n  "version": "0.3.35",\n  "license": "MIT"\n}\n';
-    const { src: next, from, to } = applyPluginPatchBump(src);
-    expect(from).toBe("0.3.35");
-    expect(to).toBe("0.3.36");
-    expect(next).toBe(
-      '{\n  "name": "x",\n  "version": "0.3.36",\n  "license": "MIT"\n}\n',
-    );
-  });
-
-  it("preserves formatting and key order — rewrites in place rather than re-serializing", () => {
-    const src = '{"version":"1.0.0","name":"x"}';
-    const { src: next } = applyPluginPatchBump(src);
-    expect(next).toBe('{"version":"1.0.1","name":"x"}');
-  });
-
-  it("throws when no version field is found, rather than silently no-oping", () => {
-    expect(() => applyPluginPatchBump('{"name": "x"}')).toThrow(
-      /Could not find/,
-    );
   });
 });

@@ -50,11 +50,11 @@ jobs:
           # Custom version command: `changeset version` (bumps package.jsons +
           # changelogs) then everything that has to follow a version bump, so the
           # Version Packages PR carries it all and no manual step is needed:
-          #   1. sync-pins: the live-mode CDN pin (EDITOR_VERSION), the CLI pin in
-          #      templatical-email's SKILL.md and in the docs' agent-skill page,
-          #      and a patch bump of that skill's .claude-plugin/plugin.json —
-          #      Claude Code caches a plugin by the version in its manifest, so a
-          #      release that rewrites a user-facing file must move it
+          #   1. sync-pins: the live-mode CDN pin (EDITOR_VERSION), and the CLI
+          #      pin in templatical-email's SKILL.md and in the docs' agent-skill
+          #      page — the skills are distributed by `npx skills add`, which
+          #      reads the repository directly, so there is no separate manifest
+          #      version to move alongside them
           #   2. the changelog page + JSON served at docs.templatical.com
           #   3. the docs' llms.txt agent surface
           #   4. templatical-sdk's reference tree, which is a verbatim copy of the
