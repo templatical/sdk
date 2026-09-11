@@ -99,8 +99,8 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
 
       const data = await response.json();
 
-      if (data.conversation_id) {
-        conversationId.value = data.conversation_id;
+      if (data.conversationId) {
+        conversationId.value = data.conversationId;
       }
 
       if (Array.isArray(data.data) && data.data.length > 0) {
@@ -109,12 +109,12 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
             id: string;
             role: "user" | "assistant";
             content: string;
-            created_at: string;
+            createdAt: string;
           }) => ({
             id: msg.id,
             role: msg.role,
             content: msg.content,
-            timestamp: new Date(msg.created_at).getTime(),
+            timestamp: new Date(msg.createdAt).getTime(),
           }),
         );
       }
@@ -150,8 +150,8 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
           Accept: "text/event-stream",
         },
         body: JSON.stringify({
-          current_content: currentContent,
-          merge_tags: mergeTags.map((p) => ({
+          currentContent: currentContent,
+          mergeTags: mergeTags.map((p) => ({
             label: p.label,
             value: p.value,
           })),
@@ -257,19 +257,19 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
         },
         body: JSON.stringify({
           prompt,
-          current_content: currentContent,
-          merge_tags: mergeTags.map((p) => ({
+          currentContent: currentContent,
+          mergeTags: mergeTags.map((p) => ({
             label: p.label,
             value: p.value,
           })),
-          conversation_id: conversationId.value,
+          conversationId: conversationId.value,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         if (response.status === 403) {
-          throw new Error("ai_generation_not_available");
+          throw new Error("aiGenerationNotAvailable");
         }
         throw new Error(errorData?.message || "Failed to generate template");
       }
@@ -318,8 +318,8 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
             } else if (event.type === "error") {
               throw new Error(event.message || "Failed to generate template");
             } else if (event.type === "done") {
-              if (event.conversation_id) {
-                conversationId.value = event.conversation_id;
+              if (event.conversationId) {
+                conversationId.value = event.conversationId;
               }
 
               updateMessage(assistantMsgId, {

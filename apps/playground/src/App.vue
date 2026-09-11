@@ -24,6 +24,7 @@ import {
   init,
   unmount,
   createLocalStorageSavedBlocksProvider,
+  createLocalStorageMediaProvider,
 } from "@templatical/editor";
 import type {
   TemplaticalEditor,
@@ -42,6 +43,8 @@ import type {
   CommentsProvider,
   EditorUser,
   FontsConfig,
+  MediaAsset,
+  MediaProvider,
   SavedBlock,
   SavedBlocksProvider,
   TemplateVersion,
@@ -341,6 +344,63 @@ function savedBlocksProviderFor(
 
   savedBlocksProviders.set(name, provider);
   return provider;
+}
+
+const MEDIA_STORAGE_KEY = "templatical:media";
+
+/**
+ * Remote HTTPS images so a first open is not an empty library. Data-URL
+ * uploads from `create` eat `localStorage` quota; these do not.
+ *
+ * Seeded only when the key is absent — never when it holds `[]`. An empty
+ * array is the user having cleared the library, and re-seeding would make
+ * delete look broken.
+ */
+const PLAYGROUND_MEDIA_SEED: MediaAsset[] = [
+  {
+    id: "seed-product-shot",
+    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
+    filename: "product-shot.jpg",
+    alt: "Product shot",
+    mimeType: "image/jpeg",
+  },
+  {
+    id: "seed-team-photo",
+    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
+    filename: "team-photo.jpg",
+    alt: "Team photo",
+    mimeType: "image/jpeg",
+  },
+  {
+    id: "seed-abstract",
+    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
+    filename: "abstract.jpg",
+    alt: "Abstract",
+    mimeType: "image/jpeg",
+  },
+];
+
+function seedMediaLibrary(): void {
+  if (localStorage.getItem(MEDIA_STORAGE_KEY) !== null) return;
+  localStorage.setItem(
+    MEDIA_STORAGE_KEY,
+    JSON.stringify(PLAYGROUND_MEDIA_SEED),
+  );
+}
+
+let mediaProvider: MediaProvider | undefined;
+
+function mediaProviderFor(): MediaProvider {
+  if (mediaProvider) return mediaProvider;
+  seedMediaLibrary();
+  mediaProvider = createLocalStorageMediaProvider({ key: MEDIA_STORAGE_KEY });
+  return mediaProvider;
 }
 
 /**
@@ -967,7 +1027,9 @@ const configDarkThemeJson = ref("");
 const configThemeMode = ref<"light" | "dark">("light");
 const configError = ref("");
 const configTab = ref<(typeof configTabs)[number]>("options");
-const enableRequestMedia = ref(true);
+const enableRequestMedia = ref(
+  localStorage.getItem("tpl-playground-media") !== "false",
+);
 const enableRequestMergeTag = ref(true);
 
 // --- Block & Template Defaults ---
@@ -1803,69 +1865,6 @@ function buildSerializableConfig() {
 
 let currentSerializableConfig = buildSerializableConfig();
 
-// --- Media picker ---
-const mediaPickerOpen = ref(false);
-let mediaResolve:
-  ((result: { url: string; alt?: string } | null) => void) | null = null;
-
-const demoImages = computed(() => [
-  {
-    label: t.value.demoImages.productShot,
-    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
-  },
-  {
-    label: t.value.demoImages.teamPhoto,
-    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
-  },
-  {
-    label: t.value.demoImages.abstract,
-    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
-    thumb:
-      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
-  },
-]);
-
-function requestMedia(context?: {
-  accept?: string[];
-  files?: File[];
-}): Promise<{ url: string; alt?: string } | null> {
-  // Drag-and-drop upload (#229): when the editor passes a dropped File, a real
-  // consumer uploads it to their backend and returns the hosted URL. The
-  // playground has no backend, so it reads the file into a serializable data
-  // URL to stand in for that uploaded URL — never a `blob:` object URL, which
-  // would break export/serialization.
-  const file = context?.files?.[0];
-  if (file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () =>
-        resolve({ url: String(reader.result), alt: file.name });
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
-  }
-  mediaPickerOpen.value = true;
-  return new Promise((resolve) => {
-    mediaResolve = resolve;
-  });
-}
-
-function selectMedia(url: string, alt?: string): void {
-  mediaPickerOpen.value = false;
-  mediaResolve?.({ url, alt });
-  mediaResolve = null;
-}
-
-function cancelMediaPicker(): void {
-  mediaPickerOpen.value = false;
-  mediaResolve?.(null);
-  mediaResolve = null;
-}
-
 const initError = ref("");
 
 // Shadow DOM mount mode. Resolution order on first load:
@@ -1969,7 +1968,10 @@ async function initEditor(): Promise<void> {
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
-      onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
+      // Media library when the flag is on — the bundled localStorage adapter,
+      // with `onRequestMedia` left unset so Browse opens the real modal.
+      // Off omits both keys: image fields stay URL-only (e2e coverage).
+      ...(enableRequestMedia.value ? { media: mediaProviderFor() } : {}),
       // Always on in the playground: saved blocks are backed by the bundled
       // browser-local provider, so the OSS path is exercised on every run
       // without needing a backend. Entries persist in this browser profile.
@@ -2139,7 +2141,6 @@ function useModalTrap(isOpen: typeof showConfig | typeof exportTabValue) {
 const configModalRef = useModalTrap(showConfig);
 const importModalRef = useModalTrap(showImport);
 const mergeTagModalRef = useModalTrap(mergeTagPickerOpen);
-const mediaModalRef = useModalTrap(mediaPickerOpen);
 const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
@@ -2158,7 +2159,6 @@ watch(
     showConfig.value ||
     showImport.value ||
     mergeTagPickerOpen.value ||
-    mediaPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
     showFeatureOverlay.value ||
     shareModalOpen.value ||
@@ -3691,11 +3691,12 @@ onUnmounted(() => {
                     v-model="enableRequestMedia"
                     type="checkbox"
                     class="size-4 accent-primary cursor-pointer"
+                    data-testid="enable-media"
                   />
                   <div>
                     <span
                       class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
-                      >onRequestMedia</span
+                      >media</span
                     >
                     <p
                       class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400"
@@ -4178,62 +4179,6 @@ onUnmounted(() => {
                   >
                 </button>
               </template>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Media Picker Modal -->
-    <Teleport to="body">
-      <Transition name="pg-modal">
-        <div
-          v-if="mediaPickerOpen"
-          class="pg-modal-backdrop"
-          @click.self="cancelMediaPicker"
-          @keydown.escape="cancelMediaPicker"
-        >
-          <div
-            ref="mediaModalRef"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="media-modal-title"
-            class="pg-modal-dialog w-[460px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
-          >
-            <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700"
-            >
-              <span
-                id="media-modal-title"
-                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ t.mediaModal.title }}</span
-              >
-              <button
-                :aria-label="t.common.close"
-                class="pg-modal-close"
-                @click="cancelMediaPicker"
-              >
-                &times;
-              </button>
-            </div>
-            <div class="grid grid-cols-3 gap-3 p-4">
-              <button
-                v-for="img in demoImages"
-                :key="img.url"
-                class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
-                @click="selectMedia(img.url, img.label)"
-              >
-                <img
-                  :src="img.thumb"
-                  :alt="img.label"
-                  loading="lazy"
-                  class="w-full h-24 object-cover"
-                />
-                <span
-                  class="text-[12px] font-medium text-gray-700 pb-2 dark:text-gray-300"
-                  >{{ img.label }}</span
-                >
-              </button>
             </div>
           </div>
         </div>

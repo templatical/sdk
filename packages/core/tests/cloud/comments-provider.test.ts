@@ -13,11 +13,10 @@ vi.mock("../../src/cloud/api");
 /**
  * Cloud's adapter for the same comments contract a consumer implements.
  *
- * Two things carry the weight. The **mapping**: snake_case to camelCase, and the
- * two flat `author_*` / `resolved_by_*` pairs into author objects — plus the
- * `updated_at === created_at` case, which Cloud stamps on creation and which would
- * otherwise mark every comment "(edited)". And **`subscribe`**, which is where
- * Pusher lives so that nothing above this file knows it exists.
+ * Two things carry the weight. Omitting `updatedAt` when it equals
+ * `createdAt` (Cloud stamps both on insert, which would otherwise mark
+ * every comment "(edited)"). And `subscribe`, which is where Pusher lives
+ * so that nothing above this file knows it exists.
  */
 
 function createMockAuthManager(
@@ -38,17 +37,15 @@ function createMockAuthManager(
 function record(overrides: Partial<CommentResponse> = {}): CommentResponse {
   return {
     id: "c-1",
-    template_id: "tmpl-1",
-    block_id: null,
-    parent_id: null,
+    templateId: "tmpl-1",
+    blockId: null,
+    parentId: null,
     body: "Looks good",
-    author_identifier: "u-1",
-    author_name: "Ada",
-    resolved_at: null,
-    resolved_by_identifier: null,
-    resolved_by_name: null,
-    created_at: "2026-08-17T10:00:00Z",
-    updated_at: "2026-08-17T10:00:00Z",
+    author: { id: "u-1", name: "Ada" },
+    resolvedAt: null,
+    resolvedBy: null,
+    createdAt: "2026-08-17T10:00:00Z",
+    updatedAt: "2026-08-17T10:00:00Z",
     replies: [],
     ...overrides,
   };
@@ -74,8 +71,7 @@ function setup(
     channel?: ReturnType<typeof ref<RealtimeChannel | null>>;
   } = {},
 ) {
-  const channel =
-    options.channel ?? ref<RealtimeChannel | null>(null);
+  const channel = options.channel ?? ref<RealtimeChannel | null>(null);
   const provider = createCloudCommentsProvider({
     authManager: createMockAuthManager(
       options.user === undefined
@@ -115,9 +111,9 @@ describe("createCloudCommentsProvider", () => {
   });
 
   describe("wire shape → contract shape", () => {
-    it("maps the flat author pair into an author object", async () => {
+    it("copies author onto the contract", async () => {
       vi.mocked(ApiClient.prototype.getComments).mockResolvedValue([
-        record({ author_identifier: "u-9", author_name: "Grace" }),
+        record({ author: { id: "u-9", name: "Grace" } }),
       ]);
       const { provider } = setup();
 
@@ -131,12 +127,12 @@ describe("createCloudCommentsProvider", () => {
     });
 
     it("omits updatedAt when the comment has never been edited", async () => {
-      // Cloud stamps `updated_at` on creation. Forwarding it unconditionally would
+      // Cloud stamps `updatedAt` on creation. Forwarding it unconditionally would
       // mark every comment "(edited)" in the panel.
       vi.mocked(ApiClient.prototype.getComments).mockResolvedValue([
         record({
-          created_at: "2026-08-17T10:00:00Z",
-          updated_at: "2026-08-17T10:00:00Z",
+          createdAt: "2026-08-17T10:00:00Z",
+          updatedAt: "2026-08-17T10:00:00Z",
         }),
       ]);
       const { provider } = setup();
@@ -148,7 +144,7 @@ describe("createCloudCommentsProvider", () => {
 
     it("carries updatedAt once it differs from createdAt", async () => {
       vi.mocked(ApiClient.prototype.getComments).mockResolvedValue([
-        record({ updated_at: "2026-08-17T11:00:00Z" }),
+        record({ updatedAt: "2026-08-17T11:00:00Z" }),
       ]);
       const { provider } = setup();
 
@@ -160,9 +156,8 @@ describe("createCloudCommentsProvider", () => {
     it("maps the resolver pair, and omits it while unresolved", async () => {
       vi.mocked(ApiClient.prototype.getComments).mockResolvedValue([
         record({
-          resolved_at: "2026-08-17T12:00:00Z",
-          resolved_by_identifier: "u-2",
-          resolved_by_name: "Grace",
+          resolvedAt: "2026-08-17T12:00:00Z",
+          resolvedBy: { id: "u-2", name: "Grace" },
         }),
         record({ id: "c-2" }),
       ]);
@@ -177,7 +172,13 @@ describe("createCloudCommentsProvider", () => {
     it("maps replies recursively and omits an empty array", async () => {
       vi.mocked(ApiClient.prototype.getComments).mockResolvedValue([
         record({
-          replies: [record({ id: "r-1", parent_id: "c-1", author_name: "Grace" })],
+          replies: [
+            record({
+              id: "r-1",
+              parentId: "c-1",
+              author: { id: "u-1", name: "Grace" },
+            }),
+          ],
         }),
         record({ id: "c-2", replies: [] }),
       ]);
@@ -202,21 +203,20 @@ describe("createCloudCommentsProvider", () => {
       );
       const { provider } = setup({ socketId: "sock-7" });
 
-      const created = await (provider.create as Exclude<
-        typeof provider.create,
-        false
-      >)("tmpl-1", { body: "hi", blockId: "blk-1" });
+      const created = await (
+        provider.create as Exclude<typeof provider.create, false>
+      )("tmpl-1", { body: "hi", blockId: "blk-1" });
 
       expect(created.id).toBe("c-new");
       expect(ApiClient.prototype.createComment).toHaveBeenCalledWith(
         "tmpl-1",
         {
           body: "hi",
-          block_id: "blk-1",
-          parent_id: undefined,
-          user_id: "u-1",
-          user_name: "Ada",
-          user_signature: "sig-1",
+          blockId: "blk-1",
+          parentId: undefined,
+          userId: "u-1",
+          userName: "Ada",
+          userSignature: "sig-1",
         },
         { "X-Socket-ID": "sock-7" },
       );
@@ -238,14 +238,13 @@ describe("createCloudCommentsProvider", () => {
 
     it("sends the patch's body on update", async () => {
       vi.mocked(ApiClient.prototype.updateComment).mockResolvedValue(
-        record({ body: "edited", updated_at: "2026-08-17T11:00:00Z" }),
+        record({ body: "edited", updatedAt: "2026-08-17T11:00:00Z" }),
       );
       const { provider } = setup();
 
-      const updated = await (provider.update as Exclude<
-        typeof provider.update,
-        false
-      >)("tmpl-1", "c-1", { body: "edited" });
+      const updated = await (
+        provider.update as Exclude<typeof provider.update, false>
+      )("tmpl-1", "c-1", { body: "edited" });
 
       expect(updated.body).toBe("edited");
       expect(ApiClient.prototype.updateComment).toHaveBeenCalledWith(
@@ -253,9 +252,9 @@ describe("createCloudCommentsProvider", () => {
         "c-1",
         {
           body: "edited",
-          user_id: "u-1",
-          user_name: "Ada",
-          user_signature: "sig-1",
+          userId: "u-1",
+          userName: "Ada",
+          userSignature: "sig-1",
         },
         undefined,
       );
@@ -287,7 +286,7 @@ describe("createCloudCommentsProvider", () => {
       expect(ApiClient.prototype.deleteComment).toHaveBeenCalledWith(
         "tmpl-1",
         "c-1",
-        { user_id: "u-1", user_name: "Ada", user_signature: "sig-1" },
+        { userId: "u-1", userName: "Ada", userSignature: "sig-1" },
         undefined,
       );
     });
@@ -296,20 +295,19 @@ describe("createCloudCommentsProvider", () => {
       // Cloud's endpoint toggles server-side, so the requested boolean is not sent;
       // the response is what decides, and `useComments` reads `resolvedAt` off it.
       vi.mocked(ApiClient.prototype.resolveComment).mockResolvedValue(
-        record({ resolved_at: "2026-08-17T12:00:00Z" }),
+        record({ resolvedAt: "2026-08-17T12:00:00Z" }),
       );
       const { provider } = setup();
 
-      const result = await (provider.setResolved as Exclude<
-        typeof provider.setResolved,
-        false
-      >)("tmpl-1", "c-1", false);
+      const result = await (
+        provider.setResolved as Exclude<typeof provider.setResolved, false>
+      )("tmpl-1", "c-1", false);
 
       expect(result.resolvedAt).toBe("2026-08-17T12:00:00Z");
       expect(ApiClient.prototype.resolveComment).toHaveBeenCalledWith(
         "tmpl-1",
         "c-1",
-        { user_id: "u-1", user_name: "Ada", user_signature: "sig-1" },
+        { userId: "u-1", userName: "Ada", userSignature: "sig-1" },
         undefined,
       );
     });
@@ -344,10 +342,10 @@ describe("createCloudCommentsProvider", () => {
     });
 
     it.each([
-      ["comment_created", "created"],
-      ["comment_updated", "updated"],
-      ["comment_resolved", "updated"],
-      ["comment_unresolved", "updated"],
+      ["commentCreated", "created"],
+      ["commentUpdated", "updated"],
+      ["commentResolved", "updated"],
+      ["commentUnresolved", "updated"],
     ])("maps %s to a %s change", async (action, type) => {
       const pusher = createChannel();
       const channel = ref<RealtimeChannel | null>(pusher);
@@ -366,7 +364,7 @@ describe("createCloudCommentsProvider", () => {
       });
     });
 
-    it("maps comment_deleted to the id and parent, with no comment payload", async () => {
+    it("maps commentDeleted to the id and parent, with no comment payload", async () => {
       const pusher = createChannel();
       const channel = ref<RealtimeChannel | null>(pusher);
       const { provider } = setup({ channel });
@@ -375,8 +373,8 @@ describe("createCloudCommentsProvider", () => {
       provider.subscribe!("tmpl-1", onChange);
       await nextTick();
       pusher.emit("comment-broadcast", {
-        action: "comment_deleted",
-        comment: record({ id: "r-1", parent_id: "c-1" }),
+        action: "commentDeleted",
+        comment: record({ id: "r-1", parentId: "c-1" }),
       });
 
       expect(onChange).toHaveBeenCalledWith({
@@ -438,8 +436,9 @@ describe("createCloudCommentsProvider", () => {
       // The watcher is stopped, so a new channel must not be bound either.
       channel.value = createChannel();
       await nextTick();
-      expect((channel.value as ReturnType<typeof createChannel>).bind).not
-        .toHaveBeenCalled();
+      expect(
+        (channel.value as ReturnType<typeof createChannel>).bind,
+      ).not.toHaveBeenCalled();
     });
   });
 });

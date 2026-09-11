@@ -222,7 +222,7 @@ describe('useDesignReference', () => {
       const result = await dr.generate({ prompt: 'test' });
 
       expect(result).toBeNull();
-      expect(dr.error.value).toBe('ai_generation_not_available');
+      expect(dr.error.value).toBe('aiGenerationNotAvailable');
       expect(onError).toHaveBeenCalledWith(expect.any(Error));
       expect(dr.isGenerating.value).toBe(false);
     });

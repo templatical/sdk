@@ -5,7 +5,7 @@ import { blockByType } from "../helpers/selectors";
 // light-DOM and shadow-DOM projects, exercising the drop path across the
 // shadow boundary.
 test.describe("Image drag-and-drop upload (#229)", () => {
-  test("dropping an image file onto an image block sets its src via onRequestMedia", async ({
+  test("dropping an image file onto an image block sets its src via the media provider", async ({
     blankEditorReady: { editorPage },
     page,
   }) => {
@@ -38,8 +38,8 @@ test.describe("Image drag-and-drop upload (#229)", () => {
       }
     });
 
-    // The playground's onRequestMedia reads the dropped file into a data URL,
-    // which becomes the image block's src.
+    // The playground's localStorage media provider reads the dropped file
+    // into a data URL, which becomes the image block's src.
     const img = imageBlock.locator("img");
     await expect(img).toHaveAttribute("src", /^data:image\/png/);
   });

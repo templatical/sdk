@@ -89,6 +89,7 @@ import {
   LOGIC_TAG_REQUESTING_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
+  CAN_DROP_MEDIA_KEY,
   IMAGE_URL_RESOLVER_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
@@ -245,6 +246,7 @@ export interface UseEditorCoreOptions {
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
+    canDropMedia?: ComputedRef<boolean> | null;
     resolvePreview?: ResolvePreview;
     resolveImageUrl?: ResolveImageUrl | null;
     lint?: LintOptions;
@@ -726,6 +728,7 @@ export function useEditorCore(
   provide(LOGIC_TAG_PICKER_KEY, useLogicTagPicker());
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
+  provide(CAN_DROP_MEDIA_KEY, config.canDropMedia ?? null);
 
   // Display-only image src resolver (#415). Created once per editor so the
   // per-src cache spans all image-displaying blocks of the instance.

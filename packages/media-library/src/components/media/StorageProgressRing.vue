@@ -64,6 +64,7 @@ const tooltipText = computed(() =>
 
 <template>
   <div
+    data-testid="media-storage-ring"
     class="tpl:relative tpl:inline-flex tpl:cursor-help tpl:items-center tpl:justify-center"
     @mouseenter="showTooltip = true"
     @mouseleave="showTooltip = false"

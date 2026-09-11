@@ -21,7 +21,7 @@ function createMockCollaboration() {
 }
 
 describe("useCollaborationBroadcast", () => {
-  it("calls original addBlock then broadcasts add_block operation", () => {
+  it("calls original addBlock then broadcasts addBlock operation", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     const originalAddBlock = editor.addBlock;
@@ -53,11 +53,11 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("add_block");
+    expect(payload.operation).toBe("addBlock");
     expect(payload.data).toEqual({
       block,
-      section_id: "section-1",
-      column_index: 0,
+      sectionId: "section-1",
+      columnIndex: 0,
     });
     expect(payload.timestamp).toBeGreaterThan(0);
   });
@@ -80,16 +80,16 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("add_block");
+    expect(payload.operation).toBe("addBlock");
     expect(payload.data).toEqual({
       block,
-      section_id: "section-1",
-      column_index: 0,
+      sectionId: "section-1",
+      columnIndex: 0,
       index: 2,
     });
   });
 
-  it("broadcasts update_block operation with blockId and updates", () => {
+  it("broadcasts updateBlock operation with blockId and updates", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     useCollaborationBroadcast(editor, collaboration);
@@ -100,14 +100,14 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("update_block");
+    expect(payload.operation).toBe("updateBlock");
     expect(payload.data).toEqual({
-      block_id: "b1",
+      blockId: "b1",
       updates: { content: "new" },
     });
   });
 
-  it("broadcasts delete_block operation", () => {
+  it("broadcasts deleteBlock operation", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     useCollaborationBroadcast(editor, collaboration);
@@ -116,11 +116,11 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("delete_block");
-    expect(payload.data).toEqual({ block_id: "b1" });
+    expect(payload.operation).toBe("deleteBlock");
+    expect(payload.data).toEqual({ blockId: "b1" });
   });
 
-  it("broadcasts move_block operation with all arguments", () => {
+  it("broadcasts moveBlock operation with all arguments", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     useCollaborationBroadcast(editor, collaboration);
@@ -129,16 +129,16 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("move_block");
+    expect(payload.operation).toBe("moveBlock");
     expect(payload.data).toEqual({
-      block_id: "b1",
+      blockId: "b1",
       index: 3,
-      section_id: "section-2",
-      column_index: 1,
+      sectionId: "section-2",
+      columnIndex: 1,
     });
   });
 
-  it("broadcasts update_settings operation", () => {
+  it("broadcasts updateSettings operation", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     useCollaborationBroadcast(editor, collaboration);
@@ -150,11 +150,11 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("update_settings");
+    expect(payload.operation).toBe("updateSettings");
     expect(payload.data).toEqual({ updates });
   });
 
-  it("broadcasts set_content operation", () => {
+  it("broadcasts setContent operation", () => {
     const editor = createMockEditor();
     const collaboration = createMockCollaboration();
     useCollaborationBroadcast(editor, collaboration);
@@ -167,7 +167,7 @@ describe("useCollaborationBroadcast", () => {
 
     const payload: McpOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
-    expect(payload.operation).toBe("set_content");
+    expect(payload.operation).toBe("setContent");
     expect(payload.data).toEqual({ content });
   });
 

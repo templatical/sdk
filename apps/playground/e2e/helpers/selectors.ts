@@ -129,6 +129,13 @@ export const SELECTORS = {
   savedBlocksBrowserClose: '[data-testid="saved-blocks-browser-close"]',
   savedBlocksPreviewCanvas: '[data-testid="block-preview-canvas"]',
 
+  // Media library (BYO; playground's localStorage provider is on by default)
+  imageDropZone: '[data-testid="image-drop-zone"]',
+  imageBrowseMedia: 'button[aria-label="Browse Media"]',
+  mediaLibraryModal: '[data-testid="media-library-modal"]',
+  mediaLibraryItem: '[data-testid="media-library-item"]',
+  mediaConfirm: '[data-testid="media-confirm"]',
+
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',
 

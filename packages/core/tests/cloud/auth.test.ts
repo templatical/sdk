@@ -8,12 +8,12 @@ import { SdkError } from "@templatical/types";
 
 const VALID_TOKEN_DATA = {
   token: "test-token-123",
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  project_id: "proj-1",
+  expiresAt: Math.floor(Date.now() / 1000) + 3600,
+  projectId: "proj-1",
   tenant: "acme",
   tenant_id: "tenant-1",
-  test_email: {
-    allowed_emails: ["user@example.com"],
+  testEmail: {
+    allowedEmails: ["user@example.com"],
     signature: "sig-123",
   },
   user: {
@@ -149,7 +149,7 @@ describe("AuthManager", () => {
     it("sets testEmailConfig to null when incomplete", async () => {
       vi.stubGlobal(
         "fetch",
-        createMockFetch({ ...VALID_TOKEN_DATA, test_email: null }),
+        createMockFetch({ ...VALID_TOKEN_DATA, testEmail: null }),
       );
       const auth = new AuthManager({ url: "https://example.com/auth" });
       await auth.initialize();
@@ -193,8 +193,8 @@ describe("AuthManager", () => {
       vi.stubGlobal(
         "fetch",
         createMockFetch({
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          project_id: "proj-1",
+          expiresAt: Math.floor(Date.now() / 1000) + 3600,
+          projectId: "proj-1",
           tenant: "acme",
         }),
       );
@@ -203,12 +203,12 @@ describe("AuthManager", () => {
       await expect(auth.initialize()).rejects.toThrow("Invalid token response");
     });
 
-    it("throws when response missing expires_at field", async () => {
+    it("throws when response missing expiresAt field", async () => {
       vi.stubGlobal(
         "fetch",
         createMockFetch({
           token: "test-token",
-          project_id: "proj-1",
+          projectId: "proj-1",
           tenant: "acme",
         }),
       );
@@ -217,12 +217,12 @@ describe("AuthManager", () => {
       await expect(auth.initialize()).rejects.toThrow("Invalid token response");
     });
 
-    it("throws when response missing project_id field", async () => {
+    it("throws when response missing projectId field", async () => {
       vi.stubGlobal(
         "fetch",
         createMockFetch({
           token: "test-token",
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          expiresAt: Math.floor(Date.now() / 1000) + 3600,
           tenant: "acme",
         }),
       );
@@ -236,8 +236,8 @@ describe("AuthManager", () => {
         "fetch",
         createMockFetch({
           token: "test-token",
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          project_id: "proj-1",
+          expiresAt: Math.floor(Date.now() / 1000) + 3600,
+          projectId: "proj-1",
         }),
       );
       const auth = new AuthManager({ url: "https://example.com/auth" });
@@ -452,7 +452,7 @@ describe("token expiration", () => {
     // First init with token that expires in 30 seconds (within 60s threshold)
     const nearExpiryData = {
       ...VALID_TOKEN_DATA,
-      expires_at: Math.floor(Date.now() / 1000) + 30, // 30 seconds from now
+      expiresAt: Math.floor(Date.now() / 1000) + 30, // 30 seconds from now
     };
     const mockFetch = createMockFetch(nearExpiryData);
     vi.stubGlobal("fetch", mockFetch);
@@ -468,7 +468,7 @@ describe("token expiration", () => {
         Promise.resolve({
           ...VALID_TOKEN_DATA,
           token: "fresh-token",
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          expiresAt: Math.floor(Date.now() / 1000) + 3600,
         }),
     });
 
@@ -501,7 +501,7 @@ describe("token expiration", () => {
     // Token expires in 61 seconds (safely above the 60s threshold)
     const boundaryData = {
       ...VALID_TOKEN_DATA,
-      expires_at: Math.floor(Date.now() / 1000) + 61,
+      expiresAt: Math.floor(Date.now() / 1000) + 61,
     };
     const mockFetch = createMockFetch(boundaryData);
     vi.stubGlobal("fetch", mockFetch);

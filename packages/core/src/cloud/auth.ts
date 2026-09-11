@@ -172,21 +172,21 @@ export class AuthManager {
 
       const data: TokenData = await response.json();
 
-      if (!data.token || !data.expires_at || !data.project_id || !data.tenant) {
+      if (!data.token || !data.expiresAt || !data.projectId || !data.tenant) {
         throw new Error(
-          "Invalid token response: missing token, expires_at, project_id, or tenant",
+          "Invalid token response: missing token, expiresAt, projectId, or tenant",
         );
       }
 
       this.accessToken = data.token;
-      this.expiresAt = new Date(data.expires_at * 1000);
-      this._projectId = data.project_id;
+      this.expiresAt = new Date(data.expiresAt * 1000);
+      this._projectId = data.projectId;
       this._tenantSlug = data.tenant;
 
-      if (data.test_email?.allowed_emails && data.test_email?.signature) {
+      if (data.testEmail?.allowedEmails && data.testEmail?.signature) {
         this._testEmailConfig = {
-          allowedEmails: data.test_email.allowed_emails,
-          signature: data.test_email.signature,
+          allowedEmails: data.testEmail.allowedEmails,
+          signature: data.testEmail.signature,
         };
       } else {
         this._testEmailConfig = null;

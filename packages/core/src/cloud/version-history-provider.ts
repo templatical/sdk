@@ -10,8 +10,8 @@ import { ApiClient } from "./api";
 import type { AuthManager } from "./auth";
 
 /**
- * Cloud's wire shape → the contract shape. The only real work this adapter does:
- * snake_case to camelCase, and `is_autosave` to `isAutomatic`.
+ * Cloud's HTTP row → {@link TemplateVersion}. Copies the contract fields
+ * and drops `templateId`.
  *
  * `content` is carried through deliberately — Cloud's index endpoint already
  * returns it, so every listed version arrives hydrated and the editor never
@@ -23,8 +23,8 @@ import type { AuthManager } from "./auth";
 function toVersion(record: TemplateVersionResponse): TemplateVersion {
   return {
     id: record.id,
-    createdAt: record.created_at,
-    isAutomatic: record.is_autosave,
+    createdAt: record.createdAt,
+    isAutomatic: record.isAutomatic,
     content: record.content,
   };
 }

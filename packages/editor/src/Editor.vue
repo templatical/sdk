@@ -15,6 +15,7 @@ import type { TemplateContent, UiTheme } from "@templatical/types";
 import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
+import { useMediaFeature } from "./composables/useMediaFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
 import { useTemplatesFeature } from "./composables/useTemplatesFeature";
 import { useTestEmailFeature } from "./composables/useTestEmailFeature";
@@ -168,6 +169,24 @@ const savedBlocks = props.config.savedBlocks
 // saved-blocks UI. Rendered only when the feature is active.
 const SavedBlocksPanels = defineAsyncComponent(
   () => import("./components/SavedBlocksPanels.vue"),
+);
+
+// --- Media (opt-in: a provider and/or an `onRequestMedia` override) ---
+// Instantiated before `useEditorCore` so the synthesized function is what
+// gets provided as `ON_REQUEST_MEDIA_KEY`. The modal mounts only on the
+// provider path — a callback-only config never downloads it.
+const mediaFeature =
+  props.config.media || props.config.onRequestMedia
+    ? useMediaFeature({
+        provider: props.config.media,
+        onRequestMedia: props.config.onRequestMedia,
+        getTemplateId: () => editor.state.template?.id,
+        onError: props.config.onError,
+      })
+    : null;
+
+const MediaPanels = defineAsyncComponent(
+  () => import("./components/MediaPanels.vue"),
 );
 
 // --- Test email (opt-in: only when a sending provider is configured) ---
@@ -335,9 +354,11 @@ const core = useEditorCore({
     mergeTags: props.config.mergeTags,
     logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
-    // Cloud swaps in its own media browser. Not plan-gated: an entitlement here
-    // would fire when a consumer is *not* using Cloud storage, i.e. backwards.
-    onRequestMedia: props.cloud?.onRequestMedia ?? props.config.onRequestMedia,
+    // The synthesized Browse/drop handler. Null when neither a provider nor a
+    // callback is configured, which is what keeps image fields URL-only.
+    onRequestMedia: mediaFeature?.requestMedia ?? null,
+    // Distinct from Browse: a read-only provider still opens the library.
+    canDropMedia: mediaFeature?.canDrop ?? null,
     resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
@@ -704,6 +725,18 @@ defineExpose({
       :feature="savedBlocks"
     />
 
+    <!-- Media library modal. Only mounted when a storage provider is
+         configured; the modal's chunk loads on first Browse. A callback-only
+         `onRequestMedia` never mounts this — the host brought a widget. -->
+    <MediaPanels
+      v-if="config.media && mediaFeature"
+      :feature="mediaFeature"
+      :provider="config.media"
+      :locale="config.locale"
+      :ui-theme="core.resolvedTheme.value"
+      :popover-target="core.popoverRoot.value"
+    />
+
     <TestEmailPanel v-if="testEmail?.isAvailable.value" :feature="testEmail" />
 
     <!-- The comments sidebar. Only mounted when a provider and a `user` are
@@ -727,7 +760,6 @@ defineExpose({
       :runtime="cloud"
       :cloud="cloudAttachment"
       :ready="cloudReady"
-      :locale="config.locale"
     />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the

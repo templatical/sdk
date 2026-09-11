@@ -10,6 +10,15 @@ export type {
 
 // API clients
 export { ApiClient } from "./api";
+export { MediaApiClient } from "./media-api";
+export type {
+  CloudMediaBrowseParams,
+  CloudMediaBrowseResponse,
+  CloudMediaFolder,
+  CloudMediaItem,
+  CloudMediaUsageInfo,
+  CloudMediaUsageResponse,
+} from "./media-api";
 // URL builder
 export { API_ROUTES, buildUrl } from "./url-builder";
 
@@ -72,6 +81,11 @@ export type { UseWebSocketOptions, UseWebSocketReturn } from "./web-socket";
 // Saved blocks — Cloud storage adapter for the shared `useSavedBlocks`
 // composable in `@templatical/core`.
 export { createCloudSavedBlocksProvider } from "./saved-blocks-provider";
+
+// Media — Cloud storage adapter for the shared `MediaProvider` contract.
+// `MediaApiClient` is the HTTP client; the adapter maps it onto
+// `MediaAsset` (omit-null optionals, folder flatten).
+export { createCloudMediaProvider } from "./media-provider";
 
 // Templates — Cloud storage adapter for the save/load lifecycle. Passed as
 // `useEditor({ templates })`, so Cloud persists over the same contract a BYO

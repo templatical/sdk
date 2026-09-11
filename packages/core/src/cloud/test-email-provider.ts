@@ -79,7 +79,7 @@ export function createCloudTestEmailProvider(
       await api.sendTestEmail(templateId, {
         recipient,
         html,
-        allowed_emails: options.allowedEmails.value,
+        allowedEmails: options.allowedEmails.value,
         signature,
       });
     },

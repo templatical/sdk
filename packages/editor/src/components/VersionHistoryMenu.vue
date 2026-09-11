@@ -3,9 +3,8 @@
  * The header's version-history control: step older / newer through the list, or
  * open the dropdown and jump straight to one.
  *
- * Shared by both editors — it was `cloud/components/SnapshotHistory.vue` and
- * spoke Cloud's wire shape (`created_at`, `is_autosave`) directly. It now reads
- * the `TemplateVersion` contract, so any provider drives it.
+ * Shared by both editors. Reads the `TemplateVersion` contract, so any
+ * provider drives it.
  */
 import { computed, inject, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";

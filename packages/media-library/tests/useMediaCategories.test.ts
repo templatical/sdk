@@ -1,286 +1,465 @@
 // DOM stubs must be imported BEFORE Vue (Vue captures `document` at module load time)
-import './dom-stubs';
+import "./dom-stubs";
 
-import { describe, expect, it, vi } from 'vitest';
-import { computed, createApp, defineComponent, h, ref } from 'vue';
-import { useMediaCategories } from '../src/composables/useMediaCategories';
-import { PLAN_CONFIG_KEY } from '../src/keys';
+import { describe, expect, it } from "vitest";
+import { createApp, defineComponent, h, ref } from "vue";
+import { useMediaCategories } from "../src/composables/useMediaCategories";
+import { MEDIA_LIMITS_KEY, type MediaLimits } from "../src/keys";
+import type { MediaCategory } from "../src/types";
 
-// Provides under `PLAN_CONFIG_KEY`, not the string `"planConfig"`. The string
-// form was the bug: `@templatical/editor` provided `Symbol("authManager")` and
-// nothing at all for the plan config, and Vue matches injection keys by
-// identity — so Cloud's media browser got `undefined` for everything it read.
+/**
+ * Provides under `MEDIA_LIMITS_KEY`, not the string `"mediaLimits"`. The
+ * string form never resolves the `Symbol` a host provided — Vue matches
+ * injection keys by identity.
+ */
 function withProvide<T>(
   setup: () => T,
-  provides: { planConfig?: unknown } = {},
+  provides: { limits?: MediaLimits } = {},
 ): T {
   let result: T;
   const app = createApp(
     defineComponent({
       setup() {
         result = setup();
-        return () => h('div');
+        return () => h("div");
       },
     }),
   );
-  if (provides.planConfig !== undefined) {
-    app.provide(PLAN_CONFIG_KEY, provides.planConfig as never);
+  if (provides.limits !== undefined) {
+    app.provide(MEDIA_LIMITS_KEY, provides.limits);
   }
-  app.mount(document.createElement('div'));
+  app.mount(document.createElement("div"));
   app.unmount();
   return result!;
 }
 
-function createMockPlanConfig(mediaConfig: any = null) {
-  return {
-    config: ref({ media: mediaConfig }),
-    isLoading: ref(false),
-    hasFeature: vi.fn(() => false),
-    features: computed(() => null),
-    fetchConfig: vi.fn(),
-  };
+/**
+ * Keep the app mounted: a getter-backed field filling after setup needs a
+ * live computed, and unmounting would freeze it.
+ */
+function withLive<T>(
+  setup: () => T,
+  limits: MediaLimits,
+): { result: T; unmount: () => void } {
+  let result: T;
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = setup();
+        return () => h("div");
+      },
+    }),
+  );
+  app.provide(MEDIA_LIMITS_KEY, limits);
+  app.mount(document.createElement("div"));
+  return { result: result!, unmount: () => app.unmount() };
 }
 
-const sampleMediaConfig = {
-  use_media_library: true,
-  max_file_size: 10485760,
-  categories: {
-    images: {
-      mime_types: ['image/jpeg', 'image/png', 'image/gif'],
-      extensions: ['.jpg', '.png', '.gif'],
-    },
-    documents: {
-      mime_types: ['application/pdf'],
-      extensions: ['.pdf'],
-    },
-    videos: {
-      mime_types: ['video/mp4'],
-      extensions: ['.mp4'],
-    },
-  },
+const sampleMimeTypes: NonNullable<MediaLimits["mimeTypes"]> = {
+  images: ["image/jpeg", "image/png", "image/gif"],
+  documents: ["application/pdf"],
+  videos: ["video/mp4"],
 };
 
-describe('useMediaCategories', () => {
-  describe('isMediaLibraryEnabled', () => {
-    it('defaults to true when no media config', () => {
-      const planConfig = createMockPlanConfig(null);
-      const { isMediaLibraryEnabled } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
+const sampleLimits: MediaLimits = {
+  maxFileSize: 10485760,
+  mimeTypes: sampleMimeTypes,
+};
+
+describe("useMediaCategories", () => {
+  /**
+   * Cloud exposes `maxFileSize` as a getter over plan config that arrives
+   * after construction. Reading it once at setup pins the client pre-check
+   * to `undefined` (no cap) for the whole session — the `allowedRecipients`
+   * lesson. This case is the proof: a snapshot at setup stays `Infinity`
+   * after `backing` fills, so the second expect fails.
+   */
+  it("tracks a getter-backed maxFileSize that fills after setup", () => {
+    const backing = ref<number | undefined>(undefined);
+    const limits: MediaLimits = {
+      get maxFileSize() {
+        return backing.value;
+      },
+    };
+
+    const { result, unmount } = withLive(() => useMediaCategories(), limits);
+
+    expect(result.maxFileSize.value).toBe(Number.POSITIVE_INFINITY);
+
+    backing.value = 1_048_576;
+
+    expect(result.maxFileSize.value).toBe(1_048_576);
+
+    unmount();
+  });
+
+  it("tracks a getter-backed maxFileSize passed as the override", () => {
+    const backing = ref<number | undefined>(undefined);
+    const limits: MediaLimits = {
+      get maxFileSize() {
+        return backing.value;
+      },
+    };
+
+    let maxFileSize: { value: number };
+    const app = createApp(
+      defineComponent({
+        setup() {
+          maxFileSize = useMediaCategories(limits).maxFileSize;
+          return () => h("div");
+        },
+      }),
+    );
+    app.mount(document.createElement("div"));
+
+    expect(maxFileSize!.value).toBe(Number.POSITIVE_INFINITY);
+
+    backing.value = 1_048_576;
+
+    expect(maxFileSize!.value).toBe(1_048_576);
+
+    app.unmount();
+  });
+
+  it("tracks a getter-backed mimeTypes that fills after setup", () => {
+    const backing = ref<MediaLimits["mimeTypes"]>(undefined);
+    const limits: MediaLimits = {
+      get mimeTypes() {
+        return backing.value;
+      },
+    };
+
+    const { result, unmount } = withLive(() => useMediaCategories(), limits);
+
+    expect(result.allAcceptedMimeTypes.value).toEqual([]);
+    expect(result.availableCategories.value).toEqual([
+      "images",
+      "documents",
+      "videos",
+      "audio",
+    ]);
+
+    backing.value = { images: ["image/png"] };
+
+    expect(result.allAcceptedMimeTypes.value).toEqual(["image/png"]);
+    expect(result.availableCategories.value).toEqual(["images"]);
+
+    unmount();
+  });
+
+  describe("isMediaLibraryEnabled", () => {
+    it("is true whenever limits are in scope", () => {
+      const { isMediaLibraryEnabled } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: {},
+        },
+      );
       expect(isMediaLibraryEnabled.value).toBe(true);
     });
 
-    it('reflects config value', () => {
-      const planConfig = createMockPlanConfig({ use_media_library: false });
-      const { isMediaLibraryEnabled } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(isMediaLibraryEnabled.value).toBe(false);
+    it("is true when mimeTypes and maxFileSize are set", () => {
+      const { isMediaLibraryEnabled } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: sampleLimits,
+        },
+      );
+      expect(isMediaLibraryEnabled.value).toBe(true);
     });
   });
 
-  describe('allAcceptedMimeTypes', () => {
-    it('flattens all category mime types', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+  describe("allAcceptedMimeTypes", () => {
+    it("flattens all category mime types", () => {
       const { allAcceptedMimeTypes } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
       expect(allAcceptedMimeTypes.value).toEqual([
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/pdf',
-        'video/mp4',
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "application/pdf",
+        "video/mp4",
+      ]);
+    });
+
+    it("narrows to accept when the host set a filter", () => {
+      const { allAcceptedMimeTypes } = withProvide(() => useMediaCategories(), {
+        limits: { ...sampleLimits, accept: ["images"] },
+      });
+      expect(allAcceptedMimeTypes.value).toEqual([
+        "image/jpeg",
+        "image/png",
+        "image/gif",
       ]);
     });
   });
 
-  describe('allAcceptedInputString', () => {
-    it('joins with commas', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
-      const { allAcceptedInputString } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
+  describe("allAcceptedInputString", () => {
+    it("joins with commas", () => {
+      const { allAcceptedInputString } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: sampleLimits,
+        },
+      );
       expect(allAcceptedInputString.value).toBe(
-        'image/jpeg,image/png,image/gif,application/pdf,video/mp4',
+        "image/jpeg,image/png,image/gif,application/pdf,video/mp4",
       );
     });
   });
 
-  describe('maxFileSize', () => {
-    it('defaults to 0', () => {
-      const planConfig = createMockPlanConfig(null);
+  describe("maxFileSize", () => {
+    it("omitted means no cap", () => {
       const { maxFileSize } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: {},
+      });
+      expect(maxFileSize.value).toBe(Number.POSITIVE_INFINITY);
+    });
+
+    it("an explicit 0 is a cap of 0, not omit", () => {
+      const { maxFileSize } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 0 },
       });
       expect(maxFileSize.value).toBe(0);
     });
 
-    it('reads from config', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+    it("reads from limits", () => {
       const { maxFileSize } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
       expect(maxFileSize.value).toBe(10485760);
     });
+
+    it("returns the configured value", () => {
+      const { maxFileSize } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 5242880 },
+      });
+      expect(maxFileSize.value).toBe(5242880);
+    });
   });
 
-  describe('availableCategories', () => {
-    it('returns category keys', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+  describe("availableCategories", () => {
+    it("returns mimeTypes keys", () => {
       const { availableCategories } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
-      expect(availableCategories.value).toEqual(['images', 'documents', 'videos']);
+      expect(availableCategories.value).toEqual([
+        "images",
+        "documents",
+        "videos",
+      ]);
+    });
+
+    it("is all four when mimeTypes is omitted", () => {
+      const { availableCategories } = withProvide(() => useMediaCategories(), {
+        limits: {},
+      });
+      expect(availableCategories.value).toEqual([
+        "images",
+        "documents",
+        "videos",
+        "audio",
+      ]);
+    });
+
+    it("uses the accept filter when the host set one", () => {
+      const { availableCategories } = withProvide(() => useMediaCategories(), {
+        limits: { ...sampleLimits, accept: ["images"] },
+      });
+      expect(availableCategories.value).toEqual(["images"]);
     });
   });
 
-  describe('isAcceptedMimeType', () => {
-    it('returns true for valid type', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+  describe("isAcceptedMimeType", () => {
+    it("returns true for valid type", () => {
       const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
-      expect(isAcceptedMimeType('image/jpeg')).toBe(true);
-      expect(isAcceptedMimeType('application/pdf')).toBe(true);
+      expect(isAcceptedMimeType("image/jpeg")).toBe(true);
+      expect(isAcceptedMimeType("application/pdf")).toBe(true);
     });
 
-    it('returns false for invalid type', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+    it("returns false for invalid type", () => {
       const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
-      expect(isAcceptedMimeType('text/plain')).toBe(false);
+      expect(isAcceptedMimeType("text/plain")).toBe(false);
     });
 
-    it('with filter categories checks only specified categories', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+    it("with accept checks only specified categories", () => {
       const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
-      expect(isAcceptedMimeType('image/jpeg', ['images'])).toBe(true);
-      expect(isAcceptedMimeType('application/pdf', ['images'])).toBe(false);
-      expect(isAcceptedMimeType('application/pdf', ['documents'])).toBe(true);
+      expect(isAcceptedMimeType("image/jpeg", ["images"])).toBe(true);
+      expect(isAcceptedMimeType("application/pdf", ["images"])).toBe(false);
+      expect(isAcceptedMimeType("application/pdf", ["documents"])).toBe(true);
+    });
+
+    it("returns true when mimeTypes is omitted — no client pre-check", () => {
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        limits: {},
+      });
+      expect(isAcceptedMimeType("image/jpeg")).toBe(true);
+      expect(isAcceptedMimeType("text/plain")).toBe(true);
+    });
+
+    it("with empty accept checks all configured types", () => {
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        limits: sampleLimits,
+      });
+      expect(isAcceptedMimeType("image/jpeg", [])).toBe(true);
+      expect(isAcceptedMimeType("text/plain", [])).toBe(false);
+    });
+
+    it("with a category that has no mime list returns false", () => {
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        limits: sampleLimits,
+      });
+      expect(isAcceptedMimeType("image/jpeg", ["audio" as MediaCategory])).toBe(
+        false,
+      );
     });
   });
 
-  describe('isImageMimeType', () => {
-    it('checks images category only', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
+  describe("isImageMimeType", () => {
+    it("checks images category only", () => {
       const { isImageMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: sampleLimits,
       });
-      expect(isImageMimeType('image/jpeg')).toBe(true);
-      expect(isImageMimeType('image/png')).toBe(true);
-      expect(isImageMimeType('application/pdf')).toBe(false);
-      expect(isImageMimeType('video/mp4')).toBe(false);
+      expect(isImageMimeType("image/jpeg")).toBe(true);
+      expect(isImageMimeType("image/png")).toBe(true);
+      expect(isImageMimeType("application/pdf")).toBe(false);
+      expect(isImageMimeType("video/mp4")).toBe(false);
+    });
+
+    it("falls back to the image/ prefix when mimeTypes is omitted", () => {
+      const { isImageMimeType } = withProvide(() => useMediaCategories(), {
+        limits: {},
+      });
+      expect(isImageMimeType("image/jpeg")).toBe(true);
+      expect(isImageMimeType("application/pdf")).toBe(false);
     });
   });
 
-  describe('getCategoryForMimeType', () => {
-    it('returns matching category', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
-      const { getCategoryForMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(getCategoryForMimeType('image/jpeg')).toBe('images');
-      expect(getCategoryForMimeType('application/pdf')).toBe('documents');
-      expect(getCategoryForMimeType('video/mp4')).toBe('videos');
+  describe("getCategoryForMimeType", () => {
+    it("returns matching category", () => {
+      const { getCategoryForMimeType } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: sampleLimits,
+        },
+      );
+      expect(getCategoryForMimeType("image/jpeg")).toBe("images");
+      expect(getCategoryForMimeType("application/pdf")).toBe("documents");
+      expect(getCategoryForMimeType("video/mp4")).toBe("videos");
     });
 
-    it('returns null for unmatched', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
-      const { getCategoryForMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(getCategoryForMimeType('text/plain')).toBeNull();
+    it("returns null for unmatched", () => {
+      const { getCategoryForMimeType } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: sampleLimits,
+        },
+      );
+      expect(getCategoryForMimeType("text/plain")).toBeNull();
     });
 
-    it('returns null when no categories configured', () => {
-      const planConfig = createMockPlanConfig(null);
-      const { getCategoryForMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(getCategoryForMimeType('image/jpeg')).toBeNull();
+    it("returns null when mimeTypes is omitted", () => {
+      const { getCategoryForMimeType } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: {},
+        },
+      );
+      expect(getCategoryForMimeType("image/jpeg")).toBeNull();
     });
   });
 
-  describe('with null/empty categories', () => {
-    it('allAcceptedMimeTypes returns empty array when no categories', () => {
-      const planConfig = createMockPlanConfig(null);
+  describe("with empty mimeTypes", () => {
+    it("allAcceptedMimeTypes returns empty array", () => {
       const { allAcceptedMimeTypes } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: { mimeTypes: {} },
       });
       expect(allAcceptedMimeTypes.value).toEqual([]);
     });
 
-    it('allAcceptedInputString returns empty string when no categories', () => {
-      const planConfig = createMockPlanConfig(null);
-      const { allAcceptedInputString } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(allAcceptedInputString.value).toBe('');
+    it("allAcceptedInputString returns empty string", () => {
+      const { allAcceptedInputString } = withProvide(
+        () => useMediaCategories(),
+        {
+          limits: { mimeTypes: {} },
+        },
+      );
+      expect(allAcceptedInputString.value).toBe("");
     });
 
-    it('availableCategories returns empty array when no categories', () => {
-      const planConfig = createMockPlanConfig(null);
+    it("availableCategories returns empty array", () => {
       const { availableCategories } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: { mimeTypes: {} },
       });
       expect(availableCategories.value).toEqual([]);
     });
 
-    it('isAcceptedMimeType returns false when no categories', () => {
-      const planConfig = createMockPlanConfig(null);
+    it("isAcceptedMimeType returns false", () => {
       const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: { mimeTypes: {} },
       });
-      expect(isAcceptedMimeType('image/jpeg')).toBe(false);
+      expect(isAcceptedMimeType("image/jpeg")).toBe(false);
     });
 
-    it('isImageMimeType returns false when no categories', () => {
-      const planConfig = createMockPlanConfig(null);
+    it("isImageMimeType returns false", () => {
       const { isImageMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
+        limits: { mimeTypes: {} },
       });
-      expect(isImageMimeType('image/jpeg')).toBe(false);
-    });
-
-    it('isAcceptedMimeType with empty filter categories checks all', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
-      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(isAcceptedMimeType('image/jpeg', [])).toBe(true);
-      expect(isAcceptedMimeType('text/plain', [])).toBe(false);
-    });
-
-    it('isAcceptedMimeType with non-existent filter category returns false', () => {
-      const planConfig = createMockPlanConfig(sampleMediaConfig);
-      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(isAcceptedMimeType('image/jpeg', ['nonexistent' as any])).toBe(false);
+      expect(isImageMimeType("image/jpeg")).toBe(false);
     });
   });
 
-  describe('with media config with use_media_library explicitly set', () => {
-    it('isMediaLibraryEnabled is true when explicitly set', () => {
-      const planConfig = createMockPlanConfig({ use_media_library: true });
-      const { isMediaLibraryEnabled } = withProvide(() => useMediaCategories(), {
-        planConfig,
-      });
-      expect(isMediaLibraryEnabled.value).toBe(true);
+  describe("override argument", () => {
+    it("reads limits passed as the argument rather than inject", () => {
+      const { maxFileSize } = withProvide(() =>
+        useMediaCategories({ maxFileSize: 4242 }),
+      );
+      expect(maxFileSize.value).toBe(4242);
     });
   });
 
-  describe('maxFileSize with explicit config', () => {
-    it('returns configured value', () => {
-      const planConfig = createMockPlanConfig({ max_file_size: 5242880 });
-      const { maxFileSize } = withProvide(() => useMediaCategories(), {
-        planConfig,
+  /**
+   * The upload zone's `validateFiles` is this predicate. Omitted
+   * `maxFileSize` / `mimeTypes` are no client pre-check — a BYO provider
+   * that writes neither still accepts a normal image. Empty `mimeTypes: {}`
+   * is a stated "nobody", so it still rejects.
+   */
+  describe("isAcceptedFile (upload-zone validateFiles)", () => {
+    const image = { type: "image/png", size: 1024 };
+
+    it("accepts a normal image when both limits are omitted", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: {},
       });
-      expect(maxFileSize.value).toBe(5242880);
+      expect(isAcceptedFile(image)).toBe(true);
+    });
+
+    it("rejects when mimeTypes is an empty object", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { mimeTypes: {} },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
+    });
+
+    it("rejects when the file exceeds an explicit maxFileSize", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 512 },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
+    });
+
+    it("rejects a non-empty file when maxFileSize is explicitly 0", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 0 },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
     });
   });
 });

@@ -2,13 +2,13 @@
 /**
  * Build the editor as a real Webpack 5 consumer would.
  *
- * The editor uses dynamic `import()` with try/catch to load four optional
- * peers (`pusher-js`, `@templatical/quality`, `@templatical/media-library`,
- * `@templatical/renderer`). Vite/esbuild silently pass these through when the
- * package isn't installed; Webpack 5 statically resolves every `import()`
- * regardless of try/catch and emits "Module not found" warnings/errors. That
- * was the entire content of issue #63 — the editor's docs claim "no peer
- * dependencies" but Webpack consumers still got a noisy or failing build.
+ * The editor uses dynamic `import()` with try/catch to load three optional
+ * peers (`pusher-js`, `@templatical/quality`, `@templatical/renderer`).
+ * Vite/esbuild silently pass these through when the package isn't installed;
+ * Webpack 5 statically resolves every `import()` regardless of try/catch and
+ * emits "Module not found" warnings/errors. That was the entire content of
+ * issue #63 — the editor's docs claim "no peer dependencies" but Webpack
+ * consumers still got a noisy or failing build.
  *
  * Procedure:
  *   1. Build + pack the fixture's `@templatical/*` closure.
@@ -45,7 +45,6 @@ const CONSUMER_DIR = mkdtempSync(join(tmpdir(), "tpl-webpack-consumer-"));
 const OPTIONAL_PEERS = [
   "pusher-js",
   "@templatical/quality",
-  "@templatical/media-library",
   "@templatical/renderer",
 ];
 
@@ -89,7 +88,7 @@ try {
   // Webpack downgrades "Module not found" to a warning when the dynamic
   // `import()` is wrapped in try/catch and exits 0; without try/catch it
   // emits an error and exits non-zero. The OSS consumer in issue #63 saw
-  // exactly that — a production build failure on `@templatical/media-library`.
+  // exactly that — a production build failure on an uninstalled optional peer.
   // Warnings are cosmetic noise; non-zero exit means the consumer can't ship.
   if (webpackExitCode !== 0) {
     const errorPeers = OPTIONAL_PEERS.filter((peer) => {

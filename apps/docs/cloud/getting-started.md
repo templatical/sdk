@@ -18,10 +18,10 @@ This guide walks you through setting up Templatical Cloud in your application.
 If you haven't already installed the editor, add it along with the cloud dependencies:
 
 ```bash
-npm install @templatical/editor @templatical/media-library pusher-js
+npm install @templatical/editor pusher-js
 ```
 
-`@templatical/media-library` provides the built-in media browser and `pusher-js` enables real-time collaboration. Both are optional peer dependencies — only needed when using `initCloud()`.
+The Browse modal ships in the editor. `pusher-js` enables real-time collaboration and is Cloud-only. Install [`@templatical/media-library`](/backend/media#installation) only if you mount the standalone media SDK outside the editor.
 
 ::: info Shadow DOM
 `initCloud()` inherits all shadow-DOM behavior from the editor — mounted inside a Shadow DOM by default for host-CSS isolation. The media browser, AI panels, comments, and version-history UI all teleport into the editor's shadow-aware popover root, so no special handling is needed. Pass `shadowDom: false` to opt out. See the [Shadow DOM guide](/guide/shadow-dom).
@@ -88,7 +88,7 @@ const editor = await initCloud({
 The `auth.url` should point to the token endpoint you created above. The SDK handles token refresh automatically.
 
 ::: info `initCloud()` is `init()` with Cloud's adapters
-It authenticates, fetches your plan, builds Cloud's `templates` / `render` / `versionHistory` / `savedBlocks` / `testEmail` providers, and then calls `init()` with them. There is one editor component, one editor core and one header behind both entry points, and the two return the **same** type — which is what makes "Cloud implements the same interfaces you would" checkable rather than just claimed.
+It authenticates, fetches your plan, builds Cloud's `templates` / `render` / `versionHistory` / `savedBlocks` / `media` / `testEmail` providers, and then calls `init()` with them. There is one editor component, one editor core and one header behind both entry points, and the two return the **same** type — which is what makes "Cloud implements the same interfaces you would" checkable rather than just claimed.
 
 One consequence: the bootstrap runs *before* the editor mounts, so a failed handshake **rejects** `initCloud()` instead of mounting an editor showing an error overlay. Handle it like any other rejected promise. A session that dies later — a token refresh that cannot renew — still surfaces as an overlay, because by then there is an editor to cover.
 :::

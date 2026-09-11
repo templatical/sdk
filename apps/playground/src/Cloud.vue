@@ -232,8 +232,8 @@ onMounted(() => {
     if (email) {
       const emails = [email];
       const testEmailSignature = await hmacSha256(key, JSON.stringify(emails));
-      data.test_email = {
-        allowed_emails: emails,
+      data.testEmail = {
+        allowedEmails: emails,
         signature: testEmailSignature,
       };
     }
@@ -863,7 +863,7 @@ onUnmounted(() => {
                   v-model="settings.authBody"
                   class="pg-input !text-xs resize-y min-h-10"
                   rows="2"
-                  placeholder='{"project_id": "..."}'
+                  placeholder='{"projectId": "..."}'
                 ></textarea>
               </div>
             </div>

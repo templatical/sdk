@@ -128,7 +128,7 @@ describe("performHealthCheck", () => {
       vi.mocked(fetch).mockResolvedValue(
         mockJsonResponse({
           status: "ok",
-          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+          websocket: { host: "ws.test.com", port: 443, appKey: "key123" },
         }),
       );
       const result = await performHealthCheck();
@@ -150,7 +150,7 @@ describe("performHealthCheck", () => {
       vi.mocked(fetch).mockResolvedValue(
         mockJsonResponse({
           status: "ok",
-          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+          websocket: { host: "ws.test.com", port: 443, appKey: "key123" },
         }),
       );
       const result = await performHealthCheck();
@@ -172,7 +172,7 @@ describe("performHealthCheck", () => {
       vi.mocked(fetch).mockResolvedValue(
         mockJsonResponse({
           status: "ok",
-          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+          websocket: { host: "ws.test.com", port: 443, appKey: "key123" },
         }),
       );
 
@@ -213,7 +213,7 @@ describe("performHealthCheck", () => {
       vi.mocked(fetch).mockResolvedValue(
         mockJsonResponse({
           status: "ok",
-          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+          websocket: { host: "ws.test.com", port: 443, appKey: "key123" },
         }),
       );
 
@@ -243,7 +243,7 @@ describe("performHealthCheck", () => {
       vi.mocked(fetch).mockResolvedValue(
         mockJsonResponse({
           status: "ok",
-          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+          websocket: { host: "ws.test.com", port: 443, appKey: "key123" },
         }),
       );
       await performHealthCheck();

@@ -58,7 +58,7 @@ export default {
       content: "Vorlagen-Blockstruktur",
       theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
       defaults: "blockDefaults, templateDefaults",
-      callbacks: "onRequestMedia, mergeTags.onRequest",
+      callbacks: "media, mergeTags.onRequest",
       locale: "SDK-Sprache, die an init({ locale }) \u00fcbergeben wird",
     },
     localeHint:
@@ -76,7 +76,7 @@ export default {
     callbacksHint:
       'Callback-Handler f\u00fcr den Editor umschalten. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
     onRequestMediaDesc:
-      '\u00d6ffnet eine Demo-Bildauswahl, wenn der Benutzer auf "Medien durchsuchen" klickt',
+      'Stellt "Durchsuchen" \u00fcber eine lokale Medienbibliothek bereit. Deaktivieren f\u00fcr nur-URL-Feld.',
     onRequestMergeTag:
       "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer ein Merge-Tag einf\u00fcgt",
     cancel: "Abbrechen",
@@ -149,9 +149,6 @@ export default {
   },
   mergeTagModal: {
     title: "Merge-Tag einf\u00fcgen",
-  },
-  mediaModal: {
-    title: "Bild ausw\u00e4hlen",
   },
   dataSourceModal: {
     fetching: "Daten vom Endpunkt abrufen\u2026",
@@ -332,11 +329,6 @@ export default {
     loopItems: "Positionen durchlaufen",
     loopItemsDescription:
       "Wiederholt den umschlossenen Inhalt für jede Bestellposition",
-  },
-  demoImages: {
-    productShot: "Produktfoto",
-    teamPhoto: "Teamfoto",
-    abstract: "Abstrakt",
   },
   a11y: {
     backToTemplates: "Zur\u00fcck zu Vorlagen",

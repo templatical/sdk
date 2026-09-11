@@ -106,7 +106,7 @@ A handler that throws is caught and reported to `onError` — it never fails the
 
 ## Disabling create or save
 
-`create` and `save` are `false | fn` and **required**, not optional. `load` cannot be turned off — without it there is nothing to open.
+`create` and `save` take `false | fn`. `load` cannot be turned off — without it there is nothing to open.
 
 ```ts
 templates: {

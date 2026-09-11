@@ -38,11 +38,11 @@ export function useCollaborationBroadcast(
   editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
     originalAddBlock(block, targetSectionId, columnIndex, index);
     collaboration._broadcastOperation({
-      operation: "add_block",
+      operation: "addBlock",
       data: {
         block,
-        section_id: targetSectionId,
-        column_index: columnIndex,
+        sectionId: targetSectionId,
+        columnIndex: columnIndex,
         index,
       },
       timestamp: Date.now(),
@@ -52,8 +52,8 @@ export function useCollaborationBroadcast(
   editor.updateBlock = (blockId, updates) => {
     originalUpdateBlock(blockId, updates);
     collaboration._broadcastOperation({
-      operation: "update_block",
-      data: { block_id: blockId, updates },
+      operation: "updateBlock",
+      data: { blockId: blockId, updates },
       timestamp: Date.now(),
     });
   };
@@ -61,8 +61,8 @@ export function useCollaborationBroadcast(
   editor.removeBlock = (blockId) => {
     originalRemoveBlock(blockId);
     collaboration._broadcastOperation({
-      operation: "delete_block",
-      data: { block_id: blockId },
+      operation: "deleteBlock",
+      data: { blockId: blockId },
       timestamp: Date.now(),
     });
   };
@@ -70,12 +70,12 @@ export function useCollaborationBroadcast(
   editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
     originalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
     collaboration._broadcastOperation({
-      operation: "move_block",
+      operation: "moveBlock",
       data: {
-        block_id: blockId,
+        blockId: blockId,
         index: newIndex,
-        section_id: targetSectionId,
-        column_index: columnIndex,
+        sectionId: targetSectionId,
+        columnIndex: columnIndex,
       },
       timestamp: Date.now(),
     });
@@ -84,7 +84,7 @@ export function useCollaborationBroadcast(
   editor.updateSettings = (updates) => {
     originalUpdateSettings(updates);
     collaboration._broadcastOperation({
-      operation: "update_settings",
+      operation: "updateSettings",
       data: { updates },
       timestamp: Date.now(),
     });
@@ -93,7 +93,7 @@ export function useCollaborationBroadcast(
   editor.setContent = (content, markDirty?) => {
     originalSetContent(content, markDirty);
     collaboration._broadcastOperation({
-      operation: "set_content",
+      operation: "setContent",
       data: { content },
       timestamp: Date.now(),
     });

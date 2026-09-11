@@ -1,24 +1,25 @@
 // DOM stubs must be imported BEFORE Vue (Vue captures `document` at module load time)
 import "./dom-stubs";
 
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { computed, createApp, defineComponent, h, ref } from "vue";
+import { createApp, defineComponent, h } from "vue";
 import MediaLibraryModal from "../src/components/MediaLibraryModal.vue";
-import { PLAN_CONFIG_KEY } from "../src/keys";
+import { MEDIA_LIMITS_KEY } from "../src/keys";
 import { useMediaCategories } from "../src/composables/useMediaCategories";
 
 /**
- * Guards how `MediaLibraryModal` reaches its host's `authManager`, `projectId`
- * and `planConfig`.
+ * Guards how `MediaLibraryModal` reaches its host's `provider`,
+ * and how descendants reach media limits.
  *
  * Vue matches injection keys by **identity**, so a bare-string
  * `inject("authManager")` never resolves the `AUTH_MANAGER_KEY = Symbol(...)`
  * that `@templatical/editor` provides — it yields `undefined`, and the library
- * opens and does nothing with no error to trace. The three therefore travel as
- * props, which makes `vue-tsc` fail the editor's typecheck when a binding is
- * dropped.
+ * opens and does nothing with no error to trace. Cross-package values
+ * therefore travel as props, which makes `vue-tsc` fail the editor's
+ * typecheck when a binding is dropped. Intra-package limits travel through
+ * `MEDIA_LIMITS_KEY`.
  *
  * These cases cover the half a type cannot: that nobody reintroduces a
  * string-keyed injection, and that the one remaining intra-package hop goes
@@ -64,16 +65,6 @@ function filesMatching(pattern: RegExp): string[] {
 
 const FILES = listSourceFiles();
 
-function createPlanConfig(mediaConfig: unknown = null) {
-  return {
-    config: ref({ media: mediaConfig, storage: {} }),
-    isLoading: ref(false),
-    hasFeature: vi.fn(() => false),
-    features: computed(() => null),
-    fetchConfig: vi.fn(),
-  };
-}
-
 describe("cross-package injection audit", () => {
   it("source tree was discovered (sanity check)", () => {
     expect(FILES.length).toBeGreaterThan(15);
@@ -82,7 +73,7 @@ describe("cross-package injection audit", () => {
   /**
    * A blanket ban, not a list of names to remember.
    *
-   * This started as four spellings (`authManager`, `projectId`, `planConfig`,
+   * This started as four spellings (`provider`, `projectId`,
    * `translations`) and still missed `tplUiTheme` — the third component of this
    * package to inject a bare string that never resolves the identically-named
    * `Symbol` `@templatical/editor` provides. Every legitimate injection here goes
@@ -98,8 +89,8 @@ describe("cross-package injection audit", () => {
     expect(filesMatching(stringInject)).toEqual([]);
   });
 
-  it("only the two host components provide PLAN_CONFIG_KEY", () => {
-    expect(filesMatching(/provide\(\s*PLAN_CONFIG_KEY/)).toEqual([
+  it("only the two host components provide MEDIA_LIMITS_KEY", () => {
+    expect(filesMatching(/provide\(\s*MEDIA_LIMITS_KEY/)).toEqual([
       "components/MediaLibraryModal.vue",
       "standalone/MediaLibrary.vue",
     ]);
@@ -113,45 +104,60 @@ describe("cross-package injection audit", () => {
   });
 
   /**
-   * A component never sees its own `provide` — Vue resolves `inject` against the
-   * *parent* chain. Both hosts used to provide `PLAN_CONFIG_KEY` and then call
-   * `useMediaCategories()` with no argument, so `useMediaCategories` threw in
-   * every host and the library could not mount in either mode. The composables
-   * that a host both provides for and consumes therefore take an explicit
-   * argument at the host call site.
+   * `allAcceptedMimeTypes` is `[]` when `mimeTypes` is omitted (no list to
+   * flatten). Using `.includes(file.type)` on that empty array rejects every
+   * drop — the BYO provider that writes no `mimeTypes`. `isAcceptedMimeType`
+   * / `isAcceptedFile` treat omit as no pre-check; empty `{}` still rejects.
    */
-  it.each([
-    ["components/MediaLibraryModal.vue", /useMediaCategories\(\s*props\.planConfig/],
-    ["standalone/MediaLibrary.vue", /useMediaCategories\(\s*planConfig\s*\)/],
-  ])("%s passes its plan config to useMediaCategories rather than injecting it", (file, pattern) => {
-    const source = stripComments(readFileSync(join(SRC, file), "utf8"));
-    expect(source).toMatch(pattern);
-    expect(source).not.toMatch(/useMediaCategories\(\s*\)/);
+  it("upload zone validates files via isAcceptedFile, not allAcceptedMimeTypes.includes", () => {
+    const source = stripComments(
+      readFileSync(join(SRC, "components/media/MediaUploadZone.vue"), "utf8"),
+    );
+    expect(source).toMatch(/isAcceptedFile\(/);
+    expect(source).not.toMatch(/allAcceptedMimeTypes/);
   });
 
-  it("MediaLibraryModal declares the three as required props", () => {
+  /**
+   * A component never sees its own `provide` — Vue resolves `inject` against the
+   * *parent* chain. Both hosts provide `MEDIA_LIMITS_KEY` and then call
+   * `useMediaCategories` with that same object, because injecting it from the
+   * host itself would throw. The composables that a host both provides for and
+   * consumes therefore take an explicit argument at the host call site.
+   */
+  it.each([
+    ["components/MediaLibraryModal.vue", /useMediaCategories\(\s*mediaLimits/],
+    ["standalone/MediaLibrary.vue", /useMediaCategories\(\s*mediaLimits/],
+  ])(
+    "%s passes its media limits to useMediaCategories rather than injecting it",
+    (file, pattern) => {
+      const source = stripComments(readFileSync(join(SRC, file), "utf8"));
+      expect(source).toMatch(pattern);
+      expect(source).not.toMatch(/useMediaCategories\(\s*\)/);
+    },
+  );
+
+  it("MediaLibraryModal declares provider as a required prop", () => {
     const props = MediaLibraryModal.props as Record<
       string,
       { required?: boolean }
     >;
     expect(Object.keys(props).sort()).toEqual([
       "accept",
-      "authManager",
       "locale",
-      "planConfig",
+      "onError",
       "popoverTarget",
-      "projectId",
+      "provider",
+      "templateId",
       "uiTheme",
       "visible",
     ]);
-    expect(props.authManager.required).toBe(true);
-    expect(props.projectId.required).toBe(true);
-    expect(props.planConfig.required).toBe(true);
+    expect(props.provider.required).toBe(true);
+    expect(props.visible.required).toBe(true);
   });
 });
 
-describe("useMediaCategories plan-config resolution", () => {
-  function run<T>(setup: () => T, planConfig?: unknown): T {
+describe("useMediaCategories limits resolution", () => {
+  function run<T>(setup: () => T, limits?: unknown): T {
     let result: T;
     const app = createApp(
       defineComponent({
@@ -161,30 +167,30 @@ describe("useMediaCategories plan-config resolution", () => {
         },
       }),
     );
-    if (planConfig !== undefined) {
-      app.provide(PLAN_CONFIG_KEY, planConfig as never);
+    if (limits !== undefined) {
+      app.provide(MEDIA_LIMITS_KEY, limits as never);
     }
     app.mount(document.createElement("div"));
     app.unmount();
     return result!;
   }
 
-  it("resolves the plan config through PLAN_CONFIG_KEY", () => {
-    const { maxFileSize } = run(
-      () => useMediaCategories(),
-      createPlanConfig({ max_file_size: 4242, categories: {} }),
-    );
+  it("resolves the limits through MEDIA_LIMITS_KEY", () => {
+    const { maxFileSize } = run(() => useMediaCategories(), {
+      maxFileSize: 4242,
+      mimeTypes: {},
+    });
     expect(maxFileSize.value).toBe(4242);
   });
 
   it("throws a named error when no host provided one", () => {
     expect(() => run(() => useMediaCategories())).toThrow(
-      /needs a plan config in scope/,
+      /needs media limits in scope/,
     );
   });
 
   it("a string-keyed provide does NOT satisfy it", () => {
-    // The positive control for the whole bug: providing under the old string key
+    // The positive control for the whole bug: providing under a string key
     // must leave the composable unsatisfied, or this audit proves nothing.
     let error: unknown = null;
     const app = createApp(
@@ -199,11 +205,11 @@ describe("useMediaCategories plan-config resolution", () => {
         },
       }),
     );
-    app.provide("planConfig", createPlanConfig({ max_file_size: 1 }));
+    app.provide("mediaLimits", { maxFileSize: 1 });
     app.mount(document.createElement("div"));
     app.unmount();
     expect((error as Error | null)?.message).toMatch(
-      /needs a plan config in scope/,
+      /needs media limits in scope/,
     );
   });
 });

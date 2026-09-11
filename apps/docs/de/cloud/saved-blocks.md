@@ -24,11 +24,11 @@ Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt 
 
 **Eine Bibliothek pro Projekt**, geteilt von allen Beteiligten — ein Block, den eine Kollegin speichert, liegt beim nächsten Öffnen im Browser aller anderen. Genau das hat kein OSS-Gegenstück: nicht der Speicher, sondern die Tatsache, dass er bereits geteilt ist.
 
-Alle vier sind aktiv. Clouds Bibliothek ist an die Planfunktion `saved_modules` gebunden.
+Alle vier sind aktiv. Clouds Bibliothek ist an die Planfunktion `savedModules` gebunden.
 
 ## Eigene Implementierung
 
-Das geht, und dies ist einer von nur zwei Providern, die `initCloud()` als vollständigen Ersatz annimmt — `testEmail` ist der andere. Der Schlüssel hat denselben Typ wie bei `init()`, dazu eine dritte Form, die nur an diesem Einstiegspunkt existiert: Clouds Bibliothek behalten und eigene Event-Handler hinzufügen.
+Das geht, und `initCloud()` nimmt dies als vollständigen Ersatz an, genauso wie `testEmail` und `media`. Der Schlüssel hat denselben Typ wie bei `init()`, dazu eine dritte Form, die nur an diesem Einstiegspunkt existiert: Clouds Bibliothek behalten und eigene Event-Handler hinzufügen.
 
 ```ts
 await initCloud({ container, auth });                             // Clouds Bibliothek

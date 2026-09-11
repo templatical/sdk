@@ -16,18 +16,14 @@ const emit = defineEmits<{
 
 const { t, format } = useI18n();
 
-const { allAcceptedMimeTypes, allAcceptedInputString, maxFileSize } =
-  useMediaCategories();
+const { allAcceptedInputString, isAcceptedFile } = useMediaCategories();
 
 const dropZoneRef = ref<HTMLDivElement>();
 
 function validateFiles(fileList: File[] | FileList): File[] {
   const valid: File[] = [];
   for (const file of Array.from(fileList)) {
-    if (
-      allAcceptedMimeTypes.value.includes(file.type) &&
-      file.size <= maxFileSize.value
-    ) {
+    if (isAcceptedFile(file)) {
       valid.push(file);
     }
   }
@@ -64,6 +60,7 @@ onChange((fileList) => {
 <template>
   <div
     ref="dropZoneRef"
+    data-testid="media-upload-zone"
     class="tpl-upload-zone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-lg tpl:border-2 tpl:border-dashed tpl:p-5 tpl:text-center tpl:transition-all tpl:duration-150"
     :class="isOverDropZone ? 'tpl-upload-zone-active' : ''"
     style="

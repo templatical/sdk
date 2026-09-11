@@ -1,10 +1,10 @@
 // DOM stubs must be imported BEFORE Vue (Vue captures `document` at module load time)
-import './dom-stubs';
+import "./dom-stubs";
 
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h } from 'vue';
-import type { MediaItem } from '../src/types';
-import { useMediaPicker } from '../src/composables/useMediaPicker';
+import { describe, expect, it, vi } from "vitest";
+import { createApp, defineComponent, h } from "vue";
+import type { MediaResult } from "../src/types";
+import { useMediaPicker } from "../src/composables/useMediaPicker";
 
 function withProvide<T>(
   setup: () => T,
@@ -15,41 +15,36 @@ function withProvide<T>(
     defineComponent({
       setup() {
         result = setup();
-        return () => h('div');
+        return () => h("div");
       },
     }),
   );
   for (const [key, value] of Object.entries(provides)) {
     app.provide(key, value);
   }
-  app.mount(document.createElement('div'));
+  app.mount(document.createElement("div"));
   app.unmount();
   return result!;
 }
 
-const mockMediaItem: MediaItem = {
-  id: 'media-1',
-  filename: 'test.jpg',
-  mime_type: 'image/jpeg',
-  size: 1024,
-  url: 'https://example.com/test.jpg',
-  small_url: null,
-  medium_url: null,
-  large_url: null,
-  folder_id: null,
-  conversions_generated: false,
-} as MediaItem;
+const mockMediaResult: MediaResult = {
+  url: "https://example.com/test.jpg",
+  alt: "A test image",
+};
 
-describe('useMediaPicker', () => {
+describe("useMediaPicker", () => {
   // A configured handler is the whole condition: gating this by plan would charge
   // a consumer for *not* using Cloud's storage, i.e. meter nothing Cloud pays for.
-  describe('isPluggableMediaEnabled', () => {
-    it('is false when no callback', () => {
-      const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {});
+  describe("isPluggableMediaEnabled", () => {
+    it("is false when no callback", () => {
+      const { isPluggableMediaEnabled } = withProvide(
+        () => useMediaPicker(),
+        {},
+      );
       expect(isPluggableMediaEnabled.value).toBe(false);
     });
 
-    it('is true whenever a callback exists, on any plan', () => {
+    it("is true whenever a callback exists, on any plan", () => {
       const callback = vi.fn();
       const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {
         onRequestMedia: callback,
@@ -58,26 +53,25 @@ describe('useMediaPicker', () => {
     });
   });
 
-  describe('requestMedia', () => {
-    it('returns null when no callback', async () => {
-      const { requestMedia } = withProvide(() => useMediaPicker(), {
-      });
+  describe("requestMedia", () => {
+    it("returns null when no callback", async () => {
+      const { requestMedia } = withProvide(() => useMediaPicker(), {});
       const result = await requestMedia();
       expect(result).toBeNull();
     });
 
-    it('calls callback with context', async () => {
-      const callback = vi.fn().mockResolvedValue(mockMediaItem);
+    it("calls callback with context", async () => {
+      const callback = vi.fn().mockResolvedValue(mockMediaResult);
       const { requestMedia } = withProvide(() => useMediaPicker(), {
         onRequestMedia: callback,
       });
 
-      const result = await requestMedia({ accept: ['images'] });
-      expect(callback).toHaveBeenCalledWith({ accept: ['images'] });
-      expect(result).toEqual(mockMediaItem);
+      const result = await requestMedia({ accept: ["images"] });
+      expect(callback).toHaveBeenCalledWith({ accept: ["images"] });
+      expect(result).toEqual(mockMediaResult);
     });
 
-    it('defaults context to empty object', async () => {
+    it("defaults context to empty object", async () => {
       const callback = vi.fn().mockResolvedValue(null);
       const { requestMedia } = withProvide(() => useMediaPicker(), {
         onRequestMedia: callback,
@@ -87,17 +81,21 @@ describe('useMediaPicker', () => {
       expect(callback).toHaveBeenCalledWith({});
     });
 
-    it('manages isRequesting state', async () => {
-      let resolveCallback: (value: MediaItem | null) => void;
+    it("manages isRequesting state", async () => {
+      let resolveCallback: (value: MediaResult | null) => void;
       const callback = vi.fn(
-        () => new Promise<MediaItem | null>((resolve) => {
-          resolveCallback = resolve;
-        }),
+        () =>
+          new Promise<MediaResult | null>((resolve) => {
+            resolveCallback = resolve;
+          }),
       );
 
-      const { requestMedia, isRequesting } = withProvide(() => useMediaPicker(), {
-        onRequestMedia: callback,
-      });
+      const { requestMedia, isRequesting } = withProvide(
+        () => useMediaPicker(),
+        {
+          onRequestMedia: callback,
+        },
+      );
 
       expect(isRequesting.value).toBe(false);
 

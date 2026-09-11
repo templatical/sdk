@@ -217,7 +217,7 @@ export class ApiClient {
     payload: {
       recipient: string;
       html: string;
-      allowed_emails: string[];
+      allowedEmails: string[];
       signature: string;
     },
   ): Promise<void> {
@@ -255,11 +255,11 @@ export class ApiClient {
     templateId: string,
     data: {
       body: string;
-      block_id?: string;
-      parent_id?: string;
-      user_id: string;
-      user_name: string;
-      user_signature: string;
+      blockId?: string;
+      parentId?: string;
+      userId: string;
+      userName: string;
+      userSignature: string;
     },
     headers?: Record<string, string>,
   ): Promise<CommentResponse> {
@@ -275,9 +275,9 @@ export class ApiClient {
     commentId: string,
     data: {
       body: string;
-      user_id: string;
-      user_name: string;
-      user_signature: string;
+      userId: string;
+      userName: string;
+      userSignature: string;
     },
     headers?: Record<string, string>,
   ): Promise<CommentResponse> {
@@ -295,9 +295,9 @@ export class ApiClient {
     templateId: string,
     commentId: string,
     data: {
-      user_id: string;
-      user_name: string;
-      user_signature: string;
+      userId: string;
+      userName: string;
+      userSignature: string;
     },
     headers?: Record<string, string>,
   ): Promise<void> {
@@ -312,9 +312,9 @@ export class ApiClient {
     templateId: string,
     commentId: string,
     data: {
-      user_id: string;
-      user_name: string;
-      user_signature: string;
+      userId: string;
+      userName: string;
+      userSignature: string;
     },
     headers?: Record<string, string>,
   ): Promise<CommentResponse> {

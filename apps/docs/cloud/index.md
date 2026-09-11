@@ -44,13 +44,13 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 ## Bringing your own
 
-Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks and test emails can still be yours while Cloud handles the rest:
+Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks, test emails and media can still be yours while Cloud handles the rest:
 
 ```ts
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
+await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
 ```
 
-They mix safely because Cloud never independently uses either. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
+They mix safely because Cloud never independently uses them. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
 
 <!-- prettier-ignore -->
 | Key | What `initCloud()` does with it |

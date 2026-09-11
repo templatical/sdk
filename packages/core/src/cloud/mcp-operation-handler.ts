@@ -13,46 +13,46 @@ export function handleOperation(
   const { operation, data } = payload;
 
   switch (operation) {
-    case "add_block":
+    case "addBlock":
       editor.addBlock(
         data.block as Block,
-        data.section_id as string | undefined,
-        data.column_index as number | undefined,
+        data.sectionId as string | undefined,
+        data.columnIndex as number | undefined,
         data.index as number | undefined,
       );
       break;
 
-    case "update_block":
+    case "updateBlock":
       editor.updateBlock(
-        data.block_id as string,
+        data.blockId as string,
         data.updates as Partial<Block>,
       );
       break;
 
-    case "delete_block":
-      editor.removeBlock(data.block_id as string);
+    case "deleteBlock":
+      editor.removeBlock(data.blockId as string);
       break;
 
-    case "move_block":
+    case "moveBlock":
       editor.moveBlock(
-        data.block_id as string,
+        data.blockId as string,
         data.index as number,
-        data.section_id as string | undefined,
-        data.column_index as number | undefined,
+        data.sectionId as string | undefined,
+        data.columnIndex as number | undefined,
       );
       break;
 
-    case "update_settings":
+    case "updateSettings":
       editor.updateSettings(data.updates as Partial<TemplateSettings>);
       break;
 
-    case "set_content":
+    case "setContent":
       editor.setContent(data.content as TemplateContent);
       break;
 
-    case "update_block_style":
+    case "updateBlockStyle":
       editor.updateBlock(
-        data.block_id as string,
+        data.blockId as string,
         {
           styles: data.styles,
         } as Partial<Block>,

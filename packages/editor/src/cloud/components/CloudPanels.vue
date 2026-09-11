@@ -18,18 +18,6 @@ const DesignReferenceSidebar = defineAsyncComponent(
 const TemplateScoringPanel = defineAsyncComponent(
   () => import("./TemplateScoringPanel.vue"),
 );
-const MediaLibraryModal = defineAsyncComponent(async () => {
-  // try/catch downgrades Webpack's "Module not found" from error to warning
-  // when the optional peer isn't installed. Cloud consumers always install it.
-  try {
-    const m = await import("@templatical/media-library");
-    return m.MediaLibraryModal;
-  } catch {
-    throw new Error(
-      "[Templatical] Cloud media library requires the optional peer dependency '@templatical/media-library'. Please install it.",
-    );
-  }
-});
 
 /**
  * Every piece of Cloud chrome that renders outside the header.
@@ -45,6 +33,10 @@ const MediaLibraryModal = defineAsyncComponent(async () => {
  * in `Editor.vue` over a `CommentsProvider`. Its filter target lives on the shared
  * feature rather than being relayed through this component, so it survives the
  * lazy panel's mount without a runtime hop.
+ *
+ * The media library is not here either: it is shared, as `MediaPanels` in
+ * `Editor.vue` over a `MediaProvider`. Cloud supplies that provider; it does
+ * not mount a second modal.
  */
 const props = defineProps<{
   editor: UseEditorReturn;
@@ -52,13 +44,6 @@ const props = defineProps<{
   runtime: CloudRuntime;
   cloud: CloudAttachment;
   ready: CloudReady;
-  /**
-   * The editor's `init({ locale })`, forwarded to `MediaLibraryModal` so
-   * `@templatical/media-library` loads its own strings in the same language.
-   * A locale rather than translations: that package owns its copy, and the
-   * editor's own chunk carries none of it.
-   */
-  locale?: string;
 }>();
 
 function applyContent(content: TemplateContent): void {
@@ -136,21 +121,5 @@ function applyContent(content: TemplateContent): void {
     :has-existing-blocks="editor.content.value.blocks.length > 0"
     @close="cloud.panelState.designReferenceOpen.value = false"
     @apply="applyContent"
-  />
-
-  <!-- `auth-manager` / `project-id` / `plan-config` are props, not injections.
-       An injection would have to match the modal's key identity; a mismatch
-       arrives as `undefined` with no error and the browser opens inert. -->
-  <MediaLibraryModal
-    :visible="cloud.panelState.mediaLibraryOpen.value"
-    :accept="cloud.panelState.mediaLibraryAccept.value"
-    :popover-target="core.popoverRoot.value"
-    :locale="locale"
-    :ui-theme="core.resolvedTheme.value"
-    :auth-manager="cloud.mediaBrowser.authManager"
-    :project-id="cloud.mediaBrowser.projectId"
-    :plan-config="cloud.mediaBrowser.planConfig"
-    @select="cloud.mediaLib.handleMediaSelect"
-    @close="cloud.mediaLib.handleMediaLibraryClose"
   />
 </template>

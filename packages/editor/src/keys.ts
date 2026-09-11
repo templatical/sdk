@@ -260,6 +260,19 @@ export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");
 
 /**
+ * Whether a dropped image file may be uploaded. Distinct from Browse: a
+ * read-only provider (`create: false`) still opens the library, but the
+ * drop zone must not highlight. True when a host `onRequestMedia` is set
+ * (the callback receives `files`) or when `provider.create` is a function.
+ *
+ * `null` when neither a provider nor a callback is configured — image
+ * fields stay URL-only and drop is off. Injected as a computed; consumed
+ * by ImageBlock / ImageToolbar / ImageField with a `null` default.
+ */
+export const CAN_DROP_MEDIA_KEY: InjectionKey<ComputedRef<boolean> | null> =
+  Symbol("canDropMedia");
+
+/**
  * Per-editor display-only image URL resolver (`config.resolveImageUrl`),
  * wrapped with a per-src cache by `createImageUrlResolver`. `null` when the
  * host doesn't resolve — the canvas then displays canonical src values

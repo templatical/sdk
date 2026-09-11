@@ -72,7 +72,7 @@
 /* SDK-specific source paths for Tailwind scanning */
 @source '../**/*.vue';
 @source '../**/*.ts';
-/* Media library components (imported via @templatical/media-library) */
+/* Media library components (compiled into the editor's Browse chunk) */
 @source '../../../media-library/src/**/*.vue';
 @source '../../../media-library/src/**/*.ts';
 

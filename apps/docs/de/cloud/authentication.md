@@ -68,11 +68,11 @@ Ihr Token-Endpunkt muss eine JSON-Antwort mit dieser Struktur zurückgeben:
 ```json
 {
   "token": "eyJhbGciOiJSUzI1NiIs...",
-  "expires_at": 1720000000,
-  "project_id": "proj_abc123",
+  "expiresAt": 1720000000,
+  "projectId": "proj_abc123",
   "tenant": "acme-corp",
-  "test_email": {
-    "allowed_emails": ["team@example.com"],
+  "testEmail": {
+    "allowedEmails": ["team@example.com"],
     "signature": "hmac-signature-here"
   },
   "user": {
@@ -86,16 +86,16 @@ Ihr Token-Endpunkt muss eine JSON-Antwort mit dieser Struktur zurückgeben:
 | Feld | Typ | Beschreibung |
 |-------|------|-------------|
 | `token` | `string` | **Erforderlich.** Das JWT-Zugriffstoken |
-| `expires_at` | `number` | **Erforderlich.** Unix-Zeitstempel, zu dem das Token abläuft |
-| `project_id` | `string` | **Erforderlich.** Die Projekt-ID |
+| `expiresAt` | `number` | **Erforderlich.** Unix-Zeitstempel, zu dem das Token abläuft |
+| `projectId` | `string` | **Erforderlich.** Die Projekt-ID |
 | `tenant` | `string` | **Erforderlich.** Der Tenant-Slug |
 | `user` | `object` | Optional. Wird für Präsenz bei Zusammenarbeit und die Zuordnung von Kommentaren verwendet |
 | `user.id` | `string` | Benutzer-Identifier |
 | `user.name` | `string` | Anzeigename in der Kollaborations-UI |
 | `user.signature` | `string` | HMAC-Signatur zur Benutzerverifikation |
-| `test_email` | `object` | Optional. Konfiguration für die Test-E-Mail-Funktion |
-| `test_email.allowed_emails` | `string[]` | E-Mail-Adressen, die Test-E-Mails empfangen dürfen |
-| `test_email.signature` | `string` | HMAC-Signatur zur Verifikation von Test-E-Mails |
+| `testEmail` | `object` | Optional. Konfiguration für die Test-E-Mail-Funktion |
+| `testEmail.allowedEmails` | `string[]` | E-Mail-Adressen, die Test-E-Mails empfangen dürfen |
+| `testEmail.signature` | `string` | HMAC-Signatur zur Verifikation von Test-E-Mails |
 
 ## Direkte Authentifizierung
 

@@ -115,7 +115,7 @@ describe('useAiChat', () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
         createSSEResponse([
           { type: 'text', text: 'Hello' },
-          { type: 'done', text: 'Hello', content: resultContent, conversation_id: 'conv-1' },
+          { type: 'done', text: 'Hello', content: resultContent, conversationId: 'conv-1' },
         ]),
       );
 
@@ -155,10 +155,10 @@ describe('useAiChat', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            conversation_id: 'conv-42',
+            conversationId: 'conv-42',
             data: [
-              { id: 'm1', role: 'user', content: 'hi', created_at: '2025-01-01T00:00:00Z' },
-              { id: 'm2', role: 'assistant', content: 'hello', created_at: '2025-01-01T00:00:01Z' },
+              { id: 'm1', role: 'user', content: 'hi', createdAt: '2025-01-01T00:00:00Z' },
+              { id: 'm2', role: 'assistant', content: 'hello', createdAt: '2025-01-01T00:00:01Z' },
             ],
           }),
       } as unknown as Response);
@@ -197,7 +197,7 @@ describe('useAiChat', () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
         createSSEResponse([
           { type: 'text', text: 'Working...' },
-          { type: 'done', text: 'Done!', content: resultContent, conversation_id: 'conv-1' },
+          { type: 'done', text: 'Done!', content: resultContent, conversationId: 'conv-1' },
         ]),
       );
 
@@ -279,7 +279,7 @@ describe('useAiChat', () => {
       const result = await chat.sendPrompt('hello', mockContent, mockMergeTags);
 
       expect(result).toBeNull();
-      expect(chat.error.value).toBe('ai_generation_not_available');
+      expect(chat.error.value).toBe('aiGenerationNotAvailable');
       expect(chat.isGenerating.value).toBe(false);
     });
 
@@ -329,7 +329,7 @@ describe('useAiChat', () => {
     it('handles malformed JSON in SSE stream gracefully', async () => {
       // Build a stream with invalid JSON mixed in
       const encoder = new TextEncoder();
-      const lines = 'data: {invalid json}\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversation_id":"c1"}\n';
+      const lines = 'data: {invalid json}\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversationId":"c1"}\n';
       const stream = new ReadableStream({
         start(controller) {
           controller.enqueue(encoder.encode(lines));
@@ -359,7 +359,7 @@ describe('useAiChat', () => {
 
     it('ignores non-data lines in SSE stream', async () => {
       const encoder = new TextEncoder();
-      const lines = 'event: ping\n: comment\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversation_id":"c1"}\n';
+      const lines = 'event: ping\n: comment\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversationId":"c1"}\n';
       const stream = new ReadableStream({
         start(controller) {
           controller.enqueue(encoder.encode(lines));
@@ -477,7 +477,7 @@ describe('useAiChat', () => {
 
       vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
         createSSEResponse([
-          { type: 'done', text: 'Result', content: resultContent, conversation_id: 'conv-1' },
+          { type: 'done', text: 'Result', content: resultContent, conversationId: 'conv-1' },
         ]),
       );
 
@@ -526,7 +526,7 @@ describe('useAiChat', () => {
 
       vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
         createSSEResponse([
-          { type: 'done', text: 'Done', content: { rows: [] }, conversation_id: 'conv-1' },
+          { type: 'done', text: 'Done', content: { rows: [] }, conversationId: 'conv-1' },
         ]),
       );
 
@@ -594,7 +594,7 @@ describe('useAiChat', () => {
 
       vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
         createSSEResponse([
-          { type: 'done', text: 'Hello', content: resultContent, conversation_id: 'conv-1' },
+          { type: 'done', text: 'Hello', content: resultContent, conversationId: 'conv-1' },
         ]),
       );
 

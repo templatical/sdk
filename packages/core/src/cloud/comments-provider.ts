@@ -29,41 +29,36 @@ const BROADCAST_EVENT = "comment-broadcast";
 
 interface CommentBroadcastPayload {
   action:
-    | "comment_created"
-    | "comment_updated"
-    | "comment_deleted"
-    | "comment_resolved"
-    | "comment_unresolved";
+    | "commentCreated"
+    | "commentUpdated"
+    | "commentDeleted"
+    | "commentResolved"
+    | "commentUnresolved";
   comment: CommentResponse;
 }
 
 /**
- * Cloud's wire shape → the contract shape. The whole job of this adapter, plus
- * auth: snake_case to camelCase, and the two flat `author_*` / `resolved_by_*`
- * pairs into {@link CommentAuthor} objects.
+ * Cloud's HTTP row → {@link Comment}. Omits `updatedAt` when it equals
+ * `createdAt` (Cloud stamps both on insert) so the panel does not mark
+ * every comment "(edited)", and omits `resolvedBy` / empty `replies`
+ * when they are absent.
  */
 function toComment(record: CommentResponse): Comment {
   const comment: Comment = {
     id: record.id,
     body: record.body,
-    author: { id: record.author_identifier, name: record.author_name },
-    createdAt: record.created_at,
-    blockId: record.block_id,
-    parentId: record.parent_id,
-    resolvedAt: record.resolved_at,
+    author: record.author,
+    createdAt: record.createdAt,
+    blockId: record.blockId,
+    parentId: record.parentId,
+    resolvedAt: record.resolvedAt,
   };
 
-  // Cloud stamps `updated_at` on creation, so forwarding it unconditionally would
-  // mark every comment "(edited)". The contract says the key is present *only*
-  // when the body has changed since.
-  if (record.updated_at !== record.created_at) {
-    comment.updatedAt = record.updated_at;
+  if (record.updatedAt !== record.createdAt) {
+    comment.updatedAt = record.updatedAt;
   }
-  if (record.resolved_by_identifier) {
-    comment.resolvedBy = {
-      id: record.resolved_by_identifier,
-      name: record.resolved_by_name ?? "",
-    };
+  if (record.resolvedBy) {
+    comment.resolvedBy = record.resolvedBy;
   }
   if (record.replies?.length) {
     comment.replies = record.replies.map(toComment);
@@ -101,7 +96,7 @@ export interface CreateCloudCommentsProviderOptions {
  * Two things about the write payloads are Cloud's alone and stay on this side of
  * the seam:
  *
- * - **The author is signed.** `user_id` / `user_name` / `user_signature` come from
+ * - **The author is signed.** `userId` / `userName` / `userSignature` come from
  *   the JWT, not from the editor's `user` config, so a browser cannot attribute a
  *   comment to someone else. The editor's `user` key still gates the feature and
  *   drives "you wrote this" in the UI; the two agree because `initCloud()` fills
@@ -118,9 +113,9 @@ export function createCloudCommentsProvider(
   const api = new ApiClient(authManager);
 
   function userPayload(): {
-    user_id: string;
-    user_name: string;
-    user_signature: string;
+    userId: string;
+    userName: string;
+    userSignature: string;
   } {
     const user: UserConfig | null = authManager.userConfig;
     if (!user) {
@@ -132,9 +127,9 @@ export function createCloudCommentsProvider(
       );
     }
     return {
-      user_id: user.id,
-      user_name: user.name,
-      user_signature: user.signature,
+      userId: user.id,
+      userName: user.name,
+      userSignature: user.signature,
     };
   }
 
@@ -155,8 +150,8 @@ export function createCloudCommentsProvider(
           templateId,
           {
             body: input.body,
-            block_id: input.blockId,
-            parent_id: input.parentId,
+            blockId: input.blockId,
+            parentId: input.parentId,
             ...userPayload(),
           },
           socketHeaders(),
@@ -221,10 +216,10 @@ export function createCloudCommentsProvider(
       function handle(payload: CommentBroadcastPayload): void {
         const comment = toComment(payload.comment);
         switch (payload.action) {
-          case "comment_created":
+          case "commentCreated":
             onChange({ type: "created", comment });
             break;
-          case "comment_deleted":
+          case "commentDeleted":
             onChange({
               type: "deleted",
               commentId: comment.id,
@@ -233,9 +228,9 @@ export function createCloudCommentsProvider(
             break;
           // A resolve and an unresolve are both a changed comment; `resolvedAt`
           // in the payload is what says which, and `useComments` reads it.
-          case "comment_updated":
-          case "comment_resolved":
-          case "comment_unresolved":
+          case "commentUpdated":
+          case "commentResolved":
+          case "commentUnresolved":
             onChange({ type: "updated", comment });
             break;
         }

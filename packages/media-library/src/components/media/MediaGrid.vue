@@ -4,40 +4,70 @@ import { useI18n } from "../../composables/useI18n";
 import { UI_LOCALE_KEY } from "../../keys";
 import { formatAbsoluteDate } from "../../utils/formatAbsoluteDate";
 import { useMediaCategories } from "../../composables/useMediaCategories";
-import type { MediaCategory, MediaItem } from "../../types";
+import type { MediaAsset, MediaCategory } from "@templatical/types";
 import { useIntersectionObserver } from "@vueuse/core";
 import { Check, File, LoaderCircle, Pencil, RefreshCw } from "@lucide/vue";
 import { inject, ref } from "vue";
 
 const props = defineProps<{
-  items: MediaItem[];
+  items: MediaAsset[];
   selectedIds: Set<string>;
   isLoading: boolean;
   hasMore: boolean;
   accept?: MediaCategory[];
   layout?: "grid" | "list";
+  searchQuery?: string;
+  canUpdate?: boolean;
+  canReplace?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "select", item: MediaItem): void;
+  (e: "select", item: MediaAsset): void;
   (e: "toggle", id: string): void;
   (e: "loadMore"): void;
-  (e: "edit", item: MediaItem): void;
-  (e: "replace", item: MediaItem): void;
+  (e: "edit", item: MediaAsset): void;
+  (e: "replace", item: MediaAsset): void;
+  (e: "confirm", item: MediaAsset): void;
 }>();
 
 const { isAcceptedMimeType, isImageMimeType } = useMediaCategories();
 
-function isSelectable(item: MediaItem): boolean {
+function mimeOf(item: MediaAsset): string {
+  return item.mimeType ?? "";
+}
+
+function thumbOf(item: MediaAsset): string {
+  return item.thumbnailUrl ?? item.url;
+}
+
+function isSelectable(item: MediaAsset): boolean {
   if (!props.accept || props.accept.length === 0) {
     return true;
   }
 
-  return isAcceptedMimeType(item.mime_type, props.accept);
+  return isAcceptedMimeType(mimeOf(item), props.accept);
 }
 
-function handleItemClick(item: MediaItem): void {
+function showEdit(item: MediaAsset): boolean {
+  return props.canUpdate === true && item.canUpdate !== false;
+}
+
+function showReplace(item: MediaAsset): boolean {
+  return props.canReplace === true && item.canUpdate !== false;
+}
+
+function handleItemClick(item: MediaAsset, event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey) {
+    emit("toggle", item.id);
+    return;
+  }
   emit("select", item);
+}
+
+function handleItemDblClick(item: MediaAsset): void {
+  if (isSelectable(item)) {
+    emit("confirm", item);
+  }
 }
 
 const { t } = useI18n();
@@ -61,9 +91,6 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// `Intl` builds this caption, so it needs the host locale explicitly:
-// `toLocaleDateString(undefined, …)` formats in the BROWSER's language while
-// every string around it is translated from the modal's `locale` prop.
 function formatDate(dateStr: string): string {
   return formatAbsoluteDate(dateStr, uiLocale?.value, {
     year: "numeric",
@@ -75,9 +102,10 @@ function formatDate(dateStr: string): string {
 
 <template>
   <div class="tpl:p-4">
-    <!-- Skeleton loading -->
     <div
       v-if="isLoading && items.length === 0"
+      role="status"
+      aria-busy="true"
       :class="
         layout === 'list'
           ? 'tpl:flex tpl:flex-col tpl:gap-1'
@@ -90,10 +118,10 @@ function formatDate(dateStr: string): string {
         class="tpl-pulse tpl:rounded-lg"
         :class="layout === 'list' ? 'tpl:h-12' : 'tpl:aspect-square'"
         style="background-color: var(--tpl-bg-hover)"
+        aria-hidden="true"
       />
     </div>
 
-    <!-- Empty state -->
     <div
       v-else-if="items.length === 0"
       class="tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:py-16"
@@ -105,11 +133,12 @@ function formatDate(dateStr: string): string {
         style="color: var(--tpl-text-dim)"
       />
       <p class="tpl:text-xs" style="color: var(--tpl-text-muted)">
-        {{ t.mediaLibrary.noFiles }}
+        {{
+          searchQuery ? t.mediaLibrary.noSearchResults : t.mediaLibrary.noFiles
+        }}
       </p>
     </div>
 
-    <!-- Grid -->
     <div
       v-else-if="layout !== 'list'"
       class="tpl:grid tpl:grid-cols-4 tpl:gap-3"
@@ -117,7 +146,9 @@ function formatDate(dateStr: string): string {
       <div
         v-for="item in items"
         :key="item.id"
+        data-testid="media-library-item"
         class="tpl-media-item tpl:group tpl:relative tpl:overflow-hidden tpl:rounded-lg tpl:border-2 tpl:transition-all tpl:duration-150"
+        :data-media-id="item.id"
         :class="[
           'tpl:cursor-pointer',
           !isSelectable(item) && !selectedIds.has(item.id)
@@ -134,45 +165,44 @@ function formatDate(dateStr: string): string {
               ? 'var(--tpl-bg)'
               : 'var(--tpl-bg-hover)',
         }"
-        @click="handleItemClick(item)"
+        @click="handleItemClick(item, $event)"
+        @dblclick="handleItemDblClick(item)"
       >
         <div class="tpl:aspect-square">
           <img
-            v-if="isImageMimeType(item.mime_type)"
-            :src="item.small_url || item.url"
-            :alt="item.filename"
+            v-if="isImageMimeType(mimeOf(item))"
+            :src="thumbOf(item)"
+            :alt="item.filename || item.url"
             class="tpl:size-full tpl:object-cover"
             loading="lazy"
           />
-          <MediaFileIcon v-else :mime-type="item.mime_type" />
+          <MediaFileIcon v-else :mime-type="mimeOf(item)" />
         </div>
         <div class="tpl:px-2 tpl:py-1.5">
           <p
             class="tpl:truncate tpl:text-[10px] tpl:font-medium"
             style="color: var(--tpl-text)"
           >
-            {{ item.filename }}
+            {{ item.filename || item.url }}
           </p>
           <p
             class="tpl:flex tpl:justify-between tpl:text-[9px]"
             style="color: var(--tpl-text-muted)"
           >
-            <span>{{ formatSize(item.size) }}</span>
+            <span v-if="item.size != null">{{ formatSize(item.size) }}</span>
             <span
-              v-if="
-                isImageMimeType(item.mime_type) && item.width && item.height
-              "
+              v-if="isImageMimeType(mimeOf(item)) && item.width && item.height"
             >
               {{ item.width }}&times;{{ item.height }}
             </span>
           </p>
         </div>
-        <!-- Action buttons -->
         <div
           class="tpl:absolute tpl:top-1.5 tpl:left-1.5 tpl:flex tpl:gap-1 tpl:opacity-0 tpl:transition-opacity tpl:duration-150 tpl:group-hover:opacity-100"
         >
-          <!-- Edit button -->
           <button
+            v-if="showEdit(item)"
+            data-testid="media-edit"
             class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
             style="background-color: rgba(0, 0, 0, 0.6)"
             :title="t.mediaLibrary.editFile"
@@ -180,8 +210,9 @@ function formatDate(dateStr: string): string {
           >
             <Pencil :size="11" :stroke-width="2" />
           </button>
-          <!-- Replace button -->
           <button
+            v-if="showReplace(item)"
+            data-testid="media-replace"
             class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
             style="background-color: rgba(0, 0, 0, 0.6)"
             :title="t.mediaLibrary.replaceFile"
@@ -190,7 +221,6 @@ function formatDate(dateStr: string): string {
             <RefreshCw :size="11" :stroke-width="2" />
           </button>
         </div>
-        <!-- Selection check -->
         <div
           v-if="selectedIds.has(item.id)"
           class="tpl:absolute tpl:top-1.5 tpl:right-1.5 tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
@@ -201,12 +231,13 @@ function formatDate(dateStr: string): string {
       </div>
     </div>
 
-    <!-- List -->
     <div v-else class="tpl:flex tpl:flex-col tpl:gap-1">
       <div
         v-for="item in items"
         :key="item.id"
+        data-testid="media-library-item"
         class="tpl-media-list-item tpl:group tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:transition-all tpl:duration-150"
+        :data-media-id="item.id"
         :class="[
           !isSelectable(item) && !selectedIds.has(item.id)
             ? 'tpl:opacity-60'
@@ -217,40 +248,42 @@ function formatDate(dateStr: string): string {
             ? 'var(--tpl-bg-hover)'
             : 'transparent',
         }"
-        @click="handleItemClick(item)"
+        @click="handleItemClick(item, $event)"
+        @dblclick="handleItemDblClick(item)"
       >
-        <!-- Thumbnail -->
         <div
           class="tpl:size-10 tpl:shrink-0 tpl:overflow-hidden tpl:rounded"
           style="background-color: var(--tpl-bg-hover)"
         >
           <img
-            v-if="isImageMimeType(item.mime_type)"
-            :src="item.small_url || item.url"
-            :alt="item.filename"
+            v-if="isImageMimeType(mimeOf(item))"
+            :src="thumbOf(item)"
+            :alt="item.filename || item.url"
             class="tpl:size-full tpl:object-cover"
             loading="lazy"
           />
           <div v-else class="tpl-list-icon tpl:size-full">
-            <MediaFileIcon :mime-type="item.mime_type" />
+            <MediaFileIcon :mime-type="mimeOf(item)" />
           </div>
         </div>
 
-        <!-- Info -->
         <div class="tpl:min-w-0 tpl:flex-1">
           <p
             class="tpl:truncate tpl:text-xs tpl:font-medium"
             style="color: var(--tpl-text)"
           >
-            {{ item.filename }}
+            {{ item.filename || item.url }}
           </p>
           <p class="tpl:text-[10px]" style="color: var(--tpl-text-muted)">
-            {{ formatSize(item.size) }} &middot;
-            {{ formatDate(item.created_at) }}
+            <template v-if="item.size != null">{{
+              formatSize(item.size)
+            }}</template>
+            <template v-if="item.createdAt">
+              <template v-if="item.size != null"> &middot; </template>
+              {{ formatDate(item.createdAt) }}
+            </template>
             <template
-              v-if="
-                isImageMimeType(item.mime_type) && item.width && item.height
-              "
+              v-if="isImageMimeType(mimeOf(item)) && item.width && item.height"
             >
               &middot;
               {{ item.width }}&times;{{ item.height }}
@@ -258,12 +291,12 @@ function formatDate(dateStr: string): string {
           </p>
         </div>
 
-        <!-- Action buttons -->
         <div
           class="tpl:flex tpl:gap-1 tpl:opacity-0 tpl:transition-opacity tpl:duration-150 tpl:group-hover:opacity-100"
         >
-          <!-- Edit button -->
           <button
+            v-if="showEdit(item)"
+            data-testid="media-edit"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.editFile"
@@ -271,8 +304,9 @@ function formatDate(dateStr: string): string {
           >
             <Pencil :size="12" :stroke-width="2" />
           </button>
-          <!-- Replace button -->
           <button
+            v-if="showReplace(item)"
+            data-testid="media-replace"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.replaceFile"
@@ -282,7 +316,6 @@ function formatDate(dateStr: string): string {
           </button>
         </div>
 
-        <!-- Selection check -->
         <div
           v-if="selectedIds.has(item.id)"
           class="tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
@@ -293,10 +326,8 @@ function formatDate(dateStr: string): string {
       </div>
     </div>
 
-    <!-- Infinite scroll sentinel -->
     <div ref="sentinelRef" class="tpl:h-4" />
 
-    <!-- Loading more indicator -->
     <div
       v-if="isLoading && items.length > 0"
       class="tpl:flex tpl:justify-center tpl:py-4"

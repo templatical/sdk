@@ -9,13 +9,13 @@ When a user adds an image block, the editor shows a text field where they can pa
 
 <img src="/images/image-fields.png" alt="Image block fields" style="max-width: 360px;" />
 
-## Custom Media Picker
+## Browse and pick
 
-When the `onRequestMedia` callback is provided, a browse button appears alongside the URL input.
+A browse button appears alongside the URL input when **either** a [`media`](/backend/media) provider **or** `onRequestMedia` is configured.
 
 <img src="/images/image-picker.png" alt="Media picker button" style="max-width: 360px;" />
 
-The editor calls this function whenever the user clicks the button. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+`media` opens the built-in library modal. `onRequestMedia` is a **UI override** (Bynder, Cloudinary widget, a host modal): the editor calls it instead of opening the library, and it wins when both are set. Return a `MediaResult`, or `null` if the user cancels. When `alt` is provided, the editor fills in the image's alt text.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -31,6 +31,8 @@ const editor = await init({
   },
 });
 ```
+
+A gallery of your own is the `media` key — see [Media](/backend/media).
 
 The type signature:
 
@@ -55,7 +57,9 @@ type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | n
 
 ## Drag and drop to upload
 
-Users can drag an image file from their computer straight onto an image block (empty or filled), the sidebar image field, or a custom block's image field. When they do, the editor calls the **same** `onRequestMedia` handler — but with the dropped file in `context.files`:
+Users can drag an image file from their computer straight onto an image block (empty or filled), the sidebar image field, or a custom block's image field.
+
+With `onRequestMedia`, the editor calls that handler with the dropped file in `context.files`:
 
 ```ts
 const editor = await init({
@@ -74,14 +78,16 @@ const editor = await init({
 });
 ```
 
-The editor never uploads anything itself — it hands you the `File` and uses whatever URL you return, exactly like the Browse Media path. A few notes:
+With a `media` provider and no callback, drop goes to `provider.create({ file, templateId? })` when `create` is a function. `create: false` hides the drop affordance: the library is still browsable.
+
+A few notes:
 
 - **One file per drop.** `files` is an array for forward-compatibility, but the editor currently sends a single file (`files[0]`).
 - **Images only.** The editor pre-filters dropped files to image MIME types before calling you.
-- **No handler, no drop.** If `onRequestMedia` isn't provided, the drop affordance doesn't appear and drops are ignored.
+- **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
 - **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
 
-For [Cloud editors](/cloud/media-library), dropped files upload to your Templatical media library automatically — no `onRequestMedia` needed (a custom handler still takes precedence).
+For [Cloud editors](/cloud/media-library), dropped files upload to Cloud's library automatically — no `onRequestMedia` needed. A custom handler still takes precedence.
 
 ## Display-only URL resolution
 

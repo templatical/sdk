@@ -4,7 +4,7 @@ import type { CustomBlockImageField } from "@templatical/types";
 import { inputClass } from "../../../constants/styleConstants";
 import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import { ON_REQUEST_MEDIA_KEY } from "../../../keys";
+import { CAN_DROP_MEDIA_KEY, ON_REQUEST_MEDIA_KEY } from "../../../keys";
 import { useAliveFlag } from "../../../composables/useAliveFlag";
 import { useImageDrop } from "../../../composables/useImageDrop";
 import FieldWrapper from "./FieldWrapper.vue";
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
+const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const aliveFlag = useAliveFlag();
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
@@ -37,7 +38,10 @@ async function browseMedia(): Promise<void> {
 const dropZoneRef = ref<HTMLElement>();
 const isUploading = ref(false);
 const dropEnabled = computed(
-  () => canBrowseMedia.value && !isUploading.value && !props.readOnly,
+  () =>
+    (canDropMedia?.value ?? !!onRequestMedia) &&
+    !isUploading.value &&
+    !props.readOnly,
 );
 
 async function uploadDroppedFiles(files: File[]): Promise<void> {

@@ -1,25 +1,18 @@
-// Types
+// Types — the contract lives in `@templatical/types`. Re-exported so a
+// media-library consumer does not also have to import types for the
+// shapes the modal and composable return.
 export type {
+  MediaAsset,
   MediaCategory,
-  MediaCategoryData,
-  MediaConfig,
-  MediaConversion,
-  MediaItem,
   MediaFolder,
-  MediaBrowseParams,
-  MediaBrowseResponse,
-  MediaUsageInfo,
-  MediaUsageResponse,
   MediaRequestContext,
-  StorageInfo,
+  MediaResult,
+  MediaUsageInfo,
 } from "./types";
 
 // Composable
 export { useMediaLibrary } from "./composable";
 export type { MediaViewMode, UseMediaLibraryOptions } from "./composable";
-
-// API Client
-export { MediaApiClient } from "./api-client";
 
 // Vue Components
 export { default as MediaLibraryModal } from "./components/MediaLibraryModal.vue";

@@ -106,7 +106,7 @@ Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` 
 
 ## Erstellen oder Speichern deaktivieren
 
-`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. `load` lässt sich nicht abschalten — ohne es gäbe es nichts zu öffnen.
+`create` und `save` nehmen `false | fn` entgegen. `load` lässt sich nicht abschalten — ohne es gäbe es nichts zu öffnen.
 
 ```ts
 templates: {

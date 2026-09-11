@@ -12,6 +12,8 @@ import type {
   EditorUser,
   FontsConfig,
   LogicTagsConfig,
+  MediaProvider,
+  MediaRequestContext,
   MediaResult,
   MergeTagsConfig,
   RenderProvider,
@@ -29,7 +31,6 @@ import type {
 } from "@templatical/types";
 import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
-import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
 import type { CloudRuntime } from "./cloud/runtime";
@@ -252,6 +253,28 @@ export interface TemplaticalEditorConfig {
    * @default 2000
    */
   changeDebounce?: number;
+
+  /**
+   * Storage backend for the **media library** — the picker behind Browse on
+   * image fields, video thumbnails, and custom-block image fields.
+   *
+   * The editor owns the modal, grid, crop and insertion; you own persistence.
+   * `list` is required; every other method is `false | fn`. All mutations
+   * `false` is a read-only library: browse, search and pick still work.
+   *
+   * Implement the methods of `MediaProvider` against your own API, or use
+   * the bundled browser-local provider for demos and prototypes:
+   *
+   * ```ts
+   * import { init, createLocalStorageMediaProvider } from "@templatical/editor";
+   *
+   * init({ container, media: createLocalStorageMediaProvider() });
+   * ```
+   *
+   * **Omitted by default.** Image fields stay URL-only. `onRequestMedia` is
+   * the UI override (a host widget) and wins when both are set.
+   */
+  media?: MediaProvider;
 
   onRequestMedia?: OnRequestMedia;
 
@@ -1113,13 +1136,14 @@ async function mountEditor(
  * server-side for test email, sends and exports, so a supplied renderer
  * would change only what you preview and export, never what Cloud delivers.
  * `resolvePreview` is the same key with the same type on both entry points,
- * so upgrading an OSS integration is a deletion. `savedBlocks` and
- * `testEmail` are the same key on both entry points too, but Cloud widens
+ * so upgrading an OSS integration is a deletion. `savedBlocks`, `testEmail`
+ * and `media` are the same key on both entry points too, but Cloud widens
  * each type to also accept an events-only shape — `boolean |
- * SavedBlocksOptions | SavedBlocksProvider` and `Pick<TestEmailOptions,
- * "onSent" | "defaultRecipient"> | TestEmailProvider` — so upgrading is
- * still a deletion: drop the key to adopt Cloud's store or sender, or leave
- * it exactly as it is to keep your own.
+ * SavedBlocksOptions | SavedBlocksProvider`, `Pick<TestEmailOptions,
+ * "onSent" | "defaultRecipient"> | TestEmailProvider`, and
+ * `false | MediaOptions | MediaProvider` — so upgrading is still a
+ * deletion: drop the key to adopt Cloud's store or sender, or leave it
+ * exactly as it is to keep your own.
  *
  * `user` is not a key either: Cloud signs comment writes against the auth token's
  * `user` claim, so it fills `init({ user })` from there rather than letting a
@@ -1185,6 +1209,8 @@ export async function initCloud(
       savedBlocks: providers.savedBlocks,
       testEmail: providers.testEmail,
       comments: providers.comments,
+      media: providers.media,
+      onRequestMedia: config.onRequestMedia,
       // From the JWT. Undefined when the project's token carries no `user` claim,
       // which leaves comments unavailable rather than anonymous.
       user,
@@ -1247,13 +1273,20 @@ export type {
   VersionHistoryOptions,
   CommentsOptions,
   CommentEventMeta,
+  MediaAsset,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
 } from "@templatical/types";
 
-// Bundled browser-local saved-blocks provider. Re-exported here (rather than
-// leaving it to `@templatical/core`) because consumers install only this
-// package — core is bundled inline and isn't resolvable on their side.
+// Bundled browser-local saved-blocks / media providers. Re-exported here
+// (rather than leaving them to `@templatical/core`) because consumers
+// install only this package — core is bundled inline and isn't resolvable
+// on their side.
 export { createLocalStorageSavedBlocksProvider } from "@templatical/core";
 export type { LocalStorageSavedBlocksOptions } from "@templatical/core";
+export { createLocalStorageMediaProvider } from "@templatical/core";
+export type { LocalStorageMediaProviderOptions } from "@templatical/core";
 
 export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";

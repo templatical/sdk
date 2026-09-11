@@ -82,7 +82,7 @@ describe('createCloudTestEmailProvider', () => {
     expect(ApiClient.prototype.sendTestEmail).toHaveBeenCalledWith('tmpl-1', {
       recipient: 'user@test.com',
       html: '<html>test</html>',
-      allowed_emails: ['test@example.com'],
+      allowedEmails: ['test@example.com'],
       signature: 'sig-123',
     });
   });
@@ -185,7 +185,7 @@ describe('createCloudTestEmailProvider', () => {
 
       expect(ApiClient.prototype.sendTestEmail).toHaveBeenCalledWith(
         'tmpl-1',
-        expect.objectContaining({ allowed_emails: ['late@example.com'] }),
+        expect.objectContaining({ allowedEmails: ['late@example.com'] }),
       );
     });
   });
@@ -205,7 +205,7 @@ describe('createCloudTestEmailProvider', () => {
     expect(exportHtml).toHaveBeenCalledWith('tmpl-1');
     expect(ApiClient.prototype.sendTestEmail).toHaveBeenCalledWith(
       'tmpl-1',
-      expect.objectContaining({ allowed_emails: ['test@example.com'] }),
+      expect.objectContaining({ allowedEmails: ['test@example.com'] }),
     );
   });
 

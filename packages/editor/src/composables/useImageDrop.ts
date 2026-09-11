@@ -16,9 +16,10 @@ export interface UseImageDropOptions {
   onFiles: (files: File[]) => void;
   /**
    * Gate the zone. While falsy the drop is inert: no highlight, dropped files
-   * are ignored. Components pass `canBrowseMedia && !isUploading` so a missing
-   * media handler renders no affordance and a second drop can't race an
-   * in-flight upload.
+   * are ignored. Components pass `canDropMedia && !isUploading` so a
+   * read-only library (`create: false`) renders no affordance, a missing
+   * media handler does the same, and a second drop can't race an in-flight
+   * upload.
    */
   enabled?: MaybeRefOrGetter<boolean>;
 }

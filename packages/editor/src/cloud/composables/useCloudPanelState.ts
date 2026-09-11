@@ -1,7 +1,6 @@
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import type { AiFeature } from "../components/AiFeatureMenu.vue";
-import type { MediaCategory } from "@templatical/media-library";
 
 export interface UseCloudPanelStateReturn {
   activePanel: Ref<RightPanel | null>;
@@ -9,8 +8,6 @@ export interface UseCloudPanelStateReturn {
   scoringPanelOpen: ComputedRef<boolean> & { value: boolean };
   designReferenceOpen: ComputedRef<boolean> & { value: boolean };
   commentsOpen: ComputedRef<boolean> & { value: boolean };
-  mediaLibraryOpen: Ref<boolean>;
-  mediaLibraryAccept: Ref<MediaCategory[] | undefined>;
   aiMenuOpen: Ref<boolean>;
   aiMenuRef: Ref<HTMLElement | null>;
   rightPanelOpen: ComputedRef<boolean>;
@@ -42,8 +39,6 @@ export function useCloudPanelState(): UseCloudPanelStateReturn {
     set: (v) => (activePanel.value = v ? "comments" : null),
   });
 
-  const mediaLibraryOpen = ref(false);
-  const mediaLibraryAccept = ref<MediaCategory[] | undefined>(undefined);
   const aiMenuOpen = ref(false);
   const aiMenuRef = ref<HTMLElement | null>(null);
 
@@ -83,8 +78,6 @@ export function useCloudPanelState(): UseCloudPanelStateReturn {
     scoringPanelOpen,
     designReferenceOpen,
     commentsOpen,
-    mediaLibraryOpen,
-    mediaLibraryAccept,
     aiMenuOpen,
     aiMenuRef,
     rightPanelOpen,

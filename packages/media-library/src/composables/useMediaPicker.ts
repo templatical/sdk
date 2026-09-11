@@ -1,15 +1,15 @@
-import type { MediaItem, MediaRequestContext } from "../types";
+import type { MediaRequestContext, MediaResult } from "../types";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
 
 export interface UseMediaPickerReturn {
   isPluggableMediaEnabled: ComputedRef<boolean>;
   isRequesting: Ref<boolean>;
-  requestMedia: (context?: MediaRequestContext) => Promise<MediaItem | null>;
+  requestMedia: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 }
 
 export function useMediaPicker(): UseMediaPickerReturn {
   const onRequestMedia = inject<
-    ((context: MediaRequestContext) => Promise<MediaItem | null>) | undefined
+    ((context: MediaRequestContext) => Promise<MediaResult | null>) | undefined
   >("onRequestMedia");
   const isRequesting = ref(false);
 
@@ -19,7 +19,7 @@ export function useMediaPicker(): UseMediaPickerReturn {
 
   async function requestMedia(
     context?: MediaRequestContext,
-  ): Promise<MediaItem | null> {
+  ): Promise<MediaResult | null> {
     if (!onRequestMedia) {
       return null;
     }

@@ -14,7 +14,11 @@ import type { ImageBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import { ON_REQUEST_MEDIA_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import {
+  CAN_DROP_MEDIA_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+} from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
 import { useImageDrop } from "../../composables/useImageDrop";
 import { useTimeoutFn } from "@vueuse/core";
@@ -29,6 +33,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
+const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const aliveFlag = useAliveFlag();
 
@@ -133,7 +138,10 @@ const hasMergeTagSrc = computed(() =>
   containsMergeTag(props.block.src, mergeTagSyntax),
 );
 const dropEnabled = computed(
-  () => canBrowseMedia.value && !isUploading.value && !hasMergeTagSrc.value,
+  () =>
+    (canDropMedia?.value ?? !!onRequestMedia) &&
+    !isUploading.value &&
+    !hasMergeTagSrc.value,
 );
 
 async function uploadDroppedFiles(files: File[]): Promise<void> {

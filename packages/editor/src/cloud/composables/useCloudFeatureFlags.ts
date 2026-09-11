@@ -37,18 +37,18 @@ export function useCloudFeatureFlags(
 
   const canUseAiGeneration = computed(
     () =>
-      planConfigInstance.hasFeature("ai_generation") &&
+      planConfigInstance.hasFeature("aiGeneration") &&
       aiConfig.hasAnyMenuFeature.value,
   );
   const canSendTestEmail = computed(() =>
-    planConfigInstance.hasFeature("test_email"),
+    planConfigInstance.hasFeature("testEmail"),
   );
   const hasTemplateSaved = computed(() => getTemplateId() !== null);
   const templateLimit = computed(
-    () => planConfigInstance.config.value?.limits.max_templates ?? null,
+    () => planConfigInstance.config.value?.limits.maxTemplates ?? null,
   );
   const templateCount = computed(
-    () => planConfigInstance.config.value?.template_count ?? 0,
+    () => planConfigInstance.config.value?.templateCount ?? 0,
   );
 
   return {

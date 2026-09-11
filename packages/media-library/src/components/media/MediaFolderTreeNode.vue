@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import type { MediaFolder } from "../../types";
+import type { MediaFolderNode } from "../../utils/treeFolders";
 import { ChevronRight, Folder, Pencil, Plus, Trash2 } from "@lucide/vue";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
-  folder: MediaFolder;
+  folder: MediaFolderNode;
   currentFolderId: string | null;
   depth: number;
+  canCreateFolder?: boolean;
+  canRenameFolder?: boolean;
+  canDeleteFolder?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -27,14 +30,14 @@ const subfolderName = ref("");
 
 const MAX_DEPTH = 5;
 
-const hasChildren = computed(() => (props.folder.children?.length ?? 0) > 0);
+const hasChildren = computed(() => props.folder.children.length > 0);
 
 const canCreateSubfolder = computed(() => props.depth < MAX_DEPTH - 1);
 
 const isActive = computed(() => props.currentFolderId === props.folder.id);
 
 const isDescendantActive = computed(() => {
-  if (!props.currentFolderId || !props.folder.children) return false;
+  if (!props.currentFolderId) return false;
   return containsFolder(props.folder.children, props.currentFolderId);
 });
 
@@ -42,10 +45,10 @@ const shouldExpand = computed(
   () => isExpanded.value || isDescendantActive.value,
 );
 
-function containsFolder(folders: MediaFolder[], id: string): boolean {
+function containsFolder(folders: MediaFolderNode[], id: string): boolean {
   for (const folder of folders) {
     if (folder.id === id) return true;
-    if (folder.children && containsFolder(folder.children, id)) return true;
+    if (containsFolder(folder.children, id)) return true;
   }
   return false;
 }
@@ -155,7 +158,7 @@ function cancelCreateSubfolder(): void {
       >
         <!-- Add subfolder -->
         <button
-          v-if="canCreateSubfolder"
+          v-if="canCreateSubfolder && canCreateFolder"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
           :title="t.mediaLibrary.addSubfolder"
           @click.stop="startCreateSubfolder"
@@ -164,6 +167,7 @@ function cancelCreateSubfolder(): void {
         </button>
         <!-- Rename -->
         <button
+          v-if="canRenameFolder"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
           :title="t.mediaLibrary.renameFolder"
           @click.stop="startRename"
@@ -172,6 +176,7 @@ function cancelCreateSubfolder(): void {
         </button>
         <!-- Delete -->
         <button
+          v-if="canDeleteFolder"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
           @click.stop="emit('deleteFolder', folder.id)"
         >
@@ -192,6 +197,9 @@ function cancelCreateSubfolder(): void {
         :folder="child"
         :current-folder-id="currentFolderId"
         :depth="depth + 1"
+        :can-create-folder="canCreateFolder"
+        :can-rename-folder="canRenameFolder"
+        :can-delete-folder="canDeleteFolder"
         @navigate="emit('navigate', $event)"
         @create-folder="
           (name, parentId) => emit('createFolder', name, parentId)

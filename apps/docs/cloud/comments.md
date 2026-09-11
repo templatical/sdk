@@ -44,7 +44,7 @@ const editor = await initCloud({
 
 ## Author identity
 
-Cloud sends `user_id` / `user_name` / `user_signature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
+Cloud sends `userId` / `userName` / `userSignature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
 
 A project whose token endpoint omits the `user` claim gets no comments feature at all — [unavailable, never anonymous](/backend/comments#author-identity).
 

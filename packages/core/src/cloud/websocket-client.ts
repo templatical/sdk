@@ -18,7 +18,7 @@ export function resolveWebSocketConfig(
   return {
     host: serverConfig.host,
     port: serverConfig.port,
-    appKey: serverConfig.app_key,
+    appKey: serverConfig.appKey,
   };
 }
 
@@ -84,9 +84,9 @@ export class WebSocketClient {
           Accept: "application/json",
         },
         params: {
-          user_id: this.authManager.userConfig?.id ?? "",
-          user_name: this.authManager.userConfig?.name ?? "",
-          user_signature: this.authManager.userConfig?.signature ?? "",
+          userId: this.authManager.userConfig?.id ?? "",
+          userName: this.authManager.userConfig?.name ?? "",
+          userSignature: this.authManager.userConfig?.signature ?? "",
         },
       },
     });

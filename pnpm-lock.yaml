@@ -398,9 +398,6 @@ importers:
 
   packages/editor:
     dependencies:
-      '@templatical/media-library':
-        specifier: workspace:*
-        version: link:../media-library
       '@templatical/renderer':
         specifier: workspace:*
         version: link:../renderer
@@ -411,6 +408,9 @@ importers:
       '@templatical/core':
         specifier: workspace:*
         version: link:../core
+      '@templatical/media-library':
+        specifier: workspace:*
+        version: link:../media-library
       '@templatical/quality':
         specifier: workspace:*
         version: link:../quality
@@ -656,18 +656,12 @@ importers:
       '@lucide/vue':
         specifier: ^1.42.0
         version: 1.42.0(vue@3.5.42(typescript@6.0.3))
-      '@templatical/core':
-        specifier: workspace:*
-        version: link:../core
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
       '@vueuse/core':
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
-      tailwindcss:
-        specifier: ^4.3.3
-        version: 4.3.3
       vue-advanced-cropper:
         specifier: ^2.8.9
         version: 2.8.9(vue@3.5.42(typescript@6.0.3))
@@ -678,6 +672,9 @@ importers:
       '@vue/test-utils':
         specifier: ^2.5.0
         version: 2.5.0(@vue/compiler-dom@3.5.42)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

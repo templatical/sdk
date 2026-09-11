@@ -44,13 +44,13 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 
 ## Eigene Implementierung
 
-Cloud ist eine Erstanbieter-Implementierung genau der [Provider-Verträge](/de/backend/), die auch der Open-Source-Editor bereitstellt — eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten. Gespeicherte Blöcke und Test-E-Mails dürfen weiterhin Ihre sein, während Cloud den Rest übernimmt:
+Cloud ist eine Erstanbieter-Implementierung genau der [Provider-Verträge](/de/backend/), die auch der Open-Source-Editor bereitstellt — eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten. Gespeicherte Blöcke, Test-E-Mails und Medien dürfen weiterhin Ihre sein, während Cloud den Rest übernimmt:
 
 ```ts
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
+await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
 ```
 
-Diese beiden lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt. Die übrigen werden vollständig abgelehnt — außer `templates`, `comments` und `versionHistory`, die Cloud für ihre Konfiguration und Events annimmt. Ein abgelehnter, aus JavaScript übergebener Wert wird mit einer Konsolenwarnung ignoriert:
+Diese lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt. Die übrigen werden vollständig abgelehnt — außer `templates`, `comments` und `versionHistory`, die Cloud für ihre Konfiguration und Events annimmt. Ein abgelehnter, aus JavaScript übergebener Wert wird mit einer Konsolenwarnung ignoriert:
 
 <!-- prettier-ignore -->
 | Schlüssel | Was `initCloud()` damit macht |

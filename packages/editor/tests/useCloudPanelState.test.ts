@@ -201,21 +201,8 @@ describe("useCloudPanelState", () => {
      moved into `useTestEmailFeature` when the feature became shared with the OSS
      editor — panel state is for Cloud-only surfaces. */
 
-  it("mediaLibraryOpen starts as false", () => {
-    const { mediaLibraryOpen } = useCloudPanelState();
-
-    expect(mediaLibraryOpen.value).toBe(false);
-  });
-
-  it("mediaLibraryAccept starts as undefined", () => {
-    const { mediaLibraryAccept } = useCloudPanelState();
-
-    expect(mediaLibraryAccept.value).toBe(undefined);
-  });
-
   it("setting one panel closes the previous one", () => {
-    const { aiChatOpen, scoringPanelOpen, commentsOpen } =
-      useCloudPanelState();
+    const { aiChatOpen, scoringPanelOpen, commentsOpen } = useCloudPanelState();
 
     aiChatOpen.value = true;
     expect(aiChatOpen.value).toBe(true);

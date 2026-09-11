@@ -6,6 +6,7 @@
   "devDependencies": {
     "@lucide/vue": "^1.42.0",
     "@templatical/core": "workspace:*",
+    "@templatical/media-library": "workspace:*",
     "@templatical/quality": "workspace:*",
     "@templatical/types": "workspace:*",
     "@tiptap/core": "^3.31.3",
@@ -63,15 +64,11 @@
   "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
-    "@templatical/media-library": "workspace:*",
     "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@templatical/renderer": {
-      "optional": true
-    },
-    "@templatical/media-library": {
       "optional": true
     },
     "@templatical/quality": {
