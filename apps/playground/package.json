@@ -13,6 +13,7 @@
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-chamaileon": "workspace:*",
+    "@templatical/import-easy-email-pro": "workspace:*",
     "@templatical/import-html": "workspace:*",
     "@templatical/import-mjml": "workspace:*",
     "@templatical/import-stripo": "workspace:*",

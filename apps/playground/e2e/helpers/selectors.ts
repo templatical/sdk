@@ -252,7 +252,7 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon)
+  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo / Chamaileon / Easy Email Pro)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
@@ -261,6 +261,7 @@ export const SELECTORS = {
   chooserImportTopol: '[data-testid="chooser-import-topol"]',
   chooserImportStripo: '[data-testid="chooser-import-stripo"]',
   chooserImportChamaileon: '[data-testid="chooser-import-chamaileon"]',
+  chooserImportEasyEmailPro: '[data-testid="chooser-import-easy-email-pro"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
@@ -269,6 +270,7 @@ export const SELECTORS = {
   importTabTopol: '[data-testid="import-tab-topol"]',
   importTabStripo: '[data-testid="import-tab-stripo"]',
   importTabChamaileon: '[data-testid="import-tab-chamaileon"]',
+  importTabEasyEmailPro: '[data-testid="import-tab-easy-email-pro"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
@@ -276,6 +278,7 @@ export const SELECTORS = {
   importTextareaTopol: '[data-testid="import-textarea-topol"]',
   importTextareaStripo: '[data-testid="import-textarea-stripo"]',
   importTextareaChamaileon: '[data-testid="import-textarea-chamaileon"]',
+  importTextareaEasyEmailPro: '[data-testid="import-textarea-easy-email-pro"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;

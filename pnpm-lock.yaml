@@ -303,6 +303,9 @@ importers:
       '@templatical/import-chamaileon':
         specifier: workspace:*
         version: link:../../packages/import-chamaileon
+      '@templatical/import-easy-email-pro':
+        specifier: workspace:*
+        version: link:../../packages/import-easy-email-pro
       '@templatical/import-html':
         specifier: workspace:*
         version: link:../../packages/import-html

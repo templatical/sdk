@@ -12,7 +12,7 @@ export default {
     emptyCanvas: "Empty canvas with default settings",
     migration: {
       headline:
-        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML, or HTML?",
+        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
@@ -22,6 +22,7 @@ export default {
       importFromTopol: "Import from Topol",
       importFromStripo: "Import from Stripo",
       importFromChamaileon: "Import from Chamaileon",
+      importFromEasyEmailPro: "Import from Easy Email Pro",
     },
   },
   cloudBanner: {
@@ -87,6 +88,7 @@ export default {
       stripo: "From Stripo",
       topol: "From Topol",
       chamaileon: "From Chamaileon",
+      easyEmailPro: "From Easy Email Pro",
       mjml: "From MJML",
       html: "From HTML",
     },
@@ -127,6 +129,11 @@ export default {
       description:
         "Paste a Chamaileon getDocument() JSON below — the persist document, not getEmailHtml() markup.",
       emptyError: "Paste your Chamaileon document JSON or upload a file.",
+    },
+    easyEmailPro: {
+      description:
+        "Paste an Easy Email Pro JSON below — the persist { subject, content } page, not EditorCore.toMJML() output.",
+      emptyError: "Paste your Easy Email Pro JSON or upload a file.",
     },
   },
   mergeTagModal: {
@@ -332,6 +339,7 @@ export default {
     topolSourceContent: "Topol design JSON content",
     stripoSourceContent: "Stripo HTML content",
     chamaileonSourceContent: "Chamaileon document JSON content",
+    easyEmailProSourceContent: "Easy Email Pro page JSON content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

@@ -1,0 +1,39 @@
+{
+  "subject": "Easy Email Pro e2e",
+  "content": {
+    "type": "page",
+    "data": {},
+    "attributes": {},
+    "children": [
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {},
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": { "width": "100%" },
+            "children": [
+              {
+                "type": "standard-h1",
+                "data": {},
+                "attributes": {},
+                "children": [{ "text": "Hello from Easy Email Pro" }]
+              },
+              {
+                "type": "standard-button",
+                "data": { "content": "Button" },
+                "attributes": {
+                  "background-color": "#C5900C",
+                  "href": "https://example.test"
+                },
+                "children": [{ "text": "Click me" }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

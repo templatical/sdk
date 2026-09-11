@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "../helpers/selectors";
 
 type ImportSource =
-  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "chamaileon";
+  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "chamaileon" | "easyEmailPro";
 
 const TRIGGER_BY_SOURCE: Record<ImportSource, string> = {
   beefree: SELECTORS.chooserImportBeefree,
@@ -11,6 +11,7 @@ const TRIGGER_BY_SOURCE: Record<ImportSource, string> = {
   mjml: SELECTORS.chooserImportMjml,
   topol: SELECTORS.chooserImportTopol,
   chamaileon: SELECTORS.chooserImportChamaileon,
+  easyEmailPro: SELECTORS.chooserImportEasyEmailPro,
 };
 
 const TAB_BY_SOURCE: Record<ImportSource, string> = {
@@ -20,6 +21,7 @@ const TAB_BY_SOURCE: Record<ImportSource, string> = {
   mjml: SELECTORS.importTabMjml,
   topol: SELECTORS.importTabTopol,
   chamaileon: SELECTORS.importTabChamaileon,
+  easyEmailPro: SELECTORS.importTabEasyEmailPro,
 };
 
 const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
@@ -29,6 +31,7 @@ const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
   mjml: SELECTORS.importTextareaMjml,
   topol: SELECTORS.importTextareaTopol,
   chamaileon: SELECTORS.importTextareaChamaileon,
+  easyEmailPro: SELECTORS.importTextareaEasyEmailPro,
 };
 
 export class ChooserPage {
