@@ -114,6 +114,11 @@ export function convertEasyEmailProTemplate(
       "Dropped fonts[] — Templatical templates have no document-level font table.",
     );
   }
+  if (isNonEmptyHeadStyles(data.headStyles)) {
+    warnings.push(
+      "Dropped headStyles — Templatical templates have no document-level head-style table.",
+    );
+  }
   if (
     isPlainObject(data.classAttributes) &&
     Object.keys(data.classAttributes).length > 0
@@ -359,6 +364,11 @@ function isElement(
   node: EasyEmailProNode | EasyEmailProTextNode,
 ): node is EasyEmailProNode {
   return typeof node.type === "string" && node.type !== "";
+}
+
+function isNonEmptyHeadStyles(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  return isPlainObject(value) && Object.keys(value).length > 0;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

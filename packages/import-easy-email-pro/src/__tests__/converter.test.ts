@@ -176,6 +176,33 @@ describe("settings and walk", () => {
     expect(content.settings.fontFamily).toBe("Georgia, serif");
   });
 
+  it("warns once when headStyles is a non-empty array", () => {
+    const { report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: { headStyles: [{ content: ".x { color: red; }" }] },
+      attributes: {},
+      children: [],
+    });
+    expect(report.warnings).toContain(
+      "Dropped headStyles — Templatical templates have no document-level head-style table.",
+    );
+    expect(
+      report.warnings.filter((w) => w.includes("headStyles")),
+    ).toHaveLength(1);
+  });
+
+  it("warns once when headStyles is a non-empty object", () => {
+    const { report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: { headStyles: { content: "a { color: blue; }" } },
+      attributes: {},
+      children: [],
+    });
+    expect(
+      report.warnings.filter((w) => w.includes("headStyles")),
+    ).toHaveLength(1);
+  });
+
   it("skips empty logic and approximates logic with children", () => {
     const { content, report } = convertEasyEmailProTemplate({
       type: "page",
@@ -320,9 +347,8 @@ describe("settings and walk", () => {
       (b): b is ButtonBlock =>
         b.type === "button" && b.backgroundColor === "#ffffff",
     );
-    expect(filled).toBeDefined();
-    expect(outlined).toBeDefined();
-    expect(outlined?.backgroundColor).not.toBe("#333333");
+    expect(filled?.backgroundColor).toBe("#C5900C");
+    expect(outlined?.backgroundColor).toBe("#ffffff");
   });
 });
 
