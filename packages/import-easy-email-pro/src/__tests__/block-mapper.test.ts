@@ -21,9 +21,9 @@ const emptyPage: EasyEmailProNode = {
   attributes: {},
   children: [],
 };
-function map(node: EasyEmailProNode) {
+function map(node: EasyEmailProNode, page: EasyEmailProNode = emptyPage) {
   return convertLeaf(node, {
-    resolve: contextFromPage(emptyPage),
+    resolve: contextFromPage(page),
     warnings: [],
   });
 }
@@ -37,7 +37,9 @@ describe("convertLeaf", () => {
       children: [{ text: "St. Patrick's Day" }],
     });
     expect(blocks[0].type).toBe("paragraph");
-    expect((blocks[0] as ParagraphBlock).content).toBe("St. Patrick's Day");
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="font-size: 36px">St. Patrick\'s Day</p>',
+    );
     expect(entries[0]).toEqual({
       sourceTag: "standard-paragraph",
       templaticalBlockType: "paragraph",
@@ -122,6 +124,27 @@ describe("convertLeaf", () => {
     expect(entries).toEqual([]);
   });
 
+  it("bakes blockAttributes paragraph color into content HTML", () => {
+    const page: EasyEmailProNode = {
+      type: "page",
+      data: { blockAttributes: { "standard-paragraph": { color: "#FFFFFF" } } },
+      attributes: {},
+      children: [],
+    };
+    const { blocks } = map(
+      {
+        type: "standard-paragraph",
+        data: {},
+        attributes: {},
+        children: [{ text: "Hi" }],
+      },
+      page,
+    );
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="color: #FFFFFF">Hi</p>',
+    );
+  });
+
   it("maps marketing-countdown to overlay text plus an image, never countdown", () => {
     const { blocks, entries } = map({
       type: "marketing-countdown",
@@ -130,12 +153,15 @@ describe("convertLeaf", () => {
       children: [
         {
           type: "text",
-          attributes: {},
+          attributes: { color: "#ffffff" },
           children: [{ text: "SUMMER SALE" }],
         },
       ],
     });
     expect(blocks.map((b) => b.type)).toEqual(["paragraph", "image"]);
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="color: #ffffff">SUMMER SALE</p>',
+    );
     expect((blocks[1] as ImageBlock).src).toBe("https://cdn.test/timer.gif");
     expect(blocks.some((b) => b.type === "countdown")).toBe(false);
     expect(entries.every((e) => e.status === "approximated")).toBe(true);

@@ -36,6 +36,10 @@ const EMPTY_WARNING =
 const MOBILE_WARNING =
   "mobileAttributes were dropped; Templatical has no per-viewport padding.";
 
+function varWarning(resolved: number, unresolved: number): string {
+  return `Resolved ${resolved} $var() values, ${unresolved} left unresolved.`;
+}
+
 const OSS_CHILD_TYPES = new Set([
   "section",
   "column",
@@ -133,8 +137,14 @@ export function convertEasyEmailProTemplate(
     walkNode(child, map, entries, blocks);
   }
 
+  const settings = readSettings(page, data, resolve);
+
   if (hasMobileAttributes(page)) {
     warnings.push(MOBILE_WARNING);
+  }
+
+  if (resolve.stats.resolved > 0 || resolve.stats.unresolved > 0) {
+    warnings.push(varWarning(resolve.stats.resolved, resolve.stats.unresolved));
   }
 
   if (blocks.length === 0) {
@@ -147,7 +157,7 @@ export function convertEasyEmailProTemplate(
     blocks,
     settings: {
       ...defaults.settings,
-      ...readSettings(page, data, resolve),
+      ...settings,
     },
   };
 

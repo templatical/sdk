@@ -1,7 +1,11 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { ButtonBlock, SectionBlock } from "@templatical/types";
+import type {
+  ButtonBlock,
+  ParagraphBlock,
+  SectionBlock,
+} from "@templatical/types";
 import { convertEasyEmailProTemplate } from "../converter";
 import type { EasyEmailProDocument, EasyEmailProPage } from "../types";
 import example1 from "./fixtures/example-1.json" with { type: "json" };
@@ -12,6 +16,41 @@ const EMPTY_PAGE: EasyEmailProPage = {
   attributes: {},
   children: [],
 };
+
+const EMPTY_WARNING =
+  "No convertible content was found in the Easy Email Pro page. Check that page.children holds at least one standard-section.";
+
+function pageWithParagraph(
+  extra: Partial<EasyEmailProPage> = {},
+): EasyEmailProPage {
+  return {
+    type: "page",
+    data: extra.data ?? {},
+    attributes: extra.attributes ?? {},
+    children: [
+      {
+        type: "standard-section",
+        data: {},
+        attributes: {},
+        children: [
+          {
+            type: "standard-column",
+            data: {},
+            attributes: {},
+            children: [
+              {
+                type: "standard-paragraph",
+                data: {},
+                attributes: {},
+                children: [{ text: "Hi" }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
 
 const INVALID_MESSAGE =
   "Invalid Easy Email Pro template: expected a page JSON object (EmailTemplate { subject, content } or the page element).";
@@ -78,9 +117,7 @@ describe("convertEasyEmailProTemplate input guards", () => {
 
   it("warns when the page has no convertible content", () => {
     const { report } = convertEasyEmailProTemplate(EMPTY_PAGE);
-    expect(report.warnings).toEqual([
-      "No convertible content was found in the Easy Email Pro page. Check that page.children holds at least one standard-section.",
-    ]);
+    expect(report.warnings).toEqual([EMPTY_WARNING]);
     expect(report.summary).toEqual({
       total: 0,
       converted: 0,
@@ -115,7 +152,7 @@ describe("convertEasyEmailProTemplate input guards", () => {
 
 describe("settings and walk", () => {
   it("resolves $var on page background-color", () => {
-    const { content } = convertEasyEmailProTemplate({
+    const { content, report } = convertEasyEmailProTemplate({
       type: "page",
       data: {
         variables: [{ name: "primary-color", value: "#8C9A80", type: "color" }],
@@ -125,6 +162,47 @@ describe("settings and walk", () => {
     });
     expect(content.settings.backgroundColor).toBe("#8C9A80");
     expect(content.settings.width).toBe(600);
+    expect(report.warnings).toEqual([
+      "Resolved 1 $var() values, 0 left unresolved.",
+      EMPTY_WARNING,
+    ]);
+  });
+
+  it("warns once with resolved and unresolved $var counts", () => {
+    const { report } = convertEasyEmailProTemplate(
+      pageWithParagraph({
+        data: {
+          variables: [
+            { name: "primary-color", value: "#8C9A80", type: "color" },
+          ],
+        },
+        attributes: {
+          "background-color": "$var(primary-color)",
+          "link-color": "$var(missing)",
+        },
+      }),
+    );
+    expect(report.warnings).toEqual([
+      "Resolved 1 $var() values, 1 left unresolved.",
+    ]);
+  });
+
+  it("does not warn about $var when none were substituted", () => {
+    const { report } = convertEasyEmailProTemplate(pageWithParagraph());
+    expect(report.warnings.filter((w) => w.includes("$var"))).toEqual([]);
+  });
+
+  it("bakes blockAttributes paragraph color into content HTML", () => {
+    const { content } = convertEasyEmailProTemplate(
+      pageWithParagraph({
+        data: {
+          blockAttributes: { "standard-paragraph": { color: "#FFFFFF" } },
+        },
+      }),
+    );
+    const section = content.blocks[0] as SectionBlock;
+    const para = section.children[0][0] as ParagraphBlock;
+    expect(para.content).toBe('<p style="color: #FFFFFF">Hi</p>');
   });
 
   it("does not swap content-background-color onto settings.backgroundColor", () => {

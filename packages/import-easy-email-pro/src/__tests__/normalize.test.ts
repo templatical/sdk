@@ -42,19 +42,29 @@ describe("substituteVars", () => {
   it("replaces $var(name)", () => {
     expect(substituteVars("$var(primary-color)", vars)).toEqual({
       value: "#8C9A80",
-      unresolved: false,
+      resolved: 1,
+      unresolved: 0,
     });
   });
   it("leaves unknown $var marked unresolved", () => {
     expect(substituteVars("$var(nope)", vars)).toEqual({
       value: "$var(nope)",
-      unresolved: true,
+      resolved: 0,
+      unresolved: 1,
     });
   });
   it("passes through a plain colour", () => {
     expect(substituteVars("#fff", vars)).toEqual({
       value: "#fff",
-      unresolved: false,
+      resolved: 0,
+      unresolved: 0,
+    });
+  });
+  it("counts mixed tokens in one string", () => {
+    expect(substituteVars("$var(primary-color) and $var(nope)", vars)).toEqual({
+      value: "#8C9A80 and $var(nope)",
+      resolved: 1,
+      unresolved: 1,
     });
   });
 });
@@ -135,6 +145,39 @@ describe("readAttr cascade", () => {
       attributes: { "background-color": "$var(primary-color)" },
     };
     expect(readAttr(node, "background-color", c)).toBe("#d3943c");
+  });
+
+  it("counts resolved and unresolved $var on the context stats", () => {
+    const withVars: EasyEmailProNode = {
+      type: "page",
+      data: {
+        variables: [{ name: "primary-color", value: "#8C9A80", type: "color" }],
+      },
+      attributes: {
+        "background-color": "$var(primary-color)",
+        color: "$var(nope)",
+      },
+    };
+    const c = contextFromPage(withVars);
+    expect(readAttr(withVars, "background-color", c)).toBe("#8C9A80");
+    expect(readAttr(withVars, "color", c)).toBe("$var(nope)");
+    expect(c.stats.resolved).toBe(1);
+    expect(c.stats.unresolved).toBe(1);
+  });
+
+  it("does not double-count a repeated readAttr", () => {
+    const withVars: EasyEmailProNode = {
+      type: "page",
+      data: {
+        variables: [{ name: "primary-color", value: "#8C9A80", type: "color" }],
+      },
+      attributes: { "background-color": "$var(primary-color)" },
+    };
+    const c = contextFromPage(withVars);
+    expect(readAttr(withVars, "background-color", c)).toBe("#8C9A80");
+    expect(readAttr(withVars, "background-color", c)).toBe("#8C9A80");
+    expect(c.stats.resolved).toBe(1);
+    expect(c.stats.unresolved).toBe(0);
   });
 });
 

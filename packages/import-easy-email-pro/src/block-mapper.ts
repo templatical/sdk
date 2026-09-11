@@ -133,12 +133,42 @@ export function convertLeaf(
 function convertParagraph(node: EasyEmailProNode, map: MapContext): Converted {
   return finish(
     createParagraphBlock({
-      content: serialiseChildren(node.children),
+      content: paragraphHtml(node, map),
       ...leafStyles(node, map),
     }),
     node,
     report("standard-paragraph", "paragraph", "converted"),
   );
+}
+
+/**
+ * ParagraphBlock has no color / fontSize / textAlign. Bake the cascaded
+ * values into a wrapping `<p style>` (single wrapper, Unlayer/BeeFree class).
+ */
+function paragraphHtml(node: EasyEmailProNode, map: MapContext): string {
+  const html = serialiseChildren(node.children);
+  const parts: string[] = [];
+  const color = parseColor(readAttr(node, "color", map.resolve));
+  if (color) parts.push(`color: ${escapeAttr(color)}`);
+  const fontSize = setString(readAttr(node, "font-size", map.resolve));
+  if (fontSize) parts.push(`font-size: ${escapeAttr(fontSize)}`);
+  const align = parseAlign(readAttr(node, "align", map.resolve));
+  if (align) parts.push(`text-align: ${align}`);
+  if (parts.length === 0) return html;
+  return `<p style="${parts.join("; ")}">${html}</p>`;
+}
+
+function escapeAttr(value: string): string {
+  let out = "";
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (ch === "&") out += "&amp;";
+    else if (ch === "<") out += "&lt;";
+    else if (ch === ">") out += "&gt;";
+    else if (ch === '"') out += "&quot;";
+    else out += ch;
+  }
+  return out;
 }
 
 function convertHeading(

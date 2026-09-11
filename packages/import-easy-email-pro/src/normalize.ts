@@ -28,6 +28,11 @@ export const CATEGORY_BY_TYPE: Record<string, string> = {
   "standard-group": "GROUP",
 };
 
+export interface VarStats {
+  resolved: number;
+  unresolved: number;
+}
+
 export interface ResolveContext {
   variables: Record<string, string>;
   blockAttributes: Record<string, Record<string, unknown>>;
@@ -35,6 +40,12 @@ export interface ResolveContext {
   globalAttributes: Record<string, unknown>;
   /** Page node — section fill falls back to `content-background-color`. */
   page: EasyEmailProNode;
+  stats: VarStats;
+  /**
+   * Per-node attribute cache so a repeated `readAttr` (button fill vs
+   * outlined check, section fill fallback) does not double-count `$var`.
+   */
+  attrCache: WeakMap<EasyEmailProNode, Map<string, unknown>>;
 }
 
 /**
@@ -75,10 +86,11 @@ export function buildVariableTable(
 export function substituteVars(
   value: string,
   variables: Record<string, string>,
-): { value: string; unresolved: boolean } {
+): { value: string; resolved: number; unresolved: number } {
   let out = "";
   let i = 0;
-  let unresolved = false;
+  let resolved = 0;
+  let unresolved = 0;
 
   while (i < value.length) {
     const start = value.indexOf(VAR_PREFIX, i);
@@ -92,21 +104,21 @@ export function substituteVars(
     if (nameEnd === -1) {
       // Unclosed `$var(` — keep the rest verbatim and mark unresolved.
       out += value.slice(start);
-      unresolved = true;
+      unresolved += 1;
       break;
     }
     const name = value.slice(nameStart, nameEnd);
     if (Object.prototype.hasOwnProperty.call(variables, name)) {
       out += variables[name];
+      resolved += 1;
     } else {
       out += value.slice(start, nameEnd + 1);
-      unresolved = true;
+      unresolved += 1;
     }
     i = nameEnd + 1;
   }
 
-  if (out.includes(VAR_PREFIX)) unresolved = true;
-  return { value: out, unresolved };
+  return { value: out, resolved, unresolved };
 }
 
 /** Walk from `openIdx` (char after `(`) to the matching `)`. */
@@ -135,6 +147,8 @@ export function contextFromPage(page: EasyEmailProNode): ResolveContext {
     categoryAttributes: asNestedAttrMap(data.categoryAttributes),
     globalAttributes: asAttrMap(data.globalAttributes),
     page,
+    stats: { resolved: 0, unresolved: 0 },
+    attrCache: new WeakMap(),
   };
 }
 
@@ -148,7 +162,8 @@ export function withWidgetInput(
   for (const [key, value] of Object.entries(input)) {
     if (typeof value === "string") variables[key] = value;
   }
-  return { ...ctx, variables };
+  // New cache: widget `data.input` can resolve the same node keys differently.
+  return { ...ctx, variables, attrCache: new WeakMap() };
 }
 
 /**
@@ -161,9 +176,24 @@ export function readAttr(
   key: string,
   ctx: ResolveContext,
 ): unknown {
+  let cached = ctx.attrCache.get(node);
+  if (cached?.has(key)) return cached.get(key);
+
   const raw = lookupAttr(node, key, ctx);
-  if (typeof raw !== "string") return raw;
-  return substituteVars(raw, ctx.variables).value;
+  let value: unknown = raw;
+  if (typeof raw === "string") {
+    const result = substituteVars(raw, ctx.variables);
+    ctx.stats.resolved += result.resolved;
+    ctx.stats.unresolved += result.unresolved;
+    value = result.value;
+  }
+
+  if (!cached) {
+    cached = new Map();
+    ctx.attrCache.set(node, cached);
+  }
+  cached.set(key, value);
+  return value;
 }
 
 function lookupAttr(
