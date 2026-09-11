@@ -158,6 +158,10 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "From Stripo", link: "/guide/migration-from-stripo" },
         { text: "From Topol", link: "/guide/migration-from-topol" },
         { text: "From Chamaileon", link: "/guide/migration-from-chamaileon" },
+        {
+          text: "From Easy Email Pro",
+          link: "/guide/migration-from-easy-email-pro",
+        },
         { text: "From MJML", link: "/guide/migration-from-mjml" },
         { text: "From HTML", link: "/guide/migration-from-html" },
       ],
@@ -340,6 +344,10 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Von Stripo", link: "/de/guide/migration-from-stripo" },
         { text: "Von Topol", link: "/de/guide/migration-from-topol" },
         { text: "Von Chamaileon", link: "/de/guide/migration-from-chamaileon" },
+        {
+          text: "Von Easy Email Pro",
+          link: "/de/guide/migration-from-easy-email-pro",
+        },
         { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
         { text: "Von HTML", link: "/de/guide/migration-from-html" },
       ],

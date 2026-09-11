@@ -70,6 +70,10 @@ export default defineConfig({
                 packagesDir,
                 'import-chamaileon/src/index.ts',
             ),
+            '@templatical/import-easy-email-pro': resolve(
+                packagesDir,
+                'import-easy-email-pro/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',

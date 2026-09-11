@@ -1,0 +1,66 @@
+{
+  "subject": "Example 1",
+  "content": {
+    "type": "page",
+    "data": {},
+    "attributes": {
+      "width": "600px",
+      "background-color": "#f5f5f5"
+    },
+    "children": [
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {},
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": { "width": "50%" },
+            "children": [
+              {
+                "type": "standard-h1",
+                "data": {},
+                "attributes": {},
+                "children": [{ "text": "Hello" }]
+              },
+              {
+                "type": "standard-button",
+                "data": { "content": "Button" },
+                "attributes": { "background-color": "#C5900C" },
+                "children": [{ "text": "Book a table" }]
+              }
+            ]
+          },
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": { "width": "50%" },
+            "children": [
+              {
+                "type": "standard-button",
+                "data": { "content": "Button" },
+                "attributes": {
+                  "border-enabled": true,
+                  "border-color": "#C5900C",
+                  "border-width": "3px",
+                  "color": "#C5900C"
+                },
+                "children": [{ "text": "Ghost" }]
+              },
+              {
+                "type": "standard-image",
+                "data": {},
+                "attributes": {
+                  "src": "https://example.test/hero.png",
+                  "alt": "Hero"
+                },
+                "children": [{ "text": "" }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

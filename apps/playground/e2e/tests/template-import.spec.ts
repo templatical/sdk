@@ -29,6 +29,10 @@ const chamaileonSource = readFileSync(
   join(fixturesDir, "sample-chamaileon-document.json"),
   "utf8",
 );
+const easyEmailProSource = readFileSync(
+  join(fixturesDir, "sample-easy-email-pro-document.json"),
+  "utf8",
+);
 
 test.describe("Template import", () => {
   test.beforeEach(async ({ page }) => {
@@ -95,7 +99,7 @@ test.describe("Template import", () => {
     const band = chooserPage.getMigrationBand();
     await expect(band).toBeVisible();
     const tiles = band.locator("button[data-testid^='chooser-import-']");
-    await expect(tiles).toHaveCount(7);
+    await expect(tiles).toHaveCount(8);
     const ids = await tiles.evaluateAll((els) =>
       els.map((el) => el.getAttribute("data-testid")),
     );
@@ -105,6 +109,7 @@ test.describe("Template import", () => {
       "chooser-import-stripo",
       "chooser-import-topol",
       "chooser-import-chamaileon",
+      "chooser-import-easy-email-pro",
       "chooser-import-mjml",
       "chooser-import-html",
     ]);
@@ -580,6 +585,96 @@ test.describe("Template import", () => {
     await chooserPage.goto();
     await chooserPage.openImportModal("chamaileon");
     await chooserPage.pasteImportJson("chamaileon", "    ");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+  });
+
+  test("imports an Easy Email Pro page and renders converted blocks", async ({
+    chooserPage,
+    editorPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.importTemplate("easyEmailPro", easyEmailProSource);
+
+    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
+
+    await editorPage.waitForReady();
+    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
+
+    const titleBlock = page.locator(blockByType("title")).first();
+    await expect(titleBlock).toBeVisible();
+    await expect(titleBlock).toContainText("Hello from Easy Email Pro");
+
+    await expect(page.locator(blockByType("button")).first()).toBeVisible();
+  });
+
+  test("Easy Email Pro CTA opens modal with Easy Email Pro tab selected", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("easyEmailPro");
+
+    await expect(page.locator(SELECTORS.importTabEasyEmailPro)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("switching to Easy Email Pro tab swaps the textarea and preserves BeeFree input", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal();
+
+    const beefreeText = '{"page":{"rows":[]}}';
+    await chooserPage.pasteImportJson("beefree", beefreeText);
+
+    await chooserPage.selectImportSource("easyEmailPro");
+    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toHaveValue(
+      "",
+    );
+    await expect(
+      page.locator(SELECTORS.importTextareaBeefree),
+    ).toHaveCount(0);
+
+    await chooserPage.selectImportSource("beefree");
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
+      beefreeText,
+    );
+  });
+
+  test("shows an empty-input error on Easy Email Pro tab when nothing is pasted", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("easyEmailPro");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+  });
+
+  test("shows an error when the Easy Email Pro input is whitespace only", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("easyEmailPro");
+    await chooserPage.pasteImportJson("easyEmailPro", "    ");
     await chooserPage.confirmImport();
 
     await expect(chooserPage.getImportError()).toBeVisible();

@@ -42,6 +42,7 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 | `@templatical/import-topol` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
@@ -110,7 +111,7 @@ Denselben Ansatz nutzen [Sentry](https://sentry.io), [PowerSync](https://www.pow
 
 **Ja, bitte.** Beiträge aus der Community sind willkommen — Bugfixes, Features, Doku-Verbesserungen, zusätzliche Locales und Beispiele für eigene Blöcke werden geschätzt.
 
-Mit Ihrem Beitrag stimmen Sie zu, dass Ihr Beitrag unter derselben Lizenz steht wie das Paket, zu dem Sie beitragen (MIT für `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
+Mit Ihrem Beitrag stimmen Sie zu, dass Ihr Beitrag unter derselben Lizenz steht wie das Paket, zu dem Sie beitragen (MIT für `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`, `import-easy-email-pro`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
 
 Es gibt derzeit **kein separates Contributor License Agreement (CLA)** zu unterschreiben — Ihr PR allein reicht.
 

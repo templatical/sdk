@@ -19,7 +19,8 @@
       "@templatical/import-mjml": ["../../packages/import-mjml/src/index.ts"],
       "@templatical/import-topol": ["../../packages/import-topol/src/index.ts"],
       "@templatical/import-stripo": ["../../packages/import-stripo/src/index.ts"],
-      "@templatical/import-chamaileon": ["../../packages/import-chamaileon/src/index.ts"]
+      "@templatical/import-chamaileon": ["../../packages/import-chamaileon/src/index.ts"],
+      "@templatical/import-easy-email-pro": ["../../packages/import-easy-email-pro/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "src/env.d.ts"]

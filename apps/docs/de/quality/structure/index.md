@@ -4,7 +4,7 @@
 
 ## Warum
 
-Die meisten „Ist dieses Template OK?"-Werkzeuge kümmern sich um Inhaltsqualität (Alt-Text, Kontrast). Struktur-Regeln decken ein anderes Problem ab: **Kann dieses JSON überhaupt sauber rendern?** Importer (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon) und serverseitige Custom-Editoren können Blöcke produzieren, die der Editor selbst nie erzeugen würde — verwaiste Spalten-Einträge, fehlende Block-Felder, Layout-/Children-Mismatches. Erreichen sie den Renderer, ist es meist zu spät, um sauber zu reagieren.
+Die meisten „Ist dieses Template OK?"-Werkzeuge kümmern sich um Inhaltsqualität (Alt-Text, Kontrast). Struktur-Regeln decken ein anderes Problem ab: **Kann dieses JSON überhaupt sauber rendern?** Importer (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) und serverseitige Custom-Editoren können Blöcke produzieren, die der Editor selbst nie erzeugen würde — verwaiste Spalten-Einträge, fehlende Block-Felder, Layout-/Children-Mismatches. Erreichen sie den Renderer, ist es meist zu spät, um sauber zu reagieren.
 
 Der Struktur-Linter fängt diese Probleme vor Save / vor Versand:
 

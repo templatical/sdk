@@ -14,7 +14,7 @@ export default {
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
       headline:
-        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML oder HTML?",
+        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML oder HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
@@ -24,6 +24,7 @@ export default {
       importFromTopol: "Aus Topol importieren",
       importFromStripo: "Aus Stripo importieren",
       importFromChamaileon: "Aus Chamaileon importieren",
+      importFromEasyEmailPro: "Aus Easy Email Pro importieren",
     },
   },
   cloudBanner: {
@@ -89,6 +90,7 @@ export default {
       stripo: "Aus Stripo",
       topol: "Aus Topol",
       chamaileon: "Aus Chamaileon",
+      easyEmailPro: "Aus Easy Email Pro",
       mjml: "Aus MJML",
       html: "Aus HTML",
     },
@@ -137,6 +139,12 @@ export default {
         "F\u00fcgen Sie unten ein Chamaileon-getDocument()-JSON ein \u2014 das persistierte Dokument, kein getEmailHtml()-Markup.",
       emptyError:
         "F\u00fcgen Sie Ihr Chamaileon-Dokument-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    easyEmailPro: {
+      description:
+        "F\u00fcgen Sie unten ein Easy-Email-Pro-JSON ein \u2014 die persistierte Seite { subject, content }, keine EditorCore.toMJML()-Ausgabe.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Easy-Email-Pro-JSON ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -346,6 +354,7 @@ export default {
     topolSourceContent: "Topol-Design-JSON-Inhalt",
     stripoSourceContent: "Stripo-HTML-Inhalt",
     chamaileonSourceContent: "Chamaileon-Dokument-JSON-Inhalt",
+    easyEmailProSourceContent: "Easy-Email-Pro-Seiten-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",
