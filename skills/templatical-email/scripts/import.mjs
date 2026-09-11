@@ -1,6 +1,6 @@
 // Import an existing Unlayer / BeeFree / Stripo / Topol / Chamaileon /
-// MJML / HTML email template into Templatical template JSON, using the
-// deterministic `@templatical/import-*` converters.
+// Easy Email Pro / MJML / HTML email template into Templatical template JSON,
+// using the deterministic `@templatical/import-*` converters.
 // Writes the result to the shared working file (.templatical/<name>.json) so it
 // flows into validation + live mode exactly like a generated template.
 //
@@ -13,7 +13,7 @@
 // skipped — so the printed report tells you what to refine (ideally in live mode).
 //
 // Usage:
-//   node scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|mjml|html] [--cwd .] [--out <name>]
+//   node scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|easy-email-pro|mjml|html] [--cwd .] [--out <name>]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -42,6 +42,11 @@ const FORMATS = {
   chamaileon: {
     pkg: "@templatical/import-chamaileon",
     fn: "convertChamaileonTemplate",
+    input: "json",
+  },
+  "easy-email-pro": {
+    pkg: "@templatical/import-easy-email-pro",
+    fn: "convertEasyEmailProTemplate",
     input: "json",
   },
   mjml: {
@@ -132,6 +137,17 @@ function looksLikeStripoHtml(html) {
   );
 }
 
+function hasStandardType(node) {
+  if (!node || typeof node !== "object") return false;
+  if (typeof node.type === "string" && node.type.startsWith("standard-")) {
+    return true;
+  }
+  if (Array.isArray(node.children)) {
+    return node.children.some(hasStandardType);
+  }
+  return false;
+}
+
 function unpackStripoSource(source) {
   const trimmed = source.trimStart();
   if (trimmed.startsWith("{")) {
@@ -188,6 +204,16 @@ export function detectFormat(fileName, content) {
     // Chamaileon persist documents from getDocument(): { body: { type: "body" } }.
     // Unlayer is { body: { rows } } and is matched first.
     if (obj?.body?.type === "body") return "chamaileon";
+    // Easy Email Pro persist: { content: { type: "page", children: [standard-*] } }
+    // or a bare page element. OSS Easy Email is type "page" with "section"/"text"
+    // children and must not match. BeeFree is { page: { rows } }.
+    const page =
+      obj?.content?.type === "page"
+        ? obj.content
+        : obj?.type === "page"
+          ? obj
+          : null;
+    if (page && hasStandardType(page)) return "easy-email-pro";
     // Plugin hosts often persist the whole getTemplateData() object.
     if (typeof obj?.html === "string" && looksLikeStripoHtml(obj.html)) {
       return "stripo";

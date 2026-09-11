@@ -22,7 +22,7 @@ describe("FORMATS", () => {
     );
     expect(result.status).toBe(2);
     expect(result.stderr).toContain(
-      "--format unlayer|beefree|stripo|topol|chamaileon|mjml|html",
+      "--format unlayer|beefree|stripo|topol|chamaileon|easy-email-pro|mjml|html",
     );
   });
 });
@@ -154,6 +154,61 @@ describe("detectFormat", () => {
       detectFormat("x.html", '<table class="es-wrapper"><td class="es-content-body"></td></table>'),
     ).toBe("stripo");
   });
+  it("detects easy-email-pro from content.type page plus standard-section", () => {
+    expect(
+      detectFormat(
+        "doc.json",
+        JSON.stringify({
+          subject: "Hi",
+          content: {
+            type: "page",
+            children: [{ type: "standard-section", children: [] }],
+          },
+        }),
+      ),
+    ).toBe("easy-email-pro");
+  });
+
+  it("detects a bare page element", () => {
+    expect(
+      detectFormat(
+        "whatever.txt",
+        JSON.stringify({
+          type: "page",
+          children: [{ type: "standard-section", children: [] }],
+        }),
+      ),
+    ).toBe("easy-email-pro");
+  });
+
+  it("does not mistake OSS Easy Email for easy-email-pro", () => {
+    expect(
+      detectFormat(
+        "doc.json",
+        JSON.stringify({
+          content: { type: "page", children: [{ type: "section", children: [] }] },
+        }),
+      ),
+    ).toBe(null);
+  });
+
+  it("does not mistake an unlayer design for easy-email-pro", () => {
+    expect(detectFormat("design.json", JSON.stringify({ body: { rows: [] } }))).toBe(
+      "unlayer",
+    );
+  });
+
+  it("does not mistake chamaileon for easy-email-pro", () => {
+    expect(
+      detectFormat("doc.json", JSON.stringify({ body: { type: "body", eid: "root" } })),
+    ).toBe("chamaileon");
+  });
+
+  it("does not mistake beefree for easy-email-pro", () => {
+    expect(detectFormat("doc.json", JSON.stringify({ page: { rows: [] } }))).toBe(
+      "beefree",
+    );
+  });
 });
 
 describe("summarizeReport", () => {
@@ -224,6 +279,11 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
       format: "chamaileon",
       fixture:
         "packages/import-chamaileon/src/__tests__/fixtures/example-1.json",
+    },
+    {
+      format: "easy-email-pro",
+      fixture:
+        "packages/import-easy-email-pro/src/__tests__/fixtures/example-1.json",
     },
   ] as const;
 
