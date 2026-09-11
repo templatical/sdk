@@ -15,6 +15,42 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.36.0
+
+<time datetime="2026-09-11">2026-09-11</time>
+
+### Features
+
+**Add `@templatical/import-stripo`, a converter from Stripo plugin HTML (`getTemplateData`) and compiled File→HTML exports to Templatical template JSON. Auto-detects the surface from class attributes; pass `{ css }` for the plugin stylesheet.**
+
+`@templatical/import-stripo`
+
+**Add `@templatical/import-chamaileon`, a converter from Chamaileon `getDocument()` JSON to Templatical template JSON.**
+
+`@templatical/import-chamaileon`
+
+`convertChamaileonTemplate(doc)` returns `{ content, report }` with the same shape as the other `@templatical/import-*` packages. It accepts Email JSON 2.0 through 4.1 (kebab-case and camelCase, `{ reference, default }` color variables), maps `fullwidth` / `multicolumn` / leaves, and reports what it approximated: nested columns flattened, 4+ columns folded to three, outlined buttons, loops whose children converted without their expressions.
+
+**Bring-your-own media library. Cloud is the adapter; `onRequestMedia` remains a UI override.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/types`
+
+The editor compiles the Browse modal into a lazy chunk of `@templatical/editor` — `init({ media })` and Cloud's store no longer need `@templatical/media-library` installed, and that install no longer pulls Vue into an editor consumer. The media-library package remains for standalone `init()` / `MediaLibraryModal` in a host Vue app (`vue` peer; `tailwindcss` is build-time only).
+
+The editor's image picker (Browse, drop, crop, folders, search) is now backed by a `MediaProvider` you implement — a CMS gallery, a DAM, or the bundled `createLocalStorageMediaProvider()`. Templatical Cloud is one adapter behind the same contract (`createCloudMediaProvider` from `@templatical/core/cloud`). `initCloud({ media })` omitted uses Cloud's store, `false` turns it off, an events-only object keeps Cloud plus your handlers, and a full provider is yours and not plan-gated.
+
+`onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
+
+Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
+Origin: [#700](https://github.com/templatical/sdk/issues/700).
+
+**Add `@templatical/import-easy-email-pro`, a converter from Easy Email Pro persist JSON to Templatical template JSON.**
+
+`@templatical/import-easy-email-pro`
+
+`convertEasyEmailProTemplate(doc)` returns `{ content, report }` with the same shape as the other `@templatical/import-*` packages. It accepts the `{ subject, content }` envelope or a bare `type: "page"` element, resolves `$var()` design tokens, maps `standard-section` / `standard-column` / leaves, and reports what it approximated: 4+ columns folded to three, outlined buttons, hero overlays, countdown GIFs, widgets, and logic whose children converted without their expressions.
+
 ## 0.35.0
 
 <time datetime="2026-09-10">2026-09-10</time>
