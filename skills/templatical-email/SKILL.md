@@ -143,14 +143,14 @@ unrelated sessions.
 ## Importing an existing template
 
 If the user has a template from another editor in their project — **Unlayer**,
-**BeeFree**, an **HTML email**, an **MJML** template, a **Topol** design, a
-**Stripo** export (plugin `getTemplateData` HTML, or compiled File → HTML), or
-a **Chamaileon** `getDocument()` persist document — convert it to Templatical
+**BeeFree**, a **Stripo** export (plugin `getTemplateData` HTML, or compiled
+File → HTML), a **Topol** design, a **Chamaileon** `getDocument()` persist
+document, an **MJML** template, or an **HTML email** — convert it to Templatical
 instead of building from scratch. `scripts/import.mjs` runs the matching
 `@templatical/import-*` converter:
 
 ```
-node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol|stripo|chamaileon]
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|mjml|html]
 ```
 
 It auto-detects the format (Unlayer / BeeFree / Topol / Chamaileon JSON, Stripo

@@ -14,7 +14,7 @@ export default {
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
       headline:
-        "Nutzen Sie bereits BeeFree, Unlayer, MJML, Topol, Stripo oder handgeschriebenes HTML?",
+        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML oder HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
@@ -84,13 +84,13 @@ export default {
   importModal: {
     title: "Bestehende Vorlage importieren",
     sources: {
-      beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
-      html: "Aus HTML",
-      mjml: "Aus MJML",
-      topol: "Aus Topol",
+      beefree: "Aus BeeFree",
       stripo: "Aus Stripo",
+      topol: "Aus Topol",
       chamaileon: "Aus Chamaileon",
+      mjml: "Aus MJML",
+      html: "Aus HTML",
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",

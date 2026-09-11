@@ -1,5 +1,5 @@
-// Import an existing Unlayer / BeeFree / HTML / MJML / Topol / Stripo /
-// Chamaileon email template into Templatical template JSON, using the
+// Import an existing Unlayer / BeeFree / Stripo / Topol / Chamaileon /
+// MJML / HTML email template into Templatical template JSON, using the
 // deterministic `@templatical/import-*` converters.
 // Writes the result to the shared working file (.templatical/<name>.json) so it
 // flows into validation + live mode exactly like a generated template.
@@ -13,7 +13,7 @@
 // skipped — so the printed report tells you what to refine (ideally in live mode).
 //
 // Usage:
-//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol|stripo|chamaileon] [--cwd .] [--out <name>]
+//   node scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|mjml|html] [--cwd .] [--out <name>]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -29,30 +29,30 @@ const FORMATS = {
     fn: "convertBeeFreeTemplate",
     input: "json",
   },
-  html: {
-    pkg: "@templatical/import-html",
-    fn: "convertHtmlTemplate",
-    input: "text",
-  },
-  mjml: {
-    pkg: "@templatical/import-mjml",
-    fn: "convertMjmlTemplate",
-    input: "text",
+  stripo: {
+    pkg: "@templatical/import-stripo",
+    fn: "convertStripoTemplate",
+    input: "stripo",
   },
   topol: {
     pkg: "@templatical/import-topol",
     fn: "convertTopolTemplate",
     input: "json",
   },
-  stripo: {
-    pkg: "@templatical/import-stripo",
-    fn: "convertStripoTemplate",
-    input: "stripo",
-  },
   chamaileon: {
     pkg: "@templatical/import-chamaileon",
     fn: "convertChamaileonTemplate",
     input: "json",
+  },
+  mjml: {
+    pkg: "@templatical/import-mjml",
+    fn: "convertMjmlTemplate",
+    input: "text",
+  },
+  html: {
+    pkg: "@templatical/import-html",
+    fn: "convertHtmlTemplate",
+    input: "text",
   },
 };
 

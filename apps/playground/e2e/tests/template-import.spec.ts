@@ -87,24 +87,27 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("migration band advertises all five sources on the chooser", async ({
+  test("migration band advertises importer sources on the chooser", async ({
     chooserPage,
-    page,
   }) => {
     await chooserPage.goto();
 
     const band = chooserPage.getMigrationBand();
     await expect(band).toBeVisible();
-    await expect(band).toContainText(/BeeFree/);
-    await expect(band).toContainText(/Unlayer/);
-    await expect(band).toContainText(/HTML/);
-    await expect(band).toContainText(/MJML/);
-    await expect(band).toContainText(/Topol/);
-    await expect(page.locator(SELECTORS.chooserImportBeefree)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportUnlayer)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportHtml)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportMjml)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportTopol)).toBeVisible();
+    const tiles = band.locator("button[data-testid^='chooser-import-']");
+    await expect(tiles).toHaveCount(7);
+    const ids = await tiles.evaluateAll((els) =>
+      els.map((el) => el.getAttribute("data-testid")),
+    );
+    expect(ids).toEqual([
+      "chooser-import-unlayer",
+      "chooser-import-beefree",
+      "chooser-import-stripo",
+      "chooser-import-topol",
+      "chooser-import-chamaileon",
+      "chooser-import-mjml",
+      "chooser-import-html",
+    ]);
   });
 
   test("BeeFree CTA opens modal with BeeFree tab selected", async ({

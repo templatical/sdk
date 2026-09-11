@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,20 @@ import { validateTemplate } from "../scripts/validate.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoFile = (rel: string) => resolve(here, "../../..", rel);
+
+describe("FORMATS", () => {
+  it("lists --format values in popularity order on usage", () => {
+    const result = spawnSync(
+      process.execPath,
+      [resolve(here, "../scripts/import.mjs")],
+      { encoding: "utf8" },
+    );
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(
+      "--format unlayer|beefree|stripo|topol|chamaileon|mjml|html",
+    );
+  });
+});
 
 describe("detectFormat", () => {
   it("detects html by extension", () => {

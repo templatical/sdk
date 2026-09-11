@@ -12,7 +12,7 @@ export default {
     emptyCanvas: "Empty canvas with default settings",
     migration: {
       headline:
-        "Already using BeeFree, Unlayer, MJML, Topol, Stripo, or hand-coded HTML?",
+        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML, or HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
@@ -82,13 +82,13 @@ export default {
   importModal: {
     title: "Import existing template",
     sources: {
-      beefree: "From BeeFree",
       unlayer: "From Unlayer",
-      html: "From HTML",
-      mjml: "From MJML",
-      topol: "From Topol",
+      beefree: "From BeeFree",
       stripo: "From Stripo",
+      topol: "From Topol",
       chamaileon: "From Chamaileon",
+      mjml: "From MJML",
+      html: "From HTML",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",

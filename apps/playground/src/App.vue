@@ -137,7 +137,7 @@ const screen = ref<Screen>("chooser");
 type ImportSource =
   "beefree" | "unlayer" | "html" | "mjml" | "topol" | "stripo" | "chamaileon";
 const showImport = ref(false);
-const importSource = ref<ImportSource>("beefree");
+const importSource = ref<ImportSource>("unlayer");
 const beefreeJson = ref("");
 const beefreeError = ref("");
 const unlayerJson = ref("");
@@ -2886,18 +2886,6 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
-                data-testid="chooser-import-beefree"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('beefree')"
-              >
-                {{ t.chooser.migration.importFromBeefree }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
                 data-testid="chooser-import-unlayer"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('unlayer')"
@@ -2910,35 +2898,11 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-html"
+                data-testid="chooser-import-beefree"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('html')"
+                @click="openImportFromSource('beefree')"
               >
-                {{ t.chooser.migration.importFromHtml }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-mjml"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('mjml')"
-              >
-                {{ t.chooser.migration.importFromMjml }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-topol"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('topol')"
-              >
-                {{ t.chooser.migration.importFromTopol }}
+                {{ t.chooser.migration.importFromBeefree }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -2958,11 +2922,47 @@ onUnmounted(() => {
                 />
               </button>
               <button
+                data-testid="chooser-import-topol"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('topol')"
+              >
+                {{ t.chooser.migration.importFromTopol }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
                 data-testid="chooser-import-chamaileon"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('chamaileon')"
               >
                 {{ t.chooser.migration.importFromChamaileon }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-mjml"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('mjml')"
+              >
+                {{ t.chooser.migration.importFromMjml }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-html"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('html')"
+              >
+                {{ t.chooser.migration.importFromHtml }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -3788,20 +3788,6 @@ onUnmounted(() => {
             >
               <button
                 role="tab"
-                :aria-selected="importSource === 'beefree'"
-                :class="[
-                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'beefree'
-                    ? 'border-primary text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
-                ]"
-                data-testid="import-tab-beefree"
-                @click="importSource = 'beefree'"
-              >
-                {{ t.importModal.sources.beefree }}
-              </button>
-              <button
-                role="tab"
                 :aria-selected="importSource === 'unlayer'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
@@ -3816,45 +3802,17 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'html'"
+                :aria-selected="importSource === 'beefree'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'html'
+                  importSource === 'beefree'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-html"
-                @click="importSource = 'html'"
+                data-testid="import-tab-beefree"
+                @click="importSource = 'beefree'"
               >
-                {{ t.importModal.sources.html }}
-              </button>
-              <button
-                role="tab"
-                :aria-selected="importSource === 'mjml'"
-                :class="[
-                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'mjml'
-                    ? 'border-primary text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
-                ]"
-                data-testid="import-tab-mjml"
-                @click="importSource = 'mjml'"
-              >
-                {{ t.importModal.sources.mjml }}
-              </button>
-              <button
-                role="tab"
-                :aria-selected="importSource === 'topol'"
-                :class="[
-                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'topol'
-                    ? 'border-primary text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
-                ]"
-                data-testid="import-tab-topol"
-                @click="importSource = 'topol'"
-              >
-                {{ t.importModal.sources.topol }}
+                {{ t.importModal.sources.beefree }}
               </button>
               <button
                 role="tab"
@@ -3872,6 +3830,20 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
+                :aria-selected="importSource === 'topol'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'topol'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-topol"
+                @click="importSource = 'topol'"
+              >
+                {{ t.importModal.sources.topol }}
+              </button>
+              <button
+                role="tab"
                 :aria-selected="importSource === 'chamaileon'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
@@ -3883,6 +3855,34 @@ onUnmounted(() => {
                 @click="importSource = 'chamaileon'"
               >
                 {{ t.importModal.sources.chamaileon }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'mjml'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'mjml'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-mjml"
+                @click="importSource = 'mjml'"
+              >
+                {{ t.importModal.sources.mjml }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'html'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'html'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-html"
+                @click="importSource = 'html'"
+              >
+                {{ t.importModal.sources.html }}
               </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
