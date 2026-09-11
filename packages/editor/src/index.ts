@@ -375,6 +375,20 @@ export interface TemplaticalEditorConfig {
   fonts?: FontsConfig;
 
   /**
+   * Base URL for the social-icon PNGs the renderer references in exported MJML
+   * (the `<mj-image>` src for each Social block icon). Forwarded to
+   * `@templatical/renderer`’s `socialIconsBaseUrl`; when omitted the renderer
+   * uses its version-pinned jsDelivr default. Set it to self-host the icons
+   * from your own origin. Trailing slash optional.
+   *
+   * Applies to the local `toMjml()` / `toHtml()` (via `compileMjml`) path only.
+   * A `render.toMjml` provider wins over the bundled renderer and never sees
+   * this — pass the URL to your own `renderToMjml` there. The editing canvas is
+   * unaffected either way (it draws icons as inline SVG).
+   */
+  socialIconsBaseUrl?: string;
+
+  /**
    * Editor-wide color-picker palette. `presets` appear as a clickable grid in
    * every color picker popover (block toolbars, template settings, rich-text
    * color, custom-block color fields) — clicking one applies it, and the preset
@@ -1091,6 +1105,7 @@ async function mountEditor(
         getCustomBlockStylesheet: (customType: string) =>
           instance.getCustomBlockStylesheet(customType),
         getFonts: () => resolveRenderFonts(fontsManager),
+        socialIconsBaseUrl: config.socialIconsBaseUrl,
       }),
   });
 

@@ -6,6 +6,7 @@ declare module "@templatical/renderer" {
     defaultFallbackFont?: string;
     allowHtmlBlocks?: boolean;
     renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+    socialIconsBaseUrl?: string;
   }
 
   export function renderToMjml(
