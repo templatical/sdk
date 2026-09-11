@@ -132,6 +132,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)     | Convert Topol.io email templates to Templatical format           | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)   | Convert Stripo email templates to Templatical format             | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-chamaileon`](https://www.npmjs.com/package/@templatical/import-chamaileon) | Convert Chamaileon `getDocument()` JSON to Templatical format | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-easy-email-pro`](https://www.npmjs.com/package/@templatical/import-easy-email-pro) | Convert Easy Email Pro persist JSON to Templatical format | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 
@@ -161,6 +162,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo)
 - [Migrating from Topol](https://docs.templatical.com/guide/migration-from-topol)
 - [Migrating from Chamaileon](https://docs.templatical.com/guide/migration-from-chamaileon)
+- [Migrating from Easy Email Pro](https://docs.templatical.com/guide/migration-from-easy-email-pro)
 - [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml)
 - [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
 - [Changelog](https://docs.templatical.com/changelog) — every release, all packages, one page
