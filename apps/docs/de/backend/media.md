@@ -26,9 +26,9 @@ Einträge landen im `localStorage` unter `templatical:media`. `create` speichert
 
 ## Installation
 
-Das Durchsuchen-Modal liegt in `@templatical/editor` als Lazy-Chunk. `init({ media })` und Clouds Standard-Speicher brauchen kein Extra-Paket — der erste Klick auf Durchsuchen lädt diesen Chunk. Vue wird nicht installiert.
-
-Installieren Sie [`@templatical/media-library`](/de/getting-started/installation) nur für das **eigenständige** SDK: `init()`, `useMediaLibrary` oder `MediaLibraryModal` in Ihrer eigenen Vue-App.
+::: warning Nur für die eigenständige Nutzung
+Installieren Sie [`@templatical/media-library`](/de/getting-started/installation) nicht neben dem Editor. `init({ media })` und Clouds Speicher enthalten Durchsuchen bereits als Lazy-Chunk; Vue wird nicht installiert. Dieses Paket ist das eigenständige SDK — `init()`, `useMediaLibrary` oder `MediaLibraryModal` in Ihrer eigenen Vue-App.
+:::
 
 ::: code-group
 

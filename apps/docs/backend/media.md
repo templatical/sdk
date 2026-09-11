@@ -26,9 +26,9 @@ Entries go into `localStorage` under `templatical:media`. `create` stores the fi
 
 ## Installation
 
-The Browse modal ships in `@templatical/editor` as a lazy chunk. `init({ media })` and Cloud's default store need no extra package — the first Browse click loads that chunk. Vue is not installed.
-
-Install [`@templatical/media-library`](/getting-started/installation#package-overview) only for the **standalone** SDK: `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+::: warning Only needed standalone
+Do not install [`@templatical/media-library`](/getting-started/installation#package-overview) next to the editor. `init({ media })` and Cloud's store already ship Browse as a lazy chunk; Vue is not installed. This package is the standalone SDK — `init()`, `useMediaLibrary`, or `MediaLibraryModal` in your own Vue app.
+:::
 
 ::: code-group
 
