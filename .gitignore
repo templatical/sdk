@@ -9,6 +9,7 @@ playwright-report/
 test-results/
 blob-report/
 .playwright-mcp
+AGENTS.md
 CLAUDE.md
 DESIGN.md
 PRODUCT.md
