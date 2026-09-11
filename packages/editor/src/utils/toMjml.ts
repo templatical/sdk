@@ -27,6 +27,12 @@ export interface ToMjmlSource {
    * passed through, so no `<mj-head>` stylesheet is emitted.
    */
   getCustomBlockStylesheet?: (customType: string) => string | undefined;
+  /**
+   * Optional. Base URL for the social-icon PNGs, forwarded to the renderer’s
+   * `socialIconsBaseUrl`. Omitting it leaves the renderer on its version-pinned
+   * jsDelivr default, so output matches today’s `toMjml()` for the same template.
+   */
+  socialIconsBaseUrl?: string;
 }
 
 /**
@@ -93,6 +99,9 @@ export async function toMjmlForInstance(
           customFonts: fonts.customFonts,
           defaultFallbackFont: fonts.defaultFallback,
         }
+      : {}),
+    ...(instance.socialIconsBaseUrl
+      ? { socialIconsBaseUrl: instance.socialIconsBaseUrl }
       : {}),
   });
 }

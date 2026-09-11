@@ -195,6 +195,38 @@ describe("toMjmlForInstance", () => {
     expect(optionsArg).not.toHaveProperty("getCustomBlockStylesheet");
   });
 
+  it("wires socialIconsBaseUrl through to the renderer when the source provides it", async () => {
+    const renderToMjml = vi.fn().mockResolvedValue("<mjml/>");
+    vi.doMock("@templatical/renderer", () => ({ renderToMjml }));
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+
+    await toMjmlForInstance({
+      getContent: () => makeContent([]),
+      renderCustomBlock: vi.fn(async () => ""),
+      socialIconsBaseUrl: "https://cdn.example.com/social",
+    });
+
+    const optionsArg = renderToMjml.mock.calls[0][1];
+    expect(optionsArg.socialIconsBaseUrl).toBe("https://cdn.example.com/social");
+  });
+
+  it("omits socialIconsBaseUrl from renderer options when the source doesn't provide one", async () => {
+    const renderToMjml = vi.fn().mockResolvedValue("<mjml/>");
+    vi.doMock("@templatical/renderer", () => ({ renderToMjml }));
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+
+    await toMjmlForInstance({
+      getContent: () => makeContent([]),
+      renderCustomBlock: vi.fn(async () => ""),
+      // No socialIconsBaseUrl
+    });
+
+    const optionsArg = renderToMjml.mock.calls[0][1];
+    expect(optionsArg).not.toHaveProperty("socialIconsBaseUrl");
+  });
+
   it("does not call renderCustomBlock itself — that's the renderer's job", async () => {
     const renderCustomBlock = vi.fn(async () => "<p/>");
     vi.doMock("@templatical/renderer", () => ({

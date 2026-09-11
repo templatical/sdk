@@ -472,6 +472,46 @@ describe("OSS init — instance methods", () => {
     expect(mjml).toBe("<mjml>mock</mjml>");
   });
 
+  it("forwards config.socialIconsBaseUrl to the local render", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const instance = await initFn({
+      container,
+      shadowDom: false,
+      content: { blocks: [] },
+      socialIconsBaseUrl: "https://cdn.example.com/social",
+    } as unknown as Parameters<typeof initFn>[0]);
+    (captured.props!.ref as Ref<unknown>).value = {
+      getContent: vi.fn(() => ({ blocks: [] })),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+    };
+
+    await instance.toMjml();
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+    expect(vi.mocked(toMjmlForInstance)).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        socialIconsBaseUrl: "https://cdn.example.com/social",
+      }),
+    );
+  });
+
+  it("omits socialIconsBaseUrl from the local render when unset", async () => {
+    const { instance } = await mountOss({
+      getContent: vi.fn(() => ({ blocks: [] })),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+    });
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+    vi.mocked(toMjmlForInstance).mockClear();
+    await instance.toMjml();
+
+    const source = vi.mocked(toMjmlForInstance).mock.calls.at(-1)![0];
+    expect(source.socialIconsBaseUrl).toBeUndefined();
+  });
+
   describe("render provider", () => {
     async function mountWithRender(render: Record<string, unknown>) {
       const container = document.createElement("div");
