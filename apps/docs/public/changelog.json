@@ -16,8 +16,23 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.36.0",
+  "latest": "0.37.0",
   "versions": [
+    {
+      "version": "0.37.0",
+      "date": "2026-09-11",
+      "changes": [
+        {
+          "hash": "f08ee18",
+          "level": "minor",
+          "title": "Add a `socialIconsBaseUrl` option to `init()`. It forwards to the bundled renderer's `socialIconsBaseUrl`, so `toMjml()` / `toHtml()` can emit social-icon URLs from your own origin instead of the default jsDelivr mirror. The renderer already supported this; the editor now exposes it. Omit it and output is unchanged.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.36.0",
       "date": "2026-09-11",
