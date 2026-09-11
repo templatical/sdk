@@ -94,8 +94,8 @@ export function convertSocial(
   node: ChamaileonNode,
   ctx: MapContext,
 ): Converted {
-  const style = readStyle(node, ctx.variables);
-  const attrs = readAttrs(node, ctx.variables);
+  const style = readStyle(node, ctx.variables, ctx.stats);
+  const attrs = readAttrs(node, ctx.variables, ctx.stats);
   const rawElements = attrs.elements;
   const elements = Array.isArray(rawElements) ? rawElements : [];
 

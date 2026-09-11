@@ -7,6 +7,7 @@
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^25.9.5",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   },

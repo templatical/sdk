@@ -44,11 +44,60 @@ export interface MapContext {
   columnWidth: number;
   variables: ChamaileonVariable[];
   warnings: string[];
+  stats?: { resolvedVariables: number };
 }
 
 export interface Converted {
   block: Block | null;
   entry: ImportReportEntry;
+}
+
+const LOOP_TYPES = new Set([
+  "block-level-loop",
+  "block-level-conditional",
+  "loop",
+  "conditional",
+  "branch",
+]);
+
+export function isLoopType(type: string | undefined): boolean {
+  return typeof type === "string" && LOOP_TYPES.has(type);
+}
+
+export function readLoopExpression(
+  node: ChamaileonNode,
+  ctx: MapContext,
+): string | undefined {
+  const value = readAttrs(node, ctx.variables, ctx.stats).expression;
+  return typeof value === "string" ? value : undefined;
+}
+
+export function skippedLoopEntry(
+  type: string,
+  expression: string | undefined,
+): ImportReportEntry {
+  return {
+    sourceTag: type,
+    templaticalBlockType: null,
+    status: "skipped",
+    note: expression ? `${type} ${expression}` : type,
+  };
+}
+
+export function markLoopApproximated(
+  entries: ImportReportEntry[],
+  from: number,
+  type: string,
+  expression: string | undefined,
+): void {
+  const extra = expression ? `${type} ${expression}` : type;
+  for (let i = from; i < entries.length; i++) {
+    const entry = entries[i];
+    if (entry.status === "converted") {
+      entry.status = "approximated";
+    }
+    entry.note = entry.note ? `${entry.note} ${extra}` : extra;
+  }
 }
 
 /**
@@ -103,7 +152,7 @@ function convertText(node: ChamaileonNode, ctx: MapContext): Converted {
     );
   }
 
-  const heading = headingLooks(style, inferred.level, ctx.variables);
+  const heading = headingLooks(style, inferred.level, ctx);
   return finish(
     createTitleBlock({
       content: inferred.inner,
@@ -318,8 +367,8 @@ function readNode(
   ctx: MapContext,
 ): { style: Record<string, unknown>; attrs: Record<string, unknown> } {
   return {
-    style: readStyle(node, ctx.variables),
-    attrs: readAttrs(node, ctx.variables),
+    style: readStyle(node, ctx.variables, ctx.stats),
+    attrs: readAttrs(node, ctx.variables, ctx.stats),
   };
 }
 
@@ -402,9 +451,9 @@ function typedTitleLevel(subType: string): HeadingLevel | undefined {
 function headingLooks(
   style: Record<string, unknown>,
   level: HeadingLevel,
-  variables: ChamaileonVariable[],
+  ctx: MapContext,
 ): { color?: string; fontFamily?: string } {
-  const nested = readNested(style[`h${level}`], variables);
+  const nested = readNested(style[`h${level}`], ctx);
   const color = parseColor(style[`h${level}Color`] ?? nested.color);
   const fontFamily = firstFamily(
     style[`h${level}FontFamily`] ?? nested.fontFamily,
@@ -415,16 +464,13 @@ function headingLooks(
   };
 }
 
-function readNested(
-  value: unknown,
-  variables: ChamaileonVariable[],
-): Record<string, unknown> {
+function readNested(value: unknown, ctx: MapContext): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return {};
   }
   const out: Record<string, unknown> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-    const unwrapped = unwrapValue(raw, variables);
+    const unwrapped = unwrapValue(raw, ctx.variables, ctx.stats);
     if (isUnset(unwrapped)) continue;
     out[camelKey(key)] = unwrapped;
   }

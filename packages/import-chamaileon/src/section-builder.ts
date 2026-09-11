@@ -1,7 +1,14 @@
 import { createSectionBlock } from "@templatical/types";
 import type { Block, BlockVisibility, SpacingValue } from "@templatical/types";
 import { parseColor, parsePadding, parsePx } from "./attribute-parser";
-import { convertLeaf, type MapContext } from "./block-mapper";
+import {
+  convertLeaf,
+  isLoopType,
+  markLoopApproximated,
+  readLoopExpression,
+  skippedLoopEntry,
+  type MapContext,
+} from "./block-mapper";
 import {
   COLUMN_COUNT,
   columnPixels,
@@ -23,8 +30,8 @@ export function buildFullwidth(
   ctx: MapContext,
   entries: ImportReportEntry[],
 ): Block[] {
-  const style = readStyle(node, ctx.variables);
-  const attrs = readAttrs(node, ctx.variables);
+  const style = readStyle(node, ctx.variables, ctx.stats);
+  const attrs = readAttrs(node, ctx.variables, ctx.stats);
   const contentFill = parseColor(styleValue(style, "contentBackgroundColor"));
   const outerFill = parseColor(styleValue(style, "backgroundColor"));
 
@@ -71,7 +78,7 @@ export function buildFullwidth(
       (child) => child.type === "column",
     );
     const widthsPx = columns.map((column) =>
-      parsePx(styleValue(readStyle(column, ctx.variables), "width")),
+      parsePx(styleValue(readStyle(column, ctx.variables, ctx.stats), "width")),
     );
     const { layout, exact } = matchColumnLayout(
       widthsToPercents(widthsPx, ctx.bodyWidth),
@@ -82,7 +89,9 @@ export function buildFullwidth(
       );
     }
 
-    const stacking = asString(readAttrs(driving, ctx.variables).stacking);
+    const stacking = asString(
+      readAttrs(driving, ctx.variables, ctx.stats).stacking,
+    );
     if (stacking === "none") {
       section.stackOnMobile = false;
     } else if (stacking !== undefined && stacking !== "left-on-top") {
@@ -109,7 +118,12 @@ export function buildFullwidth(
   }
 
   const soleFill = copySoleFill
-    ? parseColor(styleValue(readStyle(sole, ctx.variables), "backgroundColor"))
+    ? parseColor(
+        styleValue(
+          readStyle(sole, ctx.variables, ctx.stats),
+          "backgroundColor",
+        ),
+      )
     : undefined;
   const fill = contentFill ?? soleFill;
 
@@ -185,6 +199,19 @@ function convertColumnChildren(
       blocks.push(...convertColumnChildren(child.children ?? [], ctx, entries));
       continue;
     }
+    if (isLoopType(child.type)) {
+      const type = child.type ?? "loop";
+      const expression = readLoopExpression(child, ctx);
+      const kids = child.children ?? [];
+      if (kids.length === 0) {
+        entries.push(skippedLoopEntry(type, expression));
+        continue;
+      }
+      const from = entries.length;
+      blocks.push(...convertColumnChildren(kids, ctx, entries));
+      markLoopApproximated(entries, from, type, expression);
+      continue;
+    }
     const converted = convertLeaf(child, ctx);
     entries.push(converted.entry);
     if (converted.block) blocks.push(converted.block);
@@ -193,7 +220,7 @@ function convertColumnChildren(
 }
 
 function isPaintedBox(node: ChamaileonNode, ctx: MapContext): boolean {
-  const style = readStyle(node, ctx.variables);
+  const style = readStyle(node, ctx.variables, ctx.stats);
   if (parseColor(styleValue(style, "backgroundColor"))) return true;
   const padding = parsePadding(style);
   if (
@@ -214,7 +241,7 @@ function reportPaintedBox(
   entries: ImportReportEntry[],
 ): void {
   const fill = parseColor(
-    styleValue(readStyle(node, ctx.variables), "backgroundColor"),
+    styleValue(readStyle(node, ctx.variables, ctx.stats), "backgroundColor"),
   );
   entries.push({
     sourceTag: "box",
