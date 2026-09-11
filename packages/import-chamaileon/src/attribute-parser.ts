@@ -100,21 +100,52 @@ type CssBorder = {
   color: string;
 };
 
+function isSpace(ch: string): boolean {
+  return ch === " " || ch === "\t" || ch === "\n" || ch === "\r";
+}
+
+function skipSpaces(s: string, i: number): number {
+  while (i < s.length && isSpace(s[i]!)) i++;
+  return i;
+}
+
+/**
+ * `"2px solid #00a591"` — width, style, colour.
+ *
+ * Linear: a regex whose last two tokens are "spaces, then the rest of the
+ * string" is polynomial on a long run of spaces after the style word
+ * (`js/polynomial-redos`). Every character here is visited at most once.
+ */
 function parseCssBorder(value: unknown): CssBorder | undefined {
   if (isUnset(value) || typeof value !== "string") return undefined;
-  const match = /^(\d+(?:\.\d+)?)px\s+(solid|dashed|dotted)\s+(.+)$/i.exec(
-    value.trim(),
-  );
-  if (!match) return undefined;
-  const width = Math.round(parseFloat(match[1]));
-  if (width === 0) return undefined;
-  const color = parseColor(match[3]);
-  if (color === undefined) return undefined;
-  return {
-    width,
-    style: match[2].toLowerCase() as CssBorder["style"],
-    color,
-  };
+  const s = value.trim();
+  let i = 0;
+  const numStart = i;
+  while (i < s.length && s[i]! >= "0" && s[i]! <= "9") i++;
+  if (i < s.length && s[i] === ".") {
+    i++;
+    while (i < s.length && s[i]! >= "0" && s[i]! <= "9") i++;
+  }
+  if (i === numStart) return undefined;
+  const width = Math.round(parseFloat(s.slice(numStart, i)));
+  if (s.slice(i, i + 2).toLowerCase() !== "px") return undefined;
+  i += 2;
+  i = skipSpaces(s, i);
+  const styleStart = i;
+  while (i < s.length && !isSpace(s[i]!)) i++;
+  const styleWord = s.slice(styleStart, i).toLowerCase();
+  if (
+    styleWord !== "solid" &&
+    styleWord !== "dashed" &&
+    styleWord !== "dotted"
+  ) {
+    return undefined;
+  }
+  i = skipSpaces(s, i);
+  if (i >= s.length) return undefined;
+  const color = parseColor(s.slice(i));
+  if (color === undefined || width === 0) return undefined;
+  return { width, style: styleWord, color };
 }
 
 /** Parse a CSS border shorthand for outlined buttons / leaf borders. */

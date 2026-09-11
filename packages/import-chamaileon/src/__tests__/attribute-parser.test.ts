@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   parseAlignment,
@@ -81,6 +84,28 @@ describe("parseLineStyle / parseBorderShorthand", () => {
   });
   it("returns undefined for a zero-width border", () => {
     expect(parseBorderShorthand("0px solid #000000")).toBeUndefined();
+  });
+
+  it("tolerates extra spaces between tokens", () => {
+    expect(parseLineStyle("2px  solid  #00a591")).toEqual({
+      thickness: 2,
+      lineStyle: "solid",
+      color: "#00a591",
+    });
+  });
+
+  it("returns undefined when only spaces follow the style", () => {
+    expect(
+      parseBorderShorthand("0px solid " + "  ".repeat(200)),
+    ).toBeUndefined();
+  });
+
+  it("parses the border shorthand without a backtracking regex", () => {
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../attribute-parser.ts"),
+      "utf8",
+    );
+    expect(src).not.toMatch(/px\\s\+\(solid\|dashed\|dotted\)\\s\+\(\.\+\)/);
   });
 });
 
