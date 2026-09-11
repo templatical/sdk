@@ -1,0 +1,49 @@
+{
+  "name": "@templatical/import-chamaileon",
+  "description": "Convert Chamaileon email templates to Templatical format",
+  "version": "0.35.0",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "dependencies": {
+    "@templatical/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.5",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "chamaileon",
+    "email",
+    "email-template",
+    "importer",
+    "migration",
+    "templatical"
+  ],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/import-chamaileon"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}

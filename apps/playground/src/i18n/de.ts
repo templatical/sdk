@@ -14,7 +14,7 @@ export default {
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
       headline:
-        "Nutzen Sie bereits BeeFree, Unlayer, MJML, Topol, Stripo oder handgeschriebenes HTML?",
+        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML oder HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
@@ -23,6 +23,7 @@ export default {
       importFromMjml: "Aus MJML importieren",
       importFromTopol: "Aus Topol importieren",
       importFromStripo: "Aus Stripo importieren",
+      importFromChamaileon: "Aus Chamaileon importieren",
     },
   },
   cloudBanner: {
@@ -83,12 +84,13 @@ export default {
   importModal: {
     title: "Bestehende Vorlage importieren",
     sources: {
-      beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
-      html: "Aus HTML",
-      mjml: "Aus MJML",
-      topol: "Aus Topol",
+      beefree: "Aus BeeFree",
       stripo: "Aus Stripo",
+      topol: "Aus Topol",
+      chamaileon: "Aus Chamaileon",
+      mjml: "Aus MJML",
+      html: "Aus HTML",
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",
@@ -129,6 +131,12 @@ export default {
         "F\u00fcgen Sie unten Stripo-HTML ein \u2014 einen Datei \u2192 HTML-Export oder das { html, css }-Objekt aus getTemplateData(). Der Konverter erkennt selbst, welche Variante Sie \u00fcbergeben.",
       emptyError:
         "F\u00fcgen Sie Ihr Stripo-HTML ein oder laden Sie eine Datei hoch.",
+    },
+    chamaileon: {
+      description:
+        "F\u00fcgen Sie unten ein Chamaileon-getDocument()-JSON ein \u2014 das persistierte Dokument, kein getEmailHtml()-Markup.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Chamaileon-Dokument-JSON ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -337,6 +345,7 @@ export default {
     mjmlSourceContent: "MJML-Quelltext-Inhalt",
     topolSourceContent: "Topol-Design-JSON-Inhalt",
     stripoSourceContent: "Stripo-HTML-Inhalt",
+    chamaileonSourceContent: "Chamaileon-Dokument-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",

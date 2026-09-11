@@ -25,6 +25,10 @@ const topolSource = readFileSync(
   join(fixturesDir, "sample-topol-design.json"),
   "utf8",
 );
+const chamaileonSource = readFileSync(
+  join(fixturesDir, "sample-chamaileon-document.json"),
+  "utf8",
+);
 
 test.describe("Template import", () => {
   test.beforeEach(async ({ page }) => {
@@ -83,24 +87,27 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("migration band advertises all five sources on the chooser", async ({
+  test("migration band advertises importer sources on the chooser", async ({
     chooserPage,
-    page,
   }) => {
     await chooserPage.goto();
 
     const band = chooserPage.getMigrationBand();
     await expect(band).toBeVisible();
-    await expect(band).toContainText(/BeeFree/);
-    await expect(band).toContainText(/Unlayer/);
-    await expect(band).toContainText(/HTML/);
-    await expect(band).toContainText(/MJML/);
-    await expect(band).toContainText(/Topol/);
-    await expect(page.locator(SELECTORS.chooserImportBeefree)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportUnlayer)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportHtml)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportMjml)).toBeVisible();
-    await expect(page.locator(SELECTORS.chooserImportTopol)).toBeVisible();
+    const tiles = band.locator("button[data-testid^='chooser-import-']");
+    await expect(tiles).toHaveCount(7);
+    const ids = await tiles.evaluateAll((els) =>
+      els.map((el) => el.getAttribute("data-testid")),
+    );
+    expect(ids).toEqual([
+      "chooser-import-unlayer",
+      "chooser-import-beefree",
+      "chooser-import-stripo",
+      "chooser-import-topol",
+      "chooser-import-chamaileon",
+      "chooser-import-mjml",
+      "chooser-import-html",
+    ]);
   });
 
   test("BeeFree CTA opens modal with BeeFree tab selected", async ({
@@ -483,6 +490,96 @@ test.describe("Template import", () => {
     await chooserPage.goto();
     await chooserPage.openImportModal("topol");
     await chooserPage.pasteImportJson("topol", "    ");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+  });
+
+  test("imports a Chamaileon document and renders converted blocks", async ({
+    chooserPage,
+    editorPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.importTemplate("chamaileon", chamaileonSource);
+
+    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
+
+    await editorPage.waitForReady();
+    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
+
+    const titleBlock = page.locator(blockByType("title")).first();
+    await expect(titleBlock).toBeVisible();
+    await expect(titleBlock).toContainText("Hello from Chamaileon");
+
+    await expect(page.locator(blockByType("button")).first()).toBeVisible();
+  });
+
+  test("Chamaileon CTA opens modal with Chamaileon tab selected", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("chamaileon");
+
+    await expect(page.locator(SELECTORS.importTabChamaileon)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("switching to Chamaileon tab swaps the textarea and preserves BeeFree input", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal();
+
+    const beefreeText = '{"page":{"rows":[]}}';
+    await chooserPage.pasteImportJson("beefree", beefreeText);
+
+    await chooserPage.selectImportSource("chamaileon");
+    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toHaveValue(
+      "",
+    );
+    await expect(
+      page.locator(SELECTORS.importTextareaBeefree),
+    ).toHaveCount(0);
+
+    await chooserPage.selectImportSource("beefree");
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
+      beefreeText,
+    );
+  });
+
+  test("shows an empty-input error on Chamaileon tab when nothing is pasted", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("chamaileon");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+  });
+
+  test("shows an error when the Chamaileon input is whitespace only", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("chamaileon");
+    await chooserPage.pasteImportJson("chamaileon", "    ");
     await chooserPage.confirmImport();
 
     await expect(chooserPage.getImportError()).toBeVisible();

@@ -153,12 +153,13 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Migration",
       items: [
-        { text: "From BeeFree", link: "/guide/migration-from-beefree" },
         { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
-        { text: "From HTML", link: "/guide/migration-from-html" },
-        { text: "From MJML", link: "/guide/migration-from-mjml" },
-        { text: "From Topol", link: "/guide/migration-from-topol" },
+        { text: "From BeeFree", link: "/guide/migration-from-beefree" },
         { text: "From Stripo", link: "/guide/migration-from-stripo" },
+        { text: "From Topol", link: "/guide/migration-from-topol" },
+        { text: "From Chamaileon", link: "/guide/migration-from-chamaileon" },
+        { text: "From MJML", link: "/guide/migration-from-mjml" },
+        { text: "From HTML", link: "/guide/migration-from-html" },
       ],
     },
     {
@@ -334,12 +335,13 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Migration",
       items: [
-        { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
         { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
-        { text: "Von HTML", link: "/de/guide/migration-from-html" },
-        { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
-        { text: "Von Topol", link: "/de/guide/migration-from-topol" },
+        { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
         { text: "Von Stripo", link: "/de/guide/migration-from-stripo" },
+        { text: "Von Topol", link: "/de/guide/migration-from-topol" },
+        { text: "Von Chamaileon", link: "/de/guide/migration-from-chamaileon" },
+        { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
+        { text: "Von HTML", link: "/de/guide/migration-from-html" },
       ],
     },
     {

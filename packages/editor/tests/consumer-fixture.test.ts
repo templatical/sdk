@@ -255,6 +255,7 @@ describe("the real workspace and fixtures", () => {
       "@templatical/core",
       "@templatical/editor",
       "@templatical/import-beefree",
+      "@templatical/import-chamaileon",
       "@templatical/import-html",
       "@templatical/import-mjml",
       "@templatical/import-stripo",
@@ -308,6 +309,7 @@ describe("the real workspace and fixtures", () => {
     expect(externalizes).toEqual([
       "@templatical/core",
       "@templatical/import-beefree",
+      "@templatical/import-chamaileon",
       "@templatical/import-html",
       "@templatical/import-mjml",
       "@templatical/import-stripo",

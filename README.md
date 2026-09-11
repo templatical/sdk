@@ -131,6 +131,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)     | Convert Topol.io email templates to Templatical format           | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)   | Convert Stripo email templates to Templatical format             | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-chamaileon`](https://www.npmjs.com/package/@templatical/import-chamaileon) | Convert Chamaileon `getDocument()` JSON to Templatical format | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 
@@ -155,11 +156,13 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
 - [AI Agent Skill](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt in your own agent
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
-- [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
-- [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
-- [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml)
+- [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
+- [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo)
 - [Migrating from Topol](https://docs.templatical.com/guide/migration-from-topol)
+- [Migrating from Chamaileon](https://docs.templatical.com/guide/migration-from-chamaileon)
+- [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml)
+- [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
 - [Changelog](https://docs.templatical.com/changelog) — every release, all packages, one page
 
 Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + Deutsch).

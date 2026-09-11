@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,20 @@ import { validateTemplate } from "../scripts/validate.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoFile = (rel: string) => resolve(here, "../../..", rel);
+
+describe("FORMATS", () => {
+  it("lists --format values in popularity order on usage", () => {
+    const result = spawnSync(
+      process.execPath,
+      [resolve(here, "../scripts/import.mjs")],
+      { encoding: "utf8" },
+    );
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain(
+      "--format unlayer|beefree|stripo|topol|chamaileon|mjml|html",
+    );
+  });
+});
 
 describe("detectFormat", () => {
   it("detects html by extension", () => {
@@ -118,6 +133,27 @@ describe("detectFormat", () => {
       detectFormat("mail.html", "<html><body><table></table></body></html>"),
     ).toBe("html");
   });
+  it("detects chamaileon from body.type", () => {
+    expect(
+      detectFormat("doc.json", JSON.stringify({ body: { type: "body", eid: "root", children: [] } })),
+    ).toBe("chamaileon");
+  });
+  it("detects chamaileon regardless of file name", () => {
+    expect(
+      detectFormat("whatever.txt", JSON.stringify({ body: { type: "body" } })),
+    ).toBe("chamaileon");
+  });
+  it("does not mistake an unlayer design for chamaileon", () => {
+    expect(detectFormat("design.json", JSON.stringify({ body: { rows: [] } }))).toBe("unlayer");
+  });
+  it("does not mistake a topol design for chamaileon", () => {
+    expect(detectFormat("design.json", JSON.stringify({ tagName: "mj-global-style" }))).toBe("topol");
+  });
+  it("does not mistake stripo html for chamaileon", () => {
+    expect(
+      detectFormat("x.html", '<table class="es-wrapper"><td class="es-content-body"></td></table>'),
+    ).toBe("stripo");
+  });
 });
 
 describe("summarizeReport", () => {
@@ -183,6 +219,11 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
       format: "stripo",
       fixture:
         "packages/import-stripo/src/__tests__/fixtures/compiled-content.html",
+    },
+    {
+      format: "chamaileon",
+      fixture:
+        "packages/import-chamaileon/src/__tests__/fixtures/example-1.json",
     },
   ] as const;
 

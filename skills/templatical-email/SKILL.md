@@ -143,17 +143,18 @@ unrelated sessions.
 ## Importing an existing template
 
 If the user has a template from another editor in their project — **Unlayer**,
-**BeeFree**, an **HTML email**, an **MJML** template, a **Topol** design, or a
-**Stripo** export (plugin `getTemplateData` HTML, or compiled File → HTML) —
-convert it to Templatical instead of building from scratch. `scripts/import.mjs`
-runs the matching `@templatical/import-*` converter:
+**BeeFree**, a **Stripo** export (plugin `getTemplateData` HTML, or compiled
+File → HTML), a **Topol** design, a **Chamaileon** `getDocument()` persist
+document, an **MJML** template, or an **HTML email** — convert it to Templatical
+instead of building from scratch. `scripts/import.mjs` runs the matching
+`@templatical/import-*` converter:
 
 ```
-node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol|stripo]
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|stripo|topol|chamaileon|mjml|html]
 ```
 
-It auto-detects the format (Unlayer / BeeFree / Topol JSON, Stripo HTML or
-`{ html, css }` JSON, `.html`, or MJML by its `.mjml` extension or an
+It auto-detects the format (Unlayer / BeeFree / Topol / Chamaileon JSON, Stripo
+HTML or `{ html, css }` JSON, `.html`, or MJML by its `.mjml` extension or an
 `<mjml>`/`<mj-body>` root). Stripo must be decided before the generic HTML
 branch: compiled File → HTML and plugin storage are both `.html`. Writes the
 result to a working file `.templatical/<name>.json` (same as a generated

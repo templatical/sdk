@@ -12,7 +12,7 @@ export default {
     emptyCanvas: "Empty canvas with default settings",
     migration: {
       headline:
-        "Already using BeeFree, Unlayer, MJML, Topol, Stripo, or hand-coded HTML?",
+        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, MJML, or HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
@@ -21,6 +21,7 @@ export default {
       importFromMjml: "Import from MJML",
       importFromTopol: "Import from Topol",
       importFromStripo: "Import from Stripo",
+      importFromChamaileon: "Import from Chamaileon",
     },
   },
   cloudBanner: {
@@ -81,12 +82,13 @@ export default {
   importModal: {
     title: "Import existing template",
     sources: {
-      beefree: "From BeeFree",
       unlayer: "From Unlayer",
-      html: "From HTML",
-      mjml: "From MJML",
-      topol: "From Topol",
+      beefree: "From BeeFree",
       stripo: "From Stripo",
+      topol: "From Topol",
+      chamaileon: "From Chamaileon",
+      mjml: "From MJML",
+      html: "From HTML",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
@@ -120,6 +122,11 @@ export default {
       description:
         "Paste Stripo HTML below — a File → HTML export, or the { html, css } object from getTemplateData(). The converter auto-detects which one you passed.",
       emptyError: "Paste your Stripo HTML or upload a file.",
+    },
+    chamaileon: {
+      description:
+        "Paste a Chamaileon getDocument() JSON below — the persist document, not getEmailHtml() markup.",
+      emptyError: "Paste your Chamaileon document JSON or upload a file.",
     },
   },
   mergeTagModal: {
@@ -324,6 +331,7 @@ export default {
     mjmlSourceContent: "MJML source content",
     topolSourceContent: "Topol design JSON content",
     stripoSourceContent: "Stripo HTML content",
+    chamaileonSourceContent: "Chamaileon document JSON content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

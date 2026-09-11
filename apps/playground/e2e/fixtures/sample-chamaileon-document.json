@@ -1,0 +1,29 @@
+{
+  "body": {
+    "type": "body",
+    "children": [
+      {
+        "type": "fullwidth",
+        "children": [
+          {
+            "type": "text",
+            "attrs": {
+              "text": "<h1>Hello from Chamaileon</h1>"
+            }
+          },
+          {
+            "type": "button",
+            "attrs": {
+              "text": "Click me",
+              "href": "https://example.test"
+            },
+            "style": {
+              "backgroundColor": "#00a591",
+              "color": "#ffffff"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

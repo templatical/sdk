@@ -135,9 +135,9 @@ function tplDesc(tpl: TemplateOption): string {
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
 type ImportSource =
-  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "stripo";
+  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "stripo" | "chamaileon";
 const showImport = ref(false);
-const importSource = ref<ImportSource>("beefree");
+const importSource = ref<ImportSource>("unlayer");
 const beefreeJson = ref("");
 const beefreeError = ref("");
 const unlayerJson = ref("");
@@ -150,6 +150,8 @@ const topolSource = ref("");
 const topolError = ref("");
 const stripoSource = ref("");
 const stripoError = ref("");
+const chamaileonSource = ref("");
+const chamaileonError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -1422,6 +1424,7 @@ function closeImportModal(): void {
   mjmlError.value = "";
   topolError.value = "";
   stripoError.value = "";
+  chamaileonError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -1527,6 +1530,22 @@ async function importStripoFromString(raw: string): Promise<void> {
   }
 }
 
+async function importChamaileonFromString(raw: string): Promise<void> {
+  chamaileonError.value = "";
+
+  try {
+    const { convertChamaileonTemplate } =
+      await import("@templatical/import-chamaileon");
+    const { content } = convertChamaileonTemplate(raw);
+    closeImportModal();
+    chamaileonSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    chamaileonError.value =
+      e instanceof Error ? e.message : "Invalid Chamaileon JSON";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -1578,6 +1597,16 @@ function confirmImport(): void {
     return;
   }
 
+  if (importSource.value === "chamaileon") {
+    const raw = chamaileonSource.value.trim();
+    if (!raw) {
+      chamaileonError.value = t.value.importModal.chamaileon.emptyError;
+      return;
+    }
+    importChamaileonFromString(raw);
+    return;
+  }
+
   const raw = unlayerJson.value.trim();
   if (!raw) {
     unlayerError.value = t.value.importModal.unlayer.emptyError;
@@ -1605,6 +1634,8 @@ onImportFileChange(async (files) => {
     importTopolFromString(text);
   } else if (importSource.value === "stripo") {
     importStripoFromString(text);
+  } else if (importSource.value === "chamaileon") {
+    importChamaileonFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -2855,18 +2886,6 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
-                data-testid="chooser-import-beefree"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('beefree')"
-              >
-                {{ t.chooser.migration.importFromBeefree }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
                 data-testid="chooser-import-unlayer"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('unlayer')"
@@ -2879,11 +2898,11 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-html"
+                data-testid="chooser-import-beefree"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('html')"
+                @click="openImportFromSource('beefree')"
               >
-                {{ t.chooser.migration.importFromHtml }}
+                {{ t.chooser.migration.importFromBeefree }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -2891,11 +2910,11 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-mjml"
+                data-testid="chooser-import-stripo"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('mjml')"
+                @click="openImportFromSource('stripo')"
               >
-                {{ t.chooser.migration.importFromMjml }}
+                {{ t.chooser.migration.importFromStripo }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -2915,11 +2934,35 @@ onUnmounted(() => {
                 />
               </button>
               <button
-                data-testid="chooser-import-stripo"
+                data-testid="chooser-import-chamaileon"
                 class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('stripo')"
+                @click="openImportFromSource('chamaileon')"
               >
-                {{ t.chooser.migration.importFromStripo }}
+                {{ t.chooser.migration.importFromChamaileon }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-mjml"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('mjml')"
+              >
+                {{ t.chooser.migration.importFromMjml }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-html"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('html')"
+              >
+                {{ t.chooser.migration.importFromHtml }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -3724,7 +3767,9 @@ onUnmounted(() => {
                             ? t.importModal.topol.description
                             : importSource === "stripo"
                               ? t.importModal.stripo.description
-                              : t.importModal.unlayer.description
+                              : importSource === "chamaileon"
+                                ? t.importModal.chamaileon.description
+                                : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -3743,20 +3788,6 @@ onUnmounted(() => {
             >
               <button
                 role="tab"
-                :aria-selected="importSource === 'beefree'"
-                :class="[
-                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'beefree'
-                    ? 'border-primary text-gray-900 dark:text-gray-100'
-                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
-                ]"
-                data-testid="import-tab-beefree"
-                @click="importSource = 'beefree'"
-              >
-                {{ t.importModal.sources.beefree }}
-              </button>
-              <button
-                role="tab"
                 :aria-selected="importSource === 'unlayer'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
@@ -3771,31 +3802,31 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'html'"
+                :aria-selected="importSource === 'beefree'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'html'
+                  importSource === 'beefree'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-html"
-                @click="importSource = 'html'"
+                data-testid="import-tab-beefree"
+                @click="importSource = 'beefree'"
               >
-                {{ t.importModal.sources.html }}
+                {{ t.importModal.sources.beefree }}
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'mjml'"
+                :aria-selected="importSource === 'stripo'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'mjml'
+                  importSource === 'stripo'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-mjml"
-                @click="importSource = 'mjml'"
+                data-testid="import-tab-stripo"
+                @click="importSource = 'stripo'"
               >
-                {{ t.importModal.sources.mjml }}
+                {{ t.importModal.sources.stripo }}
               </button>
               <button
                 role="tab"
@@ -3813,17 +3844,45 @@ onUnmounted(() => {
               </button>
               <button
                 role="tab"
-                :aria-selected="importSource === 'stripo'"
+                :aria-selected="importSource === 'chamaileon'"
                 :class="[
                   'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
-                  importSource === 'stripo'
+                  importSource === 'chamaileon'
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
-                data-testid="import-tab-stripo"
-                @click="importSource = 'stripo'"
+                data-testid="import-tab-chamaileon"
+                @click="importSource = 'chamaileon'"
               >
-                {{ t.importModal.sources.stripo }}
+                {{ t.importModal.sources.chamaileon }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'mjml'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'mjml'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-mjml"
+                @click="importSource = 'mjml'"
+              >
+                {{ t.importModal.sources.mjml }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'html'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'html'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-html"
+                @click="importSource = 'html'"
+              >
+                {{ t.importModal.sources.html }}
               </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
@@ -3884,12 +3943,20 @@ onUnmounted(() => {
                 placeholder='{"tagName": "mj-global-style", "children": [{"tagName": "mj-container", "children": [...]}]}'
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'stripo'"
                 v-model="stripoSource"
                 :aria-label="t.a11y.stripoSourceContent"
                 data-testid="import-textarea-stripo"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='<table class="es-wrapper">...</table>'
+              ></textarea>
+              <textarea
+                v-else
+                v-model="chamaileonSource"
+                :aria-label="t.a11y.chamaileonSourceContent"
+                data-testid="import-textarea-chamaileon"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"body": {"type": "body", "children": [{"type": "fullwidth", "children": [...]}]}}'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -3932,6 +3999,13 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ stripoError }}
+              </p>
+              <p
+                v-if="importSource === 'chamaileon' && chamaileonError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ chamaileonError }}
               </p>
             </div>
             <div
