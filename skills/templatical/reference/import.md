@@ -23,13 +23,13 @@ converters are added often, and `--list-formats --json` reports exactly what is
 resolvable right now:
 
 ```
-npx -y @templatical/template-tools@0.36.0 import --list-formats --json
+npx -y @templatical/template-tools@0.38.0 import --list-formats --json
 ```
 
 Then:
 
 ```
-npx -y @templatical/template-tools@0.36.0 import <source-file> [--format <fmt>] --json
+npx -y @templatical/template-tools@0.38.0 import <source-file> [--format <fmt>] --json
 ```
 
 It auto-detects the format from the file's name and content when `--format` is
@@ -49,7 +49,7 @@ Two rules keep this from going stale:
   converters ship over time, and a hardcoded list drifts the moment one does.
   Ask the CLI instead:
   ```
-  npx -y @templatical/template-tools@0.36.0 import --list-formats --json
+  npx -y @templatical/template-tools@0.38.0 import --list-formats --json
   ```
   which reports exactly what's resolvable right now, per format, in the
   current project.

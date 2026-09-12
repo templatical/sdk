@@ -19,7 +19,7 @@ unrelated sessions.
   ("keep working on the welcome email", "open misty-copper-otter"), list what's
   there:
   ```
-  npx -y @templatical/template-tools@0.36.0 list --json
+  npx -y @templatical/template-tools@0.38.0 list --json
   ```
   Each entry carries a title hint pulled from the template's first heading
   block — use it to figure out which one the user means.

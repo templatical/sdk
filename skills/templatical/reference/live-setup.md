@@ -34,7 +34,7 @@ template first. A mid-session switch just points the bridge at that file.
 2. Start the bridge in the background (from the project root), pointing it at
    the session's template with `--file`:
    ```
-   npx -y @templatical/template-tools@0.36.0 live --file .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.38.0 live --file .templatical/<name>.json --json
    ```
    Read the URL and working-file path from the JSON line on stdout (`url`,
    `workingFile`) rather than pattern-matching prose — the bridge also opens

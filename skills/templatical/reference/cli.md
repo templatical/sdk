@@ -7,7 +7,7 @@ playbook assumes it and none repeat it.
 **Every command below runs through one pinned CLI, and the invocation always
 starts the same way:**
 ```
-npx -y @templatical/template-tools@0.36.0 validate <file> --json
+npx -y @templatical/template-tools@0.38.0 validate <file> --json
 ```
 `npx`, then `-y`, then the package name pinned to an exact version, is the
 fixed prefix — identical for `validate`, `render`, `edit`, `import`, `live`, and
