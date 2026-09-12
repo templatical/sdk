@@ -1,7 +1,8 @@
 # Editing with operations
 
 **Before:** [cli.md](cli.md)
-**Consult:** [rules.md](rules.md) before adding a block
+**Consult:** [rules.md](rules.md) before adding a block · [blocks.md](blocks.md)
+for field-level shape · [brand.md](brand.md) when restyling
 **After:** validation runs inside `edit` itself, so a rejected operation writes
 nothing — see [validate.md](validate.md) for reading the failure
 **Then:** `live reload` if [live.md](live.md) is running

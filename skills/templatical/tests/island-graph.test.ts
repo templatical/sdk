@@ -92,14 +92,18 @@ describe("the island graph", () => {
     expect(existsSync(resolve(REFERENCE_DIR, "talking.md"))).toBe(true);
   });
 
-  it("has no intra-document anchor links — the document they pointed into is gone", () => {
+  it("has no anchor links — intra-document ones point into a document that's gone, and cross-file ones aren't seen by link resolution either", () => {
     const offenders: string[] = [];
     for (const island of islandsOnDisk()) {
       // block-guide.md is exempt: one self-contained document whose own
       // contents list anchors into its own headings.
       if (island === "block-guide") continue;
       const src = readFileSync(resolve(REFERENCE_DIR, `${island}.md`), "utf8");
-      for (const [match] of src.matchAll(/\]\(#[a-z0-9-]+\)/g)) {
+      // Any `#` inside a markdown link's target, not just `(#anchor)`: a
+      // cross-file form like `(rules.md#colors)` still doesn't end in `.md)`,
+      // so linksIn() above can't see it either — the case is caught here or
+      // nowhere.
+      for (const [match] of src.matchAll(/\]\([^)]*#[^)]*\)/g)) {
         offenders.push(`${island}.md: ${match}`);
       }
     }

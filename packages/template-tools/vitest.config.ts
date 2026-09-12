@@ -9,7 +9,7 @@ export default defineConfig({
     // schema-freshness builds a TypeScript program. That work is I/O-bound, so
     // it is cheap on a warm dev machine and several times dearer on a cold CI
     // runner — and `pnpm run test` runs every package concurrently, which is
-    // exactly what CI does. The same 20s the editor and email-skill suites use,
+    // exactly what CI does. The same 20s the editor and skill suites use,
     // for the same reason.
     testTimeout: 20_000,
   },

@@ -29,7 +29,7 @@ scoped — a whole-document rewrite discards work the user did by hand.
    ```
    npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
    ```
-   Fix every structural error reported and re-run until it exits `0` or `1`
+   Fix every structural error reported and re-run until it exits `0`
    (see [Requirements](cli.md)), and resolve the reported accessibility
    / structure / link issues too. Writing to that file is what lets a later
    "show it live" pick up the current template with no extra step.

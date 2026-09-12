@@ -1,7 +1,7 @@
 // The format registry. A new @templatical/import-* converter is ONE entry here
-// and nothing else: SKILL.md documents the routing rule rather than the list,
-// and `--list-formats` answers what is resolvable at runtime. That is what lets
-// a new importer ship without a skill edit or a plugin version bump.
+// and nothing else: reference/import.md documents the routing rule rather than
+// the list, and `--list-formats` answers what is resolvable at runtime. That is
+// what lets a new importer ship without a skill edit.
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, extname } from "node:path";

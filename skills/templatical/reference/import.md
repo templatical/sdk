@@ -1,6 +1,7 @@
 # Importing an existing template
 
 **Before:** [cli.md](cli.md)
+**Consult:** [rules.md](rules.md) for what may and may not be emitted
 **After:** [validate.md](validate.md) on the result
 **Then:** [live.md](live.md), to refine the blocks that fell back to `html` into
 native ones — see [blocks.md](blocks.md) for what to turn them into

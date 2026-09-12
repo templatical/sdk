@@ -3,12 +3,11 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 // This package's vitest.config.ts deliberately has no `passWithNoTests`, so
-// the suite must never be empty — a later task's rename that made the
+// the suite must never be empty — a rename that made the
 // `tests/**/*.test.ts` glob match nothing would otherwise exit 0 silently.
-// Until the router (SKILL.md + islands) lands in a later task, this file is
-// what exercises that config: it guards the two things this task's own
-// scaffolding promises — the workspace package identity and the three
-// relocated contract assets — so the package is never left with zero tests.
+// This file guards the workspace package identity and the three relocated
+// contract assets (schema.json, block-guide.md, examples/) that the
+// router's islands point agents at.
 const PACKAGE_ROOT = resolve(import.meta.dirname, "..");
 const REFERENCE_DIR = resolve(PACKAGE_ROOT, "reference");
 
