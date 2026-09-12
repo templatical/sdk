@@ -132,17 +132,26 @@ const SKILL_DIR_LABEL = "skills/templatical";
 const SKILL_DIR = resolve(here, "../../../", SKILL_DIR_LABEL);
 
 /**
- * Every `.md` under the skill, repo-relative, `/`-joined. Walks with
- * `lstatSync`, not `statSync`: the skill's own `node_modules` entries (e.g.
- * `typescript`, `vitest`) are symlinks into the pnpm store, and `statSync`
- * follows them — which pulls vendor README/LICENSE/SECURITY `.md` files from
- * wherever those packages happen to live into the walk. `lstatSync` reports
- * the symlink itself, which isn't a directory, so the walk never descends
- * into it.
+ * Every `.md` under the skill, repo-relative, `/`-joined. Exported so
+ * tests/sync-pins.test.ts can assert directly on what the walk finds.
+ *
+ * Two independent defenses against pulling in vendor `.md` files, not one:
+ * `lstatSync`, not `statSync`, so a symlinked entry (e.g. a pnpm-managed
+ * package inside `node_modules`) is never followed — the symlink itself
+ * isn't a directory, so the walk doesn't descend into it. And `node_modules`
+ * is skipped by name regardless, because `node_modules` is a real directory
+ * under every workspace member; whether the packages inside it are symlinks
+ * is an installer detail. `lstatSync` alone would exclude them today only
+ * because pnpm happens to symlink each package — a different installer
+ * layout, or pnpm hoisting a real directory in there, would put vendor
+ * README/LICENSE/SECURITY `.md` files back in the walk, and applyCliPin
+ * would be handed files it has no business seeing. The name skip makes the
+ * exclusion structural instead of incidental to today's installer.
  */
-function skillMarkdownFiles(dir = SKILL_DIR, base = SKILL_DIR) {
+export function skillMarkdownFiles(dir = SKILL_DIR, base = SKILL_DIR) {
   const out = [];
   for (const entry of readdirSync(dir)) {
+    if (entry === "node_modules") continue;
     const abs = join(dir, entry);
     if (lstatSync(abs).isDirectory()) {
       out.push(...skillMarkdownFiles(abs, base));

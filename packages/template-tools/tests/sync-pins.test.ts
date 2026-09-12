@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyCliPin,
   applyEditorVersion,
+  skillMarkdownFiles,
 } from "../scripts/sync-pins.mjs";
 
 // Fixture strings below are built from parts, like tests/cdn-pin.test.ts's own
@@ -86,5 +87,18 @@ describe("applyCliPin", () => {
     const out = applyCliPin(src, "2.0.0").next;
     expect(out).toContain("before");
     expect(out).toContain("after");
+  });
+});
+
+// node_modules is a real directory under every workspace member, not a
+// symlink — lstatSync alone excludes today's vendor packages only because
+// pnpm happens to symlink each one inside it. This locks the name-based skip
+// that makes the exclusion structural instead of incidental to that
+// installer detail.
+describe("skillMarkdownFiles", () => {
+  it("walks only the skill's own markdown, never its node_modules", () => {
+    const files = skillMarkdownFiles();
+    expect(files.length).toBeGreaterThan(0);
+    expect(files.filter((f: string) => f.includes("node_modules"))).toEqual([]);
   });
 });
