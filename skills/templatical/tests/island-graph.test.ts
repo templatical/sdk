@@ -14,12 +14,17 @@ function islandsOnDisk(): string[] {
     .sort();
 }
 
-/** Entry islands, parsed from the Commands table's third column. */
+/** Entry islands, parsed from the Commands table. Captures the link's label
+ *  AND its href: a row whose href points somewhere the label does not is
+ *  exactly the dead-route case this table exists to prevent. */
 function entryIslands(): string[] {
-  return [...SKILL_MD.matchAll(/^\|\s*`([a-z-]+)`\s*\|[^|]*\|\s*\[reference\/([a-z-]+)\.md\]/gm)]
-    .map(([, mode, file]) => {
-      expect(mode, "a Commands row's mode must match its island filename").toBe(file);
-      return file;
+  return [...SKILL_MD.matchAll(
+    /^\|\s*`([a-z-]+)`\s*\|[^|]*\|\s*\[reference\/([a-z-]+)\.md\]\(reference\/([a-z-]+)\.md\)/gm,
+  )]
+    .map(([, mode, label, href]) => {
+      expect(mode, "a Commands row's mode must match its island filename").toBe(label);
+      expect(href, "a Commands row's link target must match its label").toBe(label);
+      return href;
     })
     .sort();
 }
@@ -82,7 +87,9 @@ describe("the island graph", () => {
 
   it("tells the agent to load the phase island before the first command", () => {
     expect(SKILL_MD).toContain("reference/cli.md");
+    expect(SKILL_MD).toContain("reference/talking.md");
     expect(existsSync(resolve(REFERENCE_DIR, "cli.md"))).toBe(true);
+    expect(existsSync(resolve(REFERENCE_DIR, "talking.md"))).toBe(true);
   });
 
   it("has no intra-document anchor links — the document they pointed into is gone", () => {

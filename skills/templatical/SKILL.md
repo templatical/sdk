@@ -23,7 +23,7 @@ license: MIT
 # Templatical
 
 Author [Templatical](https://templatical.com) email templates and integrate the
-`@templatical/editor` SDK that renders them, as one router over both jobs — an
+`@templatical/editor` SDK that renders them, as one router over both jobs. An
 authoring session often ends by wiring its result into an application.
 
 > Is the request about **a template** — its content, design, correctness or
