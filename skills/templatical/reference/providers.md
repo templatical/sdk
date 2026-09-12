@@ -21,4 +21,4 @@ optional, and `testEmail` is a single `send`.
 
 Full contracts, headless use (`useSavedBlocks`, `useVersionHistory`,
 `useComments` from `@templatical/core`, for driving a custom UI with no
-editor mounted), and Cloud as one implementation of each: `reference/backend/`.
+editor mounted), and Cloud as one implementation of each: [docs.md](docs.md) → the `backend/` pages.

@@ -40,7 +40,7 @@ only the ones actually used (see Failure modes, below).
 
 Same shape in any component-based framework: mount on the container ref,
 unmount on cleanup. React shown; Vue, Svelte and Angular equivalents are in
-`reference/getting-started/installation.md`, under "Framework integration".
+[docs.md](docs.md) → `getting-started/installation`, under "Framework integration".
 
 ```tsx
 import { useEffect, useRef } from "react";
@@ -87,4 +87,4 @@ const editor = await initCloud({
 Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
 dashboard — this skill documents `initCloud()`'s shape and the provider
 contracts it fills in, not signup. The auth endpoint the consumer's server
-needs to implement is in `reference/cloud/getting-started.md`.
+needs to implement is in [docs.md](docs.md) → `cloud/getting-started`.
