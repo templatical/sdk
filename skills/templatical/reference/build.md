@@ -27,7 +27,7 @@ scoped — a whole-document rewrite discards work the user did by hand.
    `.templatical/<name>.json` (see [Working files](working-files.md) — generate a
    fresh three-word name for a new template; create the folder if needed) and run:
    ```
-   npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.38.0 validate .templatical/<name>.json --json
    ```
    Fix every structural error reported and re-run until it exits `0`
    (see [Requirements](cli.md)), and resolve the reported accessibility

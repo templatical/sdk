@@ -43,17 +43,17 @@ When the user asks for a change:
    in one step, composing on top of whatever's currently in the working file
    rather than discarding it:
    ```
-   npx -y @templatical/template-tools@0.36.0 edit .templatical/<name>.json --op '<json>' --json
+   npx -y @templatical/template-tools@0.38.0 edit .templatical/<name>.json --op '<json>' --json
    ```
    For a genuine rebuild, regenerate the document and **validate it before
    writing** — never push invalid content to the editor:
    ```
-   npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.38.0 validate .templatical/<name>.json --json
    ```
    then write it to `.templatical/<name>.json` yourself.
 3. **Push the write** to the browser:
    ```
-   npx -y @templatical/template-tools@0.36.0 live reload --json
+   npx -y @templatical/template-tools@0.38.0 live reload --json
    ```
    The page updates live (over Server-Sent Events) — no refresh. This also
    clears `annotations`, so a note is never acted on twice.
@@ -72,7 +72,7 @@ Stop the bridge when the user is done (or the session ends) so no process or por
 is orphaned:
 
 ```
-npx -y @templatical/template-tools@0.36.0 live stop --json
+npx -y @templatical/template-tools@0.38.0 live stop --json
 ```
 
 ## Notes & limits

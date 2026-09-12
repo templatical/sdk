@@ -15,7 +15,7 @@ swap a headline, delete a block, reorder two sections — apply an operation
 instead of regenerating and rewriting the whole document:
 
 ```
-npx -y @templatical/template-tools@0.36.0 edit .templatical/<name>.json --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}' --json
+npx -y @templatical/template-tools@0.38.0 edit .templatical/<name>.json --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}' --json
 ```
 
 `edit` applies the operation, validates the result, and writes the file — all

@@ -1,7 +1,7 @@
 {
   "name": "@templatical/import-stripo",
   "description": "Convert Stripo email templates to Templatical format",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/import-html": "workspace:*",

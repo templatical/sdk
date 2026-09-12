@@ -10,7 +10,7 @@ Run it before writing any template to disk, and whenever the user asks whether
 one is correct.
 
 ```
-npx -y @templatical/template-tools@0.36.0 validate <file> --json
+npx -y @templatical/template-tools@0.38.0 validate <file> --json
 ```
 
 ## Reading the result

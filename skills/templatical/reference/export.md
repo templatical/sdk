@@ -10,8 +10,8 @@ the user needs the email in a sendable format instead — to paste into an ESP,
 or because they have no editor integration to load JSON into — render it:
 
 ```
-npx -y @templatical/template-tools@0.36.0 render .templatical/<name>.json --format mjml -o .templatical/<name>.mjml
-npx -y @templatical/template-tools@0.36.0 render .templatical/<name>.json --format html -o .templatical/<name>.html
+npx -y @templatical/template-tools@0.38.0 render .templatical/<name>.json --format mjml -o .templatical/<name>.mjml
+npx -y @templatical/template-tools@0.38.0 render .templatical/<name>.json --format html -o .templatical/<name>.html
 ```
 
 Drop `-o <file>` to print the rendered output to stdout instead, if you'd

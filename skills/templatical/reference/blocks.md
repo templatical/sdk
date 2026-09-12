@@ -15,5 +15,5 @@ Three files carry the detail, and they are the contract rather than prose:
 - **[examples/](examples/)** — five complete, valid templates. Model output on
   these rather than inventing a shape.
 
-`npx -y @templatical/template-tools@0.36.0 schema` prints the same schema for
+`npx -y @templatical/template-tools@0.38.0 schema` prints the same schema for
 callers outside this skill; the committed copy above is what to read in context.

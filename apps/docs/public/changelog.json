@@ -14,10 +14,27 @@
     "@templatical/media-library",
     "@templatical/quality",
     "@templatical/renderer",
+    "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.37.0",
+  "latest": "0.38.0",
   "versions": [
+    {
+      "version": "0.38.0",
+      "date": "2026-09-12",
+      "changes": [
+        {
+          "hash": "67cd83d",
+          "level": "minor",
+          "title": "First release. `@templatical/template-tools` is the CLI and library behind the",
+          "body": "Templatical Agent Skill: `validate`, `render`, `edit`, `import`, `live`,\n`schema` and `list`, each with `--json` output and a documented exit contract\n(`0` success, `1` invalid template, `2` misuse, `3` an optional package is\nmissing and the message names the install command).\n\nNothing is installed into your project. `render --format html` and `import` ask\nfor one optional package when you use them, resolved from your working\ndirectory so `npx` and a local install agree. `import --list-formats --json`\nreports which converters are resolvable rather than assuming a fixed list.\n\nIt is also a library: `validateTemplate`, `runQualityLint`, `applyOperation`,\n`getColumnCount` and the generated block schema from the package root, plus the\nlocal live-preview bridge behind the `./live` subpath and the raw schema at\n`./schema.json` — the two pieces needed to generate templates with your own\nmodel and validate the result. Documented at\nhttps://docs.templatical.com/api/template-tools.\n\nThe Agent Skill it powers ships as one skill with a thin router: an entry point\nunder 4 KB that loads exactly one of 22 playbooks per request, replacing two\nskills totalling 50 KB that loaded everything up front. Its SDK reference is\nfetched from docs.templatical.com rather than packed in, so an answer is never\nolder than the site, and the block schema travels with the skill because it is\ncontract rather than documentation.",
+          "packages": [
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.37.0",
       "date": "2026-09-11",
