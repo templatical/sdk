@@ -101,9 +101,13 @@ npx -y @templatical/template-tools@0.36.0 validate path/to/template.json
 
 It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
 
+### It defines the format; you supply the taste
+
+Layer your own context on top and the agent uses it instead of generic defaults — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. Worth doing once if you plan to generate more than one email.
+
 ### Custom blocks are never generated from a prompt
 
-Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+This is the one exception to the rule above. Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
 ### SDK answers are fetched, not packed in
 

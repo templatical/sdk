@@ -101,9 +101,13 @@ npx -y @templatical/template-tools@0.36.0 validate pfad/zum/template.json
 
 Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Anschließend kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.
 
+### Er definiert das Format — den Stil bringen Sie ein
+
+Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generischer Standardwerte: Markenfarben und -schriften, Tonalität, einen eigenen System-Prompt, einen verpflichtenden Footer oder Abmelde-Block. Das lohnt sich einmalig, wenn Sie mehr als eine E-Mail erzeugen möchten.
+
 ### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
 
-Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+Das ist die einzige Ausnahme von der Regel oben. Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
 
 ### SDK-Antworten werden abgerufen, nicht mitgeliefert
 
