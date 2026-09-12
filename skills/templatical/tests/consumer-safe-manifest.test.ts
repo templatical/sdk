@@ -14,12 +14,15 @@ const DEPENDENCY_FIELDS = [
 describe("package.json is consumer-safe", () => {
   it("declares no workspace:* range in any dependency field", () => {
     // A `workspace:*` range resolves only inside this pnpm workspace. This
-    // skill is also fetched outside it — `npx skills add`, a plugin install,
-    // or a folder copy — each followed by a plain `npm install`, which fails
-    // outright on an unresolvable workspace protocol. That's why the skill
-    // reaches @templatical/editor's version and the docs it copies by
-    // relative path (tools/generate-reference.mjs) rather than declaring
-    // either as a dependency at all.
+    // skill is also fetched outside it — `npx skills add`, or a folder copy
+    // — each followed by a plain `npm install`, which fails outright on an
+    // unresolvable workspace protocol. That's why the CLI version pins in
+    // its reference islands are rewritten at release time by relative path
+    // within the monorepo (packages/template-tools/scripts/sync-pins.mjs)
+    // rather than resolved through a declared dependency, and why SDK
+    // reference docs are fetched live at request time (see
+    // reference/docs.md) rather than copied in — neither needs
+    // @templatical/editor as a dependency here.
     const pkg: Record<string, unknown> = JSON.parse(
       readFileSync(PACKAGE_JSON_PATH, "utf8"),
     );
