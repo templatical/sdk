@@ -46,4 +46,4 @@ When a prerequisite is absent, say so plainly with the fix and fall back to a
 mode that works — no Node, too old a version (`node -v`, then
 <https://nodejs.org>), or no network blocks everything; no background process
 or reachable port (a hosted, server-side sandbox) blocks only [live
-mode](#live-mode), and build mode is unaffected.
+mode](live.md), and build mode is unaffected.

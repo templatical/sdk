@@ -14,21 +14,23 @@ harness. (In Claude Code you can also pass it as an argument with a **space**:
 `/templatical-email live` — use a space, not a colon; `/templatical-email:live` is
 plugin-command-namespace syntax that silently starts build mode instead.)
 Live mode serves the session's working template (`.templatical/<name>.json`, see
-[Working files](#working-files)); if the user hasn't built one yet, create a new
+[Working files](working-files.md)); if the user hasn't built one yet, create a new
 template first. A mid-session switch just points the bridge at that file.
 
-> **Working directory matters — every command in this file resolves relative
-> to it.** `npx` fetches the pinned CLI package from npm's cache no matter
-> where you run it, but everything the CLI *touches* — the working file, the
-> live server's pidfile, any cwd-installed optional converter — resolves
-> against the current directory. Run every command below with the **user's
-> project** as the current directory, not this skill's folder. If you can't
-> control the cwd, pass `--cwd <project>` (and, for `live`, optionally
-> `--file <path>`) so `start`/`reload`/`stop` all agree on the same location.
+> **Working directory matters — every command that touches the working file
+> resolves relative to it, here and in [live.md](live.md)'s `edit`,
+> `validate`, `live reload` and `live stop`.** `npx` fetches the pinned CLI
+> package from npm's cache no matter where you run it, but everything the
+> CLI *touches* — the working file, the live server's pidfile, any
+> cwd-installed optional converter — resolves against the current directory.
+> Run every command below with the **user's project** as the current
+> directory, not this skill's folder. If you can't control the cwd, pass
+> `--cwd <project>` (and, for `live`, optionally `--file <path>`) so
+> `start`/`reload`/`stop` all agree on the same location.
 
 1. Ensure the session's `.templatical/<name>.json` exists and is valid (run
    `validate`; build a new template first if there isn't one yet — see
-   [Workflow](#workflow)).
+   [Workflow](build.md)).
 2. Start the bridge in the background (from the project root), pointing it at
    the session's template with `--file`:
    ```

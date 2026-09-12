@@ -5,7 +5,7 @@ renderer internals instead of the error list
 **Alternative:** [live.md](live.md)'s Export modal offers JSON, MJML and HTML in
 the browser, which is the only route for someone with no npm
 
-Most hand-offs are the JSON itself (see [Workflow](#workflow) step 5). When
+Most hand-offs are the JSON itself (see [Workflow](build.md) step 5). When
 the user needs the email in a sendable format instead — to paste into an ESP,
 or because they have no editor integration to load JSON into — render it:
 
@@ -21,9 +21,9 @@ rather hand it to the user inline than read it back from disk.
   hard dependency of the CLI, nothing extra to install.
 - **`--format html` needs the optional `mjml` compiler.** If it's missing the
   command exits `3` and prints the install command (see
-  [Requirements](#requirements)) — that's the one extra install to offer, not
+  [Requirements](cli.md)) — that's the one extra install to offer, not
   a failure to work around.
-- **[Live mode](#live-mode)'s Export button** offers JSON / MJML / HTML from
+- **[Live mode](live.md)'s Export button** offers JSON / MJML / HTML from
   the browser, compiled client-side — reachable for anyone with a browser and
   no npm at all.
 

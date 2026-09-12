@@ -20,7 +20,7 @@ the references, picking an example, validating, generating file names, managing
   it; only speak up when a command's exit code says something actually went
   wrong.
 - **Mention setup only on action or failure** — say something when a
-  prerequisite is genuinely missing (see [Requirements](#requirements)) or a
+  prerequisite is genuinely missing (see [Requirements](cli.md)) or a
   step actually fails, not to confirm that routine state is fine.
 - **Report real problems plainly** when they happen (a validation error you
   couldn't resolve, a missing dependency) with the fix — that's signal, not noise.

@@ -18,7 +18,7 @@ npm install @templatical/editor
 
 `@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`
 and `pusher-js` are optional peers, each gated by a specific feature — install
-only the ones actually used (see Failure modes, below).
+only the ones actually used (see [failure-modes.md](failure-modes.md)).
 
 ## Vanilla
 

@@ -28,7 +28,7 @@ actually starts.
 When the user asks for a change:
 
 1. **Check for divergence and notes first.** Read the editor's latest state
-   from the bridge's `GET /content` endpoint (at the URL from step 2 above,
+   from the bridge's `GET /content` endpoint (at the URL [live-setup.md](live-setup.md) printed,
    e.g. `http://localhost:4747/content`) → `{ divergent, content, annotations }`.
    - `divergent: false` → no in-browser hand-edits since your last write. Proceed.
    - `divergent: true` → the user hand-edited in the browser. **Ask before
@@ -39,7 +39,7 @@ When the user asks for a change:
      - **Replace with mine** → apply to your own version; say explicitly that
        this discards their browser edits.
 2. **Apply the change.** For a scoped edit, prefer an operation (see [Editing
-   with operations](#editing-with-operations)) — `edit` validates and writes
+   with operations](edit.md)) — `edit` validates and writes
    in one step, composing on top of whatever's currently in the working file
    rather than discarding it:
    ```
@@ -64,7 +64,7 @@ The page's **Export** button opens a modal with **JSON / MJML / HTML** tabs
 (HTML compiles in-browser via `mjml-browser`, loaded on demand) — reachable
 for anyone with a browser and no `npm`. You can also render either format
 yourself without live mode; see [Rendering to MJML or
-HTML](#rendering-to-mjml-or-html).
+HTML](export.md).
 
 ## Ending live mode
 

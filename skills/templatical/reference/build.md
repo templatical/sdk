@@ -24,20 +24,20 @@ scoped — a whole-document rewrite discards work the user did by hand.
 3. **Generate the JSON** — a complete `{ "blocks": [...], "settings": {...} }`
    document, following the schema exactly (see Rules).
 4. **Validate before returning** — write the JSON to the session's working file
-   `.templatical/<name>.json` (see [Working files](#working-files) — generate a
+   `.templatical/<name>.json` (see [Working files](working-files.md) — generate a
    fresh three-word name for a new template; create the folder if needed) and run:
    ```
    npx -y @templatical/template-tools@0.36.0 validate .templatical/<name>.json --json
    ```
    Fix every structural error reported and re-run until it exits `0` or `1`
-   (see [Requirements](#requirements)), and resolve the reported accessibility
+   (see [Requirements](cli.md)), and resolve the reported accessibility
    / structure / link issues too. Writing to that file is what lets a later
    "show it live" pick up the current template with no extra step.
 5. **Hand off** — return the validated JSON. What the user does with it depends
    on who they are: a developer loads it into their editor integration
    (`editor.setContent(json)`); many others just want a finished email — for
    them, **preview it live and export MJML/HTML to send** (see [Live
-   mode](#live-mode)) through any provider (SES, Postmark, …), no integration
+   mode](live.md)) through any provider (SES, Postmark, …), no integration
    needed, or render it yourself (see [Rendering to MJML or
-   HTML](#rendering-to-mjml-or-html)). Frame the hand-off for what they're
+   HTML](export.md)). Frame the hand-off for what they're
    actually doing.

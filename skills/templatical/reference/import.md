@@ -13,7 +13,7 @@ route by what you were actually handed, not by a fixed list of named formats:
 
 | What you have | Route |
 |---|---|
-| A design or export from an email builder, or any HTML email | `import`, for a deterministic first pass, then refine the `html`-fallback blocks into native ones in [live mode](#live-mode) |
+| A design or export from an email builder, or any HTML email | `import`, for a deterministic first pass, then refine the `html`-fallback blocks into native ones in [live mode](live.md) |
 | A JSON export from an editor with no converter (Mailchimp, Klaviyo, HubSpot…) | Read the export, hand-map it to blocks against `reference/schema.json`, validate, then refine |
 | An image or PDF of an email | Read it visually and compose blocks from scratch against the schema |
 
@@ -65,4 +65,4 @@ hand-map) → validate → preview in live mode → refine the fallback blocks i
 native ones.
 
 Each format's converter is optional and installed on demand — see
-[Requirements](#requirements) for the exit-`3` contract.
+[Requirements](cli.md) for the exit-`3` contract.

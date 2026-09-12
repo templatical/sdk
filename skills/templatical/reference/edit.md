@@ -30,7 +30,7 @@ replaces whichever top-level keys you pass, `styles` included, so passing
 the batch is all-or-nothing.
 
 **Prefer an operation over a whole-document rewrite whenever the change is
-scoped.** It matters most once [live mode](#live-mode) is running: a
+scoped.** It matters most once [live mode](live.md) is running: a
 whole-document write discards whatever the user just hand-edited in the
 browser, even for a one-word change, while an operation composes on top of
 it — which is also what keeps the live-update loop's divergence check from
