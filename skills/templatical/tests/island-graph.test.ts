@@ -19,7 +19,7 @@ function islandsOnDisk(): string[] {
  *  exactly the dead-route case this table exists to prevent. */
 function entryIslands(): string[] {
   return [...SKILL_MD.matchAll(
-    /^\|\s*`([a-z-]+)`\s*\|[^|]*\|\s*\[reference\/([a-z-]+)\.md\]\(reference\/([a-z-]+)\.md\)/gm,
+    /^\|\s*`([a-z0-9-]+)`\s*\|[^|]*\|\s*\[reference\/([a-z0-9-]+)\.md\]\(reference\/([a-z0-9-]+)\.md\)/gm,
   )]
     .map(([, mode, label, href]) => {
       expect(mode, "a Commands row's mode must match its island filename").toBe(label);
@@ -31,7 +31,7 @@ function entryIslands(): string[] {
 
 /** Every reference/<x>.md linked from `src`. */
 function linksIn(src: string): string[] {
-  return [...src.matchAll(/\]\((?:reference\/)?([a-z-]+)\.md\)/g)].map(([, f]) => f);
+  return [...src.matchAll(/\]\((?:reference\/)?([a-z0-9-]+)\.md\)/g)].map(([, f]) => f);
 }
 
 describe("the island graph", () => {
@@ -58,19 +58,32 @@ describe("the island graph", () => {
     }
   });
 
-  it("leaves no island orphaned — every consult island is linked from an island or the router", () => {
-    const entry = new Set(entryIslands());
-    // SKILL.md counts as a parent: talking.md is cross-cutting guidance that
-    // belongs to every route, so the router is the only honest place to link
-    // it from. Scanning islands alone would report it unreachable.
-    const linked = new Set([
-      ...linksIn(SKILL_MD),
-      ...islandsOnDisk().flatMap((i) =>
-        linksIn(readFileSync(resolve(REFERENCE_DIR, `${i}.md`), "utf8")),
-      ),
-    ]);
-    const orphans = islandsOnDisk().filter((i) => !entry.has(i) && !linked.has(i));
-    expect(orphans, "unreachable islands — link them or delete them").toEqual([]);
+  it("leaves no island orphaned — every island is reachable from the router by following links", () => {
+    // Reachability from SKILL.md, not "something links to it". Two consult
+    // islands that link only to each other each have an incoming edge while
+    // being unreachable from any entry point, and an island an agent cannot
+    // navigate to is dead weight however many siblings cite it.
+    //
+    // The router is the only root: talking.md is cross-cutting guidance
+    // belonging to every route, so SKILL.md is the one honest place to link
+    // it from, and a walk seeded from the islands alone would miss it.
+    const known = new Set(islandsOnDisk());
+    const reached = new Set<string>();
+    const queue = linksIn(SKILL_MD).filter((f) => known.has(f));
+    while (queue.length > 0) {
+      const island = queue.shift() as string;
+      if (reached.has(island)) continue;
+      reached.add(island);
+      const src = readFileSync(resolve(REFERENCE_DIR, `${island}.md`), "utf8");
+      for (const next of linksIn(src)) {
+        if (known.has(next) && !reached.has(next)) queue.push(next);
+      }
+    }
+    const orphans = [...known].filter((i) => !reached.has(i)).sort();
+    expect(
+      orphans,
+      "islands unreachable from SKILL.md — link them from a playbook that is itself reachable, or delete them",
+    ).toEqual([]);
   });
 
   it("names every entry island in argument-hint, and no consult island", () => {

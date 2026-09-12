@@ -34,7 +34,7 @@ describe("relocated contract assets", () => {
       resolve(REFERENCE_DIR, "block-guide.md"),
       "utf8",
     );
-    expect(guide.startsWith("# Block guide")).toBe(true);
+    expect(guide).toMatch(/^# Block guide/);
   });
 
   it("carries a diverse set of few-shot example templates", () => {
@@ -48,8 +48,11 @@ describe("relocated contract assets", () => {
       const content = JSON.parse(
         readFileSync(resolve(examplesDir, file), "utf8"),
       );
-      expect(Array.isArray(content.blocks)).toBe(true);
-      expect(content.blocks.length).toBeGreaterThan(0);
+      expect(content.blocks, `${file} carries no blocks array`).toBeInstanceOf(
+        Array,
+      );
+      expect(content.blocks.length, `${file} has an empty blocks array`)
+        .toBeGreaterThan(0);
     }
   });
 });

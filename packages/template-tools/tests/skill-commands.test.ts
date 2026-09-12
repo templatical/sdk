@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve, sep } from "node:path";
 
 // A pure-content skill's one remaining failure mode is instructing an agent
 // to run a command that doesn't exist — there's no validator left in the
@@ -18,25 +18,39 @@ const LIVE_TS = resolve(
 );
 
 /**
- * The router plus every flat reference island, repo-relative label paired
- * with its absolute path. Deliberately not a generic recursive walk of
+ * The router plus every reference island, repo-relative label paired with its
+ * absolute path. Deliberately not a generic recursive walk of
  * `skills/templatical/`: `node_modules` and `coverage` sit alongside
  * `reference/` in that directory and carry `.md` files of their own (vendor
  * READMEs, `node_modules/typescript` and `node_modules/vitest` are symlinks
  * into the pnpm store) that document no CLI commands at all — scanning them
  * would either false-negative silently or need the same symlink-avoidance
  * sync-pins.mjs's tree walk carries.
+ *
+ * Inside `reference/` the walk *is* recursive, and that matters: sync-pins.mjs
+ * rewrites the pin in every `.md` under the skill at any depth, so a flat scan
+ * here would leave a nested island's invocations documented but unchecked.
+ * Nothing installs into `reference/`, so recursing there needs no skip list.
  */
 function skillMarkdownFiles(): { label: string; path: string }[] {
   const files = [
     { label: "skills/templatical/SKILL.md", path: resolve(SKILL_DIR, "SKILL.md") },
   ];
-  for (const entry of readdirSync(REFERENCE_DIR).filter((f) => f.endsWith(".md"))) {
-    files.push({
-      label: `skills/templatical/reference/${entry}`,
-      path: resolve(REFERENCE_DIR, entry),
-    });
-  }
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const abs = resolve(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(abs);
+        continue;
+      }
+      if (!entry.name.endsWith(".md")) continue;
+      files.push({
+        label: `skills/templatical/${relative(SKILL_DIR, abs).split(sep).join("/")}`,
+        path: abs,
+      });
+    }
+  };
+  walk(REFERENCE_DIR);
   return files;
 }
 
