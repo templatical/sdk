@@ -13,7 +13,7 @@ npx -y @templatical/template-tools validate .templatical/my-template.json
 | `validate <file>` | Structural validation plus the accessibility / structure / link lint |
 | `render <file> --format mjml\|html` | Render to MJML, or to sending-ready HTML |
 | `edit <file> --op <json>` | Apply one operation, or a batch with `--ops <file>` |
-| `import <file>` | Convert an Unlayer / BeeFree / HTML template |
+| `import <file>` | Convert a template from another tool's export format — run `import --list-formats` to see what's supported |
 | `live` | Open the template in the real editor in a browser |
 | `schema` | Print the block JSON Schema |
 | `list` | List the working templates in `.templatical/` |
@@ -34,7 +34,7 @@ Add `--json` to any command for machine-readable output on stdout.
 Nothing is installed into your project by default. Two commands can ask for one thing:
 
 - `render --format html` needs `mjml` (the SDK bundles no MJML compiler).
-- `import` needs the converter for that format: `@templatical/import-unlayer`, `@templatical/import-beefree` or `@templatical/import-html`. Run `import --list-formats` to see which are available.
+- `import` needs the converter package for that format. Run `import --list-formats` to see which are resolvable right now — the list grows over time, so this is the only answer that doesn't go stale.
 
 Install them wherever you run the command; they are resolved from your working directory.
 

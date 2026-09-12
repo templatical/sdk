@@ -49,6 +49,7 @@ Documentation for SDK version 0.37.0. Every page below is also available as raw 
 - [Editor API](https://docs.templatical.com/api/editor): Complete reference for the init() function, TemplaticalEditorConfig, and TemplaticalEditor instance.
 - [Events](https://docs.templatical.com/api/events): Editor event callbacks — onChange, onDirtyChange, onError, and media/merge tag request handlers.
 - [Renderer](https://docs.templatical.com/api/renderer-typescript): API reference for @templatical/renderer — convert template JSON to MJML.
+- [Template Tools](https://docs.templatical.com/api/template-tools): API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing and previewing Templatical templates outside the editor.
 - [Types Reference](https://docs.templatical.com/api/types): Complete reference for @templatical/types — shared TypeScript types, block factories, and utilities.
 
 ## Connect your backend

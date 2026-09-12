@@ -121,6 +121,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-stripo`   | Converts Stripo plugin HTML and compiled File→HTML exports to Templatical format.                                                        | Optional                                                                                            |
 | `@templatical/import-chamaileon` | Converts Chamaileon `getDocument()` JSON to Templatical format.                                                                        | Optional                                                                                            |
 | `@templatical/import-easy-email-pro` | Converts Easy Email Pro persist JSON to Templatical format.                                                                        | Optional                                                                                            |
+| `@templatical/template-tools`  | CLI and library for validating, rendering, editing, importing, and live-previewing templates outside the editor.                        | Optional — run via `npx`, nothing to install; for CI checks, scripts, or generating templates without a mounted editor |
 
 `@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 
@@ -381,3 +382,23 @@ If you prefer not to use a package manager, load the editor directly via script 
 ```
 
 The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.
+
+### Pinning a version
+
+The example above is unversioned on purpose: unpkg resolves a URL with no version segment to the latest published release on every request, which is convenient for trying the editor but means the exact code your page loads can change with no corresponding change on your end. Pin an exact version for production, loading it from jsDelivr rather than unpkg:
+
+```html
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.css"
+/>
+<script type="module">
+  import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.js";
+
+  const editor = await init({
+    container: "#editor",
+  });
+</script>
+```
+
+**The host changes along with the URL shape, not just the version number.** The CDN build code-splits into hashed chunk files that the entry loads on demand, so the entry and every chunk it pulls in must resolve to the same published version — unpkg's redirect from an unversioned URL keeps that consistent, but requesting an already-pinned version's chunks from unpkg has intermittently served them with the wrong content type and a failing CORS preflight. jsDelivr serves a pinned version's chunks reliably, so keep pinned URLs there and the unversioned form on unpkg.
