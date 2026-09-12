@@ -178,10 +178,8 @@ export function collectPages(docsDir = DOCS_DIR) {
 
 /**
  * Group display order: the known groups in reading order, then anything new
- * alphabetically. Exported because the templatical-sdk skill's reference
- * generator renders its own router index from the same pages and must order
- * the groups identically — reading this function is what makes that exact
- * rather than approximate.
+ * alphabetically. Used by renderIndex below to lay out llms.txt; exported so
+ * it can be tested and reused on its own.
  */
 export function orderedGroups(pages) {
   const seen = [...new Set(pages.map((p) => p.group))];

@@ -70,7 +70,7 @@ describe("applyCliPin", () => {
 
   it("names SKILL.md in the not-found error by default", () => {
     expect(() => applyCliPin("no pin here", "1.0.0")).toThrow(
-      /skills\/templatical-email\/SKILL\.md/,
+      /skills\/templatical\/SKILL\.md/,
     );
   });
 

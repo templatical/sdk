@@ -18,10 +18,9 @@
 //    (apps/docs/guide/agent-skill.md + its de/ mirror), from the same
 //    version. Governing rule: a *pinned* invocation is synced from here, in
 //    lockstep with every other pin in this file; an invocation shown
-//    deliberately unpinned — skills/templatical-email/README.md's
-//    `npx -y @templatical/template-tools validate …`, with no `@version` at
-//    all — is a "latest is fine" choice for a file nobody expects to track
-//    the schema exactly, and must stay that way. Don't add a pin there.
+//    deliberately unpinned — no `@version` at all — is a "latest is fine"
+//    choice for a file nobody expects to track the schema exactly. Don't add
+//    a pin to one.
 // Runs at release time from the root `changeset:version` script (wired into
 // changesets/action's `version` step), so the Version Packages PR carries all
 // changes with no manual step. Also runnable by hand:
@@ -84,7 +83,7 @@ const OWN_PKG = resolve(here, "../package.json");
 // below passes its own label explicitly (syncCliPin per island, syncDocsCliPins
 // per docs page), so this only surfaces if applyCliPin is ever called
 // directly without one.
-const SKILL_MD_LABEL = "skills/templatical-email/SKILL.md";
+const SKILL_MD_LABEL = "skills/templatical/SKILL.md";
 
 // The fixed invocation prefix every reference island's Requirements section
 // declares as canonical: `npx -y @templatical/template-tools@<version>`,
@@ -201,9 +200,8 @@ export function syncCliPin() {
 
 // Governing rule: anything showing a *pinned* invocation is synced from this
 // file; an invocation shown deliberately unpinned is a "latest is fine"
-// choice and must never gain a pin. skills/templatical-email/README.md
-// quotes `npx -y @templatical/template-tools validate …` with no `@version`
-// on purpose — it isn't in this list, and adding it here would be wrong.
+// choice and must never gain a pin — such a file isn't in this list, and
+// adding it here would be wrong.
 const DOCS_CLI_PIN_TARGETS = [
   "apps/docs/guide/agent-skill.md",
   "apps/docs/de/guide/agent-skill.md",

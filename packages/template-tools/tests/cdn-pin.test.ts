@@ -55,10 +55,10 @@ describe("CDN editor pin", () => {
 
     // Within this package, EDITOR_VERSION must be declared exactly once, in
     // src/live/index.ts — a second declaration anywhere else here could drift
-    // from it silently. skills/templatical-email holds no copy to check
-    // against: the live-preview harness lives entirely in this package, and
-    // the skill carries only the content that teaches an agent to use it
-    // (SKILL.md, the schema, the block guide, the examples).
+    // from it silently. skills/templatical holds no copy to check against:
+    // the live-preview harness lives entirely in this package, and the skill
+    // carries only the content that teaches an agent to use it (SKILL.md,
+    // the schema, the block guide, the examples).
     expect(findEditorVersionDeclarations(packageRoot)).toEqual([
       resolve(packageRoot, "src/live/index.ts"),
     ]);

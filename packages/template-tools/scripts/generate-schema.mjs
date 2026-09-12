@@ -1,10 +1,10 @@
 // Generates schema.json (JSON Schema for TemplateContent) directly from the
 // canonical types in @templatical/types. This is the single source of truth for
 // every consumer that validates a Templatical template — this package's own
-// `validate`/`schema` CLI commands, and the templatical-email Agent Skill.
+// `validate`/`schema` CLI commands, and the templatical Agent Skill.
 //
 // This script writes TWO copies of the one generated artifact: this package's
-// own schema.json, and skills/templatical-email/reference/schema.json. The
+// own schema.json, and skills/templatical/reference/schema.json. The
 // skill needs its copy committed in the repo because the agent reads it in
 // context to generate templates — the CLI's `schema` command exists for other
 // callers and does not replace the file. A package script reaching into

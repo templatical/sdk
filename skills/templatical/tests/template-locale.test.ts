@@ -15,22 +15,23 @@ describe("generated templates declare their own language", () => {
   // Every few-shot example carries `"locale": "en"`, so a model asked for a
   // German email copies that and stamps `<html lang="en">` onto German copy —
   // wrong for every screen reader that opens it. The examples are themselves
-  // English, so the fix is an instruction, not a fixture change.
+  // English, so the fix is an instruction, not a fixture change. The router
+  // (SKILL.md) names no settings fields itself — reference/rules.md does.
   it("tells the model to match settings.locale to the copy's language", () => {
-    const skill = read("../SKILL.md");
+    const rules = read("../reference/rules.md");
     const locale = /`locale`[^\n]*\n?[^\n]*/g;
-    const mentions = skill.match(locale) ?? [];
+    const mentions = rules.match(locale) ?? [];
     expect(mentions.length).toBeGreaterThan(0);
 
     // Not merely "include a locale" — it has to say which value.
-    expect(skill).toMatch(
+    expect(rules).toMatch(
       /locale[\s\S]{0,400}?(language of the (copy|content|email)|copy's own language|language you (are )?writing)/i,
     );
   });
 
   it("keeps the requirement next to the other settings rules", () => {
-    const skill = read("../SKILL.md");
-    const settings = /\*\*Settings\*\*[\s\S]{0,600}/.exec(skill)?.[0];
+    const rules = read("../reference/rules.md");
+    const settings = /\*\*Settings\*\*[\s\S]{0,600}/.exec(rules)?.[0];
     expect(settings).toBeDefined();
     expect(settings).toContain("locale");
   });

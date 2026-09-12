@@ -51,15 +51,14 @@ jobs:
           # changelogs) then everything that has to follow a version bump, so the
           # Version Packages PR carries it all and no manual step is needed:
           #   1. sync-pins: the live-mode CDN pin (EDITOR_VERSION), and the CLI
-          #      pin in templatical-email's SKILL.md and in the docs' agent-skill
-          #      page — the skills are distributed by `npx skills add`, which
-          #      reads the repository directly, so there is no separate manifest
-          #      version to move alongside them
+          #      pin across templatical's reference islands and in the docs'
+          #      agent-skill page — the skill is distributed by `npx skills add`,
+          #      which reads the repository directly, so there is no separate
+          #      manifest version to move alongside it
           #   2. the changelog page + JSON served at docs.templatical.com
-          #   3. the docs' llms.txt agent surface
-          #   4. templatical-sdk's reference tree, which is a verbatim copy of the
-          #      docs and must run AFTER sync-pins: it copies the agent-skill page
-          #      that sync-pins rewrites, so the other order commits a stale pin
+          #   3. the docs' llms.txt agent surface, which the skill's docs mode
+          #      fetches at request time rather than a packed copy this pipeline
+          #      would otherwise have to keep in step
           version-script: pnpm run changeset:version
           publish-script: pnpm exec changeset publish
           # One aggregated release is created below instead. The nine packages are a

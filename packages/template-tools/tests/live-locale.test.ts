@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");
 
-// The companion half — that SKILL.md tells the agent to match
+// The companion half — that rules.md tells the agent to match
 // settings.locale to the copy's own language — asserts this skill's
 // content, so it lives with it:
-// skills/templatical-email/tests/template-locale.test.ts.
+// skills/templatical/tests/template-locale.test.ts.
 describe("live-mode locale", () => {
   // The harness called `init()` with no `locale` at all, so live mode was an
   // English editor no matter who opened it — even while the skill was generating

@@ -4,14 +4,10 @@ import { resolve } from "node:path";
 
 // This package owns both the CLI's own version and the script that syncs it
 // everywhere the pin shows up (scripts/sync-pins.mjs), so the test proving
-// every pin is correct lives here — skills/templatical-email holds no
-// executable code of its own after the refactor, and apps/docs is a
-// rendered site with no version of its own to check against. Covers every
-// file scripts/sync-pins.mjs's job 2 + job 3 rewrite: SKILL.md plus both
-// docs-site locales. skills/templatical-email/README.md is deliberately
-// NOT in this list — its `npx -y @templatical/template-tools validate …`
-// carries no `@version` at all, a "latest is fine" choice sync-pins.mjs
-// must never touch (see that script's own header comment).
+// every pin is correct lives here — apps/docs is a rendered site with no
+// version of its own to check against. Covers job 3 (both docs-site
+// locales); job 2 (every reference island under skills/templatical/) has its
+// own guard below, since the router's pin doesn't live in one file.
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const OWN_PACKAGE_JSON = resolve(
   REPO_ROOT,
@@ -19,7 +15,6 @@ const OWN_PACKAGE_JSON = resolve(
 );
 
 const PINNED_FILES = [
-  "skills/templatical-email/SKILL.md",
   "apps/docs/guide/agent-skill.md",
   "apps/docs/de/guide/agent-skill.md",
 ].map((label) => ({ label, path: resolve(REPO_ROOT, label) }));

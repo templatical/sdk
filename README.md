@@ -42,7 +42,7 @@
 
 Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
-The [`templatical-email` Agent Skill](./skills/templatical-email) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+The [`templatical` Agent Skill](./skills/templatical) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
 
 One command and you're done:
 
@@ -60,9 +60,9 @@ You can also **preview it live**: ask to "show it live" and the skill opens your
 
 ### Wiring the editor into your own app
 
-A second skill, [`templatical-sdk`](./skills/templatical-sdk), covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app. The command above installs both skills, and each one's `SKILL.md` names the other — so an agent hands off between authoring a template and wiring the editor on its own.
+The same skill covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app — just ask it, no separate install. It routes each request on its own: authoring or editing a template stays on the email side, embedding the SDK moves to the integration side, and a request that needs both ("build a welcome email and wire it into my app") gets both, template first.
 
-The same [skill guide →](https://docs.templatical.com/guide/agent-skill) covers both.
+The same [skill guide →](https://docs.templatical.com/guide/agent-skill) covers it all.
 
 ## Power features
 

@@ -1,9 +1,11 @@
-# Evals — generation-quality checks
+# Evals — generation and integration quality checks
 
-These prompts exercise the skill end-to-end to check **generation quality** — do
-the templates actually look good and fit the brief? — which the unit tests don't
-cover (those only prove the output is _structurally valid_). This is a maintainer
-artifact, not part of the runtime skill.
+These prompts exercise the skill end-to-end across both of its jobs — authoring
+a template (cases 1–5) and integrating or troubleshooting the SDK (cases
+6–15) — checking **quality**: do generated templates look good and fit the
+brief, and is integration advice correct and complete? The unit tests don't
+cover either (they only prove structural validity and reference-tree
+consistency). This is a maintainer artifact, not part of the runtime skill.
 
 `evals.json` follows the [`skill-creator`](https://code.claude.com/docs/en/skills)
 eval format, so the easiest way to run them is through the `skill-creator` skill:

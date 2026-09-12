@@ -5664,28 +5664,25 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 
 ---
 
-# AI Agent Skills
+# AI Agent Skill
 
 Source: https://docs.templatical.com/guide/agent-skill
 
-Templatical ships two [Agent Skills](https://agentskills.io) — **free, open-source, and running entirely in your own AI coding agent:**
+Templatical ships one [Agent Skill](https://agentskills.io) — **free, open-source, and running entirely in your own AI coding agent:** `templatical`.
 
-- **`templatical-email`** — design a complete email from a natural-language prompt, preview it in the real editor, and export sendable MJML/HTML.
-- **`templatical-sdk`** — install, mount, configure, theme and troubleshoot an [`@templatical/editor`](/getting-started/quick-start) integration, and answer "how do I" / "is it possible" questions about the SDK.
+It covers both jobs building with Templatical needs: authoring a template (write one from a brief, edit it, import it from another builder, validate it, render it to MJML/HTML, or preview and hand-edit it live in the real editor) and integrating the SDK (mount [`@templatical/editor`](/getting-started/quick-start) in an application, scaffold or diagnose an integration, or answer a "how do I" / "is it possible" question). One request often needs both, in order — "build a welcome email and wire it into my app" designs and validates the template first, then mounts the editor and loads it in — and the skill makes that call itself: is the request about a template's content, or about the SDK that renders it?
 
-Most people want exactly one of the two — that's why they're separate skills. Authoring or editing a template is `templatical-email`; wiring the editor into your own codebase is `templatical-sdk`. "Build a welcome email and wire it into my app" wants both, in that order: `templatical-email` builds and validates the template JSON first, then `templatical-sdk` mounts the editor and loads it in. Each skill's `SKILL.md` names the other, so an agent with both installed hands off between them on its own.
-
-There is no backend and no API key for either: your agent is the inference. Nothing is sent to Templatical.
+There is no backend and no API key for either half: your agent is the inference. Nothing is sent to Templatical.
 
 ## Install
 
-Both skills are plain [Agent Skills](https://agentskills.io) folders, so any agent that reads `SKILL.md` can use them.
+The skill is a plain [Agent Skills](https://agentskills.io) folder, so any agent that reads `SKILL.md` can use it.
 
 ```bash
 npx skills add templatical/sdk
 ```
 
-One command installs **both** skills. [`skills`](https://github.com/vercel-labs/skills) detects which supported agents you have and installs each one straight into the directory that agent reads, so there is nothing to place by hand.
+[`skills`](https://github.com/vercel-labs/skills) detects which supported agents you have and installs it straight into the directory each one reads, so there is nothing to place by hand.
 
 It reports anonymous usage telemetry by default — which repository and skill you installed, for public repositories. Set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you would rather it didn't:
 
@@ -5695,16 +5692,22 @@ DISABLE_TELEMETRY=1 npx skills add templatical/sdk
 
 Re-run the same command to update.
 
-If your agent doesn't pick a skill up afterwards, check that it is enabled in the agent's own skill list.
+If your agent doesn't pick the skill up afterwards, check that it is enabled in the agent's own skill list.
 
-## `templatical-email`: design and validate a template
+## What it does
 
-Design a complete email just by describing it. The skill teaches your agent how Templatical templates are structured, so it builds valid emails you can **preview and hand-edit in the real editor, then export as sendable MJML or HTML** — ready to send through any provider (Amazon SES, Postmark, Resend, Mailchimp, …), or to load into your own [`@templatical/editor`](/getting-started/quick-start) integration.
+Ask for what you want in plain language — the skill picks the mode:
 
-**Two ways to use it:**
-
-- **Design and send** — build an email end to end, preview and tweak it live, export the HTML, and send it through your email provider. No app, no integration, nothing to embed — all you need is a coding agent.
-- **A developer aid** — generate branded starter templates, fixtures, and prototypes for your own editor integration. See [Where this fits](#where-this-fits-in-your-product).
+- **Build** a template from a brief — "make a product-launch email", "design a welcome email".
+- **Edit** a template that already exists, as a scoped change rather than a rewrite.
+- **Import** a template out of another builder — Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML.
+- **Validate** a template's JSON against the block schema and read back precise, per-block errors.
+- **Export** a template as sendable MJML or HTML.
+- **Preview it live** in the real Templatical editor in your browser, kept in sync as you keep prompting, with any hand-edits reconciled rather than overwritten.
+- **Integrate** the editor into an application — detect the stack, propose the change, and wait before writing anything.
+- **Scaffold** a proposed integration into your repository, installing with your own package manager, then verify it by running your dev server.
+- **Diagnose** an existing integration against a table of verified traps — duplicate Vue reactivity, a missing `style.css` import, a trapped `position: fixed` ancestor, and more.
+- **Answer a question** by fetching this documentation site directly, so the answer is never older than the site itself.
 
 ::: tip Prefer a hosted experience?
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
@@ -5724,9 +5727,9 @@ A few things need to be in place on your machine before you start.
 
 **Nothing else** — no Templatical account, no API key, and no backend.
 
-Two different things can stop this working, so it helps to tell them apart: **no internet connection blocks everything**, since even generating and validating JSON now goes through the CLI. **No local filesystem or reachable port** — a hosted, server-side sandbox — blocks only the live preview; generating and validating JSON is unaffected there.
+Two different things can stop this working, so it helps to tell them apart: **no internet connection blocks everything**, since even generating and validating JSON now goes through the CLI. **No local filesystem or reachable port** — a hosted, server-side sandbox — blocks only the live preview; every other mode is unaffected there.
 
-### Using it
+## Design and validate a template
 
 Describe the email you want. For example:
 
@@ -5773,23 +5776,13 @@ It checks each block against its type in the [block schema](/guide/blocks) and r
 
 ### How it stays correct
 
-The skill's JSON Schema is generated directly from `@templatical/types` — the same types the editor and renderer use — so it never drifts from the real block model. See the [skill's README](https://github.com/templatical/sdk/tree/main/skills/templatical-email) for regeneration and contribution details.
+The skill's JSON Schema is generated directly from `@templatical/types` — the same types the editor and renderer use — so it never drifts from the real block model. See [`packages/template-tools`](https://github.com/templatical/sdk/tree/main/packages/template-tools) in the repository for regeneration and contribution details.
 
-### Where this fits in your product
+## Integrate the editor
 
-The skill covers two very different needs.
+Ask it to scaffold a brand-new integration, add a save/load provider to an existing one, or explain why an editor mounted inside a modal renders its dialogs in the wrong place — providers, theming, Shadow DOM, version skew, and the integration traps that don't show up until a consumer actually hits them (duplicate Vue reactivity, a missing `style.css` import, a trapped `position: fixed` ancestor, `toHtml()` needing a `render` provider, and more).
 
-**Design and ship an email — no integration.** If you just need an email out the door — a campaign, a transactional message, a one-off — build it here, preview and tweak it live, then export the **MJML/HTML** and send it through your ESP (Amazon SES, Postmark, Resend, Mailchimp, …). You never touch `@templatical/editor` or write a line of integration code — it's a complete authoring tool for anyone with a coding agent.
-
-**A build-time aid for an editor integration.** If you're embedding the editor in your own app, the skill is the fastest way to generate branded starter templates, fixtures, and prototypes. Your _runtime_ integration is still [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) + [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send) — you don't embed the skill itself. Wiring that integration is `templatical-sdk`'s job, next.
-
-For an in-product **"generate with AI"** feature (your users type a prompt and get a template), your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
-
-## `templatical-sdk`: integrate the editor
-
-The other skill is aimed at the opposite job: **install, mount, configure, theme and troubleshoot an [`@templatical/editor`](/getting-started/quick-start) integration**, and answer "how do I" / "is it possible" questions about the SDK — providers, theming, Shadow DOM, version skew, and the integration traps that don't show up until a consumer actually hits them (duplicate Vue reactivity, a missing `style.css` import, a trapped `position: fixed` ancestor, `toHtml()` needing a `render` provider, and more).
-
-Ask it to scaffold a brand-new integration, add a save/load provider to an existing one, or explain why an editor mounted inside a modal renders its dialogs in the wrong place. For a new integration, it:
+For a new integration, it:
 
 1. **Detects your stack** — package manager, framework, bundler, TypeScript, and whether `@templatical/editor` is already installed, and at what version.
 2. **Proposes the change and waits** — the packages to add, the files to create or edit, the mount point — before touching anything.
@@ -5799,9 +5792,19 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 
 Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against the known failure modes.
 
-Its knowledge is a generated copy of this documentation site, bundled directly in the skill and regenerated every release, so most questions need no network access at all. The exceptions: an exact schema lookup runs the same published CLI `templatical-email` uses (`npx -y @templatical/template-tools@0.36.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than the reference describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical-sdk) — ask it directly, or read `SKILL.md` in the repository.
+Its SDK knowledge is fetched from this documentation site directly, rather than packed into the skill — so an answer is never older than the site itself, and there's nothing to go stale between installs. The exceptions: an exact schema lookup runs the same published CLI the template half uses (`npx -y @templatical/template-tools@0.36.0 schema`), and a version-skew check — when your installed `@templatical/editor` is older than this site describes — reads pinned source straight from GitHub at your version's tag. Full detail, including the failure-mode table and the six provider contracts (`templates`, `versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`), lives in [the skill itself](https://github.com/templatical/sdk/tree/main/skills/templatical) — ask it directly, or read `SKILL.md` in the repository.
 
-It doesn't run the live preview above — that's `templatical-email`'s — and it never touches git.
+## Where this fits in your product
+
+The skill covers two very different needs.
+
+**Design and ship an email — no integration.** If you just need an email out the door — a campaign, a transactional message, a one-off — build it here, preview and tweak it live, then export the **MJML/HTML** and send it through your ESP (Amazon SES, Postmark, Resend, Mailchimp, …). You never touch `@templatical/editor` or write a line of integration code — it's a complete authoring tool for anyone with a coding agent.
+
+**A build-time aid for an editor integration.** If you're embedding the editor in your own app, the skill is the fastest way to generate branded starter templates, fixtures, and prototypes — then wire up the mount itself, without switching tools. Your _runtime_ integration is still [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) + [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send) — you don't embed the skill itself.
+
+For an in-product **"generate with AI"** feature (your users type a prompt and get a template), your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
+
+It never touches git.
 
 ---
 
