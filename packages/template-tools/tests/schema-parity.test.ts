@@ -7,7 +7,7 @@ import { buildSchema, serializeSchema } from "../scripts/generate-schema.mjs";
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const SKILL_SCHEMA = resolve(
   REPO_ROOT,
-  "skills/templatical-email/reference/schema.json",
+  "skills/templatical/reference/schema.json",
 );
 const OWN_SCHEMA = resolve(import.meta.dirname, "../schema.json");
 

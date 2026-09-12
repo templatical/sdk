@@ -1,0 +1,15 @@
+{
+  "name": "@templatical/skill",
+  "description": "Agent Skill: author Templatical email templates and integrate the Templatical SDK",
+  "version": "0.0.0",
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "type": "module"
+}

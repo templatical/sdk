@@ -37,7 +37,7 @@ const repoRoot = resolve(here, "../../..");
 export const SCHEMA_PATH = resolve(here, "../schema.json");
 export const SKILL_SCHEMA_PATH = resolve(
   repoRoot,
-  "skills/templatical-email/reference/schema.json",
+  "skills/templatical/reference/schema.json",
 );
 
 // No `tsconfig`: the repo compiles with TS 6, whose tsconfig carries options

@@ -13,7 +13,7 @@ describe("SKILL.md block-type coverage", () => {
   // @templatical/types by packages/template-tools/tests/schema-parity.test.ts,
   // which checks this file's committed copy against a fresh generation.)
   it("mentions every block type in the schema (emit list or exclusions note)", () => {
-    const schema = JSON.parse(read("../reference/schema.json"));
+    const schema = JSON.parse(read("../../templatical/reference/schema.json"));
     const schemaTypes = Object.values(schema.definitions)
       .map((def) => def?.properties?.type?.const)
       .filter((t) => typeof t === "string");

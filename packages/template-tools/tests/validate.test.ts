@@ -227,7 +227,7 @@ describe("runQualityLint", () => {
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const EXAMPLES_DIR = resolve(
   REPO_ROOT,
-  "skills/templatical-email/reference/examples",
+  "skills/templatical/reference/examples",
 );
 const exampleFiles = readdirSync(EXAMPLES_DIR)
   .filter((f) => f.endsWith(".json"))
