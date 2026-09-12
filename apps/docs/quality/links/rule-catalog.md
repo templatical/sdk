@@ -1,3 +1,7 @@
+---
+description: All 5 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, and localhost-or-staging hosts — with default severities.
+---
+
 # Link rule catalog
 
 The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/rules/`; severity is user-overridable per [Options](../options). All rules scan every URL source returned by `walkUrls` — anchors inside rich text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.

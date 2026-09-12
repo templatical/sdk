@@ -1,4 +1,6 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
+// @ts-expect-error — plain .mjs generator, no types
+import { copyMarkdownSources } from "../scripts/build-agent-surface.mjs";
 
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
@@ -117,7 +119,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "AI",
-      items: [{ text: "Agent Skill", link: "/guide/agent-skill" }],
+      items: [{ text: "Agent Skills", link: "/guide/agent-skill" }],
     },
     {
       text: "Customization",
@@ -148,6 +150,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Editor", link: "/api/editor" },
         { text: "Types", link: "/api/types" },
         { text: "Renderer", link: "/api/renderer-typescript" },
+        { text: "Template Tools", link: "/api/template-tools" },
         { text: "Events", link: "/api/events" },
       ],
     },
@@ -304,7 +307,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "KI",
-      items: [{ text: "Agent-Skill", link: "/de/guide/agent-skill" }],
+      items: [{ text: "Agent-Skills", link: "/de/guide/agent-skill" }],
     },
     {
       text: "Anpassung",
@@ -335,6 +338,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Editor", link: "/de/api/editor" },
         { text: "Typen", link: "/de/api/types" },
         { text: "Renderer", link: "/de/api/renderer-typescript" },
+        { text: "Template Tools", link: "/de/api/template-tools" },
         { text: "Ereignisse", link: "/de/api/events" },
       ],
     },
@@ -370,6 +374,18 @@ export default defineConfig({
   description:
     "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
   cleanUrls: true,
+  // VitePress scans the whole project root for *.md, which otherwise renders
+  // the vitest fixtures under tests/fixtures/ as real, navigable pages.
+  srcExclude: ["tests/**"],
+  sitemap: { hostname: "https://docs.templatical.com" },
+  // Serve each page's source markdown at its own URL plus `.md`. Agents that
+  // fetch rendered HTML read mangled examples of this product's own merge-tag
+  // and logic-tag syntax; source markdown sidesteps that entirely.
+  // buildEnd receives VitePress's SiteConfig, which carries outDir — verified
+  // against the installed types (`buildEnd?: (siteConfig: SiteConfig) => …`).
+  buildEnd: ({ outDir }) => {
+    copyMarkdownSources(outDir);
+  },
   head: [
     [
       "link",

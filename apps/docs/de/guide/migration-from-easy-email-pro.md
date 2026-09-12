@@ -193,7 +193,7 @@ Verschachtelte Groups werden abgeflacht, weil MJML eine Sektion innerhalb einer 
 - **`classAttributes`** — in v1 übersprungen. Eine Warnung, wenn das Objekt nicht leer ist.
 - **`breakpoint`** — still. Templatical-Mobil ist 375 / MJML 480; dieses Paket erfindet keine Einstellung.
 
-Ein frisch importiertes Template scheitert bei der Ankunft häufig an den Barrierefreiheits-Regeln von `@templatical/quality`, und das `validate.mjs` des [Agent Skill](/de/guide/agent-skill) beendet sich dabei mit einem Exit-Code ungleich 0. Aus Easy Email Pro exportierte Bilder tragen typischerweise keinen `alt`-Text, und der Importer übernimmt diese Lücke originalgetreu — eine Beschreibung zu erfinden wäre selbst ein Anti-Pattern für Barrierefreiheit. Die strukturelle Validierung besteht; die Befunde betreffen den Inhalt. Fügen Sie den importierten Bildern Alt-Text hinzu, und die Befunde verschwinden.
+Ein frisch importiertes Template scheitert bei der Ankunft häufig an den Barrierefreiheits-Regeln von `@templatical/quality`, und der `validate`-Befehl des [Agent Skill](/de/guide/agent-skill) beendet sich dabei mit einem Exit-Code ungleich 0. Aus Easy Email Pro exportierte Bilder tragen typischerweise keinen `alt`-Text, und der Importer übernimmt diese Lücke originalgetreu — eine Beschreibung zu erfinden wäre selbst ein Anti-Pattern für Barrierefreiheit. Die strukturelle Validierung besteht; die Befunde betreffen den Inhalt. Fügen Sie den importierten Bildern Alt-Text hinzu, und die Befunde verschwinden.
 
 ## Weitere Fälle
 

@@ -524,7 +524,7 @@ describe("renderReleaseNotes", () => {
   });
 });
 
-// Freshness guard, mirroring the schema-freshness test in skills/templatical-email:
+// Freshness guard, mirroring the schema-freshness test in packages/template-tools:
 // regenerate in memory and require it to equal what is committed, so a block-model
 // change or a hand-edit can never ship a stale page.
 describe("committed output is up to date", () => {

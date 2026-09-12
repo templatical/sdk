@@ -42,26 +42,27 @@
 
 Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
-The [`templatical-email` Agent Skill](./skills/templatical-email) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+The [`templatical` Agent Skill](./skills/templatical) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
 
-In **Claude Code**, two commands and you're done:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-```
-
-Every other agent takes the folder. `~/.agents/skills/` is the vendor-neutral location most of them read, so one copy covers Codex CLI, Gemini CLI and friends:
+One command and you're done:
 
 ```bash
-cp -r skills/templatical-email ~/.agents/skills/
+npx skills add templatical/sdk
 ```
 
-You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).
+That detects which supported agents you have and installs into the directory each one reads.
+
+You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and installs nothing into your project (a small CLI fetched on demand via `npx`; the editor loads from the CDN).
 
 [Skill guide →](https://docs.templatical.com/guide/agent-skill)
 
 > Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
+
+### Wiring the editor into your own app
+
+The same skill covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app — just ask it, no separate install. It routes each request on its own: authoring or editing a template stays on the email side, embedding the SDK moves to the integration side, and a request that needs both ("build a welcome email and wire it into my app") gets both, template first.
+
+The same [skill guide →](https://docs.templatical.com/guide/agent-skill) covers it all.
 
 ## Power features
 
@@ -155,7 +156,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Saving & Loading](https://docs.templatical.com/backend/templates) — the template lifecycle over your own storage
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks) — reusable block groups over your own storage
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
-- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt in your own agent
+- [AI Agent Skills](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt, or get integration help, in your own agent
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)

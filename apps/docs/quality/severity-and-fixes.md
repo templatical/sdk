@@ -1,3 +1,7 @@
+---
+description: The four-level severity model (error, warning, info, off) shared by every linter, and how auto-fix LintPatch objects apply as undoable edits.
+---
+
 # Severity & fixes
 
 Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` together.

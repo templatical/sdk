@@ -1,0 +1,9 @@
+# These docs are public and intentionally machine-readable: /llms.txt is a
+# curated index and every page is also served as raw markdown at its own URL
+# with `.md` appended. Crawling is allowed on purpose — this is a
+# source-available SDK, and an agent that has read the docs gives better
+# answers about it than one guessing from a model's training data.
+User-agent: *
+Allow: /
+
+Sitemap: https://docs.templatical.com/sitemap.xml

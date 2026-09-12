@@ -8,7 +8,8 @@
   },
   "private": true,
   "scripts": {
-    "build": "vitepress build",
+    "build": "pnpm run build:agent-surface && vitepress build",
+    "build:agent-surface": "node scripts/build-agent-surface.mjs",
     "build:changelog": "node scripts/build-changelog.mjs",
     "dev": "vitepress dev",
     "preview": "vitepress preview",

@@ -178,7 +178,7 @@ Verschachtelte Spalten und bemalte Boxen werden abgeflacht, weil MJML eine Sekti
 - **`lock` / `marker`** — Editor-Chrome; ignoriert.
 - **`placeholder`** — Block-Bibliotheks-Chrome auf `fullwidth`; übersprungen.
 
-Ein frisch importiertes Template scheitert bei der Ankunft häufig an den Barrierefreiheits-Regeln von `@templatical/quality`, und das `validate.mjs` des [Agent Skill](/de/guide/agent-skill) beendet sich dabei mit einem Exit-Code ungleich 0. Aus Chamaileon exportierte Bilder tragen typischerweise keinen `alt`-Text, und der Importer übernimmt diese Lücke originalgetreu — eine Beschreibung zu erfinden wäre selbst ein Anti-Pattern für Barrierefreiheit. Die strukturelle Validierung besteht; die Befunde betreffen den Inhalt. Fügen Sie den importierten Bildern Alt-Text hinzu, und die Befunde verschwinden.
+Ein frisch importiertes Template scheitert bei der Ankunft häufig an den Barrierefreiheits-Regeln von `@templatical/quality`, und der `validate`-Befehl des [Agent Skill](/de/guide/agent-skill) beendet sich dabei mit einem Exit-Code ungleich 0. Aus Chamaileon exportierte Bilder tragen typischerweise keinen `alt`-Text, und der Importer übernimmt diese Lücke originalgetreu — eine Beschreibung zu erfinden wäre selbst ein Anti-Pattern für Barrierefreiheit. Die strukturelle Validierung besteht; die Befunde betreffen den Inhalt. Fügen Sie den importierten Bildern Alt-Text hinzu, und die Befunde verschwinden.
 
 ## Weitere Fälle
 

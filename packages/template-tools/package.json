@@ -1,0 +1,107 @@
+{
+  "name": "@templatical/template-tools",
+  "description": "CLI and library for Templatical email templates — validate, render, edit, import, and live-preview",
+  "version": "0.36.0",
+  "bin": {
+    "templatical": "./dist/bin.js"
+  },
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "dependencies": {
+    "@templatical/quality": "workspace:*",
+    "@templatical/renderer": "workspace:*",
+    "@templatical/types": "workspace:*",
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.5",
+    "mjml": "^5.4.0",
+    "ts-json-schema-generator": "^2.9.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./live": {
+      "types": "./dist/live/index.d.ts",
+      "import": "./dist/live/index.js"
+    },
+    "./schema.json": "./schema.json"
+  },
+  "files": [
+    "README.md",
+    "dist",
+    "live",
+    "schema.json"
+  ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "cli",
+    "email",
+    "email-template",
+    "json-schema",
+    "templatical",
+    "validation"
+  ],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "peerDependencies": {
+    "@templatical/import-beefree": "workspace:*",
+    "@templatical/import-chamaileon": "workspace:*",
+    "@templatical/import-easy-email-pro": "workspace:*",
+    "@templatical/import-html": "workspace:*",
+    "@templatical/import-mjml": "workspace:*",
+    "@templatical/import-stripo": "workspace:*",
+    "@templatical/import-topol": "workspace:*",
+    "@templatical/import-unlayer": "workspace:*",
+    "mjml": "^5.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@templatical/import-beefree": {
+      "optional": true
+    },
+    "@templatical/import-chamaileon": {
+      "optional": true
+    },
+    "@templatical/import-easy-email-pro": {
+      "optional": true
+    },
+    "@templatical/import-html": {
+      "optional": true
+    },
+    "@templatical/import-mjml": {
+      "optional": true
+    },
+    "@templatical/import-stripo": {
+      "optional": true
+    },
+    "@templatical/import-topol": {
+      "optional": true
+    },
+    "@templatical/import-unlayer": {
+      "optional": true
+    },
+    "mjml": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/template-tools"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "generate-schema": "node scripts/generate-schema.mjs",
+    "sync-pins": "node scripts/sync-pins.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}

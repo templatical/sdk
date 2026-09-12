@@ -1,35 +1,67 @@
 {
   "$schema": "https://unpkg.com/syncpack@15/schema.json",
-  "source": ["package.json", "packages/*/package.json", "apps/*/package.json"],
+  "source": [
+    "package.json",
+    "packages/*/package.json",
+    "apps/*/package.json",
+    "skills/*/package.json"
+  ],
   "semverGroups": [
     {
       "label": "internal workspace deps stay pinned to workspace:*",
-      "dependencies": ["@templatical/**"],
-      "dependencyTypes": ["prod", "dev"],
-      "packages": ["**"],
+      "dependencies": [
+        "@templatical/**"
+      ],
+      "dependencyTypes": [
+        "prod",
+        "dev"
+      ],
+      "packages": [
+        "**"
+      ],
       "range": ""
     }
   ],
   "versionGroups": [
     {
       "label": "internal @templatical/* packages use workspace protocol",
-      "dependencies": ["@templatical/**"],
-      "dependencyTypes": ["prod", "dev"],
-      "packages": ["**"],
+      "dependencies": [
+        "@templatical/**"
+      ],
+      "dependencyTypes": [
+        "prod",
+        "dev"
+      ],
+      "packages": [
+        "**"
+      ],
       "pinVersion": "workspace:*"
     },
     {
       "label": "peerDependencies are intentionally looser — only check they exist",
-      "dependencyTypes": ["peer"],
-      "packages": ["**"],
-      "dependencies": ["**"],
+      "dependencyTypes": [
+        "peer"
+      ],
+      "packages": [
+        "**"
+      ],
+      "dependencies": [
+        "**"
+      ],
       "policy": "sameRange"
     },
     {
       "label": "all third-party prod/dev deps must match across the monorepo",
-      "dependencyTypes": ["prod", "dev"],
-      "dependencies": ["**"],
-      "packages": ["**"]
+      "dependencyTypes": [
+        "prod",
+        "dev"
+      ],
+      "dependencies": [
+        "**"
+      ],
+      "packages": [
+        "**"
+      ]
     }
   ]
 }

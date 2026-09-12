@@ -1,0 +1,97 @@
+# Templatical
+
+> Drag-and-drop email editor for modern apps — source-available, MIT after two years.
+
+Documentation for SDK version 0.37.0. Every page below is also available as raw markdown at the same URL with `.md` appended.
+
+## Overview
+
+- [Templatical](https://docs.templatical.com/): Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.
+- [License FAQ](https://docs.templatical.com/license-faq): Plain-English answers about Templatical's FSL-1.1-MIT and MIT licenses — what's allowed, what isn't, when FSL becomes MIT.
+- [Showcase & use cases](https://docs.templatical.com/showcase): Where Templatical fits — common product patterns, real-world integrations, and how to add yours to the showcase.
+
+## Getting Started
+
+- [Embedding the editor](https://docs.templatical.com/getting-started/embedding): CSS constraints on the container you mount the editor into, and what breaks when an ancestor violates them.
+- [How Rendering Works](https://docs.templatical.com/getting-started/how-rendering-works): Understand the JSON → MJML rendering pipeline in Templatical.
+- [Installation](https://docs.templatical.com/getting-started/installation): Install the Templatical email editor via npm or CDN.
+- [Quick Start](https://docs.templatical.com/getting-started/quick-start): Get the Templatical email editor running in under 5 minutes.
+
+## Guide
+
+- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One free, open-source Agent Skill that writes, edits, imports and validates Templatical email templates from a prompt, previews them live in the real editor, and installs, scaffolds or diagnoses an @templatical/editor integration — no backend or API key.
+- [Block Types](https://docs.templatical.com/guide/blocks): Reference for all 14 built-in block types in Templatical.
+- [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
+- [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
+- [Display Conditions](https://docs.templatical.com/guide/display-conditions): Conditional block visibility using display conditions in Templatical email templates.
+- [Custom Fonts](https://docs.templatical.com/guide/fonts): Configure custom fonts for the email editor's font picker.
+- [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
+- [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.
+- [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
+- [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
+- [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.
+- [Migrating from Chamaileon](https://docs.templatical.com/guide/migration-from-chamaileon): Convert Chamaileon email templates to Templatical format using @templatical/import-chamaileon.
+- [Migrating from Easy Email Pro](https://docs.templatical.com/guide/migration-from-easy-email-pro): Convert Easy Email Pro email templates to Templatical format using @templatical/import-easy-email-pro.
+- [Migration from HTML](https://docs.templatical.com/guide/migration-from-html): Convert HTML email templates to Templatical format using @templatical/import-html.
+- [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml): Convert MJML email templates to Templatical format using @templatical/import-mjml.
+- [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo): Convert Stripo email templates to Templatical format using @templatical/import-stripo.
+- [Migrating from Topol](https://docs.templatical.com/guide/migration-from-topol): Convert Topol.io email templates to Templatical format using @templatical/import-topol.
+- [Migration from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer): Convert Unlayer email templates to Templatical format using @templatical/import-unlayer.
+- [Preview Rendering](https://docs.templatical.com/guide/preview-rendering): Control what the editor's preview surfaces show — labels, sample values, or real data resolved by your backend.
+- [Programmatic Templates](https://docs.templatical.com/guide/programmatic-templates): Build email template content programmatically using factory functions.
+- [Sections and Columns](https://docs.templatical.com/guide/sections-and-columns): Multi-column layouts with the SectionBlock container in Templatical.
+- [Shadow DOM](https://docs.templatical.com/guide/shadow-dom): How Templatical isolates the editor from host page CSS using Shadow DOM, and when to opt out.
+- [Styling](https://docs.templatical.com/guide/styling): Block styles, spacing, visibility, and template-level settings in Templatical.
+- [Theming](https://docs.templatical.com/guide/theming): Customize the editor's appearance with CSS variables, theme overrides, dark mode, and custom fonts.
+
+## API Reference
+
+- [Editor API](https://docs.templatical.com/api/editor): Complete reference for the init() function, TemplaticalEditorConfig, and TemplaticalEditor instance.
+- [Events](https://docs.templatical.com/api/events): Editor event callbacks — onChange, onDirtyChange, onError, and media/merge tag request handlers.
+- [Renderer](https://docs.templatical.com/api/renderer-typescript): API reference for @templatical/renderer — convert template JSON to MJML.
+- [Template Tools](https://docs.templatical.com/api/template-tools): API reference for @templatical/template-tools — the CLI and library for validating, rendering, editing, importing and previewing Templatical templates outside the editor.
+- [Types Reference](https://docs.templatical.com/api/types): Complete reference for @templatical/types — shared TypeScript types, block factories, and utilities.
+
+## Connect your backend
+
+- [Comments](https://docs.templatical.com/backend/comments): A threaded review conversation on a template — over your own storage, or Templatical Cloud's.
+- [Connect your backend](https://docs.templatical.com/backend/): Saving, version history, comments, saved blocks, media, test emails and rendering are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+- [Media](https://docs.templatical.com/backend/media): Back the editor's image picker with your own gallery, DAM or CMS — or use the bundled browser-local store.
+- [Rendering & Export](https://docs.templatical.com/backend/render): Turn a template into MJML or sending-ready HTML — locally, on your own backend, or with a single mjml2html endpoint.
+- [Saved Blocks](https://docs.templatical.com/backend/saved-blocks): Let users save reusable groups of blocks and insert them into other templates, backed by your own storage.
+- [Saving & Loading Templates](https://docs.templatical.com/backend/templates): Wire the editor's save/load lifecycle to your own storage — name, save button, autosave and unsaved-changes guard included.
+- [Test Emails](https://docs.templatical.com/backend/test-email): Let users mail themselves the template they're editing, sent through your own infrastructure.
+- [Version History](https://docs.templatical.com/backend/version-history): Browse, preview and restore a template's past versions — over your own storage, or Templatical Cloud's.
+
+## Cloud
+
+- [AI Assistant](https://docs.templatical.com/cloud/ai): Generate email content, rewrite text, and convert designs to templates with AI.
+- [Authentication](https://docs.templatical.com/cloud/authentication): Configure authentication for Templatical Cloud.
+- [Collaboration](https://docs.templatical.com/cloud/collaboration): Real-time co-editing with live cursors and block locking.
+- [Comments](https://docs.templatical.com/cloud/comments): Templatical Cloud as one implementation of the comments contract.
+- [Getting Started with Cloud](https://docs.templatical.com/cloud/getting-started): Set up Templatical Cloud in your application.
+- [Headless API](https://docs.templatical.com/cloud/headless-api): Full programmatic access to templates, media, and rendering.
+- [Templatical Cloud](https://docs.templatical.com/cloud/): Premium hosted features for teams building email tooling at scale.
+- [MCP Integration](https://docs.templatical.com/cloud/mcp): Connect AI agents to build and modify templates programmatically via Model Context Protocol.
+- [Media Library](https://docs.templatical.com/cloud/media-library): Templatical Cloud as one implementation of the media storage contract.
+- [Multi-Tenant Architecture](https://docs.templatical.com/cloud/multi-tenant): Project and tenant isolation with API keys.
+- [Rendering](https://docs.templatical.com/cloud/rendering): How Templatical Cloud renders a template to MJML and HTML, and why it does not take a render provider.
+- [Saved Blocks](https://docs.templatical.com/cloud/saved-blocks): Templatical Cloud as one implementation of the saved-blocks storage contract.
+- [Template Scoring](https://docs.templatical.com/cloud/template-scoring): Automated quality checks for deliverability, accessibility, and best practices.
+- [Templates](https://docs.templatical.com/cloud/templates): Templatical Cloud as one implementation of the saving-and-loading contract.
+- [Test Emails](https://docs.templatical.com/cloud/test-emails): How Templatical Cloud sends test emails, and how to send them from your own infrastructure instead.
+- [Version History](https://docs.templatical.com/cloud/version-history): Templatical Cloud as one implementation of the version-history contract.
+
+## Quality
+
+- [Accessibility linter](https://docs.templatical.com/quality/accessibility/): lintAccessibility checks alt text, color contrast, vague link and button copy, heading structure, and touch targets against WCAG and EU accessibility law.
+- [Accessibility rule catalog](https://docs.templatical.com/quality/accessibility/rule-catalog): All 21 lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, and preheader text — with default severities.
+- [Contributing locales](https://docs.templatical.com/quality/contributing-locales): Add a new locale's rule messages for accessibility, structure, and link rules, plus the vague-text dictionaries the accessibility linter alone uses.
+- [Headless usage](https://docs.templatical.com/quality/headless-usage): Run the quality linters headless in Node.js — CI guards, save-time validation, ruleId filtering, and custom rules built with walkBlocks and walkUrls.
+- [Quality](https://docs.templatical.com/quality/): MIT-licensed linter for Templatical templates — accessibility, structure, and link rules, 31 in total, run via lintTemplate() in the editor or in CI.
+- [Links linter](https://docs.templatical.com/quality/links/): lintLinks flags dangerous javascript-protocol hrefs, malformed mailto and tel links, unsupported URL schemes, and staging URLs leaking into templates.
+- [Link rule catalog](https://docs.templatical.com/quality/links/rule-catalog): All 5 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, and localhost-or-staging hosts — with default severities.
+- [Options](https://docs.templatical.com/quality/options): Reference for LintOptions — the disabled, locale, accessibility, structure, and links fields accepted by lintTemplate and the editor's lint config.
+- [Severity & fixes](https://docs.templatical.com/quality/severity-and-fixes): The four-level severity model (error, warning, info, off) shared by every linter, and how auto-fix LintPatch objects apply as undoable edits.
+- [Structure linter](https://docs.templatical.com/quality/structure/): lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, and empty sections or columns.
+- [Structure rule catalog](https://docs.templatical.com/quality/structure/rule-catalog): All 5 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, and empty sections or columns — with severities and fixes.

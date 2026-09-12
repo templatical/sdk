@@ -1,3 +1,7 @@
+---
+description: MIT-licensed linter for Templatical templates — accessibility, structure, and link rules, 31 in total, run via lintTemplate() in the editor or in CI.
+---
+
 # Quality
 
 `@templatical/quality` is the umbrella package for Templatical's template-quality tooling — deterministic, JSON-only linters that catch authoring mistakes inside the editor and in headless / CI checks. MIT-licensed, ESM, no Vue, no DOM.

@@ -1,3 +1,7 @@
+---
+description: lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, and empty sections or columns.
+---
+
 # Structure linter
 
 `lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), and empty sections / columns.

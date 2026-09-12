@@ -1,3 +1,7 @@
+---
+description: All 5 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, and empty sections or columns — with severities and fixes.
+---
+
 # Structure rule catalog
 
 The 5 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).

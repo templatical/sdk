@@ -113,6 +113,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
 | `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
 | `@templatical/media-library`   | Eigenständiges Medien-SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in einer Vue-App). Die Durchsuchen-Oberfläche des Editors ist in `@templatical/editor` gebündelt. | Optional – nur für eigenständige Nutzung, nicht für `init({ media })` oder Clouds Speicher |
+| `@templatical/template-tools`  | CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templates außerhalb des Editors | Optional – per `npx` ausführen, nichts zu installieren; für CI-Checks, Skripte oder das Erzeugen von Templates ohne gemounteten Editor |
 | `@templatical/import-beefree`  | Konvertiert BeeFree-JSON-Templates in das Templatical-Format                                                            | Optional                                                                                                     |
 | `@templatical/import-unlayer`  | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format                                                     | Optional                                                                                                     |
 | `@templatical/import-html`     | Konvertiert bestehende HTML-E-Mail-Templates (Tabellen-basiert) in das Templatical-Format                               | Optional                                                                                                     |
@@ -381,3 +382,23 @@ Wenn Sie keinen Paketmanager verwenden möchten, können Sie den Editor direkt �
 ```
 
 Der CDN-Build ist vollständig eigenständig – alle Abhängigkeiten sind gebündelt. Schwere Bibliotheken (TipTap, Vue, Pusher usw.) werden per Code-Splitting in separate Chunks aufgeteilt und bei Bedarf nachgeladen.
+
+### Eine Version pinnen
+
+Das Beispiel oben ist absichtlich unversioniert: unpkg löst eine URL ohne Versionsangabe bei jeder Anfrage auf die zuletzt veröffentlichte Version auf — praktisch, um den Editor auszuprobieren, bedeutet aber, dass sich der genaue Code, den Ihre Seite lädt, ändern kann, ohne dass sich auf Ihrer Seite etwas geändert hat. Pinnen Sie in Produktion eine exakte Version, und laden Sie diese von jsDelivr statt von unpkg:
+
+```html
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.css"
+/>
+<script type="module">
+  import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.js";
+
+  const editor = await init({
+    container: "#editor",
+  });
+</script>
+```
+
+**Der Host ändert sich zusammen mit der URL-Form, nicht nur mit der Versionsnummer.** Der CDN-Build wird per Code-Splitting in Chunk-Dateien mit Hash-Namen aufgeteilt, die der Einstiegspunkt bei Bedarf nachlädt — Einstiegspunkt und jeder nachgeladene Chunk müssen sich also auf dieselbe veröffentlichte Version auflösen. Der Redirect von unpkg bei einer unversionierten URL stellt das sicher, aber das Anfordern der Chunks einer bereits gepinnten Version über unpkg hat diese gelegentlich mit dem falschen Content-Type und einem fehlschlagenden CORS-Preflight ausgeliefert. jsDelivr liefert die Chunks einer gepinnten Version zuverlässig aus — pinnen Sie also dort, und belassen Sie die unversionierte Form bei unpkg.

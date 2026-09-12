@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { useCollaborationBroadcast } from "../../src/cloud/collaboration-broadcast";
 import type { UseEditorReturn } from "../../src/editor";
-import type { McpOperationPayload } from "@templatical/types";
+import type { TemplateOperationPayload } from "@templatical/types";
 
 function createMockEditor(): UseEditorReturn {
   return {
@@ -51,7 +51,7 @@ describe("useCollaborationBroadcast", () => {
     );
     expect(callOrder).toEqual(["original", "broadcast"]);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("addBlock");
     expect(payload.data).toEqual({
@@ -78,7 +78,7 @@ describe("useCollaborationBroadcast", () => {
     // positioned inserts silently fall through to append-at-end.
     expect(originalAddBlock).toHaveBeenCalledWith(block, "section-1", 0, 2);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("addBlock");
     expect(payload.data).toEqual({
@@ -98,7 +98,7 @@ describe("useCollaborationBroadcast", () => {
       typeof editor.updateBlock
     >[1]);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("updateBlock");
     expect(payload.data).toEqual({
@@ -114,7 +114,7 @@ describe("useCollaborationBroadcast", () => {
 
     editor.removeBlock("b1");
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("deleteBlock");
     expect(payload.data).toEqual({ blockId: "b1" });
@@ -127,7 +127,7 @@ describe("useCollaborationBroadcast", () => {
 
     editor.moveBlock("b1", 3, "section-2", 1);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("moveBlock");
     expect(payload.data).toEqual({
@@ -148,7 +148,7 @@ describe("useCollaborationBroadcast", () => {
     >[0];
     editor.updateSettings(updates);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("updateSettings");
     expect(payload.data).toEqual({ updates });
@@ -165,7 +165,7 @@ describe("useCollaborationBroadcast", () => {
     } as unknown as Parameters<typeof editor.setContent>[0];
     editor.setContent(content, true);
 
-    const payload: McpOperationPayload =
+    const payload: TemplateOperationPayload =
       collaboration._broadcastOperation.mock.calls[0][0];
     expect(payload.operation).toBe("setContent");
     expect(payload.data).toEqual({ content });

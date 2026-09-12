@@ -171,10 +171,16 @@ export interface Collaborator {
 }
 
 // ---------------------------------------------------------------------------
-// MCP Operations
+// Template operations
 // ---------------------------------------------------------------------------
 
-export type McpOperation =
+// The operation vocabulary shared by the CLI's `edit` command, Cloud's MCP
+// bridge and the collaboration broadcast. Named for what it operates on rather
+// than for any one transport — the same seven operations travel over stdio,
+// over Pusher and over a local file edit. The names are camelCase to match the
+// payload keys beside them (`blockId`, `targetSectionId`) and every other
+// identifier in this package.
+export type TemplateOperation =
   | "addBlock"
   | "updateBlock"
   | "deleteBlock"
@@ -183,8 +189,8 @@ export type McpOperation =
   | "setContent"
   | "updateBlockStyle";
 
-export interface McpOperationPayload {
-  operation: McpOperation;
+export interface TemplateOperationPayload {
+  operation: TemplateOperation;
   data: Record<string, unknown>;
   timestamp: number;
 }
@@ -202,7 +208,7 @@ export interface AiConfig {
 
 export interface McpConfig {
   enabled: boolean;
-  onOperation?: (payload: McpOperationPayload) => void;
+  onOperation?: (payload: TemplateOperationPayload) => void;
 }
 
 export interface CollaborationConfig {

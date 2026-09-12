@@ -1,3 +1,7 @@
+---
+description: Add a new locale's rule messages for accessibility, structure, and link rules, plus the vague-text dictionaries the accessibility linter alone uses.
+---
+
 # Contributing locales
 
 `@templatical/quality` ships locale-aware data sets keyed by language:

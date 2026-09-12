@@ -113,6 +113,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
+| `@templatical/template-tools`  | CLI and library for validating, rendering, editing, importing, and live-previewing templates outside the editor.                        | Optional — run via `npx`, nothing to install; for CI checks, scripts, or generating templates without a mounted editor |
 | `@templatical/import-beefree`  | Converts BeeFree JSON templates to Templatical format.                                                                                   | Optional                                                                                            |
 | `@templatical/import-unlayer`  | Converts Unlayer JSON design templates to Templatical format.                                                                            | Optional                                                                                            |
 | `@templatical/import-html`     | Converts existing HTML email templates (table-based) to Templatical format.                                                              | Optional                                                                                            |
@@ -381,3 +382,23 @@ If you prefer not to use a package manager, load the editor directly via script 
 ```
 
 The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.
+
+### Pinning a version
+
+The example above is unversioned on purpose: unpkg resolves a URL with no version segment to the latest published release on every request, which is convenient for trying the editor but means the exact code your page loads can change with no corresponding change on your end. Pin an exact version for production, loading it from jsDelivr rather than unpkg:
+
+```html
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.css"
+/>
+<script type="module">
+  import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor@<version>/dist/cdn/editor.js";
+
+  const editor = await init({
+    container: "#editor",
+  });
+</script>
+```
+
+**The host changes along with the URL shape, not just the version number.** The CDN build code-splits into hashed chunk files that the entry loads on demand, so the entry and every chunk it pulls in must resolve to the same published version — unpkg's redirect from an unversioned URL keeps that consistent, but requesting an already-pinned version's chunks from unpkg has intermittently served them with the wrong content type and a failing CORS preflight. jsDelivr serves a pinned version's chunks reliably, so keep pinned URLs there and the unversioned form on unpkg.

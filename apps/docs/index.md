@@ -1,5 +1,6 @@
 ---
 layout: home
+description: Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.
 hero:
   name: Templatical
   text: Email Editor for Your App
@@ -12,8 +13,8 @@ hero:
       text: Try Playground
       link: https://play.templatical.com
 features:
-  - title: Design emails from a prompt
-    details: An open Agent Skill teaches Claude Code, Cursor, or any AI agent your template format — describe an email, preview it in the real editor, export MJML/HTML.
+  - title: An Agent Skill for the whole job
+    details: One open skill for Claude Code, Cursor or any AI agent — design an email from a prompt, import one from another builder, preview it in the real editor, export MJML/HTML, and mount or debug the editor in your own app.
     link: /guide/agent-skill
     linkText: Use the Agent Skill
   - title: Custom blocks with API-backed data

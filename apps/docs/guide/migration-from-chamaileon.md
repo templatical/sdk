@@ -178,7 +178,7 @@ Nested columns and painted boxes flatten because MJML forbids a section inside a
 - **`lock` / `marker`** — editor chrome; ignored.
 - **`placeholder`** — block-library chrome on `fullwidth`; skipped.
 
-A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Chamaileon typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate` command exits non-zero on it. Images exported from Chamaileon typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
 
 ## Further coverage
 

@@ -1,0 +1,27 @@
+# Evals — generation and integration quality checks
+
+These prompts exercise the skill end-to-end across both of its jobs — authoring
+a template (cases 1–5) and integrating or troubleshooting the SDK (cases
+6–15) — checking **quality**: do generated templates look good and fit the
+brief, and is integration advice correct and complete? The unit tests don't
+cover either (they only prove structural validity and reference-tree
+consistency). This is a maintainer artifact, not part of the runtime skill.
+
+`evals.json` follows the [`skill-creator`](https://code.claude.com/docs/en/skills)
+eval format, so the easiest way to run them is through the `skill-creator` skill:
+it runs each prompt with the skill vs. a baseline, opens a review viewer, and
+helps you iterate on `SKILL.md` / `reference/`.
+
+Manual loop (without skill-creator):
+
+1. In an agent that has this skill installed, run each `prompt` from `evals.json`.
+2. Load the generated JSON into the editor (or render it) and judge it against
+   the `expected_output` bar: right blocks, sensible layout, brand applied, AA
+   contrast, alt text on images, one clear CTA.
+3. Where it falls short, improve the guidance — usually `reference/block-guide.md`
+   or a new/adjusted example in `reference/examples/` — and re-run. Prefer fixing
+   guidance over adding rigid rules.
+
+Correctness (valid JSON, schema-in-sync-with-types) is already enforced by
+this skill's own `tests/` plus `packages/template-tools`'s schema-parity and
+`validate` tests; these evals are purely about taste and completeness.

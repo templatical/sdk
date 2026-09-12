@@ -786,6 +786,61 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@25.9.5)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
 
+  packages/template-tools:
+    dependencies:
+      '@templatical/import-beefree':
+        specifier: workspace:*
+        version: link:../import-beefree
+      '@templatical/import-chamaileon':
+        specifier: workspace:*
+        version: link:../import-chamaileon
+      '@templatical/import-easy-email-pro':
+        specifier: workspace:*
+        version: link:../import-easy-email-pro
+      '@templatical/import-html':
+        specifier: workspace:*
+        version: link:../import-html
+      '@templatical/import-mjml':
+        specifier: workspace:*
+        version: link:../import-mjml
+      '@templatical/import-stripo':
+        specifier: workspace:*
+        version: link:../import-stripo
+      '@templatical/import-topol':
+        specifier: workspace:*
+        version: link:../import-topol
+      '@templatical/import-unlayer':
+        specifier: workspace:*
+        version: link:../import-unlayer
+      '@templatical/quality':
+        specifier: workspace:*
+        version: link:../quality
+      '@templatical/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@templatical/types':
+        specifier: workspace:*
+        version: link:../types
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.5
+        version: 25.9.5
+      mjml:
+        specifier: ^5.4.0
+        version: 5.4.0(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)
+      ts-json-schema-generator:
+        specifier: ^2.9.0
+        version: 2.9.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@25.9.5)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
   packages/types:
     devDependencies:
       typescript:
@@ -795,17 +850,8 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@25.9.5)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
 
-  skills/templatical-email:
+  skills/templatical:
     devDependencies:
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      ts-json-schema-generator:
-        specifier: ^2.9.0
-        version: 2.9.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

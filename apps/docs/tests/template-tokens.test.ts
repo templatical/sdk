@@ -46,6 +46,7 @@ const markdownFiles = execSync(
     "-not -path '*/node_modules/*'",
     "-not -path './.vitepress/dist/*'",
     "-not -path './.vitepress/cache/*'",
+    "-not -path './tests/*'",
   ].join(" "),
   { cwd: docsRoot, encoding: "utf8" },
 )

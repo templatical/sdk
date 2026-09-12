@@ -17,7 +17,8 @@
       "@templatical/import-topol",
       "@templatical/import-stripo",
       "@templatical/import-chamaileon",
-      "@templatical/import-easy-email-pro"
+      "@templatical/import-easy-email-pro",
+      "@templatical/template-tools"
     ]
   ],
   "linked": [],
