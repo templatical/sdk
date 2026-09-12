@@ -5690,7 +5690,7 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 
 - **Build** a template from a brief — "make a product-launch email", "design a welcome email".
 - **Edit** an existing template as a scoped change, not a rewrite.
-- **Import** a template from another builder — Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML.
+- **Import** a template from almost anywhere — dedicated converters for Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML and HTML, and for anything else it maps the source onto the block schema by hand.
 - **Validate** a template's JSON against the block schema and get back precise, per-block errors.
 - **Export** a template as sendable MJML or HTML.
 - **Preview it live** in the real Templatical editor in your browser, kept in sync as you keep prompting — your own hand-edits included.
@@ -5730,9 +5730,13 @@ Ask to **show it live** (or "preview it live", "build this in live mode") and th
 
 Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
 
-### Import a template from another builder
+### Import an existing template
 
 Already have a template somewhere else? The skill converts **Unlayer**, **BeeFree**, **Stripo**, **Topol**, **Chamaileon**, **Easy Email Pro**, **MJML**, and **HTML** emails into Templatical JSON — point it at the file and it writes a working template plus a short report of what converted cleanly and what fell back to raw HTML (import is lossy by nature). Then preview it live and refine the rough edges into native blocks.
+
+**No converter for your source? It still works.** The skill knows the block schema, so it can read an unfamiliar template and map it across by hand — a WordPress block template, a Mailchimp or Klaviyo export, a hand-written HTML email, even a screenshot or PDF of one. It reads the source, plans the mapping, builds the blocks, then validates the result like any other template. Slower and less exact than a converter, and worth asking for by name.
+
+The converter list grows, so the skill asks the CLI what is available rather than assuming — you never need to check first.
 
 To run the converters directly in your own code instead, see the migration guides: [Unlayer](/guide/migration-from-unlayer), [BeeFree](/guide/migration-from-beefree), [Stripo](/guide/migration-from-stripo), [Topol](/guide/migration-from-topol), [Chamaileon](/guide/migration-from-chamaileon), [Easy Email Pro](/guide/migration-from-easy-email-pro), [MJML](/guide/migration-from-mjml), [HTML](/guide/migration-from-html).
 
@@ -5750,39 +5754,19 @@ Diagnosing an existing integration runs the same steps backwards: it reads your 
 
 ## Good to know
 
-### The schema can't drift from the real block model
-
-The skill's JSON Schema is generated directly from `@templatical/types` — the same types the editor and renderer use — so it never disagrees with what the SDK actually accepts. That's also what the validator checks against: whatever the skill hands you is guaranteed to load. See [`packages/template-tools`](https://github.com/templatical/sdk/tree/main/packages/template-tools) in the repository for regeneration and contribution details.
-
-### Validate a template without the agent
-
-The agent already runs this validator itself before handing anything back, so you don't have to. But it's just the published CLI, so you can also run it yourself — in CI, or to spot-check a template:
-
-```bash
-npx -y @templatical/template-tools@0.36.0 validate path/to/template.json
-```
-
-It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
-
-### It defines the format; you supply the taste
+### Bring your own branding
 
 Layer your own context on top and the agent uses it instead of generic defaults — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. Worth doing once if you plan to generate more than one email.
 
 ### Custom blocks are never generated from a prompt
 
-This is the one exception to the rule above. Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+This is the one exception. Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
-### SDK answers are fetched, not packed in
+### How it fits alongside the SDK
 
-Integration and troubleshooting questions are answered by fetching this documentation site directly, rather than from knowledge bundled with the skill — so an answer is never older than the site itself, and there's nothing to go stale between installs.
-
-### What this skill doesn't do
-
-You don't embed the skill itself — your runtime integration is [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) plus [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send).
+The skill is a build-time tool: it authors templates and wires up integrations. Your **runtime** is [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) plus [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send).
 
 For an in-product **"generate with AI"** feature — your users type a prompt and get a template — your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
-
-It never touches git.
 
 ---
 

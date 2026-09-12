@@ -1,8 +1,8 @@
-// Rewrites the three release-time version pins that live outside this package.
+// Rewrites the release-time version pins that live outside this package.
 //
-// Three independent jobs, run together because all three fire from the same
-// root `changeset:version` step and each keeps something that ships outside
-// this package in sync with it:
+// Two independent jobs, run together because both fire from the same root
+// `changeset:version` step and each keeps something that ships outside this
+// package in sync with it:
 //
 // 1. EDITOR_VERSION in src/live/index.ts, from @templatical/editor's own
 //    version — the live harness's CDN pin. schema.json is generated from
@@ -14,13 +14,6 @@
 //    `npx -y @templatical/template-tools@…` invocation any island documents.
 //    Pinning is what keeps reference/schema.json from ever disagreeing with
 //    the published CLI's block model, since a release moves both together.
-// 3. The same CLI version pin, shown once more in the docs site
-//    (apps/docs/guide/agent-skill.md + its de/ mirror), from the same
-//    version. Governing rule: a *pinned* invocation is synced from here, in
-//    lockstep with every other pin in this file; an invocation shown
-//    deliberately unpinned — no `@version` at all — is a "latest is fine"
-//    choice for a file nobody expects to track the schema exactly. Don't add
-//    a pin to one.
 // Runs at release time from the root `changeset:version` script (wired into
 // changesets/action's `version` step), so the Version Packages PR carries all
 // changes with no manual step. Also runnable by hand:
@@ -80,7 +73,7 @@ export function syncEditorVersion() {
 
 const OWN_PKG = resolve(here, "../package.json");
 // applyCliPin's fallback label when a caller omits one. Every real caller
-// below passes its own label explicitly (syncCliPin per island, syncDocsCliPins
+// below passes its own label explicitly (syncCliPin per island
 // per docs page), so this only surfaces if applyCliPin is ever called
 // directly without one.
 const SKILL_MD_LABEL = "skills/templatical/SKILL.md";
@@ -195,37 +188,6 @@ export function syncCliPin() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. The same CLI pin, shown once more in the docs site
-// ---------------------------------------------------------------------------
-
-// Governing rule: anything showing a *pinned* invocation is synced from this
-// file; an invocation shown deliberately unpinned is a "latest is fine"
-// choice and must never gain a pin — such a file isn't in this list, and
-// adding it here would be wrong.
-const DOCS_CLI_PIN_TARGETS = [
-  "apps/docs/guide/agent-skill.md",
-  "apps/docs/de/guide/agent-skill.md",
-].map((label) => ({ label, file: resolve(here, "../../../", label) }));
-
-/**
- * Read this package's own version and rewrite the CLI pin in every docs
- * page that quotes it. Each file is synced independently through the same
- * applyCliPin used for SKILL.md, so a missing file, a missing pin, or a
- * partial rewrite in any one locale fails loudly on its own — the English
- * page rewriting cleanly says nothing about whether the German mirror did.
- */
-export function syncDocsCliPins() {
-  const version = JSON.parse(readFileSync(OWN_PKG, "utf8")).version;
-  const results = DOCS_CLI_PIN_TARGETS.map(({ label, file }) => {
-    const src = readFileSync(file, "utf8");
-    const { next, count } = applyCliPin(src, version, label);
-    const changed = next !== src;
-    if (changed) writeFileSync(file, next, "utf8");
-    return { label, changed, count };
-  });
-  return { version, results };
-}
-
 // ---------------------------------------------------------------------------
 
 function main() {
@@ -243,14 +205,6 @@ function main() {
       : `${cli.count} CLI pin(s) across the skill's islands already ${cli.version} — no change`,
   );
 
-  const docs = syncDocsCliPins();
-  for (const { label, changed, count } of docs.results) {
-    console.log(
-      changed
-        ? `Synced ${count} CLI pin(s) in ${label} to ${docs.version}`
-        : `${count} CLI pin(s) in ${label} already ${docs.version} — no change`,
-    );
-  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

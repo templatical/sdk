@@ -27,7 +27,7 @@ Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skil
 
 - **Bauen** Sie eine Vorlage aus einem Briefing — „mach mir eine Produktlaunch-E-Mail", „gestalte eine Willkommens-E-Mail".
 - **Bearbeiten** Sie eine bestehende Vorlage als gezielte Änderung, nicht als Neuschrieb.
-- **Importieren** Sie eine Vorlage aus einem anderen Editor — Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML oder HTML.
+- **Importieren** Sie eine Vorlage aus nahezu jeder Quelle — mit eigenen Konvertern für Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML, und für alles andere bildet er die Quelle von Hand auf das Block-Schema ab.
 - **Validieren** Sie das JSON einer Vorlage gegen das Block-Schema und erhalten Sie präzise Fehler pro Block zurück.
 - **Exportieren** Sie eine Vorlage als versandfertiges MJML oder HTML.
 - **Sehen Sie sie live** im echten Templatical-Editor in Ihrem Browser an — sie bleibt synchron, während Sie weiter prompten, Änderungen von Hand eingeschlossen.
@@ -67,9 +67,13 @@ Bitten Sie darum, es **live zu zeigen** (oder „live in der Vorschau", „im Li
 
 Bauen Sie zuerst in reinem JSON und wechseln Sie mitten in der Sitzung zu einer Live-Vorschau — sie knüpft genau dort an, wo Sie stehen. Der Live-Modus ist lokal und für einen einzelnen Nutzer — nicht der Echtzeit-Weg der [Cloud](/de/cloud/) — und benötigt nichts außer einem Coding-Agenten, der auf Ihrem eigenen Rechner läuft.
 
-### Eine Vorlage aus einem anderen Editor importieren
+### Eine bestehende Vorlage importieren
 
 Haben Sie bereits eine Vorlage in einem anderen Editor? Der Skill wandelt **Unlayer**-, **BeeFree**-, **Stripo**-, **Topol**-, **Chamaileon**-, **Easy Email Pro**-, **MJML**- und **HTML**-E-Mails in Templatical-JSON um — zeigen Sie ihm die Datei, und er schreibt eine funktionierende Vorlage plus einen kurzen Bericht darüber, was sauber konvertiert wurde und was auf rohes HTML zurückgefallen ist (der Import ist naturgemäß verlustbehaftet). Sehen Sie sie sich anschließend live an und verfeinern Sie die groben Stellen zu nativen Blöcken.
+
+**Kein Konverter für Ihre Quelle? Es funktioniert trotzdem.** Der Skill kennt das Block-Schema und kann deshalb eine unbekannte Vorlage lesen und von Hand übertragen — eine WordPress-Block-Vorlage, einen Mailchimp- oder Klaviyo-Export, eine handgeschriebene HTML-E-Mail, sogar einen Screenshot oder ein PDF davon. Er liest die Quelle, plant die Abbildung, baut die Blöcke und validiert das Ergebnis wie jede andere Vorlage. Langsamer und weniger exakt als ein Konverter — und es lohnt sich, ausdrücklich danach zu fragen.
+
+Die Liste der Konverter wächst, deshalb fragt der Skill die CLI, was verfügbar ist, anstatt es anzunehmen — Sie müssen das nie vorab prüfen.
 
 Um die Konverter stattdessen direkt in Ihrem eigenen Code zu verwenden, siehe die Migrationsleitfäden: [Unlayer](/de/guide/migration-from-unlayer), [BeeFree](/de/guide/migration-from-beefree), [Stripo](/de/guide/migration-from-stripo), [Topol](/de/guide/migration-from-topol), [Chamaileon](/de/guide/migration-from-chamaileon), [Easy Email Pro](/de/guide/migration-from-easy-email-pro), [MJML](/de/guide/migration-from-mjml), [HTML](/de/guide/migration-from-html).
 
@@ -87,36 +91,16 @@ Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte r�
 
 ## Gut zu wissen
 
-### Das Schema kann nicht vom echten Blockmodell abweichen
-
-Das JSON-Schema des Skills wird direkt aus `@templatical/types` generiert — denselben Typen, die Editor und Renderer verwenden —, sodass es nie von dem abweicht, was die SDK tatsächlich akzeptiert. Genau dagegen prüft auch der Validator: Was der Skill Ihnen übergibt, lädt garantiert. Details zur Neugenerierung und zu Beiträgen finden Sie in [`packages/template-tools`](https://github.com/templatical/sdk/tree/main/packages/template-tools) im Repository.
-
-### Eine Vorlage ohne den Agenten validieren
-
-Der Agent führt diesen Validator bereits selbst aus, bevor er etwas zurückgibt, Sie müssen es also nicht tun. Es ist aber nur die veröffentlichte CLI, die Sie bei Bedarf auch selbst ausführen können — in CI oder um ein Template zu prüfen:
-
-```bash
-npx -y @templatical/template-tools@0.36.0 validate pfad/zum/template.json
-```
-
-Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Anschließend kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.
-
-### Er definiert das Format — den Stil bringen Sie ein
+### Bringen Sie Ihr eigenes Branding mit
 
 Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generischer Standardwerte: Markenfarben und -schriften, Tonalität, einen eigenen System-Prompt, einen verpflichtenden Footer oder Abmelde-Block. Das lohnt sich einmalig, wenn Sie mehr als eine E-Mail erzeugen möchten.
 
 ### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
 
-Das ist die einzige Ausnahme von der Regel oben. Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+Das ist die einzige Ausnahme. Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
 
-### SDK-Antworten werden abgerufen, nicht mitgeliefert
+### Wie er sich zur SDK verhält
 
-Fragen zur Integration und Fehlerbehebung werden beantwortet, indem diese Dokumentationsseite direkt abgerufen wird, statt aus Wissen, das im Skill gebündelt ist — eine Antwort ist dadurch nie älter als die Seite selbst, und es gibt nichts, was zwischen zwei Installationen veralten könnte.
+Der Skill ist ein Werkzeug für die Entwicklungszeit: Er verfasst Vorlagen und richtet Integrationen ein. Zur **Laufzeit** verwenden Sie [`@templatical/editor`](/de/getting-started/quick-start) (Ihre Nutzer bauen E-Mails, Sie erhalten JSON) und [`@templatical/renderer`](/de/api/renderer-typescript) (JSON → MJML/HTML zum Versand).
 
-### Was dieser Skill nicht tut
-
-Sie binden nicht den Skill selbst ein — Ihre Laufzeit-Integration ist [`@templatical/editor`](/de/getting-started/quick-start) (Ihre Nutzer bauen E-Mails, Sie erhalten JSON) plus [`@templatical/renderer`](/de/api/renderer-typescript) (JSON → MJML/HTML zum Versand).
-
-Für eine **„Mit KI erstellen"**-Funktion im Produkt — Ihre Nutzer geben einen Prompt ein und erhalten ein Template — ruft Ihr Backend ein LLM mit dem Block-Schema auf, validiert das Ergebnis mit [`@templatical/quality`](/de/quality/) und rendert es. Wenn Sie das nicht selbst bauen und hosten möchten, bietet [Templatical Cloud](/de/cloud/) verwaltete KI-Generierung und Zusammenarbeit.
-
-Er fasst nie Git an.
+Für eine „Mit KI erzeugen"-Funktion direkt im Produkt — Ihre Nutzer geben einen Prompt ein und erhalten eine Vorlage — ruft Ihr Backend ein LLM mit dem Block-Schema auf, validiert das Ergebnis mit [`@templatical/quality`](/de/quality/) und rendert es. Wenn Sie das nicht selbst bauen und hosten möchten, bietet [Templatical Cloud](/de/cloud/) verwaltete KI-Generierung und Zusammenarbeit.
