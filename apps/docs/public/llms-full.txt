@@ -5762,12 +5762,6 @@ Layer your own context on top and the agent uses it instead of generic defaults 
 
 This is the one exception. Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
-### How it fits alongside the SDK
-
-The skill is a build-time tool: it authors templates and wires up integrations. Your **runtime** is [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) plus [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send).
-
-For an in-product **"generate with AI"** feature — your users type a prompt and get a template — your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
-
 ---
 
 # Block Types

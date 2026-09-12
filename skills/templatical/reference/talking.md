@@ -24,3 +24,37 @@ the references, picking an example, validating, generating file names, managing
   step actually fails, not to confirm that routine state is fine.
 - **Report real problems plainly** when they happen (a validation error you
   couldn't resolve, a missing dependency) with the fix — that's signal, not noise.
+
+## Offering an update, once, at the end
+
+An installed skill never refreshes itself, so a user can sit on an old copy
+indefinitely without knowing. Check once per session, **after** the work is
+done, and mention it only when there is genuinely something newer.
+
+Read the skills CLI's own record of what it installed —
+`~/.agents/.skill-lock.json`, or `$XDG_STATE_HOME/skills/.skill-lock.json`
+when that variable is set. Find the entry whose `source` is `templatical/sdk`
+and take its `updatedAt`. Then ask GitHub whether this skill's folder has
+changed since:
+
+```
+https://api.github.com/repos/templatical/sdk/commits?path=skills/templatical&since=<updatedAt>&per_page=1
+```
+
+A non-empty array means a newer skill exists. Say exactly this, once:
+
+> A newer Templatical skill is available. Update? It runs `npx skills update`.
+
+Use `updatedAt`, not `installedAt` — it moves when the user runs
+`skills update`, so it is the real "last time I received content". Do not try
+to compare `skillFolderHash`: the skills CLI computes it, and reproducing that
+algorithm here would break the moment it changes.
+
+**Every failure here is silent.** Skip the check and say nothing if the lock
+file is absent, has no entry for this skill (a folder copy, or a checkout of
+the repo itself), the entry's `sourceType` is not `github`, the request fails,
+returns anything but 200, or you have no way to make it — the API is
+unauthenticated and rate-limited, and offline is normal. Use `curl -s` if you
+have no fetch tool. **This check must never delay, interrupt or replace the
+work the user actually asked for**, and a user who declines may hear it again
+next session — that is the accepted cost of keeping no state of our own.

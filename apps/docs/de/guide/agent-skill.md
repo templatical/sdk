@@ -98,9 +98,3 @@ Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generi
 ### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
 
 Das ist die einzige Ausnahme. Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
-
-### Wie er sich zur SDK verhält
-
-Der Skill ist ein Werkzeug für die Entwicklungszeit: Er verfasst Vorlagen und richtet Integrationen ein. Zur **Laufzeit** verwenden Sie [`@templatical/editor`](/de/getting-started/quick-start) (Ihre Nutzer bauen E-Mails, Sie erhalten JSON) und [`@templatical/renderer`](/de/api/renderer-typescript) (JSON → MJML/HTML zum Versand).
-
-Für eine „Mit KI erzeugen"-Funktion direkt im Produkt — Ihre Nutzer geben einen Prompt ein und erhalten eine Vorlage — ruft Ihr Backend ein LLM mit dem Block-Schema auf, validiert das Ergebnis mit [`@templatical/quality`](/de/quality/) und rendert es. Wenn Sie das nicht selbst bauen und hosten möchten, bietet [Templatical Cloud](/de/cloud/) verwaltete KI-Generierung und Zusammenarbeit.
