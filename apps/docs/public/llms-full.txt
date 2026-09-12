@@ -5676,21 +5676,15 @@ There is no backend and no API key for either half: your agent is the inference.
 
 ## Install
 
-The skill is a plain [Agent Skills](https://agentskills.io) folder, so any agent that reads `SKILL.md` can use it.
-
 ```bash
 npx skills add templatical/sdk
 ```
 
-[`skills`](https://github.com/vercel-labs/skills) detects which supported agents you have and installs it straight into the directory each one reads, so there is nothing to place by hand.
-
-It reports anonymous usage telemetry by default — which repository and skill you installed, for public repositories. Set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you would rather it didn't:
+To update:
 
 ```bash
-DISABLE_TELEMETRY=1 npx skills add templatical/sdk
+npx skills update
 ```
-
-Re-run the same command to update.
 
 If your agent doesn't pick the skill up afterwards, check that it is enabled in the agent's own skill list.
 
@@ -5712,22 +5706,6 @@ Ask for what you want in plain language — the skill picks the mode:
 ::: tip Prefer a hosted experience?
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::
-
-### What you need
-
-A few things need to be in place on your machine before you start.
-
-| | What | Needed for |
-|---|---|---|
-| **A coding agent** | One that supports [Agent Skills](https://agentskills.io) and runs on your own machine — Claude Code, Codex CLI, Cursor 2.4+, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. It must be allowed to run commands and write files. | Everything |
-| **Node.js 20+** | Version 22 (LTS) recommended. Check with `node -v`; if that prints nothing or a version below 20, install it from [nodejs.org](https://nodejs.org). | Everything |
-| **An internet connection** | Every command — including generating and validating JSON — runs through a small CLI fetched on demand via `npx`. The first run downloads the pinned version from npm; after that, npm caches it and there's no further network round trip until a future release moves the pin. Nothing is installed into your project: no `package.json` edit, no lockfile change, no `node_modules` entry. | Everything |
-| **A modern browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — you almost certainly have this. | [Live preview](#preview-it-live) |
-| **`npm`** | Fetches the converter for your source format the first time you import. Comes with Node.js. | [Importing](#import-an-existing-template) |
-
-**Nothing else** — no Templatical account, no API key, and no backend.
-
-Two different things can stop this working, so it helps to tell them apart: **no internet connection blocks everything**, since even generating and validating JSON now goes through the CLI. **No local filesystem or reachable port** — a hosted, server-side sandbox — blocks only the live preview; every other mode is unaffected there.
 
 ## Design and validate a template
 

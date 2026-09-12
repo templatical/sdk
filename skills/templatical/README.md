@@ -102,16 +102,11 @@ table, or the provider contracts.
 npx skills add templatical/sdk
 ```
 
-This is the only documented way to install the skill.
-[`skills`](https://github.com/vercel-labs/skills) (unrelated to
-`@templatical/template-tools`) detects which supported agents you have —
-Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all
-read `SKILL.md` — and installs this folder into whichever directory each one
-reads. Re-run it to update.
+This is the only documented way to install the skill. To update:
 
-It reports anonymous usage telemetry by default (repository and skill
-identifiers, for repositories GitHub confirms are public); set
-`DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you'd rather it didn't.
+```
+npx skills update
+```
 
 ## Requirements
 

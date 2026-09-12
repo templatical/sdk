@@ -13,21 +13,15 @@ Für keine der beiden Hälften gibt es ein Backend oder einen API-Schlüssel: Ih
 
 ## Installation
 
-Der Skill ist ein schlichter [Agent-Skills](https://agentskills.io)-Ordner — jeder Agent, der `SKILL.md` liest, kann ihn verwenden.
-
 ```bash
 npx skills add templatical/sdk
 ```
 
-[`skills`](https://github.com/vercel-labs/skills) erkennt, welche unterstützten Agenten Sie installiert haben, und legt ihn direkt in das Verzeichnis, das der jeweilige Agent liest — Sie müssen nichts von Hand ablegen.
-
-Das Tool meldet standardmäßig anonyme Nutzungstelemetrie: welches Repository und welchen Skill Sie installiert haben, bei öffentlichen Repositories. Setzen Sie `DISABLE_TELEMETRY=1` oder `DO_NOT_TRACK=1`, falls Ihnen das lieber ist:
+Für ein Update:
 
 ```bash
-DISABLE_TELEMETRY=1 npx skills add templatical/sdk
+npx skills update
 ```
-
-Für ein Update führen Sie denselben Befehl erneut aus.
 
 Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skill-Liste des Agenten aktiviert ist.
 
@@ -49,22 +43,6 @@ Beschreiben Sie in einfacher Sprache, was Sie wollen — der Skill wählt den Mo
 ::: tip Lieber eine gehostete Lösung?
 Ein KI-Chat direkt im Editor, feinabgestimmte Prompts und ein gehosteter MCP-Server sind Teil des [Templatical-Cloud](/de/cloud/)-Tarifs. Dieser Skill ist der offene, selbst gehostete Weg — bringen Sie Ihren eigenen Agenten mit und behalten Sie die volle Kontrolle.
 :::
-
-### Was Sie brauchen
-
-Ein paar Dinge müssen auf Ihrem Rechner vorhanden sein, bevor Sie starten.
-
-| | Was | Nötig für |
-|---|---|---|
-| **Ein Coding-Agent** | Einer, der [Agent Skills](https://agentskills.io) unterstützt und auf Ihrem eigenen Rechner läuft — Claude Code, Codex CLI, Cursor 2.4+, Gemini CLI, GitHub Copilot und weitere lesen alle `SKILL.md`. Er muss Befehle ausführen und Dateien schreiben dürfen. | Alles |
-| **Node.js 20+** | Version 22 (LTS) empfohlen. Prüfen Sie es mit `node -v`; wenn dabei nichts oder eine Version unter 20 erscheint, installieren Sie es von [nodejs.org](https://nodejs.org). | Alles |
-| **Eine Internetverbindung** | Jeder Befehl — auch das Erzeugen und Validieren von JSON — läuft über eine kleine CLI, die bei Bedarf per `npx` geladen wird. Der erste Aufruf lädt die gepinnte Version von npm herunter; danach cacht npm sie, und es gibt keinen weiteren Netzwerk-Roundtrip mehr, bis ein künftiges Release den Pin verschiebt. In Ihr Projekt wird dabei nichts installiert: keine Änderung an der `package.json`, keine Änderung an der Lockfile, kein Eintrag in `node_modules`. | Alles |
-| **Ein moderner Browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — haben Sie mit hoher Wahrscheinlichkeit bereits. | [Live-Vorschau](#live-vorschau) |
-| **`npm`** | Lädt beim ersten Import den Konverter für Ihr Quellformat. Ist in Node.js enthalten. | [Import](#eine-bestehende-vorlage-importieren) |
-
-**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel und kein Backend.
-
-Zwei unterschiedliche Dinge können das verhindern, daher lohnt sich die Unterscheidung: **Keine Internetverbindung blockiert alles**, da inzwischen selbst das Erzeugen und Validieren von JSON über die CLI läuft. **Kein lokales Dateisystem oder erreichbarer Port** — eine gehostete, serverseitige Sandbox — blockiert nur die Live-Vorschau; jeder andere Modus ist davon nicht betroffen.
 
 ## Eine Vorlage gestalten und validieren
 
