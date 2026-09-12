@@ -105,7 +105,6 @@ export default tseslint.config(
       "apps/*/tests/**/*.ts",
       "apps/*/e2e/**/*.ts",
       "packages/*/scripts/**/*.{ts,mjs,js}",
-      "skills/*/tools/**/*.mjs",
       "skills/*/tests/**/*.ts",
     ],
     extends: [tseslint.configs.recommended],
