@@ -19,7 +19,7 @@ Documentation for SDK version 0.37.0. Every page below is also available as raw 
 
 ## Guide
 
-- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One open Agent Skill for Templatical — author and validate email templates from a prompt, preview them live in the real editor, and install, mount, theme or troubleshoot the @templatical/editor SDK. Free, open-source, no backend or API key.
+- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One free, open-source Agent Skill that writes, edits, imports and validates Templatical email templates from a prompt, previews them live in the real editor, and installs, scaffolds or diagnoses an @templatical/editor integration — no backend or API key.
 - [Block Types](https://docs.templatical.com/guide/blocks): Reference for all 14 built-in block types in Templatical.
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.

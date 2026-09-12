@@ -193,7 +193,7 @@ Nested groups flatten because MJML forbids a section inside a column, and `addBl
 - **`classAttributes`** — skipped in v1. One warning when the object is non-empty.
 - **`breakpoint`** — silent. Templatical mobile is 375 / MJML 480; this package does not invent a setting.
 
-A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Easy Email Pro typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate` command exits non-zero on it. Images exported from Easy Email Pro typically carry no `alt` text, and the importer copies that gap across — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
 
 ## Further coverage
 

@@ -157,7 +157,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 - **Unrecognized tags** — a Topol node the importer doesn't handle explicitly becomes an `HtmlBlock` holding the raw node as JSON, not markup, since Topol nodes aren't markup. Every leaf tag Topol's own editor produces is handled explicitly, so this is a safety net for hand-edited or third-party JSON more than something a normal export triggers. Reimplement the tag as a [Templatical custom block](/guide/custom-blocks) for a native, editable equivalent.
 
 ::: tip
-A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate.mjs` exits non-zero on it. Images exported from Topol typically carry no `alt` text, and the importer copies that gap across faithfully — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
+A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate` command exits non-zero on it. Images exported from Topol typically carry no `alt` text, and the importer copies that gap across faithfully — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
 :::
 
 ## What to do if you hit something this guide doesn't cover
