@@ -11,19 +11,15 @@ Der mitgelieferte [Agent Skill](/de/guide/agent-skill) steuert diese CLI intern 
 
 ## Aufruf
 
-Jeder Befehl folgt derselben Form:
+Jeder Befehl hat dieselbe Form:
 
 ```bash
-npx -y @templatical/template-tools <Befehl> [Optionen]
+npx -y @templatical/template-tools <command> [options]
 ```
 
-`-y` ist in der Praxis nicht optional: Ohne es wartet npx' Bestätigungsabfrage beim ersten Aufruf auf stdin, und in einer nicht-interaktiven Shell oder einem CI-Job hängt das einfach, ohne sichtbaren Fehler.
+Mit `--json` gibt jeder Befehl ein einzelnes, parsebares JSON-Dokument auf stdout aus. Als Projekt-Abhängigkeit installiert heißt die ausführbare Datei `templatical`.
 
-Fügen Sie einem beliebigen Befehl `--json` hinzu, um ein einzelnes, parsbares JSON-Dokument auf stdout zu erhalten — die genaue Form und, wichtiger, was der Exit-Code bereits aussagt und das JSON nicht wiederholen muss, steht unten unter „Die `--json`-Ausgabe lesen".
-
-Wird das Paket aus `node_modules` aufgelöst — Ihrem eigenen, wenn Sie `npm install @templatical/template-tools` ausführen, oder npms eigenem Cache, wenn `npx` es spontan auflöst —, heißt die ausgeführte Programmdatei `templatical`, nicht `template-tools`: Das `bin`-Feld des Pakets bildet `templatical` auf seine Einstiegsdatei ab, und `npx` findet sie, weil es der einzige `bin`-Eintrag des Pakets ist. Installieren Sie das Paket stattdessen als Projekt-Abhängigkeit, statt immer über `npx` zu gehen, führen Sie es aus einem Package-Skript als `templatical <Befehl>` aus.
-
-**Binden Sie in CI eine exakte Version.** Der obige Aufruf ist auf dieser Seite überall bewusst ungepinnt — das Blockmodell, gegen das diese CLI validiert (`@templatical/types`), und die CLI selbst werden gemeinsam veröffentlicht, sodass ein ungepinnter `npx`-Aufruf immer gegen das Schema validiert, das genau die gerade abgerufene CLI-Version mitbringt — welche Version das auch ist. Genau diese Eigenschaft wollen Sie in einer CI-Pipeline nicht: eine Prüfung, die zwischen zwei Durchläufen strenger oder lockerer werden kann, ohne dass eine Codeänderung das erklärt. Binden Sie den Aufruf dort stattdessen an eine feste Version — `npx -y @templatical/template-tools@<exakte Version> <Befehl>` —, sodass ein Versionssprung ein überprüfbarer Diff ist statt einer stillen Verhaltensänderung.
+**Pinnen Sie in CI eine exakte Version.** Die CLI und das Blockmodell, gegen das sie validiert (`@templatical/types`), werden gemeinsam veröffentlicht — ein Aufruf ohne Version passt also immer zu sich selbst, kann aber zwischen zwei Durchläufen strenger werden, ohne dass eine Änderung von Ihnen das erklärt. Mit einer gepinnten Version wird ein Versionssprung zu einem überprüfbaren Diff.
 
 ## Befehle
 

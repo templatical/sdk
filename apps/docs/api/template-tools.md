@@ -17,13 +17,9 @@ Every command follows the same shape:
 npx -y @templatical/template-tools <command> [options]
 ```
 
-`-y` is not optional in practice: without it, npx's first-run confirmation prompt waits on stdin, and in a non-interactive shell or CI job that just hangs with no visible error.
+Add `--json` to any command for a single parseable JSON document on stdout. Installed as a project dependency instead, the binary is named `templatical`.
 
-Add `--json` to any command for a single parseable JSON document on stdout — see "Reading `--json`" below for the exact shape and, more importantly, what the exit code already tells you that the JSON doesn't need to repeat.
-
-Where the package resolves from `node_modules` — yours, if you `npm install @templatical/template-tools`, or npm's own cache when `npx` resolves it on the fly — the executable it runs is named `templatical`, not `template-tools`: the package's `bin` field maps `templatical` to its entry file, and `npx` finds it because it's the package's only bin entry. Installed as a project dependency instead of always going through `npx`, you'd run it as `templatical <command>` from a package script.
-
-**Pin an exact version in CI.** The invocation above is deliberately unpinned everywhere on this page — the block model this CLI validates against (`@templatical/types`) and the CLI itself are released together, so an unpinned `npx` call always validates against the schema the exact CLI version it just fetched ships with, whatever that version is. That property is exactly what you don't want in a CI pipeline: a check that could grow more or less strict between two runs with no code change to explain it. Pin the invocation there instead — `npx -y @templatical/template-tools@<exact version> <command>` — so a version bump is a reviewable diff rather than a silent behavior change.
+**Pin an exact version in CI.** The CLI and the block model it validates against (`@templatical/types`) are released together, so an unpinned call always matches itself — but it can grow stricter between two runs with no change of yours to explain it. Pinning makes a version bump a reviewable diff instead.
 
 ## Commands
 
