@@ -9,11 +9,11 @@
 //    @templatical/types, and types + editor bump in lockstep (changesets
 //    fixed group), so this keeps the live editor's block model equal to the
 //    schema's.
-// 2. The CLI version pin in skills/templatical-email/SKILL.md, from this
-//    package's OWN version — every `npx -y @templatical/template-tools@…`
-//    invocation the skill documents. Pinning is what keeps
-//    reference/schema.json from ever disagreeing with the published CLI's
-//    block model, since a release moves both together.
+// 2. The CLI version pin across every reference island under
+//    skills/templatical/, from this package's OWN version — every
+//    `npx -y @templatical/template-tools@…` invocation any island documents.
+//    Pinning is what keeps reference/schema.json from ever disagreeing with
+//    the published CLI's block model, since a release moves both together.
 // 3. The same CLI version pin, shown once more in the docs site
 //    (apps/docs/guide/agent-skill.md + its de/ mirror), from the same
 //    version. Governing rule: a *pinned* invocation is synced from here, in
@@ -31,8 +31,8 @@
 // no-ops on a missing target is worse than no sync at all, because the pin
 // test then keeps passing on stale content right up until the release that
 // needed it.
-import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -76,18 +76,22 @@ export function syncEditorVersion() {
 }
 
 // ---------------------------------------------------------------------------
-// 2. The CLI version pin in skills/templatical-email/SKILL.md
+// 2. The CLI version pin across every reference island under skills/templatical/
 // ---------------------------------------------------------------------------
 
 const OWN_PKG = resolve(here, "../package.json");
+// applyCliPin's fallback label when a caller omits one. Every real caller
+// below passes its own label explicitly (syncCliPin per island, syncDocsCliPins
+// per docs page), so this only surfaces if applyCliPin is ever called
+// directly without one.
 const SKILL_MD_LABEL = "skills/templatical-email/SKILL.md";
-const SKILL_MD = resolve(here, "../../../", SKILL_MD_LABEL);
 
-// The fixed invocation prefix SKILL.md's Requirements section declares as
-// canonical: `npx -y @templatical/template-tools@<version>`, identical for
-// every command the skill documents. Global so every occurrence rewrites
-// together — see the post-replace check below for what happens if it didn't.
-// Reused as-is by job 3 below: the docs site quotes the exact same prefix.
+// The fixed invocation prefix every reference island's Requirements section
+// declares as canonical: `npx -y @templatical/template-tools@<version>`,
+// identical for every command any island documents. Global so every
+// occurrence rewrites together — see the post-replace check below for what
+// happens if it didn't. Reused as-is by job 3 below: the docs site quotes the
+// exact same prefix.
 const CLI_PIN_RE = /(npx -y @templatical\/template-tools@)(\S+)/g;
 
 /**
@@ -124,13 +128,61 @@ export function applyCliPin(src, version, label = SKILL_MD_LABEL) {
   return { next, count: before.length };
 }
 
-/** Read this package's own version and rewrite every pin in SKILL.md. */
+const SKILL_DIR_LABEL = "skills/templatical";
+const SKILL_DIR = resolve(here, "../../../", SKILL_DIR_LABEL);
+
+/**
+ * Every `.md` under the skill, repo-relative, `/`-joined. Walks with
+ * `lstatSync`, not `statSync`: the skill's own `node_modules` entries (e.g.
+ * `typescript`, `vitest`) are symlinks into the pnpm store, and `statSync`
+ * follows them — which pulls vendor README/LICENSE/SECURITY `.md` files from
+ * wherever those packages happen to live into the walk. `lstatSync` reports
+ * the symlink itself, which isn't a directory, so the walk never descends
+ * into it.
+ */
+function skillMarkdownFiles(dir = SKILL_DIR, base = SKILL_DIR) {
+  const out = [];
+  for (const entry of readdirSync(dir)) {
+    const abs = join(dir, entry);
+    if (lstatSync(abs).isDirectory()) {
+      out.push(...skillMarkdownFiles(abs, base));
+      continue;
+    }
+    if (entry.endsWith(".md")) {
+      out.push(`${SKILL_DIR_LABEL}/${relative(base, abs).split(sep).join("/")}`);
+    }
+  }
+  return out;
+}
+
+/**
+ * Rewrite every CLI pin across the skill. Files with no pin are skipped
+ * rather than passed to applyCliPin, which throws on zero matches — under a
+ * router most islands legitimately document no command at all. The
+ * "mechanism broke" guarantee moves up one level: the tree as a whole must
+ * still carry at least one pin.
+ */
 export function syncCliPin() {
   const version = JSON.parse(readFileSync(OWN_PKG, "utf8")).version;
-  const src = readFileSync(SKILL_MD, "utf8");
-  const { next, count } = applyCliPin(src, version);
-  const changed = next !== src;
-  if (changed) writeFileSync(SKILL_MD, next, "utf8");
+  let count = 0;
+  let changed = false;
+  for (const label of skillMarkdownFiles()) {
+    const path = resolve(here, "../../../", label);
+    const src = readFileSync(path, "utf8");
+    if (!src.includes("npx -y @templatical/template-tools@")) continue;
+    const result = applyCliPin(src, version, label);
+    count += result.count;
+    if (result.next !== src) {
+      writeFileSync(path, result.next, "utf8");
+      changed = true;
+    }
+  }
+  if (count === 0) {
+    throw new Error(
+      `No \`npx -y @templatical/template-tools@<version>\` invocation anywhere under ` +
+        `${SKILL_DIR_LABEL}. The pin mechanism is broken, not idle.`,
+    );
+  }
   return { version, changed, count };
 }
 
@@ -180,8 +232,8 @@ function main() {
   const cli = syncCliPin();
   console.log(
     cli.changed
-      ? `Synced ${cli.count} CLI pin(s) in SKILL.md to ${cli.version}`
-      : `${cli.count} CLI pin(s) in SKILL.md already ${cli.version} — no change`,
+      ? `Synced ${cli.count} CLI pin(s) across the skill's islands to ${cli.version}`
+      : `${cli.count} CLI pin(s) across the skill's islands already ${cli.version} — no change`,
   );
 
   const docs = syncDocsCliPins();

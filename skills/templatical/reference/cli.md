@@ -9,8 +9,8 @@ starts the same way:**
 ```
 npx -y @templatical/template-tools@0.36.0 validate <file> --json
 ```
-`npx`, then `-y`, then the package name pinned to `0.30.0`, is the fixed
-prefix — identical for `validate`, `render`, `edit`, `import`, `live`, and
+`npx`, then `-y`, then the package name pinned to an exact version, is the
+fixed prefix — identical for `validate`, `render`, `edit`, `import`, `live`, and
 `list`; only the subcommand and its own flags change after it. Copy that
 prefix exactly: no reordering, no requoting, and never `@latest` in its
 place — pinning is what keeps this skill's `reference/schema.json` from ever

@@ -1,17 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // A pure-content skill's one remaining failure mode is instructing an agent
 // to run a command that doesn't exist — there's no validator left in the
-// skill itself to catch that at generation time, only this test.
+// skill itself to catch that at generation time, only this test. The pin now
+// lives in many files instead of one (see skill-pin.test.ts), and so does
+// every command invocation, so this scans the router plus every reference
+// island rather than a single SKILL.md.
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const SKILL_MD = resolve(REPO_ROOT, "skills/templatical-email/SKILL.md");
+const SKILL_DIR = resolve(REPO_ROOT, "skills/templatical");
+const REFERENCE_DIR = resolve(SKILL_DIR, "reference");
 const BIN_TS = resolve(REPO_ROOT, "packages/template-tools/src/bin.ts");
 const LIVE_TS = resolve(
   REPO_ROOT,
   "packages/template-tools/src/cli/commands/live.ts",
 );
+
+/**
+ * The router plus every flat reference island, repo-relative label paired
+ * with its absolute path. Deliberately not a generic recursive walk of
+ * `skills/templatical/`: `node_modules` and `coverage` sit alongside
+ * `reference/` in that directory and carry `.md` files of their own (vendor
+ * READMEs, `node_modules/typescript` and `node_modules/vitest` are symlinks
+ * into the pnpm store) that document no CLI commands at all — scanning them
+ * would either false-negative silently or need the same symlink-avoidance
+ * sync-pins.mjs's tree walk carries.
+ */
+function skillMarkdownFiles(): { label: string; path: string }[] {
+  const files = [
+    { label: "skills/templatical/SKILL.md", path: resolve(SKILL_DIR, "SKILL.md") },
+  ];
+  for (const entry of readdirSync(REFERENCE_DIR).filter((f) => f.endsWith(".md"))) {
+    files.push({
+      label: `skills/templatical/reference/${entry}`,
+      path: resolve(REFERENCE_DIR, entry),
+    });
+  }
+  return files;
+}
 
 /**
  * The valid top-level command set, derived from src/bin.ts's own
@@ -51,6 +78,8 @@ function validLiveSubcommands(): Set<string> {
 
 interface Invocation {
   raw: string;
+  /** Repo-relative label of the file this invocation was found in. */
+  file: string;
   command: string;
   /** The token right after the command, only when it isn't a flag. */
   next?: string;
@@ -62,15 +91,23 @@ interface Invocation {
 // version itself is intentionally not captured — tests/skill-pin.test.ts
 // already owns whether it's correct, so this file can validate commands
 // independent of whatever the current pin happens to be.
+//
+// The command/next tokens exclude a literal backtick, not just whitespace:
+// an island may reference a no-argument command as inline code mid-sentence
+// (reference/blocks.md: "`npx -y @templatical/template-tools@0.36.0 schema`
+// prints the same schema for…"), where the closing backtick sits flush
+// against the command with no space. `\S+` there would capture "schema`" and
+// fail every command it names, since nothing dispatches on the literal
+// string with a trailing backtick.
 const INVOCATION_RE = new RegExp(
   [
     "npx -y @templatical",
-    "/template-tools@\\S+\\s+(\\S+)(?:\\s+(\\S+))?",
+    "/template-tools@\\S+\\s+([^\\s`]+)(?:\\s+([^\\s`]+))?",
   ].join(""),
 );
 
-function parseInvocations(skillMd: string): Invocation[] {
-  const lines = skillMd.split("\n");
+function parseInvocations(file: string, content: string): Invocation[] {
+  const lines = content.split("\n");
   const invocations: Invocation[] = [];
   for (const line of lines) {
     const match = INVOCATION_RE.exec(line);
@@ -78,6 +115,7 @@ function parseInvocations(skillMd: string): Invocation[] {
     const [, command, maybeNext] = match;
     invocations.push({
       raw: line.trim(),
+      file,
       command,
       next: maybeNext && !maybeNext.startsWith("-") ? maybeNext : undefined,
     });
@@ -101,7 +139,7 @@ function isValidInvocation(
   return true;
 }
 
-describe("SKILL.md documented commands", () => {
+describe("documented commands across the skill", () => {
   const commands = validTopLevelCommands();
   const liveSubcommands = validLiveSubcommands();
 
@@ -115,11 +153,12 @@ describe("SKILL.md documented commands", () => {
     expect([...liveSubcommands].sort()).toEqual(["reload", "stop"]);
   });
 
-  it("every `npx …` invocation in SKILL.md dispatches to a real command", () => {
-    const skill = readFileSync(SKILL_MD, "utf8");
-    const invocations = parseInvocations(skill);
+  it("every `npx …` invocation across the skill dispatches to a real command", () => {
+    const invocations = skillMarkdownFiles().flatMap(({ label, path }) =>
+      parseInvocations(label, readFileSync(path, "utf8")),
+    );
 
-    // Non-vacuous: SKILL.md must actually document some commands, or every
+    // Non-vacuous: the skill must actually document some commands, or every
     // check below passes on an empty list for the wrong reason.
     expect(invocations.length).toBeGreaterThan(0);
 
@@ -127,8 +166,10 @@ describe("SKILL.md documented commands", () => {
       (invocation) => !isValidInvocation(invocation, commands, liveSubcommands),
     );
     expect(
-      invalid.map((invocation) => invocation.raw),
-      "SKILL.md documents a command (or `live` subcommand) the CLI does not dispatch.",
+      // Name the file with each offending line — a tree-wide scan that only
+      // ever says "SKILL.md" is worse than the single-file check it replaces.
+      invalid.map((invocation) => `${invocation.file}: ${invocation.raw}`),
+      "a reference island (or SKILL.md) documents a command (or `live` subcommand) the CLI does not dispatch.",
     ).toEqual([]);
   });
 
