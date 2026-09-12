@@ -43,7 +43,8 @@ https://api.github.com/repos/templatical/sdk/commits?path=skills/templatical&sin
 
 A non-empty array means a newer skill exists. Say exactly this, once:
 
-> A newer Templatical skill is available. Update? It runs `npx skills update`.
+> A newer Templatical skill is available. Update? It runs
+> `npx skills update templatical`.
 
 Use `updatedAt`, not `installedAt` — it moves when the user runs
 `skills update`, so it is the real "last time I received content". Do not try

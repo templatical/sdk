@@ -18,7 +18,7 @@ npx skills add templatical/sdk
 Für ein Update:
 
 ```bash
-npx skills update
+npx skills update templatical
 ```
 
 Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skill-Liste des Agenten aktiviert ist.

@@ -19,7 +19,7 @@ npx skills add templatical/sdk
 This is the only documented way to install the skill. To update:
 
 ```
-npx skills update
+npx skills update templatical
 ```
 
 ## What it can do

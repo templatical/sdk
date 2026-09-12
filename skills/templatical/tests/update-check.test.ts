@@ -54,8 +54,18 @@ describe("the update check", () => {
   });
 
   it("dictates the wording, so the offer reads the same every time", () => {
-    expect(read("talking")).toContain(
-      "A newer Templatical skill is available. Update? It runs `npx skills update`.",
+    expect(read("talking")).toMatch(
+      /A newer Templatical skill is available\. Update\? It runs\s+> `npx skills update templatical`\./,
     );
+  });
+
+  it("scopes the update command to this skill", () => {
+    // `npx skills update` with no argument updates every skill the CLI
+    // manages, which is not ours to trigger. The lock is keyed by skill
+    // folder name, so the argument is the name, not the `owner/repo` source.
+    const src = read("talking");
+    expect(src).toContain("npx skills update templatical");
+    expect(src).not.toMatch(/`npx skills update`/);
+    expect(src).not.toContain("npx skills update templatical/sdk");
   });
 });
