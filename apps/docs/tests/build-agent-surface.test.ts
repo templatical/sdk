@@ -10,6 +10,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
+import type { DefaultTheme, HeadConfig, TransformContext } from "vitepress";
+import config from "../.vitepress/config";
 // @ts-expect-error — plain .mjs generator, no types
 import {
   buildOutputs,
@@ -21,6 +23,22 @@ import {
 } from "../scripts/build-agent-surface.mjs";
 
 const DOCS = join(import.meta.dirname, "..");
+
+/**
+ * The head entries the config's own transformHead hook emits for one page.
+ * Only `pageData.filePath` is read, so the rest of the build context is left
+ * out rather than faked.
+ */
+async function headEntriesFor(filePath: string): Promise<HeadConfig[] | void> {
+  const { transformHead } = config;
+  if (!transformHead) throw new Error(".vitepress/config.ts has no transformHead hook");
+  return transformHead({ pageData: { filePath } } as unknown as TransformContext);
+}
+
+/** The head entry that advertises a page's raw-markdown twin. */
+function alternate(href: string): HeadConfig {
+  return ["link", { rel: "alternate", type: "text/markdown", href }];
+}
 
 /** Write a fixture file at `root/relPath`, creating any parent dirs it needs. */
 function writeFixtureFile(root: string, relPath: string, content: string) {
@@ -209,6 +227,88 @@ describe("the buildEnd hook", () => {
     const config = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
     expect(config).toContain("buildEnd");
     expect(config).toContain("copyMarkdownSources");
+  });
+});
+
+describe("the transformHead hook", () => {
+  // buildEnd writes the twin; this hook is what tells a reader it exists.
+  // robots.txt advertises the convention to crawlers, but an agent that lands
+  // on a rendered page never fetches robots.txt — the in-band <link> is the
+  // only signal it gets.
+  it("is wired, so a page carries the signal and not just the file", () => {
+    expect(typeof config.transformHead).toBe("function");
+  });
+
+  it("advertises the twin as a text/markdown alternate, and emits nothing else", async () => {
+    expect(await headEntriesFor("getting-started/installation.md")).toEqual([
+      alternate("/getting-started/installation.md"),
+    ]);
+  });
+
+  it("points a directory index at its own index.md, not at the url it is served from", async () => {
+    // copyMarkdownSources is a plain file copy, so this page's twin keeps its
+    // index.md basename while cleanUrls serves the page at /guide/widgets/.
+    // Deriving the href from the url instead of the source path yields
+    // /guide/widgets/.md, which is nothing.
+    expect(await headEntriesFor("guide/widgets/index.md")).toEqual([
+      alternate("/guide/widgets/index.md"),
+    ]);
+  });
+
+  it("points the home page at /index.md, not at the site root", async () => {
+    expect(await headEntriesFor("index.md")).toEqual([alternate("/index.md")]);
+  });
+
+  it("keeps the locale prefix, so a German page points at the German source", async () => {
+    // copyMarkdownSources covers de/ — it is the generated index that is
+    // English-only — so the German tree has twins of its own.
+    expect(await headEntriesFor("de/guide/theming.md")).toEqual([
+      alternate("/de/guide/theming.md"),
+    ]);
+  });
+
+  it("emits nothing for a virtual page, which has no markdown source to point at", async () => {
+    // VitePress renders 404.html from a built-in page whose filePath is empty;
+    // there is no 404.md in the docs tree for copyMarkdownSources to copy, so
+    // a link there would advertise a file that does not exist.
+    expect(await headEntriesFor("")).toEqual([]);
+  });
+});
+
+describe("the visible index link", () => {
+  /** The items of one sidebar group, looked up by locale, scope and heading. */
+  function sidebarGroup(
+    locale: string,
+    scope: string,
+    heading: string,
+  ): DefaultTheme.SidebarItem[] {
+    const sidebar = config.locales?.[locale]?.themeConfig?.sidebar;
+    if (!sidebar || Array.isArray(sidebar)) {
+      throw new Error(`the ${locale} locale has no per-scope sidebar`);
+    }
+    const groups = sidebar[scope];
+    if (!Array.isArray(groups)) throw new Error(`no sidebar is configured for ${scope}`);
+    return groups.find((group) => group.text === heading)?.items ?? [];
+  }
+
+  // The per-page <link> serves an agent; this is the same surface made visible
+  // to a reader. Both locales, because apps/docs mirrors have no CI parity
+  // check — nothing else would catch one of them missing it.
+  it("sits in the English Resources group", () => {
+    expect(sidebarGroup("root", "/", "Resources")).toContainEqual({
+      text: "llms.txt",
+      link: "/llms.txt",
+    });
+  });
+
+  it("sits in the German Resources group, at the same English index", () => {
+    // Deliberately no /de/ prefix, unlike every other link in that group:
+    // build-agent-surface.mjs skips de/, so /de/llms.txt does not exist and
+    // the docs build's dead-link gate does not read theme-config links.
+    expect(sidebarGroup("de", "/de/", "Ressourcen")).toContainEqual({
+      text: "llms.txt",
+      link: "/llms.txt",
+    });
   });
 });
 

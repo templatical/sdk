@@ -176,6 +176,11 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Changelog", link: "/changelog" },
         { text: "Showcase", link: "/showcase" },
         { text: "License FAQ", link: "/license-faq" },
+        // The machine-readable index, alongside the per-page `<link
+        // rel="alternate">` the transformHead hook emits. A `.txt` path is not
+        // treated as a route by VitePress's router, so this navigates to the
+        // file in public/ rather than resolving as a page.
+        { text: "llms.txt", link: "/llms.txt" },
       ],
     },
   ],
@@ -364,6 +369,11 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Changelog", link: "/de/changelog" },
         { text: "Showcase", link: "/de/showcase" },
         { text: "Lizenz-FAQ", link: "/de/license-faq" },
+        // Deliberately without the /de/ prefix every other link here carries:
+        // llms.txt is English-only by design (build-agent-surface.mjs skips
+        // de/), so /de/llms.txt does not exist. Both locales point at the one
+        // index.
+        { text: "llms.txt", link: "/llms.txt" },
       ],
     },
   ],
@@ -386,6 +396,29 @@ export default defineConfig({
   buildEnd: ({ outDir }) => {
     copyMarkdownSources(outDir);
   },
+  // robots.txt advertises the raw-markdown convention to crawlers. This is the
+  // same signal in-band, for an agent that lands on a rendered page directly
+  // and never fetches robots.txt or /llms.txt.
+  //
+  // The href is the page's markdown SOURCE path, not its rendered URL:
+  // copyMarkdownSources is a plain file copy, so the twin of
+  // `guide/widgets/index.md` sits at /guide/widgets/index.md while cleanUrls
+  // serves the page itself at /guide/widgets/. pageData.filePath is exactly
+  // that source path, and it is empty for virtual pages (the 404, which has no
+  // markdown source and so no twin to point at).
+  transformHead: ({ pageData }) =>
+    pageData.filePath
+      ? [
+          [
+            "link",
+            {
+              rel: "alternate",
+              type: "text/markdown",
+              href: `/${pageData.filePath}`,
+            },
+          ],
+        ]
+      : [],
   head: [
     [
       "link",
