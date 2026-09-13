@@ -400,8 +400,8 @@ importers:
         specifier: ^8.2.2
         version: 8.2.2
       mjml-browser:
-        specifier: ^5.4.0
-        version: 5.4.0
+        specifier: ^5.4.1
+        version: 5.4.1
       vue:
         specifier: ^3.5.42
         version: 3.5.42(typescript@6.0.3)
@@ -3533,8 +3533,8 @@ packages:
   mjml-body@5.4.1:
     resolution: {integrity: sha512-CuQjys9nV9wafYxI5MhdVTR0I9uoW6WgGsVEHCjZ/9W/2jQ16Y6i+RVrCqACgEU8vniUh6o9HlbVmWwdyNdpCw==}
 
-  mjml-browser@5.4.0:
-    resolution: {integrity: sha512-j2xw2/FuX0W+B3WaHH833evryhQSwakwQRHlgNaOP1xWBU7d8rfOhZgMzCxjVQ8saW2K/oj9wx13RsZT5BaHug==}
+  mjml-browser@5.4.1:
+    resolution: {integrity: sha512-E+b8bItN/pMXN1I+Uxi3CeZuVaN0B1Ml8Y8+fFn5TAD59fJi//scSIjPxjs1ks3Qnu25Ht+V/TnE/kwIg2SsQg==}
 
   mjml-button@5.4.1:
     resolution: {integrity: sha512-QJfYgJNQ7l6gJvDdz6pksJoKXUCdbA1BRn0SUdUUj6Vbja80F21rizgwaBjYkGW8MNH5FeHm92EQ8zpNVHmWVw==}
@@ -7454,7 +7454,7 @@ snapshots:
       - typescript
       - uncss
 
-  mjml-browser@5.4.0:
+  mjml-browser@5.4.1:
     dependencies:
       buffer: 6.0.3
       html-minifier-terser: 7.2.0
