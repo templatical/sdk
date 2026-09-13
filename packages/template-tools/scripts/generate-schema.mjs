@@ -125,11 +125,31 @@ export function applyGuideRegions(src, regions) {
     );
     out = out.replace(pattern, `${begin}\n${body}\n${end}`);
   }
-  // The half freshness cannot catch: a marker for a block type the schema no
-  // longer declares is never rewritten, so a regenerate-and-compare passes.
-  const orphans = [...out.matchAll(/<!-- BEGIN GENERATED FIELDS: ([a-z]+) -->/g)]
-    .map(([, t]) => t)
-    .filter((t) => !regions.has(t));
+  // Two ways a region goes silently unguarded, neither of which a
+  // regenerate-and-compare can see, because in both the region is simply never
+  // rewritten and so already equals itself.
+  const declared = [...out.matchAll(/<!-- BEGIN GENERATED FIELDS: ([a-z]+) -->/g)]
+    .map(([, t]) => t);
+
+  // A BEGIN whose END is gone: the region's regex has no closing anchor, so
+  // `replace` above no-ops while the BEGIN marker still advertises the block as
+  // generated. Checked before orphans because this one leaves stale content
+  // sitting under a marker that claims it is fresh.
+  const unclosed = declared.filter(
+    (t) => !out.includes(`<!-- END GENERATED FIELDS: ${t} -->`),
+  );
+  if (unclosed.length > 0) {
+    throw new Error(
+      `block-guide.md opens a generated-field region it never closes: ` +
+        `${unclosed.join(", ")}. Add the matching ` +
+        `<!-- END GENERATED FIELDS: <type> --> marker — without it the region ` +
+        `is never rewritten, so the freshness guard passes on stale content.`,
+    );
+  }
+
+  // A pair for a block type the schema no longer declares: nothing in `regions`
+  // ever targets it, so it sits there untouched.
+  const orphans = declared.filter((t) => !regions.has(t));
   if (orphans.length > 0) {
     throw new Error(
       `block-guide.md has generated-field markers for types the schema does ` +

@@ -38,16 +38,57 @@ describe("block-guide.md's generated field lists", () => {
     expect(applyGuideRegions(guide, buildGuideRegions(schema))).toBe(guide);
   });
 
-  it("carries a marker pair for exactly the emittable block types", () => {
+  it("carries a matched marker pair for exactly the emittable block types", () => {
     // Written literally rather than derived from the schema, so adding a block
     // type is a deliberate edit here — `countdown` needs Cloud to render and
     // `custom` is registered at runtime, so the skill emits neither.
-    const found = [
-      ...guide.matchAll(/<!-- BEGIN GENERATED FIELDS: ([a-z]+) -->/g),
-    ]
-      .map(([, type]) => type)
-      .sort();
-    expect(found).toEqual([...EMITTABLE].sort());
+    //
+    // Both sides are asserted, not just BEGIN. A BEGIN whose END was deleted
+    // leaves the region's regex without a closing anchor, so `applyGuideRegions`
+    // no-ops on it and the freshness case above is satisfied by a region that
+    // was never rewritten — while the BEGIN marker still advertises the block as
+    // generated. Scanning END too states that invariant here rather than leaving
+    // it to the generator's throw alone.
+    const markerTypes = (kind: "BEGIN" | "END") =>
+      [
+        ...guide.matchAll(
+          new RegExp(`<!-- ${kind} GENERATED FIELDS: ([a-z]+) -->`, "g"),
+        ),
+      ]
+        .map(([, type]) => type)
+        .sort();
+    const expected = [...EMITTABLE].sort();
+    expect(markerTypes("BEGIN")).toEqual(expected);
+    expect(markerTypes("END")).toEqual(expected);
+  });
+
+  it("refuses a region that is opened and never closed", () => {
+    const unclosed = guide.replace("<!-- END GENERATED FIELDS: image -->", "");
+    expect(() =>
+      applyGuideRegions(unclosed, buildGuideRegions(schema)),
+    ).toThrowError(
+      new Error(
+        "block-guide.md opens a generated-field region it never closes: " +
+          "image. Add the matching <!-- END GENERATED FIELDS: <type> --> " +
+          "marker — without it the region is never rewritten, so the freshness " +
+          "guard passes on stale content.",
+      ),
+    );
+  });
+
+  it("refuses a marker pair for a block type the schema does not declare", () => {
+    const orphaned = guide.replace(
+      /GENERATED FIELDS: html/g,
+      "GENERATED FIELDS: carousel",
+    );
+    expect(() =>
+      applyGuideRegions(orphaned, buildGuideRegions(schema)),
+    ).toThrowError(
+      new Error(
+        "block-guide.md has generated-field markers for types the schema does " +
+          "not declare: carousel. Remove the section or fix the type.",
+      ),
+    );
   });
 
   it("renders a literal union member as its literal, not its base type", () => {
