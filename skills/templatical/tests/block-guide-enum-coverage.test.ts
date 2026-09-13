@@ -104,8 +104,24 @@ type EnumSite = {
 
 /**
  * Every enum reachable from a documented block (or from `TemplateSettings`),
- * derived from the schema rather than listed here — a new enum-bearing field is
- * picked up with no edit to this file, which is the whole point.
+ * walked from the schema rather than listed here — including nested ones, which
+ * is how `SocialIcon.platform` is reached.
+ *
+ * What a new enum costs, measured:
+ *
+ * - **Inline** (`variant: "filled" | "outline"`) — zero edits anywhere. The
+ *   walker finds it and `renderType` prints its values into the generated line,
+ *   so the inline case below is satisfied the moment the generator runs.
+ * - **Behind a `$ref`** (`variant: ButtonVariant`) — the walker finds it too,
+ *   so it is never silently missed, but two cases then fail: the literal path
+ *   list in the sanity case must gain `button.variant`, and a bullet
+ *   enumerating the values must be written.
+ *
+ * Those two edits are the design, not friction to remove. A `$ref` enum's
+ * values appear nowhere in the generated line, so waving one through would
+ * reinstate exactly the hole this file closes — and an expected-path list
+ * derived from the schema instead of written out would make the sanity case
+ * agree with any walker, including a broken one.
  */
 function enumSites(): EnumSite[] {
   const found: EnumSite[] = [];
@@ -227,11 +243,22 @@ describe("block-guide.md documents every enum value the schema declares", () => 
   });
 
   it("carries every value of an inline enum in the block's section", () => {
-    // Trivially satisfied today, and correctly so: an inline enum is printed
-    // in full by `renderType`, so the generated line inside the markers already
-    // carries it. Asserted anyway, because it is only true while the enum stays
-    // inline — a future `$ref` extraction moves the values out of the generated
-    // line silently, and this is what notices.
+    // Satisfied today by the generated line alone, since `renderType` prints an
+    // inline enum in full. What makes it worth asserting is that it holds
+    // ABSOLUTELY, against the file, rather than against whatever the generator
+    // currently emits — which is the one thing freshness cannot do.
+    //
+    // Measured: break `renderType` so an inline enum renders `string`, then
+    // regenerate. The guide now matches the broken generator, so
+    // block-guide-freshness.test.ts passes; this case fails with 24 entries
+    // ("title.textAlign: section omits \"left\"" …). Freshness proves the guide
+    // matches the generator; only an absolute assertion notices the generator
+    // getting worse.
+    //
+    // Note what this case does NOT catch, because the boundary is easy to
+    // misread: extracting an inline enum to a `$ref` reclassifies the site to
+    // `inline: false`, so it leaves this case entirely. The `$ref` case above
+    // picks it up and fails with "no bullet anchored on …".
     const bySection = sections();
     const gaps: string[] = [];
 
