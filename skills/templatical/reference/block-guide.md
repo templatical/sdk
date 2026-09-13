@@ -96,7 +96,7 @@ renderer drops it on export.
 <!-- END GENERATED FIELDS: title -->
 
 - `content` is the heading text; inline HTML is allowed.
-- `level` is `1`–`4` (1 largest).
+- `level` is one of `1`, `2`, `3`, `4` — `1` is the largest.
 - `color` inherits `settings.textColor` when unset.
 
 ### paragraph
@@ -185,7 +185,8 @@ underline: bool, color?: hex }`.
   `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
   `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
-  `"circle"`; `iconSize` one of `"small"`, `"medium"`, `"large"`.
+  `"circle"`.
+- `iconSize` is one of `"small"`, `"medium"`, `"large"`.
 
 ### video
 
