@@ -11,7 +11,7 @@
   "devDependencies": {
     "@templatical/renderer": "workspace:*",
     "@types/node": "^25.9.6",
-    "mjml": "^5.4.0",
+    "mjml": "^5.4.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   },
