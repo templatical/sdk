@@ -2,8 +2,18 @@
 
 Human-readable companion to `schema.json` (the authoritative contract). A
 template is `{ "blocks": Block[], "settings": Settings }`. All sizes are pixels
-and all colors are hex strings unless noted. Fields marked _optional_ may be
-omitted; everything else is required.
+and all colors are hex strings unless noted.
+
+Each block's **Required** / **Optional** line is generated from `schema.json`;
+the notes around it are hand-written. Read them together — the generated line
+says what a field is typed as, the notes say what it means. In a generated line
+`int` is a pixel value, a `string` named `color` / `*Color` is a hex string, a
+`string` named `url` / `src` / `*Url` is an absolute URL, and a capitalised name
+(`SpacingValue`, `ColumnLayout`, `MenuItemData`) is a shape or enum declared in
+`schema.json` — the notes under each block spell out the ones you need.
+
+In the `Settings` list below, a field marked _optional_ may be omitted;
+everything else is required.
 
 **Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables) live in [`examples/`](./examples/).
 
@@ -27,13 +37,15 @@ omitted; everything else is required.
 
 ## Common block fields
 
-Every block has:
+Every block has these, so the per-block lists below leave them out:
 
 - `id` (string) — unique within the template, e.g. `"title_1"`.
 - `type` (string) — the block type (below).
 - `styles` — `{ padding: { top, right, bottom, left }, backgroundColor?: hex }`.
 - `visibility` (_optional_) — `{ desktop: bool, mobile: bool }` to hide per
   device.
+- `displayCondition` (_optional_) — editor-managed conditional wrapper. Never
+  emit it; the editor writes it when a user adds a display condition.
 
 Do **not** add fields beyond those listed per type — the schema rejects unknown
 properties.
@@ -44,15 +56,19 @@ properties.
 
 Container that arranges blocks into columns.
 
-- `columns` — `"1"`, `"2"`, `"3"`, `"2-1"`, or `"1-2"`.
-- `children` — array of columns, each an array of blocks. Column count must match
-  `columns` (`"1"` → one inner array; `"2"`/`"2-1"`/`"1-2"` → two; `"3"` →
-  three).
-- `borderRadius` (int, _optional_) — corner radius; omit or `0` for square.
-- `stackOnMobile` (bool, _optional_) — whether columns stack vertically on
-  mobile; omit or `true` keeps the default responsive stacking (columns stack
-  below 480px), `false` keeps them side by side.
-- `wrapper` (_optional_) — outer full-width band: `{ backgroundColor?, padding?,
+<!-- BEGIN GENERATED FIELDS: section -->
+**Required** — `columns` (ColumnLayout), `children` (Block[][]).
+**Optional** — `stackOnMobile` (bool), `borderRadius` (int), `wrapper` (SectionWrapper).
+<!-- END GENERATED FIELDS: section -->
+
+- `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
+- `children` is an array of columns, each an array of blocks. The column count
+  must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` →
+  two; `"3"` → three).
+- `borderRadius` — omit or `0` for square corners.
+- `stackOnMobile` — omit or `true` keeps the default responsive stacking
+  (columns stack below 480px); `false` keeps them side by side.
+- `wrapper` is an outer full-width band: `{ backgroundColor?, padding?,
 borderRadius? }` (e.g. a white card on a colored band).
 
 Don't nest a section inside another section — MJML has no equivalent, so the
@@ -60,110 +76,139 @@ renderer drops it on export.
 
 ### spacer
 
-- `height` (int) — vertical space.
+<!-- BEGIN GENERATED FIELDS: spacer -->
+**Required** — `height` (int).
+<!-- END GENERATED FIELDS: spacer -->
 
 ### divider
 
-- `lineStyle` — `"solid" | "dashed" | "dotted"`.
-- `color` (hex), `thickness` (int), `width` (int | `"full"`).
+<!-- BEGIN GENERATED FIELDS: divider -->
+**Required** — `lineStyle` ("solid" | "dashed" | "dotted"), `color` (string), `thickness` (int), `width` (int | "full").
+<!-- END GENERATED FIELDS: divider -->
 
 ## Text
 
 ### title
 
-- `content` (HTML string) — heading text; inline HTML allowed.
-- `level` — `1`–`4` (1 largest).
-- `color` (hex, _optional_) — inherits `settings.textColor` if unset.
-- `textAlign` — `"left" | "center" | "right"`.
-- `fontFamily` (string, _optional_).
+<!-- BEGIN GENERATED FIELDS: title -->
+**Required** — `content` (string), `level` (HeadingLevel), `textAlign` ("left" | "center" | "right").
+**Optional** — `color` (string), `fontFamily` (string).
+<!-- END GENERATED FIELDS: title -->
+
+- `content` is the heading text; inline HTML is allowed.
+- `level` is `1`–`4` (1 largest).
+- `color` inherits `settings.textColor` when unset.
 
 ### paragraph
 
-- `content` (HTML string) — supports `<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`,
-  `<ol>`.
-- `paragraphSpacing` (int, _optional_) — px gap between this block's paragraphs;
-  omit for the default `8`. Only affects content with more than one `<p>`; space
-  around the block is `styles.padding`.
+<!-- BEGIN GENERATED FIELDS: paragraph -->
+**Required** — `content` (string).
+**Optional** — `paragraphSpacing` (int).
+<!-- END GENERATED FIELDS: paragraph -->
+
+- `content` supports `<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`, `<ol>`.
+- `paragraphSpacing` is the px gap between this block's paragraphs; omit for the
+  default `8`. It only affects content with more than one `<p>` — space around
+  the block is `styles.padding`.
 
 ### menu
 
 Horizontal nav row of links.
 
-- `items` — array of `{ id, text, url, openInNewTab: bool, bold: bool,
+<!-- BEGIN GENERATED FIELDS: menu -->
+**Required** — `items` (MenuItemData[]), `fontSize` (int), `textAlign` ("left" | "center" | "right"), `separator` (string), `separatorColor` (string), `spacing` (int).
+**Optional** — `fontFamily` (string), `color` (string), `linkColor` (string).
+<!-- END GENERATED FIELDS: menu -->
+
+- `items` — each is `{ id, text, url, openInNewTab: bool, bold: bool,
 underline: bool, color?: hex }`.
-- `fontSize` (int), `textAlign`, `spacing` (int).
-- `separator` (string, e.g. `"•"`), `separatorColor` (hex).
-- `color` (hex, _optional_), `linkColor` (hex, _optional_), `fontFamily`
-  (_optional_).
+- `separator` is the character drawn between items, e.g. `"•"`.
 
 ### table
 
-- `rows` — array of `{ id, cells: [{ id, content }] }`. Cell `content` is
+<!-- BEGIN GENERATED FIELDS: table -->
+**Required** — `rows` (TableRowData[]), `hasHeaderRow` (bool), `borderColor` (string), `borderWidth` (int), `cellPadding` (int), `fontSize` (int), `textAlign` ("left" | "center" | "right").
+**Optional** — `headerBackgroundColor` (string), `fontFamily` (string), `color` (string).
+<!-- END GENERATED FIELDS: table -->
+
+- `rows` — each is `{ id, cells: [{ id, content }] }`. Cell `content` is
   **plain text — no inline HTML** (unlike `title`/`paragraph`). Inline tags render
   literally: a cell of `"<b>Weight</b>"` shows the characters `<b>Weight</b>`, not
   a bold "Weight". A cell has only `id` and `content` — there is **no per-cell or
   per-column style field**.
-- `hasHeaderRow` (bool), `headerBackgroundColor` (hex, _optional_) — the **only**
-  table emphasis. `hasHeaderRow: true` bolds (and, with `headerBackgroundColor`,
-  shades) the **top row only**. A label/value table with a bold left column is
-  therefore **not** achievable in a `table` block — for that, use a 2-column
-  `section` of `paragraph` blocks (whose `content` _is_ HTML) instead.
-- `borderColor` (hex), `borderWidth` (int), `cellPadding` (int).
-- `fontSize` (int), `textAlign`, `color` (hex, _optional_), `fontFamily`
-  (_optional_).
+- `hasHeaderRow` and `headerBackgroundColor` are the **only** table emphasis.
+  `hasHeaderRow: true` bolds (and, with `headerBackgroundColor`, shades) the
+  **top row only**. A label/value table with a bold left column is therefore
+  **not** achievable in a `table` block — for that, use a 2-column `section` of
+  `paragraph` blocks (whose `content` _is_ HTML) instead.
 
 ## Media & actions
 
 ### image
 
-- `src` (URL), `alt` (string — write meaningful alt text).
-- `width` (int | `"full"`), `align` — `"left" | "center" | "right"`.
-- `height` (int, _optional_) — px. Omit it: the height is then derived from the
-  width and the image keeps its aspect ratio. Setting both stretches the image,
-  because email clients don't support `object-fit`.
-- `borderRadius` (int, _optional_) — corner radius in px; omit or `0` for
-  square. For a round avatar or portrait, use a square image and a radius of at
-  least half its width (`999` is the usual shorthand). Outlook on Windows
-  ignores it and shows square corners, so never rely on it for legibility.
-- `linkUrl` (URL, _optional_), `linkOpenInNewTab` (bool, _optional_).
-- `decorative` (bool, _optional_) — mark purely decorative images.
+<!-- BEGIN GENERATED FIELDS: image -->
+**Required** — `src` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
+**Optional** — `height` (int), `borderRadius` (int), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
+<!-- END GENERATED FIELDS: image -->
+
+- `alt` — write meaningful alt text.
+- `height` — omit it: the height is then derived from the width and the image
+  keeps its aspect ratio. Setting both stretches the image, because email
+  clients don't support `object-fit`.
+- `borderRadius` — omit or `0` for square. For a round avatar or portrait, use a
+  square image and a radius of at least half its width (`999` is the usual
+  shorthand). Outlook on Windows ignores it and shows square corners, so never
+  rely on it for legibility.
+- `decorative` — mark purely decorative images.
+- `placeholderUrl` — design-time stand-in shown on the editor canvas when `src`
+  is a merge tag. It never reaches the sent email; omit it unless `src` is a tag.
 
 ### button
 
-- `text` (string), `url` (URL).
-- `backgroundColor` (hex), `textColor` (hex).
-- `borderRadius` (int), `fontSize` (int).
-- `buttonPadding` — `{ top, right, bottom, left }`.
-- `align` — `"left" | "center" | "right"`. Placement within the column; no
-  visible effect when `width` is `"full"`.
-- `openInNewTab` (bool, _optional_), `fontFamily` (_optional_), `width` (int |
-  `"full"`, _optional_).
+<!-- BEGIN GENERATED FIELDS: button -->
+**Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (int), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
+**Optional** — `openInNewTab` (bool), `fontFamily` (string), `width` (int | "full").
+<!-- END GENERATED FIELDS: button -->
+
+- `buttonPadding` is `{ top, right, bottom, left }`.
+- `align` places the button within its column; no visible effect when `width` is
+  `"full"`.
 
 ### social
 
-- `icons` — array of `{ id, platform, url }`.
-- `platform` — one of: `facebook`, `twitter`, `instagram`, `linkedin`,
+<!-- BEGIN GENERATED FIELDS: social -->
+**Required** — `icons` (SocialIcon[]), `iconStyle` (SocialIconStyle), `iconSize` (SocialIconSize), `spacing` (int), `align` ("left" | "center" | "right").
+<!-- END GENERATED FIELDS: social -->
+
+- `icons` — each is `{ id, platform, url }`.
+- `platform` is one of: `facebook`, `twitter`, `instagram`, `linkedin`,
   `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
   `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
-- `iconStyle` — `"solid" | "outlined" | "rounded" | "square" | "circle"`.
-- `iconSize` — `"small" | "medium" | "large"`.
-- `spacing` (int), `align` — `"left" | "center" | "right"`.
+- `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
+  `"circle"`; `iconSize` one of `"small"`, `"medium"`, `"large"`.
 
 ### video
 
 Renders as a thumbnail with a play button linking to the video.
 
-- `url` (URL), `thumbnailUrl` (URL), `alt` (string).
-- `width` (int | `"full"`), `align`.
-- `height` (int, _optional_) — px, same aspect-ratio caveat as `image`.
-- `openInNewTab` (bool, _optional_).
+<!-- BEGIN GENERATED FIELDS: video -->
+**Required** — `url` (string), `thumbnailUrl` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
+**Optional** — `openInNewTab` (bool), `height` (int), `placeholderUrl` (string).
+<!-- END GENERATED FIELDS: video -->
+
+- `height` — same aspect-ratio caveat as `image`.
+- `placeholderUrl` — design-time stand-in for the thumbnail, shown on the editor
+  canvas when `url` or `thumbnailUrl` is a merge tag. It never reaches the sent
+  email.
 
 ### html
 
 Raw-HTML escape hatch. Prefer native blocks — `html` content is not visually
 editable in the editor afterward, so use it only when no other block fits.
 
-- `content` (string) — raw HTML.
+<!-- BEGIN GENERATED FIELDS: html -->
+**Required** — `content` (string).
+<!-- END GENERATED FIELDS: html -->
 
 ## Merge tags
 
