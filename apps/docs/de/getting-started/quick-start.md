@@ -7,9 +7,25 @@ description: Bringen Sie den Templatical-E-Mail-Editor in weniger als 5 Minuten 
 
 ## 1. Pakete installieren
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/editor @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/editor @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/editor @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/editor @templatical/renderer
+```
+
+:::
 
 ## 2. Editor einbinden
 
@@ -63,11 +79,27 @@ Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template
 
 ## 3. MJML zu HTML kompilieren
 
-Auf dem Server kompilieren Sie das gerade gesendete MJML mit einer beliebigen [MJML-Bibliothek](https://mjml.io) — `mjml` ist die offizielle für Node:
+Auf dem Server kompilieren Sie das gerade gesendete MJML mit einer beliebigen [MJML-Bibliothek](https://mjml.io) — Node, PHP, Python, Ruby und andere. [So funktioniert das Rendering](/de/getting-started/how-rendering-works) listet sie. Das Node-Paket ist `mjml`:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install mjml
 ```
+
+```bash [pnpm]
+pnpm add mjml
+```
+
+```bash [yarn]
+yarn add mjml
+```
+
+```bash [bun]
+bun add mjml
+```
+
+:::
 
 ```ts
 import mjml2html from "mjml";
@@ -76,13 +108,29 @@ const { html } = mjml2html(mjml);
 // html ist versandfertig
 ```
 
-Aus einer gespeicherten JSON-Datei, ohne den Editor zu mounten:
+Aus einer gespeicherten JSON-Datei, ohne den Editor zu mounten (braucht ebenfalls `mjml`):
 
-```bash
+::: code-group
+
+```bash [npm]
 npx -y @templatical/template-tools render template.json --format html -o email.html
 ```
 
-Dieser Befehl braucht ebenfalls `mjml`. Siehe [Template Tools](/de/api/template-tools) und [So funktioniert das Rendering](/de/getting-started/how-rendering-works).
+```bash [pnpm]
+pnpm dlx @templatical/template-tools render template.json --format html -o email.html
+```
+
+```bash [yarn]
+yarn dlx @templatical/template-tools render template.json --format html -o email.html
+```
+
+```bash [bun]
+bunx @templatical/template-tools render template.json --format html -o email.html
+```
+
+:::
+
+Siehe [Template Tools](/de/api/template-tools).
 
 ::: info Shadow DOM als Standard
 Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seiten-CSS nicht in Editor-Elemente durchschlagen kann. Verwenden Sie ein `<div>` — oder ein beliebiges [Shadow-Host-fähiges Element](/de/api/editor#anforderungen-an-das-container-element) — als Container; Elemente wie `<table>`, `<form>` oder `<input>` können keinen Shadow Root aufnehmen.

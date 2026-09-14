@@ -4215,9 +4215,25 @@ Source: https://docs.templatical.com/getting-started/quick-start
 
 ## 1. Install packages
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/editor @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/editor @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/editor @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/editor @templatical/renderer
+```
+
+:::
 
 ## 2. Mount the editor
 
@@ -4271,11 +4287,27 @@ Your backend receives both the JSON (store it to let users edit later) and the M
 
 ## 3. Compile MJML to HTML
 
-On the server, compile the MJML you just posted with any [MJML library](https://mjml.io) — `mjml` is the official Node one:
+On the server, compile the MJML you just posted with any [MJML library](https://mjml.io) — Node, PHP, Python, Ruby, and others. [How Rendering Works](/getting-started/how-rendering-works) lists them. The Node package is `mjml`:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install mjml
 ```
+
+```bash [pnpm]
+pnpm add mjml
+```
+
+```bash [yarn]
+yarn add mjml
+```
+
+```bash [bun]
+bun add mjml
+```
+
+:::
 
 ```ts
 import mjml2html from "mjml";
@@ -4284,13 +4316,29 @@ const { html } = mjml2html(mjml);
 // html is ready to send
 ```
 
-From a saved JSON file, without mounting the editor:
+From a saved JSON file, without mounting the editor (also needs `mjml`):
 
-```bash
+::: code-group
+
+```bash [npm]
 npx -y @templatical/template-tools render template.json --format html -o email.html
 ```
 
-That command also needs `mjml`. See [Template Tools](/api/template-tools) and [How Rendering Works](/getting-started/how-rendering-works).
+```bash [pnpm]
+pnpm dlx @templatical/template-tools render template.json --format html -o email.html
+```
+
+```bash [yarn]
+yarn dlx @templatical/template-tools render template.json --format html -o email.html
+```
+
+```bash [bun]
+bunx @templatical/template-tools render template.json --format html -o email.html
+```
+
+:::
+
+See [Template Tools](/api/template-tools).
 
 ::: info Shadow DOM by default
 The editor mounts inside a Shadow DOM, so host page CSS cannot cascade into editor elements. Use a `<div>` — or any [shadow-host-eligible element](/api/editor#container-element-requirements) — as the container; elements like `<table>`, `<form>`, or `<input>` cannot host a shadow root.
