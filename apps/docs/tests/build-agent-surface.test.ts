@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, sep } from "node:path";
 import type { DefaultTheme, HeadConfig, TransformContext } from "vitepress";
 import config from "../.vitepress/config";
 // @ts-expect-error — plain .mjs generator, no types
@@ -59,6 +59,66 @@ function indexEntryUrls(index: string): string[] {
 function markdownTwinOf(url: string): string {
   const path = url.slice(SITE_URL.length).replace(/^\//, "");
   return path === "" || path.endsWith("/") ? `${path}index.md` : `${path}.md`;
+}
+
+const REPO_ROOT = join(DOCS, "..", "..");
+
+/**
+ * The two trees where the raw-markdown convention is documented, walked rather
+ * than listed file by file so a new site under either is covered with no edit
+ * here. Deliberately not repo-wide: elsewhere, `.md` beside a word like
+ * "append" is ordinary prose about markdown files and would false-positive.
+ */
+const RULE_ROOTS = [DOCS, join(REPO_ROOT, "skills/templatical")];
+const RULE_SKIP_DIRS = new Set(["node_modules", "dist", "cache", "coverage"]);
+const RULE_EXTENSIONS = new Set([".ts", ".mjs", ".js", ".md", ".txt", ".json", ".vue"]);
+
+/**
+ * Text stating the append-`.md` half of the rule, which must always be paired
+ * with the `index.md` half. The `(?<!\w)` before the extension is what keeps a
+ * markdown link out: `[blocks.md](blocks.md)` after the word "adding" is the
+ * only false positive these two trees produce, and the rule itself always
+ * writes a bare `.md` rather than one attached to a filename.
+ */
+const STATES_THE_RULE =
+  /(?:append|appended|plus|add)[^.\n]{0,70}(?<!\w)\.md|(?<!\w)\.md[^.\n]{0,70}append/i;
+
+/**
+ * How far from a rule statement the `index.md` half may sit. Both halves have
+ * to travel together — a reader who finds the first one stops reading.
+ */
+const RULE_CONTEXT_LINES = 3;
+
+/**
+ * Every line in those trees that states the append-`.md` half of the rule,
+ * each with whether the `index.md` half sits near enough to travel with it.
+ */
+function ruleStatements(): { at: string; text: string; statesIndexCase: boolean }[] {
+  const found: { at: string; text: string; statesIndexCase: boolean }[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const abs = join(dir, entry);
+      if (statSync(abs).isDirectory()) {
+        if (!RULE_SKIP_DIRS.has(entry)) walk(abs);
+        continue;
+      }
+      if (!RULE_EXTENSIONS.has(extname(entry))) continue;
+      const lines = readFileSync(abs, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        if (!STATES_THE_RULE.test(line)) return;
+        const context = lines
+          .slice(Math.max(0, i - RULE_CONTEXT_LINES), i + RULE_CONTEXT_LINES + 1)
+          .join("\n");
+        found.push({
+          at: `${relative(REPO_ROOT, abs).split(sep).join("/")}:${i + 1}`,
+          text: line.trim(),
+          statesIndexCase: context.includes("index.md"),
+        });
+      });
+    }
+  };
+  for (const root of RULE_ROOTS) walk(root);
+  return found;
 }
 
 /** Write a fixture file at `root/relPath`, creating any parent dirs it needs. */
@@ -256,8 +316,12 @@ describe("the transformHead hook", () => {
   // robots.txt advertises the convention to crawlers, but an agent that lands
   // on a rendered page never fetches robots.txt — the in-band <link> is the
   // only signal it gets.
-  it("is wired, so a page carries the signal and not just the file", () => {
-    expect(typeof config.transformHead).toBe("function");
+  it("is wired, so a page carries the signal and not just the file", async () => {
+    // Asserted through the hook's own output rather than `typeof` — a type
+    // check passes for a hook that is wired and emits nothing, which is the
+    // failure this case exists to catch. A root-level page, the one shape the
+    // four cases below do not cover.
+    expect(await headEntriesFor("license-faq.md")).toEqual([alternate("/license-faq.md")]);
   });
 
   it("advertises the twin as a text/markdown alternate, and emits nothing else", async () => {
@@ -309,7 +373,12 @@ describe("the visible index link", () => {
     }
     const groups = sidebar[scope];
     if (!Array.isArray(groups)) throw new Error(`no sidebar is configured for ${scope}`);
-    return groups.find((group) => group.text === heading)?.items ?? [];
+    const group = groups.find((entry) => entry.text === heading);
+    // Not `?? []`: a renamed heading would then read as an empty group, and the
+    // failure would claim the llms.txt entry was deleted rather than that the
+    // group it lives in no longer answers to this name.
+    if (!group?.items) throw new Error(`${scope} has no "${heading}" sidebar group with items`);
+    return group.items;
   }
 
   // The per-page <link> serves an agent; this is the same surface made visible
@@ -483,10 +552,26 @@ describe("the three places that state the raw-markdown rule", () => {
     // Checked from here rather than the skill's own suite: the failure being
     // guarded is these three drifting apart, and only one place sees all three.
     const island = readFileSync(
-      join(DOCS, "../../skills/templatical/reference/docs.md"),
+      join(REPO_ROOT, "skills/templatical/reference/docs.md"),
       "utf8",
     );
     expect(island).toContain("index.md");
+  });
+
+  it("and no other comment or page states the append-`.md` half on its own", () => {
+    // The three cases above are the positive obligation: each shipped artifact
+    // has to state the rule at all. This is the negative one, and it is a scan
+    // rather than a fourth path because the two sites it was added for were
+    // code comments — one of them four lines from a comment that had the rule
+    // right. A list would have to grow every time a new site appears; the scan
+    // covers one that nobody thought to add.
+    const statements = ruleStatements();
+    // Non-vacuity: a broken regex or a wrong root yields an empty list, which
+    // would otherwise satisfy the filter below without reading anything.
+    const files = statements.map(({ at }) => at.split(":")[0]);
+    expect(files).toContain("apps/docs/scripts/build-agent-surface.mjs");
+    expect(files).toContain("skills/templatical/reference/docs.md");
+    expect(statements.filter((statement) => !statement.statesIndexCase)).toEqual([]);
   });
 });
 

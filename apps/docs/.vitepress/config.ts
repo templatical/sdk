@@ -388,7 +388,8 @@ export default defineConfig({
   // the vitest fixtures under tests/fixtures/ as real, navigable pages.
   srcExclude: ["tests/**"],
   sitemap: { hostname: "https://docs.templatical.com" },
-  // Serve each page's source markdown at its own URL plus `.md`. Agents that
+  // Serve each page's source markdown beside its rendered page: append `.md`
+  // to the page's URL, or `index.md` when that URL ends in `/`. Agents that
   // fetch rendered HTML read mangled examples of this product's own merge-tag
   // and logic-tag syntax; source markdown sidesteps that entirely.
   // buildEnd receives VitePress's SiteConfig, which carries outDir — verified

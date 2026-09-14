@@ -290,7 +290,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
 
 /**
  * Copy every source markdown file into the build output beside its rendered
- * page, so each page is fetchable at its own URL with `.md` appended.
+ * page, so each page is fetchable as raw markdown: append `.md` to its URL,
+ * or `index.md` when the URL ends in `/`. The second half is a consequence of
+ * this being a plain copy — a directory index keeps its `index.md` basename
+ * while cleanUrls serves the page itself at the bare directory URL.
  *
  * Called from VitePress's buildEnd hook. Covers every locale, including de/,
  * because it is a file copy — only the generated index is English-only. Not
