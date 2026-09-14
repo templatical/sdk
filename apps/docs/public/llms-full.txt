@@ -699,6 +699,8 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  blockRenderers?: BlockRendererMap;
+  getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
   socialIconsBaseUrl?: string;
 }
 ```
@@ -709,6 +711,8 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+| `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks
@@ -1119,7 +1123,11 @@ interface TemplateSettings {
   linkUnderline: boolean;         // Underline body links (default true)
   fontFamily: string;             // Default font family
   preheaderText?: string;         // Email preheader text
+  locale: string;                 // BCP-47 content language; <html lang> (default 'en')
+  direction?: ContentDirection;   // 'ltr' | 'rtl'; unset follows the content language
 }
+
+type ContentDirection = 'ltr' | 'rtl';
 ```
 
 ### Block
@@ -1466,6 +1474,9 @@ interface CustomBlock extends BaseBlock {
 interface MergeTag {
   label: string;
   value: string;
+  group?: string;        // picker-only grouping label
+  description?: string;  // picker-only helper text
+  sample?: string;       // preview-only example value; never written to MJML
 }
 ```
 
@@ -1476,6 +1487,8 @@ interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
   onRequest?: () => Promise<MergeTag | null>;
+  showRawValue?: boolean;   // reveal raw token in tooltip (default true)
+  autocomplete?: boolean;   // typing-based autocomplete (default true)
 }
 
 type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript';
@@ -1557,6 +1570,7 @@ interface FontsConfig {
   defaultFallback?: string;
   defaultFont?: string;
   customFonts?: CustomFont[];
+  builtIns?: boolean | string[];  // true/omitted: all seven; false: none; string[]: allowlist — see /guide/fonts
 }
 
 interface CustomFont {
@@ -1590,12 +1604,15 @@ import {
   createMenuBlock,
   createTableBlock,
   createHtmlBlock,
+  createCountdownBlock,
   createCustomBlock,
   createBlock,
   cloneBlock,
   createDefaultTemplateContent,
   generateId,
 } from '@templatical/types';
+
+// Countdown GIFs need Cloud or a `blockRenderers.countdown` override; the OSS renderer emits a placeholder.
 
 // Create with defaults
 const paragraph = createParagraphBlock();
@@ -1625,7 +1642,7 @@ const id = generateId();
 import {
   isTitle, isParagraph, isImage, isButton, isSection,
   isDivider, isVideo, isSpacer, isSocialIcons,
-  isMenu, isTable, isHtml, isCustomBlock,
+  isMenu, isTable, isHtml, isCountdown, isCustomBlock,
 } from '@templatical/types';
 
 if (isTitle(block)) {
@@ -3502,7 +3519,7 @@ It is a **cache hint, never an alternative to `get`**, and it is evaluated per e
 
 ## In the editor
 
-- **The history control** sits in the header next to the viewport and preview toggles: arrows to step older and newer, and a dropdown listing every version with a relative timestamp, its label if it has one, and an *auto* badge for save-recorded ones.
+- **The history control** sits in the left header column with the template name and write time: arrows to step older and newer, and a dropdown listing every version with a relative timestamp, its label if it has one, and an *auto* badge for save-recorded ones.
 - **The preview banner** appears while a past version is on the canvas, with Cancel and Restore.
 - **Cancel** puts back exactly what you were editing, including unsaved changes. Autosave is paused for the duration of a preview, so a previewed version is never mistaken for your work and saved over it.
 - **Restore** confirms first when there are unsaved changes — see [Unsaved changes](#unsaved-changes).
@@ -3555,1640 +3572,6 @@ await history.restore(v.id);
 ```
 
 **Using Templatical Cloud?** It implements this contract with nothing to configure — see [Version History on Cloud](/cloud/version-history).
-
----
-
-# AI Assistant
-
-Source: https://docs.templatical.com/cloud/ai
-
-Templatical Cloud includes AI-powered features for generating email content, rewriting text, scoring templates, and converting designs into editable templates.
-
-## Enable AI
-
-AI is enabled by default when using `initCloud()`. To disable it or configure specific features:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-
-  // Enable all AI features (default when omitted)
-  ai: {},
-
-  // Or configure individually
-  ai: {
-    chat: true,              // AI chat for content generation
-    rewrite: true,           // Text rewrite in title/paragraph blocks
-    scoring: true,           // Template quality scoring
-    designToTemplate: true,  // Design-to-template conversion
-  },
-
-  // Or disable AI entirely
-  ai: false,
-});
-```
-
-## AI Chat
-
-The AI chat panel lets users generate and modify email content through natural language prompts. The AI understands the current template structure and can add, modify, or remove blocks.
-
-**How it works:**
-1. User opens the AI chat panel in the editor
-2. Types a prompt like "Add a hero section with a product image and CTA button"
-3. The AI generates template changes and applies them
-4. User can accept, revert, or continue the conversation
-
-The AI maintains conversation history per template, so follow-up prompts have full context of previous changes.
-
-### Suggestions
-
-The AI can also generate prompt suggestions based on the current template content, helping users discover what improvements are possible.
-
-## Text Rewrite
-
-The text rewrite feature allows users to select text within a title or paragraph block and rewrite it with AI assistance. Users can provide instructions like:
-
-- "Make this more concise"
-- "Change the tone to be more professional"
-- "Translate to Spanish"
-- "Add a sense of urgency"
-
-The rewrite streams in real-time, and users can undo/redo the change.
-
-## Design to Template
-
-Upload a design image (screenshot, mockup, PDF) or describe what you want, and the AI generates a complete email template that matches. This is useful for:
-
-- Converting Figma/Sketch designs into editable templates
-- Reproducing competitor emails
-- Quickly prototyping from rough sketches
-
-## Composables
-
-If you're building a custom UI on top of the Cloud SDK, these composables are available from `@templatical/core/cloud`:
-
-### `useAiChat`
-
-```js
-import { useAiChat } from '@templatical/core/cloud';
-
-const {
-  messages,           // Ref<AiChatMessage[]> — conversation history
-  isGenerating,       // Ref<boolean> — currently generating
-  suggestions,        // Ref<string[]> — prompt suggestions
-  error,              // Ref<string | null>
-
-  sendPrompt,         // (prompt, content, mergeTags) => Promise<TemplateContent | null>
-  loadConversation,   // () => Promise<void>
-  loadSuggestions,    // (content, mergeTags) => Promise<void>
-  clearChat,          // () => void
-} = useAiChat({
-  authManager,
-  getTemplateId: () => templateId,
-  onApply: (content) => { /* AI applied changes */ },
-  onError: (error) => { /* handle error */ },
-});
-```
-
-### `useAiRewrite`
-
-```js
-import { useAiRewrite } from '@templatical/core/cloud';
-
-const {
-  isRewriting,        // Ref<boolean>
-  streamingText,      // Ref<string> — text as it streams in
-  rewrittenContent,   // Ref<string | null> — final result
-  error,              // Ref<string | null>
-
-  rewrite,            // (content, instruction, mergeTags) => Promise<string | null>
-  undo,               // () => string | null
-  redo,               // () => string | null
-  reset,              // () => void
-} = useAiRewrite({
-  authManager,
-  getTemplateId: () => templateId,
-});
-```
-
-### `useDesignReference`
-
-```js
-import { useDesignReference } from '@templatical/core/cloud';
-
-const {
-  isGenerating,       // Ref<boolean>
-  error,              // Ref<string | null>
-
-  generate,           // (input) => Promise<TemplateContent | null>
-  reset,              // () => void
-} = useDesignReference({
-  authManager,
-  getTemplateId: () => templateId,
-  onApply: (content) => { /* design converted */ },
-});
-
-// Generate from an uploaded image
-await generate({ imageUpload: file });
-
-// Generate from an uploaded PDF
-await generate({ pdfUpload: pdfFile });
-
-// Generate from a prompt
-await generate({ prompt: 'A product launch email with hero image and pricing table' });
-```
-
----
-
-# Authentication
-
-Source: https://docs.templatical.com/cloud/authentication
-
-Templatical Cloud uses JWT-based authentication. The SDK manages tokens automatically — you provide a server-side endpoint that issues tokens, and the `AuthManager` handles refresh, retries, and authenticated requests.
-
-## Auth Flow
-
-1. Your frontend calls `initCloud()` with an `auth.url`
-2. The SDK requests a token from your server endpoint
-3. Your server authenticates the user and calls the Templatical Cloud API to get a JWT
-4. The SDK uses the JWT for all subsequent API and WebSocket requests
-5. When the token expires, the SDK refreshes it automatically
-
-## Configuration
-
-### Basic Setup
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: {
-    url: '/api/templatical/token',
-  },
-});
-```
-
-### Full Options
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: {
-    url: '/api/templatical/token',
-    baseUrl: 'https://templatical.com',        // Default
-    requestOptions: {
-      method: 'POST',                         // Default: POST
-      headers: {
-        'X-Custom-Header': 'value',
-      },
-      body: {
-        tenant_id: 'tenant-123',
-      },
-      credentials: 'same-origin',
-    },
-  },
-});
-```
-
-### Auth Options Reference
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `url` | `string` | — | **Required.** Your token endpoint URL |
-| `baseUrl` | `string` | `https://templatical.com` | Templatical Cloud API base URL |
-| `requestOptions.method` | `'GET' \| 'POST'` | `'POST'` | HTTP method for token requests |
-| `requestOptions.headers` | `Record<string, string>` | `{}` | Additional headers sent with token requests |
-| `requestOptions.body` | `Record<string, unknown>` | `{}` | Body payload for POST token requests |
-| `requestOptions.credentials` | `RequestCredentials` | `'include'` | Fetch credentials mode (`same-origin`, `include`) |
-
-## Token Response Format
-
-Your token endpoint must return a JSON response with this structure:
-
-```json
-{
-  "token": "eyJhbGciOiJSUzI1NiIs...",
-  "expiresAt": 1720000000,
-  "projectId": "proj_abc123",
-  "tenant": "acme-corp",
-  "testEmail": {
-    "allowedEmails": ["team@example.com"],
-    "signature": "hmac-signature-here"
-  },
-  "user": {
-    "id": "user_123",
-    "name": "Jane Smith",
-    "signature": "hmac-signature-here"
-  }
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `token` | `string` | **Required.** The JWT access token |
-| `expiresAt` | `number` | **Required.** Unix timestamp when the token expires |
-| `projectId` | `string` | **Required.** The project ID |
-| `tenant` | `string` | **Required.** The tenant slug |
-| `user` | `object` | Optional. Used for collaboration presence and comment attribution |
-| `user.id` | `string` | User identifier |
-| `user.name` | `string` | Display name shown in collaboration UI |
-| `user.signature` | `string` | HMAC signature for user verification |
-| `testEmail` | `object` | Optional. Configuration for the test email feature |
-| `testEmail.allowedEmails` | `string[]` | Email addresses allowed to receive test emails |
-| `testEmail.signature` | `string` | HMAC signature for test email verification |
-
-## Direct Authentication
-
-For server-side or testing scenarios, you can authenticate directly with API credentials instead of going through a token endpoint:
-
-```js
-import { createSdkAuthManager } from '@templatical/core/cloud';
-
-const auth = createSdkAuthManager(
-  {
-    mode: 'direct',
-    clientId: 'your-client-id',
-    clientSecret: 'your-client-secret',
-    tenant: 'tenant-slug',
-  },
-  (error) => console.error('Auth error:', error), // optional onError callback
-);
-```
-
-::: warning
-Never expose `clientSecret` in client-side code. Direct authentication is intended for server-side usage, scripts, and testing only.
-:::
-
-## Error Handling
-
-Authentication errors are surfaced through the `onError` callback:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  onError: (error) => {
-    if (error.message.includes('401') || error.message.includes('auth')) {
-      // Redirect to login or show re-auth prompt
-      window.location.href = '/login';
-    }
-  },
-});
-```
-
-## Security Best Practices
-
-- **Never expose API credentials in client-side code.** Always proxy through your server.
-- **Validate the user session** in your token endpoint before issuing a Templatical token.
-- **Scope tokens to tenants.** Each token should be associated with a specific tenant to enforce data isolation.
-- **Use `credentials: 'same-origin'`** to ensure cookies are sent with token requests when your auth relies on session cookies.
-
----
-
-# Collaboration
-
-Source: https://docs.templatical.com/cloud/collaboration
-
-Multiple team members can edit the same template simultaneously. The collaboration system provides live presence tracking and block-level locking to prevent conflicts.
-
-## Enable Collaboration
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  collaboration: {
-    enabled: true,
-  },
-});
-```
-
-## How It Works
-
-When collaboration is enabled:
-
-1. **Presence** — Each user's avatar and name appears in the editor toolbar, showing who is currently viewing the template
-2. **Block Locking** — When a user selects a block, it becomes locked for other collaborators. Other users see a visual indicator showing who is editing that block
-3. **Live Updates** — Changes are broadcast in real-time via WebSocket. When one user adds, moves, or modifies a block, other collaborators see the change immediately
-4. **Conflict Prevention** — The locking mechanism prevents two users from editing the same block simultaneously, eliminating merge conflicts
-
-## Callbacks
-
-Four optional callbacks live on the `collaboration` object itself:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  collaboration: {
-    enabled: true,
-    onCollaboratorJoined: (collaborator) => { /* someone opened the template */ },
-    onCollaboratorLeft: (collaborator) => { /* someone closed it */ },
-    onBlockLocked: ({ blockId, collaborator }) => { /* they selected a block */ },
-    onBlockUnlocked: ({ blockId, collaborator }) => { /* they released it */ },
-  },
-  // Transport and API failures arrive on the editor's own onError.
-  onError: (error) => {
-    console.error('Collaboration error:', error);
-  },
-});
-```
-
-## Composable
-
-For custom UI implementations:
-
-```js
-import { useCollaboration } from '@templatical/core/cloud';
-
-const {
-  collaborators,    // Ref<Collaborator[]> — currently connected users
-  lockedBlocks,     // Ref<Map<string, Collaborator>> — blockId → who locked it
-} = useCollaboration({
-  authManager,
-  editor,
-  channel,          // Ref<PresenceChannel | null>
-  onCollaboratorJoined: (user) => { /* user joined */ },
-  onCollaboratorLeft: (user) => { /* user left */ },
-  onBlockLocked: ({ blockId, collaborator }) => { /* block locked */ },
-  onBlockUnlocked: ({ blockId, collaborator }) => { /* block unlocked */ },
-});
-```
-
-### Collaborator Object
-
-```ts
-interface Collaborator {
-  id: string;
-  name: string;
-  color: string;
-  selectedBlockId: string | null;
-}
-```
-
-## Requirements
-
-- Collaboration requires WebSocket connectivity. The SDK connects automatically using the WebSocket configuration provided in the auth token response.
-- Each user must have a `user` object in their token response (see [Authentication](/cloud/authentication)) for their name to display correctly. Each collaborator is assigned an automatic `color` for visual identification.
-
----
-
-# Comments
-
-Source: https://docs.templatical.com/cloud/comments
-
-Comments are an [open contract](/backend/comments). Templatical Cloud implements it, the same way your own backend would.
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-```
-
-Nothing to configure. Cloud supplies the provider and the identity, and the header's Comments button appears as soon as a template is saved.
-
-## The adapter
-
-| Method | Cloud |
-|---|---|
-| `list` | Every thread for the template, each with its replies |
-| `create` | Stores a comment or a reply, **signed** with the token's user claim |
-| `update` | Edits a comment's body |
-| `delete` | Removes a comment, and a root's replies with it |
-| `setResolved` | Marks a thread resolved or reopened |
-| `subscribe` | Binds Cloud's realtime channel, so a colleague's comment appears as they write it |
-
-All four mutations are enabled: comment storage and its realtime fan-out are what the `commenting` plan feature pays for, so there is no Cloud tier that can read a thread but not reply to it.
-
-## Availability
-
-Three conditions, and none implies another:
-
-- **`comments: false`** switches the feature off entirely.
-- **The `commenting` plan feature** must be granted.
-- **The template must be saved.** Cloud anchors a comment server-side, so there has to be a stored template to anchor it to — the Comments button does not render before the first save.
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  comments: false, // off, whatever the plan grants
-});
-```
-
-## Author identity
-
-Cloud sends `userId` / `userName` / `userSignature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
-
-A project whose token endpoint omits the `user` claim gets no comments feature at all — [unavailable, never anonymous](/backend/comments#author-identity).
-
-## Bringing your own
-
-Configuration and events, inside `initCloud()` — never storage.
-
-A comment is keyed to a template id **Cloud issued**, and its author is signed by Cloud's token, so `initCloud()`'s `comments` key takes [`CommentsOptions`](/backend/comments#events) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` — rather than a full provider:
-
-```ts
-await initCloud({
-  container: '#editor',
-  auth: { url: '/api/token' },
-  comments: {
-    onCreated: (comment, { origin }) => {},
-    onResolved: (comment) => {},
-    onUnresolved: (comment) => {},
-  },
-});
-```
-
-Passing a full provider is fine: `list`, `create`, `update`, `delete`, `setResolved` and `subscribe` are ignored with a console warning naming them, while `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` reach the editor regardless. An OSS `comments` provider moving to Cloud needs no change — leave the key exactly as it is.
-
-Bring your own storage with [`init()`](/backend/comments), where the whole set — templates, version history, comments, rendering — is yours.
-
-## Headless use
-
-`useComments` and `useCommentListener` live in `@templatical/core` and take a provider. Cloud's adapter is `createCloudCommentsProvider` from `@templatical/core/cloud`:
-
-```ts
-import { useComments, useCommentListener } from '@templatical/core';
-import { createCloudCommentsProvider } from '@templatical/core/cloud';
-
-const provider = createCloudCommentsProvider({
-  authManager,
-  channel,                                 // Ref<PresenceChannel | null>
-  getSocketId: () => websocket.getSocketId(),
-});
-
-const comments = useComments({
-  provider,
-  getTemplateId: () => templateId,
-  getUser: () => ({ id: authManager.userConfig.id, name: authManager.userConfig.name }),
-});
-
-useCommentListener({ comments, provider, getTemplateId: () => templateId });
-```
-
-See the [comments guide](/backend/comments#headless-use) for the full reactive surface.
-
----
-
-# Getting Started with Cloud
-
-Source: https://docs.templatical.com/cloud/getting-started
-
-This guide walks you through setting up Templatical Cloud in your application.
-
-## Prerequisites
-
-- A Templatical Cloud account with an active plan
-- A project and tenant configured in the [Cloud dashboard](https://templatical.com)
-- The `@templatical/editor` package installed in your project
-
-## Installation
-
-If you haven't already installed the editor, add it along with the cloud dependencies:
-
-```bash
-npm install @templatical/editor pusher-js
-```
-
-The Browse modal ships in the editor. `pusher-js` enables real-time collaboration and is Cloud-only. Install [`@templatical/media-library`](/backend/media#installation) only if you mount the standalone media SDK outside the editor.
-
-::: info Shadow DOM
-`initCloud()` inherits all shadow-DOM behavior from the editor — mounted inside a Shadow DOM by default for host-CSS isolation. The media browser, AI panels, comments, and version-history UI all teleport into the editor's shadow-aware popover root, so no special handling is needed. Pass `shadowDom: false` to opt out. See the [Shadow DOM guide](/guide/shadow-dom).
-:::
-
-## Authentication Endpoint
-
-Cloud features require an authentication endpoint on your server that issues access tokens. The SDK calls this endpoint automatically to obtain and refresh tokens.
-
-### Laravel Example
-
-```php
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-
-Route::post('/api/templatical/token', function (Request $request) {
-    $response = Http::post('https://templatical.com/api/v1/auth/token', [
-        'client_id' => config('templatical.client_id'),
-        'client_secret' => config('templatical.client_secret'),
-        'tenant' => $request->user()->tenant_id,
-    ]);
-
-    return $response->json();
-});
-```
-
-### Node.js Example
-
-```js
-app.post('/api/templatical/token', async (req, res) => {
-  const response = await fetch('https://templatical.com/api/v1/auth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: process.env.TEMPLATICAL_CLIENT_ID,
-      client_secret: process.env.TEMPLATICAL_CLIENT_SECRET,
-      tenant: req.user.tenantId,
-    }),
-  });
-
-  res.json(await response.json());
-});
-```
-
-## Initialize the Cloud Editor
-
-Replace `init()` with `initCloud()` and provide your auth endpoint:
-
-```js
-import { initCloud } from '@templatical/editor';
-
-const editor = await initCloud({
-  container: '#editor',
-  auth: {
-    url: '/api/templatical/token',
-    requestOptions: {
-      method: 'POST',
-      credentials: 'same-origin',
-    },
-  },
-});
-```
-
-The `auth.url` should point to the token endpoint you created above. The SDK handles token refresh automatically.
-
-::: info `initCloud()` is `init()` with Cloud's adapters
-It authenticates, fetches your plan, builds Cloud's `templates` / `render` / `versionHistory` / `savedBlocks` / `media` / `testEmail` providers, and then calls `init()` with them. There is one editor component, one editor core and one header behind both entry points, and the two return the **same** type — which is what makes "Cloud implements the same interfaces you would" checkable rather than just claimed.
-
-One consequence: the bootstrap runs *before* the editor mounts, so a failed handshake **rejects** `initCloud()` instead of mounting an editor showing an error overlay. Handle it like any other rejected promise. A session that dies later — a token refresh that cannot renew — still surfaces as an overlay, because by then there is an editor to cover.
-:::
-
-## Configuration Options
-
-`initCloud()` accepts all the same options as `init()` (theme, locale, merge tags, custom blocks, etc.) plus Cloud-specific options:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: {
-    url: '/api/templatical/token',
-  },
-
-  // Cloud features (all optional)
-  ai: {},                       // Enable all AI features
-  collaboration: {             // Enable real-time collaboration
-    enabled: true,
-  },
-  savedBlocks: true,           // Cloud-backed (default); false to disable,
-                               // or pass a SavedBlocksProvider to use your own store
-
-  // Callbacks
-  onChange: (content) => { /* template changed */ },
-  onError: (error) => { /* handle errors */ },
-  templates: {
-    onSaved:   (template, { trigger }) => { /* trigger: manual | autosave | rename | restore | api */ },
-    onCreated: (template) => { /* create() resolved — template.id is new */ },
-    onLoaded:  (template) => { /* load() resolved */ },
-  },
-  comments: {                  // omit for Cloud's default; false to disable entirely
-    onCreated: (comment, { origin }) => { /* origin: local | remote */ },
-  },
-  versionHistory: {            // omit for Cloud's default; no boolean to disable
-    onRestored: (template) => { /* restore() resolved */ },
-  },
-  onUnmount: () => { /* the editor has been torn down */ },
-});
-```
-
-Each Cloud-backed capability has its own page: [Templates](/cloud/templates), [Rendering](/cloud/rendering), [Saved Blocks](/cloud/saved-blocks), [Comments](/cloud/comments), [Version History](/cloud/version-history) and [Test Emails](/cloud/test-emails).
-
-## Working with Templates
-
-### Create a New Template
-
-```js
-const template = await editor.create();
-// template.id is now available for saving, sharing, etc.
-
-// Optionally seed it:
-await editor.create({ name: 'Spring campaign', content });
-```
-
-`create()` takes the same `{ name?, content? }` input `init()` does.
-
-### Load an Existing Template
-
-```js
-const template = await editor.load('template-id-here');
-```
-
-### Save Changes
-
-```js
-const template = await editor.save();
-```
-
-`save()` resolves to the stored `Template`. Rendering is its own provider, so it is separately callable and a save does not pay for a server render on every autosave tick.
-
-Autosave, the unsaved-changes guard and the automatic version every save records are covered in [Templates](/cloud/templates).
-
-### Export
-
-```js
-const mjml = await editor.toMjml();
-const html = await editor.toHtml();
-```
-
-Both render server-side, from the **saved** template — so each call saves first, and a session that has never created a template gets a clear rejection rather than an export of nothing. `initCloud()` does not take a `render` provider: see [Rendering](/cloud/rendering) for what Cloud's output adds over the browser's, and why the key is refused.
-
-## Cleanup
-
-When the user navigates away, unmount the editor to clean up WebSocket connections and event listeners:
-
-```js
-editor.unmount();
-```
-
-## Health Check
-
-Verify your Cloud connection is working:
-
-```js
-import { performHealthCheck } from '@templatical/core/cloud';
-
-const result = await performHealthCheck({
-  baseUrl: 'https://templatical.com',
-});
-
-console.log(result.overall);    // true if all services are reachable
-console.log(result.api);        // { ok: true, latency: 42 }
-console.log(result.websocket);  // { ok: true }
-console.log(result.auth);       // { ok: true }
-```
-
-## Next Steps
-
-- [Authentication](/cloud/authentication) — Advanced auth configuration
-- [AI Assistant](/cloud/ai) — Generate and rewrite content with AI
-- [Collaboration](/cloud/collaboration) — Set up real-time co-editing
-
----
-
-# Headless API
-
-Source: https://docs.templatical.com/cloud/headless-api
-
-The Headless API gives you full programmatic access to templates, media, rendering, and all Cloud features — without the visual editor. Build custom workflows, batch operations, CI/CD pipelines, and integrations.
-
-## Authentication
-
-Use direct authentication for server-side access:
-
-```js
-import { createSdkAuthManager, ApiClient } from '@templatical/core/cloud';
-
-const auth = createSdkAuthManager({
-  mode: 'direct',
-  clientId: process.env.TEMPLATICAL_CLIENT_ID,
-  clientSecret: process.env.TEMPLATICAL_CLIENT_SECRET,
-  tenant: 'tenant-slug',
-});
-
-await auth.initialize();
-const api = new ApiClient(auth);
-```
-
-::: warning
-Direct authentication should only be used in server-side code. Never expose credentials in the browser.
-:::
-
-## Templates
-
-### Create
-
-```js
-const template = await api.createTemplate({
-  blocks: [],
-  settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' },
-});
-```
-
-### Read
-
-```js
-const template = await api.getTemplate('template-id');
-```
-
-### Update
-
-```js
-const updated = await api.updateTemplate('template-id', {
-  blocks: modifiedBlocks,
-  settings: template.content.settings,
-});
-```
-
-### Delete
-
-```js
-await api.deleteTemplate('template-id');
-```
-
-## Export
-
-```js
-const { html, mjml } = await api.exportTemplate('template-id');
-```
-
-With custom fonts:
-
-```js
-const { html } = await api.exportTemplate('template-id', {
-  customFonts: [{ name: 'Inter', url: 'https://fonts.googleapis.com/css2?family=Inter' }],
-  defaultFallback: 'Arial, sans-serif',
-});
-```
-
-## Versions
-
-```js
-// List versions (each carries its content)
-const versions = await api.getVersions('template-id');
-
-// Fetch one version's content
-const version = await api.getVersion('template-id', 'version-id');
-
-// Record a version
-await api.createVersion('template-id', content);
-
-// Restore a version — append-only, so this adds an entry
-const restored = await api.restoreVersion('template-id', 'version-id');
-```
-
-## Comments
-
-```js
-// List comments
-const comments = await api.getComments('template-id');
-
-// Add a comment
-const comment = await api.createComment('template-id', {
-  body: 'This section needs a stronger CTA',
-  blockId: 'block-uuid',
-  userId: 'user-123',
-  userName: 'Jane Smith',
-  userSignature: 'hmac-signature',
-});
-
-// Resolve a comment
-await api.resolveComment('template-id', 'comment-id', {
-  userId: 'user-123',
-  userName: 'Jane Smith',
-  userSignature: 'hmac-signature',
-});
-```
-
-## Saved Blocks
-
-```js
-// List saved blocks
-const savedBlocks = await api.listModules();
-
-// Create a saved block
-const savedBlock = await api.createModule({
-  name: 'Product Card',
-  content: sectionContent,
-});
-
-// Delete a saved block
-await api.deleteModule('saved-block-id');
-```
-
-::: tip
-The REST routes and `ApiClient` method names keep their original `module`
-wording for backward compatibility — only the feature's name changed. For the
-editor-side feature and the storage-provider interface, see
-[Saved Blocks](/backend/saved-blocks).
-:::
-
-## Test Emails
-
-```js
-await api.sendTestEmail('template-id', {
-  recipient: 'test@example.com',
-  html: '<html>...</html>',
-  allowedEmails: ['test@example.com'],
-  signature: 'hmac-signature',
-});
-```
-
-## Plan Configuration
-
-```js
-const config = await api.fetchConfig();
-console.log(config.features); // Available features for this plan
-```
-
-## API Routes Reference
-
-All routes are scoped to a project and tenant:
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `config` | GET | Get plan configuration |
-| `broadcasting/auth` | POST | Authenticate WebSocket connection |
-| `templates` | POST | Create template |
-| `templates/import/from-beefree` | POST | Import BeeFree template |
-| `templates/import/from-unlayer` | POST | Import Unlayer template |
-| `templates/{id}` | GET | Get template |
-| `templates/{id}` | PUT | Update template |
-| `templates/{id}` | DELETE | Delete template |
-| `templates/{id}/export` | POST | Export to HTML/MJML |
-| `templates/{id}/send-test-email` | POST | Send test email |
-| `templates/{id}/versions` | GET | List versions |
-| `templates/{id}/versions` | POST | Record version |
-| `templates/{id}/versions/{id}` | GET | Get one version |
-| `templates/{id}/versions/{id}/restore` | POST | Restore version |
-| `templates/{id}/comments` | GET | List comments |
-| `templates/{id}/comments` | POST | Create comment |
-| `templates/{id}/comments/{id}` | PUT | Update comment |
-| `templates/{id}/comments/{id}` | DELETE | Delete comment |
-| `templates/{id}/comments/{id}/resolve` | POST | Resolve comment |
-| `templates/{id}/ai/generate` | POST | AI content generation |
-| `templates/{id}/ai/conversation-messages` | GET | AI conversation history |
-| `templates/{id}/ai/suggestions` | POST | AI prompt suggestions |
-| `templates/{id}/ai/rewrite-text` | POST | AI text rewrite |
-| `templates/{id}/ai/score` | POST | Template quality scoring |
-| `templates/{id}/ai/fix-finding` | POST | AI fix scoring finding |
-| `templates/{id}/ai/generate-from-design` | POST | Design-to-template conversion |
-| `saved-modules` | GET | List saved blocks |
-| `saved-modules` | POST | Create saved block |
-| `saved-modules/{id}` | PUT | Update saved block |
-| `saved-modules/{id}` | DELETE | Delete saved block |
-| `media/browse` | GET | Browse media |
-| `media/upload` | POST | Upload media |
-| `media/delete` | POST | Delete media |
-| `media/move` | POST | Move media to folder |
-| `media/check-usage` | POST | Check media usage in templates |
-| `media/frequently-used` | GET | Get frequently used media |
-| `media/import-from-url` | POST | Import media from URL |
-| `media/{id}` | PUT | Update media metadata |
-| `media/{id}/replace` | POST | Replace media file |
-| `media-folders` | GET | List media folders |
-| `media-folders` | POST | Create media folder |
-| `media-folders/{id}` | PUT | Rename media folder |
-| `media-folders/{id}` | DELETE | Delete media folder |
-
----
-
-# Templatical Cloud
-
-Source: https://docs.templatical.com/cloud/
-
-The self-hosted editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — AI content generation, real-time collaboration, media management, template scoring, and more.
-
-## How It Works
-
-Cloud features are activated by switching from `init()` to `initCloud()` when initializing the editor. The same visual editor you already know gets additional capabilities powered by the Templatical Cloud backend.
-
-```js
-import { initCloud } from '@templatical/editor';
-
-const editor = await initCloud({
-  container: '#editor',
-  auth: {
-    url: '/api/templatical/token',
-  },
-});
-```
-
-All Cloud features communicate through authenticated API endpoints and WebSocket connections managed automatically by the SDK.
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| [AI Assistant](/cloud/ai) | Generate email content from prompts, rewrite text, design-to-template conversion |
-| [Collaboration](/cloud/collaboration) | Real-time co-editing with live cursors and block locking |
-| [Comments](/cloud/comments) | Inline review threads on specific blocks |
-| [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |
-| [Template Scoring](/cloud/template-scoring) | Automated quality checks for deliverability and accessibility |
-| [Rendering](/cloud/rendering) | `toMjml()` and `toHtml()` server-side, with a countdown GIF and video play button a browser cannot produce |
-| [Saved Blocks](/cloud/saved-blocks) | Reusable block groups — one library per project, shared across your team with no backend to implement |
-| [Templates](/cloud/templates) | Saving, loading, autosave and the unsaved-changes guard, with no storage to run |
-| [Test Emails](/cloud/test-emails) | Send test emails directly from the editor |
-| [Version History](/cloud/version-history) | Browse, preview and restore past versions — an open contract Cloud implements |
-| [MCP Integration](/cloud/mcp) | Connect AI agents to build and modify templates programmatically |
-| [Multi-Tenant](/cloud/multi-tenant) | Project and tenant isolation with API keys |
-| [Headless API](/cloud/headless-api) | Full programmatic access to templates, media, and rendering |
-
-## Bringing your own
-
-Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks, test emails and media can still be yours while Cloud handles the rest:
-
-```ts
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
-```
-
-They mix safely because Cloud never independently uses them. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
-
-<!-- prettier-ignore -->
-| Key | What `initCloud()` does with it |
-| --- | --- |
-| `templates` | **Storage stays Cloud's; configuration and events are yours.** The id anchors collaboration, comments, AI rewrite, scoring and the server-side export, so `initCloud()` keeps `load`/`create`/`save`. The key still reaches the editor for [its configuration and events](/cloud/templates#bringing-your-own) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` — with any storage methods named and ignored. |
-| `comments` | **Storage stays Cloud's; configuration and events are yours.** A comment is keyed to a template id Cloud issued and its author is signed by the auth token, so `initCloud()` keeps its own `list`/`create`/`update`/`delete`/`setResolved`/`subscribe`. The key still reaches the editor for [its events](/cloud/comments#bringing-your-own) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved` — with any storage methods named and ignored. |
-| `versionHistory` | **Storage stays Cloud's; events are yours.** A version is keyed to a template id Cloud issued, and Cloud's own `templates` adapter records automatic versions as part of every save, so `initCloud()` keeps its own `list`/`get`/`create`/`restore`. The key still reaches the editor for [its events](/cloud/version-history#events) — `onCreated`, `onRestored` — with any storage methods named and ignored. There's no boolean or full-provider form here, unlike `savedBlocks`: the type is `VersionHistoryOptions` alone. |
-| `render` | **Cloud renders independently for delivery** — test email, scheduled sends and exports. A provider would change what you preview and export, never what Cloud sends. |
-
-There's no `user` key either — `initCloud()` fills it from the auth token's own claim, so a consumer-supplied identity could only disagree with the one the backend verifies.
-
-To own the whole set, use [`init()`](/backend/).
-
-## Pricing
-
-Plans start at $99/month. All plans include the full editor, AI features, and collaboration.
-
-[Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [View Pricing](https://templatical.com/pricing) &nbsp;·&nbsp; [Contact Sales](mailto:sales@templatical.com)
-
----
-
-# MCP Integration
-
-Source: https://docs.templatical.com/cloud/mcp
-
-The Model Context Protocol (MCP) integration allows AI agents and automation tools to interact with the editor programmatically. Agents can create, read, modify, and manage templates through a standardized protocol.
-
-## Use Cases
-
-- **AI Workflows** — Let AI agents generate templates based on external data or triggers
-- **Automation** — Build templates programmatically as part of a larger pipeline
-- **Custom Agents** — Create specialized agents that understand your brand guidelines and produce on-brand emails
-
-## How It Works
-
-When MCP is enabled, the editor listens for operations from connected AI agents via WebSocket. Agents can perform operations like:
-
-- Creating and modifying templates
-- Adding, updating, and removing blocks
-- Reading template content and structure
-- Applying design changes
-
-## Configuration
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  mcp: {
-    enabled: true,
-    // Optional: observe each operation the agent applies.
-    onOperation: (payload) => {
-      console.log(payload.operation, payload.data, payload.timestamp);
-    },
-  },
-});
-```
-
-## Architecture
-
-The MCP system consists of:
-
-1. **`useMcpListener`** — Listens for incoming operations on the WebSocket channel
-2. **`handleOperation`** — Processes individual MCP operations and applies them to the editor state
-
-Both are available from `@templatical/core/cloud` for custom integrations.
-
----
-
-# Media Library
-
-Source: https://docs.templatical.com/cloud/media-library
-
-Media is an [open contract](/backend/media). Templatical Cloud implements it, the same way your own backend would.
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-```
-
-Nothing to configure — this one is on by default. Cloud supplies the provider, and Browse appears on image fields, video thumbnails and custom-block image fields. The modal ships in the editor; Cloud is the store.
-
-## The adapter
-
-| Method | Cloud |
-| --- | --- |
-| `list` | Project library, search / folder / category / cursor forwarded |
-| `create` | Uploads the file into the project |
-| `update` | Filename and alt |
-| `delete` | Bulk remove |
-| `folders` | Nested folders; Cloud flattens a tree payload into the contract's flat list |
-| `replace` | Replaces the file in place |
-| `importFromUrl` | Pulls a remote URL into the library |
-| `checkUsage` | Templates that reference the assets |
-| `frequentlyUsed` | Recents for the current user |
-| `storage` | Quota ring; `null` until plan config has loaded |
-
-**One library per project**, shared by everyone on it. Cloud **ignores `templateId`**: the store is project-scoped.
-
-Every method is a function. `storage`, `maxFileSize` and `mimeTypes` are **live getters** over plan config — they fill in after construction, so a snapshot at setup would pin quota to `null` for the whole session.
-
-When Cloud's store is in play, consumer `maxFileSize` / `mimeTypes` on an events-only object are ignored (Cloud's plan owns those limits). Only `onCreated` / `onUpdated` / `onDeleted` forward.
-
-## Bringing your own
-
-You can, and `initCloud()` accepts this as a full swap, the same way it accepts `savedBlocks` and `testEmail`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
-
-```ts
-await initCloud({ container, auth });                        // Cloud's library
-await initCloud({ container, auth, media: { onCreated } });  // Cloud's library, plus your events
-await initCloud({ container, auth, media: mine });           // your own, on Cloud
-await initCloud({ container, auth, media: false });          // off — URL field only
-```
-
-<!-- prettier-ignore -->
-| `media` | Store |
-| --- | --- |
-| omitted | Cloud |
-| `false` | off |
-| options (`{ onCreated }`) | Cloud, plus those handlers |
-| full provider | yours, **not** plan-gated |
-
-Cloud tells them apart by `list`, never by whether the value is an object: something with a working `list` replaces Cloud's store outright, and anything else — `false`, an events-only object — keeps Cloud's own store and forwards whatever events it carries onto it.
-
-A provider you supply is **not** plan-gated — the plan licenses Cloud's *storage*, not the editor's UI. An events-only object still uses Cloud's store.
-
-A malformed object that has `create` (or other mutations) but no working `list` falls through to Cloud's store, with a warning naming the ignored methods.
-
-## UI override
-
-`onRequestMedia` is a host widget (Bynder, Cloudinary, a modal of your own). It is not the store. When both are set, the callback wins and Cloud's modal never opens. It returns `{ url, alt? }` — see [Images](/guide/images).
-
-```ts
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  onRequestMedia: async (context) => {
-    const selected = await myMediaPicker.open(context);
-    if (!selected) return null;
-    return { url: selected.url, alt: selected.alt };
-  },
-});
-```
-
-## Standalone
-
-The same UI, without Confirm, via `@templatical/media-library`. Pass a `provider` — Cloud is `createCloudMediaProvider` from `@templatical/core/cloud`:
-
-```ts
-import { init } from '@templatical/media-library';
-import { createCloudMediaProvider } from '@templatical/core/cloud';
-
-const mediaLibrary = await init({
-  container: '#media-library',
-  provider: createCloudMediaProvider(authManager),
-  onSelect: (asset) => {
-    console.log('Selected:', asset.url);
-  },
-});
-```
-
-`onSelect` is optional. `accept` narrows categories; omit it for every category.
-
-## Headless use
-
-For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. `createCloudMediaProvider` maps the response onto `MediaProvider`.
-
-```ts
-import { MediaApiClient } from '@templatical/core/cloud';
-
-const client = new MediaApiClient(authManager);
-
-const response = await client.browseMedia({ folderId: 'folder-id', search: 'hero', category: 'images' });
-const item = await client.uploadMedia(file, folderId);
-await client.deleteMedia(['item-id-1', 'item-id-2']);
-const usage = await client.checkMediaUsage(['item-id-1']);
-```
-
----
-
-# Multi-Tenant Architecture
-
-Source: https://docs.templatical.com/cloud/multi-tenant
-
-Templatical Cloud is built for multi-tenant SaaS applications. Each of your customers gets their own isolated set of templates, media, saved blocks, and settings — all managed through a single integration.
-
-## Concepts
-
-| Concept | Description |
-|---------|-------------|
-| **Project** | Your application. One project per Templatical Cloud account. |
-| **Tenant** | One of your customers/organizations. Each tenant has isolated data. |
-| **API Key** | Credentials scoped to a project. Used to generate tenant-specific tokens. |
-
-## How It Works
-
-1. You create a project in the Templatical Cloud dashboard
-2. Each of your users/organizations maps to a tenant
-3. When a user opens the editor, your token endpoint issues a JWT scoped to their tenant
-4. The SDK automatically routes all API calls to the correct tenant
-
-```
-Your App → Token Endpoint → Templatical Cloud API → Tenant-Scoped JWT
-                                                          ↓
-                                              Editor loads with tenant data
-```
-
-## Token Scoping
-
-The tenant is determined at token generation time. Your server-side token endpoint should map the authenticated user to their tenant:
-
-```php
-Route::post('/api/templatical/token', function (Request $request) {
-    $response = Http::post('https://templatical.com/api/v1/auth/token', [
-        'client_id' => config('templatical.client_id'),
-        'client_secret' => config('templatical.client_secret'),
-        'tenant' => $request->user()->organization->templatical_tenant_slug,
-    ]);
-
-    return $response->json();
-});
-```
-
-## Data Isolation
-
-Each tenant has completely isolated:
-
-- **Templates** — CRUD operations only affect the tenant's own templates
-- **Media** — Uploaded images are scoped to the tenant
-- **Saved Blocks** — The saved-block library is per-tenant
-- **Versions** — Version history is per-template, per-tenant
-- **Comments** — Comment threads are per-template, per-tenant
-- **AI History** — Conversation history is per-template, per-tenant
-
-## API Routes
-
-All Cloud API routes include project and tenant identifiers:
-
-```
-/api/v1/projects/{project}/tenants/{tenant}/templates
-/api/v1/projects/{project}/tenants/{tenant}/media/browse
-/api/v1/projects/{project}/tenants/{tenant}/saved-modules
-```
-
-The SDK resolves these automatically from the auth token — you never need to construct URLs manually.
-
----
-
-# Rendering
-
-Source: https://docs.templatical.com/cloud/rendering
-
-Rendering is an [open contract](/backend/render). Templatical Cloud implements it — and it is the one provider `initCloud()` does **not** let you replace.
-
-```ts
-const mjml = await editor.toMjml();
-const html = await editor.toHtml();
-```
-
-Nothing to configure, and nothing to install: no `@templatical/renderer` on your side, no MJML compiler, no render host.
-
-## The adapter
-
-| Method | Cloud |
-| --- | --- |
-| `toMjml` | Renders the saved template to MJML server-side |
-| `toHtml` | Renders and compiles it to sending-ready HTML in one call |
-| `compileMjml` | Compiles MJML you already have |
-
-## What Cloud adds
-
-Two things a browser cannot produce at render time:
-
-- a **countdown block** resolves to a live, server-generated animated GIF;
-- a **video block** gets a composited play button over the poster frame.
-
-Everything else is identical, because Cloud runs the *published* `@templatical/renderer` with exactly those two functions injected. Nothing else can diverge.
-
-## Constraints
-
-- **Cloud renders the saved template**, so each `toMjml()` / `toHtml()` call saves first. A session that has never created a template gets a clear rejection instead of an export of nothing.
-- **Rendering is not plan-gated.** Every plan renders the fonts the canvas is using.
-
-## Bringing your own
-
-You can't, inside `initCloud()`.
-
-Cloud renders **server-side for delivery too**: test email, scheduled sends and API exports all go through its own renderer. A provider here would change `toMjml()` and `toHtml()` and nothing else, so what you preview and export would not be what Cloud sends.
-
-Note this is a different rule from the one covering [templates](/cloud/templates), [version history](/cloud/version-history) and [comments](/cloud/comments) — rendering is stateless and needs no template id.
-
-`initCloud({ render })` is therefore not on the config type, and a provider passed from JavaScript is ignored with a console warning.
-
-If you want your own MJML on Cloud, call the renderer directly — it is a plain function over the content the editor already holds:
-
-```ts
-import { renderToMjml } from '@templatical/renderer';
-
-const mjml = await renderToMjml(editor.getContent());
-```
-
-That renders the *current* canvas rather than the stored copy, and produces the browser-side output rather than Cloud's superset. To own the whole pipeline, use [`init()`](/backend/render).
-
-## Headless use
-
-Render outside the editor entirely with the [headless API](/cloud/headless-api#export).
-
----
-
-# Saved Blocks
-
-Source: https://docs.templatical.com/cloud/saved-blocks
-
-Saved blocks are an [open contract](/backend/saved-blocks). Templatical Cloud implements it, the same way your own backend would.
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-```
-
-Nothing to configure — this one is on by default. Cloud supplies the provider, and the library rail appears in the sidebar.
-
-## The adapter
-
-| Method | Cloud |
-| --- | --- |
-| `list` | Every saved block on the project, in the order Cloud returns them |
-| `create` | Stores a block with its name and optional category |
-| `update` | Renames or recategorises |
-| `delete` | Removes it from the project |
-
-**One library per project**, shared by everyone on it — a block one teammate saves is in another's browser on their next open. That is the part with no OSS equivalent: not the storage, but the fact that it is already shared.
-
-All four are enabled. Cloud's library is gated on the `savedModules` plan feature.
-
-## Bringing your own
-
-You can, and `initCloud()` accepts this as a full swap, the same way it accepts `testEmail` and `media`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
-
-```ts
-await initCloud({ container, auth });                             // Cloud's library
-await initCloud({ container, auth, savedBlocks: { onCreated } }); // Cloud's library, plus your events
-await initCloud({ container, auth, savedBlocks: mine });          // your own, on Cloud
-await initCloud({ container, auth, savedBlocks: false });         // off
-```
-
-Cloud tells them apart by `list`, never by whether the value is an object: something with a working `list` replaces Cloud's store outright, and anything else — `true`, `false`, an events-only object — keeps Cloud's own store and forwards whatever events it carries onto it.
-
-It mixes safely because Cloud never independently uses the library: a saved block is cloned onto the canvas and read nowhere else, so there is no second store to disagree with.
-
-A provider you supply is **not** plan-gated — the plan feature licenses Cloud's *storage*, not the editor's UI. An events-only object stays plan-gated, since Cloud's own store is still the one doing the work.
-
-## Events
-
-```ts
-savedBlocks: {
-  onCreated: (block) => {},
-  onUpdated: (block) => {},
-  onDeleted: (block) => {},
-}
-```
-
-The same events as the [open contract](/backend/saved-blocks#events), fired whether the store behind them is Cloud's or your own.
-
-## Headless use
-
-The REST methods keep their original `module` wording — `listModules`, `createModule`, `updateModule`, `deleteModule`. See the [headless API](/cloud/headless-api#saved-blocks).
-
----
-
-# Template Scoring
-
-Source: https://docs.templatical.com/cloud/template-scoring
-
-Template scoring runs automated quality checks on your email template and provides actionable feedback across deliverability, accessibility, and design best practices.
-
-## How It Works
-
-1. User clicks the scoring button in the editor toolbar
-2. The AI analyzes the template content and structure
-3. Results appear as a score with categorized findings
-4. Each finding includes a description and an optional auto-fix
-
-## Auto-Fix
-
-Some findings can be fixed automatically. The AI rewrites the affected block content to address the issue while preserving the user's intent. Fixes stream in real-time so users can see the change as it happens.
-
-## Composable
-
-```js
-import { useTemplateScoring } from '@templatical/core/cloud';
-
-const {
-  // State
-  isScoring,          // Ref<boolean>
-  scoringResult,      // Ref<ScoringResult | null>
-  error,              // Ref<string | null>
-  fixingFindingId,    // Ref<string | null> — currently fixing
-  fixStreamingText,   // Ref<string> — fix text as it streams
-  fixError,           // Ref<string | null>
-
-  // Methods
-  score,              // (content, mergeTags) => Promise<ScoringResult | null>
-  fixFinding,         // (blockContent, finding, mergeTags) => Promise<string | null>
-  removeFinding,      // (category, findingId) => void
-  reset,              // () => void
-} = useTemplateScoring({
-  authManager,
-  getTemplateId: () => templateId,
-});
-```
-
-## Configuration
-
-Template scoring is an AI feature and can be toggled independently:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  ai: {
-    chat: true,
-    scoring: true,        // Enable scoring (default: true)
-    designToTemplate: false,
-  },
-});
-```
-
----
-
-# Templates
-
-Source: https://docs.templatical.com/cloud/templates
-
-Saving and loading is an [open contract](/backend/templates). Templatical Cloud implements it, the same way your own backend would.
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-await editor.create({ name: 'Spring campaign' });
-```
-
-Nothing to configure. Cloud supplies the provider, so the whole lifecycle — the inline name field, the save button, the save status, `Cmd`/`Ctrl`+`S`, autosave and the unsaved-changes guard — works with no key to pass and no storage to run.
-
-## The adapter
-
-| Method | Cloud |
-| --- | --- |
-| `load` | Fetches a stored template by id, scoped to the token's project |
-| `create` | Stores a new template and issues the id everything else keys off |
-| `save` | Persists the content and the name, and records an automatic version |
-
-Cloud does not return `createdAt` / `updatedAt` yet, so the header shows no [write time](/backend/templates#the-write-time) on this tier. The keys are read the moment the API sends them, with no SDK change.
-
-Both mutations are enabled — no Cloud tier can open a template but not save it. Plans cap **how many** templates a project may hold, which is a quantity limit, not a capability one.
-
-## Automatic versions
-
-Cloud's `save` writes a version in the same call, throttled to at most one per minute. That is what makes [version history](/cloud/version-history) work with nothing else configured. A save that only renames the template records nothing.
-
-## Autosave
-
-Unlike `init()`, where autosave stays off until you have somewhere to save to, a Cloud session always does — so `templates.autoSave` defaults to **on**. `changeDebounce` is the same 2000ms default both entry points use; only the on/off default differs. The keys and their types are identical to `init()`'s:
-
-```js
-await initCloud({ container, auth, templates: { autoSave: false } }); // off
-await initCloud({ container, auth, changeDebounce: 5000 });           // slower
-```
-
-::: tip Pace `onChange` alone with `templates.autoSave: false`
-Cloud always injects its own `templates`, so there is no `templates`-less config here the way there is on `init()`. Persist nothing while still pacing `onChange` at `changeDebounce` by setting `templates: { autoSave: false }`, rather than by leaving `templates` out.
-:::
-
-## Bringing your own
-
-Configuration and events, inside `initCloud()` — never storage.
-
-The id Cloud's store issues is what anchors comments, version history, collaboration, AI rewrite, scoring and the server-side export. A store Cloud never issued ids for cannot be wired into features Cloud hosts, so `initCloud()`'s `templates` key takes [`TemplatesOptions`](/backend/templates#events) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated` and `onLoaded` — rather than a full provider:
-
-```ts
-await initCloud({
-  container: '#editor',
-  auth: { url: '/api/token' },
-  templates: {
-    unsavedChangesGuard: false,
-    nameField: false,
-    onSaved:   (template, { trigger }) => {},
-    onCreated: (template) => {},
-    onLoaded:  (template) => {},
-  },
-});
-```
-
-::: tip Rendering and test email save too
-`toMjml()`, `toHtml()` and sending a test email each save the template first, so `onSaved` fires with `trigger: "api"` for an action the user did not experience as a save. Gate navigation on `trigger === "manual"` rather than on the absence of `"autosave"`.
-:::
-
-Passing a full provider is fine: `load`, `create` and `save` are ignored with a console warning naming them, while the rest of the object reaches the editor regardless. An OSS `templates` provider moving to Cloud needs no change — leave the key exactly as it is.
-
-Bring your own storage with [`init()`](/backend/templates), where the whole set — templates, version history, comments, rendering — is yours.
-
-## Headless use
-
-The REST surface is `getTemplate`, `createTemplate` and `updateTemplate` on `ApiClient` — see the [headless API](/cloud/headless-api#templates).
-
----
-
-# Test Emails
-
-Source: https://docs.templatical.com/cloud/test-emails
-
-Send test emails directly from the editor to verify rendering in a real inbox before going live.
-
-Test email is a **shared feature**: the trigger, the dialog, recipient validation and every sending state are the same components in the OSS and Cloud editors. Only the sender differs. The [Test Emails guide](/backend/test-email) covers the feature itself — this page is what Cloud adds, and how to override it.
-
-## How Cloud sends
-
-1. The user clicks **Test** in the editor header.
-2. They pick a recipient from the project's allowed list.
-3. The template is saved, then rendered to HTML **server-side**.
-4. Cloud delivers the email.
-
-Three conditions gate the button, and none implies another — all must hold for it to appear:
-
-- the `testEmail` plan feature;
-- a test-email config on the project's auth token (the allowed recipients plus their signature);
-- a **saved** template, because Cloud renders from the stored copy.
-
-### The allowed-recipient list is signed
-
-The list arrives with the auth token and is posted back with a signature the backend verifies. That matters because the SDK runs in the user's browser: without a server-signed list, the endpoint would be an open relay.
-
-This is the one place Cloud and a BYO sender genuinely differ. A provider you supply carries an `allowedRecipients` array that is **unsigned** — it restricts the picker, and your own backend has to enforce it. See [Restricting recipients](/backend/test-email#restricting-recipients).
-
-## Before-send hook
-
-Transform the rendered HTML just before Cloud sends it — useful for injecting a preheader, or filling merge tags with test data:
-
-```js
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  onBeforeTestEmail: async (html) => {
-    return html
-      .replace('{{first_name}}', 'Jane')
-      .replace('{{company}}', 'Acme Corp');
-  },
-});
-```
-
-Cloud-only, and deliberately so: it exists because *Cloud* renders the HTML, so you need a seam into it. If you supply your own sender (below), that provider **is** the seam and this hook does not apply to it.
-
-## Sending it yourself instead
-
-`initCloud()` accepts the same `testEmail` key as `init()` for a full provider, so you can keep Cloud for everything else and still send mail from your own infrastructure — usually for compliance or data-residency reasons:
-
-```js
-await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  testEmail: {
-    send: async ({ recipient, content }) => {
-      const res = await fetch('/api/test-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient, content }),
-      });
-      if (!res.ok) throw new Error('Could not send the test email');
-    },
-  },
-});
-```
-
-Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `testEmail` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
-
-Cloud also accepts a narrower shape that keeps its own sender: `{ onSent?, defaultRecipient? }`. `includeMjml` and `allowedRecipients` are excluded from it — Cloud renders server-side rather than from a client MJML pass, and its allowlist is the signed one from your project's JWT, not one a client value could override. `defaultRecipient` is ignored unless it's already on that signed allowlist.
-
-```js
-await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  testEmail: { onSent: (payload) => trackEvent('test_email_sent', payload) },
-});
-```
-
-Cloud tells them apart by `send`, never by whether the value is an object: something with a working `send` replaces Cloud's sender, and anything else — including this narrower shape — keeps Cloud's own sender and stays plan-gated.
-
-Because the key's full-provider form is identical on both entry points, moving an OSS integration to Cloud means deleting this key or leaving it untouched — never rewriting it.
-
-## Events
-
-```ts
-testEmail: {
-  onSent: (payload) => {},
-}
-```
-
-The same event as the [open contract](/backend/test-email#events) — fires once a send resolves, whether the sender behind it is Cloud's or your own.
-
-## Composables
-
-Cloud's test-email configuration and its sender are separate, so one send path serves both editors:
-
-```js
-import { useTestEmail, createCloudTestEmailProvider } from '@templatical/core/cloud';
-
-// Configuration: what this project is allowed to do.
-const {
-  isEnabled,      // ComputedRef<boolean> — the token carries a test-email config
-  allowedEmails,  // ComputedRef<string[]> — permitted recipients
-  getSignature,   // () => string | null — lets the backend verify that list
-} = useTestEmail({ authManager, isAuthReady });
-
-// Sending: a `TestEmailProvider`, interchangeable with your own.
-const provider = createCloudTestEmailProvider({
-  authManager,
-  getTemplateId: () => templateId,
-  save: () => editor.save(),
-  exportHtml: (id) => exportFn(id),
-  allowedEmails,
-  getSignature,
-  onBeforeTestEmail: (html) => html,
-});
-```
-
-::: warning `allowedEmails` fills asynchronously
-It arrives with the auth token, so it is empty until auth resolves. **Read it reactively** — a value snapshotted at setup stays empty for the whole session, and because an empty allowlist means "nobody may be sent to", the button would never appear.
-:::
-
----
-
-# Version History
-
-Source: https://docs.templatical.com/cloud/version-history
-
-Version history is an [open contract](/backend/version-history). Templatical Cloud implements it, the same way your own backend would.
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-```
-
-Nothing to configure. Cloud supplies the provider, and the header's history control appears as soon as a template is created or loaded.
-
-## The adapter
-
-| Method | Cloud |
-|---|---|
-| `list` | Returns every version for the template, **with its content** — so scrubbing through history never waits |
-| `get` | Fetches one version's content |
-| `create` | Records a version on demand |
-| `restore` | An atomic, audited server endpoint |
-
-Both mutations are enabled: version storage is part of what the plan pays for, so there is no Cloud tier that can list history but not restore it.
-
-## Automatic versions
-
-Cloud's **templates** adapter records them as part of its own `save`, throttled to at most one per minute. That is the contract's rule for every implementation — [whoever owns the storage owns the retention policy](/backend/version-history#recording-versions). A save that only renames the template records nothing.
-
-## Bringing your own
-
-Not the storage. A version is keyed to a template id **Cloud issued**, and Cloud's `templates` adapter records an automatic version as part of every save, and that same id anchors collaboration, comments, AI rewrite, scoring and the server-side export — which is why `initCloud()` accepts a `templates` key for [its configuration and events](/cloud/templates#bringing-your-own), never a full provider. A consumer-supplied history would drive the UI while Cloud carried on writing versions into its own store: two stores, one of them invisible and billable.
-
-`versionHistory` follows the same shape. `initCloud({ versionHistory })` takes `VersionHistoryOptions` — `onCreated`, `onRestored` — and nothing else: no boolean to turn it off, no full-provider form. A value carrying `list` / `get` / `create` / `restore` still has those methods ignored, named in a console warning, with only its events kept.
-
-```js
-await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-  versionHistory: {
-    onRestored: (template) => navigate(`/templates/${template.id}`),
-  },
-});
-```
-
-Bring your own storage with [`init()`](/backend/version-history), where the whole set — templates, version history, rendering — is yours.
-
-## Events
-
-```ts
-versionHistory: {
-  onCreated: (version) => {},
-  onRestored: (template) => {},
-}
-```
-
-The same events as the [open contract](/backend/version-history#events).
-
-## Headless use
-
-```js
-import { createCloudVersionHistoryProvider } from '@templatical/core/cloud';
-import { useVersionHistory } from '@templatical/core';
-
-const history = useVersionHistory({
-  provider: createCloudVersionHistoryProvider(authManager),
-  getTemplateId: () => 'template-id',
-});
-
-await history.load();
-await history.restore(history.versions.value[1].id);
-```
-
-The `ApiClient` methods underneath are `getVersions`, `getVersion`, `createVersion` and `restoreVersion` — see the [headless API](/cloud/headless-api).
 
 ---
 
@@ -5602,6 +3985,8 @@ export function EmailEditor() {
     if (!containerRef.current) return;
 
     let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
+
     (async () => {
       const ed = await init({
         container: containerRef.current,
@@ -5609,12 +3994,18 @@ export function EmailEditor() {
           console.log("Content changed", content);
         },
       });
-      if (!cancelled) editorRef.current = ed;
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
     })();
 
     return () => {
       cancelled = true;
-      editorRef.current?.unmount();
+      instance?.unmount();
+      editorRef.current = null;
     };
   }, []);
 
@@ -5719,6 +4110,8 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
 ```
 
 :::
+
+If the effect re-runs before `init()` resolves — React StrictMode does this in development — unmount the instance that just finished, not only the ref.
 
 ::: warning Important
 Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
@@ -5986,7 +4379,19 @@ Layer your own context on top and the agent uses it instead of generic defaults 
 
 ### Custom blocks are never generated from a prompt
 
-This is the one exception. Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+
+### Never emit `countdown`
+
+`countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
+
+### Prefer native blocks
+
+Reach for `html` only as a last resort — raw HTML is not visually editable afterward.
+
+### Match `settings.locale` to the copy
+
+`settings.locale` becomes `<html lang>`. Set it to the language of the generated copy; do not default German copy to `"en"`. For `ar`/`he`/`fa`/`ur`/… also set `direction: "rtl"` (or omit it and those locales resolve as RTL).
 
 ---
 
@@ -9907,6 +8312,10 @@ createVideoBlock({
 })
 ```
 
+### Countdown
+
+`createCountdownBlock` builds a countdown block, but countdown GIFs need Cloud or a `blockRenderers.countdown` override — the OSS renderer emits a placeholder.
+
 ### Section
 
 ```ts
@@ -9968,7 +8377,7 @@ if (isImage(block)) {
 }
 ```
 
-Every block type has a corresponding guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
+Every block type has a corresponding guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCountdown()`, `isCustomBlock()`.
 
 ## Template settings
 
@@ -9981,6 +8390,8 @@ content.settings.width = 640;
 content.settings.backgroundColor = '#f5f5f5';
 content.settings.fontFamily = 'Helvetica, Arial, sans-serif';
 content.settings.preheaderText = 'Your weekly digest is here';
+content.settings.locale = 'en';
+content.settings.direction = 'ltr';
 ```
 
 | Setting | Type | Description |
@@ -9992,6 +8403,8 @@ content.settings.preheaderText = 'Your weekly digest is here';
 | `linkUnderline` | `boolean` | Underline body (rich-text) links. Defaults to `true` |
 | `fontFamily` | `string` | Default font stack |
 | `preheaderText` | `string` | Preview text shown in inbox list |
+| `locale` | `string` | BCP-47 content language (`<html lang>`) |
+| `direction` | `'ltr' \| 'rtl'` | Writing direction. Unset follows the content language |
 
 For default values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 
@@ -10951,7 +9364,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The OSS SDK works completely standalone — every feature in `@templatical/editor` (the OSS init path) runs without any backend.
 
-The Cloud tier adds AI rewrite, real-time collaboration, comments, snapshots, and saved blocks. It is in development and will be available as a managed service.
+Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 
@@ -12009,9 +10422,9 @@ You're building (or extending) a transactional email API — Postmark, Resend, S
 **Templatical fits because:**
 - Templates are JSON — versionable, diffable, AI-friendly, easy to store next to your customers' data.
 - MJML output renders consistently across Outlook, Gmail, Apple Mail, and the long tail of clients.
-- The renderer runs in Node, so you can compile to HTML server-side at send time without a vendor-hosted render API.
+- The renderer produces MJML in Node; you compile that MJML to HTML with any MJML library (or `@templatical/template-tools render --format html`) at send time, without a vendor-hosted render API.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) for the visual editor in your dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) on your backend to compile to HTML before sending.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) for the visual editor in your dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) on your backend for MJML, then compile to HTML with any MJML library before sending.
 
 ### Newsletter or marketing-email SaaS
 
@@ -12021,9 +10434,9 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud features (AI rewrite, comments, version history) are available either as managed Cloud or as source-available code you self-host.
+- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are OSS BYO providers on `init()` (or source-available self-host).
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for HTML compilation, optional Cloud tier for AI/collab.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML, optional Cloud tier for AI/collab.
 
 ### CRM or marketing automation product
 
@@ -12034,7 +10447,7 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 - Custom blocks let you surface your product's data (contact fields, deal info, calculated values) as first-class content blocks customers can drop into emails.
 - Real-time collaboration lets sales and marketing teams co-edit campaign templates without clobbering each other.
 
-**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, plus [`@templatical/core/cloud`](https://www.npmjs.com/package/@templatical/core) for collab and comments.
+**Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) with `customBlocks` registered for your domain entities, plus [`@templatical/core/cloud`](https://www.npmjs.com/package/@templatical/core) for collab if you want it; comments are a `comments` provider on `init()`.
 
 ### Internal email composer
 

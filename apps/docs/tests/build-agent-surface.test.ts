@@ -171,6 +171,12 @@ describe("collectPages", () => {
     expect(collectPages(DOCS).some((p) => p.path.startsWith("de/"))).toBe(false);
   });
 
+  it("excludes Cloud from the agent index", () => {
+    expect(collectPages(DOCS).some((p) => p.path.startsWith("cloud/"))).toBe(
+      false,
+    );
+  });
+
   it("builds extensionless absolute urls, matching cleanUrls", () => {
     const theming = collectPages(DOCS).find((p) => p.path === "guide/theming.md");
     expect(theming?.url).toBe(`${SITE_URL}/guide/theming`);
@@ -277,18 +283,25 @@ describe("the committed artifacts", () => {
   });
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {
-    // cloud/getting-started.md's frontmatter title ("Getting Started with
-    // Cloud") differs from its body's own H1 ("Getting Started") — the exact
-    // case that made the duplicate visible as two different headings back to
-    // back, rather than merely a repeated one.
+    // The generator strips the body's H1 so the index heading is the only
+    // one. License FAQ has no other ATX h1 in the body (unlike Installation,
+    // whose examples contain `# pnpm-workspace.yaml`), so a regression is a
+    // second `# License FAQ` rather than a different title.
     const { full } = buildOutputs();
-    const sourceLine = `Source: ${SITE_URL}/cloud/getting-started`;
+    const sourceLine = `Source: ${SITE_URL}/license-faq`;
     const sourceIndex = full.indexOf(sourceLine);
     const entryStart = full.lastIndexOf("\n---\n", sourceIndex) + 1;
     const entryEnd = full.indexOf("\n---\n", sourceIndex);
     const entry = full.slice(entryStart, entryEnd === -1 ? full.length : entryEnd);
     const headingLines = entry.split("\n").filter((line) => line.startsWith("# "));
-    expect(headingLines).toEqual(["# Getting Started with Cloud"]);
+    expect(headingLines).toEqual(["# License FAQ"]);
+  });
+
+  it("does not list Cloud pages in the committed index or full corpus", () => {
+    const { index, full } = buildOutputs();
+    expect(index).not.toContain("## Cloud");
+    expect(index).not.toMatch(/docs\.templatical\.com\/cloud\//);
+    expect(full).not.toMatch(/docs\.templatical\.com\/cloud\//);
   });
 
   it("reports the SDK version from the editor package, not a literal", () => {
@@ -427,12 +440,19 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     // Nested page — proves the destination directory is created — and
     // carries frontmatter plus merge-tag tokens for the byte-identical check.
     writeFixtureFile(srcDir, "guide/nested.md", NESTED_FIXTURE);
-    // de/ root-level and nested pages — the walker's one inversion of
-    // SKIP_DIRS: German pages are copied, unlike every other skipped dir.
+    // de/ and cloud/ — SKIP_DIRS inversions: copied as raw markdown even
+    // though the generated index omits both. Every other skipped dir is
+    // not walked at all.
     writeFixtureFile(srcDir, "de/root.md", "# Root (DE)\n\nGerman root content.\n");
     writeFixtureFile(srcDir, "de/guide/nested.md", "# Nested (DE)\n\nGerman nested content.\n");
-    // One page under each SKIP_DIRS entry other than "de" — none may reach
-    // the output, and their containing directory is never even walked.
+    writeFixtureFile(
+      srcDir,
+      "cloud/getting-started.md",
+      "# Getting Started\n\nCloud fixture.\n",
+    );
+    // One page under each SKIP_DIRS entry other than "de" and "cloud" —
+    // none may reach the output, and their containing directory is never
+    // even walked.
     writeFixtureFile(srcDir, "node_modules/skip.md", "# Skip\n\nnode_modules.\n");
     writeFixtureFile(srcDir, ".vitepress/skip.md", "# Skip\n\n.vitepress.\n");
     writeFixtureFile(srcDir, "public/skip.md", "# Skip\n\npublic.\n");
@@ -449,10 +469,16 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     rmSync(destDir, { recursive: true, force: true });
   });
 
-  it("returns exactly the markdown pages, excluding every skip-dir except de/", () => {
+  it("returns exactly the markdown pages, excluding every skip-dir except de/ and cloud/", () => {
     const copied = copyMarkdownSources(destDir, srcDir);
     expect([...copied].sort()).toEqual(
-      ["root.md", "guide/nested.md", "de/root.md", "de/guide/nested.md"].sort(),
+      [
+        "root.md",
+        "guide/nested.md",
+        "de/root.md",
+        "de/guide/nested.md",
+        "cloud/getting-started.md",
+      ].sort(),
     );
   });
 
@@ -469,7 +495,13 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     copyMarkdownSources(destDir, srcDir);
     const onDisk = listFilesRecursively(destDir);
     expect(onDisk.sort()).toEqual(
-      ["root.md", "guide/nested.md", "de/root.md", "de/guide/nested.md"].sort(),
+      [
+        "root.md",
+        "guide/nested.md",
+        "de/root.md",
+        "de/guide/nested.md",
+        "cloud/getting-started.md",
+      ].sort(),
     );
   });
 

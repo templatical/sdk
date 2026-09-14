@@ -63,25 +63,6 @@ Documentation for SDK version 0.38.0. Every page below is also available as raw 
 - [Test Emails](https://docs.templatical.com/backend/test-email): Let users mail themselves the template they're editing, sent through your own infrastructure.
 - [Version History](https://docs.templatical.com/backend/version-history): Browse, preview and restore a template's past versions — over your own storage, or Templatical Cloud's.
 
-## Cloud
-
-- [AI Assistant](https://docs.templatical.com/cloud/ai): Generate email content, rewrite text, and convert designs to templates with AI.
-- [Authentication](https://docs.templatical.com/cloud/authentication): Configure authentication for Templatical Cloud.
-- [Collaboration](https://docs.templatical.com/cloud/collaboration): Real-time co-editing with live cursors and block locking.
-- [Comments](https://docs.templatical.com/cloud/comments): Templatical Cloud as one implementation of the comments contract.
-- [Getting Started with Cloud](https://docs.templatical.com/cloud/getting-started): Set up Templatical Cloud in your application.
-- [Headless API](https://docs.templatical.com/cloud/headless-api): Full programmatic access to templates, media, and rendering.
-- [Templatical Cloud](https://docs.templatical.com/cloud/): Premium hosted features for teams building email tooling at scale.
-- [MCP Integration](https://docs.templatical.com/cloud/mcp): Connect AI agents to build and modify templates programmatically via Model Context Protocol.
-- [Media Library](https://docs.templatical.com/cloud/media-library): Templatical Cloud as one implementation of the media storage contract.
-- [Multi-Tenant Architecture](https://docs.templatical.com/cloud/multi-tenant): Project and tenant isolation with API keys.
-- [Rendering](https://docs.templatical.com/cloud/rendering): How Templatical Cloud renders a template to MJML and HTML, and why it does not take a render provider.
-- [Saved Blocks](https://docs.templatical.com/cloud/saved-blocks): Templatical Cloud as one implementation of the saved-blocks storage contract.
-- [Template Scoring](https://docs.templatical.com/cloud/template-scoring): Automated quality checks for deliverability, accessibility, and best practices.
-- [Templates](https://docs.templatical.com/cloud/templates): Templatical Cloud as one implementation of the saving-and-loading contract.
-- [Test Emails](https://docs.templatical.com/cloud/test-emails): How Templatical Cloud sends test emails, and how to send them from your own infrastructure instead.
-- [Version History](https://docs.templatical.com/cloud/version-history): Templatical Cloud as one implementation of the version-history contract.
-
 ## Quality
 
 - [Accessibility linter](https://docs.templatical.com/quality/accessibility/): lintAccessibility checks alt text, color contrast, vague link and button copy, heading structure, and touch targets against WCAG and EU accessibility law.

@@ -12,8 +12,11 @@
 //
 // English only. The de/ mirror is deliberately absent from the index: agents
 // work in English for an API surface, and a mirrored index would double its
-// size for no gain. Per-page raw markdown (served by the buildEnd hook in
-// .vitepress/config.ts) covers every locale, because that is a file copy.
+// size for no gain. Cloud is absent too: that tier is WIP and has no OSS
+// clients, and listing it sends agents into pages that contradict the BYO
+// contracts. Per-page raw markdown (served by the buildEnd hook in
+// .vitepress/config.ts) still copies every locale and cloud/, because that
+// is a file copy.
 import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -38,7 +41,15 @@ const EXCLUDED = new Set(["changelog.md"]);
 
 // `public` is skipped both because it holds no pages and because it is where
 // this generator writes — walking it would feed the output back into the input.
-const SKIP_DIRS = new Set(["de", "node_modules", ".vitepress", "public", "tests", "scripts"]);
+const SKIP_DIRS = new Set([
+  "de",
+  "cloud",
+  "node_modules",
+  ".vitepress",
+  "public",
+  "tests",
+  "scripts",
+]);
 
 // Only where title-casing the directory would read wrong. A directory with no
 // entry here still gets a sensible name, so a new docs section needs no edit.
@@ -56,7 +67,6 @@ const GROUP_ORDER = [
   "Guide",
   "API Reference",
   "Connect your backend",
-  "Cloud",
   "Quality",
 ];
 
@@ -296,9 +306,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
  * while cleanUrls serves the page itself at the bare directory URL.
  *
  * Called from VitePress's buildEnd hook. Covers every locale, including de/,
- * because it is a file copy — only the generated index is English-only. Not
- * routed through public/: that directory is copied to the output root, and
- * mirroring a route tree inside it invites collisions with real routes.
+ * and cloud/, because it is a file copy — only the generated index is
+ * English-only and Cloud-free. Not routed through public/: that directory is
+ * copied to the output root, and mirroring a route tree inside it invites
+ * collisions with real routes.
  */
 export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
   const copied = [];
@@ -306,7 +317,9 @@ export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
     for (const entry of readdirSync(dir)) {
       const abs = join(dir, entry);
       if (statSync(abs).isDirectory()) {
-        if (!SKIP_DIRS.has(entry) || entry === "de") walkAll(abs);
+        if (!SKIP_DIRS.has(entry) || entry === "de" || entry === "cloud") {
+          walkAll(abs);
+        }
         continue;
       }
       if (!entry.endsWith(".md")) continue;
