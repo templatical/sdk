@@ -191,6 +191,8 @@ export function EmailEditor() {
     if (!containerRef.current) return;
 
     let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
+
     (async () => {
       const ed = await init({
         container: containerRef.current,
@@ -198,12 +200,18 @@ export function EmailEditor() {
           console.log("Content changed", content);
         },
       });
-      if (!cancelled) editorRef.current = ed;
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
     })();
 
     return () => {
       cancelled = true;
-      editorRef.current?.unmount();
+      instance?.unmount();
+      editorRef.current = null;
     };
   }, []);
 
@@ -308,6 +316,8 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
 ```
 
 :::
+
+If the effect re-runs before `init()` resolves — React StrictMode does this in development — unmount the instance that just finished, not only the ref.
 
 ::: warning Important
 Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
