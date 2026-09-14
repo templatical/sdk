@@ -442,7 +442,7 @@ export default defineConfig({
       {
         property: "og:description",
         content:
-          "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
+          "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.",
       },
     ],
     ["meta", { property: "og:type", content: "website" }],
@@ -467,7 +467,7 @@ export default defineConfig({
       {
         name: "twitter:description",
         content:
-          "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
+          "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.",
       },
     ],
     [

@@ -97,4 +97,16 @@ Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generi
 
 ### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
 
-Das ist die einzige Ausnahme. Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+
+### Nie `countdown` ausgeben
+
+`countdown` braucht das serverseitige animierte GIF von Cloud; der OSS-Renderer kann es nicht erzeugen. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
+
+### Native Blöcke bevorzugen
+
+`html` nur als letzte Option — rohes HTML lässt sich danach nicht mehr visuell bearbeiten.
+
+### `settings.locale` an den Text anpassen
+
+`settings.locale` wird zu `<html lang>`. Auf die Sprache des erzeugten Texts setzen; deutschen Text nicht auf `"en"` defaulten. Für `ar`/`he`/`fa`/`ur`/… zusätzlich `direction: "rtl"` setzen (oder weglassen — diese Locales gelten als RTL).

@@ -40,6 +40,8 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  blockRenderers?: BlockRendererMap;
+  getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
   socialIconsBaseUrl?: string;
 }
 ```
@@ -50,6 +52,8 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+| `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks

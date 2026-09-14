@@ -145,7 +145,7 @@ It is a **cache hint, never an alternative to `get`**, and it is evaluated per e
 
 ## In the editor
 
-- **The history control** sits in the header next to the viewport and preview toggles: arrows to step older and newer, and a dropdown listing every version with a relative timestamp, its label if it has one, and an *auto* badge for save-recorded ones.
+- **The history control** sits in the left header column with the template name and write time: arrows to step older and newer, and a dropdown listing every version with a relative timestamp, its label if it has one, and an *auto* badge for save-recorded ones.
 - **The preview banner** appears while a past version is on the canvas, with Cancel and Restore.
 - **Cancel** puts back exactly what you were editing, including unsaved changes. Autosave is paused for the duration of a preview, so a previewed version is never mistaken for your work and saved over it.
 - **Restore** confirms first when there are unsaved changes — see [Unsaved changes](#unsaved-changes).

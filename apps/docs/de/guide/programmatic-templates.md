@@ -179,6 +179,10 @@ createVideoBlock({
 })
 ```
 
+### Countdown
+
+`createCountdownBlock` erzeugt einen Countdown-Block, aber Countdown-GIFs brauchen Cloud oder ein `blockRenderers.countdown`-Override — der OSS-Renderer gibt einen Platzhalter aus.
+
 ### Section
 
 ```ts
@@ -240,7 +244,7 @@ if (isImage(block)) {
 }
 ```
 
-Jeder Blocktyp hat einen entsprechenden Guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
+Jeder Blocktyp hat einen entsprechenden Guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCountdown()`, `isCustomBlock()`.
 
 ## Template-Einstellungen
 
@@ -253,6 +257,8 @@ content.settings.width = 640;
 content.settings.backgroundColor = '#f5f5f5';
 content.settings.fontFamily = 'Helvetica, Arial, sans-serif';
 content.settings.preheaderText = 'Your weekly digest is here';
+content.settings.locale = 'en';
+content.settings.direction = 'ltr';
 ```
 
 | Einstellung | Typ | Beschreibung |
@@ -264,6 +270,8 @@ content.settings.preheaderText = 'Your weekly digest is here';
 | `linkUnderline` | `boolean` | Text-Links unterstreichen. Standard: `true` |
 | `fontFamily` | `string` | Standard-Font-Stack |
 | `preheaderText` | `string` | Vorschautext, der in der Posteingangsliste angezeigt wird |
+| `locale` | `string` | BCP-47-Inhaltssprache (`<html lang>`) |
+| `direction` | `'ltr' \| 'rtl'` | Schreibrichtung. Ungesetzt folgt der Inhaltssprache |
 
 Für Standardwerte und wie Sie diese anpassen können, siehe [Block- & Template-Standardwerte](/de/guide/defaults).
 

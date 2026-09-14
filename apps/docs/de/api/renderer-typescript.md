@@ -40,6 +40,8 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  blockRenderers?: BlockRendererMap;
+  getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
   socialIconsBaseUrl?: string;
 }
 ```
@@ -50,6 +52,8 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
+| `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. |
 | `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${style}/${platform}.png` aufgelöst. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke

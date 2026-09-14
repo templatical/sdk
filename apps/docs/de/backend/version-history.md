@@ -145,7 +145,7 @@ Es ist ein **Cache-Hinweis, nie ein Ersatz für `get`**, und wird pro Eintrag au
 
 ## Im Editor
 
-- **Das Verlaufs-Steuerelement** sitzt im Header neben den Umschaltern für Ansichtsgröße und Vorschau: Pfeile, um älter und neuer zu blättern, und ein Aufklappmenü mit allen Versionen samt relativem Zeitstempel, ihrer Bezeichnung, falls vorhanden, und einem *auto*-Abzeichen für die beim Speichern aufgezeichneten.
+- **Das Verlaufs-Steuerelement** sitzt in der linken Header-Spalte mit Vorlagenname und Schreibzeit: Pfeile, um älter und neuer zu blättern, und ein Aufklappmenü mit allen Versionen samt relativem Zeitstempel, ihrer Bezeichnung, falls vorhanden, und einem *auto*-Abzeichen für die beim Speichern aufgezeichneten.
 - **Das Vorschaubanner** erscheint, solange eine frühere Version auf der Arbeitsfläche liegt, mit „Abbrechen“ und „Wiederherstellen“.
 - **Abbrechen** stellt genau das wieder her, woran Sie gearbeitet haben, einschließlich ungespeicherter Änderungen. Autosave pausiert für die Dauer einer Vorschau, damit eine Vorschau-Version nie mit Ihrer Arbeit verwechselt und darüber gespeichert wird.
 - **Wiederherstellen** fragt bei ungespeicherten Änderungen zuerst nach — siehe [Ungespeicherte Änderungen](#ungespeicherte-anderungen).
