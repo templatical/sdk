@@ -179,6 +179,10 @@ createVideoBlock({
 })
 ```
 
+### Countdown
+
+`createCountdownBlock` builds a countdown block, but countdown GIFs need Cloud or a `blockRenderers.countdown` override — the OSS renderer emits a placeholder.
+
 ### Section
 
 ```ts
@@ -240,7 +244,7 @@ if (isImage(block)) {
 }
 ```
 
-Every block type has a corresponding guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
+Every block type has a corresponding guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCountdown()`, `isCustomBlock()`.
 
 ## Template settings
 
@@ -253,6 +257,8 @@ content.settings.width = 640;
 content.settings.backgroundColor = '#f5f5f5';
 content.settings.fontFamily = 'Helvetica, Arial, sans-serif';
 content.settings.preheaderText = 'Your weekly digest is here';
+content.settings.locale = 'en';
+content.settings.direction = 'ltr';
 ```
 
 | Setting | Type | Description |
@@ -264,6 +270,8 @@ content.settings.preheaderText = 'Your weekly digest is here';
 | `linkUnderline` | `boolean` | Underline body (rich-text) links. Defaults to `true` |
 | `fontFamily` | `string` | Default font stack |
 | `preheaderText` | `string` | Preview text shown in inbox list |
+| `locale` | `string` | BCP-47 content language (`<html lang>`) |
+| `direction` | `'ltr' \| 'rtl'` | Writing direction. Unset follows the content language |
 
 For default values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 

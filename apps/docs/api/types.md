@@ -35,7 +35,11 @@ interface TemplateSettings {
   linkUnderline: boolean;         // Underline body links (default true)
   fontFamily: string;             // Default font family
   preheaderText?: string;         // Email preheader text
+  locale: string;                 // BCP-47 content language; <html lang> (default 'en')
+  direction?: ContentDirection;   // 'ltr' | 'rtl'; unset follows the content language
 }
+
+type ContentDirection = 'ltr' | 'rtl';
 ```
 
 ### Block
@@ -382,6 +386,9 @@ interface CustomBlock extends BaseBlock {
 interface MergeTag {
   label: string;
   value: string;
+  group?: string;        // picker-only grouping label
+  description?: string;  // picker-only helper text
+  sample?: string;       // preview-only example value; never written to MJML
 }
 ```
 
@@ -392,6 +399,8 @@ interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
   onRequest?: () => Promise<MergeTag | null>;
+  showRawValue?: boolean;   // reveal raw token in tooltip (default true)
+  autocomplete?: boolean;   // typing-based autocomplete (default true)
 }
 
 type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript';
@@ -473,6 +482,7 @@ interface FontsConfig {
   defaultFallback?: string;
   defaultFont?: string;
   customFonts?: CustomFont[];
+  builtIns?: boolean | string[];  // true/omitted: all seven; false: none; string[]: allowlist — see /guide/fonts
 }
 
 interface CustomFont {
@@ -481,7 +491,6 @@ interface CustomFont {
   fallback?: string;
 }
 ```
-
 ### ViewportSize
 
 ```ts
@@ -506,12 +515,15 @@ import {
   createMenuBlock,
   createTableBlock,
   createHtmlBlock,
+  createCountdownBlock,
   createCustomBlock,
   createBlock,
   cloneBlock,
   createDefaultTemplateContent,
   generateId,
 } from '@templatical/types';
+
+// Countdown GIFs need Cloud or a `blockRenderers.countdown` override; the OSS renderer emits a placeholder.
 
 // Create with defaults
 const paragraph = createParagraphBlock();
@@ -541,7 +553,7 @@ const id = generateId();
 import {
   isTitle, isParagraph, isImage, isButton, isSection,
   isDivider, isVideo, isSpacer, isSocialIcons,
-  isMenu, isTable, isHtml, isCustomBlock,
+  isMenu, isTable, isHtml, isCountdown, isCustomBlock,
 } from '@templatical/types';
 
 if (isTitle(block)) {
