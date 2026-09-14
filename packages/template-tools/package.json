@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.6",
-    "mjml": "^5.4.0",
+    "mjml": "^5.4.1",
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
@@ -56,7 +56,7 @@
     "@templatical/import-stripo": "workspace:*",
     "@templatical/import-topol": "workspace:*",
     "@templatical/import-unlayer": "workspace:*",
-    "mjml": "^5.4.0"
+    "mjml": "^5.4.1"
   },
   "peerDependenciesMeta": {
     "@templatical/import-beefree": {
