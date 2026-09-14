@@ -29,10 +29,10 @@ So the primary loop is manual, and works in any agent:
    `reference/examples/` — and re-run. Prefer fixing guidance over adding
    rigid rules.
 
-If your agent has its own eval runner that can drive a prompt list, use it.
-The file's shape matches the `skill-creator` eval format, so that tool can read
-it directly; treat that as one convenience among others rather than the
-supported path.
+If your agent has its own eval runner that can drive a prompt list, use it —
+the file is flat enough to feed one directly. Treat any such runner as a
+convenience rather than the supported path, so the suite stays runnable by
+whoever picks it up next.
 
 ## Why they are not in CI
 

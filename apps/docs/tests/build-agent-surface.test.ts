@@ -529,7 +529,7 @@ describe("the raw-markdown rule the index states", () => {
   });
 });
 
-describe("the three places that state the raw-markdown rule", () => {
+describe("wherever the raw-markdown rule is stated, it is stated in full", () => {
   // One rule, three audiences: the index an agent fetches, the comment a
   // crawler operator reads, and the skill's own fetch procedure. Each must
   // carry the `index.md` case, because "append `.md`" alone is a 404 on every

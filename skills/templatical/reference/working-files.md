@@ -5,7 +5,7 @@
 has been lost
 
 Every template lives in the user's `.templatical/` folder as its own file with a
-random three-word name, like a Claude plan file — e.g.
+random three-word name — e.g.
 `.templatical/misty-copper-otter.json`. This keeps finished work around as a
 browsable history instead of one file that silently carries state between
 unrelated sessions.

@@ -10,9 +10,10 @@ port. A hosted sandbox blocks it; every other mode still works there.
 Enter it whenever the user expresses the intent — "show it live", "preview it
 live", "open it in the editor", "build this in live mode", or similar — mid-session
 is fine. Natural-language intent is the portable trigger and works on every
-harness. (In Claude Code you can also pass it as an argument with a **space**:
-`/templatical live` — use a space, not a colon; `/templatical:live` is
-plugin-command-namespace syntax that silently starts build mode instead.)
+harness. (Some harnesses also expose a skill as a slash command. If yours does,
+pass the mode as a **space**-separated argument — `/templatical live` — never
+with a colon: on at least one harness `/templatical:live` is command-namespace
+syntax and silently starts build mode instead of failing.)
 Live mode serves the session's working template (`.templatical/<name>.json`, see
 [Working files](working-files.md)); if the user hasn't built one yet, create a new
 template first. A mid-session switch just points the bridge at that file.
