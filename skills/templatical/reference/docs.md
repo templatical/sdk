@@ -12,8 +12,12 @@ change faster than anyone reinstalls a skill.
 1. **The index.** `https://docs.templatical.com/llms.txt` — every page, grouped,
    one line each with its title, URL and a one-sentence description. Read it and
    pick the single page that answers the question.
-2. **The page.** Append `.md` to that page's URL to get its raw markdown —
-   `https://docs.templatical.com/getting-started/installation.md`. Fetch the
+2. **The page.** Build its raw-markdown URL: append `.md`, or `index.md` when
+   the URL ends in `/`. So `/getting-started/installation` becomes
+   `https://docs.templatical.com/getting-started/installation.md`, and the
+   directory URL `/backend/` becomes
+   `https://docs.templatical.com/backend/index.md`. A bare `.md` on a URL
+   ending in `/` is a 404, and the index carries several of those. Fetch the
    rendered HTML only if the markdown route fails; HTML mangles this product's
    own merge-tag and logic-tag syntax in every example.
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -38,6 +39,26 @@ async function headEntriesFor(filePath: string): Promise<HeadConfig[] | void> {
 /** The head entry that advertises a page's raw-markdown twin. */
 function alternate(href: string): HeadConfig {
   return ["link", { rel: "alternate", type: "text/markdown", href }];
+}
+
+/** The committed index, which is what an agent actually fetches. */
+function committedIndex(): string {
+  return readFileSync(join(DOCS, "public/llms.txt"), "utf8");
+}
+
+/** Every page url the index links to, in the order it lists them. */
+function indexEntryUrls(index: string): string[] {
+  return [...index.matchAll(/^- \[[^\]]*]\((https:\/\/[^)]+)\):/gm)].map(([, url]) => url);
+}
+
+/**
+ * The source file behind a page url, by the rule the index states: append
+ * `.md`, or `index.md` when the url ends in `/`. Relative to the docs root, so
+ * it resolves against the source tree and needs no build.
+ */
+function markdownTwinOf(url: string): string {
+  const path = url.slice(SITE_URL.length).replace(/^\//, "");
+  return path === "" || path.endsWith("/") ? `${path}index.md` : `${path}.md`;
 }
 
 /** Write a fixture file at `root/relPath`, creating any parent dirs it needs. */
@@ -404,6 +425,68 @@ describe("crawler surface", () => {
     const robots = readFileSync(join(DOCS, "public/robots.txt"), "utf8");
     expect(robots).toContain("Sitemap: https://docs.templatical.com/sitemap.xml");
     expect(robots).toContain("Allow: /");
+  });
+});
+
+describe("the raw-markdown rule the index states", () => {
+  it("resolves every entry to a source file that exists", () => {
+    // The rule is only worth what is checked. "Append `.md`" alone held for
+    // most entries and named nothing for the seven whose url ends in `/` —
+    // /backend/.md against the real /backend/index.md. Resolved against the
+    // source tree rather than dist, so this needs no build.
+    const urls = indexEntryUrls(committedIndex());
+    expect(urls).toHaveLength(collectPages(DOCS).length);
+    const missing = urls
+      .map((url) => ({ url, twin: markdownTwinOf(url) }))
+      .filter(({ twin }) => !existsSync(join(DOCS, twin)));
+    expect(missing).toEqual([]);
+  });
+
+  it("needs its index.md branch — a bare .md on a directory url names nothing", () => {
+    // Without this the case above passes for a rule that has silently stopped
+    // covering directory urls, because a rule can only be wrong about entries
+    // the index still emits.
+    const directoryUrls = indexEntryUrls(committedIndex()).filter((url) => url.endsWith("/"));
+    const indexPages = collectPages(DOCS).filter(
+      (page: { path: string }) => page.path === "index.md" || page.path.endsWith("/index.md"),
+    );
+    expect(indexPages.length).toBeGreaterThan(0);
+    expect(directoryUrls).toHaveLength(indexPages.length);
+    for (const url of directoryUrls) {
+      const bare = `${url.slice(SITE_URL.length).replace(/^\//, "")}.md`;
+      expect(existsSync(join(DOCS, bare))).toBe(false);
+      expect(existsSync(join(DOCS, markdownTwinOf(url)))).toBe(true);
+    }
+  });
+});
+
+describe("the three places that state the raw-markdown rule", () => {
+  // One rule, three audiences: the index an agent fetches, the comment a
+  // crawler operator reads, and the skill's own fetch procedure. Each must
+  // carry the `index.md` case, because "append `.md`" alone is a 404 on every
+  // directory url. `index.md` appears nowhere else in any of the three, so its
+  // presence is the whole signal.
+  it("the index states it, in the sentence the generator writes", () => {
+    // Asserted on the committed artifact rather than the generator's source:
+    // `index.md` occurs several times in that module for unrelated reasons,
+    // and the freshness case above already binds the two together.
+    expect(committedIndex()).toContain(
+      "append `.md` to its URL, or `index.md` when the URL ends in `/`",
+    );
+  });
+
+  it("robots.txt states it", () => {
+    expect(readFileSync(join(DOCS, "public/robots.txt"), "utf8")).toContain("index.md");
+  });
+
+  it("the skill's docs island states it", () => {
+    // Checked from here rather than the skill's own suite: the failure being
+    // guarded is these three drifting apart, and only one place sees all three.
+    const island = readFileSync(
+      join(DOCS, "../../skills/templatical/reference/docs.md"),
+      "utf8",
+    );
+    expect(island).toContain("index.md");
   });
 });
 

@@ -195,7 +195,11 @@ export function renderIndex(pages, meta) {
     "",
     `> ${SITE_SUMMARY}`,
     "",
-    `Documentation for SDK version ${meta.version}. Every page below is also available as raw markdown at the same URL with \`.md\` appended.`,
+    // The `index.md` half is load-bearing: seven of these URLs end in `/`
+    // (the home page and every directory index), and a bare `.md` on those
+    // names a file that has never existed. Same directory-URL rule a web
+    // server applies; stating only the simple half sends a reader to a 404.
+    `Documentation for SDK version ${meta.version}. Every page below is also available as raw markdown: append \`.md\` to its URL, or \`index.md\` when the URL ends in \`/\`.`,
     "",
   ];
   for (const group of orderedGroups(pages)) {
