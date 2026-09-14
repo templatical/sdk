@@ -3,7 +3,7 @@ import { defineConfig, type DefaultTheme } from "vitepress";
 import { copyMarkdownSources } from "../scripts/build-agent-surface.mjs";
 
 const enNav: DefaultTheme.NavItem[] = [
-  { text: "Guide", link: "/getting-started/installation" },
+  { text: "Guide", link: "/getting-started/quick-start" },
   { text: "API", link: "/api/editor" },
   { text: "Quality", link: "/quality/" },
   { text: "Cloud", link: "/cloud/" },
@@ -85,8 +85,8 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Getting Started",
       items: [
-        { text: "Installation", link: "/getting-started/installation" },
         { text: "Quick Start", link: "/getting-started/quick-start" },
+        { text: "Installation", link: "/getting-started/installation" },
         { text: "Embedding", link: "/getting-started/embedding" },
         {
           text: "How Rendering Works",
@@ -187,7 +187,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
 };
 
 const deNav: DefaultTheme.NavItem[] = [
-  { text: "Anleitung", link: "/de/getting-started/installation" },
+  { text: "Anleitung", link: "/de/getting-started/quick-start" },
   { text: "API", link: "/de/api/editor" },
   { text: "Qualität", link: "/de/quality/" },
   { text: "Cloud", link: "/de/cloud/" },
@@ -275,8 +275,8 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     {
       text: "Erste Schritte",
       items: [
-        { text: "Installation", link: "/de/getting-started/installation" },
         { text: "Schnellstart", link: "/de/getting-started/quick-start" },
+        { text: "Installation", link: "/de/getting-started/installation" },
         { text: "Einbetten", link: "/de/getting-started/embedding" },
         {
           text: "So funktioniert das Rendering",

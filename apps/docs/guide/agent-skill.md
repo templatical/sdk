@@ -36,6 +36,8 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 - **Diagnose** an integration that misbehaves, against a table of verified traps.
 - **Answer a question** about the SDK by fetching this documentation site directly.
 
+The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
+
 ::: tip Prefer a hosted experience?
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::

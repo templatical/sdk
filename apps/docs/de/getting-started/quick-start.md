@@ -59,7 +59,30 @@ npm install @templatical/editor @templatical/renderer
 </html>
 ```
 
-Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template später weiter bearbeiten können) als auch das MJML (kompilieren Sie es mit einer beliebigen [MJML-Bibliothek](https://mjml.io) zu HTML und versenden Sie es).
+Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template später weiter bearbeiten können) als auch das MJML. `toMjml()` erzeugt kein HTML.
+
+## 3. MJML zu HTML kompilieren
+
+Auf dem Server kompilieren Sie das gerade gesendete MJML mit einer beliebigen [MJML-Bibliothek](https://mjml.io) — `mjml` ist die offizielle für Node:
+
+```bash
+npm install mjml
+```
+
+```ts
+import mjml2html from "mjml";
+
+const { html } = mjml2html(mjml);
+// html ist versandfertig
+```
+
+Aus einer gespeicherten JSON-Datei, ohne den Editor zu mounten:
+
+```bash
+npx -y @templatical/template-tools render template.json --format html -o email.html
+```
+
+Dieser Befehl braucht ebenfalls `mjml`. Siehe [Template Tools](/de/api/template-tools) und [So funktioniert das Rendering](/de/getting-started/how-rendering-works).
 
 ::: info Shadow DOM als Standard
 Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seiten-CSS nicht in Editor-Elemente durchschlagen kann. Verwenden Sie ein `<div>` — oder ein beliebiges [Shadow-Host-fähiges Element](/de/api/editor#anforderungen-an-das-container-element) — als Container; Elemente wie `<table>`, `<form>` oder `<input>` können keinen Shadow Root aufnehmen.
@@ -69,6 +92,7 @@ Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seite
 
 ## Nächste Schritte
 
-- [Wie das Rendering funktioniert](/de/getting-started/how-rendering-works) -- verstehen Sie die JSON → MJML-Pipeline.
-- [Blöcke](/de/guide/blocks) -- Referenz für alle 14 Blocktypen.
-- [Renderer-API](/de/api/renderer-typescript) -- vollständige `renderToMjml()`-Referenz.
+- [Einbetten](/de/getting-started/embedding) — Container-Regeln, Stacking und was die CSS-Isolation bricht.
+- [Backend anbinden](/de/backend/) — Speichern, Versionen, Kommentare, gespeicherte Blöcke, Medien, Test-E-Mail, Rendern.
+- [Template Tools](/de/api/template-tools) — Validieren, Rendern, Importieren und Live-Vorschau per CLI oder Skript.
+- [So funktioniert das Rendering](/de/getting-started/how-rendering-works) — JSON → MJML → HTML, und was gespeichert werden sollte.

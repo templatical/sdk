@@ -4,10 +4,13 @@ hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
   tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Speichern, Versionsverlauf, Kommentare, Testversand und Rendering laufen über Ihr eigenes Backend — über einfache Konfigurationsobjekte, die Sie implementieren. Source-Available und Framework-agnostisch.
+  image:
+    src: https://templatical.com/preview.png
+    alt: Templatical E-Mail-Editor
   actions:
     - theme: brand
       text: Loslegen
-      link: /de/getting-started/installation
+      link: /de/getting-started/quick-start
     - theme: alt
       text: Playground ausprobieren
       link: https://play.templatical.com

@@ -7,7 +7,7 @@ description: API reference for @templatical/template-tools — the CLI and libra
 
 `@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
 
-The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the seven documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job.
+The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the seven documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
 
 ## Invoking it
 

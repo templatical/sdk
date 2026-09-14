@@ -890,7 +890,7 @@ Source: https://docs.templatical.com/api/template-tools
 
 `@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
 
-The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the seven documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job.
+The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the seven documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
 
 ## Invoking it
 
@@ -4267,7 +4267,30 @@ npm install @templatical/editor @templatical/renderer
 </html>
 ```
 
-Your backend receives both the JSON (store it to let users edit later) and the MJML (compile to HTML with any [MJML library](https://mjml.io) and send).
+Your backend receives both the JSON (store it to let users edit later) and the MJML. `toMjml()` does not produce HTML.
+
+## 3. Compile MJML to HTML
+
+On the server, compile the MJML you just posted with any [MJML library](https://mjml.io) — `mjml` is the official Node one:
+
+```bash
+npm install mjml
+```
+
+```ts
+import mjml2html from "mjml";
+
+const { html } = mjml2html(mjml);
+// html is ready to send
+```
+
+From a saved JSON file, without mounting the editor:
+
+```bash
+npx -y @templatical/template-tools render template.json --format html -o email.html
+```
+
+That command also needs `mjml`. See [Template Tools](/api/template-tools) and [How Rendering Works](/getting-started/how-rendering-works).
 
 ::: info Shadow DOM by default
 The editor mounts inside a Shadow DOM, so host page CSS cannot cascade into editor elements. Use a `<div>` — or any [shadow-host-eligible element](/api/editor#container-element-requirements) — as the container; elements like `<table>`, `<form>`, or `<input>` cannot host a shadow root.
@@ -4277,9 +4300,10 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 
 ## Next steps
 
-- [How Rendering Works](/getting-started/how-rendering-works) -- understand the JSON → MJML pipeline.
-- [Blocks](/guide/blocks) -- reference for all 14 block types.
-- [Renderer API](/api/renderer-typescript) -- full `renderToMjml()` reference.
+- [Embedding](/getting-started/embedding) — container rules, stacking, and what breaks host CSS isolation.
+- [Connect your backend](/backend/) — save, versions, comments, saved blocks, media, test email, render.
+- [Template Tools](/api/template-tools) — validate, render, import, and live-preview from a CLI or script.
+- [How Rendering Works](/getting-started/how-rendering-works) — JSON → MJML → HTML, and what to store.
 
 ---
 
@@ -4317,6 +4341,8 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 - **Scaffold** a proposed integration into your repository, installed with your own package manager and checked against your running dev server.
 - **Diagnose** an integration that misbehaves, against a table of verified traps.
 - **Answer a question** about the SDK by fetching this documentation site directly.
+
+The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
 ::: tip Prefer a hosted experience?
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.

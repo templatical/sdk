@@ -36,6 +36,8 @@ Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skil
 - **Diagnostizieren** Sie eine Integration, die nicht wie erwartet funktioniert, anhand einer Tabelle verifizierter Fallstricke.
 - **Beantworten Sie eine Frage** zur SDK, indem diese Dokumentationsseite direkt abgerufen wird.
 
+Die mechanischen Schritte — validieren, rendern, importieren, Live-Vorschau — sind [`@templatical/template-tools`](/de/api/template-tools). Der Skill steuert diese CLI; dieselben Befehle laufen ohne Agenten aus einer Shell.
+
 ::: tip Lieber eine gehostete Lösung?
 Ein KI-Chat direkt im Editor, feinabgestimmte Prompts und ein gehosteter MCP-Server sind Teil des [Templatical-Cloud](/de/cloud/)-Tarifs. Dieser Skill ist der offene, selbst gehostete Weg — bringen Sie Ihren eigenen Agenten mit und behalten Sie die volle Kontrolle.
 :::
