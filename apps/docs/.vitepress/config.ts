@@ -83,6 +83,14 @@ const enSidebar: DefaultTheme.SidebarMulti = {
   ],
   "/": [
     {
+      text: "Start here",
+      items: [
+        { text: "Starting points", link: "/getting-started/paths" },
+        { text: "Author features", link: "/getting-started/author-features" },
+        { text: "Hosted builders", link: "/getting-started/hosted-builders" },
+      ],
+    },
+    {
       text: "Getting Started",
       items: [
         { text: "Quick Start", link: "/getting-started/quick-start" },
@@ -272,6 +280,20 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     },
   ],
   "/de/": [
+    {
+      text: "Einstieg",
+      items: [
+        { text: "Einstiegspunkte", link: "/de/getting-started/paths" },
+        {
+          text: "Funktionen für Autoren",
+          link: "/de/getting-started/author-features",
+        },
+        {
+          text: "Gehostete Builder",
+          link: "/de/getting-started/hosted-builders",
+        },
+      ],
+    },
     {
       text: "Erste Schritte",
       items: [

@@ -3575,6 +3575,43 @@ await history.restore(v.id);
 
 ---
 
+# Author features
+
+Source: https://docs.templatical.com/getting-started/author-features
+
+What authors see. Each row is off until you pass its key (or, for Issues, install the optional quality package). The editor with only `container` still edits; it does not persist, comment, or send.
+
+Provider methods run in the browser. Hide a control with `false`; enforce the same rule on your server. See [Connect your backend](/backend/).
+
+## Storage and send
+
+| Feature | What authors do | `init()` key | Docs |
+|---|---|---|---|
+| Save and load | Name the template, save, autosave, unsaved-changes guard | `templates` | [Saving and loading](/backend/templates) |
+| Version history | Step through past versions, preview, restore | `versionHistory` | [Version history](/backend/version-history) |
+| Comments | Thread on a block, reply, resolve | `comments` | [Comments](/backend/comments) |
+| Saved blocks | Bookmark a group, browse, insert | `savedBlocks` | [Saved blocks](/backend/saved-blocks) |
+| Media library | Browse, upload, crop, folders | `media` | [Media](/backend/media) |
+| Test email | Send this template to an inbox | `testEmail` | [Test emails](/backend/test-email) |
+| MJML / HTML export | `toMjml()` / `toHtml()` on the instance | `render` (optional; local renderer also works) | [Rendering](/backend/render) |
+
+A bundled browser-local adapter exists for saved blocks and media if you want the UI with no server of your own yet.
+
+## Always in the chrome
+
+No provider. Configure on `init()` or in template settings.
+
+| Feature | What authors do | Docs |
+|---|---|---|
+| Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) |
+| Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) |
+| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` |
+| Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) |
+
+Issues is an optional peer: skip the package and the tab never downloads.
+
+---
+
 # Embedding the editor
 
 Source: https://docs.templatical.com/getting-started/embedding
@@ -3668,6 +3705,43 @@ Shadow DOM blocks host *rules* — a selector in your stylesheet never matches i
 ### You do not need a CSS reset on the container
 
 Resetting the container is not necessary, and an aggressive reset is harmful: `all: initial` or `all: revert` there wipes the `--tpl-user-*` custom properties that [Theming](../guide/theming) relies on, and can break the `height: 100%` chain the editor sizes against. Style the container's box — size, position, border — and leave its inherited values alone.
+
+---
+
+# Hosted builders
+
+Source: https://docs.templatical.com/getting-started/hosted-builders
+
+Templatical is an SDK you mount in your product. Storage, send, and accounts stay yours. Unlayer, BeeFree, Stripo, Topol, Chamaileon, and Easy Email Pro are hosted products: their dashboard, their storage, their terms.
+
+Commercial embedding is free. You may not repackage Templatical as a competing email-editor product. [License FAQ](/license-faq).
+
+## Comparison
+
+| | Templatical | Hosted builder |
+|---|---|---|
+| Where authors work | Your app | Their site or iframe |
+| Template storage | Your backend (`templates` on `init()`) | Theirs |
+| Send | Your ESP or API | Often theirs |
+| Output | JSON you keep; MJML via `@templatical/renderer`; HTML via any MJML library | Their HTML / their JSON |
+| License | FSL-1.1-MIT on the editor; MIT on renderer, types, quality, importers | Vendor ToS |
+
+## Importers
+
+Each converter maps a native export onto Templatical JSON. Unmapped pieces become an `html` block or are skipped. The report on each runbook is the record of that.
+
+| Source | Runbook |
+|---|---|
+| Unlayer | [From Unlayer](/guide/migration-from-unlayer) |
+| BeeFree | [From BeeFree](/guide/migration-from-beefree) |
+| Stripo | [From Stripo](/guide/migration-from-stripo) |
+| Topol | [From Topol](/guide/migration-from-topol) |
+| Chamaileon | [From Chamaileon](/guide/migration-from-chamaileon) |
+| Easy Email Pro | [From Easy Email Pro](/guide/migration-from-easy-email-pro) |
+| MJML | [From MJML](/guide/migration-from-mjml) |
+| HTML | [From HTML](/guide/migration-from-html) |
+
+MJML and HTML are the catch-alls when the native format is not in that list. The Agent Skill can run an import and then refine in the live editor — [Agent Skill](/guide/agent-skill).
 
 ---
 
@@ -4209,6 +4283,50 @@ The example above is unversioned on purpose: unpkg resolves a URL with no versio
 
 ---
 
+# Starting points
+
+Source: https://docs.templatical.com/getting-started/paths
+
+Commercial use is free. The [License FAQ](/license-faq) is the competing-product restriction in plain language.
+
+## Embed the editor
+
+Mount `@templatical/editor` in your product. Any framework, or none.
+
+- [Quick Start](/getting-started/quick-start) — mount, save JSON, compile MJML to HTML
+- [Installation](/getting-started/installation) — packages, CDN, React / Vue / Svelte / Angular
+- [Embedding](/getting-started/embedding) — container height, stacking, `position: fixed`
+
+## Connect storage and send
+
+Saving, versions, comments, saved blocks, media, test email, and HTML export are keys you pass to `init()`. Omit a key and that UI is absent.
+
+- [Connect your backend](/backend/) — the contracts
+- [Author features](/getting-started/author-features) — what people in the editor actually see
+
+## Generate a template from a prompt
+
+Your coding agent writes and validates JSON. No Templatical account.
+
+- [Agent Skill](/guide/agent-skill)
+- [Template Tools](/api/template-tools) — the same validate / render / import / live commands from a shell
+
+## JSON to sendable HTML
+
+The editor stores JSON. `@templatical/renderer` emits MJML. Any MJML library compiles HTML. You send through whatever you already use.
+
+- [How Rendering Works](/getting-started/how-rendering-works)
+- [Renderer API](/api/renderer-typescript)
+- [Template Tools](/api/template-tools) `render --format html`
+
+## Leave a hosted builder
+
+Unlayer, BeeFree, Stripo, and the others are products with their own accounts. Importers map their exports onto Templatical JSON.
+
+- [Hosted builders](/getting-started/hosted-builders)
+
+---
+
 # Quick Start
 
 Source: https://docs.templatical.com/getting-started/quick-start
@@ -4348,6 +4466,7 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 
 ## Next steps
 
+- [Starting points](/getting-started/paths) — embed, backend, prompt, or JSON → HTML.
 - [Embedding](/getting-started/embedding) — container rules, stacking, and what breaks host CSS isolation.
 - [Connect your backend](/backend/) — save, versions, comments, saved blocks, media, test email, render.
 - [Template Tools](/api/template-tools) — validate, render, import, and live-preview from a CLI or script.

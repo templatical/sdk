@@ -140,6 +140,7 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 
 ## Next steps
 
+- [Starting points](/getting-started/paths) — embed, backend, prompt, or JSON → HTML.
 - [Embedding](/getting-started/embedding) — container rules, stacking, and what breaks host CSS isolation.
 - [Connect your backend](/backend/) — save, versions, comments, saved blocks, media, test email, render.
 - [Template Tools](/api/template-tools) — validate, render, import, and live-preview from a CLI or script.

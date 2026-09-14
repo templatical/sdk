@@ -140,6 +140,7 @@ Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seite
 
 ## Nächste Schritte
 
+- [Einstiegspunkte](/de/getting-started/paths) — Einbinden, Backend, Prompt oder JSON → HTML.
 - [Einbetten](/de/getting-started/embedding) — Container-Regeln, Stacking und was die CSS-Isolation bricht.
 - [Backend anbinden](/de/backend/) — Speichern, Versionen, Kommentare, gespeicherte Blöcke, Medien, Test-E-Mail, Rendern.
 - [Template Tools](/de/api/template-tools) — Validieren, Rendern, Importieren und Live-Vorschau per CLI oder Skript.

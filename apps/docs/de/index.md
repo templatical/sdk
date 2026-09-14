@@ -61,6 +61,6 @@ features:
     linkText: So funktioniert die Isolation
   - title: Bestehende Templates übernehmen
     details: Importer für Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML und HTML. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
-    link: /de/guide/migration-from-unlayer
-    linkText: Von Unlayer migrieren
+    link: /de/getting-started/hosted-builders
+    linkText: Gehostete Builder
 ---
