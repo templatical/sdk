@@ -138,7 +138,7 @@ Es gibt kein Header-Logo oder anderes erzwungenes Branding — der Footer ist di
 
 **Nein.** Der Cloud-Tarif ist optional. Das OSS-SDK funktioniert komplett eigenständig — jede Funktion in `@templatical/editor` (der OSS-Init-Pfad) läuft ohne Backend.
 
-Der Cloud-Tarif fügt KI-Umschreibung, Echtzeit-Zusammenarbeit, Kommentare, Snapshots und gespeicherte Blöcke hinzu. Er befindet sich in Entwicklung und wird als gemanagter Dienst angeboten.
+Cloud ist optionale gehostete Infrastruktur (KI-Umschreibung, Echtzeit-Zusammenarbeit, gemanagter Speicher). Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail und Medien sind über Provider an `init()` verfügbar, die Sie selbst implementieren — Cloud ist ein Adapter, nicht die Funktion.
 
 ## Was, wenn ich eine Frage habe, die hier nicht beantwortet wird?
 

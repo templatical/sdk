@@ -138,7 +138,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The OSS SDK works completely standalone — every feature in `@templatical/editor` (the OSS init path) runs without any backend.
 
-The Cloud tier adds AI rewrite, real-time collaboration, comments, snapshots, and saved blocks. It is in development and will be available as a managed service.
+Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 

@@ -36,7 +36,7 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. An optional Cloud tier is in development for AI rewrites, real-time collaboration, comments, saved blocks, multi-tenancy, test email sending, MCP support, and more.
+**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, and media are OSS — you pass providers to `init()`. An optional Cloud tier adds AI rewrite, real-time collaboration, and hosted/managed storage.
 
 ## Design a complete email from a prompt
 
@@ -124,8 +124,9 @@ const mjml = await editor.toMjml();
 | [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                     | Framework-agnostic editor logic, state, history                  | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)   | Media library — composable, components, standalone SDK           | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types)                   | Shared TypeScript types and block factories                      | [MIT](./LICENSE-MIT)     |
-| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML → HTML renderer (browser + Node)                     | [MIT](./LICENSE-MIT)     |
-| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Accessibility linter for templates (browser + Node)              | [MIT](./LICENSE-MIT)     |
+| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML renderer (browser + Node)                            | [MIT](./LICENSE-MIT)     |
+| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Template quality linter — accessibility, structure, and link rules (browser + Node) | [MIT](./LICENSE-MIT)     |
+| [`@templatical/template-tools`](https://www.npmjs.com/package/@templatical/template-tools) | CLI and library: validate, render (MJML/HTML), edit, import, live-preview templates | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
