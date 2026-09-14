@@ -349,7 +349,7 @@ importers:
         specifier: ^6.43.11
         version: 6.43.11
       '@lucide/vue':
-        specifier: ^1.44.0
+        specifier: ^1.45.0
         version: 1.45.0(vue@3.5.42(typescript@6.0.3))
       '@templatical/editor':
         specifier: workspace:*
@@ -460,7 +460,7 @@ importers:
         version: link:../renderer
     devDependencies:
       '@lucide/vue':
-        specifier: ^1.44.0
+        specifier: ^1.45.0
         version: 1.45.0(vue@3.5.42(typescript@6.0.3))
       '@templatical/core':
         specifier: workspace:*
@@ -711,7 +711,7 @@ importers:
   packages/media-library:
     dependencies:
       '@lucide/vue':
-        specifier: ^1.44.0
+        specifier: ^1.45.0
         version: 1.45.0(vue@3.5.42(typescript@6.0.3))
       '@templatical/types':
         specifier: workspace:*
