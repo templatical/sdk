@@ -15,6 +15,62 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.39.0
+
+<time datetime="2026-09-15">2026-09-15</time>
+
+### Features
+
+**Merge tags are re-picked rather than hand-edited**
+
+`@templatical/editor` · `@templatical/types`
+
+**Behaviour change.** Activating a merge tag in the content now reopens the tag chooser — `mergeTags.onRequest` when you have one, the built-in picker otherwise — instead of a text input holding the raw token. Editing a known tag's token as free text is gone. A token that no chooser can resolve, and an editor with neither `tags` nor `onRequest`, still get the text input, so a legacy or mistyped token can be repaired.
+
+This closes a data-integrity bug: that input committed whatever was typed with no syntax check, so a chip could end up holding a value that is not a merge tag at all — which `renderToMjml` then emitted verbatim into the sent email. Input is now validated against the configured `syntax` and an invalid value is never committed.
+
+It applies on every surface that renders a tag — the canvas and each sidebar field (button text and URL, image src and alt, video, menu, social, custom fields, template settings, and the rich-text link dialog). In a field, a tag is individually clickable; the surrounding text still opens the whole value for editing.
+
+- **`mergeTags.onRequest` takes an optional `MergeTagRequestContext`** — `{ reason: "insert" | "edit", current?: MergeTag }`. `current` is the tag being replaced, absent for a token that matches no configured tag. Existing zero-argument callbacks are unaffected.
+- **New `mergeTags.showRawValue`** (default `true`). Set `false` when `value` is an internal identifier an author should never see: tag tooltips then reveal nothing, on the canvas, in sidebar fields and in the built-in picker. It also governs what an _undeclared_ tag renders as — the editor makes a tag out of anything matching your `syntax`, and such a tag normally shows the token as its own label; with the flag off it falls back to the label stored at insert time and then to a neutral placeholder, keeping the identifier out of the canvas and out of the accessible name. Display-only — stored content and rendered output are unchanged.
+- The built-in picker preselects the tag being replaced and titles itself accordingly.
+
+**Add `editor.setMergeTags(tags)` for replacing merge tags after `init()`**
+
+`@templatical/editor`
+
+The configured tag list could only be set at `init()`. Consumers whose tags are minted on demand — a picker that creates a field the moment an author chooses one — had no supported way to register the new tag, and a tag renamed after mount never repainted.
+
+`setMergeTags(tags)` replaces the list at runtime. Everything that renders a tag reads the same source, so the canvas, the sidebar fields and the built-in picker repaint together. Available on both `init()` and `initCloud()`.
+
+Two affordances that were captured once at setup and could go stale are now reactive: the **Insert merge tag** control appears when the list goes from empty to populated, and so does type-ahead filtering.
+
+One limitation, stated rather than worked around: whether type-ahead autocomplete is _registered_ is decided when a block opens for editing. Going from no tags to some enables it for the next block opened, not for one already being edited. Registering it unconditionally would show the suggestion popup to consumers who configured no tags at all.
+
+Mutating the array passed to `init()` remains unsupported — it never repainted anything already on screen, and `setMergeTags` is the supported replacement.
+
+### Fixes and improvements
+
+**Merge-tag fields expose their controls as a group, not a button inside a button**
+
+`@templatical/editor`
+
+A merge-tag-enabled field rendered as `role="button"` while containing its own controls — a button per tag, plus Clear. ARIA treats a button as a leaf, so screen readers announced a control inside a control and the tab order read as if you had stepped into the element you just landed on.
+
+The field is now `role="group"` with an accessible name, and raw text editing has an explicit **Edit as text** control instead of relying on the wrapper being focusable. Clicking anywhere in the field still opens the raw editor for mouse users, and Clear is unchanged.
+
+Affects every merge-tag-enabled field: button text and URL, image src and alt, video, menu, social, custom text and textarea fields, template settings, and the rich-text link dialog.
+
+**Show a minted merge tag's label instead of its raw token**
+
+`@templatical/editor`
+
+A `mergeTags.onRequest` picker that mints a tag on the fly returns one that is in no `tags` array, so nothing could resolve it — and the chip rendered the raw token the moment the author picked a field. The label was already stored on the tag; the display chain just reached for the token first.
+
+A tag now resolves its label as: the matching entry in `tags`, then the label stored on the tag, then the token (or the placeholder when `showRawValue` is `false`). For a tag the editor made itself — typed, pasted, or converted from loaded content — the stored label is the token, so nothing changes there.
+
+One consequence worth stating: a tag whose entry is later removed from `tags` now keeps showing the label it was inserted with, rather than reverting to its token.
+
 ## 0.38.0
 
 <time datetime="2026-09-12">2026-09-12</time>
