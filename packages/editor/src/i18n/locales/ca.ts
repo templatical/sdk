@@ -518,7 +518,8 @@ const ca: typeof en = {
 
   // Merge Tag
   mergeTag: {
-    clickToEdit: "Feu clic per editar",
+    editAsText: "Edita com a text",
+    fieldGroup: "Valor amb etiquetes de fusió",
     remove: "Elimina l'etiqueta de fusió",
     insert: "Insereix l'etiqueta de fusió",
     insertShort: "Etiqueta de fusió",

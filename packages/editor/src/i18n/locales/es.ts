@@ -518,7 +518,8 @@ const es: typeof en = {
 
   // Merge Tag
   mergeTag: {
-    clickToEdit: "Haz clic para editar",
+    editAsText: "Editar como texto",
+    fieldGroup: "Valor con etiquetas de combinación",
     remove: "Eliminar etiqueta de combinación",
     insert: "Insertar etiqueta de combinación",
     insertShort: "Etiqueta de combinación",

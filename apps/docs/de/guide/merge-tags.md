@@ -325,7 +325,7 @@ Die Option bestimmt außerdem, **wie ein Tag dargestellt wird**, nicht nur seine
 Schritt 2 hält ein Tag lesbar, das Ihr `onRequest` **neu erzeugt** hat: Es steht in keinem `tags`-Array, sodass nur das von Ihnen zurückgegebene Label es identifiziert. Bei einem Tag, das der Editor selbst erzeugt hat — getippt, eingefügt oder aus geladenem Inhalt konvertiert —, ist das gespeicherte Label der Token, sodass beide Schritte übereinstimmen und sich nichts ändert.
 
 ::: tip Felder in der Seitenleiste
-Ein Feldwert ist eine einzelne Zeichenkette, die Text und Token mischt (<code v-pre>Hallo {{first_name}}, willkommen</code>). Seine Tags sind einzeln anklickbar und werden wie alle anderen neu ausgewählt; die Bearbeitung des umgebenden Textes öffnet jedoch die gesamte Zeichenkette zur Bearbeitung, Token eingeschlossen. `showRawValue` ändert daran nichts.
+Ein Feldwert ist eine einzelne Zeichenkette, die Text und Token mischt (<code v-pre>Hallo {{first_name}}, willkommen</code>). Seine Tags sind einzeln anklickbar und werden wie alle anderen neu ausgewählt. Um den umgebenden Text zu ändern, verwenden Sie **Als Text bearbeiten** — oder klicken Sie an eine beliebige andere Stelle im Feld —, was die gesamte Zeichenkette öffnet, Token eingeschlossen. `showRawValue` ändert daran nichts.
 :::
 
 ## Tokens in geladenen Inhalten

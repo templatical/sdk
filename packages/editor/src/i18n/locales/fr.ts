@@ -455,7 +455,8 @@ const fr: typeof en = {
     presetColors: "Couleurs prédéfinies",
   },
   mergeTag: {
-    clickToEdit: "Cliquez pour modifier",
+    editAsText: "Modifier comme texte",
+    fieldGroup: "Valeur avec balises de fusion",
     remove: "Supprimer la balise de fusion",
     insert: "Insérer une balise de fusion",
     insertShort: "Balise de fusion",

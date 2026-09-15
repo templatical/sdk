@@ -517,7 +517,8 @@ const ptBR: typeof en = {
 
   // Merge Tag
   mergeTag: {
-    clickToEdit: "Clique para editar",
+    editAsText: "Editar como texto",
+    fieldGroup: "Valor com merge tags",
     remove: "Remover merge tag",
     insert: "Inserir merge tag",
     insertShort: "Merge tag",

@@ -11,8 +11,9 @@ test.describe("Block-specific settings", () => {
     const panel = page.locator(SELECTORS.rightPanelContent);
     await expect(panel).toBeVisible();
 
-    // Image toolbar should have inputs (MergeTagInput renders input or role=button)
-    const inputs = panel.locator('input, [role="button"][tabindex="0"]');
+    // MergeTagInput renders a plain <input>, or — once the value contains a
+    // tag — a role="group" holding a button per tag plus Edit and Clear.
+    const inputs = panel.locator('input, [role="group"]');
     expect(await inputs.count()).toBeGreaterThanOrEqual(1);
   });
 
@@ -49,8 +50,8 @@ test.describe("Block-specific settings", () => {
     const panel = page.locator(SELECTORS.rightPanelContent);
     await expect(panel).toBeVisible();
 
-    // Should have inputs for text and URL
-    const inputs = panel.locator('input, [role="button"][tabindex="0"]');
+    // Should have inputs for text and URL (see the note above on role="group")
+    const inputs = panel.locator('input, [role="group"]');
     expect(await inputs.count()).toBeGreaterThanOrEqual(2);
   });
 

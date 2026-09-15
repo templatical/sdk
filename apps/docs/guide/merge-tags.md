@@ -325,7 +325,7 @@ It also governs what a tag *renders as*, not only its tooltip. A tag resolves it
 Step 2 is what keeps a tag your `onRequest` **minted** readable: it is in no `tags` array, so only the label you returned identifies it. For a tag the editor made itself — typed, pasted, or converted from loaded content — the stored label is the token, so the two steps agree and nothing changes.
 
 ::: tip Sidebar fields
-A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other, but editing the text around them opens that whole string for editing, tokens included. `showRawValue` does not change that.
+A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other. To change the text around them, use **Edit as text** — or click anywhere else in the field — which opens the whole string, tokens included. `showRawValue` does not change that.
 :::
 
 ## Tokens in loaded content

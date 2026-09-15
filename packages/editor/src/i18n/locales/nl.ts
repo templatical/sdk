@@ -456,7 +456,8 @@ const nl: typeof en = {
     presetColors: "Vooraf ingestelde kleuren",
   },
   mergeTag: {
-    clickToEdit: "Klik om te bewerken",
+    editAsText: "Als tekst bewerken",
+    fieldGroup: "Waarde met samenvoegvelden",
     remove: "Samenvoegveld verwijderen",
     insert: "Samenvoegveld invoegen",
     insertShort: "Samenvoegveld",

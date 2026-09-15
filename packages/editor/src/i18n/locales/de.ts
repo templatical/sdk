@@ -520,7 +520,8 @@ const de: typeof en = {
 
   // Merge-Tag
   mergeTag: {
-    clickToEdit: "Zum Bearbeiten klicken",
+    editAsText: "Als Text bearbeiten",
+    fieldGroup: "Wert mit Merge-Tags",
     remove: "Merge-Tag entfernen",
     insert: "Merge-Tag einfügen",
     insertShort: "Merge-Tag",

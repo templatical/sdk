@@ -81,7 +81,7 @@ describe("merge tag chips in a field", () => {
     it("clicking the surrounding field still opens the raw editor", async () => {
       const wrapper = mountSegments();
 
-      await wrapper.find('[role="button"]').trigger("click");
+      await wrapper.find('[role="group"]').trigger("click");
 
       expect(wrapper.emitted("edit")).toHaveLength(1);
       expect(wrapper.emitted("repick")).toBeUndefined();
@@ -117,6 +117,78 @@ describe("merge tag chips in a field", () => {
       expect(chips(wrapper)[0].attributes("aria-label")).toBe(
         "Change merge tag: Name",
       );
+    });
+  });
+
+  // #738: the field holds its own controls, so the wrapper cannot be a button —
+  // ARIA forbids focusable descendants inside one, and the tab order reads as
+  // if you stepped into the element you just landed on.
+  describe("the field is a group, not a button", () => {
+    it("exposes the wrapper as a named group", () => {
+      const wrapper = mountSegments();
+      const group = wrapper.find('[role="group"]');
+
+      expect(group.exists()).toBe(true);
+      expect(group.attributes("aria-label")).toBe("Value with merge tags");
+    });
+
+    it("is not itself a control", () => {
+      const wrapper = mountSegments();
+      const group = wrapper.find('[role="group"]');
+
+      expect(wrapper.find('[role="button"]').exists()).toBe(false);
+      // No tabindex either: a focusable group would put a stop in the tab
+      // order that does nothing a child button does not already do.
+      expect(group.attributes("tabindex")).toBeUndefined();
+    });
+
+    it("puts every control at the same level, none nested in another", () => {
+      const wrapper = mountSegments({ onRequest: vi.fn() });
+      const group = wrapper.find('[role="group"]');
+
+      const buttons = group.findAll("button");
+      expect(buttons.length).toBeGreaterThan(0);
+      for (const button of buttons) {
+        expect(button.find("button").exists()).toBe(false);
+      }
+    });
+
+    it("gives raw editing an explicit, keyboard-reachable control", async () => {
+      // The wrapper's own click is mouse-only convenience; without this button
+      // there is no keyboard route to raw editing at all.
+      const wrapper = mountSegments();
+      const edit = wrapper.find('[data-testid="merge-tag-field-edit"]');
+
+      expect(edit.exists()).toBe(true);
+      expect(edit.attributes("aria-label")).toBe("Edit as text");
+
+      await edit.trigger("click");
+      expect(wrapper.emitted("edit")).toHaveLength(1);
+    });
+
+    it("does not double-fire when the Edit button is clicked", async () => {
+      const wrapper = mountSegments();
+
+      await wrapper.find('[data-testid="merge-tag-field-edit"]').trigger("click");
+
+      expect(wrapper.emitted("edit")).toHaveLength(1);
+    });
+
+    it("keeps Clear working and distinct from Edit", async () => {
+      const wrapper = mountSegments();
+
+      await wrapper.find('[data-testid="merge-tag-field-clear"]').trigger("click");
+
+      expect(wrapper.emitted("clear")).toHaveLength(1);
+      expect(wrapper.emitted("edit")).toBeUndefined();
+    });
+
+    it("names every control it contains", () => {
+      const wrapper = mountSegments({ onRequest: vi.fn() });
+
+      for (const button of wrapper.findAll("button")) {
+        expect(button.attributes("aria-label")).toBeTruthy();
+      }
     });
   });
 

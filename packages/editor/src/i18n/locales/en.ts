@@ -514,7 +514,8 @@ export default {
 
   // Merge Tag
   mergeTag: {
-    clickToEdit: "Click to edit",
+    editAsText: "Edit as text",
+    fieldGroup: "Value with merge tags",
     remove: "Remove merge tag",
     insert: "Insert merge tag",
     insertShort: "Merge tag",
