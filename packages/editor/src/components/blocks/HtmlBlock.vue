@@ -8,6 +8,7 @@ import { substituteTextMergeTagSamples } from "@templatical/types";
 import {
   HTML_BLOCK_PREVIEW_KEY,
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   USE_MERGE_TAG_SAMPLES_KEY,
 } from "../../keys";
 import { Code } from "@lucide/vue";
@@ -32,11 +33,11 @@ const showPreview = computed(() => previewEnabled && hasContent.value);
  * substituted; a tag with no sample stays a visible token, which is what shows
  * an author a sample is still missing.
  */
-const mergeTags = inject(MERGE_TAGS_KEY, []);
+const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
 const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
 const previewContent = computed(() =>
   useSamples?.value
-    ? substituteTextMergeTagSamples(props.block.content, mergeTags)
+    ? substituteTextMergeTagSamples(props.block.content, mergeTags.value)
     : props.block.content,
 );
 

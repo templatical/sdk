@@ -3,7 +3,7 @@ import "./dom-stubs";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { nextTick, ref } from "vue";
+import { shallowRef, nextTick, ref } from "vue";
 import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import Canvas from "../src/components/Canvas.vue";
 import MergeTagModeToggle from "../src/components/MergeTagModeToggle.vue";
@@ -57,7 +57,7 @@ function mountPreview(sampleMode: boolean) {
     props: { blocks: c.blocks },
     provides: {
       [EDITOR_KEY]: { content: ref(c), state: {} },
-      [MERGE_TAGS_KEY]: TAGS,
+      [MERGE_TAGS_KEY]: shallowRef(TAGS),
       [MERGE_TAG_SAMPLE_MODE_KEY]: ref(sampleMode),
     },
   } as never);
@@ -76,7 +76,7 @@ function mountCanvas(previewMode: boolean, sampleMode = true) {
     },
     provides: {
       [EDITOR_KEY]: editor,
-      [MERGE_TAGS_KEY]: TAGS,
+      [MERGE_TAGS_KEY]: shallowRef(TAGS),
       [MERGE_TAG_SAMPLE_MODE_KEY]: ref(sampleMode),
       [CAPABILITIES_KEY]: {},
     },
@@ -158,7 +158,7 @@ describe("stored content is untouched", () => {
       props: { blocks: c.blocks },
       provides: {
         [EDITOR_KEY]: { content: ref(c), state: {} },
-        [MERGE_TAGS_KEY]: TAGS,
+        [MERGE_TAGS_KEY]: shallowRef(TAGS),
         [MERGE_TAG_SAMPLE_MODE_KEY]: ref(true),
       },
     } as never);
@@ -187,7 +187,7 @@ describe("availability gates on a sample existing", () => {
   function mountToggle(tags: MergeTag[]) {
     return mountEditor(MergeTagModeToggle, {
       props: { sampleMode: true },
-      provides: { [MERGE_TAGS_KEY]: tags },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(tags) },
     } as never);
   }
 
@@ -223,7 +223,7 @@ describe("availability gates on a sample existing", () => {
       props: { blocks: c.blocks },
       provides: {
         [EDITOR_KEY]: { content: ref(c), state: {} },
-        [MERGE_TAGS_KEY]: NO_SAMPLES,
+        [MERGE_TAGS_KEY]: shallowRef(NO_SAMPLES),
         [MERGE_TAG_SAMPLE_MODE_KEY]: ref(true),
       },
     } as never);

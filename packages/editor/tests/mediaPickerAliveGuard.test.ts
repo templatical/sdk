@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { shallowRef, nextTick } from "vue";
 import { mount } from "@vue/test-utils";
 import { SYNTAX_PRESETS } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
@@ -65,7 +65,7 @@ function baseProvide(onRequestMedia: unknown) {
     [ON_REQUEST_MEDIA_KEY as symbol]: onRequestMedia,
     [TRANSLATIONS_KEY as symbol]: enTranslations,
     [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
-    [MERGE_TAGS_KEY as symbol]: [],
+    [MERGE_TAGS_KEY as symbol]: shallowRef([]),
   };
 }
 

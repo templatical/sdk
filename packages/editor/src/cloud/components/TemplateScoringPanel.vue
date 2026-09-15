@@ -4,6 +4,7 @@ import {
   EDITOR_KEY,
   SCORING_KEY,
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   requireInject,
 } from "../../keys";
 import {
@@ -41,7 +42,7 @@ const emit = defineEmits<{
 const { t: cloudT } = useCloudI18nStrict();
 const editor = requireInject(EDITOR_KEY, "TemplateScoringPanel");
 const scoring = requireInject(SCORING_KEY, "TemplateScoringPanel");
-const mergeTags = inject(MERGE_TAGS_KEY, []);
+const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
 
 const expandedCategories = ref<Record<string, boolean>>({
   spam: true,
@@ -69,7 +70,7 @@ const categoryIcons: Record<ScoringCategory, typeof ShieldCheck> = {
 };
 
 function triggerScore(): void {
-  scoring.score(editor.content.value, mergeTags);
+  scoring.score(editor.content.value, mergeTags.value);
 }
 
 watch(
@@ -104,7 +105,7 @@ async function handleFix(finding: ScoringFinding): Promise<void> {
   const fixedContent = await scoring.fixFinding(
     blockContent,
     finding,
-    mergeTags,
+    mergeTags.value,
   );
 
   if (fixedContent) {

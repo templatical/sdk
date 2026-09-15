@@ -506,12 +506,12 @@ describe('useEditorCore', () => {
     it('provides mergeTags array from config', () => {
       const tags = [{ key: 'first_name', label: 'First Name', value: '' }];
       const { captured } = mountCore({ config: { mergeTags: { tags } } as any });
-      expect(captured.injected!.mergeTags).toEqual(tags);
+      expect(captured.injected!.mergeTags.value).toEqual(tags);
     });
 
     it('provides empty mergeTags array when not configured', () => {
       const { captured } = mountCore();
-      expect(captured.injected!.mergeTags).toEqual([]);
+      expect(captured.injected!.mergeTags.value).toEqual([]);
     });
 
     it('provides onRequestMergeTag null when not configured', () => {

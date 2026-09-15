@@ -327,6 +327,7 @@ describe("initCloud — a thin wrapper over init()", () => {
       "renderCustomBlock",
       "save",
       "setContent",
+      "setMergeTags",
       "setTheme",
       "toHtml",
       "toMjml",

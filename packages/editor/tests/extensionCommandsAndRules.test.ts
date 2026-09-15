@@ -139,7 +139,7 @@ function nodeRules(ext: any, kind: "addInputRules" | "addPasteRules", ctx: any) 
 describe("MergeTagNode input/paste rules", () => {
   function ctx(mergeTags: Array<{ label: string; value: string }> = []) {
     return {
-      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags },
+      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: () => mergeTags },
       type: { create: vi.fn((attrs) => ({ __node: true, attrs })) },
     };
   }

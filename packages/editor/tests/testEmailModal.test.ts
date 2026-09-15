@@ -9,7 +9,7 @@ import {
   POPOVER_ROOT_KEY,
 } from "../src/keys";
 import type { MergeTag } from "@templatical/types";
-import { nextTick, ref } from "vue";
+import { shallowRef, nextTick, ref } from "vue";
 import type { TestEmailError } from "../src/composables/useTestEmailFeature";
 
 /**
@@ -86,7 +86,7 @@ function mountModal(
     },
     provides: {
       [POPOVER_ROOT_KEY]: ref(popoverRootEl),
-      [MERGE_TAGS_KEY]: props.mergeTags ?? [],
+      [MERGE_TAGS_KEY]: shallowRef(props.mergeTags ?? []),
       ...(props.sampleMode !== undefined
         ? { [MERGE_TAG_SAMPLE_MODE_KEY]: ref(props.sampleMode) }
         : {}),

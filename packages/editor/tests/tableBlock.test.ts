@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { ref, computed } from "vue";
+import { shallowRef, ref, computed } from "vue";
 import { mount } from "@vue/test-utils";
 import {
   EDITOR_KEY,
@@ -51,7 +51,7 @@ function tableProvides(editor: any) {
     [THEME_STYLES_KEY as symbol]: computed(() => ({})),
     [UI_THEME_KEY as symbol]: computed(() => "light"),
     [BLOCK_DEFAULTS_KEY as symbol]: undefined,
-    [MERGE_TAGS_KEY as symbol]: [],
+    [MERGE_TAGS_KEY as symbol]: shallowRef([]),
     [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
     [ON_REQUEST_MERGE_TAG_KEY as symbol]: null,
     [ON_REQUEST_MEDIA_KEY as symbol]: null,

@@ -328,6 +328,30 @@ Schritt 2 hält ein Tag lesbar, das Ihr `onRequest` **neu erzeugt** hat: Es steh
 Ein Feldwert ist eine einzelne Zeichenkette, die Text und Token mischt (<code v-pre>Hallo {{first_name}}, willkommen</code>). Seine Tags sind einzeln anklickbar und werden wie alle anderen neu ausgewählt. Um den umgebenden Text zu ändern, verwenden Sie **Als Text bearbeiten** — oder klicken Sie an eine beliebige andere Stelle im Feld —, was die gesamte Zeichenkette öffnet, Token eingeschlossen. `showRawValue` ändert daran nichts.
 :::
 
+## Die Tag-Liste nach `init()` ändern
+
+`editor.setMergeTags(tags)` ersetzt die konfigurierte Liste zur Laufzeit:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: { tags: initialTags },
+});
+
+// Ein Tag wurde umbenannt, oder Ihr Picker hat ein neues erzeugt.
+editor.setMergeTags(nextTags);
+```
+
+Alles, was ein Tag darstellt, liest dieselbe Liste — Canvas, Felder der Seitenleiste und der integrierte Picker werden gemeinsam neu gezeichnet. Auch unter `initCloud()` verfügbar.
+
+::: warning Das Array zu mutieren funktioniert nicht
+In das an `init()` übergebene Array zu schreiben wird nicht unterstützt. Es zeichnet nichts neu, was bereits auf dem Bildschirm steht — nur Tags, die *nach* dem Schreibvorgang dargestellt werden, übernehmen die Änderung. Verwenden Sie stattdessen `setMergeTags`.
+:::
+
+::: tip Eine Einschränkung bei der Autovervollständigung
+Ob die Autovervollständigung aktiv ist, wird entschieden, wenn ein Block zur Bearbeitung geöffnet wird. Von keinen Tags zu einigen zu wechseln aktiviert sie für den nächsten geöffneten Block, nicht für einen bereits in Bearbeitung befindlichen. Alles andere — Labels, die Schaltfläche **Merge-Tag**, der Picker — aktualisiert sich sofort.
+:::
+
 ## Tokens in geladenen Inhalten
 
 Inhalt, der nie die Eingabeverarbeitung des Editors durchlaufen hat — eine Vorlage aus Ihrem eigenen Speicher oder eine von den [`@templatical/import-*`](/de/guide/migration-from-html)-Konvertern erzeugte — trägt Merge-Tags als reine <code v-pre>{{tokens}}</code> statt als Tag-Knoten. Der Editor wandelt sie beim Hereinkommen um, sodass sich ein geladenes Tag exakt wie ein getipptes verhält: lesbares Label, Hervorhebung, `sample` und als eine Einheit auswählbar.

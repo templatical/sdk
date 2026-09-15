@@ -4,6 +4,7 @@ import {
   onScopeDispose,
   provide,
   ref,
+  shallowRef,
   watch,
   type Component,
   type ComputedRef,
@@ -32,6 +33,7 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   LogicTagsConfig,
+  MergeTag,
   MergeTagsConfig,
   TemplateContent,
   TemplateDefaults,
@@ -332,6 +334,8 @@ export interface UseEditorCoreReturn {
    */
   appliesConditionFilter: ComputedRef<boolean>;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
+  /** Replace the configured merge tags at runtime. */
+  setMergeTags: (next: MergeTag[]) => void;
   destroy: () => void;
 }
 
@@ -651,7 +655,30 @@ export function useEditorCore(
   );
 
   const mergeTagSyntax = resolveSyntax(config.mergeTags?.syntax);
-  provide(MERGE_TAGS_KEY, config.mergeTags?.tags ?? []);
+
+  // Seeded from config and replaced wholesale by `editor.setMergeTags()`.
+  // Everything that renders a tag reads this, so a replacement repaints the
+  // canvas, the sidebar fields and the built-in picker together.
+  const mergeTags = shallowRef<MergeTag[]>(config.mergeTags?.tags ?? []);
+
+  /**
+   * Replace the configured merge tags at runtime.
+   *
+   * A non-array is ignored with a warning rather than throwing: this is
+   * reachable from plain JavaScript, and taking the editor down over a bad
+   * argument is worse than leaving the previous list in place.
+   */
+  function setMergeTags(next: MergeTag[]): void {
+    if (!Array.isArray(next)) {
+      logger.warn(
+        `setMergeTags() expects an array of merge tags, received ${typeof next} — ignoring.`,
+      );
+      return;
+    }
+    mergeTags.value = next;
+  }
+
+  provide(MERGE_TAGS_KEY, mergeTags);
   provide(MERGE_TAG_SYNTAX_KEY, mergeTagSyntax);
   provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
   provide(MERGE_TAG_AUTOCOMPLETE_KEY, config.mergeTags?.autocomplete !== false);
@@ -800,6 +827,7 @@ export function useEditorCore(
     previewResolution,
     appliesConditionFilter,
     registerCustomBlocks,
+    setMergeTags,
     destroy,
   };
 }

@@ -14,6 +14,7 @@ import { computed, inject, onMounted, ref, watch } from "vue";
 import {
   BLOCK_REGISTRY_KEY,
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   USE_MERGE_TAG_SAMPLES_KEY,
 } from "../../keys";
 
@@ -60,7 +61,7 @@ const {
   },
 });
 
-const mergeTags = inject(MERGE_TAGS_KEY, []);
+const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
 const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
 
 /**
@@ -78,7 +79,7 @@ const blockForRender = computed<CustomBlockType>(() => {
   for (const [key, value] of Object.entries(props.block.fieldValues)) {
     fieldValues[key] =
       typeof value === "string"
-        ? substituteTextMergeTagSamples(value, mergeTags)
+        ? substituteTextMergeTagSamples(value, mergeTags.value)
         : value;
   }
   return { ...props.block, fieldValues };

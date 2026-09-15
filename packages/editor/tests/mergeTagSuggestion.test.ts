@@ -321,7 +321,7 @@ describe('MergeTagSuggestion extension', () => {
 
   it('exposes default options', () => {
     const ext = MergeTagSuggestion.configure({});
-    expect(ext.options.mergeTags).toEqual([]);
+    expect(ext.options.mergeTags()).toEqual([]);
     expect(ext.options.char).toBe('{{');
     expect(ext.options.emptyText).toBe('No matching merge tags');
     // Phase 3.1: popoverRoot defaults to null; popup falls back to
@@ -331,11 +331,11 @@ describe('MergeTagSuggestion extension', () => {
 
   it('accepts configuration', () => {
     const ext = MergeTagSuggestion.configure({
-      mergeTags: sampleTags,
+      mergeTags: () => sampleTags,
       char: '*|',
       emptyText: 'Nothing',
     });
-    expect(ext.options.mergeTags).toEqual(sampleTags);
+    expect(ext.options.mergeTags()).toEqual(sampleTags);
     expect(ext.options.char).toBe('*|');
     expect(ext.options.emptyText).toBe('Nothing');
   });

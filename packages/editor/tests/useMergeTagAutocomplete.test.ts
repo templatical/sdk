@@ -6,7 +6,7 @@
 // open/close/select effects — not source patterns.
 
 import { describe, expect, it, vi, beforeEach, type InjectionKey } from "vitest";
-import { createApp, defineComponent, h, ref } from "vue";
+import { shallowRef, createApp, defineComponent, h, ref } from "vue";
 import type { MergeTag } from "@templatical/types";
 import { SYNTAX_PRESETS } from "@templatical/types";
 import { useMergeTagAutocomplete } from "../src/composables/useMergeTagAutocomplete";
@@ -78,7 +78,7 @@ function setupDriver(opts: SetupOpts = {}) {
         elementRef,
         modelValue: () => model.value,
         emit,
-        mergeTags: opts.tags ?? TAGS,
+        mergeTags: shallowRef(opts.tags ?? TAGS),
         syntax: opts.syntax ?? SYNTAX_PRESETS.liquid,
         enabled: opts.enabled ?? true,
         onInsert,
@@ -98,23 +98,23 @@ beforeEach(() => {
 describe("useMergeTagAutocomplete — availability gate", () => {
   it("is available with a built-in syntax, tags, and enabled", () => {
     const { driver } = setupDriver();
-    expect(driver.available).toBe(true);
+    expect(driver.available.value).toBe(true);
   });
 
   it("is unavailable when disabled by config", () => {
     const { driver } = setupDriver({ enabled: false });
-    expect(driver.available).toBe(false);
+    expect(driver.available.value).toBe(false);
   });
 
   it("is unavailable with no tags to filter", () => {
     const { driver } = setupDriver({ tags: [] });
-    expect(driver.available).toBe(false);
+    expect(driver.available.value).toBe(false);
   });
 
   it("is unavailable for a custom (non-built-in) syntax", () => {
     const custom = { value: /<<.+?>>/g, logic: /<%.+?%>/g };
     const { driver } = setupDriver({ syntax: custom });
-    expect(driver.available).toBe(false);
+    expect(driver.available.value).toBe(false);
   });
 
   it("does not open the popup when unavailable", () => {

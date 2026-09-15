@@ -5,7 +5,11 @@ import {
 } from "@templatical/types";
 import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
-import { MERGE_TAGS_KEY, USE_MERGE_TAG_SAMPLES_KEY } from "../keys";
+import {
+  MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
+  USE_MERGE_TAG_SAMPLES_KEY,
+} from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { usePopoverPosition } from "./usePopoverPosition";
 import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
@@ -22,7 +26,7 @@ export interface UseEditableTextBlockReturn {
 export function useEditableTextBlock(
   blockContent: () => string,
 ): UseEditableTextBlockReturn {
-  const mergeTags = inject(MERGE_TAGS_KEY, []);
+  const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
   // Defaults to `false`, so any surface that doesn't opt in — the editing
   // canvas above all — keeps showing labels.
   const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
@@ -38,8 +42,8 @@ export function useEditableTextBlock(
    */
   const withResolvedDataTags = computed(() =>
     useSamples?.value
-      ? substituteHtmlMergeTagSamples(blockContent(), mergeTags)
-      : resolveHtmlMergeTagLabels(blockContent(), mergeTags),
+      ? substituteHtmlMergeTagSamples(blockContent(), mergeTags.value)
+      : resolveHtmlMergeTagLabels(blockContent(), mergeTags.value),
   );
 
   // Sanitize before binding to `v-html`. TipTap-authored content is

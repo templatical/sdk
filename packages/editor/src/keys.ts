@@ -1,4 +1,11 @@
-import { inject, type InjectionKey, type ComputedRef, type Ref } from "vue";
+import {
+  inject,
+  shallowRef,
+  type InjectionKey,
+  type ComputedRef,
+  type Ref,
+  type ShallowRef,
+} from "vue";
 import type {
   UseHistoryReturn,
   UseBlockActionsReturn,
@@ -144,7 +151,24 @@ export const TEMPLATE_SETTINGS_FIELDS_KEY: InjectionKey<
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
 
-export const MERGE_TAGS_KEY: InjectionKey<MergeTag[]> = Symbol("mergeTags");
+/**
+ * The configured merge tags, as a ref so `editor.setMergeTags()` repaints
+ * everything that renders one. `useEditorCore` is the only writer.
+ *
+ * `shallowRef`, not `ref`: the list is replaced wholesale, and a deep proxy
+ * would make an in-place `push` by a consumer holding the original array
+ * behave differently from the same push today. Consumers must go through
+ * `setMergeTags`.
+ */
+export const MERGE_TAGS_KEY: InjectionKey<ShallowRef<MergeTag[]>> =
+  Symbol("mergeTags");
+
+/**
+ * Inject default for {@link MERGE_TAGS_KEY} — headless callers and tests mount
+ * components with no editor above them. Shared rather than allocated per call,
+ * and never written: an editor always provides its own ref.
+ */
+export const NO_MERGE_TAGS: ShallowRef<MergeTag[]> = shallowRef([]);
 
 export const MERGE_TAG_SYNTAX_KEY: InjectionKey<SyntaxPreset> =
   Symbol("mergeTagSyntax");

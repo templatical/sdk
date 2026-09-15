@@ -2,7 +2,7 @@
 import './dom-stubs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
+import { shallowRef, createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
 import type { MergeTag } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTagField } from '../src/composables/useMergeTagField';
@@ -77,7 +77,7 @@ function defaultProvides(
   overrides: Record<string | symbol, unknown> = {},
 ): Record<string | symbol, unknown> {
   return {
-    [MERGE_TAGS_KEY as symbol]: sampleTags,
+    [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
     [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
     ...overrides,
   };
@@ -629,7 +629,7 @@ describe('useMergeTagField', () => {
         defaultProvides(),
       );
 
-      expect(canRequestMergeTag).toBe(true);
+      expect(canRequestMergeTag.value).toBe(true);
     });
 
     it('is true when onRequestMergeTag callback is provided', () => {
@@ -648,7 +648,7 @@ describe('useMergeTagField', () => {
         }),
       );
 
-      expect(canRequestMergeTag).toBe(true);
+      expect(canRequestMergeTag.value).toBe(true);
     });
 
     it('is false when no merge tags and no callback', () => {
@@ -663,12 +663,12 @@ describe('useMergeTagField', () => {
             elementRef,
           }),
         {
-          [MERGE_TAGS_KEY as symbol]: [],
+          [MERGE_TAGS_KEY as symbol]: shallowRef([]),
           [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
         },
       );
 
-      expect(canRequestMergeTag).toBe(false);
+      expect(canRequestMergeTag.value).toBe(false);
     });
   });
 

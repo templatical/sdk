@@ -221,6 +221,21 @@ editor.setTheme("auto"); // follow system preference
 
 **Parameter:** `theme: 'light' | 'dark' | 'auto'`
 
+### `setMergeTags(tags)`
+
+Replaces the configured merge tags at runtime. The canvas, the sidebar fields and the built-in picker all read the same list, so they repaint together.
+
+```ts
+editor.setMergeTags([
+  { label: 'First Name', value: '{{first_name}}' },
+  { label: 'Plan', value: '{{plan_name}}' },
+]);
+```
+
+**Parameter:** `tags: MergeTag[]`
+
+Use it when tags are minted or renamed while the editor is open. Mutating the array passed to `init()` is not a supported substitute — it repaints nothing already on screen. See [Merge Tags](/guide/merge-tags) for the one autocomplete limitation.
+
 ### `unmount()`
 
 Destroys this editor instance.

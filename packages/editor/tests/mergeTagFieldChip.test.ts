@@ -1,3 +1,4 @@
+import { shallowRef } from "vue";
 // @vitest-environment happy-dom
 //
 // The merge-tag chip inside a sidebar field (`MergeTagSegments`, rendered by
@@ -49,7 +50,7 @@ function mountSegments(
     },
     provides: {
       [TRANSLATIONS_KEY]: en,
-      [MERGE_TAGS_KEY]: options.tags ?? [NAME, EMAIL],
+      [MERGE_TAGS_KEY]: shallowRef(options.tags ?? [NAME, EMAIL]),
       [ON_REQUEST_MERGE_TAG_KEY]: options.onRequest ?? null,
       [MERGE_TAG_SHOW_RAW_VALUE_KEY]: options.showRawValue ?? true,
     },

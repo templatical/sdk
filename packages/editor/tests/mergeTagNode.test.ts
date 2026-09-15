@@ -130,7 +130,8 @@ describe('MergeTagNode extension config', () => {
   it('default options use liquid syntax', () => {
     const options = (MergeTagNode.config.addOptions as Function).call({});
     expect(options.syntax).toEqual(SYNTAX_PRESETS.liquid);
-    expect(options.mergeTags).toEqual([]);
+    // A getter now, so the extension always reads the live list.
+    expect(options.mergeTags()).toEqual([]);
   });
 });
 
@@ -211,7 +212,7 @@ describe('MergeTagNode renderHTML', () => {
       HTMLAttributes: {},
     };
     const result = renderHTML.call(
-      { options: { mergeTags } },
+      { options: { mergeTags: () => mergeTags } },
       context,
     );
     expect(result[0]).toBe('span');
@@ -226,7 +227,7 @@ describe('MergeTagNode renderHTML', () => {
       HTMLAttributes: {},
     };
     const result = renderHTML.call(
-      { options: { mergeTags: [] } },
+      { options: { mergeTags: () => [] } },
       context,
     );
     expect(result[1]['data-merge-tag']).toBe('{{ unknown }}');
@@ -240,7 +241,7 @@ describe('MergeTagNode renderHTML', () => {
       HTMLAttributes: { class: 'custom-class', id: 'tag-1' },
     };
     const result = renderHTML.call(
-      { options: { mergeTags: [] } },
+      { options: { mergeTags: () => [] } },
       context,
     );
     expect(result[1].class).toBe('custom-class');
@@ -333,7 +334,7 @@ describe('MergeTagNode addKeyboardShortcuts', () => {
 describe('MergeTagNode addInputRules', () => {
   it('returns an array with one input rule', () => {
     const rules = (MergeTagNode.config.addInputRules as Function).call({
-      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: [] },
+      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: () => [] },
       type: { create: vi.fn() },
     });
     expect(rules).toHaveLength(1);
@@ -343,7 +344,7 @@ describe('MergeTagNode addInputRules', () => {
 describe('MergeTagNode addPasteRules', () => {
   it('returns an array with one paste rule', () => {
     const rules = (MergeTagNode.config.addPasteRules as Function).call({
-      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: [] },
+      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: () => [] },
       type: { create: vi.fn() },
     });
     expect(rules).toHaveLength(1);

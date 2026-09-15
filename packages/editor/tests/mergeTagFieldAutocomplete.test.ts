@@ -1,3 +1,4 @@
+import { shallowRef } from "vue";
 // @vitest-environment happy-dom
 //
 // End-to-end wiring test: mounts the real MergeTagInput / MergeTagTextarea via
@@ -46,7 +47,7 @@ describe("MergeTagInput autocomplete", () => {
   it("re-emits a keydown the popup did not consume", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "https://example.com" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
 
@@ -62,7 +63,7 @@ describe("MergeTagInput autocomplete", () => {
   it("does not re-emit the Enter that selected a tag", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{fir");
@@ -79,7 +80,7 @@ describe("MergeTagInput autocomplete", () => {
   it("opens the shared popup with filtered tags when the trigger is typed", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{fir");
@@ -94,7 +95,7 @@ describe("MergeTagInput autocomplete", () => {
   it("inserts the selected tag on Enter and closes the popup", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{fir");
@@ -114,7 +115,7 @@ describe("MergeTagInput autocomplete", () => {
   it("navigates with ArrowDown before selecting", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{");
@@ -134,7 +135,7 @@ describe("MergeTagInput autocomplete", () => {
   it("closes the popup on Escape without inserting", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{fir");
@@ -154,7 +155,7 @@ describe("MergeTagInput autocomplete", () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
       provides: {
-        [MERGE_TAGS_KEY]: TAGS,
+        [MERGE_TAGS_KEY]: shallowRef(TAGS),
         [MERGE_TAG_AUTOCOMPLETE_KEY]: false,
       },
     });
@@ -170,7 +171,7 @@ describe("MergeTagInput autocomplete", () => {
   it("does not open when no merge tags are configured", async () => {
     const wrapper = mountEditor(MergeTagInput, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: [] },
+      provides: { [MERGE_TAGS_KEY]: shallowRef([]) },
     });
     const input = wrapper.find("input");
     await type(input.element as HTMLInputElement, "{{fir");
@@ -186,7 +187,7 @@ describe("MergeTagTextarea autocomplete", () => {
   it("opens the shared popup and inserts on Enter", async () => {
     const wrapper = mountEditor(MergeTagTextarea, {
       props: { modelValue: "" },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
     const textarea = wrapper.find("textarea");
     await type(textarea.element as HTMLTextAreaElement, "Hi {{la");

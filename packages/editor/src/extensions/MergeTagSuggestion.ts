@@ -15,7 +15,12 @@ let POPUP_ID_SEQ = 0;
 
 export interface MergeTagSuggestionOptions {
   /** Available merge tags */
-  mergeTags: MergeTag[];
+  /**
+   * Read live, not captured: the list can be replaced while a block is being
+   * edited (`editor.setMergeTags`), and a snapshot taken when the extension
+   * was configured would keep suggesting the old tags.
+   */
+  mergeTags: () => MergeTag[];
   /** Trigger string (e.g. "{{", "*|", "%%=") */
   char: string;
   /** Localized empty-state label */
@@ -469,7 +474,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
 
   addOptions() {
     return {
-      mergeTags: [],
+      mergeTags: () => [],
       char: "{{",
       emptyText: "No matching merge tags",
       popoverRoot: null,
@@ -477,7 +482,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
   },
 
   addProseMirrorPlugins() {
-    const tags = this.options.mergeTags;
+    const tags = this.options.mergeTags();
     const emptyText = this.options.emptyText;
     const popoverRootRef = this.options.popoverRoot;
 

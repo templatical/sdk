@@ -328,6 +328,30 @@ Step 2 is what keeps a tag your `onRequest` **minted** readable: it is in no `ta
 A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other. To change the text around them, use **Edit as text** — or click anywhere else in the field — which opens the whole string, tokens included. `showRawValue` does not change that.
 :::
 
+## Changing the tag list after `init()`
+
+`editor.setMergeTags(tags)` replaces the configured list at runtime:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: { tags: initialTags },
+});
+
+// A tag was renamed, or your picker minted a new one.
+editor.setMergeTags(nextTags);
+```
+
+Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together. It is available on `initCloud()` too.
+
+::: warning Mutating the array does not work
+Pushing into the array you passed to `init()` is not supported. It never repaints anything already on screen — only tags rendered *after* the push pick up the change. Call `setMergeTags` instead.
+:::
+
+::: tip Autocomplete has one limit
+Whether type-ahead is active is decided when a block opens for editing. Going from no tags to some enables it for the next block opened, not for one already being edited. Everything else — labels, the **Insert merge tag** control, the picker — updates immediately.
+:::
+
 ## Tokens in loaded content
 
 Content that never passed through the editor — a template from your own store, or one produced by the [`@templatical/import-*`](/guide/migration-from-html) converters — carries merge tags as bare <code v-pre>{{tokens}}</code> rather than as tag nodes. The editor converts them on the way in, so a loaded tag behaves exactly like a typed one: human label, highlight, `sample`, and selectable as a single unit.

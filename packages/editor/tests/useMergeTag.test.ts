@@ -2,7 +2,7 @@
 import './dom-stubs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
+import { shallowRef, createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
 import type { MergeTag } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTag } from '../src/composables/useMergeTag';
@@ -60,7 +60,7 @@ describe('useMergeTag', () => {
       const [a, b] = withProvide(
         () => [useMergeTag(), useMergeTag()] as const,
         {
-          [MERGE_TAGS_KEY]: sampleTags,
+          [MERGE_TAGS_KEY]: shallowRef(sampleTags),
           [MERGE_TAG_REQUESTING_KEY]: shared,
           [MERGE_TAG_PICKER_KEY]: useMergeTagPicker(),
         },
@@ -76,7 +76,7 @@ describe('useMergeTag', () => {
       const [a, b] = withProvide(
         () => [useMergeTag(), useMergeTag()] as const,
         {
-          [MERGE_TAGS_KEY]: sampleTags,
+          [MERGE_TAGS_KEY]: shallowRef(sampleTags),
           [MERGE_TAG_REQUESTING_KEY]: shared,
           [MERGE_TAG_PICKER_KEY]: picker,
         },
@@ -93,7 +93,7 @@ describe('useMergeTag', () => {
     it('falls back to a private ref when nothing is provided', () => {
       const [a, b] = withProvide(
         () => [useMergeTag(), useMergeTag()] as const,
-        { [MERGE_TAGS_KEY]: sampleTags },
+        { [MERGE_TAGS_KEY]: shallowRef(sampleTags) },
       );
 
       expect(a.isRequesting).not.toBe(b.isRequesting);
@@ -104,38 +104,38 @@ describe('useMergeTag', () => {
   describe('canRequestMergeTag', () => {
     it('is false when neither tags nor onRequest is provided', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag());
-      expect(canRequestMergeTag).toBe(false);
+      expect(canRequestMergeTag.value).toBe(false);
     });
 
     it('is true when only static tags are provided (built-in picker handles the click)', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
       });
-      expect(canRequestMergeTag).toBe(true);
+      expect(canRequestMergeTag.value).toBe(true);
     });
 
     it('is true when only onRequest callback is provided (empty tags)', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
       });
-      expect(canRequestMergeTag).toBe(true);
+      expect(canRequestMergeTag.value).toBe(true);
     });
 
     it('is true when both static tags and callback are provided', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
       });
-      expect(canRequestMergeTag).toBe(true);
+      expect(canRequestMergeTag.value).toBe(true);
     });
 
     it('is false when tags is provided but empty (no callback either)', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
       });
-      expect(canRequestMergeTag).toBe(false);
+      expect(canRequestMergeTag.value).toBe(false);
     });
   });
 
@@ -154,7 +154,7 @@ describe('useMergeTag', () => {
   describe('getMergeTagLabel', () => {
     it('resolves label from merge tags array', () => {
       const { getMergeTagLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
 
       expect(getMergeTagLabel('{{first_name}}')).toBe('First Name');
@@ -163,7 +163,7 @@ describe('useMergeTag', () => {
 
     it('returns value itself when no matching tag found', () => {
       const { getMergeTagLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
 
       expect(getMergeTagLabel('{{unknown}}')).toBe('{{unknown}}');
@@ -239,7 +239,7 @@ describe('useMergeTag', () => {
       const openSpy = vi.spyOn(picker, 'open');
 
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: picker,
       });
 
@@ -256,7 +256,7 @@ describe('useMergeTag', () => {
       const picker = useMergeTagPicker();
 
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: picker,
       });
 
@@ -271,7 +271,7 @@ describe('useMergeTag', () => {
       const callback = vi.fn().mockResolvedValue(sampleTags[1]);
 
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: picker,
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: callback,
       });
@@ -286,7 +286,7 @@ describe('useMergeTag', () => {
       const callback = vi.fn().mockResolvedValue(null);
 
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: callback,
       });
 
@@ -298,7 +298,7 @@ describe('useMergeTag', () => {
       const picker = useMergeTagPicker();
 
       const { requestMergeTag, isRequesting } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: picker,
       });
 
@@ -314,7 +314,7 @@ describe('useMergeTag', () => {
       const picker = useMergeTagPicker();
 
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: picker,
       });
 
@@ -327,7 +327,7 @@ describe('useMergeTag', () => {
 
     it('returns null when tags is non-empty but picker is not provided (headless caller)', async () => {
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         // No MERGE_TAG_PICKER_KEY provided.
       });
       expect(await requestMergeTag()).toBeNull();
@@ -366,7 +366,7 @@ describe('useMergeTag', () => {
   describe('getMergeTagLabel with different tags', () => {
     it('returns value for empty merge tags array', () => {
       const { getMergeTagLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
       });
 
       expect(getMergeTagLabel('{{first_name}}')).toBe('{{first_name}}');
@@ -405,7 +405,7 @@ describe('useMergeTag', () => {
   describe('findMergeTag', () => {
     it('returns the configured tag for an exact value match', () => {
       const { findMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(findMergeTag('{{last_name}}')).toEqual({
         label: 'Last Name',
@@ -417,7 +417,7 @@ describe('useMergeTag', () => {
     // deciding whether a chip can be re-picked must tell absence apart.
     it('returns undefined rather than falling back to the token', () => {
       const { findMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(findMergeTag('{{unknown}}')).toBeUndefined();
     });
@@ -428,14 +428,14 @@ describe('useMergeTag', () => {
   describe('canRepickMergeTag', () => {
     it('is true for a configured tag', () => {
       const { canRepickMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(canRepickMergeTag('{{email}}')).toBe(true);
     });
 
     it('is false for an unknown token when only tags are configured', () => {
       const { canRepickMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(canRepickMergeTag('{{unknown}}')).toBe(false);
     });
@@ -444,7 +444,7 @@ describe('useMergeTag', () => {
     // leaves `tags` empty would otherwise get raw editing on every chip.
     it('is true for an unknown token when the consumer owns the chooser', () => {
       const { canRepickMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
       });
       expect(canRepickMergeTag('{{unknown}}')).toBe(true);
@@ -463,14 +463,14 @@ describe('useMergeTag', () => {
   describe('getMergeTagDisplayLabel', () => {
     it('uses the configured label for a declared tag', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(getMergeTagDisplayLabel('{{email}}')).toBe('Email');
     });
 
     it('prefers the configured label over a stale stored one', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(getMergeTagDisplayLabel('{{email}}', 'Old Name')).toBe('Email');
     });
@@ -481,7 +481,7 @@ describe('useMergeTag', () => {
     // the chip renders a raw identifier the instant the author picks a field.
     it('uses the stored label for a minted tag, even when raw tokens are shown', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(getMergeTagDisplayLabel('{{minted-uuid}}', 'Loyalty Tier')).toBe(
         'Loyalty Tier',
@@ -492,14 +492,14 @@ describe('useMergeTag', () => {
       // The editor makes a tag out of anything syntax-shaped, so for a
       // readable syntax the token is the only thing identifying it.
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
       });
       expect(getMergeTagDisplayLabel('{{unknown}}')).toBe('{{unknown}}');
     });
 
     it('falls back to the stored label when raw tokens are hidden', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
       });
       expect(getMergeTagDisplayLabel('{{opaque}}', 'First Name')).toBe(
@@ -509,7 +509,7 @@ describe('useMergeTag', () => {
 
     it('falls back to a neutral placeholder with no stored label', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
         [TRANSLATIONS_KEY as symbol]: en,
       });
@@ -518,7 +518,7 @@ describe('useMergeTag', () => {
 
     it('treats a blank stored label as absent', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
         [TRANSLATIONS_KEY as symbol]: en,
       });
@@ -527,7 +527,7 @@ describe('useMergeTag', () => {
 
     it('never returns the token when raw tokens are hidden', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
         [TRANSLATIONS_KEY as symbol]: en,
       });
@@ -540,7 +540,7 @@ describe('useMergeTag', () => {
 
     it('works headlessly, with no translations provided', () => {
       const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
         [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
       });
       expect(getMergeTagDisplayLabel('{{opaque}}')).toBe('Merge tag');
@@ -590,7 +590,7 @@ describe('useMergeTag', () => {
     it('hands the built-in picker the tag to preselect', async () => {
       const open = vi.fn().mockResolvedValue(null);
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: { open },
       });
 
@@ -604,7 +604,7 @@ describe('useMergeTag', () => {
     it('opens the picker with nothing preselected on an insert', async () => {
       const open = vi.fn().mockResolvedValue(null);
       const { requestMergeTag } = withProvide(() => useMergeTag(), {
-        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAGS_KEY as symbol]: shallowRef(sampleTags),
         [MERGE_TAG_PICKER_KEY as symbol]: { open },
       });
 

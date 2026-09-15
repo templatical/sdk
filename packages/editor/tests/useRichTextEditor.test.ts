@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { defineComponent, h, ref } from 'vue';
+import { shallowRef, defineComponent, h, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_REQUESTING_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
 import { SYNTAX_PRESETS } from '@templatical/types';
@@ -135,7 +135,7 @@ function mountRichText(
       global: {
         provide: {
           [EDITOR_KEY]: emailEditor,
-          [MERGE_TAGS_KEY]: [] as any[],
+          [MERGE_TAGS_KEY]: shallowRef([] as any[]),
           [ON_REQUEST_MERGE_TAG_KEY]: null,
           translations: makeStubTranslations(),
           ...provides,
@@ -422,7 +422,7 @@ describe('useRichTextEditor', () => {
       const ctx = mountRichText(
         {},
         {
-          [MERGE_TAGS_KEY]: [] as any[],
+          [MERGE_TAGS_KEY]: shallowRef([] as any[]),
           [ON_REQUEST_MERGE_TAG_KEY]: onRequestMergeTag,
         },
       );

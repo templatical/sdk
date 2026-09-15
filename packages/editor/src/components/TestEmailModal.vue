@@ -36,6 +36,7 @@ import { hasMergeTagSamples, type ViewportSize } from "@templatical/types";
 import {
   EDITOR_KEY,
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   MERGE_TAG_SAMPLE_MODE_KEY,
   RESOLVE_PREVIEW_KEY,
 } from "../keys";
@@ -89,7 +90,9 @@ const sharedSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
 // A blanket `true` would make the dialog claim tags "show example values" for a
 // consumer who configured none — false, and with no toggle rendered to correct
 // it, since the toggle hides itself when nothing has a sample.
-const localSampleMode = ref(hasMergeTagSamples(inject(MERGE_TAGS_KEY, [])));
+const localSampleMode = ref(
+  hasMergeTagSamples(inject(MERGE_TAGS_KEY, NO_MERGE_TAGS).value),
+);
 const sampleMode = computed({
   get: () =>
     // Off entirely while a resolver is configured — same rule as the canvas.

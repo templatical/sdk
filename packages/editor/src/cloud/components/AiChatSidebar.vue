@@ -6,6 +6,7 @@ import {
   EDITOR_KEY,
   AUTH_MANAGER_KEY,
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   requireInject,
 } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
@@ -38,7 +39,7 @@ const cloudTranslations = requireInject(
 );
 const editor = requireInject(EDITOR_KEY, "AiChatSidebar");
 const authManager = requireInject(AUTH_MANAGER_KEY, "AiChatSidebar");
-const mergeTags = inject(MERGE_TAGS_KEY, []);
+const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
 const aliveFlag = useAliveFlag();
 
 const aiChat = useAiChat({
@@ -109,7 +110,7 @@ watch(
         (aiChat.messages.value?.length ?? 0) === 0 &&
         editor.content.value.blocks.length === 0
       ) {
-        aiChat.loadSuggestions(editor.content.value, mergeTags);
+        aiChat.loadSuggestions(editor.content.value, mergeTags.value);
       }
     }
   },
@@ -126,7 +127,7 @@ async function handleSend(): Promise<void> {
   aiChat.failedPrompt.value = null;
   scrollToBottom();
 
-  await aiChat.sendPrompt(prompt, editor.content.value, mergeTags);
+  await aiChat.sendPrompt(prompt, editor.content.value, mergeTags.value);
   if (!aliveFlag.alive) return;
 
   if (aiChat.failedPrompt.value) {

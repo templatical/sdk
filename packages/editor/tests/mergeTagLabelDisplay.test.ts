@@ -1,3 +1,4 @@
+import { shallowRef } from "vue";
 // @vitest-environment happy-dom
 //
 // Canvas display: Button, Menu, Video and Image render a merge-tag-enabled text
@@ -49,7 +50,7 @@ describe("ButtonBlock merge tag label display", () => {
         }),
         viewport: "desktop",
       },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
 
     expect(wrapper.find("a").text()).toBe("Go to Your Dashboard Shipping Method");
@@ -64,7 +65,7 @@ describe("ButtonBlock merge tag label display", () => {
         block: createButtonBlock({ text: "Hello {{mystery}}" }),
         viewport: "desktop",
       },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
 
     expect(wrapper.find("a").text()).toBe("Hello {{mystery}}");
@@ -77,7 +78,7 @@ describe("ButtonBlock merge tag label display", () => {
         block: createButtonBlock({ text: "Just a label" }),
         viewport: "desktop",
       },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
 
     expect(wrapper.find("a").text()).toBe("Just a label");
@@ -97,7 +98,7 @@ describe("MenuBlock merge tag label display", () => {
         }),
         viewport: "desktop",
       },
-      provides: { [MERGE_TAGS_KEY]: TAGS },
+      provides: { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     });
 
     const links = wrapper.findAll("a");
@@ -121,7 +122,7 @@ describe("VideoBlock merge tag label display", () => {
         viewport: "desktop",
       },
       provides: {
-        [MERGE_TAGS_KEY]: [{ label: "Video URL", value: "{{video_url}}" }],
+        [MERGE_TAGS_KEY]: shallowRef([{ label: "Video URL", value: "{{video_url}}" }]),
       },
     });
 
@@ -142,7 +143,7 @@ describe("ImageBlock merge tag label display", () => {
         viewport: "desktop",
       },
       provides: {
-        [MERGE_TAGS_KEY]: [{ label: "Account ID", value: "{{account_id}}" }],
+        [MERGE_TAGS_KEY]: shallowRef([{ label: "Account ID", value: "{{account_id}}" }]),
       },
     });
 

@@ -15,7 +15,7 @@ const mergeTags = [{ label: 'First Name', value: '{{first_name}}' }];
 
 const extensions = [
   StarterKit,
-  MergeTagNode.configure({ mergeTags }),
+  MergeTagNode.configure({ mergeTags: () => mergeTags }),
   LogicMergeTagNode,
 ];
 

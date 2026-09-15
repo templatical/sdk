@@ -3,7 +3,7 @@ import {
   type ComponentMountingOptions,
   type VueWrapper,
 } from '@vue/test-utils';
-import { ref, computed, type Component } from 'vue';
+import { shallowRef, ref, computed, type Component } from 'vue';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import {
   TRANSLATIONS_KEY,
@@ -52,7 +52,7 @@ export function mountEditor<C extends Component>(
     [THEME_STYLES_KEY]: computed(() => ({})),
     [UI_THEME_KEY]: computed(() => 'light'),
     [BLOCK_DEFAULTS_KEY]: undefined,
-    [MERGE_TAGS_KEY]: [],
+    [MERGE_TAGS_KEY]: shallowRef([]),
     [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.liquid,
     [ON_REQUEST_MERGE_TAG_KEY]: null,
     [ON_REQUEST_MEDIA_KEY]: null,

@@ -2,7 +2,7 @@
 import "./dom-stubs";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ref } from "vue";
+import { shallowRef, ref } from "vue";
 import type { MergeTag } from "@templatical/types";
 import RichTextLinkDialog from "../src/components/blocks/RichTextLinkDialog.vue";
 import { MERGE_TAGS_KEY, POPOVER_ROOT_KEY } from "../src/keys";
@@ -62,7 +62,7 @@ describe("RichTextLinkDialog merge tags", () => {
   // affordance; every other one (button, image, video, menu, social) is a
   // MergeTagInput. A link is the field most often composed from a tag.
   it("offers the merge tag insert button when tags are configured", () => {
-    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: TAGS });
+    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: shallowRef(TAGS) });
 
     expect(buttonLabels()).toContain("mergeTag.insert");
 
@@ -70,7 +70,7 @@ describe("RichTextLinkDialog merge tags", () => {
   });
 
   it("offers no merge tag button when no tags are configured", () => {
-    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: [] });
+    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: shallowRef([]) });
 
     expect(buttonLabels()).not.toContain("mergeTag.insert");
 
@@ -80,7 +80,7 @@ describe("RichTextLinkDialog merge tags", () => {
   it("still submits on Enter", () => {
     const wrapper = mountDialog(
       { linkUrl: "https://example.com" },
-      { [MERGE_TAGS_KEY]: TAGS },
+      { [MERGE_TAGS_KEY]: shallowRef(TAGS) },
     );
 
     const input = popoverRootEl.querySelector("input") as HTMLInputElement;
@@ -97,7 +97,7 @@ describe("RichTextLinkDialog merge tags", () => {
   // press to the dialog would submit the link on the keystroke that was
   // choosing its URL.
   it("does not submit on the Enter that picks a tag from the popup", async () => {
-    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: TAGS });
+    const wrapper = mountDialog({}, { [MERGE_TAGS_KEY]: shallowRef(TAGS) });
 
     const input = popoverRootEl.querySelector("input") as HTMLInputElement;
     input.value = "{{eve";

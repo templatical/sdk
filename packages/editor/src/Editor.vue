@@ -494,6 +494,7 @@ defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
   setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
+  setMergeTags: core.setMergeTags,
   isDirty: () => editor.state.isDirty,
   create: templateLifecycle.create,
   load: templateLifecycle.load,

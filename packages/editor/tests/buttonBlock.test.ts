@@ -1,3 +1,4 @@
+import { shallowRef } from "vue";
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
@@ -19,7 +20,7 @@ function mountButton(block: ButtonBlockType) {
       provide: {
         [TRANSLATIONS_KEY as symbol]: enTranslations,
         [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
-        [MERGE_TAGS_KEY as symbol]: [],
+        [MERGE_TAGS_KEY as symbol]: shallowRef([]),
       },
     },
   });

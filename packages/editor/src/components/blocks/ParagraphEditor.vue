@@ -136,13 +136,20 @@ const {
         FontSize,
         LineHeight,
         LetterSpacing,
-        MergeTagNode.configure({ mergeTags, syntax }),
+        // The getter, not `mergeTags.value`: a snapshot here would pin the
+        // extension to the list as it stood when this block opened.
+        MergeTagNode.configure({ mergeTags: () => mergeTags.value, syntax }),
         LogicMergeTagNode.configure({ syntax }),
         LineBoundaryKeys,
-        ...(autocompleteEnabled && triggerChar && mergeTags.length > 0
+        // Registration is decided here, when the block opens for editing, so a
+        // list that goes from empty to populated enables type-ahead for the
+        // next block opened rather than this one. Deliberate: registering
+        // unconditionally would show the suggestion popup to consumers who
+        // configured no tags at all.
+        ...(autocompleteEnabled && triggerChar && mergeTags.value.length > 0
           ? [
               MergeTagSuggestion.configure({
-                mergeTags,
+                mergeTags: () => mergeTags.value,
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
                 popoverRoot,

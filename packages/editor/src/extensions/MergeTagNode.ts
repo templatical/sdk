@@ -6,7 +6,12 @@ import { isNodeSelected } from "./isNodeSelected";
 import { renderVueNodeView } from "./renderVueNodeView";
 
 export interface MergeTagNodeOptions {
-  mergeTags: MergeTag[];
+  /**
+   * Read live, not captured. `renderHTML` and the input/paste rules resolve a
+   * label every time they run, and `editor.setMergeTags` can replace the list
+   * while a block is open for editing.
+   */
+  mergeTags: () => MergeTag[];
   syntax: SyntaxPreset;
 }
 
@@ -38,7 +43,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
 
   addOptions() {
     return {
-      mergeTags: [],
+      mergeTags: () => [],
       syntax: SYNTAX_PRESETS.liquid,
     };
   },
@@ -74,7 +79,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const label = getMergeTagLabel(node.attrs.value, this.options.mergeTags);
+    const label = getMergeTagLabel(node.attrs.value, this.options.mergeTags());
 
     return [
       "span",
@@ -120,7 +125,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
         find: inputRegex,
         handler: ({ state, range, match }) => {
           const fullValue = match[0];
-          const label = getMergeTagLabel(fullValue, this.options.mergeTags);
+          const label = getMergeTagLabel(fullValue, this.options.mergeTags());
 
           const node = this.type.create({
             label,
@@ -141,7 +146,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
         find: pasteRegex,
         handler: ({ state, range, match }) => {
           const fullValue = match[0];
-          const label = getMergeTagLabel(fullValue, this.options.mergeTags);
+          const label = getMergeTagLabel(fullValue, this.options.mergeTags());
 
           const node = this.type.create({
             label,

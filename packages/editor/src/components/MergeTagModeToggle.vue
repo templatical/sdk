@@ -20,7 +20,7 @@
  */
 import { hasMergeTagSamples } from "@templatical/types";
 import { useI18n } from "../composables/useI18n";
-import { MERGE_TAGS_KEY } from "../keys";
+import { MERGE_TAGS_KEY, NO_MERGE_TAGS } from "../keys";
 import { TextCursorInput, Sparkles } from "@lucide/vue";
 import { computed, inject } from "vue";
 
@@ -35,8 +35,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const mergeTags = inject(MERGE_TAGS_KEY, []);
-const isAvailable = computed(() => hasMergeTagSamples(mergeTags));
+const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
+const isAvailable = computed(() => hasMergeTagSamples(mergeTags.value));
 
 const modes = computed(() => [
   { value: true, label: t.mergeTagPreview.sample },

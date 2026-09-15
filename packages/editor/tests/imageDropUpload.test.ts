@@ -2,7 +2,7 @@
 import "./dom-stubs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount, shallowMount, flushPromises } from "@vue/test-utils";
-import { computed, ref, toValue, type MaybeRefOrGetter } from "vue";
+import { shallowRef, computed, ref, toValue, type MaybeRefOrGetter } from "vue";
 import { SYNTAX_PRESETS, createImageBlock } from "@templatical/types";
 import type { CustomBlockImageField } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
@@ -30,7 +30,7 @@ function provideMap(onRequestMedia: unknown, canDrop?: boolean) {
   return {
     [TRANSLATIONS_KEY as symbol]: enTranslations,
     [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
-    [MERGE_TAGS_KEY as symbol]: [],
+    [MERGE_TAGS_KEY as symbol]: shallowRef([]),
     [ON_REQUEST_MEDIA_KEY as symbol]: onRequestMedia,
     ...(canDrop !== undefined
       ? { [CAN_DROP_MEDIA_KEY as symbol]: computed(() => canDrop) }

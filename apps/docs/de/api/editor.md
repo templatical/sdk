@@ -221,6 +221,21 @@ editor.setTheme("auto"); // folgt der Systemeinstellung
 
 **Parameter:** `theme: 'light' | 'dark' | 'auto'`
 
+### `setMergeTags(tags)`
+
+Ersetzt die konfigurierten Merge-Tags zur Laufzeit. Canvas, Felder der Seitenleiste und der integrierte Picker lesen dieselbe Liste und werden gemeinsam neu gezeichnet.
+
+```ts
+editor.setMergeTags([
+  { label: 'Vorname', value: '{{first_name}}' },
+  { label: 'Tarif', value: '{{plan_name}}' },
+]);
+```
+
+**Parameter:** `tags: MergeTag[]`
+
+Verwenden Sie die Methode, wenn Tags erzeugt oder umbenannt werden, während der Editor geöffnet ist. Das an `init()` übergebene Array zu mutieren ist kein unterstützter Ersatz — es zeichnet nichts neu, was bereits sichtbar ist. Siehe [Merge-Tags](/de/guide/merge-tags) für die eine Einschränkung bei der Autovervollständigung.
+
 ### `unmount()`
 
 Zerstört diese Editor-Instanz.

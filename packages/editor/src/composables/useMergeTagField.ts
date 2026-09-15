@@ -29,7 +29,7 @@ export interface UseMergeTagFieldOptions {
 export interface UseMergeTagFieldReturn {
   segments: ComputedRef<MergeTagSegment[]>;
   hasMergeTags: ComputedRef<boolean>;
-  canRequestMergeTag: boolean;
+  canRequestMergeTag: ComputedRef<boolean>;
   isRequestingMergeTag: Ref<boolean>;
   canInsertLogicTag: boolean;
   isRequestingLogicTag: Ref<boolean>;
@@ -54,7 +54,7 @@ export interface UseMergeTagFieldReturn {
   replaceMergeTagAt: (index: number) => Promise<void>;
   insertLogicTag: () => Promise<void>;
   /** Whether type-ahead autocomplete is active for this field. */
-  autocompleteAvailable: boolean;
+  autocompleteAvailable: ComputedRef<boolean>;
 }
 
 export function useMergeTagField(

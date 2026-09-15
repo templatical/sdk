@@ -8,9 +8,17 @@ import {
   getMergeTagLabel as resolveMergeTagLabel,
   SYNTAX_PRESETS,
 } from "@templatical/types";
-import { inject, ref, type Ref } from "vue";
+import {
+  computed,
+  inject,
+  ref,
+  type ComputedRef,
+  type Ref,
+  type ShallowRef,
+} from "vue";
 import {
   MERGE_TAGS_KEY,
+  NO_MERGE_TAGS,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
@@ -21,8 +29,11 @@ import {
 } from "../keys";
 
 export interface UseMergeTagReturn {
-  /** Available merge tags from config */
-  mergeTags: MergeTag[];
+  /**
+   * The configured merge tags. A ref, so `editor.setMergeTags()` reaches
+   * everything reading it — never destructure the array out of it.
+   */
+  mergeTags: ShallowRef<MergeTag[]>;
   /** Whether a merge tag request is in progress */
   isRequesting: Ref<boolean>;
   /**
@@ -30,7 +41,7 @@ export interface UseMergeTagReturn {
    * either `onRequestMergeTag` is provided or `mergeTags.tags` is
    * non-empty (the built-in picker then handles the click).
    */
-  canRequestMergeTag: boolean;
+  canRequestMergeTag: ComputedRef<boolean>;
   /** Whether typing-based autocomplete is enabled by configuration */
   autocomplete: boolean;
   /** The resolved syntax preset for merge tags */
@@ -97,7 +108,7 @@ export interface UseMergeTagReturn {
  * Provides utilities for detecting, displaying, and requesting merge tags.
  */
 export function useMergeTag(): UseMergeTagReturn {
-  const mergeTags = inject(MERGE_TAGS_KEY, []);
+  const mergeTags = inject(MERGE_TAGS_KEY, NO_MERGE_TAGS);
   const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
   const onRequestMergeTag = inject(ON_REQUEST_MERGE_TAG_KEY, null);
   const autocomplete = inject(MERGE_TAG_AUTOCOMPLETE_KEY, true);
@@ -122,11 +133,11 @@ export function useMergeTag(): UseMergeTagReturn {
   }
 
   function getMergeTagLabel(value: string): string {
-    return resolveMergeTagLabel(value, mergeTags);
+    return resolveMergeTagLabel(value, mergeTags.value);
   }
 
   function findMergeTag(value: string): MergeTag | undefined {
-    return mergeTags.find((tag) => tag.value === value);
+    return mergeTags.value.find((tag) => tag.value === value);
   }
 
   function canRepickMergeTag(value: string): boolean {
@@ -167,10 +178,12 @@ export function useMergeTag(): UseMergeTagReturn {
         isRequesting.value = false;
       }
     }
-    if (mergeTags.length > 0 && picker) {
+    if (mergeTags.value.length > 0 && picker) {
       isRequesting.value = true;
       try {
-        return await picker.open(mergeTags, { current: context?.current });
+        return await picker.open(mergeTags.value, {
+          current: context?.current,
+        });
       } finally {
         isRequesting.value = false;
       }
@@ -178,7 +191,12 @@ export function useMergeTag(): UseMergeTagReturn {
     return null;
   }
 
-  const canRequestMergeTag = !!onRequestMergeTag || mergeTags.length > 0;
+  // Computed, not a snapshot: `setMergeTags` can take the list from empty to
+  // populated, and a plain boolean captured here would leave the "Insert merge
+  // tag" affordance hidden for the rest of the session.
+  const canRequestMergeTag = computed(
+    () => !!onRequestMergeTag || mergeTags.value.length > 0,
+  );
 
   return {
     mergeTags,

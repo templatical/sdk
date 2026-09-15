@@ -224,6 +224,21 @@ editor.setTheme("auto"); // follow system preference
 
 **Parameter:** `theme: 'light' | 'dark' | 'auto'`
 
+### `setMergeTags(tags)`
+
+Replaces the configured merge tags at runtime. The canvas, the sidebar fields and the built-in picker all read the same list, so they repaint together.
+
+```ts
+editor.setMergeTags([
+  { label: 'First Name', value: '{{first_name}}' },
+  { label: 'Plan', value: '{{plan_name}}' },
+]);
+```
+
+**Parameter:** `tags: MergeTag[]`
+
+Use it when tags are minted or renamed while the editor is open. Mutating the array passed to `init()` is not a supported substitute — it repaints nothing already on screen. See [Merge Tags](/guide/merge-tags) for the one autocomplete limitation.
+
 ### `unmount()`
 
 Destroys this editor instance.
@@ -6754,6 +6769,30 @@ Step 2 is what keeps a tag your `onRequest` **minted** readable: it is in no `ta
 
 ::: tip Sidebar fields
 A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other. To change the text around them, use **Edit as text** — or click anywhere else in the field — which opens the whole string, tokens included. `showRawValue` does not change that.
+:::
+
+## Changing the tag list after `init()`
+
+`editor.setMergeTags(tags)` replaces the configured list at runtime:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: { tags: initialTags },
+});
+
+// A tag was renamed, or your picker minted a new one.
+editor.setMergeTags(nextTags);
+```
+
+Everything that renders a tag reads the same list, so the canvas, the sidebar fields and the built-in picker repaint together. It is available on `initCloud()` too.
+
+::: warning Mutating the array does not work
+Pushing into the array you passed to `init()` is not supported. It never repaints anything already on screen — only tags rendered *after* the push pick up the change. Call `setMergeTags` instead.
+:::
+
+::: tip Autocomplete has one limit
+Whether type-ahead is active is decided when a block opens for editing. Going from no tags to some enables it for the next block opened, not for one already being edited. Everything else — labels, the **Insert merge tag** control, the picker — updates immediately.
 :::
 
 ## Tokens in loaded content

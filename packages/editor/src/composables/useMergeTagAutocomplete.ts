@@ -5,12 +5,15 @@ import {
   type SyntaxPreset,
 } from "@templatical/types";
 import {
+  computed,
   getCurrentScope,
   inject,
   isRef,
   nextTick,
   onScopeDispose,
+  type ComputedRef,
   type Ref,
+  type ShallowRef,
 } from "vue";
 import type { Translations } from "../i18n";
 import { TRANSLATIONS_KEY } from "../keys";
@@ -33,7 +36,7 @@ export interface UseMergeTagAutocompleteOptions {
   /** Emits a new field value. */
   emit: (value: string) => void;
   /** Available merge tags (the autocomplete filter source). */
-  mergeTags: MergeTag[];
+  mergeTags: ShallowRef<MergeTag[]>;
   /** Resolved merge-tag syntax. */
   syntax: SyntaxPreset;
   /** Consumer's `mergeTags.autocomplete` flag. */
@@ -50,7 +53,7 @@ export interface UseMergeTagAutocompleteReturn {
    * Whether autocomplete can ever fire. Mirrors the rich-text gate exactly:
    * enabled + a built-in trigger syntax + at least one tag to filter.
    */
-  available: boolean;
+  available: ComputedRef<boolean>;
   /** Recompute the popup after the value or caret changed. */
   refresh: () => void;
   /**
@@ -86,7 +89,12 @@ export function useMergeTagAutocomplete(
 
   const triggerChar = getSyntaxTriggerChar(syntax);
   const closingChar = getSyntaxClosingChar(syntax);
-  const available = enabled && triggerChar !== null && mergeTags.length > 0;
+  // Reactive: `setMergeTags` can take the list from empty to populated, and a
+  // boolean captured here would leave type-ahead dead for the rest of the
+  // field's life.
+  const available = computed(
+    () => enabled && triggerChar !== null && mergeTags.value.length > 0,
+  );
 
   // Resolve the empty-state label the same way the rich-text path does —
   // inject with a null default so headless callers (no translations provider)
@@ -155,7 +163,7 @@ export function useMergeTagAutocomplete(
   }
 
   function refresh(): void {
-    if (!available || disposed) return;
+    if (!available.value || disposed) return;
     const el = elementRef.value;
     if (!el) {
       popup.close();
@@ -167,7 +175,7 @@ export function useMergeTagAutocomplete(
       return;
     }
 
-    const items = filterMergeTags(mergeTags, match.query);
+    const items = filterMergeTags(mergeTags.value, match.query);
     const getRect = () => getCaretRect(el, match.triggerStart);
     const onCommand = (tag: MergeTag) => applySelection(el, match, tag);
 

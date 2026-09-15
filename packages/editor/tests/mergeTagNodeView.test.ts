@@ -14,7 +14,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { MergeTag } from "@templatical/types";
-import { nextTick } from "vue";
+import { shallowRef, nextTick } from "vue";
 import { flushPromises } from "@vue/test-utils";
 import MergeTagNodeView from "../src/extensions/MergeTagNodeView.vue";
 import { mountEditor } from "./helpers/mount";
@@ -51,7 +51,7 @@ function mountChip(options: {
     },
     provides: {
       [TRANSLATIONS_KEY]: en,
-      [MERGE_TAGS_KEY]: options.tags ?? [FIRST_NAME, LAST_NAME],
+      [MERGE_TAGS_KEY]: shallowRef(options.tags ?? [FIRST_NAME, LAST_NAME]),
       [ON_REQUEST_MERGE_TAG_KEY]: options.onRequest ?? null,
       [MERGE_TAG_PICKER_KEY]: options.picker ?? null,
       [MERGE_TAG_SHOW_RAW_VALUE_KEY]: options.showRawValue ?? true,
@@ -173,7 +173,7 @@ describe("MergeTagNodeView", () => {
         props: { node: { attrs }, deleteNode: vi.fn(), updateAttributes },
         provides: {
           [TRANSLATIONS_KEY]: en,
-          [MERGE_TAGS_KEY]: [FIRST_NAME],
+          [MERGE_TAGS_KEY]: shallowRef([FIRST_NAME]),
           [ON_REQUEST_MERGE_TAG_KEY]: vi.fn().mockResolvedValue(minted),
         },
       });
@@ -299,7 +299,7 @@ describe("MergeTagNodeView", () => {
           },
           provides: {
             [TRANSLATIONS_KEY]: en,
-            [MERGE_TAGS_KEY]: [],
+            [MERGE_TAGS_KEY]: shallowRef([]),
             [ON_REQUEST_MERGE_TAG_KEY]: vi.fn(),
             [MERGE_TAG_SHOW_RAW_VALUE_KEY]: showRawValue,
           },

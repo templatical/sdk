@@ -15,6 +15,7 @@ import type {
   MediaProvider,
   MediaRequestContext,
   MediaResult,
+  MergeTag,
   MergeTagsConfig,
   RenderProvider,
   SavedBlocksProvider,
@@ -618,6 +619,20 @@ interface TemplaticalEditorBase {
   getContent(): TemplateContent;
   setContent(content: TemplateContent): void;
   setTheme(theme: UiTheme): void;
+  /**
+   * Replace the configured merge tags after `init()`.
+   *
+   * Everything that renders a tag reads the same list, so a replacement
+   * repaints the canvas, the sidebar fields and the built-in picker together.
+   * Use it when tags are minted or renamed while the editor is open — mutating
+   * the array you passed to `init()` is not a supported substitute and will
+   * not repaint anything already on screen.
+   *
+   * Type-ahead autocomplete is the one exception: whether it is active is
+   * decided when a block opens for editing, so going from no tags to some
+   * enables it for the next block opened, not one already being edited.
+   */
+  setMergeTags(tags: MergeTag[]): void;
   unmount(): void;
   /**
    * Render the current template to MJML.
@@ -1026,6 +1041,15 @@ async function mountEditor(
       if (editorRef.value) {
         editorRef.value.setTheme(theme);
       }
+    },
+    setMergeTags(tags: MergeTag[]) {
+      if (editorRef.value) {
+        editorRef.value.setMergeTags(tags);
+        return;
+      }
+      // Called before mount: fold it into the config the editor is about to
+      // read, so the call is never silently lost.
+      config.mergeTags = { ...config.mergeTags, tags };
     },
     unmount: () => unmountOssContainer(container),
     create(input?: { name?: string; content?: TemplateContent }) {
