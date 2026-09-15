@@ -5,6 +5,9 @@ import { useData } from "vitepress";
 /**
  * The editor screenshot. The file lives on templatical.com — README.md
  * uses this same URL. Do not copy the PNG into apps/docs/public/.
+ *
+ * referrerpolicy=no-referrer is required: templatical.com hotlink-protects
+ * on Referer (403 from *.pages.dev, 200 with no Referer).
  */
 const SRC = "https://templatical.com/preview.png";
 
@@ -23,5 +26,6 @@ const alt = computed(() =>
     :alt="alt"
     width="900"
     height="537"
+    referrerpolicy="no-referrer"
   />
 </template>
