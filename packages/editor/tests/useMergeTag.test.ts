@@ -475,6 +475,19 @@ describe('useMergeTag', () => {
       expect(getMergeTagDisplayLabel('{{email}}', 'Old Name')).toBe('Email');
     });
 
+    // #737: a consumer whose picker MINTS a tag on insert or edit returns a
+    // MergeTag that is in no `tags` array. Its label is written onto the node,
+    // so the chain must reach it before falling back to the token — otherwise
+    // the chip renders a raw identifier the instant the author picks a field.
+    it('uses the stored label for a minted tag, even when raw tokens are shown', () => {
+      const { getMergeTagDisplayLabel } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+      });
+      expect(getMergeTagDisplayLabel('{{minted-uuid}}', 'Loyalty Tier')).toBe(
+        'Loyalty Tier',
+      );
+    });
+
     it('shows an undeclared token as itself by default', () => {
       // The editor makes a tag out of anything syntax-shaped, so for a
       // readable syntax the token is the only thing identifying it.

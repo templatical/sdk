@@ -160,6 +160,36 @@ describe("MergeTagNodeView", () => {
       expect(onRequest).toHaveBeenCalledTimes(1);
     });
 
+    // #737's scenario end to end: the consumer's picker returns a tag it just
+    // minted, which is in no `tags` array. The chip must show the label the
+    // author chose, not the identifier behind it.
+    it("shows a minted tag's label after the pick, not its token", async () => {
+      const minted = { label: "Loyalty Tier", value: "{{c9f0f895-2222}}" };
+      const attrs = { label: "First Name", value: TOKEN };
+      const updateAttributes = vi.fn((patch: Record<string, unknown>) => {
+        Object.assign(attrs, patch);
+      });
+      const wrapper = mountEditor(MergeTagNodeView as never, {
+        props: { node: { attrs }, deleteNode: vi.fn(), updateAttributes },
+        provides: {
+          [TRANSLATIONS_KEY]: en,
+          [MERGE_TAGS_KEY]: [FIRST_NAME],
+          [ON_REQUEST_MERGE_TAG_KEY]: vi.fn().mockResolvedValue(minted),
+        },
+      });
+
+      await wrapper.find('[role="button"]').trigger("click");
+      await flushPromises();
+      // TipTap re-renders the node view with the written attrs.
+      await wrapper.setProps({ node: { attrs: { ...attrs } } });
+
+      expect(updateAttributes).toHaveBeenCalledWith({
+        value: minted.value,
+        label: minted.label,
+      });
+      expect(wrapper.find('[role="button"]').text()).toBe("Loyalty Tier");
+    });
+
     it("does not write attributes onto a node view that was torn down mid-pick", async () => {
       // The chooser mounts outside this node view, so the block can finish
       // editing while it is open.
@@ -276,11 +306,27 @@ describe("MergeTagNodeView", () => {
         }).find('[role="button"]');
       }
 
-      it("renders as itself by default", () => {
-        expect(mountUndeclared(true).text()).toBe(TOKEN);
+      it("renders as itself when its stored label is the token", () => {
+        // The shape every tag the editor makes for itself has: the input rule,
+        // paste rule and normalization all derive an undeclared tag's stored
+        // label from getMergeTagLabel, which returns the token.
+        expect(mountUndeclared(true, TOKEN).text()).toBe(TOKEN);
       });
 
-      it("renders the stored label instead when raw tokens are hidden", () => {
+      it("renders as itself with no stored label at all", () => {
+        expect(mountUndeclared(true, "").text()).toBe(TOKEN);
+      });
+
+      // #737: a picker that mints a tag returns one in no `tags` array, and
+      // writes its label onto the node. Reaching for the token first showed a
+      // raw identifier the instant the author picked a field.
+      it("renders a minted tag's stored label, even with raw tokens shown", () => {
+        expect(mountUndeclared(true, "Loyalty Tier").text()).toBe(
+          "Loyalty Tier",
+        );
+      });
+
+      it("renders the stored label when raw tokens are hidden", () => {
         expect(mountUndeclared(false).text()).toBe("First Name");
       });
 

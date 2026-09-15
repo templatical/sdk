@@ -316,7 +316,13 @@ const editor = await init({
 
 Authors then see only labels — on the canvas, in sidebar fields and in the built-in picker. Display-only: the token is unchanged in stored content and in the rendered output.
 
-It also governs what a tag *renders as*, not only its tooltip. The editor makes a tag out of anything matching your `syntax`, declared or not, and an undeclared one normally shows the token as its own label. With `showRawValue: false` it falls back to the label stored on the tag when it was inserted, and then to a neutral placeholder — so an internal identifier never reaches the screen or a screen reader.
+It also governs what a tag *renders as*, not only its tooltip. A tag resolves its display label in this order:
+
+1. the `label` of the matching entry in `tags`;
+2. the label stored on the tag when it was inserted or last changed;
+3. the token itself — or, with `showRawValue: false`, a neutral placeholder.
+
+Step 2 is what keeps a tag your `onRequest` **minted** readable: it is in no `tags` array, so only the label you returned identifies it. For a tag the editor made itself — typed, pasted, or converted from loaded content — the stored label is the token, so the two steps agree and nothing changes.
 
 ::: tip Sidebar fields
 A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other, but editing the text around them opens that whole string for editing, tokens included. `showRawValue` does not change that.

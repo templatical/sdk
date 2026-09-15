@@ -316,7 +316,13 @@ const editor = await init({
 
 Autoren sehen dann nur noch Labels — im Canvas, in den Feldern der Seitenleiste und im integrierten Picker. Rein visuell: Der Token bleibt im gespeicherten Inhalt und in der gerenderten Ausgabe unverändert.
 
-Die Option bestimmt außerdem, **wie ein Tag dargestellt wird**, nicht nur seinen Tooltip. Der Editor erzeugt aus allem, was Ihrer `syntax` entspricht, ein Tag — deklariert oder nicht —, und ein nicht deklariertes zeigt normalerweise den Token als eigenes Label. Mit `showRawValue: false` greift stattdessen das Label, das beim Einfügen auf dem Tag gespeichert wurde, und anschließend ein neutraler Platzhalter — so gelangt eine interne Kennung weder auf den Bildschirm noch zu einem Screenreader.
+Die Option bestimmt außerdem, **wie ein Tag dargestellt wird**, nicht nur seinen Tooltip. Ein Tag ermittelt sein Anzeige-Label in dieser Reihenfolge:
+
+1. das `label` des passenden Eintrags in `tags`;
+2. das Label, das beim Einfügen oder bei der letzten Änderung auf dem Tag gespeichert wurde;
+3. der Token selbst — oder, mit `showRawValue: false`, ein neutraler Platzhalter.
+
+Schritt 2 hält ein Tag lesbar, das Ihr `onRequest` **neu erzeugt** hat: Es steht in keinem `tags`-Array, sodass nur das von Ihnen zurückgegebene Label es identifiziert. Bei einem Tag, das der Editor selbst erzeugt hat — getippt, eingefügt oder aus geladenem Inhalt konvertiert —, ist das gespeicherte Label der Token, sodass beide Schritte übereinstimmen und sich nichts ändert.
 
 ::: tip Felder in der Seitenleiste
 Ein Feldwert ist eine einzelne Zeichenkette, die Text und Token mischt (<code v-pre>Hallo {{first_name}}, willkommen</code>). Seine Tags sind einzeln anklickbar und werden wie alle anderen neu ausgewählt; die Bearbeitung des umgebenden Textes öffnet jedoch die gesamte Zeichenkette zur Bearbeitung, Token eingeschlossen. `showRawValue` ändert daran nichts.

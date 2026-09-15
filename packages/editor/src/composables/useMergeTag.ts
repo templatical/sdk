@@ -139,8 +139,15 @@ export function useMergeTag(): UseMergeTagReturn {
   ): string {
     const declared = findMergeTag(value);
     if (declared) return declared.label;
-    if (showRawValue) return value;
-    return storedLabel?.trim() || unknownLabel;
+    // Before the token, not after it. A consumer whose picker mints a tag
+    // returns one that is in no `tags` array, and its label is written onto
+    // the node — reaching for the token first renders a raw identifier the
+    // instant the author picks a field. This costs nothing for a tag the
+    // editor made itself: the input rule, the paste rule, normalization and
+    // `parseHTML` all derive an undeclared tag's stored label from
+    // `getMergeTagLabel`, which returns the token, so the two agree already.
+    if (storedLabel?.trim()) return storedLabel.trim();
+    return showRawValue ? value : unknownLabel;
   }
 
   /**
