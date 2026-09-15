@@ -161,9 +161,25 @@ Ein Provider gewinnt gegen den lokalen Renderer, deshalb übergibt der Editor al
 
 Ohne `render`-Provider — oder mit einem, der nur `compileMjml` implementiert — nutzt `toMjml()` den [`@templatical/renderer`](/de/api/renderer-typescript), eine optionale Peer-Dependency unter MIT-Lizenz. Installieren Sie ihn dort, wo Sie exportieren:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 `toMjml()` importiert ihn beim ersten Aufruf dynamisch und lehnt mit einem klaren Fehler ab, der das fehlende Paket nennt. Custom Blocks werden über die Registry des Editors aufgelöst, und Ihre konfigurierten Fonts werden automatisch eingebunden.
 

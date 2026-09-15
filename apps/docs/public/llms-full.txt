@@ -683,9 +683,25 @@ Source: https://docs.templatical.com/api/renderer-typescript
 
 The renderer produces MJML only. To compile MJML to HTML for email sending, use any MJML library ([mjml](https://www.npmjs.com/package/mjml) for Node.js, [spatie/mjml-php](https://github.com/spatie/mjml-php) for PHP, etc.).
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 ## `renderToMjml(content, options?)`
 
@@ -1110,9 +1126,25 @@ Source: https://docs.templatical.com/api/types
 
 `@templatical/types` provides all shared TypeScript types, block factory functions, and utilities.
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/types
 ```
+
+```bash [pnpm]
+pnpm add @templatical/types
+```
+
+```bash [yarn]
+yarn add @templatical/types
+```
+
+```bash [bun]
+bun add @templatical/types
+```
+
+:::
 
 ## Template Structure
 
@@ -2601,9 +2633,25 @@ A provider wins over the local renderer, so the editor hands over everything a b
 
 With no `render` provider — or one implementing `compileMjml` alone — `toMjml()` uses [`@templatical/renderer`](/api/renderer-typescript), an optional peer dependency, MIT-licensed. Install it where you export from:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 `toMjml()` lazy-imports it on first call and rejects with a clear error naming the package if it isn't installed. Custom blocks resolve through the editor's own registry, and your configured fonts are wired in automatically.
 
@@ -7024,9 +7072,25 @@ This package is in active development. Some block types and advanced features ma
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-beefree
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-beefree
+```
+
+```bash [yarn]
+yarn add @templatical/import-beefree
+```
+
+```bash [bun]
+bun add @templatical/import-beefree
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -7147,9 +7211,25 @@ The input is `editorInstance.methods.getDocument()`, not `getEmailHtml()` / the 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-chamaileon
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-chamaileon
+```
+
+```bash [yarn]
+yarn add @templatical/import-chamaileon
+```
+
+```bash [bun]
+bun add @templatical/import-chamaileon
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -7332,9 +7412,25 @@ The input is the persist JSON — `{ subject, content }` with `content.type === 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-easy-email-pro
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-easy-email-pro
+```
+
+```bash [yarn]
+yarn add @templatical/import-easy-email-pro
+```
+
+```bash [bun]
+bun add @templatical/import-easy-email-pro
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -7534,9 +7630,25 @@ This package is in active development. Modern (flex/grid) HTML is preserved via 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-html
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-html
+```
+
+```bash [yarn]
+yarn add @templatical/import-html
+```
+
+```bash [bun]
+bun add @templatical/import-html
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -7747,9 +7859,25 @@ This guide is for teams who've been authoring email templates in raw [MJML](http
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-mjml
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-mjml
+```
+
+```bash [yarn]
+yarn add @templatical/import-mjml
+```
+
+```bash [bun]
+bun add @templatical/import-mjml
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -7907,9 +8035,25 @@ A leftover `.esd-block-html` rule inside a stylesheet is not a discriminator. CS
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-stripo
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-stripo
+```
+
+```bash [yarn]
+yarn add @templatical/import-stripo
+```
+
+```bash [bun]
+bun add @templatical/import-stripo
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -8042,9 +8186,25 @@ This guide is for teams who've built email templates in [Topol.io](https://topol
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-topol
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-topol
+```
+
+```bash [yarn]
+yarn add @templatical/import-topol
+```
+
+```bash [bun]
+bun add @templatical/import-topol
+```
+
+:::
 
 ### Without a build step (CDN)
 
@@ -8211,9 +8371,25 @@ This package is in active development. Some content types and advanced features 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-unlayer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-unlayer
+```
+
+```bash [yarn]
+yarn add @templatical/import-unlayer
+```
+
+```bash [bun]
+bun add @templatical/import-unlayer
+```
+
+:::
 
 ### Without a build step (CDN)
 

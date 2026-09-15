@@ -9,9 +9,25 @@ This guide is for teams who've built email templates in [Topol.io](https://topol
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-topol
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-topol
+```
+
+```bash [yarn]
+yarn add @templatical/import-topol
+```
+
+```bash [bun]
+bun add @templatical/import-topol
+```
+
+:::
 
 ### Without a build step (CDN)
 

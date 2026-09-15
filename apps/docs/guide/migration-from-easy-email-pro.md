@@ -11,9 +11,25 @@ The input is the persist JSON — `{ subject, content }` with `content.type === 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-easy-email-pro
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-easy-email-pro
+```
+
+```bash [yarn]
+yarn add @templatical/import-easy-email-pro
+```
+
+```bash [bun]
+bun add @templatical/import-easy-email-pro
+```
+
+:::
 
 ### Without a build step (CDN)
 

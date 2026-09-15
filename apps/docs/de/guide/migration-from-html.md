@@ -13,9 +13,25 @@ Dieses Paket ist in aktiver Entwicklung. Modernes HTML (Flex/Grid) wird als HTML
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-html
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-html
+```
+
+```bash [yarn]
+yarn add @templatical/import-html
+```
+
+```bash [bun]
+bun add @templatical/import-html
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

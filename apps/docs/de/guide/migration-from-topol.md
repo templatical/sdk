@@ -9,9 +9,25 @@ Diese Anleitung richtet sich an Teams, die E-Mail-Templates im Drag-and-Drop-Edi
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-topol
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-topol
+```
+
+```bash [yarn]
+yarn add @templatical/import-topol
+```
+
+```bash [bun]
+bun add @templatical/import-topol
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

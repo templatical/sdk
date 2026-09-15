@@ -9,9 +9,25 @@ This guide is for teams who've been authoring email templates in raw [MJML](http
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-mjml
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-mjml
+```
+
+```bash [yarn]
+yarn add @templatical/import-mjml
+```
+
+```bash [bun]
+bun add @templatical/import-mjml
+```
+
+:::
 
 ### Without a build step (CDN)
 

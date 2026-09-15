@@ -13,9 +13,25 @@ Dieses Paket befindet sich in aktiver Entwicklung. Einige Blocktypen und erweite
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-beefree
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-beefree
+```
+
+```bash [yarn]
+yarn add @templatical/import-beefree
+```
+
+```bash [bun]
+bun add @templatical/import-beefree
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

@@ -7,9 +7,25 @@ description: Complete reference for @templatical/types — shared TypeScript typ
 
 `@templatical/types` provides all shared TypeScript types, block factory functions, and utilities.
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/types
 ```
+
+```bash [pnpm]
+pnpm add @templatical/types
+```
+
+```bash [yarn]
+yarn add @templatical/types
+```
+
+```bash [bun]
+bun add @templatical/types
+```
+
+:::
 
 ## Template Structure
 

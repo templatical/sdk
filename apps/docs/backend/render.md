@@ -161,9 +161,25 @@ A provider wins over the local renderer, so the editor hands over everything a b
 
 With no `render` provider — or one implementing `compileMjml` alone — `toMjml()` uses [`@templatical/renderer`](/api/renderer-typescript), an optional peer dependency, MIT-licensed. Install it where you export from:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 `toMjml()` lazy-imports it on first call and rejects with a clear error naming the package if it isn't installed. Custom blocks resolve through the editor's own registry, and your configured fonts are wired in automatically.
 

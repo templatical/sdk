@@ -13,9 +13,25 @@ This package is in active development. Modern (flex/grid) HTML is preserved via 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-html
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-html
+```
+
+```bash [yarn]
+yarn add @templatical/import-html
+```
+
+```bash [bun]
+bun add @templatical/import-html
+```
+
+:::
 
 ### Without a build step (CDN)
 

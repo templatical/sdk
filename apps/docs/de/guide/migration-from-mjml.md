@@ -9,9 +9,25 @@ Diese Anleitung richtet sich an Teams, die E-Mail-Templates bisher in rohem [MJM
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-mjml
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-mjml
+```
+
+```bash [yarn]
+yarn add @templatical/import-mjml
+```
+
+```bash [bun]
+bun add @templatical/import-mjml
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

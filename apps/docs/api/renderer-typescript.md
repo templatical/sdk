@@ -9,9 +9,25 @@ description: API reference for @templatical/renderer — convert template JSON t
 
 The renderer produces MJML only. To compile MJML to HTML for email sending, use any MJML library ([mjml](https://www.npmjs.com/package/mjml) for Node.js, [spatie/mjml-php](https://github.com/spatie/mjml-php) for PHP, etc.).
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 ## `renderToMjml(content, options?)`
 

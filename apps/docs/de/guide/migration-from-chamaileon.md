@@ -11,9 +11,25 @@ Die Eingabe ist `editorInstance.methods.getDocument()`, nicht `getEmailHtml()` /
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-chamaileon
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-chamaileon
+```
+
+```bash [yarn]
+yarn add @templatical/import-chamaileon
+```
+
+```bash [bun]
+bun add @templatical/import-chamaileon
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

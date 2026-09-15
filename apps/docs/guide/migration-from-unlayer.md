@@ -13,9 +13,25 @@ This package is in active development. Some content types and advanced features 
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-unlayer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-unlayer
+```
+
+```bash [yarn]
+yarn add @templatical/import-unlayer
+```
+
+```bash [bun]
+bun add @templatical/import-unlayer
+```
+
+:::
 
 ### Without a build step (CDN)
 

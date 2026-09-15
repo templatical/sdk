@@ -9,9 +9,25 @@ description: API-Referenz für @templatical/renderer — konvertiert Template-JS
 
 Der Renderer erzeugt ausschließlich MJML. Um MJML für den E-Mail-Versand zu HTML zu kompilieren, verwenden Sie eine beliebige MJML-Bibliothek ([mjml](https://www.npmjs.com/package/mjml) für Node.js, [spatie/mjml-php](https://github.com/spatie/mjml-php) für PHP usw.).
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/renderer
 ```
+
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+
+```bash [yarn]
+yarn add @templatical/renderer
+```
+
+```bash [bun]
+bun add @templatical/renderer
+```
+
+:::
 
 ## `renderToMjml(content, options?)`
 

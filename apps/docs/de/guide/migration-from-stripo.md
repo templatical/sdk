@@ -18,9 +18,25 @@ Eine übrig gebliebene Regel `.esd-block-html` in einem Stylesheet ist kein Unte
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-stripo
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-stripo
+```
+
+```bash [yarn]
+yarn add @templatical/import-stripo
+```
+
+```bash [bun]
+bun add @templatical/import-stripo
+```
+
+:::
 
 ### Ohne Build-Schritt (CDN)
 

@@ -18,9 +18,25 @@ A leftover `.esd-block-html` rule inside a stylesheet is not a discriminator. CS
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/import-stripo
 ```
+
+```bash [pnpm]
+pnpm add @templatical/import-stripo
+```
+
+```bash [yarn]
+yarn add @templatical/import-stripo
+```
+
+```bash [bun]
+bun add @templatical/import-stripo
+```
+
+:::
 
 ### Without a build step (CDN)
 

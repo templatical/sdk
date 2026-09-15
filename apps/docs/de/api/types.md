@@ -7,9 +7,25 @@ description: Vollständige Referenz für @templatical/types — gemeinsame TypeS
 
 `@templatical/types` stellt alle gemeinsamen TypeScript-Typen, Block-Factory-Funktionen und Hilfsfunktionen bereit.
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @templatical/types
 ```
+
+```bash [pnpm]
+pnpm add @templatical/types
+```
+
+```bash [yarn]
+yarn add @templatical/types
+```
+
+```bash [bun]
+bun add @templatical/types
+```
+
+:::
 
 ## Template-Struktur
 
