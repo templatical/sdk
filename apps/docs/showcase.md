@@ -77,7 +77,7 @@ What we list:
 - Your logo and a link
 - Optional: a one-paragraph note on how you use Templatical (which packages, which features, anything notable)
 
-This page populates as adoption grows. Be the first.
+Until a production team lists itself, the public demo is the [playground](https://play.templatical.com).
 
 ::: tip Sponsorship & support
 If your company depends on Templatical, you can also support development directly on [GitHub Sponsors](https://github.com/sponsors/orkhanahmadov). Sponsorship is independent from being listed here — listing is free, and it stays free.

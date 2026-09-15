@@ -235,6 +235,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 |----------|------|-------------|
 | `columns` | `ColumnLayout` | Column layout preset |
 | `children` | `Block[][]` | Array of block arrays, one per column |
+| `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
 | `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section |
 

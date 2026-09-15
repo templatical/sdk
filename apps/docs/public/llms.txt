@@ -19,6 +19,7 @@ Documentation for SDK version 0.38.0. Every page below is also available as raw 
 - [Installation](https://docs.templatical.com/getting-started/installation): Install the Templatical email editor via npm or CDN.
 - [Starting points](https://docs.templatical.com/getting-started/paths): Which docs page to open first — embed the editor, connect your backend, generate a template from a prompt, or compile JSON to sendable HTML.
 - [Quick Start](https://docs.templatical.com/getting-started/quick-start): Get the Templatical email editor running in under 5 minutes.
+- [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — duplicate Vue, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
 
 ## Guide
 
@@ -30,6 +31,7 @@ Documentation for SDK version 0.38.0. Every page below is also available as raw 
 - [Custom Fonts](https://docs.templatical.com/guide/fonts): Configure custom fonts for the email editor's font picker.
 - [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
 - [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.
+- [Keyboard](https://docs.templatical.com/guide/keyboard): Editor chrome shortcuts — save, undo, delete, palette insert, saved-blocks pick session. Drag-and-drop is pointer-only.
 - [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
 - [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.

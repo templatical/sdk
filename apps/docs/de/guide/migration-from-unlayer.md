@@ -54,6 +54,15 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor
 - `report` — ein Konvertierungsbericht mit dem Status jedes Inhaltsknotens (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
+| Status | Bedeutung |
+|---|---|
+| `converted` | Ohne Verlust auf einen Templatical-Block abgebildet. |
+| `approximated` | Abgebildet, mit Clamp oder Flatten — `note` sagt, was sich geändert hat. |
+| `html-fallback` | Kein Block-Äquivalent; das Original-Markup ist ein `HtmlBlock`. |
+| `skipped` | Keine Ausgabe (Formulare und alles, was der Konverter ablehnt). |
+
+Das Design-JSON, das Unlayers gehosteter Editor und `editor.saveDesign()` erzeugen, ist die Eingabe. Ein kompiliertes HTML-Export ist ein anderes Envelope — [`@templatical/import-html`](/de/guide/migration-from-html).
+
 ## Block-Mapping
 
 Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
@@ -104,7 +113,7 @@ Globale Template-Einstellungen werden übertragen, wo möglich:
 - **Anzeigebedingungen / dynamische Inhalte** — Unlayers Syntax für bedingte Inhalte hat keine direkte Entsprechung und wird bei der Konvertierung verworfen. Nutzen Sie Templaticals [Anzeigebedingungen](/de/guide/display-conditions), um sie neu aufzubauen.
 - **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Bauen Sie sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
 - **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; bauen Sie den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
-- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Bauen Sie sie mit Templaticals `CountdownBlock` neu auf.
+- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Kein `type: "countdown"` erzeugen: dieser Block braucht Clouds serverseitiges GIF, der OSS-Renderer kann es nicht erzeugen. Als statischen Titel oder Absatz neu aufbauen (Datum, oder „noch X Tage“) oder den HTML-Platzhalter behalten.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates überprüfen

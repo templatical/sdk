@@ -102,6 +102,9 @@ Beyond individual block styles, the template itself has global settings that aff
 | `linkColor` | `string` | Document-level link color applied to every link (rich-text and menu). Optional — when unset, links inherit the surrounding text color. A per-block or per-item color still overrides. |
 | `linkUnderline` | `boolean` | Whether body (rich-text) links are underlined. Defaults to `true`. Buttons and menu items keep their own text-decoration. |
 | `fontFamily` | `string` | Default font family for all blocks |
+| `locale` | `string` | BCP-47 content language (`<html lang>`). Defaults to `en` on a blank template |
+| `direction` | `'ltr' \| 'rtl'` | Writing direction. Unset follows the content language |
+| `preheaderText` | `string` | Inbox preview line |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
 

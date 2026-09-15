@@ -99,6 +99,14 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface CommentInput {
+  body: string;
+  blockId?: string;   // omitted for a template-level comment
+  parentId?: string;  // omitted for a thread root
+}
+
+type CommentPatch = Partial<{ body: string }>;
+
 interface CommentsProvider {
   list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
   create:      false | ((templateId: string, input: CommentInput) => Promise<Comment>);

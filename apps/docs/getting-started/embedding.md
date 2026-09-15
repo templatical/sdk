@@ -7,7 +7,7 @@ description: CSS constraints on the container you mount the editor into, and wha
 
 The editor is a component you mount into an element of your own page. Almost everything that goes wrong at that seam is a CSS interaction between your page and the editor's overlays, and a small set of properties causes all of it.
 
-Nothing here is Templatical-specific — these are plain CSS rules that affect any library positioning overlays with `position: fixed`. See also [Shadow DOM](../guide/shadow-dom) for how the editor isolates its own styles, and [Theming](../guide/theming) for the `--tpl-user-*` surface.
+Nothing here is Templatical-specific — these are plain CSS rules that affect any library positioning overlays with `position: fixed`. Symptom index: [Troubleshooting](/getting-started/troubleshooting). See also [Shadow DOM](../guide/shadow-dom) for how the editor isolates its own styles, and [Theming](../guide/theming) for the `--tpl-user-*` surface.
 
 ## The editor's container
 

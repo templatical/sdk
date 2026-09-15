@@ -7,7 +7,7 @@ description: CSS-Einschränkungen für den Container, in den Sie den Editor moun
 
 Der Editor ist eine Komponente, die Sie in ein Element Ihrer eigenen Seite mounten. Fast alles, was an dieser Nahtstelle schiefgeht, ist eine CSS-Wechselwirkung zwischen Ihrer Seite und den Overlays des Editors — verursacht von einer kleinen Menge von Eigenschaften.
 
-Nichts davon ist Templatical-spezifisch: Es sind reine CSS-Regeln, die jede Bibliothek betreffen, die Overlays mit `position: fixed` positioniert. Siehe außerdem [Shadow DOM](../guide/shadow-dom) dazu, wie der Editor seine eigenen Styles isoliert, und [Theming](../guide/theming) für die `--tpl-user-*`-Oberfläche.
+Nichts davon ist Templatical-spezifisch: Es sind reine CSS-Regeln, die jede Bibliothek betreffen, die Overlays mit `position: fixed` positioniert. Symptom-Index: [Fehlerbehebung](/de/getting-started/troubleshooting). Siehe außerdem [Shadow DOM](../guide/shadow-dom) dazu, wie der Editor seine eigenen Styles isoliert, und [Theming](../guide/theming) für die `--tpl-user-*`-Oberfläche.
 
 ## Der Container des Editors
 

@@ -297,6 +297,6 @@ editor.setContent(newContent);
 
 ## Next steps
 
-- [Block Types](/guide/blocks) -- properties reference for all 14 block types.
+- [Block Types](/guide/blocks) -- properties reference for every built-in type.
 - [How Rendering Works](/getting-started/how-rendering-works) -- the JSON → MJML pipeline.
 - [Custom Blocks](/guide/custom-blocks) -- define your own block types.

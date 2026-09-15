@@ -96,7 +96,13 @@ Sektionen können nicht innerhalb anderer Sektionen verschachtelt werden. Jede S
 
 ## Responsives Verhalten
 
-Auf dem Desktop werden Spalten nebeneinander in ihren definierten Breiten gerendert. Auf kleineren Bildschirmen stapeln sich die Spalten vertikal in der Quellreihenfolge (linke Spalte oben). Dieses Stapelverhalten erfolgt automatisch und wird von der MJML-Ausgabe übernommen.
+Auf dem Desktop werden Spalten nebeneinander in ihren definierten Breiten gerendert. Auf kleineren Bildschirmen stapeln sie sich vertikal in der Quellreihenfolge (linke Spalte oben) — MJML-Standard.
+
+`stackOnMobile` schaltet das ab. Weglassen oder `true` behält das Stapeln. `false` packt die Spalten in `<mj-group>`, damit sie auf Mobilgeräten nebeneinander bleiben. Die Sektions-Toolbar zeigt den Schalter bei mehrspaltigen Sektionen. Eine einspaltige Sektion erzeugt nie ein `mj-group`.
+
+```ts
+const row = createSectionBlock({ columns: '2', stackOnMobile: false });
+```
 
 Sie können die Eigenschaft `visibility` für einzelne Blöcke innerhalb von Spalten verwenden, um Inhalte pro Breakpoint anzuzeigen oder auszublenden:
 

@@ -99,6 +99,14 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface CommentInput {
+  body: string;
+  blockId?: string;   // fehlt bei einem Template-Kommentar
+  parentId?: string;  // fehlt bei einer Thread-Wurzel
+}
+
+type CommentPatch = Partial<{ body: string }>;
+
 interface CommentsProvider {
   list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
   create:      false | ((templateId: string, input: CommentInput) => Promise<Comment>);

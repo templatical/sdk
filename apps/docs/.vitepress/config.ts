@@ -97,6 +97,10 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Installation", link: "/getting-started/installation" },
         { text: "Embedding", link: "/getting-started/embedding" },
         {
+          text: "Troubleshooting",
+          link: "/getting-started/troubleshooting",
+        },
+        {
           text: "How Rendering Works",
           link: "/getting-started/how-rendering-works",
         },
@@ -119,6 +123,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Block Types", link: "/guide/blocks" },
         { text: "Sections & Columns", link: "/guide/sections-and-columns" },
         { text: "Styling", link: "/guide/styling" },
+        { text: "Keyboard", link: "/guide/keyboard" },
         {
           text: "Programmatic Templates",
           link: "/guide/programmatic-templates",
@@ -301,6 +306,10 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Installation", link: "/de/getting-started/installation" },
         { text: "Einbetten", link: "/de/getting-started/embedding" },
         {
+          text: "Fehlerbehebung",
+          link: "/de/getting-started/troubleshooting",
+        },
+        {
           text: "So funktioniert das Rendering",
           link: "/de/getting-started/how-rendering-works",
         },
@@ -326,6 +335,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Blocktypen", link: "/de/guide/blocks" },
         { text: "Sektionen & Spalten", link: "/de/guide/sections-and-columns" },
         { text: "Styling", link: "/de/guide/styling" },
+        { text: "Tastatur", link: "/de/guide/keyboard" },
         {
           text: "Programmatische Templates",
           link: "/de/guide/programmatic-templates",

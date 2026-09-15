@@ -120,6 +120,19 @@ interface MediaAsset {
   updatedAt?: string;
 }
 
+interface MediaCreateInput {
+  file: File;
+  folderId?: string | null;
+  alt?: string;
+  filename?: string;
+  templateId?: string;
+}
+
+interface MediaAssetPatch {
+  alt?: string;
+  filename?: string;
+}
+
 interface MediaListParams {
   search?: string;
   cursor?: string;

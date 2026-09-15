@@ -1797,6 +1797,14 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface CommentInput {
+  body: string;
+  blockId?: string;   // omitted for a template-level comment
+  parentId?: string;  // omitted for a thread root
+}
+
+type CommentPatch = Partial<{ body: string }>;
+
 interface CommentsProvider {
   list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
   create:      false | ((templateId: string, input: CommentInput) => Promise<Comment>);
@@ -2177,6 +2185,19 @@ interface MediaAsset {
   canDelete?: boolean;
   createdAt?: string;      // optional — display only, never affects ordering
   updatedAt?: string;
+}
+
+interface MediaCreateInput {
+  file: File;
+  folderId?: string | null;
+  alt?: string;
+  filename?: string;
+  templateId?: string;
+}
+
+interface MediaAssetPatch {
+  alt?: string;
+  filename?: string;
 }
 
 interface MediaListParams {
@@ -2798,6 +2819,18 @@ interface SavedBlock {
   createdAt?: string;    // optional — display only, never affects ordering
   updatedAt?: string;
 }
+
+interface SavedBlockInput {
+  name: string;
+  content: Block[];
+  category?: string;
+}
+
+type SavedBlockPatch = Partial<{
+  name: string;
+  content: Block[];
+  category: string; // "" clears the category; omitting the key leaves it
+}>;
 ```
 
 - **`id` comes from the provider.** The editor never generates one; it uses whatever `create()` returns.
@@ -3633,7 +3666,7 @@ Source: https://docs.templatical.com/getting-started/embedding
 
 The editor is a component you mount into an element of your own page. Almost everything that goes wrong at that seam is a CSS interaction between your page and the editor's overlays, and a small set of properties causes all of it.
 
-Nothing here is Templatical-specific — these are plain CSS rules that affect any library positioning overlays with `position: fixed`. See also [Shadow DOM](../guide/shadow-dom) for how the editor isolates its own styles, and [Theming](../guide/theming) for the `--tpl-user-*` surface.
+Nothing here is Templatical-specific — these are plain CSS rules that affect any library positioning overlays with `position: fixed`. Symptom index: [Troubleshooting](/getting-started/troubleshooting). See also [Shadow DOM](../guide/shadow-dom) for how the editor isolates its own styles, and [Theming](../guide/theming) for the `--tpl-user-*` surface.
 
 ## The editor's container
 
@@ -4489,6 +4522,27 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 
 ---
 
+# Troubleshooting
+
+Source: https://docs.templatical.com/getting-started/troubleshooting
+
+Match the symptom to the row before changing anything. Several of these look like a broken build and throw nothing. Container and stacking detail: [Embedding](/getting-started/embedding).
+
+| Symptom | Cause | What to do |
+|---|---|---|
+| Chrome renders, clicks / drags / keystrokes do nothing | A second Vue reactivity instance. `@templatical/core` (or any other Vue-using `@templatical/*` package) is in the app's own `dependencies`, so refs the editor creates are invisible to that second `WeakMap`. | Keep those packages out of the app's `dependencies`. The editor already bundles them. |
+| Editor mounts, layout is gone | `@templatical/editor/style.css` was not imported. The `exports` map resolves that subpath to `dist/style.css`. | Import the stylesheet next to `init()`. Do not install `tailwindcss` as a peer — it is compiled into that file. |
+| Dialogs clipped, painted under host chrome, or a drag ghost that drifts | An ancestor of the container is a containing block for `position: fixed`: `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`, `isolation`, `opacity` below `1`, or a positioned element with `z-index`. | Remove that property from ancestors, or mount outside that stacking context. |
+| Sidebar last items / footer clip, no scroll | The container has no definite height. The editor fills its parent; without one it uses a small anti-collapse floor and chrome still assumes real height. | Give the container a real height (`100%` of a sized parent, or a `px`/`vh` value). |
+| React 18 StrictMode: extra editors, leaked listeners | `init()` is async. StrictMode unmounts the effect before the promise resolves, so the created instance is never stored and never `unmount()`ed. | Unmount the instance that just finished when the effect was cancelled. See [Installation](/getting-started/installation). |
+| `toHtml()` throws / `toMjml()` asks for a package | The SDK ships no MJML compiler. `toMjml()` lazy-imports `@templatical/renderer`. HTML is any MJML library, `render.compileMjml`, or `template-tools render --format html`. | Install the renderer peer for MJML. Compile HTML on the server. [How Rendering Works](/getting-started/how-rendering-works). |
+| `require('@templatical/editor')` fails | ESM only. No `main`, no CJS, no UMD. | Use `import`. A CJS-only app needs a bundler that can consume ESM. |
+| Theming tokens vanish after `all: initial` on the container | Inheritance crosses the shadow boundary. Resetting the container wipes `--tpl-user-*`, which is the theming surface, and can break the height chain. | Do not reset the container. The editor already neutralizes host typography at its own root. |
+
+The Agent Skill's `diagnose` mode walks the same table against an existing `init()` call.
+
+---
+
 # AI Agent Skill
 
 Source: https://docs.templatical.com/guide/agent-skill
@@ -4837,6 +4891,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 |----------|------|-------------|
 | `columns` | `ColumnLayout` | Column layout preset |
 | `children` | `Block[][]` | Array of block arrays, one per column |
+| `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
 | `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section |
 
@@ -6311,6 +6366,42 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 
 ---
 
+# Keyboard
+
+Source: https://docs.templatical.com/guide/keyboard
+
+Modifier is `metaKey || ctrlKey` (Command on macOS, Control elsewhere). The listener is on `document` so a click on a non-focusable block still receives the chord.
+
+While a text field or TipTap surface is focused, undo/redo and Delete/Backspace stay with the field.
+
+| Chord | Action |
+|---|---|
+| `Mod+S` | Save, when a templates provider can save |
+| `Mod+Z` | Undo. TipTap handles this while editing text |
+| `Mod+Shift+Z` | Redo. Same text-editing exception |
+| `Escape` | Deselect the current block |
+| `Delete` / `Backspace` | Remove the selected block. No-op while typing |
+
+## Palette
+
+Click, Enter, or Space on a sidebar palette item inserts that block **below the selection** (or at the end when nothing is selected). A nested column child cannot accept a section — MJML forbids `mj-section` in `mj-column` — so a section insert lands after the parent section. Same rule as `duplicateBlock`.
+
+Drag-and-drop is pointer-emulated (`force-fallback`). There is no keyboard drag.
+
+## Saved-blocks pick session
+
+While picking blocks to save:
+
+| Chord | Action |
+|---|---|
+| `Escape` | Cancel the session |
+| `Enter` | Confirm (disabled at zero picks) |
+| `Delete` / `Backspace` | Swallowed — does not delete canvas blocks |
+
+Arrow Up/Down on a focused reorder grip in the save dialog moves a preview row.
+
+---
+
 # Logic Tags
 
 Source: https://docs.templatical.com/guide/logic-tags
@@ -6973,6 +7064,15 @@ console.log(report);
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each block (`converted`, `approximated`, `html-fallback`, or `skipped`)
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
+| `skipped` | No output (forms, and anything the converter refuses). |
+
+The JSON BeeFree's editor persists (`page.rows`) is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
 
 ## Block Mapping
 
@@ -8148,6 +8248,17 @@ const editor = await init({
 console.log(report);
 ```
 
+Each `report.entries` item is one source module:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
+| `skipped` | No output (forms, and anything the converter refuses). |
+
+The design JSON Unlayer's hosted editor and `editor.saveDesign()` emit is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
+
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each content node (`converted`, `approximated`, `html-fallback`, or `skipped`)
@@ -8202,7 +8313,7 @@ Global template settings are converted where possible:
 - **Display conditions / dynamic content** — Unlayer's conditional content syntax has no direct equivalent and is dropped during conversion. Use Templatical's [display conditions](/guide/display-conditions) to recreate them.
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
-- **Timers / countdowns** — Imported as a placeholder HTML block. Recreate using Templatical's `CountdownBlock`.
+- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -8718,7 +8829,7 @@ editor.setContent(newContent);
 
 ## Next steps
 
-- [Block Types](/guide/blocks) -- properties reference for all 14 block types.
+- [Block Types](/guide/blocks) -- properties reference for every built-in type.
 - [How Rendering Works](/getting-started/how-rendering-works) -- the JSON → MJML pipeline.
 - [Custom Blocks](/guide/custom-blocks) -- define your own block types.
 
@@ -8819,7 +8930,13 @@ Sections cannot be nested inside other sections. Each section sits at the top le
 
 ## Responsive behavior
 
-On desktop, columns render side-by-side at their defined widths. On smaller screens, columns stack vertically in source order (left column on top). This stacking behavior is automatic and handled by the MJML output.
+On desktop, columns render side-by-side at their defined widths. On smaller screens, columns stack vertically in source order (left column on top) — MJML's default.
+
+`stackOnMobile` opts out. Omit it or set `true` to keep stacking. `false` wraps the columns in `<mj-group>` so they stay side by side on mobile. The section toolbar exposes the toggle on multi-column sections. A one-column section never emits `mj-group`.
+
+```ts
+const row = createSectionBlock({ columns: '2', stackOnMobile: false });
+```
 
 You can use the `visibility` property on individual blocks within columns to show or hide content per breakpoint:
 
@@ -9183,6 +9300,9 @@ Beyond individual block styles, the template itself has global settings that aff
 | `linkColor` | `string` | Document-level link color applied to every link (rich-text and menu). Optional — when unset, links inherit the surrounding text color. A per-block or per-item color still overrides. |
 | `linkUnderline` | `boolean` | Whether body (rich-text) links are underlined. Defaults to `true`. Buttons and menu items keep their own text-decoration. |
 | `fontFamily` | `string` | Default font family for all blocks |
+| `locale` | `string` | BCP-47 content language (`<html lang>`). Defaults to `en` on a blank template |
+| `direction` | `'ltr' \| 'rtl'` | Writing direction. Unset follows the content language |
+| `preheaderText` | `string` | Inbox preview line |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
 
@@ -10769,7 +10889,7 @@ What we list:
 - Your logo and a link
 - Optional: a one-paragraph note on how you use Templatical (which packages, which features, anything notable)
 
-This page populates as adoption grows. Be the first.
+Until a production team lists itself, the public demo is the [playground](https://play.templatical.com).
 
 ::: tip Sponsorship & support
 If your company depends on Templatical, you can also support development directly on [GitHub Sponsors](https://github.com/sponsors/orkhanahmadov). Sponsorship is independent from being listed here — listing is free, and it stays free.

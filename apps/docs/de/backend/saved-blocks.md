@@ -104,6 +104,18 @@ interface SavedBlock {
   createdAt?: string;    // optional — nur Anzeige, ohne Einfluss auf die Reihenfolge
   updatedAt?: string;
 }
+
+interface SavedBlockInput {
+  name: string;
+  content: Block[];
+  category?: string;
+}
+
+type SavedBlockPatch = Partial<{
+  name: string;
+  content: Block[];
+  category: string; // "" löscht die Kategorie; fehlender Key lässt sie
+}>;
 ```
 
 - **Die `id` kommt vom Provider.** Der Editor erzeugt nie eine eigene, sondern verwendet, was `create()` zurückgibt.

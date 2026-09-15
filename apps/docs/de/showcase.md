@@ -77,7 +77,7 @@ Was wir auflisten:
 - Ihr Logo und ein Link
 - Optional: ein Absatz dazu, wie Sie Templatical nutzen (welche Pakete, welche Funktionen, irgendetwas Bemerkenswertes)
 
-Diese Seite füllt sich, während die Adoption wächst. Seien Sie der/die Erste.
+Bis ein Produktionsteam sich einträgt, ist die öffentliche Demo der [Playground](https://play.templatical.com).
 
 ::: tip Sponsoring & Unterstützung
 Wenn Ihr Unternehmen auf Templatical baut, können Sie die Entwicklung auch direkt über [GitHub Sponsors](https://github.com/sponsors/orkhanahmadov) unterstützen. Sponsoring ist unabhängig vom Eintrag hier — die Listung ist kostenlos und bleibt kostenlos.

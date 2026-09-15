@@ -54,6 +54,15 @@ The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each block (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
+| `skipped` | No output (forms, and anything the converter refuses). |
+
+The JSON BeeFree's editor persists (`page.rows`) is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
+
 ## Block Mapping
 
 BeeFree block types map to Templatical equivalents:

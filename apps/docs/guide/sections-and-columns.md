@@ -96,7 +96,13 @@ Sections cannot be nested inside other sections. Each section sits at the top le
 
 ## Responsive behavior
 
-On desktop, columns render side-by-side at their defined widths. On smaller screens, columns stack vertically in source order (left column on top). This stacking behavior is automatic and handled by the MJML output.
+On desktop, columns render side-by-side at their defined widths. On smaller screens, columns stack vertically in source order (left column on top) — MJML's default.
+
+`stackOnMobile` opts out. Omit it or set `true` to keep stacking. `false` wraps the columns in `<mj-group>` so they stay side by side on mobile. The section toolbar exposes the toggle on multi-column sections. A one-column section never emits `mj-group`.
+
+```ts
+const row = createSectionBlock({ columns: '2', stackOnMobile: false });
+```
 
 You can use the `visibility` property on individual blocks within columns to show or hide content per breakpoint:
 

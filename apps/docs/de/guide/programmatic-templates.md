@@ -297,6 +297,6 @@ editor.setContent(newContent);
 
 ## Nächste Schritte
 
-- [Blocktypen](/de/guide/blocks) -- Eigenschaftenreferenz für alle 14 Blocktypen.
+- [Blocktypen](/de/guide/blocks) -- Eigenschaftenreferenz für jeden eingebauten Typ.
 - [Wie das Rendering funktioniert](/de/getting-started/how-rendering-works) -- Die JSON → MJML-Pipeline.
 - [Benutzerdefinierte Blöcke](/de/guide/custom-blocks) -- Definieren Sie Ihre eigenen Blocktypen.

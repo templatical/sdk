@@ -50,6 +50,17 @@ const editor = await init({
 console.log(report);
 ```
 
+Each `report.entries` item is one source module:
+
+| Status | Meaning |
+|---|---|
+| `converted` | Mapped to a Templatical block with no loss of fidelity. |
+| `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
+| `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
+| `skipped` | No output (forms, and anything the converter refuses). |
+
+The design JSON Unlayer's hosted editor and `editor.saveDesign()` emit is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
+
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each content node (`converted`, `approximated`, `html-fallback`, or `skipped`)
@@ -104,7 +115,7 @@ Global template settings are converted where possible:
 - **Display conditions / dynamic content** — Unlayer's conditional content syntax has no direct equivalent and is dropped during conversion. Use Templatical's [display conditions](/guide/display-conditions) to recreate them.
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
-- **Timers / countdowns** — Imported as a placeholder HTML block. Recreate using Templatical's `CountdownBlock`.
+- **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates

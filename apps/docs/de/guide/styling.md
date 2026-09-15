@@ -102,6 +102,9 @@ Neben einzelnen Blockstilen hat das Template selbst globale Einstellungen, die d
 | `linkColor` | `string` | Dokumentweite Linkfarbe für jeden Link (Rich-Text und Menu). Optional – wenn nicht gesetzt, erben Links die umgebende Textfarbe. Eine block- oder elementspezifische Farbe überschreibt weiterhin. |
 | `linkUnderline` | `boolean` | Ob Body-Links (Rich-Text) unterstrichen werden. Standard: `true`. Buttons und Menu-Elemente behalten ihre eigene text-decoration. |
 | `fontFamily` | `string` | Standard-Schriftfamilie für alle Blöcke |
+| `locale` | `string` | BCP-47-Inhaltssprache (`<html lang>`). Bei einem leeren Template Standard `en` |
+| `direction` | `'ltr' \| 'rtl'` | Schreibrichtung. Ungesetzt folgt der Inhaltssprache |
+| `preheaderText` | `string` | Vorschauzeile im Posteingang |
 
 Diese werden über die `init()`-Konfiguration des Editors oder durch direkte Änderung des Template-JSON konfiguriert:
 
