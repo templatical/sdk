@@ -23,3 +23,38 @@
 .medium-zoom-image--opened {
     z-index: 31;
 }
+
+/*
+ * VitePress's default hero image is a 12–20rem logo hole (absolute, object-fit
+ * contain). The editor screenshot is a 16:9 product shot at the same URL as
+ * README.md. Override the logo geometry so the <img> can paint.
+ */
+.VPHero.has-image .image-container {
+    width: min(36rem, 100%);
+    height: auto;
+    aspect-ratio: 900 / 537;
+}
+
+@media (min-width: 60rem) {
+    .VPHero.has-image .image-container {
+        width: 100%;
+        height: auto;
+        transform: none;
+        justify-content: flex-end;
+        align-items: center;
+    }
+}
+
+.VPHero .tpl-hero-preview {
+    position: relative;
+    top: auto;
+    left: auto;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: none;
+    object-fit: contain;
+    transform: none;
+    border-radius: 10px;
+}

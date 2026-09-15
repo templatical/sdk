@@ -5,9 +5,6 @@ hero:
   name: Templatical
   text: Email Editor for Your App
   tagline: Drop a production-ready drag-and-drop email editor into any web application — host CSS and design systems can't break it. Saving, version history, comments, test sends and rendering all plug into your own backend, through plain config objects you implement. Source-available and framework-agnostic.
-  image:
-    src: https://templatical.com/preview.png
-    alt: Templatical email editor
   actions:
     - theme: brand
       text: Get Started
