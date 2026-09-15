@@ -291,3 +291,122 @@ test.describe("Merge tag picker — autocomplete unchanged", () => {
     await expect(page.locator(SELECTORS.mergeTagSuggestionPopup)).toBeVisible();
   });
 });
+
+/**
+ * Issue #733: activating a tag that is already in the content reopens the
+ * chooser rather than a text input holding the raw token.
+ *
+ * The canvas chip is the case worth driving in a browser: the chooser mounts
+ * in the popover root, outside the rich-text editor, so a click on one of its
+ * rows reads as a click outside the block. Without the shared requesting flag
+ * the block finishes editing mid-pick and the update is silently dropped —
+ * which no unit test exercises end to end.
+ */
+test.describe("Merge tag — changing a tag already in the content", () => {
+  async function insertFirstTag(
+    editorPage: import("../pages/editor.page").EditorPage,
+    page: import("@playwright/test").Page,
+  ): Promise<string> {
+    await openParagraphToolbar(editorPage);
+    await clickInsertMergeTagButton(page);
+    const firstItem = page.locator(SELECTORS.mergeTagPickerItem).first();
+    const value = await firstItem.getAttribute("data-merge-tag-value");
+    await firstItem.click();
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeHidden();
+    return value!;
+  }
+
+  function chipFor(page: import("@playwright/test").Page, value: string) {
+    return page.locator(`.tpl-merge-tag-node [data-tooltip="${value}"]`).last();
+  }
+
+  test("clicking a chip reopens the picker instead of a raw text input", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await openConfigAndDisableOnRequest(page);
+    await editorPage.waitForReady();
+    const inserted = await insertFirstTag(editorPage, page);
+
+    await chipFor(page, inserted).click();
+
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
+    // The old behaviour put the raw token into an editable input on the chip.
+    await expect(page.locator(".tpl-merge-tag-node input")).toHaveCount(0);
+  });
+
+  test("the picker opens with the current tag preselected", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await openConfigAndDisableOnRequest(page);
+    await editorPage.waitForReady();
+    const inserted = await insertFirstTag(editorPage, page);
+
+    await chipFor(page, inserted).click();
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
+
+    const current = page.locator(
+      `${SELECTORS.mergeTagPickerItem}[aria-current="true"]`,
+    );
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveAttribute("data-merge-tag-value", inserted);
+  });
+
+  test("picking a different tag swaps the chip in place", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await openConfigAndDisableOnRequest(page);
+    await editorPage.waitForReady();
+    const inserted = await insertFirstTag(editorPage, page);
+    const chipsBefore = await page.locator(SELECTORS.mergeTagNode).count();
+
+    // Counted, not asserted absent: the showcase template already carries tags
+    // of its own, so only the delta says whether *this* chip changed.
+    const allWith = (value: string) =>
+      page.locator(`.tpl-merge-tag-node [data-tooltip="${value}"]`);
+    const insertedBefore = await allWith(inserted).count();
+
+    await chipFor(page, inserted).click();
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
+
+    const replacement = page.locator(SELECTORS.mergeTagPickerItem).nth(1);
+    const replacementValue =
+      await replacement.getAttribute("data-merge-tag-value");
+    expect(replacementValue).not.toBe(inserted);
+    const replacementBefore = await allWith(replacementValue!).count();
+    // Clicking a row is a click outside the rich-text block. If the block tears
+    // down here, the update lands on a disposed node view and nothing changes.
+    await replacement.click();
+
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeHidden();
+    await expect(allWith(replacementValue!)).toHaveCount(replacementBefore + 1);
+    await expect(allWith(inserted)).toHaveCount(insertedBefore - 1);
+    // Swapped, not added.
+    await expect(page.locator(SELECTORS.mergeTagNode)).toHaveCount(chipsBefore);
+  });
+
+  test("a consumer-owned chooser handles the change too", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    // Default playground state: `mergeTags.onRequest` is wired to the
+    // playground's own modal, which must own edits as well as insertions.
+    await editorPage.waitForReady();
+    await openParagraphToolbar(editorPage);
+    await clickInsertMergeTagButton(page);
+    const playgroundModal = page.locator(SELECTORS.playgroundMergeTagModal);
+    await expect(playgroundModal).toBeVisible();
+    const row = playgroundModal.getByRole("button").nth(1);
+    await row.click();
+    await expect(playgroundModal).toBeHidden();
+
+    const chip = page.locator(`${SELECTORS.mergeTagNode} [role="button"]`).last();
+    await chip.click();
+
+    await expect(playgroundModal).toBeVisible();
+    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toHaveCount(0);
+    await expect(page.locator(".tpl-merge-tag-node input")).toHaveCount(0);
+  });
+});

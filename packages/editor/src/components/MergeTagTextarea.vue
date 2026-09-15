@@ -39,6 +39,7 @@ const {
   clearValue,
   insertMergeTag,
   insertLogicTag,
+  replaceMergeTagAt,
 } = useMergeTagField({
   modelValue: () => props.modelValue,
   emit: (value) => emit("update:modelValue", value),
@@ -58,6 +59,7 @@ const displayClass =
       :display-class="displayClass"
       @edit="startEditing"
       @clear="clearValue"
+      @repick="replaceMergeTagAt"
     />
     <div
       v-if="canRequestMergeTag || canInsertLogicTag"

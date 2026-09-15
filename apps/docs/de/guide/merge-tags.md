@@ -272,6 +272,56 @@ const editor = await init({
 Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche **Merge-Tag** ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
 :::
 
+## Ein bereits vorhandenes Tag ändern
+
+Wird ein Tag im Inhalt aktiviert — per Klick oder mit <kbd>Enter</kbd> —, öffnet sich erneut die Auswahl, damit der Autor ein anderes Tag wählt. Es ist dieselbe Auswahl wie beim Einfügen, aufgerufen mit einem `context`, der angibt, worum es geht:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    onRequest: async (context) => {
+      // context: { reason: 'insert' | 'edit', current?: MergeTag }
+      return showMyMergeTagPicker({ preselect: context?.current });
+    },
+  },
+});
+```
+
+Der Parameter ist optional — ein Callback, der ihn ignoriert, funktioniert unverändert weiter.
+
+Welchen Weg ein aktiviertes Tag nimmt, hängt davon ab, was seinen Token auflösen kann:
+
+| Konfiguration | Beim Aktivieren eines Tags öffnet sich |
+|---|---|
+| `onRequest` ist gesetzt | immer Ihre Auswahl — `context.current` enthält das aufgelöste Tag oder fehlt bei einem Token, der keinem Eintrag in `tags` entspricht |
+| nur `tags` ist gesetzt und der Token entspricht einem Eintrag | der integrierte Picker, mit diesem Tag vorausgewählt |
+| der Token entspricht nichts, oder keines von beiden ist konfiguriert | ein Texteingabefeld mit dem rohen Token |
+
+Die letzte Zeile ist die einzige Stelle, an der ein Token als Text bearbeitbar ist; sie existiert, damit ein veralteter oder vertippter Token repariert werden kann. Die Eingabe wird dort gegen Ihre `syntax` geprüft — ein Wert, der kein Merge-Tag ist, wird nie übernommen, da er sonst unverändert in die versendete E-Mail geschrieben würde.
+
+## Den rohen Token verbergen
+
+Der Tooltip eines Tags zeigt den Token hinter seinem Label. Das passt zu einer lesbaren Syntax wie <code v-pre>{{first_name}}</code>, bei der der Token dem Autor verrät, um welches Feld es sich handelt. Wenn `value` eine interne Kennung ist, die Ihr Backend auflöst, setzen Sie `showRawValue: false`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    showRawValue: false,
+    onRequest: async () => showMyFieldPicker(),
+  },
+});
+```
+
+Autoren sehen dann nur noch Labels — im Canvas, in den Feldern der Seitenleiste und im integrierten Picker. Rein visuell: Der Token bleibt im gespeicherten Inhalt und in der gerenderten Ausgabe unverändert.
+
+Die Option bestimmt außerdem, **wie ein Tag dargestellt wird**, nicht nur seinen Tooltip. Der Editor erzeugt aus allem, was Ihrer `syntax` entspricht, ein Tag — deklariert oder nicht —, und ein nicht deklariertes zeigt normalerweise den Token als eigenes Label. Mit `showRawValue: false` greift stattdessen das Label, das beim Einfügen auf dem Tag gespeichert wurde, und anschließend ein neutraler Platzhalter — so gelangt eine interne Kennung weder auf den Bildschirm noch zu einem Screenreader.
+
+::: tip Felder in der Seitenleiste
+Ein Feldwert ist eine einzelne Zeichenkette, die Text und Token mischt (<code v-pre>Hallo {{first_name}}, willkommen</code>). Seine Tags sind einzeln anklickbar und werden wie alle anderen neu ausgewählt; die Bearbeitung des umgebenden Textes öffnet jedoch die gesamte Zeichenkette zur Bearbeitung, Token eingeschlossen. `showRawValue` ändert daran nichts.
+:::
+
 ## Tokens in geladenen Inhalten
 
 Inhalt, der nie die Eingabeverarbeitung des Editors durchlaufen hat — eine Vorlage aus Ihrem eigenen Speicher oder eine von den [`@templatical/import-*`](/de/guide/migration-from-html)-Konvertern erzeugte — trägt Merge-Tags als reine <code v-pre>{{tokens}}</code> statt als Tag-Knoten. Der Editor wandelt sie beim Hereinkommen um, sodass sich ein geladenes Tag exakt wie ein getipptes verhält: lesbares Label, Hervorhebung, `sample` und als eine Einheit auswählbar.

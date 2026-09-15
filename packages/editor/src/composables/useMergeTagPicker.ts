@@ -7,14 +7,26 @@ export interface UseMergeTagPickerReturn {
   /** The merge tags currently shown in the picker. */
   tags: Ref<MergeTag[]>;
   /**
+   * The tag the user is replacing, when the picker was opened from an existing
+   * tag rather than to insert a new one. Drives the modal's title and which
+   * row starts highlighted. `null` for an insertion.
+   */
+  current: Ref<MergeTag | null>;
+  /**
    * Open the picker with the given tags. Returns a promise that resolves
    * with the selected tag when the user clicks or presses Enter, or `null`
    * when the user cancels (Esc, Cancel button, backdrop click, or modal
    * teardown). If `open()` is called while another promise is pending, the
    * previous promise resolves with `null` (latest-wins) and a fresh one is
    * returned.
+   *
+   * Pass `options.current` to replace an existing tag: the modal then titles
+   * itself as a change rather than an insert and preselects that row.
    */
-  open: (tags: MergeTag[]) => Promise<MergeTag | null>;
+  open: (
+    tags: MergeTag[],
+    options?: { current?: MergeTag },
+  ) => Promise<MergeTag | null>;
   /**
    * Resolve the currently pending promise. Safe no-op when none is pending.
    * Closing the modal must always flow through this — direct `isOpen.value`
@@ -33,10 +45,14 @@ export interface UseMergeTagPickerReturn {
 export function useMergeTagPicker(): UseMergeTagPickerReturn {
   const isOpen = ref(false);
   const tags = ref<MergeTag[]>([]);
+  const current = ref<MergeTag | null>(null);
 
   let pendingResolver: ((tag: MergeTag | null) => void) | null = null;
 
-  function open(nextTags: MergeTag[]): Promise<MergeTag | null> {
+  function open(
+    nextTags: MergeTag[],
+    options?: { current?: MergeTag },
+  ): Promise<MergeTag | null> {
     // Latest-wins: a fresh open() call cancels the previous pending promise.
     if (pendingResolver) {
       const previous = pendingResolver;
@@ -44,6 +60,7 @@ export function useMergeTagPicker(): UseMergeTagPickerReturn {
       previous(null);
     }
     tags.value = nextTags;
+    current.value = options?.current ?? null;
     isOpen.value = true;
     return new Promise<MergeTag | null>((resolvePromise) => {
       pendingResolver = resolvePromise;
@@ -55,6 +72,7 @@ export function useMergeTagPicker(): UseMergeTagPickerReturn {
     pendingResolver = null;
     isOpen.value = false;
     tags.value = [];
+    current.value = null;
     if (resolver) {
       resolver(tag);
     }
@@ -70,12 +88,14 @@ export function useMergeTagPicker(): UseMergeTagPickerReturn {
       }
       isOpen.value = false;
       tags.value = [];
+      current.value = null;
     });
   }
 
   return {
     isOpen,
     tags,
+    current,
     open,
     resolve,
   };

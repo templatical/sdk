@@ -461,10 +461,13 @@ const nl: typeof en = {
     insert: "Samenvoegveld invoegen",
     insertShort: "Samenvoegveld",
     editValue: "Waarde van het samenvoegveld bewerken",
+    changeTag: "Samenvoegveld wijzigen: {label}",
+    unknownLabel: "Samenvoegveld",
     deleteMergeTag: "Samenvoegveld verwijderen",
     suggestionEmpty: "Geen overeenkomende samenvoegvelden",
     picker: {
       title: "Samenvoegveld invoegen",
+      changeTitle: "Samenvoegveld wijzigen",
       searchPlaceholder: "Samenvoegvelden zoeken",
       searchAriaLabel: "Samenvoegvelden zoeken",
       noResults: "Geen overeenkomende samenvoegvelden",

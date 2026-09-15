@@ -14,6 +14,7 @@ import TplModal from "./TplModal.vue";
 import { useI18n } from "../composables/useI18n";
 import {
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_SHOW_RAW_VALUE_KEY,
   THEME_STYLES_KEY,
   UI_THEME_KEY,
   requireInject,
@@ -34,6 +35,25 @@ const { t, format } = useI18n();
 // defaults and the picker ignores dark mode + custom theme colors.
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
+const showRawValue = inject(MERGE_TAG_SHOW_RAW_VALUE_KEY, true);
+
+// Replacing an existing tag rather than inserting a new one. Drives the title
+// and which row starts highlighted.
+const isChanging = computed(() => picker.current.value !== null);
+
+const modalTitle = computed(() =>
+  isChanging.value ? t.mergeTag.picker.changeTitle : t.mergeTag.picker.title,
+);
+
+/**
+ * A row's native tooltip. The description alone when the consumer hid raw
+ * tokens — the picker is a list of labels, so leaking the token here would
+ * defeat `showRawValue` on the one surface that exists to choose tags.
+ */
+function rowTitle(tag: MergeTag): string | undefined {
+  if (!showRawValue) return tag.description || undefined;
+  return tag.description ? `${tag.value} — ${tag.description}` : tag.value;
+}
 
 // --- Search ---
 const rawSearch = ref("");
@@ -159,14 +179,43 @@ const visibleTags = computed(() =>
   rows.value.flatMap((row) => (row.kind === "tag" ? [row.tag] : [])),
 );
 
+/**
+ * Whether the highlight is still waiting to land on the tag being replaced.
+ *
+ * `search` is debounced, so right after `open()` it can still hold the previous
+ * session's query and the row we want may not be in `visibleTags` yet. The flag
+ * keeps trying as the list settles, and any deliberate move by the user clears
+ * it so a late debounce can't yank the highlight back.
+ */
+let preselectPending = false;
+
+function preselectCurrent(candidates: MergeTag[]): boolean {
+  const target = picker.current.value;
+  if (!target) return false;
+  const index = candidates.findIndex((tag) => tag.value === target.value);
+  if (index === -1) return false;
+  highlightedIndex.value = index;
+  return true;
+}
+
+function setHighlight(index: number): void {
+  preselectPending = false;
+  highlightedIndex.value = index;
+}
+
 // --- Lifecycle: focus search + reset state when modal opens ---
 watch(
   () => picker.isOpen.value,
   (isOpen) => {
-    if (isOpen) {
+    if (!isOpen) {
+      preselectPending = false;
+      return;
+    }
+    {
       rawSearch.value = "";
       highlightedIndex.value = 0;
       collapsedGroups.value = new Set();
+      preselectPending = !preselectCurrent(visibleTags.value);
       // Search input is mounted as part of the same render cycle the
       // modal opens; nextTick guarantees the ref is bound before focus.
       nextTick(() => {
@@ -179,6 +228,10 @@ watch(
 // Keep the highlight inside the visible-tags bounds whenever the
 // filtered list shrinks (e.g. user typed a more specific query).
 watch(visibleTags, (next) => {
+  if (preselectPending && preselectCurrent(next)) {
+    preselectPending = false;
+    return;
+  }
   if (highlightedIndex.value >= next.length) {
     highlightedIndex.value = Math.max(0, next.length - 1);
   }
@@ -195,6 +248,7 @@ function cancel(): void {
 
 function moveHighlight(delta: number): void {
   if (visibleTags.value.length === 0) return;
+  preselectPending = false;
   const next = highlightedIndex.value + delta;
   // Stop at edges (don't wrap) — feels more predictable in a long list.
   highlightedIndex.value = Math.max(
@@ -334,7 +388,7 @@ const showPillRow = computed(
           :id="`${listId}-title`"
           class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
-          {{ t.mergeTag.picker.title }}
+          {{ modalTitle }}
         </h2>
         <button
           type="button"
@@ -404,7 +458,7 @@ const showPillRow = computed(
         ref="listRef"
         class="tpl:relative tpl:max-h-[60vh] tpl:flex-1 tpl:overflow-y-auto"
         role="listbox"
-        :aria-label="t.mergeTag.picker.title"
+        :aria-label="modalTitle"
         data-testid="merge-tag-picker-list"
       >
         <template v-if="isEmptyConfig">
@@ -459,11 +513,12 @@ const showPillRow = computed(
               :data-selected="row.index === highlightedIndex ? 'true' : 'false'"
               :data-merge-tag-index="row.index"
               :data-merge-tag-value="row.tag.value"
-              :title="
-                row.tag.description
-                  ? `${row.tag.value} — ${row.tag.description}`
-                  : row.tag.value
+              :aria-current="
+                row.tag.value === picker.current.value?.value
+                  ? 'true'
+                  : undefined
               "
+              :title="rowTitle(row.tag)"
               class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:flex-col tpl:items-start tpl:gap-0.5 tpl:border-none tpl:px-3 tpl:py-1.5 tpl:text-left tpl:transition-colors"
               :class="
                 row.index === highlightedIndex
@@ -471,7 +526,7 @@ const showPillRow = computed(
                   : 'tpl:bg-transparent tpl:text-[var(--tpl-text)] tpl:hover:bg-[var(--tpl-bg-hover)]'
               "
               data-testid="merge-tag-picker-item"
-              @mousemove="highlightedIndex = row.index"
+              @mousemove="setHighlight(row.index)"
               @click="selectTag(row.tag)"
             >
               <span class="tpl:text-sm tpl:font-medium">{{

@@ -11,6 +11,7 @@ import type {
   LogicPair,
   LogicTag,
   MergeTag,
+  MergeTagRequestContext,
   ResolvePreview,
   SyntaxPreset,
 } from "@templatical/types";
@@ -149,11 +150,21 @@ export const MERGE_TAG_SYNTAX_KEY: InjectionKey<SyntaxPreset> =
   Symbol("mergeTagSyntax");
 
 export const ON_REQUEST_MERGE_TAG_KEY: InjectionKey<
-  (() => Promise<MergeTag | null>) | null
+  ((context?: MergeTagRequestContext) => Promise<MergeTag | null>) | null
 > = Symbol("onRequestMergeTag");
 
 export const MERGE_TAG_AUTOCOMPLETE_KEY: InjectionKey<boolean> = Symbol(
   "mergeTagAutocomplete",
+);
+
+/**
+ * Whether a merge tag's tooltip reveals the raw token behind its label.
+ * Resolved once from `mergeTags.showRawValue` and read by every surface that
+ * renders a tag, so a chip in a sidebar field and a chip on the canvas cannot
+ * disagree about whether the token is visible.
+ */
+export const MERGE_TAG_SHOW_RAW_VALUE_KEY: InjectionKey<boolean> = Symbol(
+  "mergeTagShowRawValue",
 );
 
 /**

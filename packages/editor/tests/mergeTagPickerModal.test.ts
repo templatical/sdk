@@ -7,6 +7,7 @@ import type { MergeTag } from "@templatical/types";
 import MergeTagPickerModal from "../src/components/MergeTagPickerModal.vue";
 import {
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_SHOW_RAW_VALUE_KEY,
   POPOVER_ROOT_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
@@ -781,5 +782,111 @@ describe("MergeTagPickerModal — group pill row", () => {
     mountPicker(oneGroupTags);
     await nextTick();
     expect(findPillRow()).toBe(null);
+  });
+
+  // Issue #733: the picker doubles as the editor for an existing tag, so it
+  // has to say which job it is doing and start on the tag being replaced.
+  describe("replacing an existing tag", () => {
+    function openForEdit(tags: MergeTag[], current: MergeTag) {
+      const picker = useMergeTagPicker();
+      mountEditor(MergeTagPickerModal, {
+        attachTo: document.body,
+        provides: {
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [MERGE_TAG_PICKER_KEY]: picker,
+          [TRANSLATIONS_KEY]: enTranslations,
+        },
+      });
+      const openPromise = picker.open(tags, { current });
+      return { picker, openPromise };
+    }
+
+    it("titles itself as a change, not an insert", async () => {
+      openForEdit(flatTags, flatTags[1]);
+      await nextTick();
+
+      expect(findDialog()!.textContent).toContain("Change merge tag");
+      expect(findDialog()!.textContent).not.toContain("Insert merge tag");
+    });
+
+    it("starts the highlight on the tag being replaced", async () => {
+      openForEdit(flatTags, flatTags[2]);
+      await nextTick();
+
+      const items = findItems();
+      expect(items[2].getAttribute("data-selected")).toBe("true");
+      expect(items[0].getAttribute("data-selected")).toBe("false");
+    });
+
+    it("marks that tag as the current value", async () => {
+      openForEdit(flatTags, flatTags[1]);
+      await nextTick();
+
+      const current = findItems().filter(
+        (el) => el.getAttribute("aria-current") === "true",
+      );
+      expect(current).toHaveLength(1);
+      expect(current[0].textContent).toContain("Last Name");
+    });
+
+    it("preselects across groups, using rendered order not config order", async () => {
+      // "Unsubscribe URL" is last in config but lands in the trailing "Other"
+      // group, so an index taken from the config array would be wrong.
+      openForEdit(groupedTags, groupedTags[3]);
+      await nextTick();
+
+      const items = findItems();
+      expect(items[items.length - 1].getAttribute("data-selected")).toBe("true");
+    });
+
+    it("still titles itself as an insert when nothing is being replaced", async () => {
+      mountPicker(flatTags);
+      await nextTick();
+
+      expect(findDialog()!.textContent).toContain("Insert merge tag");
+      expect(findItems()[0].getAttribute("data-selected")).toBe("true");
+      expect(
+        findItems().filter((el) => el.getAttribute("aria-current") === "true"),
+      ).toHaveLength(0);
+    });
+
+    it("clears the current tag once resolved, so the next insert is clean", async () => {
+      const { picker, openPromise } = openForEdit(flatTags, flatTags[2]);
+      await nextTick();
+      picker.resolve(null);
+      await openPromise;
+
+      expect(picker.current.value).toBe(null);
+    });
+
+    it("hides the raw token in a row's tooltip when showRawValue is off", async () => {
+      const picker = useMergeTagPicker();
+      mountEditor(MergeTagPickerModal, {
+        attachTo: document.body,
+        provides: {
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [MERGE_TAG_PICKER_KEY]: picker,
+          [TRANSLATIONS_KEY]: enTranslations,
+          [MERGE_TAG_SHOW_RAW_VALUE_KEY]: false,
+        },
+      });
+      picker.open(flatTags);
+      await nextTick();
+
+      const titles = findItems().map((el) => el.getAttribute("title"));
+      expect(titles).toEqual([null, null, "Primary contact"]);
+    });
+
+    it("shows the raw token in a row's tooltip by default", async () => {
+      mountPicker(flatTags);
+      await nextTick();
+
+      const titles = findItems().map((el) => el.getAttribute("title"));
+      expect(titles).toEqual([
+        "{{first_name}}",
+        "{{last_name}}",
+        "{{email}} — Primary contact",
+      ]);
+    });
   });
 });

@@ -523,10 +523,13 @@ const ca: typeof en = {
     insert: "Insereix l'etiqueta de fusió",
     insertShort: "Etiqueta de fusió",
     editValue: "Edita el valor de l'etiqueta de fusió",
+    changeTag: "Canvia l'etiqueta de fusió: {label}",
+    unknownLabel: "Etiqueta de fusió",
     deleteMergeTag: "Elimina l'etiqueta de fusió",
     suggestionEmpty: "No hi ha etiquetes de fusió coincidents",
     picker: {
       title: "Insereix l'etiqueta de fusió",
+      changeTitle: "Canvia l'etiqueta de fusió",
       searchPlaceholder: "Cerca etiquetes de fusió",
       searchAriaLabel: "Cerca etiquetes de fusió",
       noResults: "No hi ha etiquetes de fusió coincidents",

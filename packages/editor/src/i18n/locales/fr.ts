@@ -460,10 +460,13 @@ const fr: typeof en = {
     insert: "Insérer une balise de fusion",
     insertShort: "Balise de fusion",
     editValue: "Modifier la valeur de la balise de fusion",
+    changeTag: "Remplacer la balise de fusion : {label}",
+    unknownLabel: "Balise de fusion",
     deleteMergeTag: "Supprimer la balise de fusion",
     suggestionEmpty: "Aucune balise de fusion correspondante",
     picker: {
       title: "Insérer une balise de fusion",
+      changeTitle: "Remplacer la balise de fusion",
       searchPlaceholder: "Rechercher des balises de fusion",
       searchAriaLabel: "Rechercher des balises de fusion",
       noResults: "Aucune balise de fusion correspondante",

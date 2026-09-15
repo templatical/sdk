@@ -13,7 +13,10 @@ import {
   MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
+  MERGE_TAG_SHOW_RAW_VALUE_KEY,
+  TRANSLATIONS_KEY,
 } from '../src/keys';
+import en from '../src/i18n/locales/en';
 import type { LogicPair, LogicTag } from '@templatical/types';
 
 function withProvide<T>(
@@ -931,6 +934,216 @@ describe('useMergeTagField', () => {
       field.startEditing();
       expect(field.handleKeydown(keyEvent('Escape'))).toBe(false);
       expect(field.isEditing.value).toBe(false);
+    });
+  });
+
+  // Issue #733: a field renders its tags through the same display chain the
+  // canvas uses, so hiding raw tokens covers both. A field value is a plain
+  // string with no stored label, so the placeholder is the whole fallback.
+  describe('segment labels when raw tokens are hidden', () => {
+    function labelsFor(
+      value: string,
+      provides: Record<string | symbol, unknown>,
+    ) {
+      const field = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => value,
+            emit: vi.fn(),
+            elementRef: createElementRef(),
+          }),
+        defaultProvides(provides),
+      );
+      return field.segments.value
+        .filter((s) => s.type === 'mergeTag')
+        .map((s) => (s as { label: string }).label);
+    }
+
+    it('labels a declared tag normally', () => {
+      expect(
+        labelsFor('Hi {{name}}', {
+          [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
+        }),
+      ).toEqual(['Name']);
+    });
+
+    it('shows an undeclared token as itself by default', () => {
+      expect(labelsFor('Hi {{opaque}}', {})).toEqual(['{{opaque}}']);
+    });
+
+    it('replaces an undeclared token with the placeholder', () => {
+      expect(
+        labelsFor('Hi {{opaque}}', {
+          [MERGE_TAG_SHOW_RAW_VALUE_KEY as symbol]: false,
+          [TRANSLATIONS_KEY as symbol]: en,
+        }),
+      ).toEqual(['Merge tag']);
+    });
+  });
+
+  // Issue #733: a tag in a field is swapped through the same chooser
+  // insertion uses, so the raw token never has to be shown to change it.
+  describe('replaceMergeTagAt', () => {
+    function fieldWith(
+      value: string,
+      onRequest: () => Promise<MergeTag | null>,
+      emit = vi.fn(),
+    ) {
+      const field = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => value,
+            emit,
+            elementRef: createElementRef(),
+          }),
+        defaultProvides({
+          [ON_REQUEST_MERGE_TAG_KEY as symbol]: onRequest,
+        }),
+      );
+      return { field, emit };
+    }
+
+    it('swaps exactly one tag and leaves the rest byte-identical', async () => {
+      const { field, emit } = fieldWith(
+        'Hi {{name}}, write to {{email}} or {{name}}',
+        vi.fn().mockResolvedValue({ label: 'Email', value: '{{email}}' }),
+      );
+
+      // segments: [text, {{name}}, text, {{email}}, text, {{name}}]
+      await field.replaceMergeTagAt(1);
+
+      expect(emit).toHaveBeenCalledTimes(1);
+      expect(emit).toHaveBeenCalledWith(
+        'Hi {{email}}, write to {{email}} or {{name}}',
+      );
+    });
+
+    it('passes the resolved tag as the edit context', async () => {
+      const onRequest = vi.fn().mockResolvedValue(null);
+      const { field } = fieldWith('Hi {{name}}', onRequest);
+
+      await field.replaceMergeTagAt(1);
+
+      expect(onRequest).toHaveBeenCalledWith({
+        reason: 'edit',
+        current: { label: 'Name', value: '{{name}}' },
+      });
+    });
+
+    it('omits current for a token that matches no configured tag', async () => {
+      const onRequest = vi.fn().mockResolvedValue(null);
+      const { field } = fieldWith('Hi {{legacy}}', onRequest);
+
+      await field.replaceMergeTagAt(1);
+
+      expect(onRequest).toHaveBeenCalledWith({ reason: 'edit' });
+    });
+
+    it('emits nothing when the chooser is cancelled', async () => {
+      const { field, emit } = fieldWith(
+        'Hi {{name}}',
+        vi.fn().mockResolvedValue(null),
+      );
+
+      await field.replaceMergeTagAt(1);
+
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op on a text segment', async () => {
+      const onRequest = vi.fn().mockResolvedValue({
+        label: 'Email',
+        value: '{{email}}',
+      });
+      const { field, emit } = fieldWith('Hi {{name}}', onRequest);
+
+      await field.replaceMergeTagAt(0);
+
+      expect(onRequest).not.toHaveBeenCalled();
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op on a logic-tag segment', async () => {
+      const onRequest = vi.fn().mockResolvedValue({
+        label: 'Email',
+        value: '{{email}}',
+      });
+      const { field, emit } = fieldWith('{% if vip %}{{name}}', onRequest);
+
+      await field.replaceMergeTagAt(0);
+
+      expect(onRequest).not.toHaveBeenCalled();
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op on an out-of-range index', async () => {
+      const onRequest = vi.fn().mockResolvedValue({
+        label: 'Email',
+        value: '{{email}}',
+      });
+      const { field, emit } = fieldWith('Hi {{name}}', onRequest);
+
+      await field.replaceMergeTagAt(99);
+
+      expect(onRequest).not.toHaveBeenCalled();
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    // The chooser mounts outside the field, so a blur fires while it is open.
+    // Without the flag insertMergeTag already uses, the field would leave edit
+    // mode mid-pick.
+    it('holds edit mode open for the duration of the pick', async () => {
+      let resolvePick: (tag: MergeTag | null) => void = () => {};
+      const { field } = fieldWith(
+        'Hi {{name}}',
+        vi.fn(
+          () => new Promise<MergeTag | null>((r) => (resolvePick = r)),
+        ),
+      );
+
+      field.startEditing();
+      const pending = field.replaceMergeTagAt(1);
+      field.stopEditing();
+      expect(field.isEditing.value).toBe(true);
+
+      resolvePick(null);
+      await pending;
+      field.stopEditing();
+      expect(field.isEditing.value).toBe(false);
+    });
+
+    // The snapshot is taken before the await because `segments` is a computed
+    // over modelValue(), which a collaborator edit can change mid-pick.
+    it('rebuilds from the value as it stood when the chooser opened', async () => {
+      // A real ref, not a closure variable: `segments` is a computed, so a
+      // non-reactive source never invalidates it and the test cannot tell a
+      // snapshot from a live read.
+      const live = ref('Hi {{name}} and {{email}}');
+      const emit = vi.fn();
+      let resolvePick: (tag: MergeTag | null) => void = () => {};
+      const field = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => live.value,
+            emit,
+            elementRef: createElementRef(),
+          }),
+        defaultProvides({
+          [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(
+            () => new Promise<MergeTag | null>((r) => (resolvePick = r)),
+          ),
+        }),
+      );
+
+      const pending = field.replaceMergeTagAt(1);
+      // Someone else rewrites the field while the chooser is open.
+      live.value = 'completely different {{email}}';
+      expect(field.segments.value).toHaveLength(2);
+
+      resolvePick({ label: 'Email', value: '{{email}}' });
+      await pending;
+
+      expect(emit).toHaveBeenCalledWith('Hi {{email}} and {{email}}');
     });
   });
 });

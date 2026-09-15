@@ -523,10 +523,13 @@ const es: typeof en = {
     insert: "Insertar etiqueta de combinación",
     insertShort: "Etiqueta de combinación",
     editValue: "Editar valor de la etiqueta de combinación",
+    changeTag: "Cambiar etiqueta de combinación: {label}",
+    unknownLabel: "Etiqueta de combinación",
     deleteMergeTag: "Eliminar etiqueta de combinación",
     suggestionEmpty: "No hay etiquetas de combinación coincidentes",
     picker: {
       title: "Insertar etiqueta de combinación",
+      changeTitle: "Cambiar etiqueta de combinación",
       searchPlaceholder: "Buscar etiquetas de combinación",
       searchAriaLabel: "Buscar etiquetas de combinación",
       noResults: "No hay etiquetas de combinación coincidentes",

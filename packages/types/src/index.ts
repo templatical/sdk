@@ -246,6 +246,7 @@ export type {
   LogicTag,
   MediaResult,
   MergeTag,
+  MergeTagRequestContext,
   MergeTagsConfig,
   TemplateSettingsConfig,
   ThemeOverrides,

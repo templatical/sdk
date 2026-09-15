@@ -272,6 +272,56 @@ const editor = await init({
 If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
 :::
 
+## Changing a tag that is already in the content
+
+Activating a tag in the content — clicking it, or pressing <kbd>Enter</kbd> on it — reopens the chooser so the author picks a different tag. It is the same chooser insertion uses, called with a `context` that says which job it is doing:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    onRequest: async (context) => {
+      // context: { reason: 'insert' | 'edit', current?: MergeTag }
+      return showMyMergeTagPicker({ preselect: context?.current });
+    },
+  },
+});
+```
+
+The parameter is optional, so a callback that ignores it keeps working unchanged.
+
+Which route an activated tag takes depends on what can resolve its token:
+
+| Configuration | Activating a tag opens |
+|---|---|
+| `onRequest` is set | your chooser, always — `context.current` is the resolved tag, or absent for a token that matches no entry in `tags` |
+| only `tags` is set, and the token matches one | the built-in picker, with that tag preselected |
+| the token matches nothing, or neither is configured | a text input holding the raw token |
+
+The last row is the only place a token is editable as text, and it exists so a legacy or mistyped token can still be repaired. Input there is checked against your `syntax` — a value that is not a merge tag is never committed, because it would otherwise be written into the sent email verbatim.
+
+## Hiding the raw token
+
+A tag's tooltip shows the token behind its label. That suits a readable syntax like <code v-pre>{{first_name}}</code>, where the token tells an author which field they are looking at. When `value` is an internal identifier your backend resolves, set `showRawValue: false`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    showRawValue: false,
+    onRequest: async () => showMyFieldPicker(),
+  },
+});
+```
+
+Authors then see only labels — on the canvas, in sidebar fields and in the built-in picker. Display-only: the token is unchanged in stored content and in the rendered output.
+
+It also governs what a tag *renders as*, not only its tooltip. The editor makes a tag out of anything matching your `syntax`, declared or not, and an undeclared one normally shows the token as its own label. With `showRawValue: false` it falls back to the label stored on the tag when it was inserted, and then to a neutral placeholder — so an internal identifier never reaches the screen or a screen reader.
+
+::: tip Sidebar fields
+A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other, but editing the text around them opens that whole string for editing, tokens included. `showRawValue` does not change that.
+:::
+
 ## Tokens in loaded content
 
 Content that never passed through the editor — a template from your own store, or one produced by the [`@templatical/import-*`](/guide/migration-from-html) converters — carries merge tags as bare <code v-pre>{{tokens}}</code> rather than as tag nodes. The editor converts them on the way in, so a loaded tag behaves exactly like a typed one: human label, highlight, `sample`, and selectable as a single unit.

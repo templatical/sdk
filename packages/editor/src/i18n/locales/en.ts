@@ -519,10 +519,13 @@ export default {
     insert: "Insert merge tag",
     insertShort: "Merge tag",
     editValue: "Edit merge tag value",
+    changeTag: "Change merge tag: {label}",
+    unknownLabel: "Merge tag",
     deleteMergeTag: "Delete merge tag",
     suggestionEmpty: "No matching merge tags",
     picker: {
       title: "Insert merge tag",
+      changeTitle: "Change merge tag",
       searchPlaceholder: "Search merge tags",
       searchAriaLabel: "Search merge tags",
       noResults: "No matching merge tags",

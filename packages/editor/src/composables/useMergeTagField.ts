@@ -46,6 +46,12 @@ export interface UseMergeTagFieldReturn {
   handleBlur: () => void;
   clearValue: () => void;
   insertMergeTag: () => Promise<void>;
+  /**
+   * Swap the merge tag at `index` in {@link segments} for another one, chosen
+   * through the same chooser insertion uses. No-op when the index isn't a
+   * merge-tag segment, or when the user cancels.
+   */
+  replaceMergeTagAt: (index: number) => Promise<void>;
   insertLogicTag: () => Promise<void>;
   /** Whether type-ahead autocomplete is active for this field. */
   autocompleteAvailable: boolean;
@@ -61,7 +67,8 @@ export function useMergeTagField(
     canRequestMergeTag,
     isRequesting: isRequestingMergeTag,
     isMergeTagValue,
-    getMergeTagLabel,
+    getMergeTagDisplayLabel,
+    findMergeTag,
     requestMergeTag,
     syntax,
     autocomplete,
@@ -120,7 +127,10 @@ export function useMergeTagField(
         result.push({
           type: "mergeTag",
           value: matched,
-          label: getMergeTagLabel(matched),
+          // A field value is a plain string, so there is no stored label to
+          // fall back to — an undeclared token resolves to the placeholder
+          // when the consumer hid raw tokens.
+          label: getMergeTagDisplayLabel(matched),
         });
       } else if (isLogicMergeTagValue(matched, syntax)) {
         result.push({
@@ -233,6 +243,37 @@ export function useMergeTagField(
     }
   }
 
+  async function replaceMergeTagAt(index: number): Promise<void> {
+    // Snapshot before the await: `segments` is a computed over modelValue(),
+    // and a collaborator edit or a parallel write can change it while the
+    // chooser is open. Rebuilding from the snapshot keeps the swap addressed
+    // to the tag the user actually clicked.
+    const snapshot = segments.value;
+    const target = snapshot[index];
+    if (target?.type !== "mergeTag") return;
+
+    // Same flag insertMergeTag uses: the chooser mounts outside the field, so
+    // without it the blur handler leaves edit mode mid-pick.
+    insertingMergeTag = true;
+    let replacement: Awaited<ReturnType<typeof requestMergeTag>>;
+    try {
+      replacement = await requestMergeTag({
+        reason: "edit",
+        current: findMergeTag(target.value),
+      });
+    } finally {
+      insertingMergeTag = false;
+    }
+
+    if (disposed || !replacement) return;
+
+    emit(
+      snapshot
+        .map((segment, i) => (i === index ? replacement.value : segment.value))
+        .join(""),
+    );
+  }
+
   async function insertLogicTag(): Promise<void> {
     // Read the selection straight from the element (kept focused via the
     // button's mousedown.prevent). Null only in display mode → append at end.
@@ -295,6 +336,7 @@ export function useMergeTagField(
     handleBlur,
     clearValue,
     insertMergeTag,
+    replaceMergeTagAt,
     insertLogicTag,
     autocompleteAvailable: typeahead.available,
   };

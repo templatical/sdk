@@ -75,6 +75,7 @@ import {
   TEMPLATE_SETTINGS_FIELDS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
+  MERGE_TAG_SHOW_RAW_VALUE_KEY,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
@@ -654,6 +655,10 @@ export function useEditorCore(
   provide(MERGE_TAG_SYNTAX_KEY, mergeTagSyntax);
   provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
   provide(MERGE_TAG_AUTOCOMPLETE_KEY, config.mergeTags?.autocomplete !== false);
+  provide(
+    MERGE_TAG_SHOW_RAW_VALUE_KEY,
+    config.mergeTags?.showRawValue !== false,
+  );
 
   // Which merge-tag view the previews use. Session state only — deliberately
   // not persisted and not a config option: it is a per-look choice.

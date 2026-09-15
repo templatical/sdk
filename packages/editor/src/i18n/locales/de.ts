@@ -525,10 +525,13 @@ const de: typeof en = {
     insert: "Merge-Tag einfügen",
     insertShort: "Merge-Tag",
     editValue: "Merge-Tag-Wert bearbeiten",
+    changeTag: "Merge-Tag ändern: {label}",
+    unknownLabel: "Merge-Tag",
     deleteMergeTag: "Merge-Tag löschen",
     suggestionEmpty: "Keine passenden Merge-Tags",
     picker: {
       title: "Merge-Tag einfügen",
+      changeTitle: "Merge-Tag ändern",
       searchPlaceholder: "Merge-Tags suchen",
       searchAriaLabel: "Merge-Tags suchen",
       noResults: "Keine passenden Merge-Tags",

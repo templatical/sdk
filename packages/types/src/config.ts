@@ -122,10 +122,44 @@ export interface MediaResult {
   alt?: string;
 }
 
+/**
+ * Why the merge-tag chooser opened, handed to {@link MergeTagsConfig.onRequest}.
+ *
+ * `"insert"` is a new tag at the caret. `"edit"` is the user activating a tag
+ * that is already in the content, asking to swap it for another one.
+ */
+export interface MergeTagRequestContext {
+  reason: "insert" | "edit";
+  /**
+   * The tag being replaced. Present only when `reason` is `"edit"` AND the
+   * token in the content resolves against `tags` — a token that matches no
+   * configured tag still opens the chooser, with nothing to preselect.
+   */
+  current?: MergeTag;
+}
+
 export interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
-  onRequest?: () => Promise<MergeTag | null>;
+  /**
+   * Consumer-owned chooser. Called both to insert a tag at the caret and to
+   * replace one already in the content — `context.reason` says which. Return
+   * the chosen tag, or `null` to cancel.
+   *
+   * The parameter is optional, so an existing zero-argument implementation
+   * keeps working unchanged.
+   */
+  onRequest?: (context?: MergeTagRequestContext) => Promise<MergeTag | null>;
+  /**
+   * Whether a tag's tooltip reveals the raw token behind its label. Defaults
+   * to `true`, which suits a readable syntax like `{{first_name}}` — the
+   * tooltip tells an author which field they are looking at.
+   *
+   * Set `false` when `value` is an internal identifier (an opaque id resolved
+   * by your backend) that an author should never see. Display-only: the token
+   * is unchanged in stored content and in the rendered output.
+   */
+  showRawValue?: boolean;
   /**
    * Enables typing-based autocomplete in rich text blocks and in every
    * merge-tag-enabled input/textarea field (toolbars, template settings,

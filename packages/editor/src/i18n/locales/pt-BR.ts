@@ -522,10 +522,13 @@ const ptBR: typeof en = {
     insert: "Inserir merge tag",
     insertShort: "Merge tag",
     editValue: "Editar valor da merge tag",
+    changeTag: "Alterar merge tag: {label}",
+    unknownLabel: "Merge tag",
     deleteMergeTag: "Excluir merge tag",
     suggestionEmpty: "Nenhuma merge tag correspondente",
     picker: {
       title: "Inserir merge tag",
+      changeTitle: "Alterar merge tag",
       searchPlaceholder: "Pesquisar merge tags",
       searchAriaLabel: "Pesquisar merge tags",
       noResults: "Nenhuma merge tag correspondente",

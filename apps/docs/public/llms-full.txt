@@ -57,7 +57,7 @@ unmount();
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                                                                             |
-| `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                                                                                          |
+| `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                                                                                          |
 | `resolvePreview`     | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering)                                                                                                                                                                                                                                                                                                  |
 | `displayConditions`  | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `logicTags`          | `LogicTagsConfig`                                                 | No       | Logic tag configuration — template-language control flow (conditionals, loops) inserted inline in rich text and text inputs. See [Logic Tags](/guide/logic-tags)                                                                                                                                                                                                                                                                                                                                                               |
@@ -6698,6 +6698,56 @@ const editor = await init({
 
 ::: tip Precedence
 If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
+:::
+
+## Changing a tag that is already in the content
+
+Activating a tag in the content — clicking it, or pressing <kbd>Enter</kbd> on it — reopens the chooser so the author picks a different tag. It is the same chooser insertion uses, called with a `context` that says which job it is doing:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    onRequest: async (context) => {
+      // context: { reason: 'insert' | 'edit', current?: MergeTag }
+      return showMyMergeTagPicker({ preselect: context?.current });
+    },
+  },
+});
+```
+
+The parameter is optional, so a callback that ignores it keeps working unchanged.
+
+Which route an activated tag takes depends on what can resolve its token:
+
+| Configuration | Activating a tag opens |
+|---|---|
+| `onRequest` is set | your chooser, always — `context.current` is the resolved tag, or absent for a token that matches no entry in `tags` |
+| only `tags` is set, and the token matches one | the built-in picker, with that tag preselected |
+| the token matches nothing, or neither is configured | a text input holding the raw token |
+
+The last row is the only place a token is editable as text, and it exists so a legacy or mistyped token can still be repaired. Input there is checked against your `syntax` — a value that is not a merge tag is never committed, because it would otherwise be written into the sent email verbatim.
+
+## Hiding the raw token
+
+A tag's tooltip shows the token behind its label. That suits a readable syntax like <code v-pre>{{first_name}}</code>, where the token tells an author which field they are looking at. When `value` is an internal identifier your backend resolves, set `showRawValue: false`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    showRawValue: false,
+    onRequest: async () => showMyFieldPicker(),
+  },
+});
+```
+
+Authors then see only labels — on the canvas, in sidebar fields and in the built-in picker. Display-only: the token is unchanged in stored content and in the rendered output.
+
+It also governs what a tag *renders as*, not only its tooltip. The editor makes a tag out of anything matching your `syntax`, declared or not, and an undeclared one normally shows the token as its own label. With `showRawValue: false` it falls back to the label stored on the tag when it was inserted, and then to a neutral placeholder — so an internal identifier never reaches the screen or a screen reader.
+
+::: tip Sidebar fields
+A field value is a single string that mixes text and tokens (<code v-pre>Hi {{first_name}}, welcome</code>). Its tags are individually clickable and re-picked like any other, but editing the text around them opens that whole string for editing, tokens included. `showRawValue` does not change that.
 :::
 
 ## Tokens in loaded content
