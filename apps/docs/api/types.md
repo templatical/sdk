@@ -282,7 +282,6 @@ type SocialPlatform =
   | 'reddit' | 'github' | 'dribbble' | 'behance'
   | 'website';
 
-// 16 platforms total
 
 type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
 type SocialIconSize = 'small' | 'medium' | 'large';
@@ -609,3 +608,7 @@ unsubscribe(); // Remove listener
 | `emit(event, data)` | Emit an event |
 | `removeAllListeners(event?)` | Remove all listeners, optionally for a specific event |
 | `listenerCount(event)` | Number of listeners for an event |
+
+## Storage contracts
+
+`Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` and the rest of the BYO storage shapes live under [Connect your backend](/backend/). This page is the block model and editor config.

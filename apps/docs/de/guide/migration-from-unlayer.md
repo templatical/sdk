@@ -93,7 +93,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Spacer | `spacer` | Konvertiert |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
-| Social | `social` | Konvertiert (16 Plattformen abgebildet) |
+| Social | `social` | Konvertiert |
 | Video | `video` | Konvertiert |
 | Timer | `html` | HTML-Fallback (manuell neu aufbauen) |
 | Form | — | Übersprungen |

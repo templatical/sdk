@@ -282,7 +282,6 @@ type SocialPlatform =
   | 'reddit' | 'github' | 'dribbble' | 'behance'
   | 'website';
 
-// Insgesamt 16 Plattformen
 
 type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
 type SocialIconSize = 'small' | 'medium' | 'large';
@@ -609,3 +608,7 @@ unsubscribe(); // Listener entfernen
 | `emit(event, data)` | Ein Ereignis auslösen |
 | `removeAllListeners(event?)` | Alle Listener entfernen, optional für ein bestimmtes Ereignis |
 | `listenerCount(event)` | Anzahl der Listener für ein Ereignis |
+
+## Speicherverträge
+
+`Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` und die übrigen BYO-Speicherformen stehen unter [Backend anbinden](/de/backend/). Diese Seite ist das Blockmodell und die Editor-Config.

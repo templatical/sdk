@@ -145,14 +145,6 @@ interface MediaListPage {
   items: MediaAsset[];
   nextCursor?: string;
 }
-
-interface MediaCreateInput {
-  file: File;
-  folderId?: string | null;
-  alt?: string;
-  filename?: string;
-  templateId?: string;
-}
 ```
 
 - **Die `id` kommt vom Provider.** Der Editor erzeugt nie eine eigene, sondern verwendet, was `create()` zurückgibt.

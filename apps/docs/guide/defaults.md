@@ -186,7 +186,8 @@ console.log(TITLE_BLOCK_DEFAULTS);
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
-// { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' }
+// { width: 600, backgroundColor: '#ffffff', textColor: '#1a1a1a',
+//   linkUnderline: true, fontFamily: 'Arial', locale: 'en' }
 
 // Build a custom preset by extending a single block's defaults
 const myButtonDefaults = {

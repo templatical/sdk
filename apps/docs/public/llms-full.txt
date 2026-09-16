@@ -775,7 +775,7 @@ const mjml = await renderToMjml(content, {
 
 ### Social icons
 
-Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (16 platforms × 5 styles) alongside the package:
+Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (every `SocialPlatform` × 5 styles) alongside the package:
 
 ```
 https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
@@ -1401,7 +1401,6 @@ type SocialPlatform =
   | 'reddit' | 'github' | 'dribbble' | 'behance'
   | 'website';
 
-// 16 platforms total
 
 type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
 type SocialIconSize = 'small' | 'medium' | 'large';
@@ -1728,6 +1727,10 @@ unsubscribe(); // Remove listener
 | `emit(event, data)` | Emit an event |
 | `removeAllListeners(event?)` | Remove all listeners, optionally for a specific event |
 | `listenerCount(event)` | Number of listeners for an event |
+
+## Storage contracts
+
+`Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` and the rest of the BYO storage shapes live under [Connect your backend](/backend/). This page is the block model and editor config.
 
 ---
 
@@ -2243,14 +2246,6 @@ interface MediaListParams {
 interface MediaListPage {
   items: MediaAsset[];
   nextCursor?: string;
-}
-
-interface MediaCreateInput {
-  file: File;
-  folderId?: string | null;
-  alt?: string;
-  filename?: string;
-  templateId?: string;
 }
 ```
 
@@ -3718,6 +3713,8 @@ Nothing here is Templatical-specific — these are plain CSS rules that affect a
 
 ## The editor's container
 
+Give the container a **definite height** — `100%` of a sized parent, or a `px` / `vh` value. The editor fills that box. Without a height it uses a small anti-collapse floor and the sidebar / footer clip. Symptom table: [Troubleshooting](/getting-started/troubleshooting).
+
 The editor mounts its dialogs into a popover root at `z-index: 10000`, inside the container you pass to `init()`. A z-index only competes within its own stacking context, so **the container must not establish one** — otherwise every editor dialog is confined to it, and any chrome of yours with a higher z-index in the parent context paints over them.
 
 These properties on the container, or on any ancestor between it and the stacking context your chrome lives in, create one:
@@ -4451,6 +4448,29 @@ bun add @templatical/editor @templatical/renderer
 
 ## 2. Mount the editor
 
+The HTML below is a **bundler** example (`import` from package names). Vite, webpack, or the playground already resolve those. A static file with no bundler needs the [CDN](/getting-started/installation#cdn) instead.
+
+CDN (no bundler):
+
+```html
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
+/>
+<script type="module">
+  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
+
+  const editor = await init({
+    container: "#editor",
+  });
+</script>
+<div id="editor" style="height: 100vh;"></div>
+```
+
+Pin a version for production — [Installation](/getting-started/installation#cdn).
+
+With a bundler:
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -4775,9 +4795,9 @@ Diagnosing an existing integration runs the same steps backwards: it reads your 
 
 Layer your own context on top and the agent uses it instead of generic defaults — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. Worth doing once if you plan to generate more than one email.
 
-### Custom blocks are never generated from a prompt
+### Never emit `custom`
 
-Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does. Never emit `type: "custom"`. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
 ### Never emit `countdown`
 
@@ -4790,6 +4810,24 @@ Reach for `html` only as a last resort — raw HTML is not visually editable aft
 ### Match `settings.locale` to the copy
 
 `settings.locale` becomes `<html lang>`. Set it to the language of the generated copy; do not default German copy to `"en"`. For `ar`/`he`/`fa`/`ur`/… also set `direction: "rtl"` (or omit it and those locales resolve as RTL).
+
+### Shape of a template
+
+Do not invent fields. A blank template is `{ blocks, settings }`. Install the skill or run `npx @templatical/template-tools schema` for the contract. Minimal valid JSON:
+
+```json
+{
+  "blocks": [],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}
+```
 
 ---
 
@@ -5829,7 +5867,8 @@ console.log(TITLE_BLOCK_DEFAULTS);
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
-// { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' }
+// { width: 600, backgroundColor: '#ffffff', textColor: '#1a1a1a',
+//   linkUnderline: true, fontFamily: 'Arial', locale: 'en' }
 
 // Build a custom preset by extending a single block's defaults
 const myButtonDefaults = {
@@ -6499,14 +6538,6 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 - **Always set alt text** -- Many email clients (especially Outlook) block images by default. Recipients see the alt text until they choose to load images.
 - **Set explicit width** -- Email clients may render images at their native size if no width is specified, breaking your layout on small screens.
 - **Leave the height out unless you need it** -- Width alone keeps the aspect ratio. A height that doesn't match the source ratio stretches the image in every client.
-
----
-
-# Keyboard
-
-Source: https://docs.templatical.com/guide/keyboard
-
-Shortcuts, palette insert, and the pick session live under [Editor accessibility](/guide/accessibility#keyboard).
 
 ---
 
@@ -7212,7 +7243,7 @@ BeeFree block types map to Templatical equivalents:
 | Button | `button` | Converted |
 | Divider | `divider` | Converted |
 | Spacer | `spacer` | Converted |
-| Social | `social` | Converted (16 platforms mapped) |
+| Social | `social` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
 | Video | `video` | Converted |
@@ -8513,7 +8544,7 @@ Unlayer content types map to Templatical equivalents:
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
-| Social | `social` | Converted (16 platforms mapped) |
+| Social | `social` | Converted |
 | Video | `video` | Converted |
 | Timer | `html` | HTML fallback (rebuild manually) |
 | Form | — | Skipped |
@@ -8783,7 +8814,8 @@ Templatical provides factory functions for every block type. Use them to build t
 import { createDefaultTemplateContent } from '@templatical/types';
 
 const content = createDefaultTemplateContent();
-// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' } }
+// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff',
+//   textColor: '#1a1a1a', linkUnderline: true, fontFamily: 'Arial', locale: 'en' } }
 ```
 
 `createDefaultTemplateContent()` accepts an optional font family string:

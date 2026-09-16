@@ -97,9 +97,9 @@ Diagnosing an existing integration runs the same steps backwards: it reads your 
 
 Layer your own context on top and the agent uses it instead of generic defaults — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. Worth doing once if you plan to generate more than one email.
 
-### Custom blocks are never generated from a prompt
+### Never emit `custom`
 
-Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does. Never emit `type: "custom"`. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
 ### Never emit `countdown`
 
@@ -112,3 +112,21 @@ Reach for `html` only as a last resort — raw HTML is not visually editable aft
 ### Match `settings.locale` to the copy
 
 `settings.locale` becomes `<html lang>`. Set it to the language of the generated copy; do not default German copy to `"en"`. For `ar`/`he`/`fa`/`ur`/… also set `direction: "rtl"` (or omit it and those locales resolve as RTL).
+
+### Shape of a template
+
+Do not invent fields. A blank template is `{ blocks, settings }`. Install the skill or run `npx @templatical/template-tools schema` for the contract. Minimal valid JSON:
+
+```json
+{
+  "blocks": [],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}
+```

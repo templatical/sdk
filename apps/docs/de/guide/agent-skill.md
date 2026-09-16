@@ -97,9 +97,9 @@ Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte r�
 
 Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generischer Standardwerte: Markenfarben und -schriften, Tonalität, einen eigenen System-Prompt, einen verpflichtenden Footer oder Abmelde-Block. Das lohnt sich einmalig, wenn Sie mehr als eine E-Mail erzeugen möchten.
 
-### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
+### Nie `custom` ausgeben
 
-Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut. Nie `type: "custom"` ausgeben. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
 
 ### Nie `countdown` ausgeben
 
@@ -112,3 +112,21 @@ Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Kons
 ### `settings.locale` an den Text anpassen
 
 `settings.locale` wird zu `<html lang>`. Auf die Sprache des erzeugten Texts setzen; deutschen Text nicht auf `"en"` defaulten. Für `ar`/`he`/`fa`/`ur`/… zusätzlich `direction: "rtl"` setzen (oder weglassen — diese Locales gelten als RTL).
+
+### Form eines Templates
+
+Keine Felder erfinden. Ein leeres Template ist `{ blocks, settings }`. Den Skill installieren oder `npx @templatical/template-tools schema` für den Vertrag. Minimales gültiges JSON:
+
+```json
+{
+  "blocks": [],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}
+```

@@ -29,6 +29,29 @@ bun add @templatical/editor @templatical/renderer
 
 ## 2. Mount the editor
 
+The HTML below is a **bundler** example (`import` from package names). Vite, webpack, or the playground already resolve those. A static file with no bundler needs the [CDN](/getting-started/installation#cdn) instead.
+
+CDN (no bundler):
+
+```html
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
+/>
+<script type="module">
+  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
+
+  const editor = await init({
+    container: "#editor",
+  });
+</script>
+<div id="editor" style="height: 100vh;"></div>
+```
+
+Pin a version for production — [Installation](/getting-started/installation#cdn).
+
+With a bundler:
+
 ```html
 <!DOCTYPE html>
 <html lang="en">

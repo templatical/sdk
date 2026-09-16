@@ -157,8 +157,11 @@ function urlFor(relPath) {
 export function collectPages(docsDir = DOCS_DIR) {
   return walk(docsDir, docsDir)
     .sort()
-    .map((rel) => {
+    .flatMap((rel) => {
       const { fields, body } = parsePage(readFileSync(join(docsDir, rel), "utf8"));
+      // Stubs that exist so a human URL does not 404. Agents should fetch the
+      // canonical page instead (see llms: false on guide/keyboard.md).
+      if (fields.llms === "false") return [];
       const description = fields.description ?? "";
       if (!description) {
         throw new Error(
@@ -175,14 +178,16 @@ export function collectPages(docsDir = DOCS_DIR) {
       // fallback there — keeping the home page's title semantic rather than
       // filesystem-literal.
       const title = fields.title ?? heading?.[1] ?? titleFromPath(rel) ?? SITE_TITLE;
-      return {
-        path: rel,
-        url: urlFor(rel),
-        group: groupOf(rel),
-        title,
-        description,
-        body,
-      };
+      return [
+        {
+          path: rel,
+          url: urlFor(rel),
+          group: groupOf(rel),
+          title,
+          description,
+          body,
+        },
+      ];
     });
 }
 

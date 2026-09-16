@@ -160,11 +160,18 @@ describe("OSS docs house style", () => {
     expect(readDocs("de/index.md")).not.toContain("preview.png");
   });
 
-  it("tells the agent skill never to emit countdown", () => {
+  it("tells the agent skill never to emit countdown or custom", () => {
     const src = readDocs("guide/agent-skill.md");
     expect(src).toMatch(/Never emit `countdown`/);
+    expect(src).toMatch(/Never emit `custom`/);
     expect(readDocs("guide/migration-from-unlayer.md")).not.toMatch(
       /Recreate using Templatical's `CountdownBlock`/,
+    );
+  });
+
+  it("does not put Cloud comments in the README docs list", () => {
+    expect(readRepo("README.md")).not.toMatch(
+      /Cloud \(AI, Collab, Comments\)/,
     );
   });
 

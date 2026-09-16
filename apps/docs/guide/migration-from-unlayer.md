@@ -95,7 +95,7 @@ Unlayer content types map to Templatical equivalents:
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
-| Social | `social` | Converted (16 platforms mapped) |
+| Social | `social` | Converted |
 | Video | `video` | Converted |
 | Timer | `html` | HTML fallback (rebuild manually) |
 | Form | — | Skipped |

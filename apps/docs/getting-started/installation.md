@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install the Templatical email editor via npm or CDN.
+description: Install the Templatical email editor with a package manager or from a CDN.
 ---
 
 # Installation

@@ -11,6 +11,8 @@ Nichts davon ist Templatical-spezifisch: Es sind reine CSS-Regeln, die jede Bibl
 
 ## Der Container des Editors
 
+Geben Sie dem Container eine **definite Höhe** — `100%` eines bemessenen Parents, oder einen `px`-/`vh`-Wert. Der Editor füllt diese Box. Ohne Höhe nutzt er eine kleine Anti-Collapse-Untergrenze, und Sidebar / Footer werden abgeschnitten. Symptom-Tabelle: [Fehlerbehebung](/de/getting-started/troubleshooting).
+
 Der Editor mountet seine Dialoge in eine Popover-Wurzel mit `z-index: 10000` innerhalb des Containers, den Sie an `init()` übergeben. Ein z-index wirkt nur innerhalb seines eigenen Stacking-Kontexts. Deshalb **darf der Container keinen eigenen Stacking-Kontext erzeugen** — sonst bleiben alle Dialoge des Editors darin eingeschlossen, und jedes Chrome von Ihnen mit höherem z-index im übergeordneten Kontext überdeckt sie.
 
 Diese Eigenschaften erzeugen einen Stacking-Kontext, wenn sie auf dem Container oder einem Vorfahren zwischen Container und dem Stacking-Kontext Ihres Chromes liegen:
