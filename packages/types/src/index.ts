@@ -205,6 +205,15 @@ export {
   generateId,
 } from "./factory";
 
+// Layout overlay (pure splice of authored content into a slot)
+export {
+  applyLayout,
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
+  layoutWrapsSlot,
+  validateLayout,
+} from "./layout";
+
 // Event emitter
 export { EventEmitter } from "./events";
 
