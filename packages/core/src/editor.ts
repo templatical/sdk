@@ -11,7 +11,12 @@ import type {
   UiTheme,
   ViewportSize,
 } from "@templatical/types";
-import { createDefaultTemplateContent, SdkError } from "@templatical/types";
+import {
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
+  createDefaultTemplateContent,
+  SdkError,
+} from "@templatical/types";
 import { notifyHandler } from "./error-reporting";
 
 function getColumnCount(layout: ColumnLayout): number {
@@ -139,14 +144,19 @@ export interface UseEditorReturn {
 }
 
 export function useEditor(options: UseEditorOptions): UseEditorReturn {
+  const seedContent =
+    options.content ??
+    createDefaultTemplateContent(
+      options.defaultFontFamily,
+      options.templateDefaults,
+    );
+  // Layout-only; authored content must not contain slot or wrapper.
+  assertNoSlotInContent(seedContent);
+  assertNoWrapperInContent(seedContent);
+
   const state = reactive<EditorState>({
     template: null,
-    content:
-      options.content ??
-      createDefaultTemplateContent(
-        options.defaultFontFamily,
-        options.templateDefaults,
-      ),
+    content: seedContent,
     selectedBlockId: null,
     viewport: "desktop",
     darkMode: false,
@@ -262,6 +272,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   // through the tree are also blocked.
 
   function setContent(newContent: TemplateContent, markDirty = true): void {
+    assertNoSlotInContent(newContent);
+    assertNoWrapperInContent(newContent);
     state.content = newContent;
     if (markDirty) {
       touch();
@@ -316,6 +328,12 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     columnIndex = 0,
     index?: number,
   ): void {
+    const candidate = {
+      settings: state.content.settings,
+      blocks: [block],
+    };
+    assertNoSlotInContent(candidate);
+    assertNoWrapperInContent(candidate);
     // Sections cannot be nested inside a column — MJML forbids `mj-section`
     // inside `mj-column`, so the renderer drops them on export (issue #292).
     // Reject the nest up front rather than lose the content silently later.
@@ -517,6 +535,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     state.isLoading = true;
     try {
       loaded = await provider.load(templateId);
+      assertNoSlotInContent(loaded.content);
+      assertNoWrapperInContent(loaded.content);
       state.template = loaded;
       state.content = loaded.content;
       state.isDirty = false;
