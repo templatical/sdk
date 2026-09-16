@@ -12,6 +12,7 @@ import TableBlock from "./blocks/TableBlock.vue";
 import TitleBlock from "./blocks/TitleBlock.vue";
 import ParagraphBlock from "./blocks/ParagraphBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
+import WrapperBlock from "./blocks/WrapperBlock.vue";
 import {
   BLOCK_REGISTRY_KEY,
   CONDITION_PREVIEW_KEY,
@@ -183,6 +184,7 @@ const previewComponentMap: Record<string, Component> = {
   spacer: SpacerBlock,
   html: HtmlBlock,
   custom: CustomBlock,
+  wrapper: WrapperBlock,
 };
 
 function getBlockComponent(block: Block): Component | null {
