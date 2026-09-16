@@ -95,7 +95,7 @@ AI rewrite and real-time collaboration go through `initCloud()`. Comments, versi
 - [Theming](https://docs.templatical.com/guide/theming)
 - [Shadow DOM](https://docs.templatical.com/guide/shadow-dom)
 - [Custom blocks](https://docs.templatical.com/guide/custom-blocks)
-- [Saved blocks](https://docs.templatical.com/guide/saved-blocks)
+- [Saved blocks](https://docs.templatical.com/backend/saved-blocks)
 
 Full docs at **[docs.templatical.com](https://docs.templatical.com)**.
 

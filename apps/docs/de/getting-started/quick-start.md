@@ -55,12 +55,15 @@ Diese Datei in den Browser legen. Kein Bundler. Framework- und Paketmanager-Moun
     const editor = await init({
       container: "#editor",
     });
+
+    const json = editor.getContent();
+    const mjml = await editor.toMjml();
   </script>
 </body>
 </html>
 ```
 
-Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template später weiter bearbeiten können) als auch das MJML. `toMjml()` erzeugt kein HTML.
+`json` speichern, damit Nutzer das Template später weiter bearbeiten können. `mjml` auf dem Server kompilieren — `toMjml()` erzeugt kein HTML.
 
 ## 3. MJML zu HTML kompilieren
 

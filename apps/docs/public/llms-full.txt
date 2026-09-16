@@ -4443,12 +4443,15 @@ Paste this into an HTML file and open it. No bundler. Framework and package-mana
     const editor = await init({
       container: "#editor",
     });
+
+    const json = editor.getContent();
+    const mjml = await editor.toMjml();
   </script>
 </body>
 </html>
 ```
 
-Your backend receives both the JSON (store it to let users edit later) and the MJML. `toMjml()` does not produce HTML.
+Store `json` so users can edit later. Compile `mjml` on the server — `toMjml()` does not produce HTML.
 
 ## 3. Compile MJML to HTML
 

@@ -245,4 +245,34 @@ describe("OSS docs house style", () => {
       );
     }
   });
+
+  it("Quick Start extracts JSON and MJML from the mounted editor", () => {
+    for (const rel of [
+      "getting-started/quick-start.md",
+      "de/getting-started/quick-start.md",
+    ]) {
+      const src = readDocs(rel);
+      expect(src, rel).toMatch(/editor\.getContent\(\)/);
+      expect(src, rel).toMatch(/await editor\.toMjml\(\)/);
+    }
+  });
+
+  it("does not put token-count, pluggable-syntax, or a block count in the README", () => {
+    const src = readRepo("README.md");
+    expect(src).not.toMatch(/27 OKLch/i);
+    expect(src).not.toMatch(/pluggable syntax/i);
+    expect(src).not.toMatch(/all 14 block types/i);
+    expect(src).not.toMatch(/\*\*14 block types\*\*/);
+    expect(src).not.toMatch(/Cloud tier \(below\)/);
+  });
+
+  it("points the editor README saved-blocks link at the backend page", () => {
+    const src = readRepo("packages/editor/README.md");
+    expect(src).toMatch(
+      /docs\.templatical\.com\/backend\/saved-blocks/,
+    );
+    expect(src).not.toMatch(
+      /docs\.templatical\.com\/guide\/saved-blocks/,
+    );
+  });
 });
