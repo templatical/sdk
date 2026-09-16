@@ -12,7 +12,7 @@ Three files carry the detail, and they are the contract rather than prose:
 - **[schema.json](schema.json)** — the JSON Schema `validate` enforces. Read it
   when the guide is ambiguous or a field is missing from it. It is generated
   from the same types the validator uses, so it cannot disagree with them.
-- **[examples/](examples/)** — five complete, valid templates. Model output on
+- **[examples/](examples/)** — complete, valid templates. Model output on
   these rather than inventing a shape.
 
 `npx -y @templatical/template-tools@0.39.0 schema` prints the same schema for

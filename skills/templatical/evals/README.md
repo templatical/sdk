@@ -1,9 +1,9 @@
 # Evals — generation and integration quality checks
 
-Fifteen prompts that exercise the skill end-to-end across both of its jobs —
-authoring a template (cases 1–5) and integrating or troubleshooting the SDK
-(cases 6–15). They check **quality**: does a generated template look good and
-fit the brief, and is integration advice correct and complete?
+The `evals` array exercises the skill end-to-end across both of its jobs —
+authoring a template and integrating or troubleshooting the SDK. They check
+**quality**: does a generated template look good and fit the brief, and is
+integration advice correct and complete?
 
 A maintainer artifact, not part of the runtime skill. Nothing here ships to a
 user who installs the skill.
@@ -52,8 +52,8 @@ reach `scaffold` and lands in `docs` produces a plausible, useless answer, and
 every unit test still passes.
 
 So run these when the Commands table changes, when an entry island's scope
-moves, or when the discrimination prose is reworded. Cases 6–15 cover the SDK
-side, where most routing ambiguity lives.
+moves, or when the discrimination prose is reworded. The SDK-side cases are
+where most routing ambiguity lives.
 
 ## What they do not cover
 
