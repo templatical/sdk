@@ -8,18 +8,21 @@ import {
     isImage,
     isMenu,
     isSection,
+    isSlot,
     isSocialIcons,
     isSpacer,
     isTable,
     isTitle,
     isParagraph,
     isVideo,
+    isWrapper,
     createTitleBlock,
     createParagraphBlock,
     createImageBlock,
     createButtonBlock,
     createDividerBlock,
     createSectionBlock,
+    createSlotBlock,
     createVideoBlock,
     createSocialIconsBlock,
     createSpacerBlock,
@@ -27,6 +30,7 @@ import {
     createMenuBlock,
     createTableBlock,
     createCountdownBlock,
+    createWrapperBlock,
 } from '../src';
 
 describe('type guards', () => {
@@ -168,5 +172,23 @@ describe('type guards return false for wrong block types', () => {
 
     it('isSection returns false for paragraph block', () => {
         expect(isSection(createParagraphBlock())).toBe(false);
+    });
+});
+
+describe('layout block type guards', () => {
+    it('isSlot returns true for slot blocks', () => {
+        expect(isSlot(createSlotBlock())).toBe(true);
+    });
+
+    it('isSlot returns false for title blocks', () => {
+        expect(isSlot(createTitleBlock())).toBe(false);
+    });
+
+    it('isWrapper returns true for wrapper blocks', () => {
+        expect(isWrapper(createWrapperBlock())).toBe(true);
+    });
+
+    it('isWrapper returns false for title blocks', () => {
+        expect(isWrapper(createTitleBlock())).toBe(false);
     });
 });

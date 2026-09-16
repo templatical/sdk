@@ -9,11 +9,13 @@ import type {
   MenuBlock,
   ParagraphBlock,
   SectionBlock,
+  SlotBlock,
   SocialIconsBlock,
   SpacerBlock,
   TableBlock,
   TitleBlock,
   VideoBlock,
+  WrapperBlock,
 } from "./blocks";
 
 export function isSection(block: Block): block is SectionBlock {
@@ -70,4 +72,12 @@ export function isCountdown(block: Block): block is CountdownBlock {
 
 export function isCustomBlock(block: Block): block is CustomBlock {
   return block.type === "custom";
+}
+
+export function isSlot(block: Block): block is SlotBlock {
+  return block.type === "slot";
+}
+
+export function isWrapper(block: Block): block is WrapperBlock {
+  return block.type === "wrapper";
 }
