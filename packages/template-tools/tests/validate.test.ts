@@ -13,11 +13,13 @@ import {
   createMenuBlock,
   createParagraphBlock,
   createSectionBlock,
+  createSlotBlock,
   createSocialIconsBlock,
   createSpacerBlock,
   createTableBlock,
   createTitleBlock,
   createVideoBlock,
+  createWrapperBlock,
   type Block,
   type BlockType,
 } from "@templatical/types";
@@ -285,6 +287,9 @@ const BLOCK_FACTORIES: Record<BlockType, () => Block> = {
       fields: [],
       template: "<div></div>",
     }),
+  // Layout-only; still schema members, so the drift guard covers them.
+  slot: () => createSlotBlock(),
+  wrapper: () => createWrapperBlock(),
 };
 
 /** Every block type's discriminator `const`, read from the generated schema. */

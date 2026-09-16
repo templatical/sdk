@@ -144,8 +144,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// Cast helper — Editor.vue is mocked, so the config is just passed through as
-// a prop and never validated.
+// Omit `content`: `{}` is truthy and `assertNoSlotInContent` walks `blocks`.
 function cloudConfig(
   container: HTMLElement,
   extra: Record<string, unknown> = {},
@@ -153,7 +152,6 @@ function cloudConfig(
   return {
     container,
     shadowDom: false,
-    content: {},
     ...extra,
   } as unknown as Parameters<typeof initCloudFn>[0];
 }
@@ -658,8 +656,7 @@ describe("top-level unmount()", () => {
     await initFn({
       container,
       shadowDom: false,
-      content: {},
-    } as unknown as Parameters<typeof initFn>[0]);
+    });
 
     expect(fakeApps[0].unmount).not.toHaveBeenCalled();
 
