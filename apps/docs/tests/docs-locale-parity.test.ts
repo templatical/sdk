@@ -1,14 +1,19 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import config from "../.vitepress/config";
 
 /**
- * English pages have a German mirror with the same path, the same heading
- * outline, and the same internal nav/sidebar targets. Prose is not compared.
+ * Every extra VitePress locale (today: `de`) mirrors English: same markdown
+ * paths, same heading-level outline, same internal nav/sidebar targets.
+ * Prose is not compared.
  *
- * `changelog.md` exists in both trees; the German file is a stub that links
- * through to English, so its outline is not asserted.
+ * Adding a language is two steps — `locales.<code>` in `.vitepress/config.ts`
+ * and `apps/docs/<code>/` with the mirrored tree. This file discovers locales
+ * from the config; it does not name them.
+ *
+ * `changelog.md` exists in every tree; non-English copies are stubs that link
+ * through to English, so their outline is not asserted.
  */
 
 const DOCS = join(import.meta.dirname, "..");
@@ -20,6 +25,10 @@ const SKIP_DIRS = new Set([
   "tests",
   "scripts",
 ]);
+
+function localeCodes(): string[] {
+  return Object.keys(config.locales ?? {}).filter((key) => key !== "root");
+}
 
 function walkMarkdown(dir: string, acc: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -35,14 +44,15 @@ function walkMarkdown(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-function englishPaths(all: string[]): string[] {
-  return all.filter((rel) => !rel.startsWith("de/"));
+function englishPaths(all: string[], locales: string[]): string[] {
+  return all.filter((rel) => !locales.some((l) => rel === l || rel.startsWith(`${l}/`)));
 }
 
-function germanPaths(all: string[]): string[] {
+function localePaths(all: string[], locale: string): string[] {
+  const prefix = `${locale}/`;
   return all
-    .filter((rel) => rel.startsWith("de/"))
-    .map((rel) => rel.slice("de/".length));
+    .filter((rel) => rel.startsWith(prefix))
+    .map((rel) => rel.slice(prefix.length));
 }
 
 function headingOutline(src: string): number[] {
@@ -79,51 +89,87 @@ function collectFromTheme(theme: {
   return acc;
 }
 
-function internalPath(link: string): string | null {
+function stripLocalePrefix(link: string, locale: string): string | null {
   if (/^https?:\/\//.test(link)) return null;
+  if (!link.startsWith("/")) return null;
+  const prefix = `/${locale}`;
   let path = link;
-  if (path === "/de" || path.startsWith("/de/")) {
-    path = path.slice(3) || "/";
-  }
-  if (!path.startsWith("/")) return null;
+  if (path === prefix) path = "/";
+  else if (path.startsWith(`${prefix}/`)) path = path.slice(prefix.length);
   if (path.length > 1) path = path.replace(/\/$/, "");
   return path;
 }
 
-describe("English and German docs stay in lockstep", () => {
+function internalEnglishPath(link: string, locales: string[]): string | null {
+  if (/^https?:\/\//.test(link)) return null;
+  if (!link.startsWith("/")) return null;
+  for (const locale of locales) {
+    const stripped = stripLocalePrefix(link, locale);
+    if (stripped !== null && link.startsWith(`/${locale}`)) return stripped;
+  }
+  return link.length > 1 ? link.replace(/\/$/, "") : link;
+}
+
+describe("docs locales stay in lockstep with English", () => {
+  const locales = localeCodes();
   const all = walkMarkdown(DOCS);
-  const en = englishPaths(all).sort();
-  const de = germanPaths(all).sort();
+  const en = englishPaths(all, locales).sort();
 
-  it("has a German markdown file for every English page, and none extra", () => {
-    expect(en.length).toBeGreaterThan(20);
-    expect(de).toEqual(en);
-  });
-
-  it("keeps the same heading-level outline on each pair except changelog", () => {
-    const mismatches: string[] = [];
-    for (const rel of en) {
-      if (rel === "changelog.md") continue;
-      const enSrc = readFileSync(join(DOCS, rel), "utf8");
-      const deSrc = readFileSync(join(DOCS, "de", rel), "utf8");
-      const a = headingOutline(enSrc);
-      const b = headingOutline(deSrc);
-      if (a.join(",") !== b.join(",")) {
-        mismatches.push(`${rel}: en [${a}] de [${b}]`);
-      }
+  it("registers each extra locale as a VitePress locale with a matching directory", () => {
+    expect(locales.length).toBeGreaterThan(0);
+    for (const locale of locales) {
+      expect(existsSync(join(DOCS, locale)), locale).toBe(true);
     }
-    expect(mismatches).toEqual([]);
   });
 
-  it("exposes the same internal nav and sidebar paths in both locales", () => {
-    const enLinks = collectFromTheme(config.locales?.root?.themeConfig ?? {});
-    const deLinks = collectFromTheme(config.locales?.de?.themeConfig ?? {});
-    const enPaths = new Set(
-      enLinks.map(internalPath).filter((p): p is string => p !== null),
-    );
-    const dePaths = new Set(
-      deLinks.map(internalPath).filter((p): p is string => p !== null),
-    );
-    expect([...enPaths].sort()).toEqual([...dePaths].sort());
-  });
+  it.each(locales)(
+    "%s has a markdown file for every English page, and none extra",
+    (locale) => {
+      expect(en.length).toBeGreaterThan(20);
+      expect(localePaths(all, locale).sort()).toEqual(en);
+    },
+  );
+
+  it.each(locales)(
+    "%s keeps the same heading-level outline on each pair except changelog",
+    (locale) => {
+      const mismatches: string[] = [];
+      for (const rel of en) {
+        if (rel === "changelog.md") continue;
+        const enSrc = readFileSync(join(DOCS, rel), "utf8");
+        const locSrc = readFileSync(join(DOCS, locale, rel), "utf8");
+        const a = headingOutline(enSrc);
+        const b = headingOutline(locSrc);
+        if (a.join(",") !== b.join(",")) {
+          mismatches.push(`${rel}: en [${a}] ${locale} [${b}]`);
+        }
+      }
+      expect(mismatches).toEqual([]);
+    },
+  );
+
+  it.each(locales)(
+    "%s exposes the same internal nav and sidebar paths as English",
+    (locale) => {
+      const enLinks = collectFromTheme(config.locales?.root?.themeConfig ?? {});
+      const locLinks = collectFromTheme(
+        config.locales?.[locale]?.themeConfig ?? {},
+      );
+      const enPaths = [
+        ...new Set(
+          enLinks
+            .map((l) => internalEnglishPath(l, locales))
+            .filter((p): p is string => p !== null),
+        ),
+      ].sort();
+      const locPaths = [
+        ...new Set(
+          locLinks
+            .map((l) => stripLocalePrefix(l, locale))
+            .filter((p): p is string => p !== null),
+        ),
+      ].sort();
+      expect(locPaths).toEqual(enPaths);
+    },
+  );
 });
