@@ -5,6 +5,7 @@ import {
   createParagraphBlock,
   createSectionBlock,
   createSlotBlock,
+  createWrapperBlock,
 } from '@templatical/types';
 import type {
   CustomBlock,
@@ -347,5 +348,31 @@ describe('buildRenderPayload', () => {
     );
     expect(JSON.stringify(content)).toBe(before);
     expect(content.blocks[0]).toBe(author);
+  });
+
+  it('pre-renders a custom block a card splice nested under the wrapper', async () => {
+    const custom = makeCustomBlock('banner');
+    const section = createSectionBlock({ columns: '1', children: [[custom]] });
+    const content = makeContent([section]);
+    const layout = makeContent([
+      createWrapperBlock({ children: [createSlotBlock()] }),
+    ]);
+    const before = JSON.stringify(content);
+
+    const payload = await buildRenderPayload(source(content, layout));
+
+    const card = payload.content.blocks[0] as {
+      type: string;
+      children: { children: CustomBlock[][] }[];
+    };
+    expect(card.type).toBe('wrapper');
+    expect(card.children[0]?.children[0]?.[0]?.renderedHtml).toBe(
+      '<p>banner</p>',
+    );
+    expect(JSON.stringify(content)).toBe(before);
+    expect(custom.renderedHtml).toBeUndefined();
+    expect(
+      (section.children[0][0] as CustomBlock).renderedHtml,
+    ).toBeUndefined();
   });
 });

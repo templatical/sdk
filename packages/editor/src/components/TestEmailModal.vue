@@ -120,6 +120,10 @@ const previewBlocks = computed(
   () => previewResolution.content.value.blocks ?? [],
 );
 
+const previewSettings = computed(
+  () => previewResolution.content.value.settings,
+);
+
 const hasAllowlist = computed(
   () =>
     props.allowedRecipients !== undefined && props.allowedRecipients.length > 0,
@@ -367,6 +371,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <BlockPreviewCanvas
           v-if="!previewResolution.isInitialResolve.value"
           :blocks="previewBlocks"
+          :settings="previewSettings"
           :viewport="previewViewport"
           :apply-condition-filter="!previewResolution.isConfigured"
         />

@@ -33,6 +33,7 @@ import {
 import {
   resolveContentDirection,
   type Block,
+  type TemplateSettings,
   type ViewportSize,
 } from "@templatical/types";
 import { computed, inject, provide, type Component } from "vue";
@@ -59,8 +60,14 @@ const props = withDefaults(
      * and get the wrong answer.
      */
     applyConditionFilter?: boolean;
+    /**
+     * Document settings for this surface. Test-email passes the composed
+     * document so the mat is layout `backgroundColor` (`mj-body`). Saved-block
+     * previews omit it and read the live editor template.
+     */
+    settings?: TemplateSettings;
   }>(),
-  { viewport: "desktop", applyConditionFilter: true },
+  { viewport: "desktop", applyConditionFilter: true, settings: undefined },
 );
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
@@ -97,6 +104,10 @@ const visibleBlocks = computed(() =>
     : props.blocks,
 );
 
+const previewSettings = computed(
+  () => props.settings ?? editor?.content.value.settings,
+);
+
 /**
  * Frame width, from the one helper the canvas and the scaled preview rows also
  * use — so all three agree by construction rather than by three constants that
@@ -104,7 +115,7 @@ const visibleBlocks = computed(() =>
  * width instead of a flat 600.
  */
 const frameWidth = computed(() =>
-  getEmailFrameWidth(editor?.content.value.settings, props.viewport),
+  getEmailFrameWidth(previewSettings.value, props.viewport),
 );
 
 /**
@@ -118,7 +129,7 @@ const frameWidth = computed(() =>
  * and the current settings are what it will actually look like once inserted.
  */
 const documentStyle = computed(() =>
-  editor ? getDocumentStyle(editor.content.value.settings) : {},
+  previewSettings.value ? getDocumentStyle(previewSettings.value) : {},
 );
 
 /**
@@ -133,10 +144,10 @@ const documentStyle = computed(() =>
  * spellcheck instead of falling back.
  */
 const contentLang = computed(
-  () => editor?.content.value.settings?.locale?.trim() || undefined,
+  () => previewSettings.value?.locale?.trim() || undefined,
 );
 const contentDir = computed(() =>
-  resolveContentDirection(editor?.content.value.settings ?? { locale: "en" }),
+  resolveContentDirection(previewSettings.value ?? { locale: "en" }),
 );
 
 /**
@@ -153,8 +164,7 @@ const contentDir = computed(() =>
  * falling back to the neutral preview surface.
  */
 const emailBackground = computed(
-  () =>
-    editor?.content.value.settings.backgroundColor || "var(--tpl-canvas-bg)",
+  () => previewSettings.value?.backgroundColor || "var(--tpl-canvas-bg)",
 );
 
 /**

@@ -1,5 +1,5 @@
 import type { Block, CustomBlock, TemplateContent } from "@templatical/types";
-import { isCustomBlock } from "@templatical/types";
+import { isCustomBlock, isSection, isWrapper } from "@templatical/types";
 
 /**
  * The only thing this needs from the block registry. Named as a slice rather than
@@ -39,12 +39,15 @@ export async function preRenderCustomBlocks(
       }
     }
 
-    if (block.type === "section" && "children" in block) {
-      const sectionBlock = block as { children: Block[][] };
-      for (const column of sectionBlock.children) {
+    if (isSection(block)) {
+      for (const column of block.children) {
         for (const child of column) {
           await renderBlock(child);
         }
+      }
+    } else if (isWrapper(block)) {
+      for (const child of block.children) {
+        await renderBlock(child);
       }
     }
   };

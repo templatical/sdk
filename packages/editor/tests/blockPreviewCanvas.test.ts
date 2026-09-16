@@ -137,6 +137,26 @@ describe('BlockPreviewCanvas email background', () => {
     expect(rootStyle(wrapper)).not.toContain('background-color');
   });
 
+  it('paints the stage from passed settings, not the unshelled editor background', async () => {
+    const content = createDefaultTemplateContent();
+    content.settings = { ...content.settings, backgroundColor: '#111111' };
+    content.blocks = [createParagraphBlock({ content: '<p>x</p>' })];
+
+    const wrapper = mountEditor(BlockPreviewCanvas, {
+      props: {
+        blocks: content.blocks,
+        settings: { ...content.settings, backgroundColor: '#f3f4f6' },
+      },
+      provides: {
+        [EDITOR_KEY]: { content: ref(content), state: {} },
+      },
+    } as never);
+    await nextTick();
+
+    expect(stageStyle(wrapper)).toContain('background-color: #f3f4f6');
+    expect(stageStyle(wrapper)).not.toContain('#111111');
+  });
+
   it('falls back to the neutral surface when the background is cleared', async () => {
     // The colour pickers clear to an empty string to mean "unset". Emitted as
     // an inline style that renders the frame transparent, so the fallback has
