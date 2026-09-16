@@ -1016,7 +1016,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | `3` | An optional dependency isn't installed. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure
-It means the CLI did its job and hit a genuinely optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
+It means the CLI did its job and hit an optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
 :::
 
 ## Reading `--json`
@@ -1025,7 +1025,7 @@ Every command's `--json` output is exactly one parseable document on stdout — 
 
 `validate --json` emits `{ valid, errors, issues }`. `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build merely because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
+**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
 
 ## Using it in CI
 
@@ -1112,7 +1112,7 @@ The raw generated JSON Schema as a `.json` file — importable anywhere your bun
 
 **Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperation` and `./live` all assume you already have a structurally valid template to work with.
 
-## How it relates to the other packages
+## Related packages
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
@@ -1916,7 +1916,7 @@ The panel filters **in memory** over whatever `list()` returned — unresolved (
 
 `CommentsListParams` is reserved for future *filters* and is empty today; the editor always calls `list` bare.
 
-::: tip Comments are deliberately not paginated
+::: tip Comments are not paginated
 `list` returns every thread at once. The unresolved badge and the per-block canvas counts are derived over the whole list, so a partial page would make both under-report silently — wrong rather than slow. A long-lived template caps its own growth by having `list()` stop returning resolved threads past some age; the panel hides those by default anyway. [Version history](/backend/version-history#pagination) does page, because its list is a flat menu with nothing aggregating over it.
 :::
 
@@ -2026,7 +2026,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 
 `init({ container })` on its own is a working editor that persists nothing.
 
-## What you implement
+## Provider keys
 
 <!-- prettier-ignore -->
 | Provider | The editor gives you | You implement |
@@ -2757,7 +2757,7 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 ## Reference
 
 - [`@templatical/renderer` API](/api/renderer-typescript)
-- [Saving & Loading](/backend/templates) — the save/load lifecycle, deliberately separate from this
+- [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
 
 **Using Templatical Cloud?** It implements this contract with nothing to configure — see [Rendering on Cloud](/cloud/rendering).
@@ -3693,7 +3693,7 @@ Provider methods run in the browser. Hide a control with `false`; enforce the sa
 
 A bundled browser-local adapter exists for saved blocks and media if you want the UI with no server of your own yet.
 
-## Always in the chrome
+## Built-in chrome
 
 No provider. Configure on `init()` or in template settings.
 
@@ -3796,7 +3796,7 @@ This matters most for the canvas. A page-wide `text-transform: uppercase` reachi
 Shadow DOM blocks host *rules* — a selector in your stylesheet never matches inside the editor's shadow root. It does not block *inheritance*, which follows the flattened tree, so inheritable properties cross the boundary regardless. The editor's own reset is what stops them, and it works identically with `shadowDom: false`.
 :::
 
-**`direction` is deliberately allowed to inherit onto the editor chrome.** An RTL page propagates its writing direction into the header and rails, which is what an RTL embedder wants. The email canvas sets its own `dir` from `settings.direction` (falling back to the content language), so the host does not decide how the email reads. `visibility` is likewise left alone.
+**`direction` is allowed to inherit onto the editor chrome.** An RTL page propagates its writing direction into the header and rails, which is what an RTL embedder wants. The email canvas sets its own `dir` from `settings.direction` (falling back to the content language), so the host does not decide how the email reads. `visibility` is likewise left alone.
 
 ### You do not need a CSS reset on the container
 
@@ -3908,7 +3908,7 @@ Templatical separates template editing from template rendering. The editor produ
 
     See the full list on [mjml.io/community](https://mjml.io/community).
 
-## Why MJML?
+## MJML
 
 [MJML](https://mjml.io) is an open-source markup language designed specifically for email. Email HTML is notoriously difficult. Every email client renders HTML differently -- Outlook uses Microsoft Word's rendering engine, Gmail strips `<style>` tags, Apple Mail supports modern CSS but Yahoo doesn't. Writing HTML that works everywhere requires:
 
@@ -3951,7 +3951,7 @@ MJML depends on the JSON *and* on your renderer — your fonts config, any `bloc
 - Wraps blocks with `displayCondition` before/after strings
 - Optionally strips raw HTML blocks when `allowHtmlBlocks` is `false`
 
-## What the renderer does NOT do
+## Renderer limits
 
 - **Compile MJML to HTML** -- Use any [MJML library](#the-pipeline) for this step.
 - **Evaluate merge tags** -- Tags like <code v-pre>{{ first_name }}</code> pass through as-is and are replaced at send time by your email platform.
@@ -4591,6 +4591,94 @@ The Agent Skill's `diagnose` mode walks the same table against an existing `init
 
 ---
 
+# Editor accessibility
+
+Source: https://docs.templatical.com/guide/accessibility
+
+This page is the **editor UI** — rails, canvas chrome, dialogs, shortcuts. The email a recipient gets is a different surface: [`@templatical/quality`](/quality/) lints that JSON. Do not treat this page as a VPAT or a WCAG score for sent mail.
+
+## Keyboard
+
+Modifier is `metaKey || ctrlKey` (Command on macOS, Control elsewhere). The listener is on `document` so a click on a non-focusable block still receives the chord.
+
+While a text field or TipTap surface is focused, undo/redo and Delete/Backspace stay with the field.
+
+| Chord | Action |
+|---|---|
+| `Mod+S` | Save, when a templates provider can save |
+| `Mod+Z` | Undo. TipTap handles this while editing text |
+| `Mod+Shift+Z` | Redo. Same text-editing exception |
+| `Escape` | Deselect the current block |
+| `Delete` / `Backspace` | Remove the selected block. No-op while typing |
+
+### Palette
+
+Click, Enter, or Space on a sidebar palette item inserts that block **below the selection** (or at the end when nothing is selected). A nested column child cannot accept a section — MJML forbids `mj-section` in `mj-column` — so a section insert lands after the parent section. Same rule as `duplicateBlock`.
+
+Drag-and-drop is pointer-emulated (`force-fallback`). There is no keyboard drag. Palette insert is the pointer-free add path.
+
+### Saved-blocks pick session
+
+While picking blocks to save:
+
+| Chord | Action |
+|---|---|
+| `Escape` | Cancel the session |
+| `Enter` | Confirm (disabled at zero picks) |
+| `Delete` / `Backspace` | Swallowed — does not delete canvas blocks |
+
+Arrow Up/Down on a focused reorder grip in the save dialog moves a preview row.
+
+## Focus and shadow DOM
+
+Default mount is an open shadow root on the container. `document.activeElement` and `window.getSelection()` stop at the shadow host, so chrome that needs the real focus target goes through the editor's own root (shadow root or `document` in light-DOM mode). Both expose the same `activeElement` / `getSelection` surface.
+
+The keydown listener stays on `document`: a click on a non-focusable block leaves `activeElement` on `body`, and a shadow-root-bound listener would miss `Mod+Z` / `Mod+S`.
+
+Opt out with `shadowDom: false`. Isolation, theming, and this focus split: [Shadow DOM](/guide/shadow-dom).
+
+## Dialogs
+
+Popups teleport to `.tpl-popover-root` inside the editor, never `document.body`. That root is a stacking context (`z-index: 10000`), so dialogs stay in the editor even when the host page has its own modals.
+
+Height caps are a **percentage of the backdrop**, not `vh`. A host ancestor with `transform` / `filter` / `contain` becomes the containing block for `position: fixed`; a `vh` cap would overflow that box. Symptom table: [Troubleshooting](/getting-started/troubleshooting).
+
+## Chrome vs canvas
+
+Header, rails and dialogs follow `init({ locale })` and the UI theme (`data-tpl-theme`). The email canvas follows `settings.locale` and `settings.direction` — those become `<html lang>` / `<mjml dir>` on export. A German editor writing an English campaign keeps English countdown labels and `lang="en"` on the canvas.
+
+Nested block chrome (action bar on a section child) uses `--tpl-chrome-*` tokens so a dark UI does not inherit the canvas's forced-light colors.
+
+## Roles in the chrome
+
+| Control | Pattern |
+|---|---|
+| Viewport toggle | `role="radiogroup"` / `role="radio"` + `aria-checked` |
+| Merge-tag suggestion popup | combobox + listbox (`aria-activedescendant`) |
+| Saved-blocks first load | `role="status"` + `aria-busy`; skeleton bars `aria-hidden` |
+| Required custom-block field | visible `*` is `aria-hidden`; name is an `.tpl-sr-only` sibling |
+| Native checkboxes | none in editor source — sliding `role="switch"` instead |
+
+## Small screen
+
+The supported floor is 768px. Below that, `SmallScreenNotice` sits above dialogs (later sibling of the popover root) and tells the author the chrome is not a phone UI.
+
+## Host duties
+
+These are the same constraints as [Embedding](/getting-started/embedding). They are load-bearing for AT as well as for sighted layout:
+
+- Give the container a definite height.
+- Do not put `transform`, `filter`, `backdrop-filter`, `contain`, or `isolation` on an ancestor of the container if you want dialogs to cover the viewport.
+- Do not `all: initial` / `all: revert` the container — that wipes `--tpl-user-*` and can break the height chain.
+
+## See also
+
+- [`@templatical/quality`](/quality/) — accessibility, structure and link rules on the **template JSON**
+- [Troubleshooting](/getting-started/troubleshooting)
+- [Embedding](/getting-started/embedding)
+
+---
+
 # AI Agent Skill
 
 Source: https://docs.templatical.com/guide/agent-skill
@@ -4613,7 +4701,7 @@ npx skills update templatical
 
 If your agent doesn't pick the skill up afterwards, check that it is enabled in the agent's own skill list.
 
-## What it can do
+## Capabilities
 
 - **Build** a template from a brief — "make a product-launch email", "design a welcome email".
 - **Edit** an existing template as a scoped change, not a rewrite.
@@ -5924,7 +6012,7 @@ displayConditions: {
 
 The `before` and `after` fields accept any string, so you can use any templating syntax your platform supports — Liquid, Handlebars, AMPscript, Jinja2, or anything else.
 
-## How conditions affect output
+## Output
 
 When a block has a display condition assigned, the renderer wraps the block's HTML output with the `before` and `after` strings:
 
@@ -6115,7 +6203,7 @@ async function switchLocale(newLocale: string) {
 }
 ```
 
-## How translations work
+## Translation loading
 
 Translations are nested objects organized by UI section:
 
@@ -6418,35 +6506,7 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 
 Source: https://docs.templatical.com/guide/keyboard
 
-Modifier is `metaKey || ctrlKey` (Command on macOS, Control elsewhere). The listener is on `document` so a click on a non-focusable block still receives the chord.
-
-While a text field or TipTap surface is focused, undo/redo and Delete/Backspace stay with the field.
-
-| Chord | Action |
-|---|---|
-| `Mod+S` | Save, when a templates provider can save |
-| `Mod+Z` | Undo. TipTap handles this while editing text |
-| `Mod+Shift+Z` | Redo. Same text-editing exception |
-| `Escape` | Deselect the current block |
-| `Delete` / `Backspace` | Remove the selected block. No-op while typing |
-
-## Palette
-
-Click, Enter, or Space on a sidebar palette item inserts that block **below the selection** (or at the end when nothing is selected). A nested column child cannot accept a section — MJML forbids `mj-section` in `mj-column` — so a section insert lands after the parent section. Same rule as `duplicateBlock`.
-
-Drag-and-drop is pointer-emulated (`force-fallback`). There is no keyboard drag.
-
-## Saved-blocks pick session
-
-While picking blocks to save:
-
-| Chord | Action |
-|---|---|
-| `Escape` | Cancel the session |
-| `Enter` | Confirm (disabled at zero picks) |
-| `Delete` / `Backspace` | Swallowed — does not delete canvas blocks |
-
-Arrow Up/Down on a focused reorder grip in the save dialog moves a preview row.
+Shortcuts, palette insert, and the pick session live under [Editor accessibility](/guide/accessibility#keyboard).
 
 ---
 
@@ -7941,7 +8001,7 @@ for (const entry of report.entries) {
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
 
-## What's actually happening here
+## Conversion model
 
 This is a slightly counter-intuitive migration. Templatical's renderer produces *MJML output* — so on the surface, MJML and Templatical look identical. But:
 
@@ -8012,7 +8072,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **`mj-include`** — the importer reads a single MJML string with no filesystem access, so an unresolved `<mj-include>` is skipped with a warning naming its `path` attribute. Inline the included content before importing.
 - **Custom MJML components** — an unrecognized `mj-*` tag lands as an `HtmlBlock` holding its rendered markup automatically. Reimplement it as a [Templatical custom block](/guide/custom-blocks) if you want it editable as a native block instead.
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your MJML and what you're trying to achieve. We use these reports to improve `@templatical/import-mjml`'s coverage.
 
@@ -8172,7 +8232,7 @@ Everything else in a stripe goes through `@templatical/import-html` (headings, p
 - **A round-trip back into Stripo** — the output is Templatical JSON, not Stripo editor HTML.
 - **Generic HTML that was never a Stripo document** — use [`@templatical/import-html`](/guide/migration-from-html) directly. Passing it here still converts, with a warning.
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Stripo HTML and what you're trying to achieve. We use these reports to improve `@templatical/import-stripo`'s coverage.
 
@@ -8276,7 +8336,7 @@ for (const entry of report.entries) {
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed. `report.warnings` carries the handful of document-level drops that don't attach to a single entry — a dropped document line-height, for instance, covered under "Things that don't map automatically" below.
 
-## What's actually happening here
+## Conversion model
 
 Topol's own JSON tree already speaks in MJML-shaped tags — `mj-section`, `mj-column`, `mj-text`, `mj-button`, and so on — even though Topol is not MJML itself. Its root node is `mj-global-style`, not MJML's `<mjml>`/`<mj-body>` pair, and a few tags pack information differently: a single `mj-social` node carries every icon as `<platform>-href` attributes, rather than nesting child `mj-social-element`s the way hand-written MJML does. Rich content sits in a `content` field beside each node's `attributes`, not inside it.
 
@@ -8353,7 +8413,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate` command exits non-zero on it. Images exported from Topol typically carry no `alt` text, and the importer copies that gap across faithfully — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
 :::
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Topol design and what you're trying to achieve. We use these reports to improve `@templatical/import-topol`'s coverage.
 
@@ -8613,7 +8673,7 @@ Slow answers are discarded when a newer request supersedes them, so switching re
 
 If your callback rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. A resolver outage degrades the preview; it never blanks or breaks it.
 
-Failures are deliberately **not** routed to `config.onError`. A degraded preview is visible to the user and non-fatal, and reporting it there would read as more severe than it is.
+Failures are **not** routed to `config.onError`. A degraded preview is visible to the user and non-fatal, and reporting it there would read as more severe than it is.
 
 ### It is display-only
 
@@ -8645,14 +8705,14 @@ resolvePreview: async ({ content }) => {
   const audience = await openMyAudiencePicker();
   if (!audience) {
     // Dismissed. Throwing shows the unresolved template *and* the inline note;
-    // returning `content` unchanged shows it with no note. Pick deliberately.
+    // returning `content` unchanged shows it with no note. Pick one.
     return content;
   }
   return renderWithMyEngine(content, audience.data);
 },
 ```
 
-While your dialog is open the preview shows its skeleton, which is what you want — the preview genuinely isn't ready yet.
+While your dialog is open the preview shows its skeleton — the preview is not ready yet.
 
 ### Evaluate display conditions
 
@@ -8693,7 +8753,7 @@ None of it can double up. Resolved content reaches preview surfaces only, so wha
 
 Prices, stock levels, a personalised product grid. Anything the template references but doesn't store can be fetched at preview time, so the preview reflects reality rather than whatever was authored.
 
-## Trying it out
+## Playground
 
 The [playground](https://play.templatical.com) wires a fake resolver on the **Welcome Email** template only — it substitutes values and evaluates that template's `{% if plan_name == … %}` branches after a short delay, so you can watch the skeleton and see the conditional collapse to just the branch that applies.
 
@@ -9177,7 +9237,7 @@ Templatical mounts inside a [Shadow DOM](https://developer.mozilla.org/en-US/doc
 
 This page is the canonical reference for the isolation model. If you just want to theme the editor, jump to the [theming guide](./theming).
 
-## How it works
+## Isolation
 
 When you call `init()` or `initCloud()` and pass a container element, Templatical:
 
@@ -9216,13 +9276,13 @@ After mount, the DOM looks like this:
 
 The editor's `tpl:` Tailwind prefix and `.tpl-*` SDK classes are still in use under the hood, but the shadow boundary makes them functionally redundant for collision protection. They remain in place so the [opt-out mode](#opt-out-shadowdom-false) keeps working.
 
-## Why this exists
+## Purpose
 
 The `tpl:` prefix only protects one direction: editor utilities can never collide with host classes. It does **nothing** to stop the other direction — a host-page rule like `p { font-family: Comic Sans }` will cascade into every paragraph inside the editor, including ones inside the canvas preview.
 
 Shadow DOM is the only standards-based way to block that cascade. The same approach is used by Stripe Elements, Intercom widgets, and most embeddable third-party UIs. See [issue #70](https://github.com/templatical/sdk/issues/70) for the original report.
 
-## Why it's the default
+## Default mode
 
 Shadow DOM guarantees no style leaks between the host page and the editor UI — host CSS cannot cascade into the editor, and editor CSS cannot bleed into your app. Templatical enables that guarantee by default, rather than as an opt-in, because the conditions that make it necessary apply to nearly every host page:
 
@@ -9760,7 +9820,7 @@ import type { ThemeOverrides, UiTheme } from "@templatical/types";
 // ThemeOverrides includes a `dark?: Omit<ThemeOverrides, 'dark'>` key
 ```
 
-## Why two override surfaces?
+## Override surfaces
 
 CSS variables on the container are simpler when:
 
@@ -9964,9 +10024,9 @@ Source: https://docs.templatical.com/quality/accessibility/
 
 `lintAccessibility(content, options?)` is the accessibility checker inside [`@templatical/quality`](../). It operates on the JSON `TemplateContent` block tree, runs in the browser or in Node.js, and ships with no Vue or DOM dependencies — so the same package validates templates inside the editor and as a CI gate on stored fixtures.
 
-## Why
+## Purpose
 
-Email accessibility is genuinely under-tooled. Most builders either bury accessibility behind a paywall, run shallow content-tone checks, or skip it entirely. We catch the authoring mistakes that recur every day:
+Email accessibility is under-tooled. Most builders either bury accessibility behind a paywall, run shallow content-tone checks, or skip it entirely. We catch the authoring mistakes that recur every day:
 
 - Missing or filename-style alt text
 - Low-contrast text and buttons
@@ -10199,7 +10259,7 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 - **No region duplicates.** `de-AT` resolves to the same union; one entry per language.
 - **`linkedImageActionHints` is per-token, not per-phrase.** `a11y.img-linked-no-context` tokenizes the alt text on non-letter/digit boundaries and checks each token against the hint list. Add **single action verbs** in the form authors actually write them ("buy", "kaufen", "compre"), not multi-word phrases — a phrase like `"jetzt kaufen"` will never match because tokens are checked individually.
 
-## How matching resolves
+## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
 - **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), and `formatLinkMessage(locale, ruleId, params?)` (links) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All three fall back to English when the locale isn't bundled.
@@ -10484,7 +10544,7 @@ Source: https://docs.templatical.com/quality/links/
 
 `lintLinks(content, options?)` is the URL-hygiene checker inside [`@templatical/quality`](../). It walks every URL in the template — anchors inside rich text, `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` — and flags URL-shaped data that's broken, dangerous, or accidentally pointing at the wrong environment.
 
-## Why
+## Purpose
 
 Email URLs are a long-tail bug source:
 
@@ -10621,7 +10681,7 @@ The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 |---|---|---|---|
 | `link.localhost-or-staging` | warning | — | URL host matches the configured non-production host list. Default list catches `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Configurable via `LintOptions.links.nonProductionHosts` — see the [overview](./) for default extension / replacement patterns. Only fires on `http(s)` and `ftp(s)` URLs; mailto/tel/sms are skipped. |
 
-## Why no auto-fixes?
+## Auto-fixes
 
 Each link rule is destructive (strip href / change protocol) and the right answer depends on intent — `javascript:alert(1)` may belong on a button that should be deleted, or it may be a typo for `mailto:`. Detection-only is safer than guessing. Headless callers can filter `LintIssue[]` by `ruleId.startsWith("link.")` and apply their own policy (block save, send to review queue, …).
 
@@ -10917,7 +10977,7 @@ Source: https://docs.templatical.com/quality/structure/
 
 `lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), and empty sections / columns.
 
-## Why
+## Purpose
 
 Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
 
