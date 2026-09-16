@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "dependencies": {
     "@vueuse/core": "^14.4.0",
-    "marked": "^18.0.12",
+    "marked": "^18.0.13",
     "vue": "^3.5.42",
     "vue-router": "^5.3.1"
   },
