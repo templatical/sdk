@@ -99,7 +99,7 @@ for (const entry of report.entries) {
 
 Eine `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat. `report.warnings` trägt die wenigen Verluste auf Dokumentebene, die an keinem einzelnen Eintrag hängen — eine verworfene Zeilenhöhe des Dokuments zum Beispiel, behandelt weiter unten unter „Was sich nicht automatisch überträgt“.
 
-## Was hier eigentlich passiert
+## Konvertierungsmodell
 
 Topols eigener JSON-Baum spricht bereits in MJML-förmigen Tags — `mj-section`, `mj-column`, `mj-text`, `mj-button` und so weiter — obwohl Topol selbst kein MJML ist. Sein Wurzelknoten ist `mj-global-style`, nicht MJMLs `<mjml>`/`<mj-body>`-Paar, und einige Tags verpacken Informationen anders: Ein einzelner `mj-social`-Knoten trägt jedes Icon als `<platform>-href`-Attribute, statt wie bei handgeschriebenem MJML `mj-social-element`-Kindelemente zu verschachteln. Reicher Inhalt liegt in einem `content`-Feld neben den `attributes` jedes Knotens, nicht darin.
 
@@ -162,7 +162,7 @@ Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener 
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` außerhalb dieser drei wird auf die nächstliegende aufgelöst — und Topols eigener Standardwert ist 35px, also ist das bei Social-Blöcken der Normalfall, nicht die Ausnahme.
 - **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends in einem Topol-Design, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Import.
 
-## Was sich nicht automatisch überträgt
+## Nicht übertragene Merkmale
 
 - **Hintergrundbilder einer Section** — `SectionWrapper` trägt nur `backgroundColor`, `padding` und `borderRadius`; Templatical hat kein Hintergrundbild-Feld auf irgendeinem Block, und der Renderer erzeugt kein `background-url`. Das `background-url` einer Topol-Section wird nie gelesen, daher behält eine Hero-Section ihre Hintergrundfarbe, verliert aber ihr Foto — und weil das Attribut unangetastet bleibt, weist nichts in `report.entries` darauf hin. `full-width` und `layout` auf derselben `mj-section` sowie `vertical-align` auf `mj-column` gehen denselben Weg.
 - **Der `margin` eines Buttons** — `styles.padding` ist das einzige Feld für äußeren Abstand von `ButtonBlock`. Topol schreibt auf jedem `mj-button` sowohl `padding` als auch `margin`; `padding` füllt dieses Feld, und `margin` wird verworfen statt eingerechnet zu werden, was den vertikalen Abstand verdoppeln würde. Auch das innere Padding der Button-Beschriftung (`buttonPadding`) behält Templaticals Standardwert, da Topol dafür kein eigenes Attribut hat.

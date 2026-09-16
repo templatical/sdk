@@ -128,7 +128,7 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 - **No region duplicates.** `de-AT` resolves to the same union; one entry per language.
 - **`linkedImageActionHints` is per-token, not per-phrase.** `a11y.img-linked-no-context` tokenizes the alt text on non-letter/digit boundaries and checks each token against the hint list. Add **single action verbs** in the form authors actually write them ("buy", "kaufen", "compre"), not multi-word phrases — a phrase like `"jetzt kaufen"` will never match because tokens are checked individually.
 
-## How matching resolves
+## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
 - **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), and `formatLinkMessage(locale, ruleId, params?)` (links) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All three fall back to English when the locale isn't bundled.

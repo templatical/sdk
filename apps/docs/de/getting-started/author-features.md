@@ -23,7 +23,7 @@ Provider-Methoden laufen im Browser. Ein Steuerelement mit `false` ausblenden; d
 
 Für gespeicherte Blöcke und Medien gibt es einen mitgelieferten browserlokalen Adapter, wenn die Oberfläche ohne eigenen Server reichen soll.
 
-## Immer in der Oberfläche
+## Eingebautes Chrome
 
 Kein Provider. Konfiguration über `init()` oder Template-Einstellungen.
 

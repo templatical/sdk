@@ -23,7 +23,7 @@ npx skills update templatical
 
 Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skill-Liste des Agenten aktiviert ist.
 
-## Was er kann
+## Fähigkeiten
 
 - **Bauen** Sie eine Vorlage aus einem Briefing — „mach mir eine Produktlaunch-E-Mail", „gestalte eine Willkommens-E-Mail".
 - **Bearbeiten** Sie eine bestehende Vorlage als gezielte Änderung, nicht als Neuschrieb.

@@ -186,7 +186,7 @@ The panel filters **in memory** over whatever `list()` returned — unresolved (
 
 `CommentsListParams` is reserved for future *filters* and is empty today; the editor always calls `list` bare.
 
-::: tip Comments are deliberately not paginated
+::: tip Comments are not paginated
 `list` returns every thread at once. The unresolved badge and the per-block canvas counts are derived over the whole list, so a partial page would make both under-report silently — wrong rather than slow. A long-lived template caps its own growth by having `list()` stop returning resolved threads past some age; the panel hides those by default anyway. [Version history](/backend/version-history#pagination) does page, because its list is a flat menu with nothing aggregating over it.
 :::
 

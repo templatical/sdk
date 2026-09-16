@@ -6,7 +6,7 @@ description: lintStructure catches template JSON that can't safely render — du
 
 `lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), and empty sections / columns.
 
-## Why
+## Purpose
 
 Most "is this template OK?" tooling cares about content quality (alt text, contrast). Structure rules cover a different problem: **can this JSON safely render at all?** Importers (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) and custom server-side editors can produce blocks the editor would never produce — orphan column entries, missing block fields, layout/children mismatches. By the time they reach the renderer they're usually too late to recover from cleanly.
 

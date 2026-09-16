@@ -111,7 +111,7 @@ Langsame Antworten werden verworfen, wenn eine neuere Anfrage sie überholt — 
 
 Wenn Ihr Callback abbricht — oder etwas zurückgibt, das kein `TemplateContent` ist — fällt die Vorschau auf die **unaufgelöste** Vorlage zurück und weist darauf hin. Ein Ausfall verschlechtert die Vorschau, macht sie aber nie leer oder kaputt.
 
-Fehler werden bewusst **nicht** an `config.onError` gemeldet. Eine verschlechterte Vorschau ist für Nutzer sichtbar und nicht fatal; sie dort zu melden würde schwerwiegender wirken, als sie ist.
+Fehler werden **nicht** an `config.onError` gemeldet. Eine verschlechterte Vorschau ist für Nutzer sichtbar und nicht fatal; sie dort zu melden würde schwerwiegender wirken, als sie ist.
 
 ### Ausschließlich zur Anzeige
 
@@ -144,7 +144,7 @@ resolvePreview: async ({ content }) => {
   if (!audience) {
     // Abgebrochen. Ein Fehler zeigt die unaufgelöste Vorlage *mit* Hinweis;
     // `content` unverändert zurückzugeben zeigt sie ohne Hinweis.
-    // Entscheiden Sie bewusst.
+    // Eine der beiden Varianten wählen.
     return content;
   }
   return renderWithMyEngine(content, audience.data);
@@ -192,7 +192,7 @@ Doppelt anhängen können Sie dabei nicht. Aufgelöste Inhalte erreichen ausschl
 
 Preise, Lagerbestände, ein personalisiertes Produktraster. Alles, worauf die Vorlage verweist, ohne es zu speichern, kann zum Vorschauzeitpunkt geladen werden — so spiegelt die Vorschau die Realität und nicht den Stand bei der Erstellung.
 
-## Selbst ausprobieren
+## Playground
 
 Der [Playground](https://play.templatical.com) verdrahtet einen simulierten Resolver **nur** in der Vorlage **Welcome Email** — er ersetzt Werte und wertet die `{% if plan_name == … %}`-Verzweigungen dieser Vorlage nach kurzer Verzögerung aus, sodass Sie den Platzhalter sehen und beobachten können, wie der Bedingungsblock auf den zutreffenden Zweig zusammenfällt.
 

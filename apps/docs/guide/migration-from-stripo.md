@@ -155,6 +155,6 @@ Everything else in a stripe goes through `@templatical/import-html` (headings, p
 - **A round-trip back into Stripo** — the output is Templatical JSON, not Stripo editor HTML.
 - **Generic HTML that was never a Stripo document** — use [`@templatical/import-html`](/guide/migration-from-html) directly. Passing it here still converts, with a warning.
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Stripo HTML and what you're trying to achieve. We use these reports to improve `@templatical/import-stripo`'s coverage.

@@ -91,7 +91,7 @@ for (const entry of report.entries) {
 
 Ein `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat.
 
-## Was hier eigentlich passiert
+## Konvertierungsmodell
 
 Diese Migration ist etwas kontraintuitiv. Templaticals Renderer erzeugt *MJML als Ausgabe* — auf den ersten Blick sehen MJML und Templatical identisch aus. Aber:
 
@@ -157,7 +157,7 @@ MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer oh
 - **HTML-Blöcke** — aus demselben Grund rendert der Inhalt eines `HtmlBlock` als reines `mj-text`-Markup ohne jede Kennzeichnung als HTML. Beim Import daraus entsteht ein `ParagraphBlock` mit demselben Markup.
 - **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Durchlauf durch Export und Re-Import.
 
-## Was sich nicht automatisch überträgt
+## Nicht übertragene Merkmale
 
 - **`mj-include`** — der Importer liest einen einzelnen MJML-String ohne Dateisystemzugriff, daher wird ein nicht auflösbares `<mj-include>` übersprungen (`skipped`), mit einer Warnung, die das `path`-Attribut nennt. Inkludierten Inhalt vor dem Import inlinen.
 - **Custom MJML-Components** — ein nicht erkanntes `mj-*`-Tag landet automatisch als `HtmlBlock` mit dem gerenderten Markup. Implementieren Sie es als [Templatical Custom Block](/de/guide/custom-blocks), wenn Sie es stattdessen als nativen Block editierbar haben möchten.

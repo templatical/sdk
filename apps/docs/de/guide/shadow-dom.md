@@ -9,7 +9,7 @@ Templatical wird standardmäßig innerhalb eines [Shadow DOM](https://developer.
 
 Diese Seite ist die kanonische Referenz für das Isolationsmodell. Wenn Sie den Editor nur stylen möchten, springen Sie zum [Theming-Leitfaden](./theming).
 
-## So funktioniert es
+## Isolation
 
 Wenn Sie `init()` oder `initCloud()` aufrufen und ein Container-Element übergeben, geht Templatical folgendermaßen vor:
 
@@ -48,13 +48,13 @@ Nach dem Mount sieht das DOM so aus:
 
 Das `tpl:`-Tailwind-Präfix und die `.tpl-*`-SDK-Klassen des Editors sind weiterhin im Einsatz, aber durch die Shadow-Grenze sind sie funktional überflüssig für Kollisionsschutz. Sie bleiben erhalten, damit der [Opt-out-Modus](#opt-out-shadowdom-false) weiter funktioniert.
 
-## Warum das existiert
+## Zweck
 
 Das `tpl:`-Präfix schützt nur eine Richtung: Editor-Utilities können niemals mit Host-Klassen kollidieren. Es verhindert **nichts** in der anderen Richtung — eine Host-Seiten-Regel wie `p { font-family: Comic Sans }` kaskadiert in jeden Absatz innerhalb des Editors, einschließlich der Canvas-Vorschau.
 
 Shadow DOM ist der einzige standardbasierte Weg, diese Kaskade zu blockieren. Derselbe Ansatz wird von Stripe Elements, Intercom-Widgets und den meisten einbettbaren Drittanbieter-UIs verwendet. Siehe [Issue #70](https://github.com/templatical/sdk/issues/70) für den ursprünglichen Bericht.
 
-## Warum als Standard
+## Standardmodus
 
 Shadow DOM garantiert, dass keine Stile zwischen Host-Seite und Editor-UI leaken — Host-CSS kann nicht in den Editor kaskadieren, und Editor-CSS kann nicht in Ihre App durchsickern. Templatical aktiviert diese Garantie standardmäßig, nicht als Opt-in, weil die Bedingungen, die sie notwendig machen, auf fast jede Host-Seite zutreffen:
 

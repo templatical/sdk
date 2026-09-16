@@ -285,7 +285,7 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 ## Reference
 
 - [`@templatical/renderer` API](/api/renderer-typescript)
-- [Saving & Loading](/backend/templates) — the save/load lifecycle, deliberately separate from this
+- [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
 
 **Using Templatical Cloud?** It implements this contract with nothing to configure — see [Rendering on Cloud](/cloud/rendering).

@@ -31,7 +31,7 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 
 `init({ container })` allein ist ein funktionierender Editor, der nichts persistiert.
 
-## Was Sie implementieren
+## Provider-Schlüssel
 
 <!-- prettier-ignore -->
 | Provider | Das liefert der Editor | Das implementieren Sie |

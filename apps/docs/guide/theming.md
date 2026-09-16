@@ -255,7 +255,7 @@ import type { ThemeOverrides, UiTheme } from "@templatical/types";
 // ThemeOverrides includes a `dark?: Omit<ThemeOverrides, 'dark'>` key
 ```
 
-## Why two override surfaces?
+## Override surfaces
 
 CSS variables on the container are simpler when:
 

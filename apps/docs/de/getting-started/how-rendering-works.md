@@ -68,7 +68,7 @@ Templatical trennt die Template-Bearbeitung vom Template-Rendering. Der Editor e
 
     Eine vollständige Liste finden Sie auf [mjml.io/community](https://mjml.io/community).
 
-## Warum MJML?
+## MJML
 
 [MJML](https://mjml.io) ist eine Open-Source-Markup-Sprache, die speziell für E-Mails entwickelt wurde. E-Mail-HTML ist bekanntermaßen schwierig. Jeder E-Mail-Client rendert HTML anders -- Outlook verwendet die Rendering-Engine von Microsoft Word, Gmail entfernt `<style>`-Tags, Apple Mail unterstützt modernes CSS, Yahoo dagegen nicht. HTML zu schreiben, das überall funktioniert, erfordert:
 
@@ -111,7 +111,7 @@ MJML hängt vom JSON *und* von Ihrem Renderer ab: Ihrer Schriften-Konfiguration,
 - Umschließt Blöcke mit `displayCondition`-Before/After-Strings
 - Entfernt optional rohe HTML-Blöcke, wenn `allowHtmlBlocks` auf `false` gesetzt ist
 
-## Was der Renderer NICHT tut
+## Renderer-Grenzen
 
 - **MJML zu HTML kompilieren** -- Verwenden Sie dafür eine beliebige [MJML-Bibliothek](#die-pipeline).
 - **Merge-Tags auswerten** -- Tags wie <code v-pre>{{ first_name }}</code> werden unverändert durchgereicht und zum Versandzeitpunkt von Ihrer E-Mail-Plattform ersetzt.

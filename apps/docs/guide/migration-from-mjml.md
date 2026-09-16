@@ -91,7 +91,7 @@ for (const entry of report.entries) {
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed.
 
-## What's actually happening here
+## Conversion model
 
 This is a slightly counter-intuitive migration. Templatical's renderer produces *MJML output* — so on the surface, MJML and Templatical look identical. But:
 
@@ -162,6 +162,6 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **`mj-include`** — the importer reads a single MJML string with no filesystem access, so an unresolved `<mj-include>` is skipped with a warning naming its `path` attribute. Inline the included content before importing.
 - **Custom MJML components** — an unrecognized `mj-*` tag lands as an `HtmlBlock` holding its rendered markup automatically. Reimplement it as a [Templatical custom block](/guide/custom-blocks) if you want it editable as a native block instead.
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your MJML and what you're trying to achieve. We use these reports to improve `@templatical/import-mjml`'s coverage.

@@ -155,6 +155,6 @@ Alles andere in einem Streifen läuft durch `@templatical/import-html` (Übersch
 - **Ein Roundtrip zurück nach Stripo** — die Ausgabe ist Templatical-JSON, kein Stripo-Editor-HTML.
 - **Generisches HTML, das nie ein Stripo-Dokument war** — verwenden Sie [`@templatical/import-html`](/de/guide/migration-from-html) direkt. Hier übergeben konvertiert es trotzdem, mit einer Warnung.
 
-## Was tun, wenn diese Anleitung etwas nicht abdeckt
+## Weitere Hilfe
 
 [Eröffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt Ihres Stripo-HTML und dem, was Sie erreichen wollen. Wir nutzen diese Rückmeldungen, um die Abdeckung von `@templatical/import-stripo` zu verbessern.

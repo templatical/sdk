@@ -6,9 +6,9 @@ description: lintAccessibility checks alt text, color contrast, vague link and b
 
 `lintAccessibility(content, options?)` is the accessibility checker inside [`@templatical/quality`](../). It operates on the JSON `TemplateContent` block tree, runs in the browser or in Node.js, and ships with no Vue or DOM dependencies — so the same package validates templates inside the editor and as a CI gate on stored fixtures.
 
-## Why
+## Purpose
 
-Email accessibility is genuinely under-tooled. Most builders either bury accessibility behind a paywall, run shallow content-tone checks, or skip it entirely. We catch the authoring mistakes that recur every day:
+Email accessibility is under-tooled. Most builders either bury accessibility behind a paywall, run shallow content-tone checks, or skip it entirely. We catch the authoring mistakes that recur every day:
 
 - Missing or filename-style alt text
 - Low-contrast text and buttons

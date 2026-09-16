@@ -6,7 +6,7 @@ description: lintLinks flags dangerous javascript-protocol hrefs, malformed mail
 
 `lintLinks(content, options?)` is the URL-hygiene checker inside [`@templatical/quality`](../). It walks every URL in the template — anchors inside rich text, `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` — and flags URL-shaped data that's broken, dangerous, or accidentally pointing at the wrong environment.
 
-## Why
+## Purpose
 
 Email URLs are a long-tail bug source:
 

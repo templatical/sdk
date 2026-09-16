@@ -23,7 +23,7 @@ Provider methods run in the browser. Hide a control with `false`; enforce the sa
 
 A bundled browser-local adapter exists for saved blocks and media if you want the UI with no server of your own yet.
 
-## Always in the chrome
+## Built-in chrome
 
 No provider. Configure on `init()` or in template settings.
 

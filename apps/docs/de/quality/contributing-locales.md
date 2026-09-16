@@ -124,7 +124,7 @@ Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 - **Keine Regions-Duplikate.** `de-AT` löst sich auf dieselbe Vereinigung auf; ein Eintrag pro Sprache.
 - **`linkedImageActionHints` ist pro Token, nicht pro Phrase.** `a11y.img-linked-no-context` tokenisiert den Alt-Text an Nicht-Buchstaben/Ziffer-Grenzen und prüft jeden Token gegen die Hint-Liste. Tragen Sie **einzelne Action-Verben** in der Form ein, in der Autoren sie schreiben („buy", „kaufen", „compre") — nicht Mehrwort-Phrasen. „jetzt kaufen" wird nie matchen, weil Tokens einzeln geprüft werden.
 
-## Wie das Matching aufgelöst wird
+## Match-Reihenfolge
 
 - **Vague-Text-Dictionary** — `getDictionary(locale)` liefert eine Vereinigung der Phrasen (und Action-Hints) aller registrierten Locales. Das `locale`-Argument wird der API-Symmetrie wegen akzeptiert, ändert aber aktuell nichts an der zurückgegebenen Menge — eine vage Phrase ist universell vage, und ein Action-Verb in einer beliebigen registrierten Sprache zählt als Link-Ziel-Kontext. Die Erkennung ist by design sprachübergreifend.
 - **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur) und `formatLinkMessage(locale, ruleId, params?)` (Links) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle drei fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.

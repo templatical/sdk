@@ -102,7 +102,7 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 | `3` | Eine optionale Abhängigkeit ist nicht installiert. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
 ::: tip Exit-Code 3 ist kein Fehlschlag
-Er bedeutet, dass die CLI ihre Arbeit getan hat und dabei auf einen wirklich optionalen Baustein gestoßen ist, ohne den es nicht weitergeht — das Paket `mjml` für `render --format html`, oder ein Konverter-Paket für `import`. Behandeln Sie ihn in jedem Skript oder CI-Schritt anders als `1`/`2`: `3` bedeutet „ein Paket installieren und erneut ausführen", nicht „mit diesem Template stimmt etwas nicht".
+Er bedeutet, dass die CLI ihre Arbeit getan hat und dabei auf einen optionalen Baustein gestoßen ist, ohne den es nicht weitergeht — das Paket `mjml` für `render --format html`, oder ein Konverter-Paket für `import`. Behandeln Sie ihn in jedem Skript oder CI-Schritt anders als `1`/`2`: `3` bedeutet „ein Paket installieren und erneut ausführen", nicht „mit diesem Template stimmt etwas nicht".
 :::
 
 ## Die `--json`-Ausgabe lesen
@@ -146,7 +146,7 @@ Passen Sie das Glob-Muster an den Ort an, an dem Ihre Templates tatsächlich lie
 
 Das Ausführen der CLI installiert von sich aus nie etwas in Ihr Projekt — `npx` löst nur das Paket selbst auf (aus npms Cache, oder durch einmaliges Abrufen beim ersten Mal), und das ist die einzige Netzwerk- oder Dateisystemaktivität, die ein einfacher Befehl auslöst. Zwei Befehle können jeweils genau ein weiteres Paket verlangen, und der Fehler nennt den Installationsbefehl, wenn es fehlt:
 
-- **`render --format html`** braucht `mjml`. Der Renderer erzeugt ausschließlich MJML — dieses SDK bündelt bewusst keinen eigenen MJML-zu-HTML-Compiler —, sodass eine MJML-Implementierung nötig ist, um daraus versandfertiges HTML zu machen, und `mjml` ist diejenige, die dieser Befehl zu laden weiß.
+- **`render --format html`** braucht `mjml`. Der Renderer erzeugt ausschließlich MJML — dieses SDK bündelt keinen eigenen MJML-zu-HTML-Compiler —, sodass eine MJML-Implementierung nötig ist, um daraus versandfertiges HTML zu machen, und `mjml` ist diejenige, die dieser Befehl zu laden weiß.
 - **`import`** braucht das Konverter-Paket für das jeweilige Format, das Sie importieren.
 
 Raten Sie bei `import` nicht, welche Konverter installiert sind — fragen Sie die CLI:

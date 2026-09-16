@@ -1,6 +1,6 @@
 ---
 title: Block Types
-description: Reference for all 14 built-in block types in Templatical.
+description: Reference for every built-in block type in Templatical.
 ---
 
 # Block Types

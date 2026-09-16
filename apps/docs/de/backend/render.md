@@ -285,7 +285,7 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 ## Referenz
 
 - [`@templatical/renderer`-API](/de/api/renderer-typescript)
-- [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies bewusst getrennt ist
+- [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies getrennt ist
 - [Custom Blocks](/de/guide/custom-blocks) — warum das Vorrendern Teil des Payloads ist
 
 **Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Rendering auf Cloud](/de/cloud/rendering).

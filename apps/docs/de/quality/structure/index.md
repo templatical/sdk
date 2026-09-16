@@ -2,7 +2,7 @@
 
 `lintStructure(content, options?)` ist der Datenintegritäts-Checker in [`@templatical/quality`](../). Er durchläuft den `TemplateContent`-Blockbaum und meldet Formen, die auf Korruption hindeuten — doppelte IDs, Sektionen, deren `columns`-Layout nicht zum `children`-Array passt, verschachtelte Sektionen (vom Renderer abgelehnt) und leere Sektionen / Spalten.
 
-## Warum
+## Zweck
 
 Die meisten „Ist dieses Template OK?"-Werkzeuge kümmern sich um Inhaltsqualität (Alt-Text, Kontrast). Struktur-Regeln decken ein anderes Problem ab: **Kann dieses JSON überhaupt sauber rendern?** Importer (BeeFree, Unlayer, HTML, MJML, Topol, Stripo, Chamaileon, Easy Email Pro) und serverseitige Custom-Editoren können Blöcke produzieren, die der Editor selbst nie erzeugen würde — verwaiste Spalten-Einträge, fehlende Block-Felder, Layout-/Children-Mismatches. Erreichen sie den Renderer, ist es meist zu spät, um sauber zu reagieren.
 

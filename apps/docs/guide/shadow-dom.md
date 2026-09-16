@@ -9,7 +9,7 @@ Templatical mounts inside a [Shadow DOM](https://developer.mozilla.org/en-US/doc
 
 This page is the canonical reference for the isolation model. If you just want to theme the editor, jump to the [theming guide](./theming).
 
-## How it works
+## Isolation
 
 When you call `init()` or `initCloud()` and pass a container element, Templatical:
 
@@ -48,13 +48,13 @@ After mount, the DOM looks like this:
 
 The editor's `tpl:` Tailwind prefix and `.tpl-*` SDK classes are still in use under the hood, but the shadow boundary makes them functionally redundant for collision protection. They remain in place so the [opt-out mode](#opt-out-shadowdom-false) keeps working.
 
-## Why this exists
+## Purpose
 
 The `tpl:` prefix only protects one direction: editor utilities can never collide with host classes. It does **nothing** to stop the other direction — a host-page rule like `p { font-family: Comic Sans }` will cascade into every paragraph inside the editor, including ones inside the canvas preview.
 
 Shadow DOM is the only standards-based way to block that cascade. The same approach is used by Stripe Elements, Intercom widgets, and most embeddable third-party UIs. See [issue #70](https://github.com/templatical/sdk/issues/70) for the original report.
 
-## Why it's the default
+## Default mode
 
 Shadow DOM guarantees no style leaks between the host page and the editor UI — host CSS cannot cascade into the editor, and editor CSS cannot bleed into your app. Templatical enables that guarantee by default, rather than as an opt-in, because the conditions that make it necessary apply to nearly every host page:
 

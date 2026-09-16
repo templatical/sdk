@@ -2,9 +2,9 @@
 
 `lintAccessibility(content, options?)` ist der Barrierefreiheits-Checker in [`@templatical/quality`](../). Er arbeitet auf dem JSON-`TemplateContent`-Blockbaum, läuft im Browser oder in Node.js und kommt ohne Vue- oder DOM-Abhängigkeiten aus — dasselbe Paket validiert Templates im Editor und als CI-Gate für gespeicherte Fixtures.
 
-## Warum
+## Zweck
 
-E-Mail-Barrierefreiheit ist tatsächlich unterversorgt. Die meisten Builder verstecken sie hinter Paywalls, prüfen nur oberflächlich auf Tonalität oder ignorieren sie ganz. Wir erwischen die Autorenfehler, die sich täglich wiederholen:
+E-Mail-Barrierefreiheit ist unterversorgt. Die meisten Builder verstecken sie hinter Paywalls, prüfen nur oberflächlich auf Tonalität oder ignorieren sie ganz. Wir erwischen die Autorenfehler, die sich täglich wiederholen:
 
 - Fehlender oder dateinamenartiger Alt-Text
 - Niedriger Kontrast bei Text und Buttons

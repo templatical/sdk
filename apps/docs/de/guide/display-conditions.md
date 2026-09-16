@@ -118,7 +118,7 @@ displayConditions: {
 
 Die Felder `before` und `after` akzeptieren jede Zeichenkette, sodass Sie jede Template-Syntax verwenden können, die Ihre Plattform unterstützt — Liquid, Handlebars, AMPscript, Jinja2 oder alles andere.
 
-## Wie sich Bedingungen auf die Ausgabe auswirken
+## Ausgabe
 
 Wenn einem Block eine Anzeigebedingung zugewiesen ist, umschließt der Renderer die HTML-Ausgabe des Blocks mit den `before`- und `after`-Zeichenketten:
 

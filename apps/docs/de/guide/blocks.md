@@ -1,6 +1,6 @@
 ---
 title: Blocktypen
-description: Referenz für alle 14 integrierten Blocktypen in Templatical.
+description: Referenz für jeden integrierten Blocktyp in Templatical.
 ---
 
 # Blocktypen

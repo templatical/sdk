@@ -186,7 +186,7 @@ Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat —
 
 `CommentsListParams` ist für künftige *Filter* reserviert und heute leer; der Editor ruft `list` immer ohne Parameter auf.
 
-::: tip Kommentare werden bewusst nicht seitenweise geladen
+::: tip Kommentare werden nicht seitenweise geladen
 `list` gibt alle Threads auf einmal zurück. Das Badge für ungelöste Threads und die Zähler an den Blöcken werden über die gesamte Liste berechnet — eine Teilseite ließe beide stillschweigend zu niedrig ausfallen, also falsch statt langsam. Eine langlebige Vorlage begrenzt ihr Wachstum selbst, indem `list()` gelöste Threads ab einem gewissen Alter nicht mehr zurückgibt; das Panel blendet diese ohnehin standardmäßig aus. Der [Versionsverlauf](/de/backend/version-history#seitenweises-laden) lädt sehr wohl seitenweise, denn seine Liste ist ein flaches Menü, über das nichts aggregiert wird.
 :::
 

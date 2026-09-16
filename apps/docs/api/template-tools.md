@@ -102,7 +102,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | `3` | An optional dependency isn't installed. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure
-It means the CLI did its job and hit a genuinely optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
+It means the CLI did its job and hit an optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
 :::
 
 ## Reading `--json`
@@ -111,7 +111,7 @@ Every command's `--json` output is exactly one parseable document on stdout — 
 
 `validate --json` emits `{ valid, errors, issues }`. `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build merely because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
+**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
 
 ## Using it in CI
 
@@ -198,7 +198,7 @@ The raw generated JSON Schema as a `.json` file — importable anywhere your bun
 
 **Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperation` and `./live` all assume you already have a structurally valid template to work with.
 
-## How it relates to the other packages
+## Related packages
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 

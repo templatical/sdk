@@ -2,7 +2,7 @@
 
 `lintLinks(content, options?)` ist der URL-Hygiene-Checker in [`@templatical/quality`](../). Er durchläuft jede URL im Template — Anker in Rich-Text, `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` — und meldet URL-förmige Daten, die kaputt, gefährlich oder versehentlich auf die falsche Umgebung gerichtet sind.
 
-## Warum
+## Zweck
 
 E-Mail-URLs sind eine Langschwanz-Fehlerquelle:
 

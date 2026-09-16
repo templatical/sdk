@@ -111,7 +111,7 @@ Slow answers are discarded when a newer request supersedes them, so switching re
 
 If your callback rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. A resolver outage degrades the preview; it never blanks or breaks it.
 
-Failures are deliberately **not** routed to `config.onError`. A degraded preview is visible to the user and non-fatal, and reporting it there would read as more severe than it is.
+Failures are **not** routed to `config.onError`. A degraded preview is visible to the user and non-fatal, and reporting it there would read as more severe than it is.
 
 ### It is display-only
 
@@ -143,14 +143,14 @@ resolvePreview: async ({ content }) => {
   const audience = await openMyAudiencePicker();
   if (!audience) {
     // Dismissed. Throwing shows the unresolved template *and* the inline note;
-    // returning `content` unchanged shows it with no note. Pick deliberately.
+    // returning `content` unchanged shows it with no note. Pick one.
     return content;
   }
   return renderWithMyEngine(content, audience.data);
 },
 ```
 
-While your dialog is open the preview shows its skeleton, which is what you want — the preview genuinely isn't ready yet.
+While your dialog is open the preview shows its skeleton — the preview is not ready yet.
 
 ### Evaluate display conditions
 
@@ -191,7 +191,7 @@ None of it can double up. Resolved content reaches preview surfaces only, so wha
 
 Prices, stock levels, a personalised product grid. Anything the template references but doesn't store can be fetched at preview time, so the preview reflects reality rather than whatever was authored.
 
-## Trying it out
+## Playground
 
 The [playground](https://play.templatical.com) wires a fake resolver on the **Welcome Email** template only — it substitutes values and evaluates that template's `{% if plan_name == … %}` branches after a short delay, so you can watch the skeleton and see the conditional collapse to just the branch that applies.
 

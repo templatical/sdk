@@ -99,7 +99,7 @@ for (const entry of report.entries) {
 
 A `note` on an `approximated` entry always names the value it replaced, so diffing `report.entries` between two runs shows exactly what a migration changed. `report.warnings` carries the handful of document-level drops that don't attach to a single entry — a dropped document line-height, for instance, covered under "Things that don't map automatically" below.
 
-## What's actually happening here
+## Conversion model
 
 Topol's own JSON tree already speaks in MJML-shaped tags — `mj-section`, `mj-column`, `mj-text`, `mj-button`, and so on — even though Topol is not MJML itself. Its root node is `mj-global-style`, not MJML's `<mjml>`/`<mj-body>` pair, and a few tags pack information differently: a single `mj-social` node carries every icon as `<platform>-href` attributes, rather than nesting child `mj-social-element`s the way hand-written MJML does. Rich content sits in a `content` field beside each node's `attributes`, not inside it.
 
@@ -176,6 +176,6 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 A freshly imported template commonly fails `@templatical/quality`'s accessibility rules on arrival, and the [Agent Skill](/guide/agent-skill)'s `validate` command exits non-zero on it. Images exported from Topol typically carry no `alt` text, and the importer copies that gap across faithfully — inventing a description would itself be an accessibility anti-pattern. Structural validation passes; the findings are about content. Add alt text to the imported images and the findings clear.
 :::
 
-## What to do if you hit something this guide doesn't cover
+## Further help
 
 [Open a discussion](https://github.com/templatical/sdk/discussions) with a redacted snippet of your Topol design and what you're trying to achieve. We use these reports to improve `@templatical/import-topol`'s coverage.

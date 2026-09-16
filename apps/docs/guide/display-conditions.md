@@ -118,7 +118,7 @@ displayConditions: {
 
 The `before` and `after` fields accept any string, so you can use any templating syntax your platform supports — Liquid, Handlebars, AMPscript, Jinja2, or anything else.
 
-## How conditions affect output
+## Output
 
 When a block has a display condition assigned, the renderer wraps the block's HTML output with the `before` and `after` strings:
 

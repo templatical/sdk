@@ -255,7 +255,7 @@ import type { ThemeOverrides, UiTheme } from "@templatical/types";
 // ThemeOverrides enthält einen `dark?: Omit<ThemeOverrides, 'dark'>` Schlüssel
 ```
 
-## Warum zwei Überschreibungs-Oberflächen?
+## Überschreibungs-Oberflächen
 
 CSS-Variablen auf dem Container sind einfacher, wenn:
 

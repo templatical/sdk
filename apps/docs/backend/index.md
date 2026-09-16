@@ -31,7 +31,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 
 `init({ container })` on its own is a working editor that persists nothing.
 
-## What you implement
+## Provider keys
 
 <!-- prettier-ignore -->
 | Provider | The editor gives you | You implement |

@@ -31,6 +31,6 @@ The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 |---|---|---|---|
 | `link.localhost-or-staging` | warning | — | URL host matches the configured non-production host list. Default list catches `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Configurable via `LintOptions.links.nonProductionHosts` — see the [overview](./) for default extension / replacement patterns. Only fires on `http(s)` and `ftp(s)` URLs; mailto/tel/sms are skipped. |
 
-## Why no auto-fixes?
+## Auto-fixes
 
 Each link rule is destructive (strip href / change protocol) and the right answer depends on intent — `javascript:alert(1)` may belong on a button that should be deleted, or it may be a typo for `mailto:`. Detection-only is safer than guessing. Headless callers can filter `LintIssue[]` by `ruleId.startsWith("link.")` and apply their own policy (block save, send to review queue, …).
