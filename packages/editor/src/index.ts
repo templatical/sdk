@@ -1147,6 +1147,7 @@ async function mountEditor(
         renderCustomBlock: (block: CustomBlock) =>
           instance.renderCustomBlock(block),
         getFonts: () => resolveRenderFonts(fontsManager),
+        getLayout: () => config.layout,
       }),
     renderLocalMjml: () =>
       toMjmlForInstance({
@@ -1157,6 +1158,7 @@ async function mountEditor(
           instance.getCustomBlockStylesheet(customType),
         getFonts: () => resolveRenderFonts(fontsManager),
         socialIconsBaseUrl: config.socialIconsBaseUrl,
+        getLayout: () => config.layout,
       }),
   });
 

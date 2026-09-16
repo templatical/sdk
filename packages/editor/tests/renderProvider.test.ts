@@ -4,6 +4,7 @@ import {
   createDefaultTemplateContent,
   createParagraphBlock,
   createSectionBlock,
+  createSlotBlock,
 } from '@templatical/types';
 import type {
   CustomBlock,
@@ -248,13 +249,14 @@ describe('buildRenderPayload', () => {
       .mockImplementation(async (block: CustomBlock) => `<p>${block.customType}</p>`);
   });
 
-  function source(content: TemplateContent) {
+  function source(content: TemplateContent, layout?: TemplateContent) {
     return {
       getContent: () => content,
       renderCustomBlock: renderCustomBlock as (
         block: CustomBlock,
       ) => Promise<string>,
       getFonts: () => resolveRenderFonts(fontsSource()),
+      ...(layout ? { getLayout: () => layout } : {}),
     };
   }
 
@@ -318,5 +320,32 @@ describe('buildRenderPayload', () => {
     );
 
     expect(renderCustomBlock).not.toHaveBeenCalled();
+  });
+
+  it('composes getLayout chrome around the author block without mutating getContent', async () => {
+    const author = createParagraphBlock({ content: '<p>AUTHOR-BODY</p>' });
+    const content = makeContent([author]);
+    const layout = makeContent([
+      createParagraphBlock({ content: '<p>VIEW-IN-BROWSER</p>' }),
+      createSlotBlock(),
+      createParagraphBlock({ content: '<p>IMPRESSUM</p>' }),
+    ]);
+    const before = JSON.stringify(content);
+
+    const payload = await buildRenderPayload(source(content, layout));
+
+    expect(payload.content.blocks).toHaveLength(3);
+    expect((payload.content.blocks[0] as { content: string }).content).toBe(
+      '<p>VIEW-IN-BROWSER</p>',
+    );
+    expect(payload.content.blocks[1]?.id).toBe(author.id);
+    expect((payload.content.blocks[2] as { content: string }).content).toBe(
+      '<p>IMPRESSUM</p>',
+    );
+    expect(payload.content.blocks.some((block) => block.type === 'slot')).toBe(
+      false,
+    );
+    expect(JSON.stringify(content)).toBe(before);
+    expect(content.blocks[0]).toBe(author);
   });
 });

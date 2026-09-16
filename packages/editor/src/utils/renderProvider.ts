@@ -5,7 +5,12 @@ import type {
   RenderProvider,
   TemplateContent,
 } from "@templatical/types";
-import { safeClone } from "@templatical/types";
+import {
+  applyLayout,
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
+  safeClone,
+} from "@templatical/types";
 import { preRenderCustomBlocks } from "./preRenderCustomBlocks";
 
 /** The fonts half of a {@link RenderPayload}, as the editor resolves it. */
@@ -39,6 +44,13 @@ export interface RenderPayloadSource {
   getContent: () => TemplateContent;
   renderCustomBlock: (block: CustomBlock) => Promise<string>;
   getFonts: () => RenderFonts;
+  /**
+   * Optional. Embedder shell spliced onto the payload's `content` so a BYO
+   * `render.toMjml` cannot drop the chrome by treating payload content as
+   * today's template. Omitting it (or returning undefined) leaves the
+   * unshelled clone. Never written back into `getContent()`.
+   */
+  getLayout?: () => TemplateContent | undefined;
 }
 
 /**
@@ -51,13 +63,22 @@ export interface RenderPayloadSource {
  *
  * The content is a **defensive copy** (`safeClone`, same as `getContent()`, since
  * a drag inside a section can leave a Sortable expando cycle reachable from live
- * content). Pre-rendering writes `renderedHtml` onto blocks, and doing that to the
- * live tree would mark the editor dirty and make an export mutate the document.
+ * content). When `getLayout` returns a shell, that copy is composed (`applyLayout`)
+ * so a BYO `render.toMjml` cannot drop the chrome by reading payload content as
+ * today's template. Pre-rendering writes `renderedHtml` onto blocks, and doing
+ * that to the live tree would mark the editor dirty and make an export mutate
+ * the document.
  */
 export async function buildRenderPayload(
   source: RenderPayloadSource,
 ): Promise<RenderPayload> {
-  const content = safeClone(source.getContent());
+  const raw = safeClone(source.getContent());
+  const layout = source.getLayout?.();
+  const content = layout ? applyLayout(layout, raw) : raw;
+  if (!layout) {
+    assertNoSlotInContent(content);
+    assertNoWrapperInContent(content);
+  }
   await preRenderCustomBlocks(content, {
     renderCustomBlock: source.renderCustomBlock,
   });
