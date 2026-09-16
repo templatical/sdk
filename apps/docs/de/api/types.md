@@ -405,6 +405,11 @@ interface MergeTag {
   description?: string;  // nur Picker: Hilfetext
   sample?: string;       // nur Vorschau: Beispielwert; nie im MJML
 }
+
+interface MergeTagRequestContext {
+  reason: 'insert' | 'edit';
+  current?: MergeTag;    // beim Bearbeiten, wenn das Token zu tags passt
+}
 ```
 
 ### MergeTagsConfig
@@ -413,7 +418,7 @@ interface MergeTag {
 interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
-  onRequest?: () => Promise<MergeTag | null>;
+  onRequest?: (context?: MergeTagRequestContext) => Promise<MergeTag | null>;
   showRawValue?: boolean;   // Roh-Token im Tooltip anzeigen (Standard true)
   autocomplete?: boolean;   // tippbasiertes Autocomplete (Standard true)
 }

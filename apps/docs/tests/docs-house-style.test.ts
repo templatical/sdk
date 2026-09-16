@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
+import config from "../.vitepress/config";
 
 /**
  * OSS docs house style: voice, package-manager install snippets, renderer
@@ -176,12 +177,72 @@ describe("OSS docs house style", () => {
   });
 
   it("sends Guide and Get Started to Quick Start", () => {
-    const config = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
-    expect(config).toMatch(
+    const src = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
+    expect(src).toMatch(
       /\{ text: "Guide", link: "\/getting-started\/quick-start" \}/,
     );
     expect(readDocs("index.md")).toMatch(
       /link: \/getting-started\/quick-start/,
     );
+  });
+
+  it("does not link OSS pages into /cloud/", () => {
+    const hits: string[] = [];
+    const banned = /\]\(\/(?:de\/)?cloud\/|docs\.templatical\.com\/(?:de\/)?cloud/;
+    for (const rel of pages) {
+      for (const [i, line] of readDocs(rel).split("\n").entries()) {
+        if (banned.test(line)) hits.push(`${rel}:${i + 1}: ${line.trim()}`);
+      }
+    }
+    for (const rel of [
+      "README.md",
+      "packages/editor/README.md",
+      "packages/core/README.md",
+      "packages/media-library/README.md",
+    ]) {
+      for (const [i, line] of readRepo(rel).split("\n").entries()) {
+        if (banned.test(line)) hits.push(`${rel}:${i + 1}: ${line.trim()}`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("keeps Cloud out of nav, sidebar, robots, and the sitemap", () => {
+    const robots = readDocs("public/robots.txt");
+    expect(robots).toMatch(/^Disallow: \/cloud\/$/m);
+    expect(robots).toMatch(/^Disallow: \/de\/cloud\/$/m);
+
+    const transform = config.sitemap?.transformItems;
+    expect(typeof transform).toBe("function");
+    expect(
+      transform!([
+        { url: "https://docs.templatical.com/guide/theming" },
+        { url: "https://docs.templatical.com/cloud/ai" },
+        { url: "https://docs.templatical.com/de/cloud/" },
+      ]),
+    ).toEqual([{ url: "https://docs.templatical.com/guide/theming" }]);
+
+    const src = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
+    expect(src).not.toMatch(/link:\s*"\/(?:de\/)?cloud/);
+  });
+
+  it("does not put token-count or pluggable-syntax jargon on the home cards", () => {
+    expect(readDocs("index.md")).not.toMatch(/27 OKLch/i);
+    expect(readDocs("de/index.md")).not.toMatch(/27 OKLch/i);
+    expect(readDocs("index.md")).not.toMatch(/pluggable syntax/i);
+    expect(readDocs("de/index.md")).not.toMatch(/pluggable Syntax/i);
+  });
+
+  it("Quick Start mounts from the CDN, not a bare package import", () => {
+    for (const rel of [
+      "getting-started/quick-start.md",
+      "de/getting-started/quick-start.md",
+    ]) {
+      const src = readDocs(rel);
+      expect(src, rel).not.toMatch(/from ['"]@templatical\/editor['"]/);
+      expect(src, rel).toMatch(
+        /unpkg\.com\/@templatical\/editor\/dist\/cdn\/editor\.js/,
+      );
+    }
   });
 });

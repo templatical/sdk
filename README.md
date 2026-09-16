@@ -158,7 +158,6 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks) — reusable block groups over your own storage
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
 - [AI Agent Skills](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt, or get integration help, in your own agent
-- [Cloud](https://docs.templatical.com/cloud/) — optional hosted tier: AI rewrite, realtime collaboration, managed storage
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo)

@@ -207,7 +207,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 A live countdown to a deadline, rendered as an animated GIF.
 
 ::: warning Rendering requires Templatical Cloud
-An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On Cloud the block renders normally — see [Rendering on Cloud](/cloud/rendering).
+An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On a hosted backend that can render GIFs, the block renders normally.
 :::
 
 | Property | Type | Description |

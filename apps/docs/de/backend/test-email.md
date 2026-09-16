@@ -163,4 +163,3 @@ Selbst vollständig aufgelöst ist sie keine Byte-für-Byte-Vorschau der zugeste
 
 Die Vorschau liegt im ohnehin verzögert geladenen Chunk des Dialogs — wer `testEmail` nicht konfiguriert, lädt davon nichts.
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Test-E-Mails auf Cloud](/de/cloud/test-emails).

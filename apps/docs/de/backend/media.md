@@ -297,7 +297,6 @@ const {
 
 Die Liste bleibt nach jedem erfolgreichen Aufruf synchron — beim Erstellen vorangestellt, beim Aktualisieren ersetzt, beim Löschen entfernt — und Fehler werden an `onError` gemeldet, ohne die Liste bei einem Fehlschlag zu verändern. Eine veraltete `list`- / `loadMore`-Antwort wird verworfen.
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Medienbibliothek auf Cloud](/de/cloud/media-library).
 
 ## Eigene Implementierung
 

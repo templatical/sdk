@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
-  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Speichern, Versionsverlauf, Kommentare, Testversand und Rendering laufen über Ihr eigenes Backend — über einfache Konfigurationsobjekte, die Sie implementieren. Source-Available und Framework-agnostisch.
+  tagline: E-Mail-Editor in Ihre App legen. Host-CSS kann ihn nicht beschädigen. Speichern, Versionen, Kommentare, Testversand und HTML-Export hängen an Ihrem Backend. Source-Available.
   actions:
     - theme: brand
       text: Loslegen
@@ -28,8 +28,8 @@ features:
     details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
     link: /de/backend/saved-blocks
     linkText: Gespeicherte Blöcke einrichten
-  - title: Merge-Tags mit pluggable Syntax
-    details: Handlebars, Liquid, JS-Template-Literale oder eigene Syntax — mit lesbaren Labels im Canvas.
+  - title: Merge-Tags in der Syntax Ihres ESP
+    details: Handlebars, Liquid, JS-Literale oder die Tags Ihres ESP — mit lesbaren Labels im Canvas.
     link: /de/guide/merge-tags
     linkText: Merge-Tags konfigurieren
   - title: Anzeigebedingungen
@@ -37,7 +37,7 @@ features:
     link: /de/guide/display-conditions
     linkText: Anzeigebedingungen ansehen
   - title: Vollständiges Theming über Design-Tokens
-    details: 27 OKLch-Tokens, eigene Schriften, Dark Mode und komplette Theme-Overrides.
+    details: Farb-Tokens, eigene Schriften, Dark Mode und Theme-Overrides am Container.
     link: /de/guide/theming
     linkText: Theming anpassen
   - title: Template- & Block-Defaults

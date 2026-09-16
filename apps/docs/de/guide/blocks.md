@@ -207,7 +207,7 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 Ein laufender Countdown bis zu einem Stichtag, gerendert als animiertes GIF.
 
 ::: warning Das Rendern erfordert Templatical Cloud
-Ein animiertes GIF muss zum Versandzeitpunkt pro Empfänger erzeugt werden — das kann ein Browser nicht. Der Open-Source-Renderer hat für diesen Block keinen Renderer: Er gibt einen `templatical:unrenderable-block`-Markerkommentar aus und protokolliert eine Warnung, sodass eine Versand-Pipeline das erkennen und ablehnen kann. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer). Auf Cloud wird der Block normal gerendert — siehe [Rendering auf Cloud](/de/cloud/rendering).
+Ein animiertes GIF muss zum Versandzeitpunkt pro Empfänger erzeugt werden — das kann ein Browser nicht. Der Open-Source-Renderer hat für diesen Block keinen Renderer: Er gibt einen `templatical:unrenderable-block`-Markerkommentar aus und protokolliert eine Warnung, sodass eine Versand-Pipeline das erkennen und ablehnen kann. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer). Auf einem gehosteten Backend, das GIFs rendern kann, wird der Block normal gerendert.
 :::
 
 | Eigenschaft | Typ | Beschreibung |

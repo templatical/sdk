@@ -163,4 +163,3 @@ Even fully resolved it is not a byte-for-byte preview of the delivered email: th
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Test Emails on Cloud](/cloud/test-emails).

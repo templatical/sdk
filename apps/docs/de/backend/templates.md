@@ -275,4 +275,3 @@ await init({
 - [Gespeicherte Blöcke](/de/backend/saved-blocks) — dieselbe Bring-your-own-Storage-Form, für wiederverwendbare Blockgruppen
 - [Test-E-Mails](/de/backend/test-email) — Bring-your-own-Versand
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Templates auf Cloud](/de/cloud/templates).

@@ -405,6 +405,11 @@ interface MergeTag {
   description?: string;  // picker-only helper text
   sample?: string;       // preview-only example value; never written to MJML
 }
+
+interface MergeTagRequestContext {
+  reason: 'insert' | 'edit';
+  current?: MergeTag;    // on edit, when the token matches tags
+}
 ```
 
 ### MergeTagsConfig
@@ -413,7 +418,7 @@ interface MergeTag {
 interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
-  onRequest?: () => Promise<MergeTag | null>;
+  onRequest?: (context?: MergeTagRequestContext) => Promise<MergeTag | null>;
   showRawValue?: boolean;   // reveal raw token in tooltip (default true)
   autocomplete?: boolean;   // typing-based autocomplete (default true)
 }

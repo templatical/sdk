@@ -1524,6 +1524,11 @@ interface MergeTag {
   description?: string;  // picker-only helper text
   sample?: string;       // preview-only example value; never written to MJML
 }
+
+interface MergeTagRequestContext {
+  reason: 'insert' | 'edit';
+  current?: MergeTag;    // on edit, when the token matches tags
+}
 ```
 
 ### MergeTagsConfig
@@ -1532,7 +1537,7 @@ interface MergeTag {
 interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
-  onRequest?: () => Promise<MergeTag | null>;
+  onRequest?: (context?: MergeTagRequestContext) => Promise<MergeTag | null>;
   showRawValue?: boolean;   // reveal raw token in tooltip (default true)
   autocomplete?: boolean;   // typing-based autocomplete (default true)
 }
@@ -1995,8 +2000,6 @@ useCommentListener({
 });
 ```
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Comments on Cloud](/cloud/comments).
-
 ---
 
 # Connect your backend
@@ -2077,29 +2080,6 @@ type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateConten
 ## Headless use
 
 `useSavedBlocks`, `useVersionHistory` and `useComments` are exported from `@templatical/core`, so a provider can drive your own interface with no editor mounted at all. Media state is modal-scoped: `useMediaLibrary` lives in `@templatical/media-library`, and the provider methods themselves are the headless API. Each page's *Headless use* section has the surface.
-
-## Templatical Cloud
-
-Don't want to build any of this? Templatical Cloud implements all of them. Point `initCloud()` at an auth endpoint and saving, version history, comments, saved blocks, media, test sending and rendering all work — no storage to run, no endpoints to write, no MJML compiler to host.
-
-```ts
-import { initCloud } from '@templatical/editor';
-
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-});
-```
-
-It also adds what the open-source editor has no contract for at all:
-
-- **AI** — generate content from a prompt, rewrite a selection, turn a design into a template
-- **Real-time collaboration** — live cursors, presence and block locking over a managed WebSocket
-- **Template scoring** — automated deliverability and accessibility checks
-
-Same editor, same block model, same contracts: Cloud is a first-party implementation of the interfaces on this page, not a fork. You can still bring your own block library, gallery or sender and let Cloud handle the rest.
-
-[Explore Templatical Cloud →](/cloud/)
 
 ---
 
@@ -2399,7 +2379,6 @@ const {
 
 It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and reports to `onError` without mutating the list on failure. A stale `list` / `loadMore` response is discarded.
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Media Library on Cloud](/cloud/media-library).
 
 ## Bringing your own
 
@@ -2685,7 +2664,7 @@ What to watch for:
 
 - This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
 - `getCustomBlockStylesheet` is not part of the payload. Pass your own resolver if your custom blocks carry definition-level CSS — otherwise their `<mj-style>` rules are dropped.
-- `initCloud()` ignores `render`, so this is an `init()` arrangement. See [Rendering on Cloud](/cloud/rendering).
+- `initCloud()` ignores `render`, so this is an `init()` arrangement.
 
 ::: tip Showing it in the preview too
 The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
@@ -2754,8 +2733,6 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 - [`@templatical/renderer` API](/api/renderer-typescript)
 - [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
-
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Rendering on Cloud](/cloud/rendering).
 
 ---
 
@@ -3017,8 +2994,6 @@ const {
 It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and re-throws after reporting to `onError`.
 
 Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a withheld mutation — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.
-
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Saved Blocks on Cloud](/cloud/saved-blocks).
 
 ---
 
@@ -3296,8 +3271,6 @@ await init({
 - [Saved Blocks](/backend/saved-blocks) — the same bring-your-own-storage shape, for reusable groups of blocks
 - [Test Emails](/backend/test-email) — bring-your-own sending
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Templates on Cloud](/cloud/templates).
-
 ---
 
 # Test Emails
@@ -3461,8 +3434,6 @@ What it shows for merge tags depends on how much you configured — labels by de
 Even fully resolved it is not a byte-for-byte preview of the delivered email: the real message is compiled HTML rendered by a mail client. Treat it as "is this the right template, with the right data?", not "is this exactly what lands in the inbox?".
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
-
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Test Emails on Cloud](/cloud/test-emails).
 
 ---
 
@@ -3661,8 +3632,6 @@ history.peekContent(v);                      // TemplateContent | null — no ro
 await history.resolveContent(v);             // the hint, or get(), cached
 await history.restore(v.id);
 ```
-
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Version History on Cloud](/cloud/version-history).
 
 ---
 
@@ -3929,7 +3898,7 @@ By producing MJML instead of HTML directly, Templatical stays lightweight and gi
 | --- | --- | --- |
 | **In the browser** — no `render` provider, or `compileMjml` only | your **frontend** app, next to the editor | **Optional.** `toMjml()` is already at hand when the user saves, so keeping the result avoids re-rendering later. The [Quick Start](/getting-started/quick-start) does this. |
 | **On your backend** — you implement `render.toMjml` | your **backend** — or nothing at all, if it renders in another language | **No.** Your backend produces the MJML as it renders. A browser copy is a second source that can disagree with it. See [Rendering & Export](/backend/render). |
-| **Templatical Cloud** | nowhere — Cloud runs the published renderer server-side | **No.** Cloud renders from the *saved* template and re-derives on demand. See [Rendering on Cloud](/cloud/rendering). |
+| **Hosted Cloud** | nowhere — the hosted backend renders from the *saved* template and re-derives on demand | **No.** |
 
 ::: warning A stored render is a cache
 MJML depends on the JSON *and* on your renderer — your fonts config, any `blockRenderers` overrides, the package version itself. Change any of those and stored copies are stale while the JSON still renders correctly. Re-derive rather than repair.
@@ -4448,28 +4417,7 @@ bun add @templatical/editor @templatical/renderer
 
 ## 2. Mount the editor
 
-The HTML below is a **bundler** example (`import` from package names). Vite, webpack, or the playground already resolve those. A static file with no bundler needs the [CDN](/getting-started/installation#cdn) instead.
-
-CDN (no bundler):
-
-```html
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
-/>
-<script type="module">
-  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
-
-  const editor = await init({
-    container: "#editor",
-  });
-</script>
-<div id="editor" style="height: 100vh;"></div>
-```
-
-Pin a version for production — [Installation](/getting-started/installation#cdn).
-
-With a bundler:
+Paste this into an HTML file and open it. No bundler. Framework and package-manager mounts live on [Installation](/getting-started/installation). Pin a version for production — [CDN](/getting-started/installation#cdn).
 
 ```html
 <!DOCTYPE html>
@@ -4478,40 +4426,23 @@ With a bundler:
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Templatical Editor</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
+  />
   <style>
     body { margin: 0; }
-    #editor { height: calc(100vh - 48px); }
-    #toolbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; }
-    #toolbar button { padding: 8px 16px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    #editor { height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="toolbar">
-    <button onclick="save()">Save Template</button>
-  </div>
   <div id="editor"></div>
-
   <script type="module">
-    import { init } from '@templatical/editor';
-    import '@templatical/editor/style.css';
+    import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
 
     const editor = await init({
-      container: '#editor',
+      container: "#editor",
     });
-
-    window.save = async function () {
-      // The JSON is the source of truth. The MJML is an optional cache —
-      // worth keeping only because this example renders in the browser.
-      // See "What to store" in How rendering works.
-      const content = editor.getContent();
-      const mjml = await editor.toMjml();
-
-      await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, mjml }),
-      });
-    };
   </script>
 </body>
 </html>
@@ -4737,7 +4668,7 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
 ::: tip Prefer a hosted experience?
-An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
+An in-editor AI chat, tuned prompts, and a hosted MCP server are a hosted-tier path. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::
 
 ## Examples
@@ -4765,7 +4696,7 @@ Ask to **show it live** (or "preview it live", "build this in live mode") and th
 2. Updates it **live** each time you prompt a change — no refresh.
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
 
-Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
+Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user, and needs nothing beyond a coding agent running on your own machine.
 
 ### Import an existing template
 
@@ -4813,7 +4744,7 @@ Reach for `html` only as a last resort — raw HTML is not visually editable aft
 
 ### Shape of a template
 
-Do not invent fields. A blank template is `{ blocks, settings }`. Install the skill or run `npx @templatical/template-tools schema` for the contract. Minimal valid JSON:
+The contract is `reference/schema.json` in the skill, also printed by `npx @templatical/template-tools schema`. Do not invent block fields from this page. A blank template is `{ blocks, settings }`:
 
 ```json
 {
@@ -5037,7 +4968,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 A live countdown to a deadline, rendered as an animated GIF.
 
 ::: warning Rendering requires Templatical Cloud
-An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On Cloud the block renders normally — see [Rendering on Cloud](/cloud/rendering).
+An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On a hosted backend that can render GIFs, the block renders normally.
 :::
 
 | Property | Type | Description |
@@ -6460,7 +6391,7 @@ A few notes:
 - **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
 - **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
 
-For [Cloud editors](/cloud/media-library), dropped files upload to Cloud's library automatically — no `onRequestMedia` needed. A custom handler still takes precedence.
+With a `media` provider whose `create` is a function, dropped files upload through that provider — no `onRequestMedia` needed. A custom handler still takes precedence.
 
 ## Display-only URL resolution
 
@@ -9726,7 +9657,7 @@ Any CSS length works. If you prefer the editor to track your custom root font-si
 
 This affects the **editor chrome** only. The email content on the canvas uses the pixel sizes stored on each block, so your template renders identically no matter how the editor UI is scaled.
 
-The same `--tpl-user-base-size` knob applies to the standalone [`@templatical/media-library`](../cloud/media-library) SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
+The same `--tpl-user-base-size` knob applies to the standalone `@templatical/media-library` SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
 
 ## ThemeOverrides config
 

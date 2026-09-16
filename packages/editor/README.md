@@ -85,9 +85,7 @@ See the [Shadow DOM guide](https://docs.templatical.com/guide/shadow-dom) for tr
 
 ## Cloud features
 
-For AI features and real-time collaboration, use `initCloud()` instead. See the [Cloud guide](https://docs.templatical.com/cloud/getting-started).
-
-Comments, version history, saved blocks, test email and rendering are **not** cloud-only — configure each against your own backend with `init()`. See [Bring your own backend](https://docs.templatical.com/backend/).
+AI rewrite and real-time collaboration go through `initCloud()`. Comments, version history, saved blocks, test email and rendering are **not** Cloud-only — configure each against your own backend with `init()`. See [Connect your backend](https://docs.templatical.com/backend/).
 
 ## Documentation
 

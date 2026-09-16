@@ -218,7 +218,7 @@ Worauf Sie achten sollten:
 
 - Dies ist die eine Konstellation, in der `@templatical/renderer` trotz implementiertem `toMjml` in Ihrem Frontend-Bundle bleibt. Die Tabelle oben beschreibt Provider, die anderswo rendern; hier rufen Sie den lokalen Renderer selbst auf.
 - `getCustomBlockStylesheet` gehört nicht zur Nutzlast. Übergeben Sie einen eigenen Resolver, wenn Ihre Custom Blocks CSS auf Definitionsebene mitbringen — sonst entfallen deren `<mj-style>`-Regeln.
-- `initCloud()` ignoriert `render`; dies ist also eine `init()`-Konstellation. Siehe [Rendering in der Cloud](/de/cloud/rendering).
+- `initCloud()` ignoriert `render`; dies ist also eine `init()`-Konstellation.
 
 ::: tip Auch in der Vorschau zeigen
 Die Arbeitsfläche zeigt die Vorlage, nicht das Chrome darum herum. Dafür sorgt [`resolvePreview`](/de/guide/preview-rendering#zeigen-was-ihre-plattform-beim-versand-anhangt) — entweder über dieselbe Kompositionsfunktion wie oben oder über das Backend, das beim echten Versand anhängt.
@@ -288,4 +288,3 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 - [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies getrennt ist
 - [Custom Blocks](/de/guide/custom-blocks) — warum das Vorrendern Teil des Payloads ist
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Rendering auf Cloud](/de/cloud/rendering).

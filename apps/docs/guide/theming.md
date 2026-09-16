@@ -129,7 +129,7 @@ Any CSS length works. If you prefer the editor to track your custom root font-si
 
 This affects the **editor chrome** only. The email content on the canvas uses the pixel sizes stored on each block, so your template renders identically no matter how the editor UI is scaled.
 
-The same `--tpl-user-base-size` knob applies to the standalone [`@templatical/media-library`](../cloud/media-library) SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
+The same `--tpl-user-base-size` knob applies to the standalone `@templatical/media-library` SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
 
 ## ThemeOverrides config
 

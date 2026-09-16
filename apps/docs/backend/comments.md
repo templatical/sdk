@@ -262,4 +262,3 @@ useCommentListener({
 });
 ```
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Comments on Cloud](/cloud/comments).

@@ -39,7 +39,7 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
 ::: tip Prefer a hosted experience?
-An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
+An in-editor AI chat, tuned prompts, and a hosted MCP server are a hosted-tier path. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::
 
 ## Examples
@@ -67,7 +67,7 @@ Ask to **show it live** (or "preview it live", "build this in live mode") and th
 2. Updates it **live** each time you prompt a change — no refresh.
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
 
-Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
+Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user, and needs nothing beyond a coding agent running on your own machine.
 
 ### Import an existing template
 
@@ -115,7 +115,7 @@ Reach for `html` only as a last resort — raw HTML is not visually editable aft
 
 ### Shape of a template
 
-Do not invent fields. A blank template is `{ blocks, settings }`. Install the skill or run `npx @templatical/template-tools schema` for the contract. Minimal valid JSON:
+The contract is `reference/schema.json` in the skill, also printed by `npx @templatical/template-tools schema`. Do not invent block fields from this page. A blank template is `{ blocks, settings }`:
 
 ```json
 {

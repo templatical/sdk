@@ -80,25 +80,3 @@ type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateConten
 
 `useSavedBlocks`, `useVersionHistory` and `useComments` are exported from `@templatical/core`, so a provider can drive your own interface with no editor mounted at all. Media state is modal-scoped: `useMediaLibrary` lives in `@templatical/media-library`, and the provider methods themselves are the headless API. Each page's *Headless use* section has the surface.
 
-## Templatical Cloud
-
-Don't want to build any of this? Templatical Cloud implements all of them. Point `initCloud()` at an auth endpoint and saving, version history, comments, saved blocks, media, test sending and rendering all work — no storage to run, no endpoints to write, no MJML compiler to host.
-
-```ts
-import { initCloud } from '@templatical/editor';
-
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-});
-```
-
-It also adds what the open-source editor has no contract for at all:
-
-- **AI** — generate content from a prompt, rewrite a selection, turn a design into a template
-- **Real-time collaboration** — live cursors, presence and block locking over a managed WebSocket
-- **Template scoring** — automated deliverability and accessibility checks
-
-Same editor, same block model, same contracts: Cloud is a first-party implementation of the interfaces on this page, not a fork. You can still bring your own block library, gallery or sender and let Cloud handle the rest.
-
-[Explore Templatical Cloud →](/cloud/)

@@ -4,7 +4,7 @@ description: Templatical is an embeddable drag-and-drop email editor SDK — sav
 hero:
   name: Templatical
   text: Email Editor for Your App
-  tagline: Drop a production-ready drag-and-drop email editor into any web application — host CSS and design systems can't break it. Saving, version history, comments, test sends and rendering all plug into your own backend, through plain config objects you implement. Source-available and framework-agnostic.
+  tagline: Drop an email editor into your app. Host CSS cannot break it. Save, versions, comments, test sends and HTML export plug into your backend. Source-available.
   actions:
     - theme: brand
       text: Get Started
@@ -29,8 +29,8 @@ features:
     details: Let users save block groups and re-insert them across templates — backed by your own storage, or a bundled browser-local provider for zero setup.
     link: /backend/saved-blocks
     linkText: Set up saved blocks
-  - title: Merge tags with pluggable syntax
-    details: Handlebars, Liquid, JS literals, or your own — with human-readable labels in the canvas.
+  - title: Merge tags in your ESP's syntax
+    details: Handlebars, Liquid, JS literals, or your ESP's tags — with human-readable labels on the canvas.
     link: /guide/merge-tags
     linkText: Configure merge tags
   - title: Display conditions
@@ -38,7 +38,7 @@ features:
     link: /guide/display-conditions
     linkText: See display conditions
   - title: Full theming via design tokens
-    details: 27 OKLch tokens, custom fonts, dark mode, and complete theme overrides.
+    details: Color tokens, custom fonts, dark mode, and theme overrides on the container.
     link: /guide/theming
     linkText: Customize theming
   - title: Template & block defaults

@@ -7,5 +7,7 @@
 # training data.
 User-agent: *
 Allow: /
+Disallow: /cloud/
+Disallow: /de/cloud/
 
 Sitemap: https://docs.templatical.com/sitemap.xml

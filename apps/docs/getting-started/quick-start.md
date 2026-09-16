@@ -29,28 +29,7 @@ bun add @templatical/editor @templatical/renderer
 
 ## 2. Mount the editor
 
-The HTML below is a **bundler** example (`import` from package names). Vite, webpack, or the playground already resolve those. A static file with no bundler needs the [CDN](/getting-started/installation#cdn) instead.
-
-CDN (no bundler):
-
-```html
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
-/>
-<script type="module">
-  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
-
-  const editor = await init({
-    container: "#editor",
-  });
-</script>
-<div id="editor" style="height: 100vh;"></div>
-```
-
-Pin a version for production — [Installation](/getting-started/installation#cdn).
-
-With a bundler:
+Paste this into an HTML file and open it. No bundler. Framework and package-manager mounts live on [Installation](/getting-started/installation). Pin a version for production — [CDN](/getting-started/installation#cdn).
 
 ```html
 <!DOCTYPE html>
@@ -59,40 +38,23 @@ With a bundler:
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Templatical Editor</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
+  />
   <style>
     body { margin: 0; }
-    #editor { height: calc(100vh - 48px); }
-    #toolbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; }
-    #toolbar button { padding: 8px 16px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    #editor { height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="toolbar">
-    <button onclick="save()">Save Template</button>
-  </div>
   <div id="editor"></div>
-
   <script type="module">
-    import { init } from '@templatical/editor';
-    import '@templatical/editor/style.css';
+    import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
 
     const editor = await init({
-      container: '#editor',
+      container: "#editor",
     });
-
-    window.save = async function () {
-      // The JSON is the source of truth. The MJML is an optional cache —
-      // worth keeping only because this example renders in the browser.
-      // See "What to store" in How rendering works.
-      const content = editor.getContent();
-      const mjml = await editor.toMjml();
-
-      await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, mjml }),
-      });
-    };
   </script>
 </body>
 </html>
