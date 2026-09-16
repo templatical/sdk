@@ -32,9 +32,14 @@ import { useI18n } from "../composables/useI18n";
 import { looksLikeEmail } from "../utils/validateEmailShape";
 import { Check, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
-import { hasMergeTagSamples, type ViewportSize } from "@templatical/types";
+import {
+  applyLayout,
+  hasMergeTagSamples,
+  type ViewportSize,
+} from "@templatical/types";
 import {
   EDITOR_KEY,
+  LAYOUT_KEY,
   MERGE_TAGS_KEY,
   NO_MERGE_TAGS,
   MERGE_TAG_SAMPLE_MODE_KEY,
@@ -60,6 +65,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const editor = inject(EDITOR_KEY, null);
+const layout = inject(LAYOUT_KEY, undefined);
 
 const recipient = ref("");
 
@@ -70,12 +76,17 @@ const previewViewport = ref<ViewportSize>("desktop");
  * a recipient and the editor's preview does not — resolving for "whoever is
  * selected here" is a different question from resolving for the canvas.
  * `isActive` is the dialog's own visibility.
+ *
+ * Compose the embedder shell while the dialog is showing. The send payload
+ * stays unshelled.
  */
 const resolvePreviewHook = inject(RESOLVE_PREVIEW_KEY, undefined);
 const previewResolution = usePreviewResolution({
   resolvePreview: resolvePreviewHook ?? undefined,
-  getContent: () =>
-    editor?.content.value ?? { blocks: [], settings: {} as never },
+  getContent: () => {
+    const raw = editor?.content.value ?? { blocks: [], settings: {} as never };
+    return layout && props.visible ? applyLayout(layout, raw) : raw;
+  },
   isActive: () => props.visible,
   getRecipient: () => recipient.value || undefined,
 });

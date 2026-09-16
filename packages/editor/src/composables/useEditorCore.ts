@@ -45,6 +45,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import {
+  applyLayout,
   deepMergeDefaults,
   hasMergeTagSamples,
   resolveContentDirection,
@@ -713,9 +714,17 @@ export function useEditorCore(
   //
   // The test-email dialog has its own recipient, so it re-runs resolution
   // through its own instance rather than this one; see `TestEmailModal`.
+  //
+  // Preview `getContent` composes the embedder shell while previewing. The
+  // public instance `getContent()` stays unshelled.
   const previewResolution = usePreviewResolution({
     resolvePreview: config.resolvePreview,
-    getContent: () => editor.content.value,
+    getContent: () => {
+      const raw = editor.content.value;
+      return config.layout && editor.state.previewMode
+        ? applyLayout(config.layout, raw)
+        : raw;
+    },
     isActive: () => editor.state.previewMode,
   });
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);
