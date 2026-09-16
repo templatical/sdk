@@ -19,8 +19,8 @@
 // condition list ["require", "node", "default"] and never "import" — so it
 // throws ERR_PACKAGE_PATH_NOT_EXPORTED for any package whose exports map
 // declares only "import", which is every first-party package in this monorepo
-// (CLAUDE.md's ESM-only rule: `exports` exposes only the "import" condition,
-// never "require" or "main"). That map also omits "./package.json", so
+// (ESM-only: `exports` exposes only the "import" condition, never "require"
+// or "main"). That map also omits "./package.json", so
 // require.resolve can't even read the manifest to look further. The result
 // under the old createRequire-based resolution: every @templatical/import-*
 // converter reported as "not installed" even when built and present on disk.
