@@ -7,8 +7,12 @@ import type {
   SectionWrapper,
 } from "@templatical/types";
 import {
-  isSection,
+  applyLayout,
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
   isCustomBlock,
+  isSection,
+  isWrapper,
   resolveContentDirection,
 } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
@@ -90,6 +94,12 @@ export interface RenderOptions {
    * served as raster images over HTTP for cross-client compatibility.
    */
   socialIconsBaseUrl?: string;
+  /**
+   * Embedder shell applied at render. Cloned and spliced around `content`
+   * via `applyLayout`; `content` is not mutated. Omitted, the document is
+   * rendered as authored and must not contain `slot` or `wrapper`.
+   */
+  layout?: TemplateContent;
 }
 
 /**
@@ -105,6 +115,12 @@ export async function renderToMjml(
   content: TemplateContent,
   options?: RenderOptions,
 ): Promise<string> {
+  const toRender = options?.layout
+    ? applyLayout(options.layout, content)
+    : (assertNoSlotInContent(content),
+      assertNoWrapperInContent(content),
+      content);
+
   const customFonts = options?.customFonts ?? [];
   const defaultFallbackFont =
     options?.defaultFallbackFont ?? "Arial, sans-serif";
@@ -114,19 +130,19 @@ export async function renderToMjml(
   );
 
   const customBlockHtml = await resolveCustomBlocks(
-    content,
+    toRender,
     options?.renderCustomBlock,
   );
 
   const customBlockStylesheets = collectCustomBlockStylesheets(
-    content,
+    toRender,
     options?.getCustomBlockStylesheet,
   );
 
-  const contentDirection = resolveContentDirection(content.settings);
+  const contentDirection = resolveContentDirection(toRender.settings);
 
   const renderContext = new RenderContext(
-    content.settings.width,
+    toRender.settings.width,
     customFonts,
     defaultFallbackFont,
     allowHtmlBlocks,
@@ -136,25 +152,25 @@ export async function renderToMjml(
     contentDirection,
   );
 
-  const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
+  const blocks = filterHtmlBlocks(toRender.blocks, allowHtmlBlocks);
   const fontFamily = renderContext.resolveFontFamily(
-    content.settings.fontFamily,
+    toRender.settings.fontFamily,
   );
-  const backgroundColor = content.settings.backgroundColor;
+  const backgroundColor = toRender.settings.backgroundColor;
   // Document-level default text color → the `<mj-text>` default below. Blocks
   // that set their own color (e.g. Title) or carry inline text-color marks
   // override it. Omitted when unset so existing templates render identically.
-  const textColorAttr = content.settings.textColor
-    ? ` color="${escapeAttr(content.settings.textColor)}"`
+  const textColorAttr = toRender.settings.textColor
+    ? ` color="${escapeAttr(toRender.settings.textColor)}"`
     : "";
   // Document-level link styling → the global `a { … }` rule below, cascading to
   // every link (rich-text and menu). An unset `linkColor` keeps `color: inherit`
   // so links follow the text color and legacy content renders identically; a
   // per-link/per-item color still overrides (inline styles beat this rule).
-  const linkColor = content.settings.linkColor
-    ? escapeCssValue(content.settings.linkColor)
+  const linkColor = toRender.settings.linkColor
+    ? escapeCssValue(toRender.settings.linkColor)
     : "inherit";
-  const linkDecoration = content.settings.linkUnderline ? "underline" : "none";
+  const linkDecoration = toRender.settings.linkUnderline ? "underline" : "none";
 
   const bodyContent = blocks
     .map((block) => renderTopLevelBlock(block, renderContext))
@@ -162,9 +178,9 @@ export async function renderToMjml(
     .join("\n");
 
   const fontDeclarations = generateFontDeclarations(customFonts);
-  const previewTag = generatePreviewTag(content.settings.preheaderText);
+  const previewTag = generatePreviewTag(toRender.settings.preheaderText);
 
-  const lang = escapeAttr(content.settings.locale);
+  const lang = escapeAttr(toRender.settings.locale);
   const dir = escapeAttr(contentDirection);
 
   return `<mjml lang="${lang}" dir="${dir}">
@@ -196,16 +212,30 @@ ${bodyContent}
 }
 
 /**
- * Render a top-level block. Sections are rendered directly,
- * non-section blocks are wrapped in a default section/column.
+ * Render a top-level block. Wrappers emit `mj-wrapper` around their children.
+ * Sections are rendered directly; other blocks are wrapped in a default
+ * section/column.
  */
 function renderTopLevelBlock(block: Block, context: RenderContext): string {
+  if (isWrapper(block)) {
+    const inner = filterHtmlBlocks(block.children, context.allowHtmlBlocks)
+      .map((child) => renderTopLevelBlock(child, context))
+      .filter((value) => value !== "")
+      .join("\n");
+    const framed = renderMjWrapper(inner, {
+      backgroundColor: block.styles.backgroundColor,
+      padding: block.styles.padding,
+      borderRadius: block.borderRadius,
+    });
+    return wrapWithDisplayCondition(block, framed);
+  }
+
   if (isSection(block)) {
     const rendered = renderBlock(block, context);
     // An empty render (hidden section) stays empty — never emit a bare wrapper.
     const framed =
       block.wrapper && rendered !== ""
-        ? renderSectionWrapper(rendered, block.wrapper)
+        ? renderMjWrapper(rendered, block.wrapper)
         : rendered;
     return wrapWithDisplayCondition(block, framed);
   }
@@ -216,11 +246,11 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
 }
 
 /**
- * Wrap a rendered section's `mj-section` in an `mj-wrapper` — a full-width band
- * (its own background + padding + optional radius) that frames the section.
- * `mj-wrapper` is the only MJML element that may contain `mj-section`.
+ * `mj-wrapper` attributes shared by a layout `wrapper` block and
+ * `section.wrapper`. Padding is always explicit: MJML's wrapper default is
+ * `20px 0`, ours is 0.
  */
-function renderSectionWrapper(inner: string, wrapper: SectionWrapper): string {
+function renderMjWrapper(inner: string, wrapper: SectionWrapper): string {
   const bg = bgAttr(wrapper.backgroundColor, "native");
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
@@ -343,6 +373,8 @@ function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
       for (const column of block.children) {
         collectCustomBlocks(column, out);
       }
+    } else if (isWrapper(block)) {
+      collectCustomBlocks(block.children, out);
     }
   }
 }
