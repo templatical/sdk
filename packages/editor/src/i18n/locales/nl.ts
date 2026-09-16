@@ -149,6 +149,8 @@ const nl: typeof en = {
     ratio21: "Verhouding 2:1",
     borderRadius: "Hoekafronding",
     wrapperEnable: "Omhulsel toevoegen",
+    wrapperLayoutConflict:
+      "Deze editor kadert de e-mail al in. Een extra kader op deze sectie wordt niet ondersteund — voorbeeld en export zullen mislukken.",
     stackOnMobile: "Stapelen op mobiel",
   },
   linkDialog: {

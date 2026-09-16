@@ -131,6 +131,15 @@ export const LAYOUT_KEY: InjectionKey<TemplateContent | undefined> =
   Symbol("layout");
 
 /**
+ * Whether the section toolbar offers Add wrapper (`config.sectionWrapper`).
+ * Provided by `useEditorCore`. `undefined` when the host configured none,
+ * which is on (`!== false`). Consumed by `SectionToolbar`. Own key — not
+ * folded into `LAYOUT_KEY`.
+ */
+export const SECTION_WRAPPER_KEY: InjectionKey<boolean | undefined> =
+  Symbol("sectionWrapper");
+
+/**
  * Consumer-supplied color-picker palette (`config.colors`), normalized to
  * `{ presets, allowCustom, allowCustomIgnored }` by `resolveColorsConfig`.
  * Provided by `useEditorCore`, consumed by every `ColorPicker`. The inject

@@ -109,6 +109,20 @@ export interface TemplaticalEditorConfig {
   layout?: TemplateContent;
 
   /**
+   * Whether the section toolbar offers Add wrapper. Defaults to on
+   * (`!== false`). Set `false` to hide the control, including where a
+   * wrapper is legal (sibling-slot layout, or no layout).
+   *
+   * Presentation only: hiding never strips `section.wrapper` from content
+   * and does not refuse `updateBlock`. A section that already has a wrapper
+   * still shows the panel so it can be turned off.
+   *
+   * Independent of {@link layout}. A sibling-slot layout still wants the
+   * control; hiding is this flag, not inferred from a layout being set.
+   */
+  sectionWrapper?: boolean;
+
+  /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
    * from the host page. Defaults to `true` — host stylesheets cannot
    * cascade past the shadow boundary into editor elements (`p`, `a`,
@@ -1237,6 +1251,7 @@ export async function initCloud(
       container: config.container,
       content: config.content,
       layout: config.layout,
+      sectionWrapper: config.sectionWrapper,
       shadowDom: config.shadowDom,
       locale: config.locale,
       uiTheme: config.uiTheme,

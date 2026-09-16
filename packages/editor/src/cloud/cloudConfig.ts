@@ -43,6 +43,12 @@ export interface TemplaticalCloudEditorConfig {
   layout?: TemplateContent;
 
   /**
+   * Whether the section toolbar offers Add wrapper. Defaults to on
+   * (`!== false`). See `sectionWrapper` on the OSS editor config.
+   */
+  sectionWrapper?: boolean;
+
+  /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
    * from the host page. Defaults to `true` — host stylesheets cannot
    * cascade past the shadow boundary into editor elements (`p`, `a`,
