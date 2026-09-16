@@ -40,11 +40,13 @@ describe("schema shape", () => {
       "menu",
       "paragraph",
       "section",
+      "slot",
       "social",
       "spacer",
       "table",
       "title",
       "video",
+      "wrapper",
     ]);
   });
 

@@ -8,11 +8,12 @@
   `button`, `divider`, `spacer`, `social`, `video`, `menu`, `table`, `html`.
   Prefer native blocks — reach for `html` only when nothing else fits, since raw
   HTML is not visually editable afterward.
-- **Never emit `countdown` or `custom` blocks** (even though the schema allows
-  them): `countdown` needs the Templatical **Cloud** backend to render its
-  animated GIF — the open-source renderer can't, so it would break — and `custom`
-  blocks are consumer-registered runtime extensions that can't be produced from a
-  prompt. If the user asks for a countdown, say it's a Cloud feature and offer a
+- **Never emit `countdown`, `custom`, `slot`, or `wrapper` blocks** (even though
+  the schema allows them): `countdown` needs the Templatical **Cloud** backend to
+  render its animated GIF — the open-source renderer can't, so it would break —
+  and `custom` blocks are consumer-registered runtime extensions that can't be
+  produced from a prompt. `slot` and `wrapper` are layout markers, not campaign
+  blocks. If the user asks for a countdown, say it's a Cloud feature and offer a
   static stand-in instead — a `title`/`paragraph` with the date/time, or a "X days
   to go" line (optionally a `{{merge_tag}}`).
 - **Every block needs** `id` (unique, e.g. `"title_1"`), `type`, and
