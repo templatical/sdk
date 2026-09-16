@@ -93,7 +93,7 @@ BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 | Button | `button` | Konvertiert |
 | Divider | `divider` | Konvertiert |
 | Spacer | `spacer` | Konvertiert |
-| Social | `social` | Konvertiert (16 Plattformen zugeordnet) |
+| Social | `social` | Konvertiert |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
 | Video | `video` | Konvertiert |

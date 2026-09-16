@@ -28,8 +28,12 @@
   **Table cell `content` is the exception — plain text, no inline HTML** (tags
   render literally); for emphasis use `hasHeaderRow`, or a 2-column `section` of
   `paragraph` blocks for a label/value layout.
-- **Merge tags** for personalization use `{{contact.field_name}}` (e.g.
-  `{{contact.first_name}}`); they're substituted when the email is sent.
+- **Merge tags** for personalization default to Liquid
+  `{{contact.field_name}}` (e.g. `{{contact.first_name}}`). If the brief or an
+  existing template uses another dialect the SDK ships — Handlebars
+  `{{first_name}}`, Mailchimp `*|FNAME|*`, AMPScript `%%=first_name=%%` —
+  emit that dialect instead, and do not mix dialects in one template. They're
+  substituted when the email is sent.
 - **No extra fields** — the schema rejects unknown properties. If unsure a field
   exists, check `reference/schema.json`.
 - **Colors** are hex strings (`"#4CBB17"`). **Images**: use a real URL when
@@ -40,8 +44,8 @@
   Set `locale` to **the language of the copy you are writing**, not to `"en"`
   by default — it becomes `<html lang>` in the delivered email, so a German
   message labelled `"en"` is mispronounced by every screen reader that opens
-  it. The examples are English, so they all read `"en"`; a German email needs
-  `"de"`, Brazilian Portuguese `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
+  it. Match the copy: English `"en"`, German `"de"`, Brazilian Portuguese
+  `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
   and other RTL copy, also set `direction: "rtl"` (or omit it — those locales
   resolve as RTL). That value is the canvas `dir` and the exported
   `<mjml dir>`.

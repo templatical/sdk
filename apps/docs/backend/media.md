@@ -145,14 +145,6 @@ interface MediaListPage {
   items: MediaAsset[];
   nextCursor?: string;
 }
-
-interface MediaCreateInput {
-  file: File;
-  folderId?: string | null;
-  alt?: string;
-  filename?: string;
-  templateId?: string;
-}
 ```
 
 - **`id` comes from the provider.** The editor never generates one; it uses whatever `create()` returns.
@@ -305,7 +297,6 @@ const {
 
 It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and reports to `onError` without mutating the list on failure. A stale `list` / `loadMore` response is discarded.
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Media Library on Cloud](/cloud/media-library).
 
 ## Bringing your own
 

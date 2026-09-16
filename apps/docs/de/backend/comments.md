@@ -262,4 +262,3 @@ useCommentListener({
 });
 ```
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Kommentare auf Cloud](/de/cloud/comments).

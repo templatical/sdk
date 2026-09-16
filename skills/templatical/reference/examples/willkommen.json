@@ -1,0 +1,86 @@
+{
+  "blocks": [
+    {
+      "id": "sec_hero",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 32, "right": 24, "bottom": 32, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "title_welcome",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "Willkommen bei Acme, {{contact.first_name}}",
+            "level": 1,
+            "color": "#111827",
+            "textAlign": "center"
+          },
+          {
+            "id": "para_welcome",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 20, "left": 0 }
+            },
+            "content": "<p>Ihr Konto ist bereit. Richten Sie Ihr erstes Projekt in unter zwei Minuten ein.</p>"
+          },
+          {
+            "id": "btn_start",
+            "type": "button",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "text": "Loslegen",
+            "url": "https://app.example.com/onboarding",
+            "backgroundColor": "#1d4ed8",
+            "textColor": "#ffffff",
+            "borderRadius": 6,
+            "fontSize": 16,
+            "buttonPadding": {
+              "top": 14,
+              "right": 28,
+              "bottom": 14,
+              "left": 28
+            },
+            "align": "center"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_footer",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 24, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "para_footer",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>Sie erhalten diese E-Mail, weil Sie sich bei Acme registriert haben. <a href=\"https://example.com/unsubscribe\">Abmelden</a>.</p>"
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1f2937",
+    "linkColor": "#1d4ed8",
+    "linkUnderline": true,
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "preheaderText": "Willkommen an Bord — so starten Sie.",
+    "locale": "de"
+  }
+}

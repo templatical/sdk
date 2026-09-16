@@ -165,6 +165,7 @@ describe("collectPages", () => {
     expect(paths).toContain("guide/theming.md");
     expect(paths).toContain("index.md");
     expect(paths).not.toContain("changelog.md");
+    expect(paths).not.toContain("guide/keyboard.md");
   });
 
   it("excludes the German mirror", () => {
@@ -173,6 +174,12 @@ describe("collectPages", () => {
 
   it("excludes Cloud from the agent index", () => {
     expect(collectPages(DOCS).some((p) => p.path.startsWith("cloud/"))).toBe(
+      false,
+    );
+  });
+
+  it("excludes pages marked llms: false", () => {
+    expect(collectPages(DOCS).some((p) => p.path === "guide/keyboard.md")).toBe(
       false,
     );
   });

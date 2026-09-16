@@ -92,7 +92,7 @@ By producing MJML instead of HTML directly, Templatical stays lightweight and gi
 | --- | --- | --- |
 | **In the browser** — no `render` provider, or `compileMjml` only | your **frontend** app, next to the editor | **Optional.** `toMjml()` is already at hand when the user saves, so keeping the result avoids re-rendering later. The [Quick Start](/getting-started/quick-start) does this. |
 | **On your backend** — you implement `render.toMjml` | your **backend** — or nothing at all, if it renders in another language | **No.** Your backend produces the MJML as it renders. A browser copy is a second source that can disagree with it. See [Rendering & Export](/backend/render). |
-| **Templatical Cloud** | nowhere — Cloud runs the published renderer server-side | **No.** Cloud renders from the *saved* template and re-derives on demand. See [Rendering on Cloud](/cloud/rendering). |
+| **Hosted Cloud** | nowhere — the hosted backend renders from the *saved* template and re-derives on demand | **No.** |
 
 ::: warning A stored render is a cache
 MJML depends on the JSON *and* on your renderer — your fonts config, any `blockRenderers` overrides, the package version itself. Change any of those and stored copies are stale while the JSON still renders correctly. Re-derive rather than repair.

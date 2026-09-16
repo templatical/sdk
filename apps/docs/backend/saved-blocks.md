@@ -260,4 +260,3 @@ It keeps the list in sync after each successful call — prepending on create, r
 
 Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a withheld mutation — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Saved Blocks on Cloud](/cloud/saved-blocks).

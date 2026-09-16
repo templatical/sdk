@@ -88,7 +88,7 @@ Einige Hinweise:
 - **Keine Auswahl, kein Drop.** Ohne `onRequestMedia` und ohne einen `media`-Provider, dessen `create` eine Funktion ist, erscheint kein Drop-Hinweis und Drops werden ignoriert.
 - **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL (oder eine `data:`-URL) zurück.
 
-Bei [Cloud-Editoren](/de/cloud/media-library) werden abgelegte Dateien automatisch in Clouds Bibliothek hochgeladen — kein `onRequestMedia` nötig. Ein eigener Handler hat weiterhin Vorrang.
+Mit einem `media`-Provider, dessen `create` eine Funktion ist, werden abgelegte Dateien über diesen Provider hochgeladen — kein `onRequestMedia` nötig. Ein eigener Handler hat weiterhin Vorrang.
 
 ## Reine Anzeige-Auflösung von Bild-URLs {#reine-anzeige-aufloesung-von-bild-urls}
 

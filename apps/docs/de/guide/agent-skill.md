@@ -39,7 +39,7 @@ Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skil
 Die mechanischen Schritte — validieren, rendern, importieren, Live-Vorschau — sind [`@templatical/template-tools`](/de/api/template-tools). Der Skill steuert diese CLI; dieselben Befehle laufen ohne Agenten aus einer Shell.
 
 ::: tip Lieber eine gehostete Lösung?
-Ein KI-Chat direkt im Editor, feinabgestimmte Prompts und ein gehosteter MCP-Server sind Teil des [Templatical-Cloud](/de/cloud/)-Tarifs. Dieser Skill ist der offene, selbst gehostete Weg — bringen Sie Ihren eigenen Agenten mit und behalten Sie die volle Kontrolle.
+Ein KI-Chat direkt im Editor, feinabgestimmte Prompts und ein gehosteter MCP-Server sind ein gehosteter Weg. Dieser Skill ist der offene, selbst gehostete Weg — bringen Sie Ihren eigenen Agenten mit und behalten Sie die volle Kontrolle.
 :::
 
 ## Beispiele
@@ -67,7 +67,7 @@ Bitten Sie darum, es **live zu zeigen** (oder „live in der Vorschau", „im Li
 2. aktualisiert sie bei jeder Änderung, die Sie prompten, **live** — ohne Neuladen.
 3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Version aufbauen oder sie ersetzen soll, bevor er überschreibt.
 
-Bauen Sie zuerst in reinem JSON und wechseln Sie mitten in der Sitzung zu einer Live-Vorschau — sie knüpft genau dort an, wo Sie stehen. Der Live-Modus ist lokal und für einen einzelnen Nutzer — nicht der Echtzeit-Weg der [Cloud](/de/cloud/) — und benötigt nichts außer einem Coding-Agenten, der auf Ihrem eigenen Rechner läuft.
+Bauen Sie zuerst in reinem JSON und wechseln Sie mitten in der Sitzung zu einer Live-Vorschau — sie knüpft genau dort an, wo Sie stehen. Der Live-Modus ist lokal und für einen einzelnen Nutzer und benötigt nichts außer einem Coding-Agenten, der auf Ihrem eigenen Rechner läuft.
 
 ### Eine bestehende Vorlage importieren
 
@@ -97,13 +97,17 @@ Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte r�
 
 Ergänzen Sie Ihren eigenen Kontext, und der Agent verwendet ihn anstelle generischer Standardwerte: Markenfarben und -schriften, Tonalität, einen eigenen System-Prompt, einen verpflichtenden Footer oder Abmelde-Block. Das lohnt sich einmalig, wenn Sie mehr als eine E-Mail erzeugen möchten.
 
-### Benutzerdefinierte Blöcke werden nie aus einem Prompt erzeugt
+### Nie `custom` ausgeben
 
-Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut, und erzeugt ihn deshalb nie aus einem Prompt. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
+Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Konsumenten — der Skill kann nicht wissen, was ein solcher Block tut. Nie `type: "custom"` ausgeben. Wie Sie einen eigenen registrieren, steht unter [Benutzerdefinierte Blöcke](/de/guide/custom-blocks).
 
 ### Nie `countdown` ausgeben
 
 `countdown` braucht das serverseitige animierte GIF von Cloud; der OSS-Renderer kann es nicht erzeugen. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
+
+### Nie `slot` oder `wrapper` ausgeben
+
+`slot` und `wrapper` sind Layout-Markierungen auf `init({ layout })`, keine Kampagnenblöcke. Nie `type: "slot"` oder `type: "wrapper"` ausgeben. Siehe [Layout](/de/guide/layout).
 
 ### Native Blöcke bevorzugen
 
@@ -112,3 +116,21 @@ Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Kons
 ### `settings.locale` an den Text anpassen
 
 `settings.locale` wird zu `<html lang>`. Auf die Sprache des erzeugten Texts setzen; deutschen Text nicht auf `"en"` defaulten. Für `ar`/`he`/`fa`/`ur`/… zusätzlich `direction: "rtl"` setzen (oder weglassen — diese Locales gelten als RTL).
+
+### Form eines Templates
+
+Der Vertrag ist `reference/schema.json` im Skill, auch ausgegeben von `npx @templatical/template-tools schema`. Keine Blockfelder von dieser Seite erfinden. Ein leeres Template ist `{ blocks, settings }`:
+
+```json
+{
+  "blocks": [],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}
+```

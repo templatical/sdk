@@ -101,7 +101,7 @@ const mjml = await renderToMjml(content, {
 
 ### Social icons
 
-Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (16 platforms × 5 styles) alongside the package:
+Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (every `SocialPlatform` × 5 styles) alongside the package:
 
 ```
 https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png

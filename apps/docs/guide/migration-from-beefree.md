@@ -93,7 +93,7 @@ BeeFree block types map to Templatical equivalents:
 | Button | `button` | Converted |
 | Divider | `divider` | Converted |
 | Spacer | `spacer` | Converted |
-| Social | `social` | Converted (16 platforms mapped) |
+| Social | `social` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
 | Video | `video` | Converted |

@@ -1,6 +1,7 @@
 ---
 title: Keyboard
 description: Editor chrome shortcuts. Canonical page is Editor accessibility.
+llms: false
 ---
 
 # Keyboard

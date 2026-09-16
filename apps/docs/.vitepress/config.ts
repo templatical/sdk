@@ -6,7 +6,6 @@ const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/quick-start" },
   { text: "API", link: "/api/editor" },
   { text: "Quality", link: "/quality/" },
-  { text: "Cloud", link: "/cloud/" },
   { text: "Changelog", link: "/changelog" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -45,39 +44,6 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Overview", link: "/quality/links/" },
         { text: "Rule catalog", link: "/quality/links/rule-catalog" },
-      ],
-    },
-  ],
-  "/cloud/": [
-    {
-      text: "Cloud",
-      items: [
-        { text: "Overview", link: "/cloud/" },
-        { text: "Getting Started", link: "/cloud/getting-started" },
-        { text: "Authentication", link: "/cloud/authentication" },
-      ],
-    },
-    {
-      text: "Features",
-      items: [
-        { text: "AI Assistant", link: "/cloud/ai" },
-        { text: "Collaboration", link: "/cloud/collaboration" },
-        { text: "Comments", link: "/cloud/comments" },
-        { text: "Media Library", link: "/cloud/media-library" },
-        { text: "Rendering", link: "/cloud/rendering" },
-        { text: "Saved Blocks", link: "/cloud/saved-blocks" },
-        { text: "Template Scoring", link: "/cloud/template-scoring" },
-        { text: "Templates", link: "/cloud/templates" },
-        { text: "Test Emails", link: "/cloud/test-emails" },
-        { text: "Version History", link: "/cloud/version-history" },
-      ],
-    },
-    {
-      text: "Advanced",
-      items: [
-        { text: "MCP Integration", link: "/cloud/mcp" },
-        { text: "Multi-Tenant", link: "/cloud/multi-tenant" },
-        { text: "Headless API", link: "/cloud/headless-api" },
       ],
     },
   ],
@@ -204,7 +170,6 @@ const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/quick-start" },
   { text: "API", link: "/de/api/editor" },
   { text: "Qualität", link: "/de/quality/" },
-  { text: "Cloud", link: "/de/cloud/" },
   { text: "Changelog", link: "/de/changelog" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -249,39 +214,6 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Überblick", link: "/de/quality/links/" },
         { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
-      ],
-    },
-  ],
-  "/de/cloud/": [
-    {
-      text: "Cloud",
-      items: [
-        { text: "Überblick", link: "/de/cloud/" },
-        { text: "Erste Schritte", link: "/de/cloud/getting-started" },
-        { text: "Authentifizierung", link: "/de/cloud/authentication" },
-      ],
-    },
-    {
-      text: "Funktionen",
-      items: [
-        { text: "KI-Assistent", link: "/de/cloud/ai" },
-        { text: "Zusammenarbeit", link: "/de/cloud/collaboration" },
-        { text: "Kommentare", link: "/de/cloud/comments" },
-        { text: "Medienbibliothek", link: "/de/cloud/media-library" },
-        { text: "Rendering", link: "/de/cloud/rendering" },
-        { text: "Gespeicherte Blöcke", link: "/de/cloud/saved-blocks" },
-        { text: "Template-Bewertung", link: "/de/cloud/template-scoring" },
-        { text: "Templates", link: "/de/cloud/templates" },
-        { text: "Test-E-Mails", link: "/de/cloud/test-emails" },
-        { text: "Versionsverlauf", link: "/de/cloud/version-history" },
-      ],
-    },
-    {
-      text: "Fortgeschritten",
-      items: [
-        { text: "MCP-Integration", link: "/de/cloud/mcp" },
-        { text: "Multi-Tenant", link: "/de/cloud/multi-tenant" },
-        { text: "Headless-API", link: "/de/cloud/headless-api" },
       ],
     },
   ],
@@ -424,7 +356,11 @@ export default defineConfig({
   // VitePress scans the whole project root for *.md, which otherwise renders
   // the vitest fixtures under tests/fixtures/ as real, navigable pages.
   srcExclude: ["tests/**"],
-  sitemap: { hostname: "https://docs.templatical.com" },
+  sitemap: {
+    hostname: "https://docs.templatical.com",
+    transformItems: (items: { url: string }[]) =>
+      items.filter((item) => !item.url.includes("/cloud")),
+  },
   // Serve each page's source markdown beside its rendered page: append `.md`
   // to the page's URL, or `index.md` when that URL ends in `/`. Agents that
   // fetch rendered HTML read mangled examples of this product's own merge-tag

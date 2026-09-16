@@ -275,4 +275,3 @@ await init({
 - [Saved Blocks](/backend/saved-blocks) — the same bring-your-own-storage shape, for reusable groups of blocks
 - [Test Emails](/backend/test-email) — bring-your-own sending
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Templates on Cloud](/cloud/templates).

@@ -9,9 +9,12 @@ Propose before writing. A scaffold that edits an unfamiliar repository
 unannounced is the failure this procedure exists to avoid.
 
 1. **Detect.** Package manager from the lockfile (`pnpm-lock.yaml` /
-   `package-lock.json` / `yarn.lock` / `bun.lockb`). Framework and bundler
-   from `package.json` and its config files. TypeScript from `tsconfig.json`.
-   Whether `@templatical/editor` is already installed, and at what version.
+   `package-lock.json` / `yarn.lock` / `bun.lockb` / `bun.lock`). Framework
+   and bundler from `package.json` and its config files. TypeScript from
+   `tsconfig.json`. Whether `@templatical/editor` is already installed, and
+   at what version. Install **only** `@templatical/editor` unless a feature
+   that needs an optional peer was asked for — never `vue`, `tailwindcss`,
+   or `@templatical/core`.
 2. **Propose, then wait.** Name the packages to add, the files to create or
    edit, and the mount point — then wait for a go-ahead. Don't edit an
    unfamiliar codebase unannounced.

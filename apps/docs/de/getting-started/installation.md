@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Installieren Sie den Templatical-E-Mail-Editor über npm oder CDN.
+description: Installieren Sie den Templatical-E-Mail-Editor mit einem Paketmanager oder von einem CDN.
 ---
 
 # Installation

@@ -90,6 +90,12 @@
       "prompt": "We're self-hosting the editor (no Cloud). Users should be able to add a countdown-timer block from the sidebar, counting down to our launch. How do I turn that on?",
       "expected_output": "States that countdown is Cloud-only: it needs Cloud's server-side animated-GIF rendering, so the sidebar palette never offers it under a plain `init()` — the built-in block list only splices countdown in once the editor has an active Cloud plan capability. Says explicitly that `paletteBlocks` (or any other `init()` config) cannot turn it on outside Cloud — countdown isn't in the candidate block list at all without a plan, so listing it there just logs an 'unknown block' warning instead of enabling it. Notes that even a countdown block present in the content some other way still won't render to real output: the open-source `@templatical/renderer` has no built-in renderer for it and emits a placeholder marker plus a console warning in its place, not a working countdown image. Names the real paths — `initCloud()` with an active plan, or a self-hosted `blockRenderers.countdown` / `render.toMjml` override for a consumer generating their own countdown images — and offers a concrete stand-in for the self-hosted case, e.g. a static title or paragraph naming the launch date, or an 'X days to go' line. Must not claim `paletteBlocks`, a config flag, or any other plain `init()` option enables a working countdown block, and must not present a countdown block as something that will render correctly in a Cloud-less integration.",
       "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "Password-reset email for our Mailchimp audience. Use their merge tags for first name and the unsubscribe URL. Short, transactional, one button to reset.",
+      "expected_output": "Valid TemplateContent JSON. Personalization uses Mailchimp tokens (`*|FNAME|*`, `*|UNSUB|*` or similar `*|…|*`), not Liquid `{{contact.first_name}}` and not a mix of dialects in one template. One primary reset button, restrained transactional layout. settings.locale matches the copy language.",
+      "files": []
     }
   ]
 }

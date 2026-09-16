@@ -15,7 +15,7 @@ npm install @templatical/media-library
 
 Peer dep: `vue@^3.5`. Not needed next to `@templatical/editor` — that package already contains the modal.
 
-> **Storage.** The library is storage-agnostic. Pass a `MediaProvider` — Cloud's adapter is `createCloudMediaProvider` from `@templatical/core/cloud`. See the [media contract](https://docs.templatical.com/backend/media) and the [Cloud adapter](https://docs.templatical.com/cloud/media-library).
+> **Storage.** The library is storage-agnostic. Pass a `MediaProvider` — Cloud's adapter is `createCloudMediaProvider` from `@templatical/core/cloud`. See the [media contract](https://docs.templatical.com/backend/media).
 
 ## Usage
 
@@ -42,7 +42,7 @@ media.unmount();
 
 ### Vue component
 
-Use `MediaLibraryModal` inside a Vue 3 app. See [docs](https://docs.templatical.com/cloud/media-library) for the full prop reference.
+Use `MediaLibraryModal` inside a Vue 3 app. See the [media contract](https://docs.templatical.com/backend/media) for the provider the modal sits on.
 
 ```ts
 import { MediaLibraryModal } from '@templatical/media-library';
@@ -105,7 +105,6 @@ If you embed `MediaLibraryModal` manually inside another shadow-DOM-mounted UI, 
 ## Documentation
 
 - [Media contract](https://docs.templatical.com/backend/media)
-- [Cloud media library](https://docs.templatical.com/cloud/media-library)
 - [Shadow DOM (editor)](https://docs.templatical.com/guide/shadow-dom)
 
 Full reference at **[docs.templatical.com](https://docs.templatical.com)**.

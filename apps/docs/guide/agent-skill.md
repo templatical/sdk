@@ -39,7 +39,7 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
 ::: tip Prefer a hosted experience?
-An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
+An in-editor AI chat, tuned prompts, and a hosted MCP server are a hosted-tier path. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::
 
 ## Examples
@@ -67,7 +67,7 @@ Ask to **show it live** (or "preview it live", "build this in live mode") and th
 2. Updates it **live** each time you prompt a change — no refresh.
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
 
-Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
+Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user, and needs nothing beyond a coding agent running on your own machine.
 
 ### Import an existing template
 
@@ -97,13 +97,17 @@ Diagnosing an existing integration runs the same steps backwards: it reads your 
 
 Layer your own context on top and the agent uses it instead of generic defaults — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. Worth doing once if you plan to generate more than one email.
 
-### Custom blocks are never generated from a prompt
+### Never emit `custom`
 
-Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does, so it never invents one from a prompt. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
+Custom blocks are consumer-registered runtime extensions — the skill has no way to know what one does. Never emit `type: "custom"`. See [Custom Blocks](/guide/custom-blocks) for how to register your own.
 
 ### Never emit `countdown`
 
 `countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
+
+### Never emit `slot` or `wrapper`
+
+`slot` and `wrapper` are layout markers on `init({ layout })`, not campaign blocks. Never emit `type: "slot"` or `type: "wrapper"`. See [Layout](/guide/layout).
 
 ### Prefer native blocks
 
@@ -112,3 +116,21 @@ Reach for `html` only as a last resort — raw HTML is not visually editable aft
 ### Match `settings.locale` to the copy
 
 `settings.locale` becomes `<html lang>`. Set it to the language of the generated copy; do not default German copy to `"en"`. For `ar`/`he`/`fa`/`ur`/… also set `direction: "rtl"` (or omit it and those locales resolve as RTL).
+
+### Shape of a template
+
+The contract is `reference/schema.json` in the skill, also printed by `npx @templatical/template-tools schema`. Do not invent block fields from this page. A blank template is `{ blocks, settings }`:
+
+```json
+{
+  "blocks": [],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}
+```

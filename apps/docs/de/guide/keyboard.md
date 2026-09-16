@@ -1,6 +1,7 @@
 ---
 title: Tastatur
 description: Tastenkürzel der Editor-Oberfläche. Die kanonische Seite ist Barrierefreiheit im Editor.
+llms: false
 ---
 
 # Tastatur

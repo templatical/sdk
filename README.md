@@ -56,7 +56,7 @@ You can also **preview it live**: ask to "show it live" and the skill opens your
 
 [Skill guide →](https://docs.templatical.com/guide/agent-skill)
 
-> Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
+> Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier.
 
 ### Wiring the editor into your own app
 
@@ -69,18 +69,18 @@ The same [skill guide →](https://docs.templatical.com/guide/agent-skill) cover
 Things that are usually paid features in commercial editors — free in Templatical:
 
 - **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
-- **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
+- **Merge tags in your ESP's syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
 - **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
 - **Reusable saved blocks** — let users save a group of blocks and re-insert it across templates, with search, preview, rename and delete. You supply storage via a small provider interface (or use the bundled browser-local one); the editor owns the whole UI.
 - **Version history** — browse, preview and restore a template's past versions from the header. Storage is a four-method provider you implement; the editor owns the control, the preview and the restore flow.
-- **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
+- **Full theming via design tokens** — color tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
 - **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
 
 ### And more
 
 - **Drop-in mount** — one `init()` call, one `unmount()`. No framework lock-in.
 - **Style-isolated, both directions** — Shadow DOM by default keeps host CSS out of the editor; `tpl:` Tailwind prefix and no preflight reset keep editor styles out of your app. Drops into any page, any framework, any CMS — no resets, no conflicts. [Learn more →](https://docs.templatical.com/guide/shadow-dom)
-- **14 block types** — Title, Paragraph, Image, Button, Section, Divider, Spacer, Social Icons, Menu, Table, HTML, Video, Countdown, Custom.
+- **Built-in blocks** — Title, Paragraph, Image, Button, Section, Divider, Spacer, Social Icons, Menu, Table, HTML, Video, Countdown, Custom.
 - **JSON templates** — portable, versionable, store anywhere, render anywhere.
 - **MJML output** — works with any email provider (Postmark, Resend, SES, Mailgun, anything).
 - **Framework-agnostic** — first-class examples for React, Vue, Svelte, Angular, vanilla.
@@ -151,14 +151,13 @@ The only restriction: don't repackage Templatical itself as a directly competing
 ## Documentation
 
 - [Getting Started](https://docs.templatical.com/getting-started/quick-start) — install, mount, render
-- [Block Reference](https://docs.templatical.com/guide/blocks) — all 14 block types
+- [Block Reference](https://docs.templatical.com/guide/blocks) — every built-in block
 - [Theming](https://docs.templatical.com/guide/theming) — design tokens, dark mode, custom fonts
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks) — extend with your own
 - [Saving & Loading](https://docs.templatical.com/backend/templates) — the template lifecycle over your own storage
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks) — reusable block groups over your own storage
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
 - [AI Agent Skills](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt, or get integration help, in your own agent
-- [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Stripo](https://docs.templatical.com/guide/migration-from-stripo)

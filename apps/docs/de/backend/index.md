@@ -79,26 +79,3 @@ type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateConten
 ## Headless-Nutzung
 
 `useSavedBlocks`, `useVersionHistory` und `useComments` werden aus `@templatical/core` exportiert, sodass ein Provider Ihre eigene Oberfläche versorgen kann, ganz ohne eingebundenen Editor. Der Medienzustand ist an das Modal gebunden: `useMediaLibrary` lebt in `@templatical/media-library`, und die Provider-Methoden selbst sind die Headless-API. Die jeweilige Oberfläche steht im Abschnitt *Headless-Nutzung* der einzelnen Seiten.
-
-## Templatical Cloud
-
-Sie möchten das alles nicht selbst bauen? Templatical Cloud implementiert sie alle. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Medien, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
-
-```ts
-import { initCloud } from '@templatical/editor';
-
-const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
-});
-```
-
-Hinzu kommt, wofür der Open-Source-Editor überhaupt keinen Vertrag hat:
-
-- **KI** — Inhalte aus einem Prompt erzeugen, eine Auswahl umformulieren, ein Design in eine Vorlage verwandeln
-- **Echtzeit-Zusammenarbeit** — Live-Cursor, Präsenz und Block-Sperren über einen verwalteten WebSocket
-- **Template-Bewertung** — automatische Prüfungen auf Zustellbarkeit und Barrierefreiheit
-
-Derselbe Editor, dasselbe Blockmodell, dieselben Verträge: Cloud ist eine Erstanbieter-Implementierung der Schnittstellen auf dieser Seite, kein Fork. Sie können weiterhin Ihre eigene Blockbibliothek, Galerie oder Ihren eigenen Versand mitbringen und den Rest Cloud überlassen.
-
-[Templatical Cloud entdecken →](/de/cloud/)

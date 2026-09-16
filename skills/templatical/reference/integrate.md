@@ -10,7 +10,11 @@ into their repository
 misbehaves · [docs.md](docs.md) for anything not covered here
 
 `@templatical/editor` is self-contained: Vue, TipTap and its other runtime
-dependencies are all bundled inside it.
+dependencies are all bundled inside it. There is **no** framework component —
+no `<TemplaticalEditor />`, no Vue SFC export, no `@templatical/react`. The
+public API is `init()` / `initCloud()` / `unmount()` in every stack, including
+React. The `useRef` + `useEffect` wrapper below is that API used
+idiomatically, not a missing-component workaround.
 
 ```bash
 npm install @templatical/editor
@@ -36,11 +40,26 @@ only the ones actually used (see [failure-modes.md](failure-modes.md)).
 </script>
 ```
 
+No bundler: load the CDN build (`dist/cdn/editor.js` + `editor.css`) from a
+`<script type="module">` and a `<link>`. Pin an exact version in that URL for
+anything beyond a quick test — the unversioned latest is only for trying it.
+The container must be able to host a shadow root (`div`, `section`, `article`;
+never `table`, `button`, or `input`). See [docs.md](docs.md) →
+`getting-started/installation` under CDN.
+
 ## Framework
 
 Same shape in any component-based framework: mount on the container ref,
-unmount on cleanup. React shown; Vue, Svelte and Angular equivalents are in
-[docs.md](docs.md) → `getting-started/installation`, under "Framework integration".
+unmount on cleanup. React shown; Vue (`onMounted` / `onUnmounted`), Svelte and
+Angular equivalents are in [docs.md](docs.md) → `getting-started/installation`,
+under "Framework integration". A host that is already Vue is **not** license
+to add `@templatical/core` (or any other Vue-using `@templatical/*` package)
+so the app "shares" Vue — the editor bundles and dedupes its own copy
+regardless of the host framework.
+
+Next.js App Router: the file that calls `useRef` / `useEffect` / `init()` is a
+Client Component (`'use client'` at the top). `init()` is browser-only. There
+is no Next-specific package and no SSR configuration step.
 
 ```tsx
 import { useEffect, useRef } from "react";
@@ -88,3 +107,17 @@ Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
 dashboard — this skill documents `initCloud()`'s shape and the provider
 contracts it fills in, not signup. The auth endpoint the consumer's server
 needs to implement is in [docs.md](docs.md) → `cloud/getting-started`.
+
+Countdown is Cloud-only. `paletteBlocks` (or any other `init()` key) cannot
+turn it on under a plain `init()` — see [failure-modes.md](failure-modes.md).
+
+## Theming
+
+Set `--tpl-user-*` on the container or any ancestor — inheritance crosses the
+shadow boundary, so this works in both DOM modes with no JS.
+`--tpl-user-primary` / `-primary-hover` / `-primary-light` for brand colour,
+`--tpl-user-radius` (plus `-sm` / `-lg`) for radius. Dark values are
+`--tpl-user-dark-*` **and** `uiTheme: "dark"` or `"auto"`: tokens alone do
+not switch the chrome. The `theme` object on `init()` is the alternative for
+runtime-computed values and wins because it is inline style. Do not turn
+shadow DOM off to make theming work.

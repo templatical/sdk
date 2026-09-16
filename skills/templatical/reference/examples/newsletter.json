@@ -131,6 +131,68 @@
           }
         ]
       ]
+    },
+    {
+      "id": "sec_compare",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 8, "right": 24, "bottom": 24, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "title_compare",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "This month's shoe desk",
+            "level": 3,
+            "textAlign": "left"
+          },
+          {
+            "id": "tbl_shoes",
+            "type": "table",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "rows": [
+              {
+                "id": "tr0",
+                "cells": [
+                  { "id": "th0", "content": "Model" },
+                  { "id": "th1", "content": "Weight" },
+                  { "id": "th2", "content": "Price" }
+                ]
+              },
+              {
+                "id": "tr1",
+                "cells": [
+                  { "id": "td0", "content": "Ridge Runner" },
+                  { "id": "td1", "content": "240 g" },
+                  { "id": "td2", "content": "$148" }
+                ]
+              },
+              {
+                "id": "tr2",
+                "cells": [
+                  { "id": "td3", "content": "Valley Cruiser" },
+                  { "id": "td4", "content": "310 g" },
+                  { "id": "td5", "content": "$126" }
+                ]
+              }
+            ],
+            "hasHeaderRow": true,
+            "headerBackgroundColor": "#f3f4f6",
+            "borderColor": "#e5e7eb",
+            "borderWidth": 1,
+            "cellPadding": 10,
+            "fontSize": 14,
+            "textAlign": "left"
+          }
+        ]
+      ]
     }
   ],
   "settings": {
@@ -139,6 +201,7 @@
     "textColor": "#2b2b2b",
     "linkUnderline": false,
     "fontFamily": "Helvetica, Arial, sans-serif",
+    "preheaderText": "Field Notes: two stories from the backcountry, plus this month's shoe desk.",
     "locale": "en"
   }
 }

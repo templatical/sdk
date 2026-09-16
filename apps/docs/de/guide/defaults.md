@@ -187,7 +187,8 @@ console.log(TITLE_BLOCK_DEFAULTS);
 
 // Template-Standardwerte inspizieren
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
-// { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' }
+// { width: 600, backgroundColor: '#ffffff', textColor: '#1a1a1a',
+//   linkUnderline: true, fontFamily: 'Arial', locale: 'en' }
 
 // Ein benutzerdefiniertes Preset erstellen, indem die Standardwerte eines einzelnen Blocks erweitert werden
 const myButtonDefaults = {

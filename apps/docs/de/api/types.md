@@ -77,7 +77,9 @@ type Block =
   | TableBlock
   | HtmlBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 ```
 
 ### BlockType
@@ -86,7 +88,8 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
+  | 'slot' | 'wrapper';
 ```
 
 ## Basistypen
@@ -282,7 +285,6 @@ type SocialPlatform =
   | 'reddit' | 'github' | 'dribbble' | 'behance'
   | 'website';
 
-// Insgesamt 16 Plattformen
 
 type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
 type SocialIconSize = 'small' | 'medium' | 'large';
@@ -392,7 +394,19 @@ interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   dataSourceFetched?: boolean;
 }
+
+interface SlotBlock extends BaseBlock {
+  type: 'slot';
+}
+
+interface WrapperBlock extends BaseBlock {
+  type: 'wrapper';
+  children: Block[];
+  borderRadius?: number;
+}
 ```
+
+`slot` und `wrapper` sind Layout-Markierungen. Der Skill gibt sie nie aus. Siehe [Layout](/de/guide/layout).
 
 ## Konfigurationstypen
 
@@ -406,6 +420,11 @@ interface MergeTag {
   description?: string;  // nur Picker: Hilfetext
   sample?: string;       // nur Vorschau: Beispielwert; nie im MJML
 }
+
+interface MergeTagRequestContext {
+  reason: 'insert' | 'edit';
+  current?: MergeTag;    // beim Bearbeiten, wenn das Token zu tags passt
+}
 ```
 
 ### MergeTagsConfig
@@ -414,7 +433,7 @@ interface MergeTag {
 interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
-  onRequest?: () => Promise<MergeTag | null>;
+  onRequest?: (context?: MergeTagRequestContext) => Promise<MergeTag | null>;
   showRawValue?: boolean;   // Roh-Token im Tooltip anzeigen (Standard true)
   autocomplete?: boolean;   // tippbasiertes Autocomplete (Standard true)
 }
@@ -609,3 +628,7 @@ unsubscribe(); // Listener entfernen
 | `emit(event, data)` | Ein Ereignis auslösen |
 | `removeAllListeners(event?)` | Alle Listener entfernen, optional für ein bestimmtes Ereignis |
 | `listenerCount(event)` | Anzahl der Listener für ein Ereignis |
+
+## Speicherverträge
+
+`Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` und die übrigen BYO-Speicherformen stehen unter [Backend anbinden](/de/backend/). Diese Seite ist das Blockmodell und die Editor-Config.

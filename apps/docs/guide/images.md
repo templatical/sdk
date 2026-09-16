@@ -87,7 +87,7 @@ A few notes:
 - **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
 - **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
 
-For [Cloud editors](/cloud/media-library), dropped files upload to Cloud's library automatically — no `onRequestMedia` needed. A custom handler still takes precedence.
+With a `media` provider whose `create` is a function, dropped files upload through that provider — no `onRequestMedia` needed. A custom handler still takes precedence.
 
 ## Display-only URL resolution
 

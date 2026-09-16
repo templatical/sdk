@@ -11,6 +11,8 @@ Nothing here is Templatical-specific — these are plain CSS rules that affect a
 
 ## The editor's container
 
+Give the container a **definite height** — `100%` of a sized parent, or a `px` / `vh` value. The editor fills that box. Without a height it uses a small anti-collapse floor and the sidebar / footer clip. Symptom table: [Troubleshooting](/getting-started/troubleshooting).
+
 The editor mounts its dialogs into a popover root at `z-index: 10000`, inside the container you pass to `init()`. A z-index only competes within its own stacking context, so **the container must not establish one** — otherwise every editor dialog is confined to it, and any chrome of yours with a higher z-index in the parent context paints over them.
 
 These properties on the container, or on any ancestor between it and the stacking context your chrome lives in, create one:

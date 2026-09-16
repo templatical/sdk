@@ -260,4 +260,3 @@ Die Liste bleibt nach jedem erfolgreichen Aufruf synchron — beim Erstellen vor
 
 Prüfen Sie `canCreate` / `canUpdateBlock` / `canDeleteBlock`, bevor Sie eine Aktion in Ihrer eigenen Oberfläche anbieten. Der Aufruf einer Mutation, die der Provider vorenthält — oder die ein Eintrag verbietet —, wird abgelehnt statt still erfüllt, sodass niemand eine Ablehnung für ein Speichern halten kann.
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Gespeicherte Blöcke auf Cloud](/de/cloud/saved-blocks).

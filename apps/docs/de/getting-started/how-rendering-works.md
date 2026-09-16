@@ -92,7 +92,7 @@ Indem Templatical MJML statt direkt HTML erzeugt, bleibt es leichtgewichtig und 
 | --- | --- | --- |
 | **Im Browser** — kein `render`-Provider oder nur `compileMjml` | in Ihrer **Frontend**-Anwendung, neben dem Editor | **Optional.** `toMjml()` liegt beim Speichern ohnehin vor, das Ergebnis aufzubewahren erspart späteres erneutes Rendern. Der [Schnellstart](/de/getting-started/quick-start) macht das. |
 | **Auf Ihrem Backend** — Sie implementieren `render.toMjml` | auf Ihrem **Backend** — oder gar nicht, wenn es in einer anderen Sprache rendert | **Nein.** Ihr Backend erzeugt das MJML beim Rendern. Eine Browser-Kopie ist eine zweite Quelle, die davon abweichen kann. Siehe [Rendering & Export](/de/backend/render). |
-| **Templatical Cloud** | nirgends — Cloud führt den veröffentlichten Renderer serverseitig aus | **Nein.** Cloud rendert aus der *gespeicherten* Vorlage und leitet bei Bedarf neu ab. Siehe [Rendering auf Cloud](/de/cloud/rendering). |
+| **Gehostete Cloud** | nirgends — das gehostete Backend rendert aus der *gespeicherten* Vorlage und leitet bei Bedarf neu ab | **Nein.** |
 
 ::: warning Ein gespeichertes Render-Ergebnis ist ein Cache
 MJML hängt vom JSON *und* von Ihrem Renderer ab: Ihrer Schriften-Konfiguration, etwaigen `blockRenderers`-Überschreibungen, der Paketversion selbst. Ändert sich davon etwas, sind gespeicherte Kopien veraltet, während das JSON weiterhin korrekt rendert. Leiten Sie neu ab, statt zu reparieren.

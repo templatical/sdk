@@ -218,7 +218,7 @@ What to watch for:
 
 - This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
 - `getCustomBlockStylesheet` is not part of the payload. Pass your own resolver if your custom blocks carry definition-level CSS — otherwise their `<mj-style>` rules are dropped.
-- `initCloud()` ignores `render`, so this is an `init()` arrangement. See [Rendering on Cloud](/cloud/rendering).
+- `initCloud()` ignores `render`, so this is an `init()` arrangement.
 
 ::: tip Showing it in the preview too
 The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
@@ -288,4 +288,3 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 - [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Rendering on Cloud](/cloud/rendering).

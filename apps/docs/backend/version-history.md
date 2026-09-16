@@ -197,4 +197,3 @@ await history.resolveContent(v);             // the hint, or get(), cached
 await history.restore(v.id);
 ```
 
-**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Version History on Cloud](/cloud/version-history).

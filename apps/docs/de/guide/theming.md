@@ -129,7 +129,7 @@ Jede CSS-Länge funktioniert. Wenn der Editor doch der eigenen Root-Schriftgrö�
 
 Dies betrifft nur die **Editor-Oberfläche**. Der E-Mail-Inhalt auf dem Canvas verwendet die auf jedem Block gespeicherten Pixelgrößen, sodass Ihr Template unabhängig von der Skalierung der Editor-UI identisch gerendert wird.
 
-Derselbe `--tpl-user-base-size`-Schalter gilt für das eigenständige [`@templatical/media-library`](../cloud/media-library)-SDK. Wie jede `--tpl-user-*`-Variable funktioniert er in Shadow-DOM- und Light-DOM-Modus identisch.
+Derselbe `--tpl-user-base-size`-Schalter gilt für das eigenständige `@templatical/media-library`-SDK. Wie jede `--tpl-user-*`-Variable funktioniert er in Shadow-DOM- und Light-DOM-Modus identisch.
 
 ## ThemeOverrides-Konfiguration
 

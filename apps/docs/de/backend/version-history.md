@@ -197,4 +197,3 @@ await history.resolveContent(v);             // der Hinweis oder get(), zwischen
 await history.restore(v.id);
 ```
 
-**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Versionsverlauf auf Cloud](/de/cloud/version-history).
