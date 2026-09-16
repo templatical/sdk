@@ -73,6 +73,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   HTML_BLOCK_PREVIEW_KEY,
+  LAYOUT_KEY,
   COLORS_KEY,
   TEMPLATE_SETTINGS_FIELDS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
@@ -243,6 +244,7 @@ export interface UseEditorCoreOptions {
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
+    layout?: TemplateContent;
     colors?: ColorsConfig;
     templateSettings?: TemplateSettingsConfig;
     mergeTags?: MergeTagsConfig;
@@ -638,6 +640,7 @@ export function useEditorCore(
     HTML_BLOCK_PREVIEW_KEY,
     resolveHtmlBlockPreview(config.htmlBlockPreview),
   );
+  provide(LAYOUT_KEY, config.layout);
   // Editor-wide color-picker palette (resolved + audited above, ahead of the
   // block registry).
   provide(COLORS_KEY, resolvedColors);

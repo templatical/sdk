@@ -34,6 +34,15 @@ export interface TemplaticalCloudEditorConfig {
   content?: TemplateContent;
 
   /**
+   * Embedder-owned email shell, applied as an overlay at preview and at
+   * `toMjml()` / `toHtml()`. Never written into `getContent()`. See `layout`
+   * on the OSS editor config for details.
+   *
+   * A layout guide will land in the published docs.
+   */
+  layout?: TemplateContent;
+
+  /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
    * from the host page. Defaults to `true` — host stylesheets cannot
    * cascade past the shadow boundary into editor elements (`p`, `a`,

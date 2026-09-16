@@ -30,7 +30,13 @@ import type {
   UiTheme,
   ResolvePreview,
 } from "@templatical/types";
-import { createDefaultTemplateContent, safeClone } from "@templatical/types";
+import {
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
+  createDefaultTemplateContent,
+  safeClone,
+  validateLayout,
+} from "@templatical/types";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 
 import Editor from "./Editor.vue";
@@ -88,6 +94,19 @@ export interface TemplaticalEditorConfig {
    */
   container: string | HTMLElement;
   content?: TemplateContent;
+
+  /**
+   * Embedder-owned email shell, applied as an overlay at preview and at
+   * `toMjml()` / `toHtml()`. Never written into `getContent()`, save, history,
+   * or the editing canvas.
+   *
+   * A Templatical JSON document with exactly one `slot` — top-level (header /
+   * footer / mat) or inside a layout `wrapper` (the card around author
+   * sections). Build it with `createSlotBlock()` / `createWrapperBlock()`.
+   *
+   * A layout guide will land in the published docs.
+   */
+  layout?: TemplateContent;
 
   /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
@@ -976,11 +995,19 @@ async function mountEditor(
   // This is one of four places content enters. The other three:
   // `instance.setContent` and `instance.create` below, and the `templates`
   // provider's `load`, wrapped in `Editor.vue` where it reaches core.
+  // Overlay chrome is not seed content: merge tags in the shell, then refuse
+  // an illegal tree before mount.
+  if (config.layout) {
+    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
+    validateLayout(config.layout);
+  }
   if (config.content) {
     config.content = normalizeContentForConfig(
       config.content,
       config.mergeTags,
     );
+    assertNoSlotInContent(config.content);
+    assertNoWrapperInContent(config.content);
   }
 
   const app = createApp({
@@ -1207,6 +1234,7 @@ export async function initCloud(
     {
       container: config.container,
       content: config.content,
+      layout: config.layout,
       shadowDom: config.shadowDom,
       locale: config.locale,
       uiTheme: config.uiTheme,
@@ -1332,6 +1360,16 @@ export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
 export type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
+
+export {
+  applyLayout,
+  validateLayout,
+  createSlotBlock,
+  createWrapperBlock,
+  isSlot,
+  isWrapper,
+  layoutWrapsSlot,
+} from "@templatical/types";
 
 export {
   getSupportedLocales,
