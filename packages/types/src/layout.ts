@@ -17,17 +17,18 @@ const WRAPPER_IN_CONTENT = "[Templatical] wrapper is not a valid content block";
 
 function walkBlocks(
   blocks: Block[],
-  visit: (block: Block, parent: Block | null) => void,
+  visit: (block: Block, parent: Block | null, insideSection: boolean) => void,
   parent: Block | null = null,
+  insideSection = false,
 ): void {
   for (const block of blocks) {
-    visit(block, parent);
+    visit(block, parent, insideSection);
     if (isSection(block)) {
       for (const column of block.children) {
-        walkBlocks(column, visit, block);
+        walkBlocks(column, visit, block, true);
       }
     } else if (isWrapper(block)) {
-      walkBlocks(block.children, visit, block);
+      walkBlocks(block.children, visit, block, insideSection);
     }
   }
 }
@@ -35,15 +36,20 @@ function walkBlocks(
 /** Throw if `layout` does not contain exactly one legal slot. */
 export function validateLayout(layout: TemplateContent): void {
   let slotCount = 0;
-  walkBlocks(layout.blocks, (block, parent) => {
+  walkBlocks(layout.blocks, (block, _parent, insideSection) => {
     if (isSlot(block)) {
       slotCount += 1;
-      if (parent !== null && isSection(parent)) {
+      if (insideSection) {
         throw new Error(SLOT_NESTED_IN_SECTION);
       }
     }
-    if (isWrapper(block) && block.children.some(isWrapper)) {
-      throw new Error(WRAPPER_IN_WRAPPER);
+    if (isWrapper(block)) {
+      if (insideSection) {
+        throw new Error(SLOT_NESTED_IN_SECTION);
+      }
+      if (block.children.some(isWrapper)) {
+        throw new Error(WRAPPER_IN_WRAPPER);
+      }
     }
   });
   if (slotCount !== 1) {

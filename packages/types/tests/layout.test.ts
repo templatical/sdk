@@ -108,6 +108,25 @@ describe("validateLayout", () => {
     expect(() => validateLayout(layout)).toThrow(SLOT_NESTED_IN_SECTION);
   });
 
+  it("throws when the slot sits in a wrapper nested in a section column", () => {
+    const layout = withBlocks([
+      createSectionBlock({
+        children: [[createWrapperBlock({ children: [createSlotBlock()] })]],
+      }),
+    ]);
+    expect(() => validateLayout(layout)).toThrow(SLOT_NESTED_IN_SECTION);
+  });
+
+  it("throws when a wrapper sits in a section column", () => {
+    const layout = withBlocks([
+      createSlotBlock(),
+      createSectionBlock({
+        children: [[createWrapperBlock()]],
+      }),
+    ]);
+    expect(() => validateLayout(layout)).toThrow(SLOT_NESTED_IN_SECTION);
+  });
+
   it("throws when a wrapper contains a wrapper", () => {
     const layout = withBlocks([
       createWrapperBlock({
@@ -210,7 +229,9 @@ describe("applyLayout", () => {
     expect((result.blocks[1] as ParagraphBlock).content).toBe(
       "<p>Hello author</p>",
     );
-    expect((result.blocks[2] as ParagraphBlock).content).toBe("<p>Impressum</p>");
+    expect((result.blocks[2] as ParagraphBlock).content).toBe(
+      "<p>Impressum</p>",
+    );
     expect(result.blocks[2]?.id).not.toBe(footer.id);
     expect(result.blocks.some(isSlot)).toBe(false);
     expect(result.settings.backgroundColor).toBe("#f3f4f6");
@@ -250,7 +271,9 @@ describe("applyLayout", () => {
       authorBody.id,
     ]);
     expect(card.children[0]).not.toBe(authorTitle);
-    expect((card.children[0] as TitleBlock).content).toBe("<p>Author title</p>");
+    expect((card.children[0] as TitleBlock).content).toBe(
+      "<p>Author title</p>",
+    );
     expect((card.children[1] as ParagraphBlock).content).toBe(
       "<p>Author body</p>",
     );
