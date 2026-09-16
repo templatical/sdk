@@ -237,7 +237,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ## Custom
 

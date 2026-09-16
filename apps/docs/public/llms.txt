@@ -33,6 +33,7 @@ Documentation for SDK version 0.39.0. Every page below is also available as raw 
 - [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
 - [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.
 - [Keyboard](https://docs.templatical.com/guide/keyboard): Editor chrome shortcuts. Canonical page is Editor accessibility.
+- [Layout](https://docs.templatical.com/guide/layout): Wrap every email in an embedder-owned shell — header, footer, mat, and an optional card — applied at preview and render, never written into the template.
 - [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
 - [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.

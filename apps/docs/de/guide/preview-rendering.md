@@ -93,7 +93,7 @@ interface PreviewResolveContext {
 }
 ```
 
-`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. `recipient` ist im Test-E-Mail-Dialog vorhanden und im Vorschaumodus des Editors nicht; behandeln Sie das Fehlen als *„kein bestimmter Empfänger"* und geben Sie trotzdem darstellbaren Inhalt zurück.
+`content` ist eine Kopie — sie zu verändern kann den Editor nicht beeinflussen. Wenn `layout` gesetzt ist, ist `content` das zusammengesetzte Dokument. Siehe [Layout](/de/guide/layout). `recipient` ist im Test-E-Mail-Dialog vorhanden und im Vorschaumodus des Editors nicht; behandeln Sie das Fehlen als *„kein bestimmter Empfänger"* und geben Sie trotzdem darstellbaren Inhalt zurück.
 
 Geben Sie ein `TemplateContent` zurück. Alles andere wird als Fehler behandelt (siehe unten).
 
