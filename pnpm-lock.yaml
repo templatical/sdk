@@ -282,8 +282,8 @@ importers:
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       marked:
-        specifier: ^18.0.12
-        version: 18.0.12
+        specifier: ^18.0.13
+        version: 18.0.13
       vue:
         specifier: ^3.5.42
         version: 3.5.42(typescript@6.0.3)
@@ -3469,8 +3469,8 @@ packages:
   mark.js@8.11.1:
     resolution: {integrity: sha512-1I+1qpDt4idfgLQG+BNWmrqku+7/2bi5nLf4YwF8y8zXvmfiTBY3PV3ZibfrjBueCByROpuBjLLFCajqkgYoLQ==}
 
-  marked@18.0.12:
-    resolution: {integrity: sha512-LEm4ga2YeI2T3GVHj9b0BaDPPk93LLTHMFeMyQbNIzPxc8vCI0y/scy0ZA6z6lXKyT9j9Nhl/OC6ZYKYGuFScA==}
+  marked@18.0.13:
+    resolution: {integrity: sha512-xTxVzZsBFwunP6HDmtBkabUQEYArnP7/rMDGmPj9SlrKlQ4i8MdYVow+nJL0eOqwpUqhzBoTBRADGN6uYwPyOw==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -7356,7 +7356,7 @@ snapshots:
 
   mark.js@8.11.1: {}
 
-  marked@18.0.12: {}
+  marked@18.0.13: {}
 
   mdast-util-to-hast@13.2.1:
     dependencies:
