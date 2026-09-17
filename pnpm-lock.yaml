@@ -186,8 +186,8 @@ importers:
         specifier: ^7.59.1
         version: 7.59.1(@types/node@25.9.6)
       '@playwright/mcp':
-        specifier: ^0.0.80
-        version: 0.0.80
+        specifier: ^0.0.81
+        version: 0.0.81
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -1380,8 +1380,8 @@ packages:
   '@oxc-project/types@0.149.0':
     resolution: {integrity: sha512-Efcc+iF0j3Bf67YjEqIqWXbX5XddXoK/Mw4K1/JuXwRCZ8N16VR7iT23nlCc9XrveFVh/E5Rqs2StT0V8v9LdA==}
 
-  '@playwright/mcp@0.0.80':
-    resolution: {integrity: sha512-FOPXHm2SvFhAQylm10jMZ35B/SR2TaMLVkavAlwoG4N2qCb5RqbvhQYcu3zmXNyxR2DW0Ooxe+9XPVt5UjKRCQ==}
+  '@playwright/mcp@0.0.81':
+    resolution: {integrity: sha512-c4eVex1nS53IzLHlwAm0J9ZISDTvA7RndFX8oVcQOrmvIrKSkByazpq79lZHWJuWTB7Gpk0sLBQoRepyIgmneA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -3757,8 +3757,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright-core@1.63.0-alpha-2026-08-31:
-    resolution: {integrity: sha512-1ek0Lyr12h6jcs/WTcNoVtzZkQp7D/90PsMuBW/Rm6h3AsWAbzpqj0geMv8+8Tzzr9CSUYvg9kznrVZINQMXXw==}
+  playwright-core@1.64.0-alpha-2026-09-14:
+    resolution: {integrity: sha512-VCqlQ8lEKS8NAfEU/sWx3KP7gL2oCWd/DAGzPDZncGV7dUNNHpaVxHd2LWe2pc5y53h0Hqu3SWzRiPqKqkrYQA==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -3767,8 +3767,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.63.0-alpha-2026-08-31:
-    resolution: {integrity: sha512-3XAsuznfu8jBVJ4QxdGvBkt0+b8ZFwuwJYyOfiIw5ZjUOrNLNRhKxzLzLuydou3gJ9c6eMwVqgzdiOwhy54Kzw==}
+  playwright@1.64.0-alpha-2026-09-14:
+    resolution: {integrity: sha512-CdpbZ03/Iq4HMth9RP2NHBv/gv9exDLkR3eJEDvS2fKdAjZSNYvL2PrJum3wHe8qOSFR8KzWuyKUx3AZ5vZc4w==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -5325,10 +5325,10 @@ snapshots:
 
   '@oxc-project/types@0.149.0': {}
 
-  '@playwright/mcp@0.0.80':
+  '@playwright/mcp@0.0.81':
     dependencies:
-      playwright: 1.63.0-alpha-2026-08-31
-      playwright-core: 1.63.0-alpha-2026-08-31
+      playwright: 1.64.0-alpha-2026-09-14
+      playwright-core: 1.64.0-alpha-2026-09-14
 
   '@playwright/test@1.63.0':
     dependencies:
@@ -8013,15 +8013,15 @@ snapshots:
 
   playwright-core@1.63.0: {}
 
-  playwright-core@1.63.0-alpha-2026-08-31: {}
+  playwright-core@1.64.0-alpha-2026-09-14: {}
 
   playwright@1.63.0:
     dependencies:
       playwright-core: 1.63.0
 
-  playwright@1.63.0-alpha-2026-08-31:
+  playwright@1.64.0-alpha-2026-09-14:
     dependencies:
-      playwright-core: 1.63.0-alpha-2026-08-31
+      playwright-core: 1.64.0-alpha-2026-09-14
 
   postcss-calc@10.1.1(postcss@8.5.28):
     dependencies:
