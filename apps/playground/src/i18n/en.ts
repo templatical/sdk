@@ -280,10 +280,6 @@ export default {
       name: "Arabic Invitation",
       description: "RTL invitation with merge tags and a two-column section",
     },
-    shell: {
-      name: "Platform shell",
-      description: "Embedder layout: grey mat, card, view-in-browser, Imprint",
-    },
   },
   onboarding: {
     next: "Next",

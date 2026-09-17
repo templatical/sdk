@@ -2868,19 +2868,6 @@ onUnmounted(() => {
                     ></div>
                   </div>
                 </div>
-                <!-- Platform shell: grey mat + white card -->
-                <div
-                  v-else-if="tpl.preview === 'shell'"
-                  class="flex h-[100px] w-[70%] items-center justify-center rounded bg-gray-200 dark:bg-gray-600"
-                >
-                  <div
-                    class="flex h-[68px] w-[78%] flex-col items-center justify-center gap-1 rounded bg-white dark:bg-gray-100"
-                  >
-                    <div class="h-1 w-[40%] rounded bg-gray-300"></div>
-                    <div class="h-1 w-[55%] rounded bg-gray-300"></div>
-                    <div class="mt-0.5 h-3 w-[36%] rounded bg-primary/30"></div>
-                  </div>
-                </div>
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"

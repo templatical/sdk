@@ -2177,71 +2177,54 @@ export function createArabicInvitationTemplate(): TemplateContent {
   };
 }
 
-/** Grey mat, view-in-browser, white card around the slot, Imprint. */
-export function createPlatformShellLayout(): TemplateContent {
+function playgroundLayout(
+  variant: "card" | "siblings",
+  opts: {
+    mat?: string;
+    viewLabel?: string;
+    imprintLabel?: string;
+    textAlign?: "center" | "right";
+  } = {},
+): TemplateContent {
+  const align = opts.textAlign ?? "center";
+  const view = opts.viewLabel ?? "View in browser";
+  const imprint = opts.imprintLabel ?? "Imprint";
+  const header = createParagraphBlock({
+    content: `<p style="text-align:${align}"><a href="https://example.com/view">${view}</a></p>`,
+    styles: pad(16, 24, 8, 24),
+  });
+  const footer = createParagraphBlock({
+    content: `<p style="text-align:${align}"><a href="https://example.com/imprint">${imprint}</a></p>`,
+    styles: pad(8, 24, 24, 24),
+  });
+  const slot = createSlotBlock();
   const layout = createDefaultTemplateContent();
-  layout.settings.backgroundColor = "#f3f4f6";
-  layout.blocks = [
-    createParagraphBlock({
-      content:
-        '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
-      styles: pad(16, 24, 8, 24),
-    }),
-    createWrapperBlock({
-      styles: {
-        backgroundColor: "#ffffff",
-        padding: { top: 24, right: 24, bottom: 24, left: 24 },
-      },
-      borderRadius: 12,
-      children: [createSlotBlock()],
-    }),
-    createParagraphBlock({
-      content:
-        '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
-      styles: pad(8, 24, 24, 24),
-    }),
-  ];
+  layout.settings.backgroundColor = opts.mat ?? "#f3f4f6";
+  layout.blocks =
+    variant === "card"
+      ? [
+          header,
+          createWrapperBlock({
+            styles: {
+              backgroundColor: "#ffffff",
+              padding: { top: 24, right: 24, bottom: 24, left: 24 },
+            },
+            borderRadius: 12,
+            children: [slot],
+          }),
+          footer,
+        ]
+      : [header, slot, footer];
   return layout;
 }
 
-export function createPlatformShellTemplate(): TemplateContent {
-  return {
-    settings: {
-      width: 600,
-      backgroundColor: "#ffffff",
-      textColor: "#1a1a1a",
-      linkUnderline: true,
-      fontFamily: "Arial",
-      preheaderText: "A short note from Acme.",
-      locale: "en",
-    },
-    blocks: [
-      createTitleBlock({
-        content: "<p>Welcome to Acme</p>",
-        level: 1,
-        color: "#111827",
-        textAlign: "center",
-        styles: white(32, 32, 8, 32),
-      }),
-      createParagraphBlock({
-        content:
-          '<p style="text-align:center"><span style="color:#4b5563">Thanks for signing up. Your account is ready.</span></p>',
-        styles: white(0, 40, 20, 40),
-      }),
-      createButtonBlock({
-        text: "Open dashboard",
-        url: "https://example.com/app",
-        backgroundColor: "#1d4ed8",
-        textColor: "#ffffff",
-        borderRadius: 6,
-        fontSize: 16,
-        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
-        align: "center",
-        styles: white(0, 32, 32, 32),
-      }),
-    ],
-  };
-}
+const CARD_LAYOUT = playgroundLayout("card");
+const SALE_LAYOUT = playgroundLayout("siblings", { mat: "#111827" });
+const RTL_LAYOUT = playgroundLayout("card", {
+  textAlign: "right",
+  viewLabel: "عرض في المتصفح",
+  imprintLabel: "بيان الناشر",
+});
 
 export const templates: TemplateOption[] = [
   {
@@ -2251,6 +2234,8 @@ export const templates: TemplateOption[] = [
     preview: "product",
     customBlocks: [testimonialBlock],
     savedBlocks: productLaunchSavedBlocks,
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Saved Blocks",
@@ -2291,6 +2276,8 @@ export const templates: TemplateOption[] = [
     preview: "newsletter",
     customBlocks: [featuredArticleBlock],
     savedBlocks: newsletterSavedBlocks,
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     // Curated font list: only these built-ins appear in the font picker (the
     // other four built-ins are hidden). Showcases `fonts.builtIns`.
     fonts: {
@@ -2334,6 +2321,8 @@ export const templates: TemplateOption[] = [
     create: createWelcomeTemplate,
     preview: "welcome",
     customBlocks: [],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     useBuiltInMergeTagPicker: true,
     // The one template that wires `resolvePreview`. It has both value tags and
     // `{% if plan_name == … %}` branches, so a resolved preview visibly differs
@@ -2341,6 +2330,11 @@ export const templates: TemplateOption[] = [
     // `MergeTag.sample`, every other template is left to demo Sample/Label.
     resolvePreview: true,
     features: [
+      {
+        label: "Layout overlay (card)",
+        description:
+          "Every playground template except Black Friday passes init({ layout }) with a white card around the slot. Preview and Export wrap the email in a grey mat, View in browser, the card, and Imprint. The editing canvas and getContent() do not.\nTo try it: look at the canvas (no shell), then click Preview. Add wrapper is hidden — a section wrapper inside the card would nest mj-wrapper, which MJML forbids.",
+      },
       {
         label: "Resolved Preview (resolvePreview)",
         icon: "merge-tag",
@@ -2373,6 +2367,8 @@ export const templates: TemplateOption[] = [
     create: createOrderConfirmationTemplate,
     preview: "order",
     customBlocks: [shippingTrackerBlock],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Sample vs Label Preview",
@@ -2418,6 +2414,8 @@ export const templates: TemplateOption[] = [
     create: createEventInvitationTemplate,
     preview: "event",
     customBlocks: [eventDetailsBlock],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     // Brand-locked palette: fixed swatches + `allowCustom: false`, so every
     // color picker in this template offers only these presets (no wheel / hex).
     colors: {
@@ -2470,6 +2468,8 @@ export const templates: TemplateOption[] = [
     create: createPasswordResetTemplate,
     preview: "reset",
     customBlocks: [],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Responsive Visibility",
@@ -2492,7 +2492,13 @@ export const templates: TemplateOption[] = [
     preview: "sale",
     customBlocks: [productShowcaseBlock],
     htmlBlockPreview: true,
+    layout: SALE_LAYOUT,
     features: [
+      {
+        label: "Layout overlay (siblings)",
+        description:
+          "This template uses a sibling layout — View in browser, slot, Imprint — with no card around the slot. Dark full-bleed sections stay legal mj-wrappers under mj-body. Preview to see the chrome on the dark mat. Add wrapper stays available because a section wrapper here is a sibling, not nested.",
+      },
       {
         label: "Custom HTML Block (Live Preview)",
         icon: "html",
@@ -2525,26 +2531,13 @@ export const templates: TemplateOption[] = [
     create: createArabicInvitationTemplate,
     preview: "rtl",
     customBlocks: [],
+    layout: RTL_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Content direction (RTL)",
         description:
           'This template sets settings.locale to ar and settings.direction to rtl. The canvas, previews, and exported MJML follow that value: text starts at the right, two-column sections put column 0 on the right on desktop, and <mjml dir="rtl"> is what mail clients read.\nTo try it: open Template Settings — the Right-to-left toggle is on. Turn it off and the canvas flips to LTR without rewriting the copy. The editor chrome stays LTR; only the email is inverted.',
-      },
-    ],
-  },
-  {
-    name: "Platform shell",
-    description: "Embedder layout: grey mat, card, view-in-browser, Imprint",
-    create: createPlatformShellTemplate,
-    preview: "shell",
-    layout: createPlatformShellLayout(),
-    sectionWrapper: false,
-    features: [
-      {
-        label: "Layout overlay",
-        description:
-          "This template passes init({ layout }) — a JSON shell with one slot. Preview and Export wrap the email in a grey mat, a View in browser line, a white card, and Imprint. The editing canvas and getContent() do not: that is the authored template only.\nTo try it: look at the canvas (no shell), then click Preview. Add wrapper is hidden because the slot sits inside the card — a section wrapper would nest mj-wrapper, which MJML forbids.",
       },
     ],
   },

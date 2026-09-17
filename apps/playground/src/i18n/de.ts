@@ -242,11 +242,6 @@ export default {
       description:
         "RTL-Einladung mit Merge-Tags und einem zweispaltigen Abschnitt",
     },
-    shell: {
-      name: "Plattform-Hülle",
-      description:
-        "Embedder-Layout: grauer Untergrund, Karte, Browseransicht, Impressum",
-    },
   },
   onboarding: {
     next: "Weiter",
