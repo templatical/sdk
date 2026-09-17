@@ -104,7 +104,7 @@ export interface TemplaticalEditorConfig {
    * footer / mat) or inside a layout `wrapper` (the card around author
    * sections). Build it with `createSlotBlock()` / `createWrapperBlock()`.
    *
-   * A layout guide will land in the published docs.
+   * See the [Layout](https://docs.templatical.com/guide/layout) guide.
    */
   layout?: TemplateContent;
 
@@ -1383,6 +1383,8 @@ export {
   validateLayout,
   createSlotBlock,
   createWrapperBlock,
+  createParagraphBlock,
+  createDefaultTemplateContent,
   isSlot,
   isWrapper,
   layoutWrapsSlot,

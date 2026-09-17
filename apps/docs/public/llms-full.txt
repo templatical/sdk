@@ -6504,7 +6504,6 @@ Pass a JSON document with exactly one `slot`. Preview and export wrap the author
 
 ```ts
 init({ layout?: TemplateContent; sectionWrapper?: boolean })
-initCloud({ layout?: TemplateContent; sectionWrapper?: boolean })
 renderToMjml(content, { layout?: TemplateContent })
 ```
 
@@ -6515,11 +6514,13 @@ Build the shell with `createSlotBlock()` and, for a card, `createWrapperBlock()`
 Grey page background, a "View in browser" line, the author's sections inside a white card, Imprint below the card. This is the wrap-around shell: preview and `toMjml()` / `toHtml()` compose it; the editing canvas and `getContent()` do not.
 
 ```ts
-import { init, createSlotBlock, createWrapperBlock } from '@templatical/editor';
 import {
-  createDefaultTemplateContent,
+  init,
+  createSlotBlock,
+  createWrapperBlock,
   createParagraphBlock,
-} from '@templatical/types';
+  createDefaultTemplateContent,
+} from '@templatical/editor';
 
 const layout = createDefaultTemplateContent();
 layout.settings.backgroundColor = '#f3f4f6';
@@ -6559,8 +6560,6 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 `sectionWrapper: false` hides **Add wrapper** on author sections. With the slot inside a `wrapper`, that control would emit `mj-wrapper` inside `mj-wrapper`, which MJML forbids. Omit `sectionWrapper` (or pass `true`) if you want the panel; the editor still disables turning it on for this card layout.
 
-`createSlotBlock` and `createWrapperBlock` are re-exported from `@templatical/editor`. `createDefaultTemplateContent` and `createParagraphBlock` stay on `@templatical/types`.
-
 ## The contract
 
 `layout` is a `TemplateContent` with exactly one `slot`.
@@ -6575,9 +6574,8 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 | Preview canvas | composed |
 | `editor.toMjml()` / `toHtml()` | composed |
 | `RenderPayload.content` | composed |
-| Cloud send | no client compose |
 
-`init` / `initCloud` run `validateLayout` on the shell (after merge-tag normalization). `applyLayout` runs at preview and at `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. It clones: authored block ids are left alone; layout block ids are new on the clone.
+`init` runs `validateLayout` on the shell (after merge-tag normalization). `applyLayout` runs at preview and at `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. It clones: authored block ids are left alone; layout block ids are new on the clone.
 
 ::: tip Saved JSON
 `getContent()`, load, save, and the editing canvas never include layout blocks. Send with `toMjml()` / `toHtml()`, or call `applyLayout` on the server. Hiding Add wrapper does not strip `section.wrapper` from stored content.
@@ -6587,7 +6585,7 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 **`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
 
-`applyLayout`, `validateLayout`, `createSlotBlock`, `createWrapperBlock`, `isSlot`, `isWrapper`, and `layoutWrapsSlot` are exported from `@templatical/types` and re-exported from `@templatical/editor`.
+Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 
 `validateLayout` throws:
 
@@ -6644,7 +6642,6 @@ If a loaded template already has `section.wrapper`, the switch stays on and enab
 
 ```ts
 init({ sectionWrapper?: boolean })
-initCloud({ sectionWrapper?: boolean })
 ```
 
 <!-- prettier-ignore -->
@@ -6698,7 +6695,7 @@ Test email: `payload.content` is the authored template; MJML/HTML from `toMjml` 
 
 Lint runs on editor content. The shell is not linted.
 
-Cloud send does not compose on the client. Preview does. Server-side send needs the same `layout` argument (or `applyLayout`) that preview used.
+A send path that re-renders from stored JSON without `layout` will drop the shell. Pass the same `layout` to `renderToMjml` (or call `applyLayout`) on the server.
 
 ---
 

@@ -9,7 +9,6 @@ description: Übergeben Sie eine JSON-Hülle mit einem Slot. Vorschau und Export
 
 ```ts
 init({ layout?: TemplateContent; sectionWrapper?: boolean })
-initCloud({ layout?: TemplateContent; sectionWrapper?: boolean })
 renderToMjml(content, { layout?: TemplateContent })
 ```
 
@@ -20,11 +19,13 @@ Bauen Sie die Hülle mit `createSlotBlock()` und, für eine Karte, `createWrappe
 Grauer Seitenhintergrund, eine Zeile „Im Browser ansehen“, die Autorensektionen in einer weißen Karte, Impressum unter der Karte. Das ist die umschließende Hülle: Vorschau und `toMjml()` / `toHtml()` setzen sie zusammen; die Bearbeitungsleinwand und `getContent()` nicht.
 
 ```ts
-import { init, createSlotBlock, createWrapperBlock } from '@templatical/editor';
 import {
-  createDefaultTemplateContent,
+  init,
+  createSlotBlock,
+  createWrapperBlock,
   createParagraphBlock,
-} from '@templatical/types';
+  createDefaultTemplateContent,
+} from '@templatical/editor';
 
 const layout = createDefaultTemplateContent();
 layout.settings.backgroundColor = '#f3f4f6';
@@ -64,8 +65,6 @@ mj-body                         ← grauer Untergrund (layout.settings.backgroun
 
 `sectionWrapper: false` blendet **Wrapper hinzufügen** an Autorensektionen aus. Sitzt der Slot in einem `wrapper`, würde das Steuerelement `mj-wrapper` in `mj-wrapper` erzeugen, was MJML verbietet. Lassen Sie `sectionWrapper` weg (oder übergeben Sie `true`), wenn Sie das Panel wollen; der Editor deaktiviert das Einschalten bei diesem Karten-Layout trotzdem.
 
-`createSlotBlock` und `createWrapperBlock` werden aus `@templatical/editor` re-exportiert. `createDefaultTemplateContent` und `createParagraphBlock` bleiben auf `@templatical/types`.
-
 ## Der Vertrag
 
 `layout` ist ein `TemplateContent` mit genau einem `slot`.
@@ -80,9 +79,8 @@ mj-body                         ← grauer Untergrund (layout.settings.backgroun
 | Vorschauleinwand | zusammengesetzt |
 | `editor.toMjml()` / `toHtml()` | zusammengesetzt |
 | `RenderPayload.content` | zusammengesetzt |
-| Cloud-Versand | kein Client-Zusammensetzen |
 
-`init` / `initCloud` führen `validateLayout` auf der Hülle aus (nach Merge-Tag-Normalisierung). `applyLayout` läuft in der Vorschau und bei `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. Es klont: IDs der Inhaltsblöcke bleiben; Layout-Block-IDs sind auf dem Klon neu.
+`init` führt `validateLayout` auf der Hülle aus (nach Merge-Tag-Normalisierung). `applyLayout` läuft in der Vorschau und bei `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. Es klont: IDs der Inhaltsblöcke bleiben; Layout-Block-IDs sind auf dem Klon neu.
 
 ::: tip Gespeichertes JSON
 `getContent()`, load, save und die Bearbeitungsleinwand enthalten nie Layout-Blöcke. Versenden Sie mit `toMjml()` / `toHtml()`, oder rufen Sie `applyLayout` auf dem Server auf. Das Ausblenden von Wrapper hinzufügen entfernt `section.wrapper` nicht aus dem gespeicherten Inhalt.
@@ -92,7 +90,7 @@ mj-body                         ← grauer Untergrund (layout.settings.backgroun
 
 **`wrapper`** ist die Layout-Karte: `styles.backgroundColor` / `styles.padding` / `borderRadius` werden zu `mj-wrapper`. Nur im Layout. Im Editor-Inhalt abgelehnt (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Autorinnen nutzen weiterhin `section.wrapper` als Kurzform pro Sektion.
 
-`applyLayout`, `validateLayout`, `createSlotBlock`, `createWrapperBlock`, `isSlot`, `isWrapper` und `layoutWrapsSlot` werden aus `@templatical/types` exportiert und aus `@templatical/editor` re-exportiert.
+Layout-Factories und -Helfer (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) werden aus `@templatical/editor` exportiert. Headless-Rendering kann `applyLayout` aus `@templatical/types` ohne den Editor importieren.
 
 `validateLayout` wirft:
 
@@ -149,7 +147,6 @@ Hat eine geladene Vorlage bereits `section.wrapper`, bleibt der Schalter an und 
 
 ```ts
 init({ sectionWrapper?: boolean })
-initCloud({ sectionWrapper?: boolean })
 ```
 
 <!-- prettier-ignore -->
@@ -203,4 +200,4 @@ Test-E-Mail: `payload.content` ist die verfasste Vorlage; MJML/HTML aus `toMjml`
 
 Lint läuft über den Editor-Inhalt. Die Hülle wird nicht gelintet.
 
-Cloud-Versand setzt auf dem Client nicht zusammen. Die Vorschau tut es. Server-seitiger Versand braucht dasselbe `layout`-Argument (oder `applyLayout`) wie die Vorschau.
+Ein Versandpfad, der gespeichertes JSON ohne `layout` neu rendert, lässt die Hülle weg. Übergeben Sie dasselbe `layout` an `renderToMjml` (oder rufen Sie `applyLayout` auf) auf dem Server.

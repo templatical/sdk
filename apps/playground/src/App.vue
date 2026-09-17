@@ -1409,6 +1409,8 @@ let currentColors: ColorsConfig | undefined;
 // template — resolved in `initEditor`, same override idiom as `currentColors`.
 let currentTemplateBlockDefaults: BlockDefaults | undefined;
 let currentTemplateTemplateDefaults: TemplateDefaults | undefined;
+let currentLayout: TemplateContent | undefined;
+let currentSectionWrapper: boolean | undefined;
 let pendingEditorInit = false;
 
 function chooseTemplate(
@@ -1445,6 +1447,8 @@ function chooseTemplate(
   // they shadow the app-level DefaultsPreset selector (see initEditor).
   currentTemplateBlockDefaults = template?.blockDefaults;
   currentTemplateTemplateDefaults = template?.templateDefaults;
+  currentLayout = template?.layout;
+  currentSectionWrapper = template?.sectionWrapper;
   // A template can opt out of the playground's consumer-owned `onRequest`
   // modal — that's how the Welcome Email template demos the SDK's built-in
   // picker without making the user flip a config toggle. The flag is
@@ -1962,6 +1966,8 @@ async function initEditor(): Promise<void> {
       templateDefaults:
         currentTemplateTemplateDefaults ?? currentTemplateDefaults,
       htmlBlockPreview: currentHtmlBlockPreview,
+      ...(currentLayout ? { layout: currentLayout } : {}),
+      ...(currentSectionWrapper === false ? { sectionWrapper: false } : {}),
       fonts: currentFonts,
       colors: currentColors,
       templateSettings: currentTemplateSettings,
@@ -2860,6 +2866,19 @@ onUnmounted(() => {
                     <div
                       class="h-7 w-[38%] rounded-[3px] bg-gray-200/60 dark:bg-gray-500/40"
                     ></div>
+                  </div>
+                </div>
+                <!-- Platform shell: grey mat + white card -->
+                <div
+                  v-else-if="tpl.preview === 'shell'"
+                  class="flex h-[100px] w-[70%] items-center justify-center rounded bg-gray-200 dark:bg-gray-600"
+                >
+                  <div
+                    class="flex h-[68px] w-[78%] flex-col items-center justify-center gap-1 rounded bg-white dark:bg-gray-100"
+                  >
+                    <div class="h-1 w-[40%] rounded bg-gray-300"></div>
+                    <div class="h-1 w-[55%] rounded bg-gray-300"></div>
+                    <div class="mt-0.5 h-3 w-[36%] rounded bg-primary/30"></div>
                   </div>
                 </div>
               </div>

@@ -58,6 +58,8 @@ describe("layout config wiring", () => {
   validateLayout,
   createSlotBlock,
   createWrapperBlock,
+  createParagraphBlock,
+  createDefaultTemplateContent,
   isSlot,
   isWrapper,
   layoutWrapsSlot,

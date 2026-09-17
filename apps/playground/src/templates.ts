@@ -20,6 +20,9 @@ import {
   createSpacerBlock,
   createTableBlock,
   createHtmlBlock,
+  createDefaultTemplateContent,
+  createSlotBlock,
+  createWrapperBlock,
   generateId,
 } from "@templatical/types";
 
@@ -2092,6 +2095,16 @@ export interface TemplateOption {
    */
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
+  /**
+   * Embedder-owned shell for this template only. Passed to `init({ layout })`.
+   * Preview and export wrap the authored content; `getContent()` does not.
+   */
+  layout?: TemplateContent;
+  /**
+   * Passed to `init({ sectionWrapper })`. `false` hides Add wrapper, including
+   * where a wrapper is legal. Reset on each template open.
+   */
+  sectionWrapper?: boolean;
 }
 
 // ─── Arabic Invitation ───────────────────────────────────────
@@ -2159,6 +2172,72 @@ export function createArabicInvitationTemplate(): TemplateContent {
         content:
           '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af"><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
         styles: white(0, 24, 32, 24),
+      }),
+    ],
+  };
+}
+
+/** Grey mat, view-in-browser, white card around the slot, Imprint. */
+export function createPlatformShellLayout(): TemplateContent {
+  const layout = createDefaultTemplateContent();
+  layout.settings.backgroundColor = "#f3f4f6";
+  layout.blocks = [
+    createParagraphBlock({
+      content:
+        '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
+      styles: pad(16, 24, 8, 24),
+    }),
+    createWrapperBlock({
+      styles: {
+        backgroundColor: "#ffffff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+      },
+      borderRadius: 12,
+      children: [createSlotBlock()],
+    }),
+    createParagraphBlock({
+      content:
+        '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
+      styles: pad(8, 24, 24, 24),
+    }),
+  ];
+  return layout;
+}
+
+export function createPlatformShellTemplate(): TemplateContent {
+  return {
+    settings: {
+      width: 600,
+      backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
+      linkUnderline: true,
+      fontFamily: "Arial",
+      preheaderText: "A short note from Acme.",
+      locale: "en",
+    },
+    blocks: [
+      createTitleBlock({
+        content: "<p>Welcome to Acme</p>",
+        level: 1,
+        color: "#111827",
+        textAlign: "center",
+        styles: white(32, 32, 8, 32),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align:center"><span style="color:#4b5563">Thanks for signing up. Your account is ready.</span></p>',
+        styles: white(0, 40, 20, 40),
+      }),
+      createButtonBlock({
+        text: "Open dashboard",
+        url: "https://example.com/app",
+        backgroundColor: "#1d4ed8",
+        textColor: "#ffffff",
+        borderRadius: 6,
+        fontSize: 16,
+        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
+        align: "center",
+        styles: white(0, 32, 32, 32),
       }),
     ],
   };
@@ -2451,6 +2530,21 @@ export const templates: TemplateOption[] = [
         label: "Content direction (RTL)",
         description:
           'This template sets settings.locale to ar and settings.direction to rtl. The canvas, previews, and exported MJML follow that value: text starts at the right, two-column sections put column 0 on the right on desktop, and <mjml dir="rtl"> is what mail clients read.\nTo try it: open Template Settings — the Right-to-left toggle is on. Turn it off and the canvas flips to LTR without rewriting the copy. The editor chrome stays LTR; only the email is inverted.',
+      },
+    ],
+  },
+  {
+    name: "Platform shell",
+    description: "Embedder layout: grey mat, card, view-in-browser, Imprint",
+    create: createPlatformShellTemplate,
+    preview: "shell",
+    layout: createPlatformShellLayout(),
+    sectionWrapper: false,
+    features: [
+      {
+        label: "Layout overlay",
+        description:
+          "This template passes init({ layout }) — a JSON shell with one slot. Preview and Export wrap the email in a grey mat, a View in browser line, a white card, and Imprint. The editing canvas and getContent() do not: that is the authored template only.\nTo try it: look at the canvas (no shell), then click Preview. Add wrapper is hidden because the slot sits inside the card — a section wrapper would nest mj-wrapper, which MJML forbids.",
       },
     ],
   },
