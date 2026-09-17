@@ -1,15 +1,11 @@
 ---
 title: Layout
-description: Wrap every email in an embedder-owned shell — header, footer, mat, and an optional card — applied at preview and render, never written into the template.
+description: Pass a JSON shell with one slot. Preview and export wrap the author's email in it. Save does not.
 ---
 
 # Layout
 
-An embedder-owned shell around every email — view-in-browser line, Impressum, brand header, grey mat, and optionally a card around the author sections — defined as Templatical JSON. Applied at preview and render. Never written into the template.
-
-Authored content stays as it is today. Layout is the overlay.
-
-## The contract
+Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell — a view-in-browser line, Impressum, brand header, grey page background, or a card around the author's sections. Save does not: `getContent()` is the authored template only.
 
 ```ts
 init({ layout?: TemplateContent; sectionWrapper?: boolean })
@@ -17,60 +13,49 @@ initCloud({ layout?: TemplateContent; sectionWrapper?: boolean })
 renderToMjml(content, { layout?: TemplateContent })
 ```
 
-`layout` is a `TemplateContent` with exactly one `slot`. Build it with `createSlotBlock()` and, for a card, `createWrapperBlock()`. `createBlock('slot')` and `createBlock('wrapper')` throw. `sectionWrapper` is editor chrome, independent of `layout`. `renderToMjml` does not take it.
+Build the shell with `createSlotBlock()` and, for a card, `createWrapperBlock()`. `createBlock('slot')` and `createBlock('wrapper')` throw. `sectionWrapper` is editor chrome and independent of `layout`. `renderToMjml` does not take `sectionWrapper`.
+
+## The contract
+
+`layout` is a `TemplateContent` with exactly one `slot`.
 
 <!-- prettier-ignore -->
 | Surface | With `layout` |
 | --- | --- |
-| `getContent()` / `setContent()` / load / save / `onChange` / history | unchanged |
-| Editing canvas | unchanged |
+| `getContent()` / `setContent()` / load / save / `onChange` / history | authored template only |
+| Editing canvas | authored template only |
 | Section toolbar Wrapper panel | [In the editor](#in-the-editor) |
-| `renderToMjml(content)` (no `layout` argument) | unchanged |
+| `renderToMjml(content)` (no `layout` argument) | authored template only |
 | Preview canvas | composed |
 | `editor.toMjml()` / `toHtml()` | composed |
 | `RenderPayload.content` | composed |
-| Cloud send | no client splice |
+| Cloud send | no client compose |
 
-`init` / `initCloud` normalize merge tags in the shell, then `validateLayout`. `applyLayout` runs at preview and at `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. It clones. Content block ids are left alone; layout block ids are reminted on the clone.
+`init` / `initCloud` run `validateLayout` on the shell (after merge-tag normalization). `applyLayout` runs at preview and at `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. It clones: authored block ids are left alone; layout block ids are new on the clone.
 
-::: tip Overlay
-A bug that puts layout blocks into `getContent()`, or that rewrites `section.wrapper` on save, breaks this contract. Hiding the Wrapper panel is presentation; it does not strip the field.
+::: tip Saved JSON
+`getContent()`, load, save, and the editing canvas never include layout blocks. Send with `toMjml()` / `toHtml()`, or call `applyLayout` on the server. Hiding Add wrapper does not strip `section.wrapper` from stored content.
 :::
 
-`slot` is the hole. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
+**`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
 
-`wrapper` is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` → `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). `section.wrapper` stays the one-section shorthand.
+**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
 
 `applyLayout`, `validateLayout`, `createSlotBlock`, `createWrapperBlock`, `isSlot`, `isWrapper`, and `layoutWrapsSlot` are exported from `@templatical/types` and re-exported from `@templatical/editor`.
 
-## In the editor
+`validateLayout` throws:
 
-The Wrapper panel is the section toolbar's **Add wrapper** switch plus the colour / padding / radius fields when on. The card-layout disable and `sectionWrapper` compose; neither infers the other. Setting `layout` does not hide the panel — a sibling-slot layout still wants Add wrapper.
-
-When `layout` is set and the slot sits inside a `wrapper`, the toggle is disabled for turning on. A muted line sits under it:
-
-> This editor already frames the email. An extra frame on this section isn't supported — preview and export will fail.
-
-If a loaded template already has `section.wrapper`, the toggle stays on and enabled so it can be turned off. The note still shows. Sibling-slot layouts (header / slot / footer, no card): the toggle stays fully usable.
-
-```ts
-init({ sectionWrapper?: boolean })
-initCloud({ sectionWrapper?: boolean })
+```
+[Templatical] layout: must contain exactly one slot block
+[Templatical] layout: slot must be a top-level or wrapper child, not nested in a section
+[Templatical] layout: a wrapper cannot contain a wrapper
 ```
 
-<!-- prettier-ignore -->
-| Value | Panel |
-| --- | --- |
-| omitted / `true` | today's UI, plus the card-layout disable above |
-| `false` | hidden, including where Add wrapper is legal (sibling layout, or no layout) |
+`setContent` / `load` / `addBlock` refuse `slot` and `wrapper` in content.
 
-`false` does not strip `section.wrapper` from content, does not refuse `updateBlock`, and does not change `getContent()`. Hiding never changes a value.
+## Header and footer
 
-Already-on is always reachable. If `sectionWrapper === false` and the selected section already has `wrapper`, the panel still renders and the toggle stays enabled so it can be turned off. Once it is off, the panel hides. The card-layout note still shows when the panel is visible.
-
-## A card around the content
-
-Sibling shell — header, slot, footer, grey mat. Author `section.wrapper` is a sibling `mj-wrapper` under `mj-body`.
+Header, slot, footer, grey page background. Author `section.wrapper` is a sibling `mj-wrapper` under `mj-body`.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -103,7 +88,9 @@ mj-body                         ← layout.settings.backgroundColor
   [layout blocks below the slot]
 ```
 
-Card around the slot — the wrapper is the card:
+## Card around the content
+
+Put the slot inside a `wrapper`. The wrapper is the card.
 
 ```ts
 import { createWrapperBlock } from '@templatical/types';
@@ -125,18 +112,51 @@ layout.blocks = [
 ```
 
 ```
-mj-body                         ← grey mat
+mj-body                         ← grey page background
   mj-section                    ← view in browser
   mj-wrapper                    ← white card
     [author sections…]
   mj-section                    ← Impressum
 ```
 
-Valid MJML if the injected blocks do not emit `mj-wrapper`. The slot is a hole in a `Block[]` — body children or wrapper children. A slot in `children: [[slot]]` is `mj-section` in `mj-column`.
+MJML forbids `mj-wrapper` inside `mj-wrapper`. If the slot sits inside a wrapper, `applyLayout` walks the injected `content.blocks`. Any block that would emit `mj-wrapper` — `section.wrapper` set, or `type === 'wrapper'` — throws:
+
+```
+[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)
+```
+
+If the slot is top-level, injected `section.wrapper` is a sibling under `mj-body`.
+
+A slot in `children: [[slot]]` is `mj-section` inside `mj-column`, which MJML also forbids. Keep the slot as a body child or a wrapper child.
+
+## In the editor
+
+The Wrapper panel is the section toolbar's **Add wrapper** switch plus colour / padding / radius when it is on. Card-layout disable and `sectionWrapper` are independent: setting `layout` does not hide the panel. A header / slot / footer shell still offers Add wrapper.
+
+When `layout` is set and the slot sits inside a `wrapper`, the switch cannot turn on. A muted line sits under it:
+
+> This editor already frames the email. An extra frame on this section isn't supported — preview and export will fail.
+
+If a loaded template already has `section.wrapper`, the switch stays on and enabled so it can be turned off. The note still shows.
+
+```ts
+init({ sectionWrapper?: boolean })
+initCloud({ sectionWrapper?: boolean })
+```
+
+<!-- prettier-ignore -->
+| Value | Panel |
+| --- | --- |
+| omitted / `true` | shown, plus the card-layout disable above |
+| `false` | hidden, including where Add wrapper is legal (header / slot / footer, or no layout) |
+
+`sectionWrapper: false` does not strip `section.wrapper` from content, does not refuse `updateBlock`, and does not change `getContent()`. Hiding never changes a value.
+
+If `sectionWrapper === false` and the selected section already has `wrapper`, the panel still renders and the switch stays enabled so it can be turned off. Once it is off, the panel hides. The card-layout note still shows when the panel is visible.
 
 ## Settings
 
-Layout is the document; content is the message. Layout `settings` is a full `TemplateSettings`. Only `backgroundColor` is read.
+Layout `settings` is a full `TemplateSettings`. Only `backgroundColor` is read.
 
 <!-- prettier-ignore -->
 | Field | Winner |
@@ -144,22 +164,11 @@ Layout is the document; content is the message. Layout `settings` is a full `Tem
 | `backgroundColor` | layout → `mj-body` |
 | `width`, `fontFamily`, `textColor`, `linkColor`, `linkUnderline`, `locale`, `preheaderText`, `direction` | content |
 
-Content `settings.backgroundColor` is not mutated. Template Settings still edits it. It is not `mj-body` when a layout is applied. `direction` is first-party template content. Layout does not set `dir`.
+Content `settings.backgroundColor` is not mutated. Template Settings still edits it. It is not `mj-body` when a layout is applied. `direction` comes from the authored template. Layout does not set `dir`.
 
-Embedders can copy content's settings and override `backgroundColor`.
+You can copy the content settings onto the layout and override `backgroundColor`.
 
-## Compose
-
-```
-base = applyLayout(layout, content)
-if (resolvePreview) base = await resolvePreview({ content: base, recipient })
-```
-
-Preview canvas, `toMjml`, and `toHtml` use `base`. The editing canvas never takes this path. Layout compose is synchronous — no skeleton for layout-only preview. `supersedesSamples` stays `resolvePreview`-only.
-
-When `layout` is set, `PreviewResolveContext.content` is the composed document. Return that shape. Returning only inner `content` drops the chrome.
-
-Headless:
+## Headless use
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -169,35 +178,21 @@ const mjml = await renderToMjml(content, { layout });
 const composed = applyLayout(layout, content);
 ```
 
-When the slot sits inside a wrapper, `applyLayout` walks the injected `content.blocks`. If any block would emit `mj-wrapper` — `section.wrapper` set, or `type === 'wrapper'` — it throws. No inline, no drop, no preview of a lie.
+Preview, `toMjml`, and `toHtml` compose first, then optionally `resolvePreview`:
 
 ```
-[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)
+base = applyLayout(layout, content)
+if (resolvePreview) base = await resolvePreview({ content: base, recipient })
 ```
 
-If the slot is top-level, injected `section.wrapper` is a sibling under `mj-body`.
+The editing canvas never takes this path. Layout compose is synchronous.
 
-Outs: sibling slot (no card); authors leave Add wrapper off; `sectionWrapper: false` so the control is not offered.
+When `layout` is set, `PreviewResolveContext.content` is the composed document. Return that shape. Returning only inner `content` drops the shell.
 
-`validateLayout` throws:
+`renderToMjml(content)` with no `layout` argument does not call `applyLayout`.
 
-```
-[Templatical] layout: must contain exactly one slot block
-[Templatical] layout: slot must be a top-level or wrapper child, not nested in a section
-[Templatical] layout: a wrapper cannot contain a wrapper
-```
+Test email: `payload.content` is the authored template; MJML/HTML from `toMjml` / `toHtml` includes the shell.
 
-`setContent` / `load` / `addBlock` refuse `slot` and `wrapper` in content. `renderToMjml(content)` with no `layout` argument must not call `applyLayout`.
+Lint runs on editor content. The shell is not linted.
 
-## Caveats
-
-1. **Editing canvas.** Chrome is preview + render only.
-2. **Mat colour.** Template Settings "background" is not `mj-body` when `layout` is set.
-3. **Layout card vs `section.wrapper`.** Slot inside a wrapper + injected `mj-wrapper` throws. The editor disables turning Add wrapper on in that case. Embedders who do not want the control at all set `sectionWrapper: false` — that hide is presentation; it does not strip an existing `wrapper` field.
-4. **Saved JSON.** `getContent()` has no shell. Send must use `toMjml` / `toHtml` (or the same splice on the server).
-5. **Cloud send.** Preview applies layout; Cloud send does not until the backend splices.
-6. **`resolvePreview`.** Receives the composed document.
-7. **Test email.** `payload.content` is unshelled; MJML/HTML from `toMjml` / `toHtml` is shelled.
-8. **Lint.** Runs on editor content. Chrome is the embedder's problem.
-9. **Slot shape.** Exactly one; top-level or wrapper child. Zero, two, or in a column → throw at `init` / `renderToMjml`.
-10. **Palette `wrapper` later.** Same type, enabled for content. Wrappers still must not nest. Import still approximates until then.
+Cloud send does not compose on the client. Preview does. Server-side send needs the same `layout` argument (or `applyLayout`) that preview used.
