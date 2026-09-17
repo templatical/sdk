@@ -36,6 +36,7 @@ function getBlockComponent(block: Block) {
     <div
       v-for="child in block.children"
       :key="child.id"
+      :data-block-id="child.id"
       :style="getBlockWrapperStyle(child)"
     >
       <component

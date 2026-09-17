@@ -48,5 +48,6 @@ describe("WrapperBlock", () => {
     expect(root.attributes("style")).toContain("border-radius: 12px");
     expect(root.text()).toBe("Card body");
     expect(registry.getComponent).toHaveBeenCalledWith(title);
+    expect(wrapper.get(`[data-block-id="${title.id}"]`).exists()).toBe(true);
   });
 });
