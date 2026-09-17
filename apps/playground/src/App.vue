@@ -961,6 +961,9 @@ const resolvePreviewDemo = async ({
       if (block.type === "section") {
         return { ...block, children: block.children.map(walk) };
       }
+      if (block.type === "wrapper") {
+        return { ...block, children: walk(block.children) };
+      }
       if (block.type === "title" || block.type === "paragraph") {
         return { ...block, content: resolveHtml(block.content) };
       }
