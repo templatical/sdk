@@ -5,7 +5,7 @@ description: Pass a JSON shell with one slot. Preview and export wrap the author
 
 # Layout
 
-Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell — a view-in-browser line, Impressum, brand header, grey page background, or a card around the author's sections. Save does not: `getContent()` is the authored template only.
+Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell. Save does not: `getContent()` is the authored template only.
 
 ```ts
 init({ layout?: TemplateContent; sectionWrapper?: boolean })
@@ -14,6 +14,57 @@ renderToMjml(content, { layout?: TemplateContent })
 ```
 
 Build the shell with `createSlotBlock()` and, for a card, `createWrapperBlock()`. `createBlock('slot')` and `createBlock('wrapper')` throw. `sectionWrapper` is editor chrome and independent of `layout`. `renderToMjml` does not take `sectionWrapper`.
+
+## Example
+
+Grey page background, a "View in browser" line, the author's sections inside a white card, Imprint below the card. This is the wrap-around shell: preview and `toMjml()` / `toHtml()` compose it; the editing canvas and `getContent()` do not.
+
+```ts
+import { init, createSlotBlock, createWrapperBlock } from '@templatical/editor';
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+} from '@templatical/types';
+
+const layout = createDefaultTemplateContent();
+layout.settings.backgroundColor = '#f3f4f6';
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
+  }),
+  createWrapperBlock({
+    styles: {
+      backgroundColor: '#ffffff',
+      padding: { top: 24, right: 24, bottom: 24, left: 24 },
+    },
+    borderRadius: 12,
+    children: [createSlotBlock()],
+  }),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
+  }),
+];
+
+const editor = await init({
+  container: '#editor',
+  layout,
+  sectionWrapper: false,
+});
+```
+
+```
+mj-body                         ← grey mat (layout.settings.backgroundColor)
+  mj-section                    ← View in browser
+  mj-wrapper                    ← white card
+    [author sections…]
+  mj-section                    ← Imprint
+```
+
+`sectionWrapper: false` hides **Add wrapper** on author sections. With the slot inside a `wrapper`, that control would emit `mj-wrapper` inside `mj-wrapper`, which MJML forbids. Omit `sectionWrapper` (or pass `true`) if you want the panel; the editor still disables turning it on for this card layout.
+
+`createSlotBlock` and `createWrapperBlock` are re-exported from `@templatical/editor`. `createDefaultTemplateContent` and `createParagraphBlock` stay on `@templatical/types`.
 
 ## The contract
 
@@ -53,81 +104,38 @@ Build the shell with `createSlotBlock()` and, for a card, `createWrapperBlock()`
 
 `setContent` / `load` / `addBlock` refuse `slot` and `wrapper` in content.
 
-## Header and footer
-
-Header, slot, footer, grey page background. Author `section.wrapper` is a sibling `mj-wrapper` under `mj-body`.
-
-```ts
-import { init } from '@templatical/editor';
-import {
-  createDefaultTemplateContent,
-  createParagraphBlock,
-  createSlotBlock,
-} from '@templatical/types';
-
-const layout = createDefaultTemplateContent();
-layout.settings.backgroundColor = '#f3f4f6';
-layout.blocks = [
-  createParagraphBlock({
-    content: '<p><a href="https://example.com/view">View in browser</a></p>',
-  }),
-  createSlotBlock(),
-  createParagraphBlock({ content: '<p>Impressum</p>' }),
-];
-
-const editor = await init({
-  container: '#editor',
-  layout,
-});
-```
-
-```
-mj-body                         ← layout.settings.backgroundColor
-  [layout blocks above the slot]
-  [content.blocks, untouched]
-  [layout blocks below the slot]
-```
-
-## Card around the content
-
-Put the slot inside a `wrapper`. The wrapper is the card.
-
-```ts
-import { createWrapperBlock } from '@templatical/types';
-
-layout.blocks = [
-  createParagraphBlock({
-    content: '<p><a href="https://example.com/view">View in browser</a></p>',
-  }),
-  createWrapperBlock({
-    styles: {
-      backgroundColor: '#ffffff',
-      padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    },
-    borderRadius: 12,
-    children: [createSlotBlock()],
-  }),
-  createParagraphBlock({ content: '<p>Impressum</p>' }),
-];
-```
-
-```
-mj-body                         ← grey page background
-  mj-section                    ← view in browser
-  mj-wrapper                    ← white card
-    [author sections…]
-  mj-section                    ← Impressum
-```
-
 MJML forbids `mj-wrapper` inside `mj-wrapper`. If the slot sits inside a wrapper, `applyLayout` walks the injected `content.blocks`. Any block that would emit `mj-wrapper` — `section.wrapper` set, or `type === 'wrapper'` — throws:
 
 ```
 [Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)
 ```
 
-If the slot is top-level, injected `section.wrapper` is a sibling under `mj-body`.
-
 A slot in `children: [[slot]]` is `mj-section` inside `mj-column`, which MJML also forbids. Keep the slot as a body child or a wrapper child.
+
+## Header and footer
+
+No card: the slot is a sibling of the header and footer. Author `section.wrapper` is then a sibling `mj-wrapper` under `mj-body`, which is valid — leave `sectionWrapper` unset if authors should still get Add wrapper.
+
+```ts
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
+  }),
+  createSlotBlock(),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
+  }),
+];
+```
+
+```
+mj-body                         ← grey mat
+  mj-section                    ← View in browser
+  [author sections…]            ← may include section.wrapper
+  mj-section                    ← Imprint
+```
 
 ## In the editor
 

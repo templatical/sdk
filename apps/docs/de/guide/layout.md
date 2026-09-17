@@ -5,7 +5,7 @@ description: Übergeben Sie eine JSON-Hülle mit einem Slot. Vorschau und Export
 
 # Layout
 
-Übergeben Sie ein JSON-Dokument mit genau einem `slot`. Vorschau und Export legen die E-Mail des Autors in diese Hülle — Link zur Browseransicht, Impressum, Markenkopf, grauer Seitenhintergrund oder eine Karte um die Autorensektionen. Speichern tut das nicht: `getContent()` ist nur die verfasste Vorlage.
+Übergeben Sie ein JSON-Dokument mit genau einem `slot`. Vorschau und Export legen die E-Mail des Autors in diese Hülle. Speichern tut das nicht: `getContent()` ist nur die verfasste Vorlage.
 
 ```ts
 init({ layout?: TemplateContent; sectionWrapper?: boolean })
@@ -14,6 +14,57 @@ renderToMjml(content, { layout?: TemplateContent })
 ```
 
 Bauen Sie die Hülle mit `createSlotBlock()` und, für eine Karte, `createWrapperBlock()`. `createBlock('slot')` und `createBlock('wrapper')` werfen. `sectionWrapper` ist Editor-Chrome und unabhängig von `layout`. `renderToMjml` nimmt `sectionWrapper` nicht entgegen.
+
+## Beispiel
+
+Grauer Seitenhintergrund, eine Zeile „Im Browser ansehen“, die Autorensektionen in einer weißen Karte, Impressum unter der Karte. Das ist die umschließende Hülle: Vorschau und `toMjml()` / `toHtml()` setzen sie zusammen; die Bearbeitungsleinwand und `getContent()` nicht.
+
+```ts
+import { init, createSlotBlock, createWrapperBlock } from '@templatical/editor';
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+} from '@templatical/types';
+
+const layout = createDefaultTemplateContent();
+layout.settings.backgroundColor = '#f3f4f6';
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">Im Browser ansehen</a></p>',
+  }),
+  createWrapperBlock({
+    styles: {
+      backgroundColor: '#ffffff',
+      padding: { top: 24, right: 24, bottom: 24, left: 24 },
+    },
+    borderRadius: 12,
+    children: [createSlotBlock()],
+  }),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Impressum</a></p>',
+  }),
+];
+
+const editor = await init({
+  container: '#editor',
+  layout,
+  sectionWrapper: false,
+});
+```
+
+```
+mj-body                         ← grauer Untergrund (layout.settings.backgroundColor)
+  mj-section                    ← Im Browser ansehen
+  mj-wrapper                    ← weiße Karte
+    [Autorensektionen…]
+  mj-section                    ← Impressum
+```
+
+`sectionWrapper: false` blendet **Wrapper hinzufügen** an Autorensektionen aus. Sitzt der Slot in einem `wrapper`, würde das Steuerelement `mj-wrapper` in `mj-wrapper` erzeugen, was MJML verbietet. Lassen Sie `sectionWrapper` weg (oder übergeben Sie `true`), wenn Sie das Panel wollen; der Editor deaktiviert das Einschalten bei diesem Karten-Layout trotzdem.
+
+`createSlotBlock` und `createWrapperBlock` werden aus `@templatical/editor` re-exportiert. `createDefaultTemplateContent` und `createParagraphBlock` bleiben auf `@templatical/types`.
 
 ## Der Vertrag
 
@@ -53,81 +104,38 @@ Bauen Sie die Hülle mit `createSlotBlock()` und, für eine Karte, `createWrappe
 
 `setContent` / `load` / `addBlock` lehnen `slot` und `wrapper` im Inhalt ab.
 
-## Kopf und Fuß
-
-Kopf, Slot, Fuß, grauer Seitenhintergrund. Autor-`section.wrapper` ist ein Geschwister-`mj-wrapper` unter `mj-body`.
-
-```ts
-import { init } from '@templatical/editor';
-import {
-  createDefaultTemplateContent,
-  createParagraphBlock,
-  createSlotBlock,
-} from '@templatical/types';
-
-const layout = createDefaultTemplateContent();
-layout.settings.backgroundColor = '#f3f4f6';
-layout.blocks = [
-  createParagraphBlock({
-    content: '<p><a href="https://example.com/view">View in browser</a></p>',
-  }),
-  createSlotBlock(),
-  createParagraphBlock({ content: '<p>Impressum</p>' }),
-];
-
-const editor = await init({
-  container: '#editor',
-  layout,
-});
-```
-
-```
-mj-body                         ← layout.settings.backgroundColor
-  [Layout-Blöcke oberhalb des Slots]
-  [content.blocks, unangetastet]
-  [Layout-Blöcke unterhalb des Slots]
-```
-
-## Karte um den Inhalt
-
-Legen Sie den Slot in einen `wrapper`. Der Wrapper ist die Karte.
-
-```ts
-import { createWrapperBlock } from '@templatical/types';
-
-layout.blocks = [
-  createParagraphBlock({
-    content: '<p><a href="https://example.com/view">View in browser</a></p>',
-  }),
-  createWrapperBlock({
-    styles: {
-      backgroundColor: '#ffffff',
-      padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    },
-    borderRadius: 12,
-    children: [createSlotBlock()],
-  }),
-  createParagraphBlock({ content: '<p>Impressum</p>' }),
-];
-```
-
-```
-mj-body                         ← grauer Seitenhintergrund
-  mj-section                    ← Ansicht im Browser
-  mj-wrapper                    ← weiße Karte
-    [Autorensektionen…]
-  mj-section                    ← Impressum
-```
-
 MJML verbietet `mj-wrapper` in `mj-wrapper`. Sitzt der Slot in einem Wrapper, durchläuft `applyLayout` die eingeschleusten `content.blocks`. Jeder Block, der `mj-wrapper` erzeugen würde — `section.wrapper` gesetzt oder `type === 'wrapper'` — wirft:
 
 ```
 [Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)
 ```
 
-Ist der Slot auf oberster Ebene, ist eingeschleustes `section.wrapper` ein Geschwister unter `mj-body`.
-
 Ein Slot in `children: [[slot]]` ist `mj-section` in `mj-column`, was MJML ebenfalls verbietet. Der Slot bleibt Kind des Body oder eines Wrappers.
+
+## Kopf und Fuß
+
+Keine Karte: der Slot ist Geschwister von Kopf und Fuß. Autor-`section.wrapper` ist dann ein Geschwister-`mj-wrapper` unter `mj-body` — gültig. Lassen Sie `sectionWrapper` weg, wenn Autorinnen weiterhin Wrapper hinzufügen sollen.
+
+```ts
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">Im Browser ansehen</a></p>',
+  }),
+  createSlotBlock(),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Impressum</a></p>',
+  }),
+];
+```
+
+```
+mj-body                         ← grauer Untergrund
+  mj-section                    ← Im Browser ansehen
+  [Autorensektionen…]            ← darf section.wrapper enthalten
+  mj-section                    ← Impressum
+```
 
 ## Im Editor
 
