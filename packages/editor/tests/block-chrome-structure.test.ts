@@ -740,6 +740,36 @@ describe("countdown resolves only through the block registry", () => {
   });
 });
 
+describe("layout wrapper preview band", () => {
+  it("wrapper is in Canvas and BlockPreviewCanvas maps, not in section maps", () => {
+    expect(read("components/Canvas.vue")).toMatch(/wrapper:\s*WrapperBlock/);
+    expect(read("components/BlockPreviewCanvas.vue")).toMatch(
+      /wrapper:\s*WrapperBlock/,
+    );
+    expect(read("components/blocks/SectionBlock.vue")).not.toMatch(
+      /wrapper:\s*WrapperBlock/,
+    );
+    expect(read("components/blocks/PreviewSectionBlock.vue")).not.toMatch(
+      /wrapper:\s*WrapperBlock/,
+    );
+  });
+
+  it("Canvas skips BlockWrapper chrome for wrapper bands", () => {
+    // A wrapper in the composed tree is top-level; BlockWrapper would put an
+    // action bar / bookmark / condition toggle on embedder chrome. Preview
+    // mode already hides chrome; still skip so those controls cannot appear.
+    expect(read("components/Canvas.vue")).toMatch(
+      /v-if="block\.type === ['"]wrapper['"]"/,
+    );
+  });
+
+  it("WrapperBlock does not use VueDraggable", () => {
+    expect(read("components/blocks/WrapperBlock.vue")).not.toMatch(
+      /VueDraggable/,
+    );
+  });
+});
+
 describe("the email background band comes from one constant", () => {
   /**
    * The canvas and every preview surface draw the same band of

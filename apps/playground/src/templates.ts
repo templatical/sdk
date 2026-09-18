@@ -20,6 +20,9 @@ import {
   createSpacerBlock,
   createTableBlock,
   createHtmlBlock,
+  createDefaultTemplateContent,
+  createSlotBlock,
+  createWrapperBlock,
   generateId,
 } from "@templatical/types";
 
@@ -2092,6 +2095,16 @@ export interface TemplateOption {
    */
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
+  /**
+   * Embedder-owned shell for this template only. Passed to `init({ layout })`.
+   * Preview and export wrap the authored content; `getContent()` does not.
+   */
+  layout?: TemplateContent;
+  /**
+   * Passed to `init({ sectionWrapper })`. `false` hides Add wrapper, including
+   * where a wrapper is legal. Reset on each template open.
+   */
+  sectionWrapper?: boolean;
 }
 
 // ─── Arabic Invitation ───────────────────────────────────────
@@ -2164,6 +2177,55 @@ export function createArabicInvitationTemplate(): TemplateContent {
   };
 }
 
+function playgroundLayout(
+  variant: "card" | "siblings",
+  opts: {
+    mat?: string;
+    viewLabel?: string;
+    imprintLabel?: string;
+    textAlign?: "center" | "right";
+  } = {},
+): TemplateContent {
+  const align = opts.textAlign ?? "center";
+  const view = opts.viewLabel ?? "View in browser";
+  const imprint = opts.imprintLabel ?? "Imprint";
+  const header = createParagraphBlock({
+    content: `<p style="text-align:${align}"><a href="https://example.com/view">${view}</a></p>`,
+    styles: pad(16, 24, 8, 24),
+  });
+  const footer = createParagraphBlock({
+    content: `<p style="text-align:${align}"><a href="https://example.com/imprint">${imprint}</a></p>`,
+    styles: pad(8, 24, 24, 24),
+  });
+  const slot = createSlotBlock();
+  const layout = createDefaultTemplateContent();
+  layout.settings.backgroundColor = opts.mat ?? "#f3f4f6";
+  layout.blocks =
+    variant === "card"
+      ? [
+          header,
+          createWrapperBlock({
+            styles: {
+              backgroundColor: "#ffffff",
+              padding: { top: 24, right: 24, bottom: 24, left: 24 },
+            },
+            borderRadius: 12,
+            children: [slot],
+          }),
+          footer,
+        ]
+      : [header, slot, footer];
+  return layout;
+}
+
+const CARD_LAYOUT = playgroundLayout("card");
+const SALE_LAYOUT = playgroundLayout("siblings", { mat: "#111827" });
+const RTL_LAYOUT = playgroundLayout("card", {
+  textAlign: "right",
+  viewLabel: "عرض في المتصفح",
+  imprintLabel: "بيان الناشر",
+});
+
 export const templates: TemplateOption[] = [
   {
     name: "Product Launch",
@@ -2172,6 +2234,8 @@ export const templates: TemplateOption[] = [
     preview: "product",
     customBlocks: [testimonialBlock],
     savedBlocks: productLaunchSavedBlocks,
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Saved Blocks",
@@ -2212,6 +2276,8 @@ export const templates: TemplateOption[] = [
     preview: "newsletter",
     customBlocks: [featuredArticleBlock],
     savedBlocks: newsletterSavedBlocks,
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     // Curated font list: only these built-ins appear in the font picker (the
     // other four built-ins are hidden). Showcases `fonts.builtIns`.
     fonts: {
@@ -2255,6 +2321,8 @@ export const templates: TemplateOption[] = [
     create: createWelcomeTemplate,
     preview: "welcome",
     customBlocks: [],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     useBuiltInMergeTagPicker: true,
     // The one template that wires `resolvePreview`. It has both value tags and
     // `{% if plan_name == … %}` branches, so a resolved preview visibly differs
@@ -2262,6 +2330,11 @@ export const templates: TemplateOption[] = [
     // `MergeTag.sample`, every other template is left to demo Sample/Label.
     resolvePreview: true,
     features: [
+      {
+        label: "Layout overlay (card)",
+        description:
+          "Every playground template except Black Friday passes init({ layout }) with a white card around the slot. Preview and Export wrap the email in a grey mat, View in browser, the card, and Imprint. The editing canvas and getContent() do not.\nTo try it: look at the canvas (no shell), then click Preview. Add wrapper is hidden — a section wrapper inside the card would nest mj-wrapper, which MJML forbids.",
+      },
       {
         label: "Resolved Preview (resolvePreview)",
         icon: "merge-tag",
@@ -2294,6 +2367,8 @@ export const templates: TemplateOption[] = [
     create: createOrderConfirmationTemplate,
     preview: "order",
     customBlocks: [shippingTrackerBlock],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Sample vs Label Preview",
@@ -2339,6 +2414,8 @@ export const templates: TemplateOption[] = [
     create: createEventInvitationTemplate,
     preview: "event",
     customBlocks: [eventDetailsBlock],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     // Brand-locked palette: fixed swatches + `allowCustom: false`, so every
     // color picker in this template offers only these presets (no wheel / hex).
     colors: {
@@ -2391,6 +2468,8 @@ export const templates: TemplateOption[] = [
     create: createPasswordResetTemplate,
     preview: "reset",
     customBlocks: [],
+    layout: CARD_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Responsive Visibility",
@@ -2413,7 +2492,13 @@ export const templates: TemplateOption[] = [
     preview: "sale",
     customBlocks: [productShowcaseBlock],
     htmlBlockPreview: true,
+    layout: SALE_LAYOUT,
     features: [
+      {
+        label: "Layout overlay (siblings)",
+        description:
+          "This template uses a sibling layout — View in browser, slot, Imprint — with no card around the slot. Dark full-bleed sections stay legal mj-wrappers under mj-body. Preview to see the chrome on the dark mat. Add wrapper stays available because a section wrapper here is a sibling, not nested.",
+      },
       {
         label: "Custom HTML Block (Live Preview)",
         icon: "html",
@@ -2446,6 +2531,8 @@ export const templates: TemplateOption[] = [
     create: createArabicInvitationTemplate,
     preview: "rtl",
     customBlocks: [],
+    layout: RTL_LAYOUT,
+    sectionWrapper: false,
     features: [
       {
         label: "Content direction (RTL)",

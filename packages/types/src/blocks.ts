@@ -319,6 +319,25 @@ export interface CustomBlock extends BaseBlock {
   dataSourceFetched?: boolean;
 }
 
+/**
+ * Layout-only hole where authored content is spliced in. Extends BaseBlock so
+ * Block walkers stay typed (`styles` unused; spliced out before render).
+ */
+export interface SlotBlock extends BaseBlock {
+  type: "slot";
+}
+
+/**
+ * Layout-only band rendered as `mj-wrapper`. The block is the band:
+ * `styles.backgroundColor` / `styles.padding` / `borderRadius` map to the
+ * wrapper. Legal in layout only this ship.
+ */
+export interface WrapperBlock extends BaseBlock {
+  type: "wrapper";
+  children: Block[];
+  borderRadius?: number;
+}
+
 export type Block =
   | SectionBlock
   | TitleBlock
@@ -333,6 +352,8 @@ export type Block =
   | MenuBlock
   | TableBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 
 export type BlockType = Block["type"];

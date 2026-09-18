@@ -210,17 +210,19 @@ test.describe("Test email", () => {
    * background-color` when sent, and the band the canvas draws beside its
    * content column.
    *
-   * Every showcase template ships `#ffffff`, so this drives the settings panel
-   * rather than picking a template: that is also the exact path in the report
-   * (#598), where the preview painted the editor's neutral surface no matter
-   * what the template said.
+   * Showcase templates now pass `init({ layout })`. The editing canvas stays
+   * the authored template (settings "background" still paints `.tpl-canvas-bg`).
+   * Test-email preview composes the shell, so the stage is the layout mat, not
+   * the author's colour. That split is the overlay contract.
    */
   test("the preview renders the template's background colour", async ({
     editorReady,
   }) => {
     const { editorPage } = editorReady;
     const page = editorPage.page;
-    const BACKGROUND = "rgb(28, 37, 255)";
+    const AUTHOR_BACKGROUND = "rgb(28, 37, 255)";
+    // CARD_LAYOUT mat in templates.ts (`#f3f4f6`).
+    const LAYOUT_MAT = "rgb(243, 244, 246)";
 
     await page.locator(SELECTORS.rightTabSettings).click();
     const hex = page
@@ -229,14 +231,13 @@ test.describe("Test email", () => {
     await hex.fill("#1c25ff");
     await hex.press("Enter");
 
-    // The canvas is the reference: whatever it paints, the dialog must match.
     await expect
       .poll(async () =>
         page
           .locator(".tpl-canvas-bg")
           .evaluate((el) => getComputedStyle(el).backgroundColor),
       )
-      .toBe(BACKGROUND);
+      .toBe(AUTHOR_BACKGROUND);
 
     await page.locator(SELECTORS.testEmailTrigger).click();
 
@@ -246,7 +247,7 @@ test.describe("Test email", () => {
       .poll(async () =>
         stage.evaluate((el) => getComputedStyle(el).backgroundColor),
       )
-      .toBe(BACKGROUND);
+      .toBe(LAYOUT_MAT);
 
     // The column stays transparent, which is what lets a block with no fill of
     // its own reveal the body colour rather than covering it.

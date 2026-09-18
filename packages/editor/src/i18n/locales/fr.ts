@@ -148,6 +148,8 @@ const fr: typeof en = {
     ratio21: "Ratio 2:1",
     borderRadius: "Rayon de bordure",
     wrapperEnable: "Ajouter un conteneur",
+    wrapperLayoutConflict:
+      "Cet éditeur encadre déjà l'e-mail. Un cadre supplémentaire sur cette section n'est pas pris en charge — l'aperçu et l'export échoueront.",
     stackOnMobile: "Empiler sur mobile",
   },
   linkDialog: {

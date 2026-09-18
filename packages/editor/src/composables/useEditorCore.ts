@@ -45,6 +45,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import {
+  applyLayout,
   deepMergeDefaults,
   hasMergeTagSamples,
   resolveContentDirection,
@@ -73,6 +74,8 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   HTML_BLOCK_PREVIEW_KEY,
+  LAYOUT_KEY,
+  SECTION_WRAPPER_KEY,
   COLORS_KEY,
   TEMPLATE_SETTINGS_FIELDS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
@@ -243,6 +246,8 @@ export interface UseEditorCoreOptions {
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
+    layout?: TemplateContent;
+    sectionWrapper?: boolean;
     colors?: ColorsConfig;
     templateSettings?: TemplateSettingsConfig;
     mergeTags?: MergeTagsConfig;
@@ -638,6 +643,8 @@ export function useEditorCore(
     HTML_BLOCK_PREVIEW_KEY,
     resolveHtmlBlockPreview(config.htmlBlockPreview),
   );
+  provide(LAYOUT_KEY, config.layout);
+  provide(SECTION_WRAPPER_KEY, config.sectionWrapper);
   // Editor-wide color-picker palette (resolved + audited above, ahead of the
   // block registry).
   provide(COLORS_KEY, resolvedColors);
@@ -710,9 +717,17 @@ export function useEditorCore(
   //
   // The test-email dialog has its own recipient, so it re-runs resolution
   // through its own instance rather than this one; see `TestEmailModal`.
+  //
+  // Preview `getContent` composes the embedder shell while previewing. The
+  // public instance `getContent()` stays unshelled.
   const previewResolution = usePreviewResolution({
     resolvePreview: config.resolvePreview,
-    getContent: () => editor.content.value,
+    getContent: () => {
+      const raw = editor.content.value;
+      return config.layout && editor.state.previewMode
+        ? applyLayout(config.layout, raw)
+        : raw;
+    },
     isActive: () => editor.state.previewMode,
   });
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);

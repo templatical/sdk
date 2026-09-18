@@ -4,6 +4,8 @@ import {
   createDefaultTemplateContent,
   createParagraphBlock,
   createSectionBlock,
+  createSlotBlock,
+  createWrapperBlock,
 } from '@templatical/types';
 import type {
   CustomBlock,
@@ -248,13 +250,14 @@ describe('buildRenderPayload', () => {
       .mockImplementation(async (block: CustomBlock) => `<p>${block.customType}</p>`);
   });
 
-  function source(content: TemplateContent) {
+  function source(content: TemplateContent, layout?: TemplateContent) {
     return {
       getContent: () => content,
       renderCustomBlock: renderCustomBlock as (
         block: CustomBlock,
       ) => Promise<string>,
       getFonts: () => resolveRenderFonts(fontsSource()),
+      ...(layout ? { getLayout: () => layout } : {}),
     };
   }
 
@@ -318,5 +321,58 @@ describe('buildRenderPayload', () => {
     );
 
     expect(renderCustomBlock).not.toHaveBeenCalled();
+  });
+
+  it('composes getLayout chrome around the author block without mutating getContent', async () => {
+    const author = createParagraphBlock({ content: '<p>AUTHOR-BODY</p>' });
+    const content = makeContent([author]);
+    const layout = makeContent([
+      createParagraphBlock({ content: '<p>VIEW-IN-BROWSER</p>' }),
+      createSlotBlock(),
+      createParagraphBlock({ content: '<p>IMPRESSUM</p>' }),
+    ]);
+    const before = JSON.stringify(content);
+
+    const payload = await buildRenderPayload(source(content, layout));
+
+    expect(payload.content.blocks).toHaveLength(3);
+    expect((payload.content.blocks[0] as { content: string }).content).toBe(
+      '<p>VIEW-IN-BROWSER</p>',
+    );
+    expect(payload.content.blocks[1]?.id).toBe(author.id);
+    expect((payload.content.blocks[2] as { content: string }).content).toBe(
+      '<p>IMPRESSUM</p>',
+    );
+    expect(payload.content.blocks.some((block) => block.type === 'slot')).toBe(
+      false,
+    );
+    expect(JSON.stringify(content)).toBe(before);
+    expect(content.blocks[0]).toBe(author);
+  });
+
+  it('pre-renders a custom block a card splice nested under the wrapper', async () => {
+    const custom = makeCustomBlock('banner');
+    const section = createSectionBlock({ columns: '1', children: [[custom]] });
+    const content = makeContent([section]);
+    const layout = makeContent([
+      createWrapperBlock({ children: [createSlotBlock()] }),
+    ]);
+    const before = JSON.stringify(content);
+
+    const payload = await buildRenderPayload(source(content, layout));
+
+    const card = payload.content.blocks[0] as {
+      type: string;
+      children: { children: CustomBlock[][] }[];
+    };
+    expect(card.type).toBe('wrapper');
+    expect(card.children[0]?.children[0]?.[0]?.renderedHtml).toBe(
+      '<p>banner</p>',
+    );
+    expect(JSON.stringify(content)).toBe(before);
+    expect(custom.renderedHtml).toBeUndefined();
+    expect(
+      (section.children[0][0] as CustomBlock).renderedHtml,
+    ).toBeUndefined();
   });
 });

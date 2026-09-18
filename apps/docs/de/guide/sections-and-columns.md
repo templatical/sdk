@@ -155,4 +155,4 @@ card.wrapper = {
 };
 ```
 
-Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden.
+Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay.

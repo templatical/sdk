@@ -1,6 +1,6 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 import type { Block, TemplateContent } from "@templatical/types";
-import { isCustomBlock } from "@templatical/types";
+import { isCustomBlock, isWrapper } from "@templatical/types";
 import type { UseBlockRegistryReturn } from "./useBlockRegistry";
 
 /**
@@ -16,7 +16,8 @@ import type { UseBlockRegistryReturn } from "./useBlockRegistry";
  *
  * Whitespace-only and missing stylesheets are filtered out. The result is a
  * `ComputedRef<string[]>` in insertion order (i.e., the order custom-block
- * types first appear in the content tree, depth-first through sections).
+ * types first appear in the content tree, depth-first through sections
+ * and wrappers).
  *
  * Consumers render one `<style>` element per entry inside the editor's mount
  * root so the rules apply to the canvas. In shadow-DOM mode they scope to the
@@ -70,6 +71,8 @@ function walk(blocks: Block[], out: Set<string>): void {
       for (const column of children) {
         walk(column, out);
       }
+    } else if (isWrapper(block)) {
+      walk(block.children, out);
     }
   }
 }

@@ -1,6 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ref } from '@vue/reactivity';
-import { createDefaultTemplateContent, createParagraphBlock, createSectionBlock, createImageBlock } from '@templatical/types';
+import {
+    createDefaultTemplateContent,
+    createParagraphBlock,
+    createSectionBlock,
+    createImageBlock,
+    createSlotBlock,
+    createWrapperBlock,
+    type Block,
+    type Template,
+    type TemplateContent,
+    type TemplatesProvider,
+} from '@templatical/types';
 import { useEditor } from '../src';
 
 function createEditorWithContent() {
@@ -621,12 +632,12 @@ describe('moveBlock into section column', () => {
         const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
         const section = createSectionBlock({
             columns: '2',
-            children: [[]],
+            children: [[], []],
         });
-        // Clear column to simulate undefined within the declared layout
-        (section as any).children[1] = undefined;
         content.blocks = [rootBlock, section];
         const editor = useEditor({ content });
+        // Hole after seed: moveBlock still initializes an undefined column.
+        (section as any).children[1] = undefined;
 
         editor.moveBlock(rootBlock.id, 0, section.id, 1);
 
@@ -853,5 +864,153 @@ describe('findBlockLocation', () => {
         const editor = useEditor({ content });
 
         expect(editor.findBlockLocation('does-not-exist')).toBeNull();
+    });
+});
+
+const SLOT_IN_CONTENT = '[Templatical] slot is not a valid content block';
+const WRAPPER_IN_CONTENT = '[Templatical] wrapper is not a valid content block';
+
+function contentWithBlocks(blocks: Block[]): TemplateContent {
+    const content = createDefaultTemplateContent();
+    content.blocks = blocks;
+    return content;
+}
+
+function storedTemplate(content: TemplateContent): Template {
+    return { id: 'tpl_1', name: 'Stored', content };
+}
+
+function loadProvider(content: TemplateContent): TemplatesProvider {
+    return {
+        load: vi.fn().mockResolvedValue(storedTemplate(content)),
+        create: false,
+        save: false,
+    };
+}
+
+describe('refuses slot and wrapper in content', () => {
+    it('throws on seed content with a top-level slot', () => {
+        expect(() =>
+            useEditor({ content: contentWithBlocks([createSlotBlock()]) }),
+        ).toThrow(SLOT_IN_CONTENT);
+    });
+
+    it('throws on seed content with a slot nested in a section', () => {
+        const section = createSectionBlock({
+            children: [[createSlotBlock()]],
+        });
+        expect(() => useEditor({ content: contentWithBlocks([section]) })).toThrow(
+            SLOT_IN_CONTENT,
+        );
+    });
+
+    it('throws on seed content with a wrapper', () => {
+        expect(() =>
+            useEditor({ content: contentWithBlocks([createWrapperBlock()]) }),
+        ).toThrow(WRAPPER_IN_CONTENT);
+    });
+
+    it('setContent of a top-level slot throws and leaves blocks empty', () => {
+        const editor = useEditor({ content: createDefaultTemplateContent() });
+
+        expect(() =>
+            editor.setContent(contentWithBlocks([createSlotBlock()])),
+        ).toThrow(SLOT_IN_CONTENT);
+        expect(editor.state.content.blocks).toEqual([]);
+    });
+
+    it('setContent of a slot nested in a section throws and leaves blocks empty', () => {
+        const editor = useEditor({ content: createDefaultTemplateContent() });
+        const section = createSectionBlock({
+            children: [[createSlotBlock()]],
+        });
+
+        expect(() => editor.setContent(contentWithBlocks([section]))).toThrow(
+            SLOT_IN_CONTENT,
+        );
+        expect(editor.state.content.blocks).toEqual([]);
+    });
+
+    it('setContent of a wrapper throws and keeps the author block', () => {
+        const author = createParagraphBlock({ content: '<p>Author</p>' });
+        const editor = useEditor({ content: contentWithBlocks([author]) });
+
+        expect(() =>
+            editor.setContent(contentWithBlocks([createWrapperBlock()])),
+        ).toThrow(WRAPPER_IN_CONTENT);
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(author.id);
+        expect(editor.state.content.blocks[0].type).toBe('paragraph');
+    });
+
+    it('addBlock of a top-level slot throws and leaves blocks empty', () => {
+        const editor = useEditor({ content: createDefaultTemplateContent() });
+
+        expect(() => editor.addBlock(createSlotBlock())).toThrow(SLOT_IN_CONTENT);
+        expect(editor.state.content.blocks).toEqual([]);
+    });
+
+    it('addBlock of a section that contains a slot throws and leaves blocks empty', () => {
+        const editor = useEditor({ content: createDefaultTemplateContent() });
+        const section = createSectionBlock({
+            children: [[createSlotBlock()]],
+        });
+
+        expect(() => editor.addBlock(section)).toThrow(SLOT_IN_CONTENT);
+        expect(editor.state.content.blocks).toEqual([]);
+    });
+
+    it('addBlock of a slot into a section column throws and keeps the author section', () => {
+        const child = createParagraphBlock({ content: '<p>child</p>' });
+        const section = createSectionBlock({ children: [[child]] });
+        const editor = useEditor({ content: contentWithBlocks([section]) });
+
+        expect(() => editor.addBlock(createSlotBlock(), section.id, 0)).toThrow(
+            SLOT_IN_CONTENT,
+        );
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(section.id);
+        const sec = editor.state.content.blocks[0];
+        expect(sec.type).toBe('section');
+        if (sec.type === 'section') {
+            expect(sec.children[0]).toHaveLength(1);
+            expect(sec.children[0][0].id).toBe(child.id);
+        }
+    });
+
+    it('addBlock of a wrapper throws and leaves blocks empty', () => {
+        const editor = useEditor({ content: createDefaultTemplateContent() });
+
+        expect(() => editor.addBlock(createWrapperBlock())).toThrow(
+            WRAPPER_IN_CONTENT,
+        );
+        expect(editor.state.content.blocks).toEqual([]);
+    });
+
+    it('load of a slot throws before assign and keeps the author block', async () => {
+        const author = createParagraphBlock({ content: '<p>local</p>' });
+        const editor = useEditor({
+            content: contentWithBlocks([author]),
+            templates: loadProvider(contentWithBlocks([createSlotBlock()])),
+        });
+
+        await expect(editor.load('tpl_1')).rejects.toThrow(SLOT_IN_CONTENT);
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(author.id);
+        expect(editor.state.content.blocks[0].type).toBe('paragraph');
+        expect(editor.state.template).toBeNull();
+    });
+
+    it('load of a wrapper throws before assign and keeps the author block', async () => {
+        const author = createParagraphBlock({ content: '<p>local</p>' });
+        const editor = useEditor({
+            content: contentWithBlocks([author]),
+            templates: loadProvider(contentWithBlocks([createWrapperBlock()])),
+        });
+
+        await expect(editor.load('tpl_1')).rejects.toThrow(WRAPPER_IN_CONTENT);
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(author.id);
+        expect(editor.state.template).toBeNull();
     });
 });

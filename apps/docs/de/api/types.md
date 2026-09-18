@@ -77,7 +77,9 @@ type Block =
   | TableBlock
   | HtmlBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 ```
 
 ### BlockType
@@ -86,7 +88,8 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
+  | 'slot' | 'wrapper';
 ```
 
 ## Basistypen
@@ -391,7 +394,19 @@ interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   dataSourceFetched?: boolean;
 }
+
+interface SlotBlock extends BaseBlock {
+  type: 'slot';
+}
+
+interface WrapperBlock extends BaseBlock {
+  type: 'wrapper';
+  children: Block[];
+  borderRadius?: number;
+}
 ```
+
+`slot` und `wrapper` sind Layout-Markierungen. Der Skill gibt sie nie aus. Siehe [Layout](/de/guide/layout).
 
 ## Konfigurationstypen
 

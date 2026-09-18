@@ -42,7 +42,7 @@ describe("the canvas declares the template's content language", () => {
       const match = source.match(/const contentLang = computed\([^;]*?\);/s);
       expect(match).not.toBeNull();
       const decl = match![0];
-      expect(decl).toContain("settings");
+      expect(decl).toMatch(/settings/i);
       expect(decl).toContain("locale");
       // `config.locale` is the chrome's language. Using it here would declare a
       // German-authored English email as German.
@@ -82,7 +82,7 @@ describe("the canvas declares the template's writing direction", () => {
       const match = source.match(/const contentDir = computed\([^;]*?\);/s);
       expect(match).not.toBeNull();
       const decl = match![0];
-      expect(decl).toContain("settings");
+      expect(decl).toMatch(/settings/i);
       expect(decl).not.toContain("config.");
       // Empty dir would inherit the host and undo isolation. Always a token.
       expect(decl).not.toContain("undefined");

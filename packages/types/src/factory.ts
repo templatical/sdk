@@ -11,6 +11,7 @@ import type {
   MenuBlock,
   ParagraphBlock,
   SectionBlock,
+  SlotBlock,
   SocialIconsBlock,
   SpacerBlock,
   SpacingValue,
@@ -19,6 +20,7 @@ import type {
   TableRowData,
   TitleBlock,
   VideoBlock,
+  WrapperBlock,
 } from "./blocks";
 import type { CustomBlockDefinition, CustomBlockField } from "./custom-blocks";
 import type { BlockDefaults } from "./defaults";
@@ -262,6 +264,28 @@ export function createCustomBlock(
   };
 }
 
+/** Layout-only. Use this to build a layout; createBlock("slot") throws. */
+export function createSlotBlock(): SlotBlock {
+  return {
+    id: generateId(),
+    type: "slot",
+    styles: createDefaultStyles(0),
+  };
+}
+
+/** Layout-only. Use this to build a layout; createBlock("wrapper") throws. */
+export function createWrapperBlock(
+  partial: Partial<WrapperBlock> = {},
+): WrapperBlock {
+  const base: WrapperBlock = {
+    id: generateId(),
+    type: "wrapper",
+    children: [],
+    styles: createDefaultStyles(0),
+  };
+  return applyDefaults(base, partial);
+}
+
 export function createBlock(
   type: BlockType,
   blockDefaults?: BlockDefaults,
@@ -293,6 +317,14 @@ export function createBlock(
       return createTableBlock(blockDefaults?.table);
     case "countdown":
       return createCountdownBlock(blockDefaults?.countdown);
+    case "slot":
+      throw new Error(
+        "[Templatical] slot cannot be inserted into content. Use createSlotBlock() to build a layout.",
+      );
+    case "wrapper":
+      throw new Error(
+        "[Templatical] wrapper cannot be inserted into content. Use createWrapperBlock() to build a layout.",
+      );
     default:
       throw new Error(`Unknown block type: ${type}`);
   }
@@ -306,6 +338,10 @@ export function cloneBlock(block: Block): Block {
     cloned.children = cloned.children.map((column) =>
       column.map((child) => cloneBlock(child)),
     );
+  }
+
+  if (cloned.type === "wrapper") {
+    cloned.children = cloned.children.map((c) => cloneBlock(c));
   }
 
   return cloned;

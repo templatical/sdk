@@ -3,6 +3,7 @@ import {
   resolveBlockComponent,
   getBlockWrapperStyle,
   getSectionWrapperStyle,
+  getWrapperStyle,
   getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
 import type { TemplateSettings } from "@templatical/types";
@@ -13,6 +14,7 @@ import {
   createCountdownBlock,
   createDividerBlock,
   createSectionBlock,
+  createWrapperBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
 import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry";
@@ -156,6 +158,18 @@ describe("getBlockWrapperStyle", () => {
   it("never sets borderRadius for a non-section block", () => {
     expect(getBlockWrapperStyle(createTitleBlock()).borderRadius).toBeUndefined();
   });
+
+  it("does not apply padding or background on a layout wrapper", () => {
+    // The band paints through getWrapperStyle on WrapperBlock's root. Applying
+    // the content-box helper here would double the padding against that band.
+    const block = createWrapperBlock({
+      styles: {
+        backgroundColor: "#ffffff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+      },
+    });
+    expect(getBlockWrapperStyle(block)).toEqual({});
+  });
 });
 
 describe("getSectionWrapperStyle", () => {
@@ -191,6 +205,39 @@ describe("getSectionWrapperStyle", () => {
     });
     const style = getSectionWrapperStyle(block);
     expect(style).toEqual({ padding: "10px 10px 10px 10px" });
+  });
+});
+
+describe("getWrapperStyle", () => {
+  it("returns null for a non-wrapper block", () => {
+    expect(getWrapperStyle(createTitleBlock())).toBeNull();
+  });
+
+  it("builds bg + padding + radius from the block itself", () => {
+    const block = createWrapperBlock({
+      styles: {
+        backgroundColor: "#ffffff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+      },
+      borderRadius: 12,
+    });
+    expect(getWrapperStyle(block)).toEqual({
+      backgroundColor: "#ffffff",
+      padding: "24px 24px 24px 24px",
+      borderRadius: "12px",
+    });
+  });
+
+  it("omits unset fields — a padding-only band has no bg or radius", () => {
+    const block = createWrapperBlock({
+      styles: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+      },
+      borderRadius: 0,
+    });
+    expect(getWrapperStyle(block)).toEqual({
+      padding: "10px 10px 10px 10px",
+    });
   });
 });
 

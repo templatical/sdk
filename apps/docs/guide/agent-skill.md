@@ -105,6 +105,10 @@ Custom blocks are consumer-registered runtime extensions — the skill has no wa
 
 `countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
 
+### Never emit `slot` or `wrapper`
+
+`slot` and `wrapper` are layout markers on `init({ layout })`, not campaign blocks. Never emit `type: "slot"` or `type: "wrapper"`. See [Layout](/guide/layout).
+
 ### Prefer native blocks
 
 Reach for `html` only as a last resort — raw HTML is not visually editable afterward.

@@ -5,7 +5,11 @@ import type {
   TemplateContent,
   TitleBlock,
 } from '@templatical/types';
-import { createSectionBlock, createTitleBlock } from '@templatical/types';
+import {
+  createSectionBlock,
+  createTitleBlock,
+  createWrapperBlock,
+} from '@templatical/types';
 import { preRenderCustomBlocks } from '../src/utils/preRenderCustomBlocks';
 import type { UseBlockRegistryReturn } from '../src/composables/useBlockRegistry';
 
@@ -72,6 +76,30 @@ describe('preRenderCustomBlocks', () => {
     await preRenderCustomBlocks(content([section]), registry(render));
 
     expect(nested.renderedHtml).toBe('<span>nested</span>');
+    expect(render).toHaveBeenCalledWith(nested);
+  });
+
+  it('renders custom blocks that are direct wrapper children', async () => {
+    const nested = createCustom('in-wrapper', 'w-1');
+    const wrapper = createWrapperBlock({ children: [nested] });
+    const render = vi.fn().mockResolvedValue('<span>wrapped</span>');
+
+    await preRenderCustomBlocks(content([wrapper]), registry(render));
+
+    expect(nested.renderedHtml).toBe('<span>wrapped</span>');
+    expect(render).toHaveBeenCalledWith(nested);
+  });
+
+  it('renders custom blocks nested in a section that is a wrapper child', async () => {
+    const nested = createCustom('nested-card', 'nested-card-1');
+    const section = createSectionBlock() as SectionBlock;
+    section.children = [[nested], []];
+    const wrapper = createWrapperBlock({ children: [section] });
+    const render = vi.fn().mockResolvedValue('<span>card-nested</span>');
+
+    await preRenderCustomBlocks(content([wrapper]), registry(render));
+
+    expect(nested.renderedHtml).toBe('<span>card-nested</span>');
     expect(render).toHaveBeenCalledWith(nested);
   });
 

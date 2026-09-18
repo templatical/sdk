@@ -166,6 +166,8 @@ const ptBR: typeof en = {
     ratio21: "Proporção 2:1",
     borderRadius: "Arredondamento das Bordas",
     wrapperEnable: "Adicionar wrapper",
+    wrapperLayoutConflict:
+      "Este editor já emoldura o e-mail. Um quadro extra nesta seção não é suportado — a visualização e a exportação falharão.",
     stackOnMobile: "Empilhar no celular",
   },
 
