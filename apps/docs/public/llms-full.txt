@@ -9904,7 +9904,7 @@ Concretely not allowed:
 - ❌ Building a product whose primary purpose is composing or designing email templates — "Templatical, but yours" — whether you host it or ship it self-installed.
 - ❌ Forking Templatical and offering the fork as a drop-in commercial replacement for Templatical itself.
 
-If you're not sure whether your use case crosses the line, [open a discussion](https://github.com/templatical/sdk/discussions) or email <licensing@templatical.com>. We'd rather give you a clear answer up front than have ambiguity.
+If you're not sure whether your use case crosses the line, [open a discussion](https://github.com/templatical/sdk/discussions) or email <hi@templatical.com>. We'd rather give you a clear answer up front than have ambiguity.
 
 ## What does "competing use" mean concretely?
 
@@ -9978,7 +9978,7 @@ Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, ma
 
 ## What if I have a question this doesn't answer?
 
-For licensing questions, email <licensing@templatical.com>. For everything else, [open a discussion](https://github.com/templatical/sdk/discussions) or [file an issue](https://github.com/templatical/sdk/issues).
+For licensing questions, email <hi@templatical.com>. For everything else, [open a discussion](https://github.com/templatical/sdk/discussions) or [file an issue](https://github.com/templatical/sdk/issues).
 
 If you spot something unclear or missing in this FAQ, please tell us — clarity benefits everyone.
 

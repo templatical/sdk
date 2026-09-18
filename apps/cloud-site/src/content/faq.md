@@ -36,4 +36,4 @@ The visual editor is Vue 3 based, but it mounts as a drop-in widget with one fun
 
 ## How do I get in touch?
 
-Email [hello@templatical.com](mailto:hello@templatical.com) — or follow the repo on [GitHub](https://github.com/templatical/sdk).
+Email [hi@templatical.com](mailto:hi@templatical.com) — or follow the repo on [GitHub](https://github.com/templatical/sdk).

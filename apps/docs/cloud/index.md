@@ -68,4 +68,4 @@ To own the whole set, use [`init()`](/backend/).
 
 Plans start at $99/month. All plans include the full editor, AI features, and collaboration.
 
-[Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [View Pricing](https://templatical.com/pricing) &nbsp;·&nbsp; [Contact Sales](mailto:sales@templatical.com)
+[Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [View Pricing](https://templatical.com/pricing) &nbsp;·&nbsp; [Contact Sales](mailto:hi@templatical.com)

@@ -110,10 +110,10 @@ import Icon from "../shared/Icon.vue";
         <ul class="mt-4 space-y-2 text-sm">
           <li>
             <a
-              href="mailto:hello@templatical.com"
+              href="mailto:hi@templatical.com"
               class="text-text-muted transition-colors hover:text-text"
             >
-              hello@templatical.com
+              hi@templatical.com
             </a>
           </li>
           <li>

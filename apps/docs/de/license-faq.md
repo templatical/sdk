@@ -68,7 +68,7 @@ Konkret nicht erlaubt:
 - ❌ Ein Produkt zu bauen, dessen primärer Zweck das Verfassen oder Gestalten von E-Mail-Templates ist — "Templatical, aber Ihres" — ganz gleich, ob Sie es hosten oder zur Selbstinstallation ausliefern.
 - ❌ Templatical zu forken und den Fork als Drop-in-Ersatz für Templatical selbst kommerziell anzubieten.
 
-Sind Sie sich nicht sicher, ob Ihr Anwendungsfall die Linie überschreitet, [öffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) oder schreiben Sie an <licensing@templatical.com>. Lieber geben wir Ihnen vorher eine klare Antwort, als dass Unklarheit bleibt.
+Sind Sie sich nicht sicher, ob Ihr Anwendungsfall die Linie überschreitet, [öffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) oder schreiben Sie an <hi@templatical.com>. Lieber geben wir Ihnen vorher eine klare Antwort, als dass Unklarheit bleibt.
 
 ## Was bedeutet "konkurrierende Nutzung" konkret?
 
@@ -142,6 +142,6 @@ Cloud ist optionale gehostete Infrastruktur (KI-Umschreibung, Echtzeit-Zusammena
 
 ## Was, wenn ich eine Frage habe, die hier nicht beantwortet wird?
 
-Für Lizenzfragen schreiben Sie an <licensing@templatical.com>. Für alles andere [öffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) oder [erstellen Sie ein Issue](https://github.com/templatical/sdk/issues).
+Für Lizenzfragen schreiben Sie an <hi@templatical.com>. Für alles andere [öffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) oder [erstellen Sie ein Issue](https://github.com/templatical/sdk/issues).
 
 Falls Ihnen hier etwas unklar oder fehlend vorkommt, sagen Sie uns Bescheid — Klarheit nutzt allen.
