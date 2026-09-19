@@ -23,7 +23,7 @@
     "@tiptap/suggestion": "^3.31.3",
     "@tiptap/vue-3": "^3.31.3",
     "@vitejs/plugin-vue": "^6.0.9",
-    "@vue/test-utils": "^2.5.0",
+    "@vue/test-utils": "^2.5.1",
     "@vueuse/core": "^14.4.0",
     "es-module-lexer": "^3.0.2",
     "happy-dom": "^20.14.5",
