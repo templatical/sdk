@@ -145,6 +145,14 @@ describe("loadMediaTranslations", () => {
     expect(translations.mediaLibrary.title).toBe("Mediabibliotheek");
   });
 
+  it("loads Japanese translations for regional locale codes", async () => {
+    const translations = await loadMediaTranslations("ja-JP");
+    expect(translations.mediaLibrary.title).toBe("メディアライブラリ");
+    expect(translations.mediaLibrary.uploadingProgress).toBe(
+      "{total} 件中 {current} 件をアップロード中...",
+    );
+  });
+
   it("resolves region variants of French and Dutch to the base locale", async () => {
     const frBE = await loadMediaTranslations("fr-BE");
     const nlBE = await loadMediaTranslations("nl-BE");

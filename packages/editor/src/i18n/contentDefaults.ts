@@ -92,6 +92,14 @@ const STRINGS: Record<string, ContentDefaultStrings> = {
     seconds: "Segons",
     expired: "Aquesta oferta ha caducat",
   },
+  ja: {
+    video: "動画",
+    days: "日",
+    hours: "時間",
+    minutes: "分",
+    seconds: "秒",
+    expired: "このオファーは終了しました",
+  },
 };
 
 /** The locales this table covers. Asserted against the UI bundles in tests. */
