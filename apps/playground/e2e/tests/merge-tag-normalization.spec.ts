@@ -24,7 +24,7 @@ import { SELECTORS } from "../helpers/selectors";
  * makes impossible by construction.
  */
 
-const TEMPLATE = "Order Confirmation";
+const SCENE = "merge-tags-samples";
 
 /** Declared with `sample: "Ada"`. */
 const SAMPLED_TOKEN = "{{first_name}}";
@@ -52,11 +52,11 @@ function deliveryContact(page: import("@playwright/test").Page) {
 }
 
 test.describe("Merge tag normalization", () => {
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName(TEMPLATE);
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto(SCENE);
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await editorPage.closeCodeDrawer();
   });
 
   test("a bare token in visible text becomes a merge tag chip", async ({
@@ -65,7 +65,9 @@ test.describe("Merge tag normalization", () => {
     const line = deliveryContact(editorPage.page);
 
     await expect(
-      line.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="${SAMPLED_TOKEN}"]`),
+      line.locator(
+        `${SELECTORS.mergeTagSpan}[data-merge-tag="${SAMPLED_TOKEN}"]`,
+      ),
     ).toHaveCount(1);
     // The raw token is absent from the rendered text: it is markup now, not text.
     await expect(line).not.toContainText(SAMPLED_TOKEN);
@@ -109,7 +111,9 @@ test.describe("Merge tag normalization", () => {
     await expect(link).toHaveAttribute("href", HREF_TOKEN);
     // No chip was created for it, and no markup leaked into the URL.
     await expect(
-      canvas.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="${HREF_TOKEN}"]`),
+      canvas.locator(
+        `${SELECTORS.mergeTagSpan}[data-merge-tag="${HREF_TOKEN}"]`,
+      ),
     ).toHaveCount(0);
     expect(await link.getAttribute("href")).not.toContain("<span");
   });
@@ -145,7 +149,9 @@ test.describe("Merge tag normalization", () => {
     // Sample view at all is the proof: a bare token has no sample to resolve.
     await expect(line).toContainText("Ada");
     await expect(
-      line.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="${SAMPLED_TOKEN}"]`),
+      line.locator(
+        `${SELECTORS.mergeTagSpan}[data-merge-tag="${SAMPLED_TOKEN}"]`,
+      ),
     ).toHaveCount(0);
 
     // `{{last_name}}` has none, so it stays a highlighted chip showing its label.
@@ -169,9 +175,8 @@ test.describe("Merge tag normalization", () => {
           .__tplPlaygroundGetMjml === "function",
     );
     const mjml = await page.evaluate(() =>
-      (
-        window as { __tplPlaygroundGetMjml?: () => Promise<string> }
-      ).__tplPlaygroundGetMjml!(),
+      (window as { __tplPlaygroundGetMjml?: () => Promise<string> })
+        .__tplPlaygroundGetMjml!(),
     );
 
     expect(mjml).toContain(SAMPLED_TOKEN);

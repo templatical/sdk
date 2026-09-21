@@ -34,6 +34,17 @@ test.describe("Playground smoke tests", () => {
     await expect(page.locator('[data-testid="code-drawer"]')).toBeVisible();
   });
 
+  test("shadow-dom-off snippet contains shadowDom: false", async ({
+    page,
+    shadowDom,
+  }) => {
+    const scenePage = new ScenePage(page, { shadowDom });
+    await scenePage.goto("shadow-dom-off");
+    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
+      "shadowDom: false",
+    );
+  });
+
   test("blank template shows empty canvas", async ({
     blankEditorReady,
     page,

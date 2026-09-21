@@ -47,6 +47,15 @@ export class EditorPage {
     }
   }
 
+  /** Feature scenes open the code drawer; canvas clicks need the width back. */
+  async closeCodeDrawer(): Promise<void> {
+    const drawer = this.page.locator(SELECTORS.codeDrawer);
+    if (await drawer.isVisible()) {
+      await this.page.getByRole("button", { name: "Code" }).click();
+      await expect(drawer).toBeHidden();
+    }
+  }
+
   // --- Block operations ---
 
   getBlocks(): Locator {

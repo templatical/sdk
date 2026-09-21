@@ -11,9 +11,10 @@ export async function mountScene(
   const config = scene.config(ctx);
   const editor = await init({
     container,
-    shadowDom,
     content: scene.content(ctx),
     ...config,
+    // Host `?shadowDom=` wins over a scene's snippet value (`shadow-dom-off`).
+    shadowDom,
   });
   if (typeof config.templates?.create === "function") {
     try {

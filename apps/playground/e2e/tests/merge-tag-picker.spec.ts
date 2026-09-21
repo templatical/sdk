@@ -2,10 +2,21 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 /**
- * E2E coverage for the built-in merge tag picker modal. Launchpad launch
+ * E2E coverage for the built-in merge tag picker modal. `/scenes/merge-tags`
  * configures `mergeTags.tags` only (no `onRequest`), so the SDK picker is
- * the default. Consumer-owned `onRequest` lives on the Task 6 scene.
+ * the default. Consumer-owned `onRequest` lives on `/scenes/merge-tags-on-request`.
  */
+
+async function openMergeTagsScene(
+  scenePage: import("../pages/scene.page").ScenePage,
+  editorPage: import("../pages/editor.page").EditorPage,
+  id: "merge-tags" | "merge-tags-on-request" = "merge-tags",
+): Promise<void> {
+  await scenePage.goto(id);
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
+  await editorPage.closeCodeDrawer();
+}
 
 async function openParagraphToolbar(
   editorPage: import("../pages/editor.page").EditorPage,
@@ -30,8 +41,12 @@ async function clickInsertMergeTagButton(
 }
 
 test.describe("Merge tag picker — built-in (SDK) modal", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await openMergeTagsScene(scenePage, editorPage);
+  });
+
   test("clicking 'Insert merge tag' opens the SDK picker when only static tags are configured", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -40,7 +55,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("mouse click on a row inserts a merge tag node into the paragraph and closes the modal", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -64,7 +79,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("keyboard insert: ArrowDown then Enter inserts the second item", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -86,7 +101,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("typing filters the list and clearing restores it", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -115,7 +130,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("search with no matches shows the empty state", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -128,7 +143,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("Esc cancels the modal without changing the canvas", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -142,7 +157,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("header close button (×) closes the modal", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -153,7 +168,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("grouped tags render with group headers and counts", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -166,7 +181,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("active search flattens groups (headers hide while filter is active)", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -183,7 +198,7 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
   });
 
   test("rows show description text when configured", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphToolbar(editorPage);
@@ -199,18 +214,15 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
 });
 
 test.describe("Merge tag picker — onRequest precedence", () => {
-  test.skip(true, "cookbook-task-6: merge-tags-on-request scene");
-
-  test("with default config (onRequest enabled), clicking 'Insert merge tag' opens the playground modal, NOT the SDK picker", async ({
-    editorReady: { editorPage },
+  test("clicking 'Insert merge tag' opens the consumer modal, NOT the SDK picker", async ({
+    scenePage,
+    editorPage,
     page,
   }) => {
-    // Default playground state already has onRequest enabled. We just need
-    // to open a paragraph and click the button.
+    await openMergeTagsScene(scenePage, editorPage, "merge-tags-on-request");
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     await expect(page.locator(SELECTORS.playgroundMergeTagModal)).toBeVisible();
-    // The SDK picker must NOT be in the DOM — consumer-owned UX wins.
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toHaveCount(0);
   });
 });
@@ -236,9 +248,11 @@ test.describe("Welcome Email template — built-in picker is the default", () =>
 
 test.describe("Merge tag picker — autocomplete unchanged", () => {
   test("typing the syntax opener still shows the autocomplete suggestion list (regression)", async ({
-    editorReady: { editorPage },
+    scenePage,
+    editorPage,
     page,
   }) => {
+    await openMergeTagsScene(scenePage, editorPage);
     await editorPage.doubleClickBlock("paragraph");
     // Programmatic caret placement — a native End after the dblclick+click
     // chain trips the Chromium triple-click scroll bug; see
@@ -261,6 +275,10 @@ test.describe("Merge tag picker — autocomplete unchanged", () => {
  * which no unit test exercises end to end.
  */
 test.describe("Merge tag — changing a tag already in the content", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await openMergeTagsScene(scenePage, editorPage);
+  });
+
   async function insertFirstTag(
     editorPage: import("../pages/editor.page").EditorPage,
     page: import("@playwright/test").Page,
@@ -279,7 +297,7 @@ test.describe("Merge tag — changing a tag already in the content", () => {
   }
 
   test("clicking a chip reopens the picker instead of a raw text input", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const inserted = await insertFirstTag(editorPage, page);
@@ -292,7 +310,7 @@ test.describe("Merge tag — changing a tag already in the content", () => {
   });
 
   test("the picker opens with the current tag preselected", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const inserted = await insertFirstTag(editorPage, page);
@@ -308,7 +326,7 @@ test.describe("Merge tag — changing a tag already in the content", () => {
   });
 
   test("picking a different tag swaps the chip in place", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const inserted = await insertFirstTag(editorPage, page);
@@ -341,15 +359,12 @@ test.describe("Merge tag — changing a tag already in the content", () => {
   });
 
   test.describe("consumer-owned chooser", () => {
-    test.skip(true, "cookbook-task-6: merge-tags-on-request scene");
-
     test("a consumer-owned chooser handles the change too", async ({
-      editorReady: { editorPage },
+      scenePage,
+      editorPage,
       page,
     }) => {
-      // Default playground state: `mergeTags.onRequest` is wired to the
-      // playground's own modal, which must own edits as well as insertions.
-      await editorPage.waitForReady();
+      await openMergeTagsScene(scenePage, editorPage, "merge-tags-on-request");
       await openParagraphToolbar(editorPage);
       await clickInsertMergeTagButton(page);
       const playgroundModal = page.locator(SELECTORS.playgroundMergeTagModal);

@@ -22,7 +22,7 @@ import { SELECTORS } from "../helpers/selectors";
  *    keeps its span and stays visibly dynamic.
  */
 
-const TEMPLATE = "Order Confirmation";
+const SCENE = "merge-tags-samples";
 
 /** Has `sample: "Ada"` in the playground config. */
 const SAMPLED_VALUE = "Ada";
@@ -32,13 +32,11 @@ const UNSAMPLED_LABEL = "Last Name";
 const SAMPLED_LABEL = "First Name";
 
 test.describe("Merge tag samples", () => {
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    // Set before any page JS runs, or the onboarding overlay intercepts the
-    // template-card click.
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName(TEMPLATE);
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto(SCENE);
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await editorPage.closeCodeDrawer();
   });
 
   test("the editing canvas shows labels, never samples", async ({
@@ -86,12 +84,14 @@ test.describe("Merge tag samples", () => {
     expect(remaining).toBeGreaterThan(0);
     expect(remaining).toBeLessThan(chipsWhileEditing);
 
-    // Two, not one: the shipping address carries `{{last_name}}` as an authored
+    // Two, not one: the greeting carries `{{last_name}}` as an authored
     // span, and the "Delivery contact" block carries it as a bare token that
     // merge-tag normalization converted on load. Both are sample-less, so both
     // keep their chip — which is the point of this assertion either way.
     await expect(
-      canvas.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="{{last_name}}"]`),
+      canvas.locator(
+        `${SELECTORS.mergeTagSpan}[data-merge-tag="{{last_name}}"]`,
+      ),
     ).toHaveCount(2);
     await expect(
       canvas.locator(
@@ -160,7 +160,11 @@ test.describe("Merge tag samples", () => {
     const canvas = page.locator(SELECTORS.canvasBody);
 
     await editorPage.togglePreview();
-    await page.locator(SELECTORS.mergeTagModeToggle).getByRole("radio").last().click();
+    await page
+      .locator(SELECTORS.mergeTagModeToggle)
+      .getByRole("radio")
+      .last()
+      .click();
     await expect(canvas).toContainText(SAMPLED_LABEL);
 
     await editorPage.togglePreview();
@@ -172,8 +176,13 @@ test.describe("Merge tag samples", () => {
   });
 
   test("the test-email preview substitutes too, sharing the same choice", async ({
+    chooserPage,
     editorPage,
   }) => {
+    await chooserPage.goto();
+    await chooserPage.selectTemplateByName("Order Confirmation");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -209,8 +218,9 @@ test.describe("Merge tag samples", () => {
     // compiles and sends. This is the strongest form of the display-only
     // guarantee available in a browser.
     const mjml = await page.evaluate(async () => {
-      const getMjml = (window as { __tplPlaygroundGetMjml?: () => Promise<string> })
-        .__tplPlaygroundGetMjml;
+      const getMjml = (
+        window as { __tplPlaygroundGetMjml?: () => Promise<string> }
+      ).__tplPlaygroundGetMjml;
       if (!getMjml) throw new Error("__tplPlaygroundGetMjml is not exposed");
       return getMjml();
     });

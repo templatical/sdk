@@ -51,11 +51,44 @@ const STORAGE_IDS = [
   "render",
 ] as const;
 
+const AUTHOR_IDS = [
+  "merge-tags",
+  "merge-tags-on-request",
+  "merge-tags-samples",
+  "merge-tags-resolve-preview",
+  "logic-tags",
+  "display-conditions",
+  "custom-blocks",
+  "issues",
+  "fonts",
+  "defaults",
+  "theming",
+  "i18n",
+  "shadow-dom-off",
+] as const;
+
+const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
+  "merge-tags": "/guide/merge-tags",
+  "merge-tags-on-request": "/guide/merge-tags",
+  "merge-tags-samples": "/guide/preview-rendering",
+  "merge-tags-resolve-preview": "/guide/preview-rendering",
+  "logic-tags": "/guide/logic-tags",
+  "display-conditions": "/guide/display-conditions",
+  "custom-blocks": "/guide/custom-blocks",
+  issues: "/quality/",
+  fonts: "/guide/fonts",
+  defaults: "/guide/defaults",
+  theming: "/guide/theming",
+  i18n: "/guide/i18n",
+  "shadow-dom-off": "/guide/shadow-dom",
+};
+
 describe("registry", () => {
-  it("registers minimum, storage scenes, then Launchpad launch", () => {
+  it("registers minimum, storage, author scenes, then Launchpad launch", () => {
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...STORAGE_IDS,
+      ...AUTHOR_IDS,
       "example-launchpad-launch",
     ]);
     expect(getScene("minimum")?.group).toBe("minimum");
@@ -70,6 +103,13 @@ describe("registry", () => {
     for (const id of STORAGE_IDS) {
       expect(getScene(id)?.group).toBe("storage");
     }
+    for (const id of AUTHOR_IDS) {
+      expect(getScene(id)?.group).toBe("author");
+      expect(getScene(id)?.docs).toBe(AUTHOR_DOCS[id]);
+    }
+    expect(SCENES.map((s) => s.id)).not.toContain("content-direction");
+    expect(SCENES.map((s) => s.id)).not.toContain("colors");
+    expect(SCENES.map((s) => s.id)).not.toContain("html-block-preview");
     expect(getScene("example-launchpad-launch")?.group).toBe("examples");
     expect(getScene("example-launchpad-launch")?.docs).toBe(
       "/guide/examples#launchpad-launch",
@@ -77,10 +117,19 @@ describe("registry", () => {
     expect(getScene("nope")).toBeUndefined();
   });
 
-  it("groups minimum first, then storage", () => {
+  it("groups minimum first, then storage, then author", () => {
     const groups = [...scenesByGroup().keys()];
     expect(groups[0]).toBe("minimum");
     expect(groups[1]).toBe("storage");
+    expect(groups[2]).toBe("author");
+  });
+
+  it('i18n snippet contains locale: "de"', () => {
+    expect(getScene("i18n")?.snippet).toMatch(/locale:\s*"de"/);
+  });
+
+  it("shadow-dom-off snippet contains shadowDom: false", () => {
+    expect(getScene("shadow-dom-off")?.snippet).toMatch(/shadowDom:\s*false/);
   });
 });
 

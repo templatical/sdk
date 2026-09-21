@@ -14,13 +14,22 @@ import { SELECTORS } from "../helpers/selectors";
  */
 async function openParagraphEditor(editorPage: {
   doubleClickBlock(t: string): Promise<void>;
-  focusTextEditableAtEnd(t: string): Promise<import("@playwright/test").Locator>;
+  focusTextEditableAtEnd(
+    t: string,
+  ): Promise<import("@playwright/test").Locator>;
 }) {
   await editorPage.doubleClickBlock("paragraph");
   return editorPage.focusTextEditableAtEnd("paragraph");
 }
 
 test.describe("Merge tag autocomplete", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("merge-tags");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await editorPage.closeCodeDrawer();
+  });
+
   // The bug that motivated this suite: clicking a suggestion item used to
   // close the inline text editor right after the merge tag was inserted.
   // The popup mounts in the editor's popover root (outside
@@ -28,7 +37,7 @@ test.describe("Merge tag autocomplete", () => {
   // keeps the document-level mousedown handler in useRichTextEditor from
   // tearing down the editor.
   test("clicking a suggestion item inserts the tag and keeps the editor open", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
@@ -51,7 +60,9 @@ test.describe("Merge tag autocomplete", () => {
     // Insertion happens in the active editable — assert there, not on a
     // .first() block (the playground has multiple paragraph blocks).
     await expect(
-      editable.locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]').last(),
+      editable
+        .locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]')
+        .last(),
     ).toBeVisible();
 
     // The bug: editor must still be open and popup must be gone.
@@ -60,7 +71,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("Enter inserts the highlighted item and keeps editor open", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
@@ -79,7 +90,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("Tab inserts like Enter (alternative confirm key)", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
@@ -91,14 +102,16 @@ test.describe("Merge tag autocomplete", () => {
     await page.keyboard.press("Tab");
 
     await expect(
-      editable.locator('.tpl-merge-tag-node [data-tooltip="{{company}}"]').last(),
+      editable
+        .locator('.tpl-merge-tag-node [data-tooltip="{{company}}"]')
+        .last(),
     ).toBeVisible();
     await expect(page.locator(SELECTORS.textToolbar)).toBeVisible();
     await expect(popup).toHaveCount(0);
   });
 
   test("ArrowDown / ArrowUp move the selected highlight between items", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphEditor(editorPage);
@@ -133,7 +146,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("inserted tag renders the human-readable label, not the raw value", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
@@ -155,7 +168,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("Escape dismisses the popup without inserting anything", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
@@ -179,7 +192,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("popup filters by query and shows the empty state for no match", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphEditor(editorPage);
@@ -196,7 +209,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("trigger fires when there is no whitespace before {{ (e.g. '.{{') ", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     // Regression for the @tiptap/suggestion default `allowedPrefixes: [" "]`
@@ -218,7 +231,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("filtering narrows results live as user types", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await openParagraphEditor(editorPage);
@@ -242,7 +255,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("popup positions near the caret in dark canvas mode (no transform/filter offset)", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     // Regression for dark-canvas mispositioning. Canvas.vue applies
@@ -270,19 +283,18 @@ test.describe("Merge tag autocomplete", () => {
         // Resolve caret + popup through the editor's root: in shadow mode
         // both live inside the shadow tree, where document.querySelector
         // can't see and the document selection is clamped at the host.
-        const host = document.querySelector(
-          '[data-testid="editor-container"]',
-        );
+        const host = document.querySelector('[data-testid="editor-container"]');
         const root = (host?.shadowRoot ?? document) as (
-          | Document
-          | ShadowRoot
+          Document | ShadowRoot
         ) & { getSelection?: () => Selection | null };
         const selection =
           typeof root.getSelection === "function"
             ? root.getSelection()
             : window.getSelection();
         const range =
-          selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+          selection && selection.rangeCount > 0
+            ? selection.getRangeAt(0)
+            : null;
         const caretRect = range?.getBoundingClientRect();
         const popupEl = root.querySelector(sel) as HTMLElement | null;
         const popupRect = popupEl?.getBoundingClientRect();
@@ -310,7 +322,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("popup flips above caret when there's not enough room below", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     // Regression for viewport-flip: when caret has insufficient room
@@ -347,7 +359,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("popup positions correctly when an ancestor of the editor has a transform", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     test.skip(
@@ -399,19 +411,18 @@ test.describe("Merge tag autocomplete", () => {
         // Resolve caret + popup through the editor's root: in shadow mode
         // both live inside the shadow tree, where document.querySelector
         // can't see and the document selection is clamped at the host.
-        const host = document.querySelector(
-          '[data-testid="editor-container"]',
-        );
+        const host = document.querySelector('[data-testid="editor-container"]');
         const root = (host?.shadowRoot ?? document) as (
-          | Document
-          | ShadowRoot
+          Document | ShadowRoot
         ) & { getSelection?: () => Selection | null };
         const selection =
           typeof root.getSelection === "function"
             ? root.getSelection()
             : window.getSelection();
         const range =
-          selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+          selection && selection.rangeCount > 0
+            ? selection.getRangeAt(0)
+            : null;
         const caretRect = range?.getBoundingClientRect();
         const popupEl = root.querySelector(sel) as HTMLElement | null;
         const popupRect = popupEl?.getBoundingClientRect();
@@ -437,7 +448,7 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("contenteditable exposes ARIA combobox attrs while popup is open", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     // Regression for missing ARIA: the contenteditable acting as the
@@ -477,16 +488,13 @@ test.describe("Merge tag autocomplete", () => {
     await page.keyboard.press("Escape");
     await expect(popup).toHaveCount(0);
     await expect(editable).not.toHaveAttribute("aria-expanded", "true");
-    await expect(editable).not.toHaveAttribute(
-      "aria-activedescendant",
-      /.+/,
-    );
+    await expect(editable).not.toHaveAttribute("aria-activedescendant", /.+/);
   });
 
   // --- Title editor coverage (mirror of the paragraph happy paths) ---
 
   test("title block: clicking suggestion item inserts tag and keeps editor open", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.doubleClickBlock("title");
@@ -503,14 +511,16 @@ test.describe("Merge tag autocomplete", () => {
     await items.first().click();
 
     await expect(
-      editable.locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]').last(),
+      editable
+        .locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]')
+        .last(),
     ).toBeVisible();
     await expect(page.locator(SELECTORS.textToolbar)).toBeVisible();
     await expect(popup).toHaveCount(0);
   });
 
   test("title block: Enter inserts highlighted item and keeps editor open", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.doubleClickBlock("title");
@@ -530,28 +540,26 @@ test.describe("Merge tag autocomplete", () => {
   });
 
   test("can insert two merge tags in the same edit session", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const editable = await openParagraphEditor(editorPage);
 
     // First insertion via Enter.
     await page.keyboard.type(" {{first");
-    await expect(
-      page.locator(SELECTORS.mergeTagSuggestionPopup),
-    ).toBeVisible();
+    await expect(page.locator(SELECTORS.mergeTagSuggestionPopup)).toBeVisible();
     await page.keyboard.press("Enter");
     await expect(
-      editable.locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]').last(),
+      editable
+        .locator('.tpl-merge-tag-node [data-tooltip="{{first_name}}"]')
+        .last(),
     ).toBeVisible();
 
     // Editor is still open — second insertion should still work.
     await expect(page.locator(SELECTORS.textToolbar)).toBeVisible();
 
     await page.keyboard.type(" {{ema");
-    await expect(
-      page.locator(SELECTORS.mergeTagSuggestionPopup),
-    ).toBeVisible();
+    await expect(page.locator(SELECTORS.mergeTagSuggestionPopup)).toBeVisible();
     await page.keyboard.press("Enter");
     await expect(
       editable.locator('.tpl-merge-tag-node [data-tooltip="{{email}}"]').last(),

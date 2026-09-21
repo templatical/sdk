@@ -18,6 +18,22 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Test email](https://play.templatical.com/scenes/test-email): init({ testEmail }) — header Test button, recipient picker, fake send.
 - [Render](https://play.templatical.com/scenes/render): init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.
 
+## Author
+
+- [Merge tags](https://play.templatical.com/scenes/merge-tags): init({ mergeTags }) — static tags, built-in picker, no onRequest.
+- [Merge tags on request](https://play.templatical.com/scenes/merge-tags-on-request): init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.
+- [Merge tag samples](https://play.templatical.com/scenes/merge-tags-samples): init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.
+- [Resolve preview](https://play.templatical.com/scenes/merge-tags-resolve-preview): init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.
+- [Logic tags](https://play.templatical.com/scenes/logic-tags): init({ logicTags }) — insert control-flow tokens from a dedicated picker.
+- [Display conditions](https://play.templatical.com/scenes/display-conditions): init({ displayConditions }) — show or hide a block per recipient.
+- [Custom blocks](https://play.templatical.com/scenes/custom-blocks): init({ customBlocks }) — one registered block on the palette.
+- [Issues](https://play.templatical.com/scenes/issues): init({ lint }) — Issues tab from the optional @templatical/quality peer.
+- [Fonts](https://play.templatical.com/scenes/fonts): init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.
+- [Defaults](https://play.templatical.com/scenes/defaults): init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.
+- [Theming](https://play.templatical.com/scenes/theming): init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.
+- [Internationalization](https://play.templatical.com/scenes/i18n): init({ locale: "de" }) — German editor chrome and block defaults.
+- [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.
+
 ## Examples
 
 - [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.

@@ -1,10 +1,22 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
+async function openIssuesScene(
+  scenePage: import("../pages/scene.page").ScenePage,
+  editorPage: import("../pages/editor.page").EditorPage,
+): Promise<void> {
+  await scenePage.goto("issues");
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
+  await editorPage.closeCodeDrawer();
+}
+
 test.describe("Template lint (a11y + structure)", () => {
   test("empty section: warning shows, Fix button is visible and amber, click removes", async ({
-    blankEditorReady: { editorPage },
+    scenePage,
+    editorPage,
   }) => {
+    await openIssuesScene(scenePage, editorPage);
     await editorPage.dragBlockFromSidebar("section");
     expect(await editorPage.getBlocks().count()).toBe(1);
 
@@ -32,8 +44,10 @@ test.describe("Template lint (a11y + structure)", () => {
   });
 
   test("a11y rule fires on blank template alongside structure rules", async ({
-    blankEditorReady: { editorPage },
+    scenePage,
+    editorPage,
   }) => {
+    await openIssuesScene(scenePage, editorPage);
     // Blank template has no preheader — a11y.missing-preheader fires at the
     // template level. This verifies that both linter families run through
     // the same composable and show in the same panel.
@@ -49,9 +63,11 @@ test.describe("Template lint (a11y + structure)", () => {
   });
 
   test("Issues tab shows a count badge with the total across categories", async ({
-    blankEditorReady: { editorPage },
+    scenePage,
+    editorPage,
     page,
   }) => {
+    await openIssuesScene(scenePage, editorPage);
     await editorPage.dragBlockFromSidebar("section");
     // structure.empty-section + a11y.missing-preheader = 2 issues total
     const tab = page.locator(SELECTORS.rightTabIssues);
@@ -60,9 +76,11 @@ test.describe("Template lint (a11y + structure)", () => {
   });
 
   test("link.javascript-protocol fires when a button URL is `javascript:`", async ({
-    blankEditorReady: { editorPage },
+    scenePage,
+    editorPage,
     page,
   }) => {
+    await openIssuesScene(scenePage, editorPage);
     await editorPage.dragBlockFromSidebar("button");
     await editorPage.selectBlockByType("button");
 
