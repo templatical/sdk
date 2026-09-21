@@ -1,5 +1,12 @@
 # @templatical/editor
 
+## 0.39.4
+
+### Patch Changes
+
+- @templatical/quality@0.39.4
+  - @templatical/renderer@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

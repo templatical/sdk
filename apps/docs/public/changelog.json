@@ -17,8 +17,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.39.3",
+  "latest": "0.39.4",
   "versions": [
+    {
+      "version": "0.39.4",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "14531d2",
+          "level": "patch",
+          "title": "Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.",
+          "body": "",
+          "packages": [
+            "@templatical/media-library"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.39.3",
       "date": "2026-09-21",

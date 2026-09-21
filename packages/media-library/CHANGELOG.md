@@ -1,5 +1,12 @@
 # @templatical/media-library
 
+## 0.39.4
+
+### Patch Changes
+
+- 14531d2: Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.
+- @templatical/types@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

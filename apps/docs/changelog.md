@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.39.4
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.**
+
+`@templatical/media-library`
+
 ## 0.39.3
 
 <time datetime="2026-09-21">2026-09-21</time>

@@ -1,5 +1,11 @@
 # @templatical/import-easy-email-pro
 
+## 0.39.4
+
+### Patch Changes
+
+- @templatical/types@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes
