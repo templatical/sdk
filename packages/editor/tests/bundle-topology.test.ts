@@ -48,7 +48,10 @@ function getEntrypointSpecifier(spec: string): string {
 function listJsFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true })
     .filter(
-      (entry) => entry.isFile() && entry.name.endsWith(".js") && !entry.name.endsWith(".map"),
+      (entry) =>
+        entry.isFile() &&
+        entry.name.endsWith(".js") &&
+        !entry.name.endsWith(".map"),
     )
     .map((entry) => join(dir, entry.name));
 }
@@ -57,8 +60,13 @@ function extractImports(source: string): string[] {
   // Use a real ES module lexer — regex-based extraction triggers false
   // positives on string literals and template literals that happen to
   // contain `from "..."` substrings.
+  // es-module-lexer v3: specifier lives on `specifier`, not `n`; type-only
+  // imports are reported with `typeOnly: true` and never emit a runtime edge.
   const [imports] = parse(source);
-  return imports.map((i) => i.n).filter((n): n is string => typeof n === "string");
+  return imports
+    .filter((i) => i.type === "static" && !i.typeOnly)
+    .map((i) => i.specifier)
+    .filter((n): n is string => typeof n === "string");
 }
 
 describe("editor bundle topology", () => {
@@ -71,7 +79,7 @@ describe("editor bundle topology", () => {
         `dist/ not found. Run \`pnpm --filter @templatical/editor run build\` before running this test.`,
       );
     }
-    await initLexer;
+    await initLexer();
     // Skip the cdn/ directory — it's a separate self-contained CDN build with
     // its own topology rules (everything inlined including optional peers).
     allFiles = listJsFiles(DIST);
@@ -98,7 +106,10 @@ describe("editor bundle topology", () => {
     for (const [file, specs] of bareImportsByFile) {
       for (const spec of specs) {
         if (!ALLOWED_EXTERNALS.has(spec)) {
-          violations.push({ file: file.replace(DIST + "/", ""), specifier: spec });
+          violations.push({
+            file: file.replace(DIST + "/", ""),
+            specifier: spec,
+          });
         }
       }
     }
@@ -271,5 +282,66 @@ describe("editor bundle topology", () => {
           `shadow-DOM consumers would see an empty adopted stylesheet.`,
       ).toBe(false);
     }
+  });
+
+  it("keeps @tiptap and prosemirror out of the entry's static-import closure", () => {
+    // Same leak the CDN granularity test covers, on the npm graph that
+    // `bundle-stats.json` reports. Field autocomplete statically imported the
+    // TipTap MergeTagSuggestion module for a shared popup helper, so
+    // `@tiptap/core` + prosemirror (~100 KB gzip) landed in every session.
+    // npm dist has no sourcemaps; the bundler leaves `node_modules/.pnpm/@tiptap`
+    // / `prosemirror-` region comments in the chunk, which is the marker.
+    const STATIC_IMPORT_RE =
+      /(?:^|[\s;])(?:import|export)[^;]*?from\s*["']\.\/([^"']+)["']/g;
+    const TIPTAP = /node_modules\/\.pnpm\/(?:@tiptap|prosemirror-)/;
+    const eager = new Set<string>();
+    const walk = (name: string) => {
+      if (eager.has(name)) return;
+      const abs = join(DIST, name);
+      if (!existsSync(abs)) return;
+      eager.add(name);
+      const text = readFileSync(abs, "utf8");
+      STATIC_IMPORT_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = STATIC_IMPORT_RE.exec(text))) walk(match[1]);
+    };
+    walk("templatical-editor.js");
+
+    const offenders: string[] = [];
+    for (const name of eager) {
+      const text = readFileSync(join(DIST, name), "utf8");
+      if (TIPTAP.test(text)) offenders.push(name);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the Toolbar and TemplateSettings chunks out of the entry's static-import closure", () => {
+    // npm dist has no sourcemaps. ColorPicker inlines into these two chunks
+    // (the only chrome that import it). Both must exist and must not be in
+    // the entry walk — a static import in RightSidebar would pull them eager.
+    const STATIC_IMPORT_RE =
+      /(?:^|[\s;])(?:import|export)[^;]*?from\s*["']\.\/([^"']+)["']/g;
+    const eager = new Set<string>();
+    const walk = (name: string) => {
+      if (eager.has(name)) return;
+      const abs = join(DIST, name);
+      if (!existsSync(abs)) return;
+      eager.add(name);
+      const text = readFileSync(abs, "utf8");
+      STATIC_IMPORT_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = STATIC_IMPORT_RE.exec(text))) walk(match[1]);
+    };
+    walk("templatical-editor.js");
+
+    const names = allFiles.map((file) => file.replace(DIST + "/", ""));
+    const toolbar = names.filter((name) => name.startsWith("Toolbar-"));
+    const settings = names.filter((name) =>
+      name.startsWith("TemplateSettings-"),
+    );
+    expect(toolbar.length).toBeGreaterThan(0);
+    expect(settings.length).toBeGreaterThan(0);
+    expect(toolbar.filter((name) => eager.has(name))).toEqual([]);
+    expect(settings.filter((name) => eager.has(name))).toEqual([]);
   });
 });

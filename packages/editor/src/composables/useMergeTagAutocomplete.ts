@@ -17,10 +17,7 @@ import {
 } from "vue";
 import type { Translations } from "../i18n";
 import { TRANSLATIONS_KEY } from "../keys";
-import {
-  createMergeTagPopup,
-  filterMergeTags,
-} from "../extensions/MergeTagSuggestion";
+import { createMergeTagPopup, filterMergeTags } from "../utils/mergeTagPopup";
 import {
   findOpenMergeTagTrigger,
   type OpenMergeTagTrigger,

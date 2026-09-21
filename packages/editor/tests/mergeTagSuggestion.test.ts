@@ -1,97 +1,97 @@
 // DOM stubs must be imported BEFORE Vue (Vue captures `document` at module load time)
-import './dom-stubs';
+import "./dom-stubs";
 
-import { describe, expect, it, vi } from 'vitest';
-import { ref, shallowRef } from 'vue';
-import type { MergeTag } from '@templatical/types';
+import { describe, expect, it, vi } from "vitest";
+import { ref, shallowRef } from "vue";
+import type { MergeTag } from "@templatical/types";
+import { MergeTagSuggestion } from "../src/extensions/MergeTagSuggestion";
 import {
-  MergeTagSuggestion,
   filterMergeTags,
   handleSuggestionKeyDown,
-} from '../src/extensions/MergeTagSuggestion';
+} from "../src/utils/mergeTagPopup";
 
 const sampleTags: MergeTag[] = [
-  { label: 'First Name', value: '{{first_name}}' },
-  { label: 'Last Name', value: '{{last_name}}' },
-  { label: 'Email', value: '{{email}}' },
-  { label: 'Company', value: '{{company}}' },
-  { label: 'City', value: '{{city}}' },
+  { label: "First Name", value: "{{first_name}}" },
+  { label: "Last Name", value: "{{last_name}}" },
+  { label: "Email", value: "{{email}}" },
+  { label: "Company", value: "{{company}}" },
+  { label: "City", value: "{{city}}" },
 ];
 
-describe('filterMergeTags', () => {
-  it('returns all tags (capped) when query is empty', () => {
-    const result = filterMergeTags(sampleTags, '');
+describe("filterMergeTags", () => {
+  it("returns all tags (capped) when query is empty", () => {
+    const result = filterMergeTags(sampleTags, "");
     expect(result).toHaveLength(5);
-    expect(result[0].value).toBe('{{first_name}}');
+    expect(result[0].value).toBe("{{first_name}}");
   });
 
-  it('caps results at 10', () => {
+  it("caps results at 10", () => {
     const many: MergeTag[] = Array.from({ length: 15 }, (_, i) => ({
       label: `Tag ${i}`,
       value: `{{tag_${i}}}`,
     }));
-    const result = filterMergeTags(many, '');
+    const result = filterMergeTags(many, "");
     expect(result).toHaveLength(10);
   });
 
-  it('matches label case-insensitively', () => {
-    const result = filterMergeTags(sampleTags, 'FIRST');
+  it("matches label case-insensitively", () => {
+    const result = filterMergeTags(sampleTags, "FIRST");
     expect(result).toHaveLength(1);
-    expect(result[0].value).toBe('{{first_name}}');
+    expect(result[0].value).toBe("{{first_name}}");
   });
 
-  it('matches value case-insensitively', () => {
-    const result = filterMergeTags(sampleTags, 'first_name');
+  it("matches value case-insensitively", () => {
+    const result = filterMergeTags(sampleTags, "first_name");
     expect(result).toHaveLength(1);
-    expect(result[0].label).toBe('First Name');
+    expect(result[0].label).toBe("First Name");
   });
 
-  it('returns empty array when no match', () => {
-    const result = filterMergeTags(sampleTags, 'zzzz');
+  it("returns empty array when no match", () => {
+    const result = filterMergeTags(sampleTags, "zzzz");
     expect(result).toEqual([]);
   });
 
-  it('trims whitespace before matching', () => {
-    const result = filterMergeTags(sampleTags, '  email  ');
+  it("trims whitespace before matching", () => {
+    const result = filterMergeTags(sampleTags, "  email  ");
     expect(result).toHaveLength(1);
-    expect(result[0].value).toBe('{{email}}');
+    expect(result[0].value).toBe("{{email}}");
   });
 
-  it('treats query as plain string (no regex injection)', () => {
-    const tags: MergeTag[] = [{ label: 'a.b', value: '{{a.b}}' }];
-    const result = filterMergeTags(tags, '.*');
+  it("treats query as plain string (no regex injection)", () => {
+    const tags: MergeTag[] = [{ label: "a.b", value: "{{a.b}}" }];
+    const result = filterMergeTags(tags, ".*");
     expect(result).toEqual([]);
   });
 
-  it('does not throw with regex special chars in query', () => {
-    const result = filterMergeTags(sampleTags, '(*)');
+  it("does not throw with regex special chars in query", () => {
+    const result = filterMergeTags(sampleTags, "(*)");
     expect(result).toEqual([]);
   });
 
-  it('matches when query appears anywhere in label', () => {
-    const result = filterMergeTags(sampleTags, 'name');
+  it("matches when query appears anywhere in label", () => {
+    const result = filterMergeTags(sampleTags, "name");
     expect(result.map((t) => t.value)).toEqual([
-      '{{first_name}}',
-      '{{last_name}}',
+      "{{first_name}}",
+      "{{last_name}}",
     ]);
   });
 
-  it('returns empty array for empty input list', () => {
-    expect(filterMergeTags([], 'anything')).toEqual([]);
-    expect(filterMergeTags([], '')).toEqual([]);
+  it("returns empty array for empty input list", () => {
+    expect(filterMergeTags([], "anything")).toEqual([]);
+    expect(filterMergeTags([], "")).toEqual([]);
   });
 });
 
-describe('handleSuggestionKeyDown', () => {
+describe("handleSuggestionKeyDown", () => {
   function makeKey(key: string): KeyboardEvent {
     return { key } as KeyboardEvent;
   }
 
-  it('returns false for non-handled key', () => {
+  it("returns false for non-handled key", () => {
     const selected = ref(0);
     const onSelect = vi.fn();
     const handled = handleSuggestionKeyDown(
-      makeKey('a'),
+      makeKey("a"),
       sampleTags,
       selected,
       onSelect,
@@ -100,10 +100,10 @@ describe('handleSuggestionKeyDown', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('ArrowDown advances selection', () => {
+  it("ArrowDown advances selection", () => {
     const selected = ref(0);
     const handled = handleSuggestionKeyDown(
-      makeKey('ArrowDown'),
+      makeKey("ArrowDown"),
       sampleTags,
       selected,
       vi.fn(),
@@ -112,10 +112,10 @@ describe('handleSuggestionKeyDown', () => {
     expect(selected.value).toBe(1);
   });
 
-  it('ArrowDown wraps from last to first', () => {
+  it("ArrowDown wraps from last to first", () => {
     const selected = ref(sampleTags.length - 1);
     handleSuggestionKeyDown(
-      makeKey('ArrowDown'),
+      makeKey("ArrowDown"),
       sampleTags,
       selected,
       vi.fn(),
@@ -123,33 +123,23 @@ describe('handleSuggestionKeyDown', () => {
     expect(selected.value).toBe(0);
   });
 
-  it('ArrowUp decrements selection', () => {
+  it("ArrowUp decrements selection", () => {
     const selected = ref(2);
-    handleSuggestionKeyDown(
-      makeKey('ArrowUp'),
-      sampleTags,
-      selected,
-      vi.fn(),
-    );
+    handleSuggestionKeyDown(makeKey("ArrowUp"), sampleTags, selected, vi.fn());
     expect(selected.value).toBe(1);
   });
 
-  it('ArrowUp wraps from first to last', () => {
+  it("ArrowUp wraps from first to last", () => {
     const selected = ref(0);
-    handleSuggestionKeyDown(
-      makeKey('ArrowUp'),
-      sampleTags,
-      selected,
-      vi.fn(),
-    );
+    handleSuggestionKeyDown(makeKey("ArrowUp"), sampleTags, selected, vi.fn());
     expect(selected.value).toBe(sampleTags.length - 1);
   });
 
-  it('Enter calls onSelect with current item', () => {
+  it("Enter calls onSelect with current item", () => {
     const selected = ref(2);
     const onSelect = vi.fn();
     const handled = handleSuggestionKeyDown(
-      makeKey('Enter'),
+      makeKey("Enter"),
       sampleTags,
       selected,
       onSelect,
@@ -159,23 +149,18 @@ describe('handleSuggestionKeyDown', () => {
     expect(onSelect).toHaveBeenCalledWith(sampleTags[2]);
   });
 
-  it('Tab acts like Enter', () => {
+  it("Tab acts like Enter", () => {
     const selected = ref(0);
     const onSelect = vi.fn();
-    handleSuggestionKeyDown(
-      makeKey('Tab'),
-      sampleTags,
-      selected,
-      onSelect,
-    );
+    handleSuggestionKeyDown(makeKey("Tab"), sampleTags, selected, onSelect);
     expect(onSelect).toHaveBeenCalledWith(sampleTags[0]);
   });
 
-  it('Enter on empty list does not call onSelect but is handled', () => {
+  it("Enter on empty list does not call onSelect but is handled", () => {
     const selected = ref(0);
     const onSelect = vi.fn();
     const handled = handleSuggestionKeyDown(
-      makeKey('Enter'),
+      makeKey("Enter"),
       [],
       selected,
       onSelect,
@@ -184,10 +169,10 @@ describe('handleSuggestionKeyDown', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('ArrowDown on empty list returns false', () => {
+  it("ArrowDown on empty list returns false", () => {
     const selected = ref(0);
     const handled = handleSuggestionKeyDown(
-      makeKey('ArrowDown'),
+      makeKey("ArrowDown"),
       [],
       selected,
       vi.fn(),
@@ -196,23 +181,20 @@ describe('handleSuggestionKeyDown', () => {
   });
 });
 
-describe('MergeTagSuggestion mount target', () => {
+describe("MergeTagSuggestion mount target", () => {
   // Regression: popup must mount inside the editor's shadow-aware popover
   // root when wired (Phase 3.1) and fall back to document.body otherwise.
   // The wrapper mirrors the editor's data-tpl-theme value and snapshots
   // every --tpl-* custom property so CSS vars (scoped to .tpl[data-tpl-theme])
   // resolve regardless of where the popup ends up in the DOM.
-  it('source uses popoverRoot.value with document.body fallback and copies --tpl-* vars', async () => {
-    const fs = await import('node:fs');
-    const src = fs.readFileSync(
-      'src/extensions/MergeTagSuggestion.ts',
-      'utf8',
-    );
-    expect(src).toContain('popoverRootRef?.value ?? document.body');
-    expect(src).toContain('mountTarget.appendChild(container)');
-    expect(src).toContain('data-tpl-theme');
-    expect(src).toContain('--tpl-');
-    expect(src).toContain('getComputedStyle');
+  it("source uses popoverRoot.value with document.body fallback and copies --tpl-* vars", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/utils/mergeTagPopup.ts", "utf8");
+    expect(src).toContain("popoverRootRef?.value ?? document.body");
+    expect(src).toContain("mountTarget.appendChild(container)");
+    expect(src).toContain("data-tpl-theme");
+    expect(src).toContain("--tpl-");
+    expect(src).toContain("getComputedStyle");
   });
 
   // Regression: useRichTextEditor doesn't pass `element` to the TipTap
@@ -220,15 +202,12 @@ describe('MergeTagSuggestion mount target', () => {
   // closest('.tpl-text-editor-wrapper') on a detached node returns null
   // and the popup falls back to document.body, breaking the click-outside
   // guard. Must use editor.view.dom (the actual mounted ProseMirror node).
-  it('source uses editor.view.dom (not options.element) to find mount target', async () => {
-    const fs = await import('node:fs');
-    const src = fs.readFileSync(
-      'src/extensions/MergeTagSuggestion.ts',
-      'utf8',
-    );
-    expect(src).toContain('editor.view');
-    expect(src).toContain('.dom');
-    expect(src).not.toContain('editor.options.element');
+  it("source uses editor.view.dom (not options.element) to find mount target", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/extensions/MergeTagSuggestion.ts", "utf8");
+    expect(src).toContain("editor.view");
+    expect(src).toContain(".dom");
+    expect(src).not.toContain("editor.options.element");
   });
 
   // Regression: repositionAfterPaint queues a requestAnimationFrame whose
@@ -239,34 +218,35 @@ describe('MergeTagSuggestion mount target', () => {
   // controller's close(); onExit delegates to it — so the cancel lives in
   // close() and onExit calls popup.close(). (Behavior is exercised end-to-end
   // in mergeTagSuggestionRenderer.test.ts.)
-  it('source cancels the pending rAF in the controller close() that onExit calls', async () => {
-    const fs = await import('node:fs');
-    const src = fs.readFileSync(
-      'src/extensions/MergeTagSuggestion.ts',
-      'utf8',
+  it("source cancels the pending rAF in the controller close() that onExit calls", async () => {
+    const fs = await import("node:fs");
+    const popupSrc = fs.readFileSync("src/utils/mergeTagPopup.ts", "utf8");
+    const extensionSrc = fs.readFileSync(
+      "src/extensions/MergeTagSuggestion.ts",
+      "utf8",
     );
-    expect(src).toContain('cancelAnimationFrame');
+    expect(popupSrc).toContain("cancelAnimationFrame");
     // onExit must route teardown through the shared controller.
-    expect(src).toContain('onExit: () => popup.close()');
+    expect(extensionSrc).toContain("onExit: () => popup.close()");
     // The cancellation must live inside close() — not just anywhere in the
     // file. Slice from `close:` to the next `},` at the same level.
-    const closeStart = src.indexOf('close: () => {');
+    const closeStart = popupSrc.indexOf("close: () => {");
     expect(closeStart).toBeGreaterThan(-1);
-    const closeEnd = src.indexOf('},', closeStart);
+    const closeEnd = popupSrc.indexOf("},", closeStart);
     expect(closeEnd).toBeGreaterThan(closeStart);
-    const closeBody = src.slice(closeStart, closeEnd);
-    expect(closeBody).toContain('cancelAnimationFrame');
+    const closeBody = popupSrc.slice(closeStart, closeEnd);
+    expect(closeBody).toContain("cancelAnimationFrame");
   });
 });
 
-describe('MergeTagSuggestion extension ordering in editors', () => {
+describe("MergeTagSuggestion extension ordering in editors", () => {
   // The suggestion plugin's command calls editor.commands.insertMergeTag,
   // which is registered by MergeTagNode. If MergeTagSuggestion appears
   // before MergeTagNode in the extensions array, TipTap may not have
   // registered the command yet on first run. Guard the order in source.
   function assertOrder(source: string, file: string): void {
-    const nodeIdx = source.indexOf('MergeTagNode.configure');
-    const suggIdx = source.indexOf('MergeTagSuggestion.configure');
+    const nodeIdx = source.indexOf("MergeTagNode.configure");
+    const suggIdx = source.indexOf("MergeTagSuggestion.configure");
     expect(nodeIdx, `${file}: MergeTagNode.configure missing`).toBeGreaterThan(
       -1,
     );
@@ -280,115 +260,112 @@ describe('MergeTagSuggestion extension ordering in editors', () => {
     ).toBeLessThan(suggIdx);
   }
 
-  it('ParagraphEditor configures MergeTagNode before MergeTagSuggestion', async () => {
-    const fs = await import('node:fs');
+  it("ParagraphEditor configures MergeTagNode before MergeTagSuggestion", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      'src/components/blocks/ParagraphEditor.vue',
-      'utf8',
+      "src/components/blocks/ParagraphEditor.vue",
+      "utf8",
     );
-    assertOrder(src, 'ParagraphEditor.vue');
+    assertOrder(src, "ParagraphEditor.vue");
   });
 
-  it('TitleEditor configures MergeTagNode before MergeTagSuggestion', async () => {
-    const fs = await import('node:fs');
+  it("TitleEditor configures MergeTagNode before MergeTagSuggestion", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      'src/components/blocks/TitleEditor.vue',
-      'utf8',
+      "src/components/blocks/TitleEditor.vue",
+      "utf8",
     );
-    assertOrder(src, 'TitleEditor.vue');
+    assertOrder(src, "TitleEditor.vue");
   });
 });
 
-describe('MergeTagSuggestion prefix-prefix behavior', () => {
+describe("MergeTagSuggestion prefix-prefix behavior", () => {
   // Regression: the @tiptap/suggestion default `allowedPrefixes: [" "]`
   // requires whitespace or line-start before the trigger. Typing `.{{` (no
   // space between the period and the trigger) does NOT fire the suggestion.
   // Our config must set `allowedPrefixes: null` so any preceding char works.
-  it('source sets allowedPrefixes to null', async () => {
-    const fs = await import('node:fs');
-    const src = fs.readFileSync(
-      'src/extensions/MergeTagSuggestion.ts',
-      'utf8',
-    );
-    expect(src).toContain('allowedPrefixes: null');
+  it("source sets allowedPrefixes to null", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/extensions/MergeTagSuggestion.ts", "utf8");
+    expect(src).toContain("allowedPrefixes: null");
   });
 });
 
-describe('MergeTagSuggestion extension', () => {
-  it('has correct name', () => {
-    expect(MergeTagSuggestion.name).toBe('mergeTagSuggestion');
+describe("MergeTagSuggestion extension", () => {
+  it("has correct name", () => {
+    expect(MergeTagSuggestion.name).toBe("mergeTagSuggestion");
   });
 
-  it('exposes default options', () => {
+  it("exposes default options", () => {
     const ext = MergeTagSuggestion.configure({});
     expect(ext.options.mergeTags()).toEqual([]);
-    expect(ext.options.char).toBe('{{');
-    expect(ext.options.emptyText).toBe('No matching merge tags');
+    expect(ext.options.char).toBe("{{");
+    expect(ext.options.emptyText).toBe("No matching merge tags");
     // Phase 3.1: popoverRoot defaults to null; popup falls back to
     // document.body when not provided.
     expect(ext.options.popoverRoot).toBe(null);
   });
 
-  it('accepts configuration', () => {
+  it("accepts configuration", () => {
     const ext = MergeTagSuggestion.configure({
       mergeTags: () => sampleTags,
-      char: '*|',
-      emptyText: 'Nothing',
+      char: "*|",
+      emptyText: "Nothing",
     });
     expect(ext.options.mergeTags()).toEqual(sampleTags);
-    expect(ext.options.char).toBe('*|');
-    expect(ext.options.emptyText).toBe('Nothing');
+    expect(ext.options.char).toBe("*|");
+    expect(ext.options.emptyText).toBe("Nothing");
   });
 
-  it('configures different trigger chars per syntax', () => {
-    const liquid = MergeTagSuggestion.configure({ char: '{{' });
-    const mailchimp = MergeTagSuggestion.configure({ char: '*|' });
-    const ampscript = MergeTagSuggestion.configure({ char: '%%=' });
+  it("configures different trigger chars per syntax", () => {
+    const liquid = MergeTagSuggestion.configure({ char: "{{" });
+    const mailchimp = MergeTagSuggestion.configure({ char: "*|" });
+    const ampscript = MergeTagSuggestion.configure({ char: "%%=" });
 
-    expect(liquid.options.char).toBe('{{');
-    expect(mailchimp.options.char).toBe('*|');
-    expect(ampscript.options.char).toBe('%%=');
+    expect(liquid.options.char).toBe("{{");
+    expect(mailchimp.options.char).toBe("*|");
+    expect(ampscript.options.char).toBe("%%=");
   });
 
-  it('stores popoverRoot ref when supplied', () => {
+  it("stores popoverRoot ref when supplied", () => {
     // Use shallowRef so the dom-stub plain object isn't wrapped in a
     // reactive proxy (production passes a real HTMLElement, which Vue
     // skips proxying — but the stub here is a plain object, which Vue
     // would deeply proxy with ref()). Identity check on the unwrapped
     // value is the assertion of record.
-    const el = document.createElement('div');
+    const el = document.createElement("div");
     const popoverRoot = shallowRef<HTMLElement | null>(el);
     const ext = MergeTagSuggestion.configure({ popoverRoot });
     expect(ext.options.popoverRoot?.value).toBe(el);
   });
 });
 
-describe('MergeTagSuggestion popoverRoot wiring', () => {
-  it('TitleEditor passes popoverRoot into MergeTagSuggestion.configure', async () => {
-    const fs = await import('node:fs');
+describe("MergeTagSuggestion popoverRoot wiring", () => {
+  it("TitleEditor passes popoverRoot into MergeTagSuggestion.configure", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      'src/components/blocks/TitleEditor.vue',
-      'utf8',
+      "src/components/blocks/TitleEditor.vue",
+      "utf8",
     );
-    expect(src).toContain('usePopoverRoot');
+    expect(src).toContain("usePopoverRoot");
     const configureBlock = src.slice(
-      src.indexOf('MergeTagSuggestion.configure'),
-      src.indexOf('MergeTagSuggestion.configure') + 300,
+      src.indexOf("MergeTagSuggestion.configure"),
+      src.indexOf("MergeTagSuggestion.configure") + 300,
     );
-    expect(configureBlock).toContain('popoverRoot');
+    expect(configureBlock).toContain("popoverRoot");
   });
 
-  it('ParagraphEditor passes popoverRoot into MergeTagSuggestion.configure', async () => {
-    const fs = await import('node:fs');
+  it("ParagraphEditor passes popoverRoot into MergeTagSuggestion.configure", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      'src/components/blocks/ParagraphEditor.vue',
-      'utf8',
+      "src/components/blocks/ParagraphEditor.vue",
+      "utf8",
     );
-    expect(src).toContain('usePopoverRoot');
+    expect(src).toContain("usePopoverRoot");
     const configureBlock = src.slice(
-      src.indexOf('MergeTagSuggestion.configure'),
-      src.indexOf('MergeTagSuggestion.configure') + 300,
+      src.indexOf("MergeTagSuggestion.configure"),
+      src.indexOf("MergeTagSuggestion.configure") + 300,
     );
-    expect(configureBlock).toContain('popoverRoot');
+    expect(configureBlock).toContain("popoverRoot");
   });
 });
