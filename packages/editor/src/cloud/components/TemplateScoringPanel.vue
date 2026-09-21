@@ -137,6 +137,8 @@ function totalFindings(): number {
   >
     <div
       v-if="visible"
+      role="complementary"
+      :aria-label="cloudT.scoring.title"
       class="tpl-scoring-panel tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
       <!-- Header -->
@@ -152,14 +154,18 @@ function totalFindings(): number {
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="scoring.scoringResult.value && !scoring.isScoring.value"
+            type="button"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+            :aria-label="cloudT.scoring.rescore"
             :title="cloudT.scoring.rescore"
             @click="triggerScore()"
           >
             <RefreshCw :size="14" :stroke-width="2" />
           </button>
           <button
+            type="button"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+            :aria-label="cloudT.scoring.close"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -373,7 +379,7 @@ function totalFindings(): number {
                     <!-- Suggestion -->
                     <p
                       v-if="finding.suggestion"
-                      class="tpl:mt-1 tpl:text-[11px] tpl:leading-snug tpl:text-[var(--tpl-text-dim)]"
+                      class="tpl:mt-1 tpl:text-[10px] tpl:leading-snug tpl:text-[var(--tpl-text-dim)]"
                     >
                       {{ finding.suggestion }}
                     </p>
@@ -383,7 +389,7 @@ function totalFindings(): number {
                       class="tpl:mt-2 tpl:flex tpl:justify-center"
                     >
                       <button
-                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)]"
+                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)]"
                         style="background-color: transparent"
                         :disabled="scoring.fixingFindingId.value !== null"
                         @click="handleFix(finding)"
@@ -403,7 +409,7 @@ function totalFindings(): number {
                       </button>
                       <p
                         v-if="scoring.fixError.value"
-                        class="tpl:mt-1.5 tpl:text-[11px] tpl:text-[var(--tpl-danger)]"
+                        class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-danger)]"
                       >
                         {{ scoring.fixError.value }}
                       </p>
@@ -434,7 +440,7 @@ function totalFindings(): number {
 
         <!-- AI disclaimer -->
         <p
-          class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
         >
           {{ cloudT.aiMenu.disclaimer }}
         </p>

@@ -317,6 +317,8 @@ defineExpose({ filterByBlock, focusNewComment });
   >
     <div
       v-if="visible"
+      role="complementary"
+      :aria-label="t.comments.title"
       data-testid="comments-sidebar"
       class="tpl-comments-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
@@ -337,7 +339,9 @@ defineExpose({ filterByBlock, focusNewComment });
           </span>
         </div>
         <button
+          type="button"
           class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+          :aria-label="t.comments.close"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -349,18 +353,22 @@ defineExpose({ filterByBlock, focusNewComment });
         class="tpl:flex tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
       >
         <button
+          type="button"
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="
             filterMode === 'unresolved' ? 'tpl-comment-filter--active' : ''
           "
+          :aria-pressed="filterMode === 'unresolved'"
           data-testid="comments-filter-unresolved"
           @click="setFilter('unresolved')"
         >
           {{ t.comments.filterUnresolved }}
         </button>
         <button
+          type="button"
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
+          :aria-pressed="filterMode === 'all'"
           data-testid="comments-filter-all"
           @click="setFilter('all')"
         >
@@ -368,8 +376,10 @@ defineExpose({ filterByBlock, focusNewComment });
         </button>
         <button
           v-if="editor.state.selectedBlockId"
+          type="button"
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
+          :aria-pressed="filterMode === 'block'"
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
           {{ t.comments.filterBlock }}
@@ -530,7 +540,7 @@ defineExpose({ filterByBlock, focusNewComment });
               <div v-if="editingId === thread.id" class="tpl:mt-2">
                 <textarea
                   v-model="editBody"
-                  class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                  class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
                   rows="3"
                   @keydown="handleEditKeydown($event, thread.id)"
                 />
@@ -600,7 +610,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 </button>
                 <button
                   v-if="(thread.replies?.length ?? 0) > 0"
-                  class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-[11px] tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+                  class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
                   @click="toggleThread(thread.id)"
                 >
                   <template v-if="expandedThreads.has(thread.id)">
@@ -688,7 +698,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <div v-if="editingId === reply.id" class="tpl:mt-1.5">
                     <textarea
                       v-model="editBody"
-                      class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                      class="tpl:w-full tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
                       rows="2"
                       @keydown="handleEditKeydown($event, reply.id)"
                     />

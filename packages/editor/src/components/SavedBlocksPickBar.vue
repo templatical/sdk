@@ -9,6 +9,10 @@
  * (`useSavedBlocksFeature` cancels it if preview turns on).
  */
 import { useI18n } from "../composables";
+import {
+  primaryBtnClass,
+  secondaryBtnClass,
+} from "../constants/styleConstants";
 import { Bookmark, X } from "@lucide/vue";
 
 const props = defineProps<{
@@ -50,7 +54,7 @@ function handleConfirm(): void {
         >
           {{ format(t.savedBlocks.pickCount, { count }) }}
         </span>
-        <span class="tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]">
+        <span class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]">
           {{ t.savedBlocks.pickHint }}
         </span>
       </div>
@@ -59,7 +63,7 @@ function handleConfirm(): void {
         <button
           type="button"
           data-testid="saved-blocks-pick-cancel"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+          :class="secondaryBtnClass"
           @click="emit('cancel')"
         >
           <X :size="13" :stroke-width="2" />
@@ -68,7 +72,7 @@ function handleConfirm(): void {
         <button
           type="button"
           data-testid="saved-blocks-pick-confirm"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:rounded-md tpl:px-2.5 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+          :class="primaryBtnClass"
           :disabled="count === 0"
           @click="handleConfirm"
         >

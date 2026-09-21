@@ -22,6 +22,7 @@ import DesignReferenceSidebar from "../src/cloud/components/DesignReferenceSideb
 const cloudTranslationsStub = {
   designReference: {
     title: "Design",
+    close: "Close",
     uploadImage: "Image",
     uploadPdf: "PDF",
     dropHint: "Drop file",
@@ -52,9 +53,7 @@ describe("DesignReferenceSidebar", () => {
   let revokeObjectURL: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    createObjectURL = vi.fn(
-      (file: File) => `blob:fake/${file.name}`,
-    );
+    createObjectURL = vi.fn((file: File) => `blob:fake/${file.name}`);
     revokeObjectURL = vi.fn();
     vi.stubGlobal("URL", {
       createObjectURL,

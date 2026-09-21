@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CircleAlert } from "@lucide/vue";
+import { primaryBtnClass } from "../../constants/styleConstants";
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 
 defineProps<{
@@ -60,7 +61,8 @@ function isNotFoundError(error: Error): boolean {
     </div>
     <button
       v-if="!isNotFoundError(error)"
-      class="tpl-btn tpl-btn-primary tpl:inline-flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:shadow-[var(--tpl-shadow-sm)] tpl:transition-all tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+      type="button"
+      :class="primaryBtnClass"
       @click="emit('retry')"
     >
       {{ cloudT.error.retry }}

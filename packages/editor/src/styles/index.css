@@ -986,12 +986,6 @@
         background: var(--tpl-bg-hover);
     }
 
-    .tpl *,
-    .tpl *::before,
-    .tpl *::after {
-        transition-duration: 0.01ms !important;
-    }
-
     /* Keep spinner functional but reduce to subtle opacity pulse */
     .tpl-spinner {
         animation: tpl-spin 1s linear infinite;

@@ -124,7 +124,7 @@ describe("CommentsSidebar", () => {
       expect(wrapper.text()).not.toContain("Ada");
     });
 
-    it('marks an edited comment, and only an edited one', async () => {
+    it("marks an edited comment, and only an edited one", async () => {
       const { wrapper } = await mountSidebar({
         threads: [
           comment("c-1", { updatedAt: "2026-08-17T11:00:00Z" }),
@@ -154,6 +154,21 @@ describe("CommentsSidebar", () => {
         .trigger("click");
 
       expect(wrapper.text()).toContain("comments.resolvedBy");
+    });
+
+    it("names the close control and exposes filter pressed state", async () => {
+      const { wrapper } = await mountSidebar();
+      expect(wrapper.find('[aria-label="comments.close"]').exists()).toBe(true);
+      expect(
+        wrapper
+          .get('[data-testid="comments-filter-unresolved"]')
+          .attributes("aria-pressed"),
+      ).toBe("true");
+      expect(
+        wrapper
+          .get('[data-testid="comments-filter-all"]')
+          .attributes("aria-pressed"),
+      ).toBe("false");
     });
 
     it("filters to unresolved by default", async () => {
@@ -226,7 +241,9 @@ describe("CommentsSidebar", () => {
     });
 
     it("hides only the edit action when update is withheld", async () => {
-      const { wrapper } = await mountSidebar({ permissions: { update: false } });
+      const { wrapper } = await mountSidebar({
+        permissions: { update: false },
+      });
       const titles = wrapper
         .findAll("button")
         .map((b) => b.attributes("title") ?? "");
@@ -237,7 +254,9 @@ describe("CommentsSidebar", () => {
     });
 
     it("hides only the delete action when delete is withheld", async () => {
-      const { wrapper } = await mountSidebar({ permissions: { delete: false } });
+      const { wrapper } = await mountSidebar({
+        permissions: { delete: false },
+      });
       const titles = wrapper
         .findAll("button")
         .map((b) => b.attributes("title") ?? "");

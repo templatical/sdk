@@ -52,6 +52,13 @@ describe("TplModal location + importers", () => {
 
   /* TestEmailModal moved out of `cloud/components/` when test email became a
      BYO feature shared by both editors, so it now sits alongside TplModal. */
+  it("CloudSaveGateModal imports TplModal from the shared components directory", () => {
+    const content = read("cloud/components/CloudSaveGateModal.vue");
+    expect(content).toContain(
+      'import TplModal from "../../components/TplModal.vue"',
+    );
+  });
+
   it("TestEmailModal imports TplModal from its own directory", () => {
     const content = read("components/TestEmailModal.vue");
     expect(content).toContain('import TplModal from "./TplModal.vue"');
@@ -61,7 +68,8 @@ describe("TplModal location + importers", () => {
   });
 
   it("no file under src/ imports from cloud/components/TplModal", () => {
-    const { execSync } = require("node:child_process") as typeof import("node:child_process");
+    const { execSync } =
+      require("node:child_process") as typeof import("node:child_process");
     const stdout = execSync(
       `grep -rln "cloud/components/TplModal" "${SRC}" || true`,
       { encoding: "utf-8" },

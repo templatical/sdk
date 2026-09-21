@@ -18,6 +18,7 @@ const ptBR: typeof en = {
   },
   aiChat: {
     title: "Assistente de IA",
+    close: "Fechar",
     button: "IA",
     inputPlaceholder: "Descreva seu template de e-mail...",
     applied: "Alterações aplicadas ao template.",
@@ -33,6 +34,7 @@ const ptBR: typeof en = {
   },
   scoring: {
     title: "Pontuação do Template",
+    close: "Fechar",
     rescore: "Pontuar novamente",
     scoring: "Analisando template...",
     overallScore: "Pontuação Geral",
@@ -71,6 +73,7 @@ const ptBR: typeof en = {
   },
   designReference: {
     title: "Referência de Design",
+    close: "Fechar",
     uploadImage: "Imagem",
     uploadPdf: "PDF",
     dropHint: "Solte um arquivo aqui ou clique para procurar",

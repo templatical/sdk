@@ -57,7 +57,7 @@ function applyFix(issue: LintIssue): void {
       </h3>
       <span
         v-if="totalCount > 0"
-        class="tpl:ml-auto tpl:rounded-full tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-0.5 tpl:text-[11px] tpl:text-[var(--tpl-text-muted)]"
+        class="tpl:ml-auto tpl:rounded-full tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
         :title="format(t.issues.issueCountTooltip, { count: totalCount })"
       >
         {{ totalCount }}
@@ -107,7 +107,7 @@ function applyFix(issue: LintIssue): void {
       >
         <header
           v-if="group.items.length > 0"
-          class="tpl:mb-2 tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-[11px] tpl:font-semibold tpl:uppercase tpl:tracking-wide"
+          class="tpl:mb-2 tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:font-semibold tpl:uppercase tpl:tracking-wide"
           :class="group.tone"
         >
           <component :is="group.icon" :size="12" :stroke-width="2" />
@@ -138,7 +138,7 @@ function applyFix(issue: LintIssue): void {
                 v-if="issue.blockId"
                 type="button"
                 data-testid="issue-jump"
-                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-text)]"
+                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]"
                 @click="jumpTo(issue)"
               >
                 <ArrowRight :size="10" :stroke-width="2" />
@@ -147,7 +147,7 @@ function applyFix(issue: LintIssue): void {
               <button
                 v-if="issue.fix"
                 type="button"
-                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:bg-[var(--tpl-primary)] tpl:px-2 tpl:py-1 tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-on-primary)]"
+                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:bg-[var(--tpl-primary)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-on-primary)]"
                 :title="issue.fix.description"
                 @click="applyFix(issue)"
               >

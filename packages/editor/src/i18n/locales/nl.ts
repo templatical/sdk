@@ -550,6 +550,7 @@ const nl: typeof en = {
   comments: {
     button: "Opmerkingen",
     title: "Opmerkingen",
+    close: "Sluiten",
     placeholder: "Schrijf een opmerking...",
     replyPlaceholder: "Schrijf een antwoord...",
     reply: "Antwoorden",

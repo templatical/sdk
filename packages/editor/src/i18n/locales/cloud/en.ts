@@ -16,6 +16,7 @@ const en = {
   },
   aiChat: {
     title: "AI Assistant",
+    close: "Close",
     button: "AI",
     inputPlaceholder: "Describe your email template...",
     applied: "Changes applied to template.",
@@ -30,6 +31,7 @@ const en = {
   },
   scoring: {
     title: "Template Score",
+    close: "Close",
     rescore: "Re-score",
     scoring: "Analyzing template...",
     overallScore: "Overall Score",
@@ -68,6 +70,7 @@ const en = {
   },
   designReference: {
     title: "Design Reference",
+    close: "Close",
     uploadImage: "Image",
     uploadPdf: "PDF",
     dropHint: "Drop a file here or click to browse",

@@ -475,7 +475,7 @@ function handleFetchData(
                   }"
                 >
                   <span
-                    class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[8px] tpl:font-bold"
+                    class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-bold"
                     style="
                       background-color: color-mix(
                         in srgb,

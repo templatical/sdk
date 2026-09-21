@@ -615,6 +615,7 @@ const es: typeof en = {
   comments: {
     button: "Comentarios",
     title: "Comentarios",
+    close: "Cerrar",
     placeholder: "Escribe un comentario...",
     replyPlaceholder: "Escribe una respuesta...",
     reply: "Responder",

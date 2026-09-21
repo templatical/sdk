@@ -610,6 +610,7 @@ export default {
   comments: {
     button: "Comments",
     title: "Comments",
+    close: "Close",
     placeholder: "Write a comment...",
     replyPlaceholder: "Write a reply...",
     reply: "Reply",

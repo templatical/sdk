@@ -30,7 +30,7 @@ const { t } = useI18n();
       "
     />
     <p
-      class="tpl:mt-1.5 tpl:flex tpl:items-start tpl:gap-1.5 tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+      class="tpl:mt-1.5 tpl:flex tpl:items-start tpl:gap-1.5 tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
     >
       <Info :size="12" class="tpl:mt-0.5 tpl:shrink-0" />
       {{ t.html.sanitizationHint }}

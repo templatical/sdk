@@ -616,6 +616,7 @@ const ca: typeof en = {
   comments: {
     button: "Comentaris",
     title: "Comentaris",
+    close: "Tancar",
     placeholder: "Escriu un comentari...",
     replyPlaceholder: "Escriu una resposta...",
     reply: "Respondre",

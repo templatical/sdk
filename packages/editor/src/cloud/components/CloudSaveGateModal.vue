@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { AlertTriangle } from "@lucide/vue";
+import {
+  dangerBtnClass,
+  secondaryBtnClass,
+} from "../../constants/styleConstants";
+import TplModal from "../../components/TplModal.vue";
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
@@ -17,76 +22,73 @@ const { t: cloudT } = useCloudI18nStrict();
 </script>
 
 <template>
-  <Transition
-    enter-active-class="tpl:transition-opacity"
-    leave-active-class="tpl:transition-opacity"
-    enter-from-class="tpl:opacity-0"
-    leave-to-class="tpl:opacity-0"
-  >
+  <TplModal :visible="open" @close="emit('cancel')">
     <div
-      v-if="open"
-      role="dialog"
+      role="alertdialog"
       aria-modal="true"
-      :aria-label="cloudT.saveGate.title"
-      class="tpl:fixed tpl:inset-0 tpl:z-50 tpl:flex tpl:items-center tpl:justify-center tpl:bg-black/40 tpl:p-6"
-      @click.self="emit('cancel')"
+      aria-labelledby="tpl-save-gate-title"
+      aria-describedby="tpl-save-gate-body"
+      data-testid="cloud-save-gate-dialog"
+      class="tpl:flex tpl:max-h-[80%] tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius-lg)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-5 tpl:shadow-[var(--tpl-shadow-lg)]"
     >
-      <div
-        class="tpl:flex tpl:max-h-[80%] tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-5 tpl:shadow-[var(--tpl-shadow-md)]"
-      >
-        <header class="tpl:flex tpl:items-center tpl:gap-2">
-          <AlertTriangle
-            :size="18"
-            :stroke-width="2"
-            class="tpl:text-[var(--tpl-warning)]"
-          />
-          <h2
-            class="tpl:m-0 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-text)]"
-          >
-            {{ cloudT.saveGate.title }}
-          </h2>
-        </header>
-
-        <p class="tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
-          {{ cloudT.saveGate.body }}
-        </p>
-
-        <ul
-          class="tpl:m-0 tpl:flex tpl:max-h-64 tpl:list-none tpl:flex-col tpl:gap-1.5 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-2"
+      <header class="tpl:flex tpl:items-center tpl:gap-2">
+        <AlertTriangle
+          :size="18"
+          :stroke-width="2"
+          class="tpl:text-[var(--tpl-warning)]"
+        />
+        <h2
+          id="tpl-save-gate-title"
+          class="tpl:m-0 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
-          <li
-            v-for="issue in issues"
-            :key="`${issue.ruleId}-${issue.blockId ?? 'template'}`"
-            class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:rounded tpl:px-2 tpl:py-1.5"
-          >
-            <span class="tpl:text-xs tpl:text-[var(--tpl-text)]">
-              {{ issue.message }}
-            </span>
-            <span
-              class="tpl:font-mono tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
-            >
-              {{ issue.ruleId }}
-            </span>
-          </li>
-        </ul>
+          {{ cloudT.saveGate.title }}
+        </h2>
+      </header>
 
-        <footer class="tpl:flex tpl:justify-end tpl:gap-2">
-          <button
-            type="button"
-            class="tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]"
-            @click="emit('cancel')"
+      <p
+        id="tpl-save-gate-body"
+        class="tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
+      >
+        {{ cloudT.saveGate.body }}
+      </p>
+
+      <ul
+        class="tpl:m-0 tpl:flex tpl:max-h-64 tpl:list-none tpl:flex-col tpl:gap-1.5 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-2"
+      >
+        <li
+          v-for="issue in issues"
+          :key="`${issue.ruleId}-${issue.blockId ?? 'template'}`"
+          class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:rounded tpl:px-2 tpl:py-1.5"
+        >
+          <span class="tpl:text-xs tpl:text-[var(--tpl-text)]">
+            {{ issue.message }}
+          </span>
+          <span
+            class="tpl:font-mono tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
           >
-            {{ cloudT.saveGate.cancel }}
-          </button>
-          <button
-            type="button"
-            class="tpl:rounded-md tpl:bg-[var(--tpl-danger)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-bg)]"
-            @click="emit('confirm')"
-          >
-            {{ cloudT.saveGate.confirm }}
-          </button>
-        </footer>
-      </div>
+            {{ issue.ruleId }}
+          </span>
+        </li>
+      </ul>
+
+      <footer class="tpl:flex tpl:justify-end tpl:gap-2">
+        <button
+          type="button"
+          data-testid="cloud-save-gate-cancel"
+          :class="secondaryBtnClass"
+          @click="emit('cancel')"
+        >
+          {{ cloudT.saveGate.cancel }}
+        </button>
+        <button
+          type="button"
+          data-testid="cloud-save-gate-confirm"
+          :class="dangerBtnClass"
+          @click="emit('confirm')"
+        >
+          {{ cloudT.saveGate.confirm }}
+        </button>
+      </footer>
     </div>
-  </Transition>
+  </TplModal>
 </template>
