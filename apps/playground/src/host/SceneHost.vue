@@ -3,6 +3,7 @@ import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 import { ChevronDown, ChevronLeft } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
 import HostKnobs from "@/host/HostKnobs.vue";
+import ImportPastePanel from "@/host/ImportPastePanel.vue";
 import { navigatePlayground, sceneHref } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
@@ -260,6 +261,11 @@ onUnmounted(() => {
           ref="editorContainer"
           data-testid="editor-container"
           class="h-full min-w-0 min-h-0 overflow-hidden bg-white dark:bg-gray-800"
+        />
+        <ImportPastePanel
+          v-if="scene.group === 'import'"
+          :scene-id="scene.id"
+          :editor="editor"
         />
       </div>
       <aside

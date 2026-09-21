@@ -34,6 +34,17 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Internationalization](https://play.templatical.com/scenes/i18n): init({ locale: "de" }) — German editor chrome and block defaults.
 - [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.
 
+## Import
+
+- [Unlayer](https://play.templatical.com/scenes/import-unlayer): convertUnlayerTemplate + init({ content }) — Unlayer saveDesign JSON.
+- [BeeFree](https://play.templatical.com/scenes/import-beefree): convertBeeFreeTemplate + init({ content }) — BeeFree page.rows JSON.
+- [HTML](https://play.templatical.com/scenes/import-html): convertHtmlTemplate + init({ content }) — table-based email HTML.
+- [MJML](https://play.templatical.com/scenes/import-mjml): convertMjmlTemplate + init({ content }) — raw MJML source.
+- [Topol](https://play.templatical.com/scenes/import-topol): convertTopolTemplate + init({ content }) — Topol design JSON.
+- [Stripo](https://play.templatical.com/scenes/import-stripo): convertStripoTemplate + init({ content }) — Stripo HTML or { html, css }.
+- [Chamaileon](https://play.templatical.com/scenes/import-chamaileon): convertChamaileonTemplate + init({ content }) — getDocument() JSON.
+- [Easy Email Pro](https://play.templatical.com/scenes/import-easy-email-pro): convertEasyEmailProTemplate + init({ content }) — persist { subject, content } page.
+
 ## Examples
 
 - [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.

@@ -12,6 +12,14 @@ import { mergeTagsSamples } from "./author/merge-tags-samples";
 import { shadowDomOff } from "./author/shadow-dom-off";
 import { theming } from "./author/theming";
 import { exampleLaunchpadLaunch } from "./examples/launchpad-launch";
+import { importBeefree } from "./import/import-beefree";
+import { importChamaileon } from "./import/import-chamaileon";
+import { importEasyEmailPro } from "./import/import-easy-email-pro";
+import { importHtml } from "./import/import-html";
+import { importMjml } from "./import/import-mjml";
+import { importStripo } from "./import/import-stripo";
+import { importTopol } from "./import/import-topol";
+import { importUnlayer } from "./import/import-unlayer";
 import { minimum } from "./minimum";
 import { comments } from "./storage/comments";
 import { media } from "./storage/media";
@@ -52,6 +60,14 @@ export const SCENES: readonly Scene[] = [
   theming,
   i18n,
   shadowDomOff,
+  importUnlayer,
+  importBeefree,
+  importHtml,
+  importMjml,
+  importTopol,
+  importStripo,
+  importChamaileon,
+  importEasyEmailPro,
   exampleLaunchpadLaunch,
 ];
 

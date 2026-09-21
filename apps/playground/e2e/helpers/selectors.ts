@@ -304,6 +304,7 @@ export const SELECTORS = {
   importTextareaEasyEmailPro: '[data-testid="import-textarea-easy-email-pro"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
+  importPanel: '[data-testid="import-panel"]',
 } as const;
 
 /** Dynamic selector for block by type */

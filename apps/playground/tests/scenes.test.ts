@@ -85,12 +85,46 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   "shadow-dom-off": "/guide/shadow-dom",
 };
 
+const IMPORT_IDS = [
+  "import-unlayer",
+  "import-beefree",
+  "import-html",
+  "import-mjml",
+  "import-topol",
+  "import-stripo",
+  "import-chamaileon",
+  "import-easy-email-pro",
+] as const;
+
+const IMPORT_DOCS: Record<(typeof IMPORT_IDS)[number], string> = {
+  "import-unlayer": "/guide/migration-from-unlayer",
+  "import-beefree": "/guide/migration-from-beefree",
+  "import-html": "/guide/migration-from-html",
+  "import-mjml": "/guide/migration-from-mjml",
+  "import-topol": "/guide/migration-from-topol",
+  "import-stripo": "/guide/migration-from-stripo",
+  "import-chamaileon": "/guide/migration-from-chamaileon",
+  "import-easy-email-pro": "/guide/migration-from-easy-email-pro",
+};
+
+const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
+  "import-unlayer": "convertUnlayerTemplate",
+  "import-beefree": "convertBeeFreeTemplate",
+  "import-html": "convertHtmlTemplate",
+  "import-mjml": "convertMjmlTemplate",
+  "import-topol": "convertTopolTemplate",
+  "import-stripo": "convertStripoTemplate",
+  "import-chamaileon": "convertChamaileonTemplate",
+  "import-easy-email-pro": "convertEasyEmailProTemplate",
+};
+
 describe("registry", () => {
-  it("registers minimum, storage, author scenes, then Launchpad launch", () => {
+  it("registers minimum, storage, author, import scenes, then Launchpad launch", () => {
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...STORAGE_IDS,
       ...AUTHOR_IDS,
+      ...IMPORT_IDS,
       "example-launchpad-launch",
     ]);
     expect(getScene("minimum")?.group).toBe("minimum");
@@ -109,6 +143,10 @@ describe("registry", () => {
       expect(getScene(id)?.group).toBe("author");
       expect(getScene(id)?.docs).toBe(AUTHOR_DOCS[id]);
     }
+    for (const id of IMPORT_IDS) {
+      expect(getScene(id)?.group).toBe("import");
+      expect(getScene(id)?.docs).toBe(IMPORT_DOCS[id]);
+    }
     expect(SCENES.map((s) => s.id)).not.toContain("content-direction");
     expect(SCENES.map((s) => s.id)).not.toContain("colors");
     expect(SCENES.map((s) => s.id)).not.toContain("html-block-preview");
@@ -119,11 +157,15 @@ describe("registry", () => {
     expect(getScene("nope")).toBeUndefined();
   });
 
-  it("groups minimum first, then storage, then author", () => {
+  it("groups minimum first, then storage, author, import, examples", () => {
     const groups = [...scenesByGroup().keys()];
-    expect(groups[0]).toBe("minimum");
-    expect(groups[1]).toBe("storage");
-    expect(groups[2]).toBe("author");
+    expect(groups).toEqual([
+      "minimum",
+      "storage",
+      "author",
+      "import",
+      "examples",
+    ]);
   });
 
   it('i18n snippet contains locale: "de"', () => {
@@ -165,6 +207,20 @@ describe("snippet honesty", () => {
       expect(missing).toEqual([]);
       expect(scene.snippet).toContain("init(");
       expect(scene.snippet).toContain("container");
+      expect(scene.snippet).not.toContain("tpl-playground");
+      expect(scene.snippet).not.toContain("__tplPlayground");
+    },
+  );
+
+  it.each(IMPORT_IDS)(
+    "%s snippet is convertXTemplate + init({ content }), not a playground API",
+    (id) => {
+      const scene = getScene(id);
+      if (!scene) throw new Error(`missing ${id}`);
+      expect(scene.snippet).toContain(IMPORT_CONVERT_FN[id]);
+      expect(scene.snippet).toContain("init(");
+      expect(scene.snippet).toMatch(/content\s*[,}]/);
+      expect(scene.snippet).not.toContain("setContent");
       expect(scene.snippet).not.toContain("tpl-playground");
       expect(scene.snippet).not.toContain("__tplPlayground");
     },
