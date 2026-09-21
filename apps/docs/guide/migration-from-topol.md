@@ -5,6 +5,8 @@ description: Convert Topol.io email templates to Templatical format using @templ
 
 # Migrating from Topol
 
+[Open in playground](https://play.templatical.com/scenes/import-topol)
+
 This guide is for teams who've built email templates in [Topol.io](https://topol.io)'s drag-and-drop editor — directly, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-topol`** converts a Topol design into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 ## Installation

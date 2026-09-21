@@ -5,6 +5,8 @@ description: Get the Templatical email editor running in under 5 minutes.
 
 # Quick Start
 
+[Open in playground](https://play.templatical.com/scenes/minimum)
+
 ## 1. Install packages
 
 ::: code-group

@@ -5,6 +5,8 @@ description: Configure custom fonts for the email editor's font picker.
 
 # Custom Fonts
 
+[Open in playground](https://play.templatical.com/scenes/fonts)
+
 By default, the editor includes a set of common web-safe fonts (Arial, Georgia, Verdana, etc.) in the font picker. You can extend this list with your own fonts — for example, loading custom typefaces from Google Fonts or your own CDN. When a custom font is used, it's automatically included as an `<mj-font>` declaration in the rendered MJML output.
 
 Configure which fonts are available using the `fonts` option:

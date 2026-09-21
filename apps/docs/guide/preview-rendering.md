@@ -5,6 +5,8 @@ description: Control what the editor's preview surfaces show — labels, sample 
 
 # Preview Rendering
 
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples) — `MergeTag.sample`. [Open in playground](https://play.templatical.com/scenes/merge-tags-resolve-preview) — `resolvePreview`.
+
 A template is full of things that aren't content: <code v-pre>{{first_name}}</code>, <code v-pre>{% if plan_name == 'pro' %}</code>. The editor has to show *something* for them, and what it shows depends on how much you've told it.
 
 There are three layers, each one more realistic than the last. All of them apply **only to preview surfaces** — the editor's preview mode and the test-email dialog. The editing canvas always shows the tag you inserted, so you never edit text you didn't write.

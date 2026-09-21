@@ -5,6 +5,8 @@ description: Convert Easy Email Pro email templates to Templatical format using 
 
 # Migrating from Easy Email Pro
 
+[Open in playground](https://play.templatical.com/scenes/import-easy-email-pro)
+
 This guide is for teams who've built email templates in [Easy Email Pro](https://www.easyemail.pro) — in the hosted editor, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-easy-email-pro`** converts an Easy Email Pro persist page into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 The input is the persist JSON — `{ subject, content }` with `content.type === "page"`, or a bare page element. It is not `EditorCore.toMJML()` and not the compiled HTML.

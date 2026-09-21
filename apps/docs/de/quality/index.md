@@ -1,5 +1,7 @@
 # Qualität
 
+[Im Playground öffnen](https://play.templatical.com/scenes/issues)
+
 `@templatical/quality` ist das Dachpaket für die Template-Qualitäts-Werkzeuge von Templatical — deterministische, ausschließlich JSON-basierte Linter, die Autorenfehler im Editor und in Headless- / CI-Prüfungen erkennen. MIT-lizenziert, ESM, kein Vue, kein DOM.
 
 ## Linter

@@ -5,6 +5,8 @@ description: Bedingte Blocksichtbarkeit mit Anzeigebedingungen in Templatical-E-
 
 # Anzeigebedingungen
 
+[Im Playground öffnen](https://play.templatical.com/scenes/display-conditions)
+
 Anzeigebedingungen erlauben es Benutzern, die Sichtbarkeit von Blöcken basierend auf Bedingungen zu ändern. Wenn einem Block eine Bedingung zugewiesen ist, umschließt der Renderer dessen Ausgabe mit der von Ihnen definierten Bedingungssyntax (z. B. Liquid `{% if %}` / `{% endif %}`). Die Bedingungen werden unverändert durchgereicht — Ihre Versandplattform oder Template-Engine sollte sie vor dem Versand rendern.
 
 ## Konfiguration

@@ -5,6 +5,8 @@ description: Frühere Versionen einer Vorlage durchsehen, in der Vorschau ansehe
 
 # Versionsverlauf
 
+[Im Playground öffnen](https://play.templatical.com/scenes/version-history)
+
 Geben Sie dem Editor einen Ort, an dem er Versionen lesen kann, und er zeigt im Header ein Verlaufs-Steuerelement: durch frühere Stände blättern, eine Version auf der Arbeitsfläche in der Vorschau ansehen und sie wiederherstellen.
 
 ```ts

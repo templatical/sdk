@@ -5,6 +5,8 @@ description: Passen Sie das Erscheinungsbild des Editors mit CSS-Variablen, Them
 
 # Theming
 
+[Im Playground öffnen](https://play.templatical.com/scenes/theming)
+
 Templatical wird mit einem ausgefeilten Standard-Theme ausgeliefert. Es gibt zwei Wege, jede Farbe, jeden Radius, Schatten oder jede Schriftart zu überschreiben:
 
 1. **CSS-Variablen auf dem Container** (`--tpl-user-*`) — der empfohlene Ansatz. Funktioniert sowohl im Shadow-DOM (Standard) als auch im Light-DOM-Modus. Reines CSS — kein JS-Umweg.

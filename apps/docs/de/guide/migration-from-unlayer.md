@@ -5,6 +5,8 @@ description: Konvertieren Sie Unlayer-E-Mail-Templates mit @templatical/import-u
 
 # Migration von Unlayer
 
+[Im Playground öffnen](https://play.templatical.com/scenes/import-unlayer)
+
 Das Paket `@templatical/import-unlayer` konvertiert Unlayer-Design-JSON (die Ausgabe von `editor.saveDesign(...)` aus `react-email-editor` oder dem gehosteten Unlayer-Editor) in Templaticals `TemplateContent`-Format.
 
 ::: warning

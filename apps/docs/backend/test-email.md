@@ -5,6 +5,8 @@ description: Let users mail themselves the template they're editing, sent throug
 
 # Test Emails
 
+[Open in playground](https://play.templatical.com/scenes/test-email)
+
 Let a user send themselves the template they're editing, so they can see it land in a real inbox before it goes anywhere near a campaign.
 
 The editor owns the trigger, the dialog, recipient validation and the sending / success / error states. **You own delivery** — one method.

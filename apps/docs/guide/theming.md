@@ -5,6 +5,8 @@ description: Customize the editor's appearance with CSS variables, theme overrid
 
 # Theming
 
+[Open in playground](https://play.templatical.com/scenes/theming)
+
 Templatical ships with a polished default theme. Two ways to override any color, radius, shadow, or font:
 
 1. **CSS variables on the container** (`--tpl-user-*`) — the recommended approach. Works in both shadow DOM (default) and light DOM modes. Pure CSS — no JS round-trip.

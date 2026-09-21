@@ -5,6 +5,8 @@ description: Steuern Sie, was die Vorschauflächen des Editors anzeigen — Beze
 
 # Vorschau-Rendering
 
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-samples) — `MergeTag.sample`. [Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-resolve-preview) — `resolvePreview`.
+
 Eine Vorlage enthält vieles, was kein Inhalt ist: <code v-pre>{{first_name}}</code>, <code v-pre>{% if plan_name == 'pro' %}</code>. Der Editor muss dafür *etwas* anzeigen — und was er anzeigt, hängt davon ab, wie viel Sie ihm mitgeteilt haben.
 
 Es gibt drei Ebenen, jede realistischer als die vorige. Alle gelten **nur für Vorschauflächen** — den Vorschaumodus des Editors und den Test-E-Mail-Dialog. Das Bearbeitungs-Canvas zeigt immer das eingefügte Tag, sodass Sie nie Text bearbeiten, den Sie nicht geschrieben haben.

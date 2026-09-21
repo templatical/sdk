@@ -5,6 +5,8 @@ description: Easy-Email-Pro-E-Mail-Templates mit @templatical/import-easy-email-
 
 # Migration von Easy Email Pro
 
+[Im Playground öffnen](https://play.templatical.com/scenes/import-easy-email-pro)
+
 Diese Anleitung richtet sich an Teams, die E-Mail-Templates in [Easy Email Pro](https://www.easyemail.pro) erstellt haben — im gehosteten Editor oder über ein Produkt, das ihn einbettet — und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-easy-email-pro`** konvertiert eine Easy-Email-Pro-Persist-Seite in Templaticals `TemplateContent`-Format. Installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
 Die Eingabe ist das Persist-JSON — `{ subject, content }` mit `content.type === "page"`, oder ein nacktes Seiten-Element. Es ist nicht `EditorCore.toMJML()` und nicht das kompilierte HTML.

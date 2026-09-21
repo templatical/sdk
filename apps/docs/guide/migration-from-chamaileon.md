@@ -5,6 +5,8 @@ description: Convert Chamaileon email templates to Templatical format using @tem
 
 # Migrating from Chamaileon
 
+[Open in playground](https://play.templatical.com/scenes/import-chamaileon)
+
 This guide is for teams who've built email templates in [Chamaileon](https://chamaileon.io) — in the hosted editor, or through a product that embeds the SDK — and want to move to Templatical's visual editor. **`@templatical/import-chamaileon`** converts a Chamaileon persist document into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 The input is `editorInstance.methods.getDocument()`, not `getEmailHtml()` / the HTML generator.

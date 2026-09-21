@@ -5,6 +5,8 @@ description: Definieren Sie Ihre eigenen Blocktypen mit benutzerdefinierten Feld
 
 # Benutzerdefinierte Blöcke
 
+[Im Playground öffnen](https://play.templatical.com/scenes/custom-blocks)
+
 Benutzerdefinierte Blöcke ermöglichen es Ihnen, Templatical um Ihre eigenen Blocktypen zu erweitern. Definieren Sie eine Reihe von Feldern, schreiben Sie ein Liquid-Template für das Rendering und verbinden Sie optional eine Datenquelle. Benutzer interagieren mit benutzerdefinierten Blöcken über die gleiche Drag-and-Drop-Oberfläche wie mit integrierten Blöcken.
 
 ::: warning Shadow DOM und Host-seitige Queries

@@ -5,6 +5,8 @@ description: Convert Stripo email templates to Templatical format using @templat
 
 # Migrating from Stripo
 
+[Open in playground](https://play.templatical.com/scenes/import-stripo)
+
 This guide is for teams who've built email templates in [Stripo](https://stripo.email) — in the hosted editor, or through a product that embeds the Stripo Plugin — and want to move to Templatical's visual editor. **`@templatical/import-stripo`** converts Stripo HTML into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 Stripo stores two different HTML surfaces. The converter auto-detects which one you passed. There is no mode flag.

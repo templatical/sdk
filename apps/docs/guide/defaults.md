@@ -5,6 +5,8 @@ description: Customize default properties for newly created blocks and template 
 
 # Block & Template Defaults
 
+[Open in playground](https://play.templatical.com/scenes/defaults)
+
 Block properties (colors, font sizes, padding, placeholder text, etc.) are hardcoded in factory functions. `blockDefaults` and `templateDefaults` let you override these so every new block and template matches your brand out of the box.
 
 ## Block Defaults

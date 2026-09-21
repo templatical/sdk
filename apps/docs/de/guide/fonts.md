@@ -5,6 +5,8 @@ description: Konfigurieren Sie benutzerdefinierte Schriftarten für die Schrifta
 
 # Benutzerdefinierte Schriftarten
 
+[Im Playground öffnen](https://play.templatical.com/scenes/fonts)
+
 Standardmäßig enthält der Editor eine Reihe gängiger websicherer Schriftarten (Arial, Georgia, Verdana usw.) in der Schriftauswahl. Sie können diese Liste mit Ihren eigenen Schriftarten erweitern — beispielsweise durch das Laden benutzerdefinierter Schriftarten von Google Fonts oder Ihrem eigenen CDN. Wenn eine benutzerdefinierte Schriftart verwendet wird, wird sie automatisch als `<mj-font>`-Deklaration in der gerenderten MJML-Ausgabe aufgenommen.
 
 Konfigurieren Sie, welche Schriftarten verfügbar sind, über die Option `fonts`:

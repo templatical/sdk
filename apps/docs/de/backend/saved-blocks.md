@@ -5,6 +5,8 @@ description: Ermöglichen Sie Ihren Nutzern, wiederverwendbare Blockgruppen zu s
 
 # Gespeicherte Blöcke
 
+[Im Playground öffnen](https://play.templatical.com/scenes/saved-blocks)
+
 Gespeicherte Blöcke ermöglichen es Ihren Nutzern, eine Gruppe von Blöcken festzuhalten — einen Header, einen Footer, ein Produktraster, einen CTA — und sie in jede andere Vorlage einzufügen.
 
 Der Editor übernimmt das Erlebnis: eine Speicheraktion an jedem Block, einen durchsuchbaren Browser mit Live-Vorschau, Einfügen an beliebiger Position, Umbenennen und Löschen. **Der Speicher liegt bei Ihnen.**

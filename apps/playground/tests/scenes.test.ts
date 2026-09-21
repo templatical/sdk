@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   SCENES,
@@ -8,6 +10,16 @@ import {
 } from "../src/scenes/index";
 import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
+
+const DOCS_ROOT = join(import.meta.dirname, "../../docs");
+
+function docsFileFor(docs: string): string {
+  const path = (docs.split("#")[0] ?? docs).replace(/^\//, "");
+  if (path === "" || path.endsWith("/")) {
+    return join(DOCS_ROOT, path, "index.md");
+  }
+  return join(DOCS_ROOT, `${path}.md`);
+}
 
 describe("parsePlaygroundRoute", () => {
   it("treats / as the catalog", () => {
@@ -184,6 +196,13 @@ describe("registry", () => {
     expect(SCENE_GROUP_ORDER[0]).toBe("minimum");
     expect(SCENE_GROUP_ORDER.at(-1)).toBe("examples");
   });
+
+  it.each(SCENES.map((s) => [s.id, s.docs] as const))(
+    "%s docs path exists as a file under apps/docs",
+    (_id, docs) => {
+      expect(existsSync(docsFileFor(docs)), docs).toBe(true);
+    },
+  );
 });
 
 describe("sceneHref", () => {

@@ -5,6 +5,8 @@ description: Conditional block visibility using display conditions in Templatica
 
 # Display Conditions
 
+[Open in playground](https://play.templatical.com/scenes/display-conditions)
+
 Display conditions allow users to change block visibility based on conditions. When a condition is applied to a block, the renderer wraps its output in the conditional syntax you define (e.g., Liquid `{% if %}` / `{% endif %}`). The conditions pass through unchanged — your sending platform or templating engine should render them before sending.
 
 ## Configuration

@@ -5,6 +5,8 @@ description: Ein Template in MJML oder versandfertiges HTML verwandeln — lokal
 
 # Rendering & Export
 
+[Im Playground öffnen](https://play.templatical.com/scenes/render)
+
 Zwei Methoden auf jeder Editor-Instanz:
 
 ```ts

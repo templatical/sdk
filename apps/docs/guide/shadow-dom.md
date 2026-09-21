@@ -5,6 +5,8 @@ description: How Templatical isolates the editor from host page CSS using Shadow
 
 # Shadow DOM
 
+[Open in playground](https://play.templatical.com/scenes/shadow-dom-off)
+
 Templatical mounts inside a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM) by default. The shadow boundary isolates the editor's chrome, canvas, and rich-text content from your host page's CSS — even global resets like `* { color: red !important }` cannot cascade past it.
 
 This page is the canonical reference for the isolation model. If you just want to theme the editor, jump to the [theming guide](./theming).

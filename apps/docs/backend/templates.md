@@ -5,6 +5,8 @@ description: Wire the editor's save/load lifecycle to your own storage — name,
 
 # Saving & Loading Templates
 
+[Open in playground](https://play.templatical.com/scenes/templates)
+
 Give the editor somewhere to save to and it grows the chrome that goes with it: an inline-editable template name, a save button, a save-status indicator, `Cmd`/`Ctrl`+`S`, optional autosave, and a warning before the tab closes with unsaved work.
 
 The editor owns all of that. **You own persistence** — three methods against your own API.

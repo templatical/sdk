@@ -5,6 +5,8 @@ description: Insert and highlight control-flow logic tags in Templatical email t
 
 # Logic Tags
 
+[Open in playground](https://play.templatical.com/scenes/logic-tags)
+
 Logic tags are the control-flow tokens of your template syntax — conditionals and loops like <code v-pre>{% if vip %}</code> … <code v-pre>{% endif %}</code> or <code v-pre>{% for item in items %}</code> … <code v-pre>{% endfor %}</code>. They are a **separate concern from [merge tags](/guide/merge-tags)**: merge tags are data placeholders you pick from a list, logic tags are structure your sending platform evaluates at send time.
 
 Because they're evaluated at send time, the editor shows them as badges rather than taking the branch. To see branches **resolved in a preview**, wire the `resolvePreview` hook — see [Preview Rendering](/guide/preview-rendering). It is the only way to resolve logic: sample values can substitute a value, but they cannot take a branch.

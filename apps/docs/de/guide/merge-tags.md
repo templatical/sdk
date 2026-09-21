@@ -5,6 +5,8 @@ description: Dynamische Inhalte mit Merge-Tags in Templatical-E-Mail-Templates.
 
 # Merge-Tags
 
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags) — `tags`, integrierter Picker. [Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-on-request) — Consumer-`onRequest`.
+
 Merge-Tags sind Tokens für dynamische Inhalte -- zum Beispiel den Namen eines Empfängers, einen Produktpreis oder eine Abmelde-URL. Sie erscheinen als hervorgehobene Tokens im Editor und werden unverändert im gerenderten MJML durchgereicht. Ihre E-Mail-Versandplattform ersetzt sie beim Versand durch echte Werte.
 
 Templatical bietet integrierte Syntax-Presets für beliebte Plattformen und unterstützt benutzerdefinierte Syntaxdefinitionen.

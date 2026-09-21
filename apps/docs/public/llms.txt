@@ -29,6 +29,7 @@ Documentation for SDK version 0.39.3. Every page below is also available as raw 
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
 - [Display Conditions](https://docs.templatical.com/guide/display-conditions): Conditional block visibility using display conditions in Templatical email templates.
+- [Examples](https://docs.templatical.com/guide/examples): Campaign emails in the playground — Launchpad, Flowwork, Sable, and Northstage — each a composed init() with a brand kit.
 - [Custom Fonts](https://docs.templatical.com/guide/fonts): Configure custom fonts for the email editor's font picker.
 - [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
 - [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.

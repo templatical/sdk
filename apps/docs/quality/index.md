@@ -4,6 +4,8 @@ description: MIT-licensed linter for Templatical templates — accessibility, st
 
 # Quality
 
+[Open in playground](https://play.templatical.com/scenes/issues)
+
 `@templatical/quality` is the umbrella package for Templatical's template-quality tooling — deterministic, JSON-only linters that catch authoring mistakes inside the editor and in headless / CI checks. MIT-licensed, ESM, no Vue, no DOM.
 
 ## Linters

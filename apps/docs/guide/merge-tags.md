@@ -5,6 +5,8 @@ description: Dynamic content via merge tags in Templatical email templates.
 
 # Merge Tags
 
+[Open in playground](https://play.templatical.com/scenes/merge-tags) — `tags`, built-in picker. [Open in playground](https://play.templatical.com/scenes/merge-tags-on-request) — consumer `onRequest`.
+
 Merge tags are tokens for dynamic content -- things like a recipient's name, a product price, or an unsubscribe URL. They appear as highlighted tokens in the editor and pass through unchanged in the rendered MJML. Your email sending platform replaces them with real values at send time.
 
 Templatical provides built-in syntax presets for popular platforms and supports custom syntax definitions.

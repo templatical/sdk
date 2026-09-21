@@ -5,6 +5,8 @@ description: Hinterlegen Sie die Bildauswahl des Editors mit Ihrer eigenen Galer
 
 # Medien
 
+[Im Playground öffnen](https://play.templatical.com/scenes/media)
+
 Der Editor übernimmt die Auswahl: Durchsuchen an Bildfeldern, Video-Thumbnails und Bildfeldern benutzerdefinierter Blöcke, Drag-and-Drop-Upload, Zuschnitt, Ordner, Suche. **Der Speicher liegt bei Ihnen.**
 
 `onRequestMedia` ist eine eigene Schnittstelle — eine UI-Überschreibung für ein Host-Widget (Bynder, Cloudinary, ein eigenes Modal). Das ist nicht dieser Speicher. Sind beide gesetzt, hat der Callback Vorrang und das eingebaute Modal öffnet sich nie. Siehe [Bilder](/de/guide/images).

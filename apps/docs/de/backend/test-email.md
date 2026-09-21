@@ -5,6 +5,8 @@ description: Lassen Sie Ihre Nutzer sich die Vorlage zusenden, die sie gerade be
 
 # Test-E-Mails
 
+[Im Playground öffnen](https://play.templatical.com/scenes/test-email)
+
 Lassen Sie Nutzer sich selbst die Vorlage zusenden, die sie gerade bearbeiten, damit sie sie in einem echten Postfach sehen, bevor sie in eine Kampagne geht.
 
 Der Editor übernimmt den Auslöser, den Dialog, die Empfängerprüfung sowie alle Zustände für Versand, Erfolg und Fehler. **Der Versand liegt bei Ihnen** — eine Methode.

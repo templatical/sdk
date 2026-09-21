@@ -1743,6 +1743,8 @@ unsubscribe(); // Remove listener
 
 Source: https://docs.templatical.com/backend/comments
 
+[Open in playground](https://play.templatical.com/scenes/comments)
+
 Give the editor a place to read and write comments from and it grows a review panel: threads with replies, per-block anchors, resolve and reopen, and a count badge on every commented block in the canvas.
 
 ```ts
@@ -2086,6 +2088,8 @@ type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateConten
 # Media
 
 Source: https://docs.templatical.com/backend/media
+
+[Open in playground](https://play.templatical.com/scenes/media)
 
 The editor owns the picker: Browse on image fields, video thumbnails and custom-block image fields, drag-and-drop upload, crop, folders, search. **You own storage.**
 
@@ -2451,6 +2455,8 @@ A CMS gallery that lists and uploads, and nothing else, is the same shape as the
 
 Source: https://docs.templatical.com/backend/render
 
+[Open in playground](https://play.templatical.com/scenes/render)
+
 Two methods on every editor instance:
 
 ```ts
@@ -2740,6 +2746,8 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 Source: https://docs.templatical.com/backend/saved-blocks
 
+[Open in playground](https://play.templatical.com/scenes/saved-blocks)
+
 Saved blocks let your users capture a group of blocks — a header, a footer, a product grid, a CTA — and re-insert it into any other template.
 
 The editor owns the experience: a save action on every block, a searchable browser with live preview, insert-at-position, rename and delete. **You own storage.**
@@ -3000,6 +3008,8 @@ Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an actio
 # Saving & Loading Templates
 
 Source: https://docs.templatical.com/backend/templates
+
+[Open in playground](https://play.templatical.com/scenes/templates)
 
 Give the editor somewhere to save to and it grows the chrome that goes with it: an inline-editable template name, a save button, a save-status indicator, `Cmd`/`Ctrl`+`S`, optional autosave, and a warning before the tab closes with unsaved work.
 
@@ -3277,6 +3287,8 @@ await init({
 
 Source: https://docs.templatical.com/backend/test-email
 
+[Open in playground](https://play.templatical.com/scenes/test-email)
+
 Let a user send themselves the template they're editing, so they can see it land in a real inbox before it goes anywhere near a campaign.
 
 The editor owns the trigger, the dialog, recipient validation and the sending / success / error states. **You own delivery** — one method.
@@ -3440,6 +3452,8 @@ The preview rides the dialog's own lazily-loaded chunk, so a consumer who never 
 # Version History
 
 Source: https://docs.templatical.com/backend/version-history
+
+[Open in playground](https://play.templatical.com/scenes/version-history)
 
 Give the editor a place to read versions from and it grows a history control in the header: step back through past states, preview one on the canvas, and restore it.
 
@@ -3645,15 +3659,15 @@ Provider methods run in the browser. Hide a control with `false`; enforce the sa
 
 ## Storage and send
 
-| Feature | What authors do | `init()` key | Docs |
-|---|---|---|---|
-| Save and load | Name the template, save, autosave, unsaved-changes guard | `templates` | [Saving and loading](/backend/templates) |
-| Version history | Step through past versions, preview, restore | `versionHistory` | [Version history](/backend/version-history) |
-| Comments | Thread on a block, reply, resolve | `comments` | [Comments](/backend/comments) |
-| Saved blocks | Bookmark a group, browse, insert | `savedBlocks` | [Saved blocks](/backend/saved-blocks) |
-| Media library | Browse, upload, crop, folders | `media` | [Media](/backend/media) |
-| Test email | Send this template to an inbox | `testEmail` | [Test emails](/backend/test-email) |
-| MJML / HTML export | `toMjml()` / `toHtml()` on the instance | `render` (optional; local renderer also works) | [Rendering](/backend/render) |
+| Feature | What authors do | `init()` key | Docs | Playground |
+|---|---|---|---|---|
+| Save and load | Name the template, save, autosave, unsaved-changes guard | `templates` | [Saving and loading](/backend/templates) | [templates](https://play.templatical.com/scenes/templates) |
+| Version history | Step through past versions, preview, restore | `versionHistory` | [Version history](/backend/version-history) | [version-history](https://play.templatical.com/scenes/version-history) |
+| Comments | Thread on a block, reply, resolve | `comments` | [Comments](/backend/comments) | [comments](https://play.templatical.com/scenes/comments) |
+| Saved blocks | Bookmark a group, browse, insert | `savedBlocks` | [Saved blocks](/backend/saved-blocks) | [saved-blocks](https://play.templatical.com/scenes/saved-blocks) |
+| Media library | Browse, upload, crop, folders | `media` | [Media](/backend/media) | [media](https://play.templatical.com/scenes/media) |
+| Test email | Send this template to an inbox | `testEmail` | [Test emails](/backend/test-email) | [test-email](https://play.templatical.com/scenes/test-email) |
+| MJML / HTML export | `toMjml()` / `toHtml()` on the instance | `render` (optional; local renderer also works) | [Rendering](/backend/render) | [render](https://play.templatical.com/scenes/render) |
 
 A bundled browser-local adapter exists for saved blocks and media if you want the UI with no server of your own yet.
 
@@ -3661,12 +3675,12 @@ A bundled browser-local adapter exists for saved blocks and media if you want th
 
 No provider. Configure on `init()` or in template settings.
 
-| Feature | What authors do | Docs |
-|---|---|---|
-| Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) |
-| Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) |
-| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` |
-| Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) |
+| Feature | What authors do | Docs | Playground |
+|---|---|---|---|
+| Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) | [merge-tags](https://play.templatical.com/scenes/merge-tags) |
+| Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) | [display-conditions](https://play.templatical.com/scenes/display-conditions) |
+| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` | [issues](https://play.templatical.com/scenes/issues) |
+| Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) | [custom-blocks](https://play.templatical.com/scenes/custom-blocks) |
 
 Issues is an optional peer: skip the package and the tab never downloads.
 
@@ -4393,6 +4407,8 @@ Unlayer, BeeFree, Stripo, and the others are products with their own accounts. I
 
 Source: https://docs.templatical.com/getting-started/quick-start
 
+[Open in playground](https://play.templatical.com/scenes/minimum)
+
 ## 1. Install packages
 
 ::: code-group
@@ -5020,6 +5036,8 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 
 Source: https://docs.templatical.com/guide/custom-blocks
 
+[Open in playground](https://play.templatical.com/scenes/custom-blocks)
+
 Custom blocks let you extend Templatical with your own block types. Define a set of fields, write a Liquid template for rendering, and optionally connect a data source. Users interact with custom blocks through the same drag-and-drop interface as built-in blocks.
 
 ::: warning Shadow DOM and host-side queries
@@ -5620,6 +5638,8 @@ dataSource: {
 
 Source: https://docs.templatical.com/guide/defaults
 
+[Open in playground](https://play.templatical.com/scenes/defaults)
+
 Block properties (colors, font sizes, padding, placeholder text, etc.) are hardcoded in factory functions. `blockDefaults` and `templateDefaults` let you override these so every new block and template matches your brand out of the box.
 
 ## Block Defaults
@@ -5872,6 +5892,8 @@ const content = createDefaultTemplateContent('Helvetica, sans-serif', {
 
 Source: https://docs.templatical.com/guide/display-conditions
 
+[Open in playground](https://play.templatical.com/scenes/display-conditions)
+
 Display conditions allow users to change block visibility based on conditions. When a condition is applied to a block, the renderer wraps its output in the conditional syntax you define (e.g., Liquid `{% if %}` / `{% endif %}`). The conditions pass through unchanged — your sending platform or templating engine should render them before sending.
 
 ## Configuration
@@ -6026,9 +6048,55 @@ Two ways, and they answer different questions:
 
 ---
 
+# Examples
+
+Source: https://docs.templatical.com/guide/examples
+
+Campaign emails with a brand kit and a composed `init()`. Feature scenes on the rest of this site isolate one key; these pages are the emails.
+
+The catalog at [play.templatical.com](https://play.templatical.com) lists every setup, including quiet feature scenes.
+
+## Launchpad product launch {#launchpad-launch}
+
+SaaS product announcement. Merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.
+
+[Open in playground](https://play.templatical.com/scenes/example-launchpad-launch)
+
+## Launchpad password reset {#launchpad-reset}
+
+Transactional credential reset on the same Launchpad kit.
+
+## Flowwork welcome {#flowwork-welcome}
+
+Onboarding mail. Preview uses `resolvePreview`.
+
+## Flowwork newsletter {#flowwork-newsletter}
+
+Periodic update. Curated fonts on the Flowwork kit.
+
+## Sable order confirmation {#sable-order}
+
+Shop receipt. Product photography in the Sable kit.
+
+## Sable Black Friday {#sable-friday}
+
+Sale campaign. `htmlBlockPreview` as composed.
+
+## Northstage event invitation {#northstage-event}
+
+Conference invitation. Brand-locked colors as composed.
+
+## Northstage Arabic invitation {#northstage-ar}
+
+Same Northstage event, `ar` locale.
+
+---
+
 # Custom Fonts
 
 Source: https://docs.templatical.com/guide/fonts
+
+[Open in playground](https://play.templatical.com/scenes/fonts)
 
 By default, the editor includes a set of common web-safe fonts (Arial, Georgia, Verdana, etc.) in the font picker. You can extend this list with your own fonts — for example, loading custom typefaces from Google Fonts or your own CDN. When a custom font is used, it's automatically included as an `<mj-font>` declaration in the rendered MJML output.
 
@@ -6115,6 +6183,8 @@ If you exclude the family that new templates start on — Arial by default, or w
 # Internationalization
 
 Source: https://docs.templatical.com/guide/i18n
+
+[Open in playground](https://play.templatical.com/scenes/i18n)
 
 The editor UI supports locale switching. Every label, tooltip, placeholder and message is driven by a translation key — no hardcoded strings.
 
@@ -6479,6 +6549,8 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 
 Source: https://docs.templatical.com/guide/logic-tags
 
+[Open in playground](https://play.templatical.com/scenes/logic-tags)
+
 Logic tags are the control-flow tokens of your template syntax — conditionals and loops like <code v-pre>{% if vip %}</code> … <code v-pre>{% endif %}</code> or <code v-pre>{% for item in items %}</code> … <code v-pre>{% endfor %}</code>. They are a **separate concern from [merge tags](/guide/merge-tags)**: merge tags are data placeholders you pick from a list, logic tags are structure your sending platform evaluates at send time.
 
 Because they're evaluated at send time, the editor shows them as badges rather than taking the branch. To see branches **resolved in a preview**, wire the `resolvePreview` hook — see [Preview Rendering](/guide/preview-rendering). It is the only way to resolve logic: sample values can substitute a value, but they cannot take a branch.
@@ -6611,6 +6683,8 @@ In a plain field a tag inserts at the cursor and a pair wraps the selected text 
 # Merge Tags
 
 Source: https://docs.templatical.com/guide/merge-tags
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags) — `tags`, built-in picker. [Open in playground](https://play.templatical.com/scenes/merge-tags-on-request) — consumer `onRequest`.
 
 Merge tags are tokens for dynamic content -- things like a recipient's name, a product price, or an unsubscribe URL. They appear as highlighted tokens in the editor and pass through unchanged in the rendered MJML. Your email sending platform replaces them with real values at send time.
 
@@ -7089,6 +7163,8 @@ Owning the field means it renders in your framework, styled to your design syste
 
 Source: https://docs.templatical.com/guide/migration-from-beefree
 
+[Open in playground](https://play.templatical.com/scenes/import-beefree)
+
 The `@templatical/import-beefree` package converts BeeFree (BEE) JSON templates into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -7229,6 +7305,8 @@ After conversion, review the output in the editor to check for:
 # Migrating from Chamaileon
 
 Source: https://docs.templatical.com/guide/migration-from-chamaileon
+
+[Open in playground](https://play.templatical.com/scenes/import-chamaileon)
 
 This guide is for teams who've built email templates in [Chamaileon](https://chamaileon.io) — in the hosted editor, or through a product that embeds the SDK — and want to move to Templatical's visual editor. **`@templatical/import-chamaileon`** converts a Chamaileon persist document into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
@@ -7430,6 +7508,8 @@ A freshly imported template commonly fails `@templatical/quality`'s accessibilit
 # Migrating from Easy Email Pro
 
 Source: https://docs.templatical.com/guide/migration-from-easy-email-pro
+
+[Open in playground](https://play.templatical.com/scenes/import-easy-email-pro)
 
 This guide is for teams who've built email templates in [Easy Email Pro](https://www.easyemail.pro) — in the hosted editor, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-easy-email-pro`** converts an Easy Email Pro persist page into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
@@ -7646,6 +7726,8 @@ A freshly imported template commonly fails `@templatical/quality`'s accessibilit
 # Migration from HTML
 
 Source: https://docs.templatical.com/guide/migration-from-html
+
+[Open in playground](https://play.templatical.com/scenes/import-html)
 
 The `@templatical/import-html` package converts HTML email templates into Templatical's `TemplateContent` format. It's designed for the table-based HTML that real marketing emails actually ship — output of MJML, Mailchimp/SendGrid/Campaign Monitor exports, hand-coded campaigns.
 
@@ -7880,6 +7962,8 @@ Sections and lost layouts are reported where they previously were not, so `repor
 
 Source: https://docs.templatical.com/guide/migration-from-mjml
 
+[Open in playground](https://play.templatical.com/scenes/import-mjml)
+
 This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor. **`@templatical/import-mjml`** converts an MJML document into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 ## Installation
@@ -8047,6 +8131,8 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 
 Source: https://docs.templatical.com/guide/migration-from-stripo
 
+[Open in playground](https://play.templatical.com/scenes/import-stripo)
+
 This guide is for teams who've built email templates in [Stripo](https://stripo.email) — in the hosted editor, or through a product that embeds the Stripo Plugin — and want to move to Templatical's visual editor. **`@templatical/import-stripo`** converts Stripo HTML into Templatical's `TemplateContent` format. Install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 Stripo stores two different HTML surfaces. The converter auto-detects which one you passed. There is no mode flag.
@@ -8206,6 +8292,8 @@ Everything else in a stripe goes through `@templatical/import-html` (headings, p
 # Migrating from Topol
 
 Source: https://docs.templatical.com/guide/migration-from-topol
+
+[Open in playground](https://play.templatical.com/scenes/import-topol)
 
 This guide is for teams who've built email templates in [Topol.io](https://topol.io)'s drag-and-drop editor — directly, or through a product that embeds it — and want to move to Templatical's visual editor. **`@templatical/import-topol`** converts a Topol design into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 
@@ -8388,6 +8476,8 @@ A freshly imported template commonly fails `@templatical/quality`'s accessibilit
 
 Source: https://docs.templatical.com/guide/migration-from-unlayer
 
+[Open in playground](https://play.templatical.com/scenes/import-unlayer)
+
 The `@templatical/import-unlayer` package converts Unlayer design JSON (the output of `editor.saveDesign(...)` from `react-email-editor` or the Unlayer hosted editor) into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -8531,6 +8621,8 @@ After conversion, review the output in the editor to check for:
 # Preview Rendering
 
 Source: https://docs.templatical.com/guide/preview-rendering
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples) — `MergeTag.sample`. [Open in playground](https://play.templatical.com/scenes/merge-tags-resolve-preview) — `resolvePreview`.
 
 A template is full of things that aren't content: <code v-pre>{{first_name}}</code>, <code v-pre>{% if plan_name == 'pro' %}</code>. The editor has to show *something* for them, and what it shows depends on how much you've told it.
 
@@ -9199,6 +9291,8 @@ The wrapper's padding is what makes the band show around the section. In the edi
 
 Source: https://docs.templatical.com/guide/shadow-dom
 
+[Open in playground](https://play.templatical.com/scenes/shadow-dom-off)
+
 Templatical mounts inside a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM) by default. The shadow boundary isolates the editor's chrome, canvas, and rich-text content from your host page's CSS — even global resets like `* { color: red !important }` cannot cascade past it.
 
 This page is the canonical reference for the isolation model. If you just want to theme the editor, jump to the [theming guide](./theming).
@@ -9535,6 +9629,8 @@ Links follow the same cascade: set a document `linkColor` to apply one color to 
 # Theming
 
 Source: https://docs.templatical.com/guide/theming
+
+[Open in playground](https://play.templatical.com/scenes/theming)
 
 Templatical ships with a polished default theme. Two ways to override any color, radius, shadow, or font:
 
@@ -10368,6 +10464,8 @@ If you'd like your custom rule to participate in the orchestrator alongside the 
 # Quality
 
 Source: https://docs.templatical.com/quality/
+
+[Open in playground](https://play.templatical.com/scenes/issues)
 
 `@templatical/quality` is the umbrella package for Templatical's template-quality tooling — deterministic, JSON-only linters that catch authoring mistakes inside the editor and in headless / CI checks. MIT-licensed, ESM, no Vue, no DOM.
 

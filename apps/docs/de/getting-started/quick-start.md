@@ -5,6 +5,8 @@ description: Bringen Sie den Templatical-E-Mail-Editor in weniger als 5 Minuten 
 
 # Schnellstart
 
+[Im Playground öffnen](https://play.templatical.com/scenes/minimum)
+
 ## 1. Pakete installieren
 
 ::: code-group

@@ -5,6 +5,8 @@ description: Verbinden Sie den Speicher-/Ladezyklus des Editors mit Ihrem eigene
 
 # Vorlagen speichern & laden
 
+[Im Playground öffnen](https://play.templatical.com/scenes/templates)
+
 Geben Sie dem Editor einen Ort zum Speichern, und er ergänzt die passende Bedienoberfläche: einen direkt bearbeitbaren Vorlagennamen, eine Speichern-Schaltfläche, eine Statusanzeige, `Cmd`/`Strg`+`S`, optionales Autosave sowie eine Warnung, bevor der Tab mit ungespeicherter Arbeit geschlossen wird.
 
 Das alles übernimmt der Editor. **Die Persistenz liegt bei Ihnen** — drei Methoden gegen Ihre eigene API.
