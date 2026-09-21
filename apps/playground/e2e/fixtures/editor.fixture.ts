@@ -12,6 +12,7 @@ type EditorFixtures = {
   shadowDom: boolean;
   chooserPage: ChooserPage;
   editorPage: EditorPage;
+  scenePage: ScenePage;
   editorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
   blankEditorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
 };
@@ -25,6 +26,9 @@ export const test = base.extend<EditorFixtures>({
   },
   editorPage: async ({ page }, use) => {
     await use(new EditorPage(page));
+  },
+  scenePage: async ({ page, shadowDom }, use) => {
+    await use(new ScenePage(page, { shadowDom }));
   },
   editorReady: async ({ page, shadowDom }, use) => {
     const chooserPage = new ChooserPage(page, { shadowDom });

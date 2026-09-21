@@ -126,11 +126,10 @@ async function measureClamp(
 test.describe("modal height clamp", () => {
   test("the test-email dialog stays inside a trapped host box", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("test-email");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await trapFixedPositioning(page);
@@ -167,11 +166,10 @@ test.describe("modal height clamp", () => {
 
   test("the send button stays reachable inside a trapped host box", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("test-email");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await trapFixedPositioning(page);
@@ -218,11 +216,10 @@ test.describe("modal height clamp", () => {
 
   test("the saved-blocks browser stays inside a trapped host box", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await trapFixedPositioning(page);
@@ -242,13 +239,16 @@ test.describe("modal height clamp", () => {
     await expect(page.locator(SELECTORS.savedBlocksBrowser)).toBeHidden();
   });
 
-  test.describe("test-email on editorReady", () => {
-    test.skip(true, "cookbook-task-5: test-email scene");
+  test.describe("test-email on scene URL", () => {
+    test.beforeEach(async ({ scenePage, editorPage }) => {
+      await scenePage.goto("test-email");
+      await editorPage.waitForReady();
+      await editorPage.dismissOverlays();
+    });
 
     test("clicking the gap below the panel still closes the dialog", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       // Regression cover for the wrapper the clamp introduced. It spans the
@@ -294,9 +294,8 @@ test.describe("modal height clamp", () => {
     });
 
     test("an untrapped host still gets a viewport-sized dialog", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       // The fix must not shrink the common case. With no trap the backdrop still

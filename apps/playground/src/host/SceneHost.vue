@@ -15,6 +15,7 @@ const { t } = usePlaygroundI18n();
 const scene = computed(() => getScene(props.sceneId));
 const editorContainer = ref<HTMLElement | null>(null);
 const initError = ref("");
+const sceneReady = ref(false);
 const codeOpen = ref(scene.value ? scene.value.group !== "examples" : false);
 
 onMounted(async () => {
@@ -33,6 +34,7 @@ onMounted(async () => {
       message: result.initError,
     });
   }
+  sceneReady.value = true;
 });
 
 onUnmounted(() => {
@@ -52,6 +54,7 @@ onUnmounted(() => {
   <div
     v-else
     data-testid="scene-host"
+    :data-scene-ready="sceneReady ? 'true' : undefined"
     class="flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <header

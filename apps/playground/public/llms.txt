@@ -8,6 +8,16 @@ Each scene is also raw markdown: /scenes/<id>.md
 
 - [Minimum setup](https://play.templatical.com/scenes/minimum): init({ container }) — empty canvas, no providers.
 
+## Storage
+
+- [Templates](https://play.templatical.com/scenes/templates): init({ templates }) — save, load, rename, and optional autosave.
+- [Version history](https://play.templatical.com/scenes/version-history): init({ templates, versionHistory }) — browse, preview, and restore past saves.
+- [Comments](https://play.templatical.com/scenes/comments): init({ templates, comments, user }) — threaded review on the attached template.
+- [Saved blocks](https://play.templatical.com/scenes/saved-blocks): init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.
+- [Media](https://play.templatical.com/scenes/media): init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.
+- [Test email](https://play.templatical.com/scenes/test-email): init({ testEmail }) — header Test button, recipient picker, fake send.
+- [Render](https://play.templatical.com/scenes/render): init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.
+
 ## Examples
 
 - [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.

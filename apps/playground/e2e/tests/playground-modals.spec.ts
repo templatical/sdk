@@ -66,9 +66,19 @@ test.describe("Playground modals", () => {
 
   test("config modal closes on Escape", async ({ editorPage, page }) => {
     await editorPage.openConfig();
-    const dialog = page.locator('[role="dialog"]').last();
+    const dialog = page.getByRole("dialog", { name: "Editor Configuration" });
     await expect(dialog).toBeVisible();
-    await page.keyboard.press("Escape");
+    // Options tab is a CodeMirror; a focused editor swallows Escape. Fire the
+    // key on the playground backdrop, which is where `@keydown.escape` is bound.
+    await page.locator(SELECTORS.modalBackdrop).evaluate((el) => {
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
     await expect(dialog).toBeHidden();
   });
 

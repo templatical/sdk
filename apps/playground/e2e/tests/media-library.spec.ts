@@ -1,17 +1,18 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
 import type { Locator, Page } from "@playwright/test";
-import { ChooserPage } from "../pages/chooser.page";
 import { EditorPage } from "../pages/editor.page";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * BYO media library in the OSS editor, backed by the playground's
  * `createLocalStorageMediaProvider({ key: "templatical:media" })`.
  *
- * Media is on unless `tpl-playground-media` is `"false"`. The first open of
- * an absent store seeds three Unsplash HTTPS assets; this spec reads that
- * seed rather than writing its own. Drop uses the same synthetic DataTransfer
- * as `imageDropUpload.spec.ts` — Playwright's `dragTo` cannot carry a File.
+ * Media is on for `/scenes/media` and off on `/scenes/minimum`. The first
+ * open of an absent store seeds three Unsplash HTTPS assets; this spec reads
+ * that seed rather than writing its own. Drop uses the same synthetic
+ * DataTransfer as `imageDropUpload.spec.ts` — Playwright's `dragTo` cannot
+ * carry a File.
  *
  * Both Playwright projects pick this spec up; do not `forEach` DOM modes.
  *
@@ -47,18 +48,11 @@ function dropPngOn(dropZone: Locator) {
 }
 
 /**
- * Media-off must be set before navigation — `blankEditorReady` goes to the
- * chooser first, and the flag is read once at `init()`. Same shape as
- * `settings-visibility.spec.ts`.
+ * Media-off is the minimum scene: no `media` key, so image fields stay URL-only.
  */
 async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
-  const chooserPage = new ChooserPage(page, { shadowDom });
   const editorPage = new EditorPage(page);
-  await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-media", "false");
-  });
-  await chooserPage.goto();
-  await chooserPage.selectBlankTemplate();
+  await new ScenePage(page, { shadowDom }).goto("minimum");
   await editorPage.waitForReady();
   await editorPage.dismissOverlays();
   return editorPage;
@@ -66,10 +60,14 @@ async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
 
 test.describe("Media library", () => {
   test.describe("with media provider", () => {
-    test.skip(true, "cookbook-task-5: media scene");
+    test.beforeEach(async ({ scenePage, editorPage }) => {
+      await scenePage.goto("media");
+      await editorPage.waitForReady();
+      await editorPage.dismissOverlays();
+    });
 
     test("Browse picks the first seeded asset onto the image block", async ({
-      blankEditorReady: { editorPage },
+      editorPage,
       page,
     }) => {
       await editorPage.clickPaletteItem("image");
@@ -101,7 +99,7 @@ test.describe("Media library", () => {
     });
 
     test("dropping a PNG onto an image block sets a data URL src", async ({
-      blankEditorReady: { editorPage },
+      editorPage,
       page,
     }) => {
       await editorPage.clickPaletteItem("image");

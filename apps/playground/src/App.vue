@@ -17,12 +17,7 @@ import {
   useTimeoutFn,
 } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
-import {
-  init,
-  unmount,
-  createLocalStorageSavedBlocksProvider,
-  createLocalStorageMediaProvider,
-} from "@templatical/editor";
+import { init, unmount } from "@templatical/editor";
 import type {
   TemplaticalEditor,
   TemplateSettingsConfig,
@@ -36,18 +31,10 @@ import type {
   BlockDefaults,
   TemplateDefaults,
   ColorsConfig,
-  Comment,
   CommentsProvider,
-  EditorUser,
   FontsConfig,
-  MediaAsset,
-  MediaProvider,
-  SavedBlock,
   SavedBlocksProvider,
-  TemplateVersion,
   TemplatesProvider,
-  TemplateSaveTrigger,
-  TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
 import { createDefaultTemplateContent } from "@templatical/types";
@@ -66,6 +53,17 @@ const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
 import LogoIcon from "@/LogoIcon.vue";
 import SceneHost from "@/host/SceneHost.vue";
 import { parsePlaygroundRoute } from "@/scenes";
+import {
+  PLAYGROUND_USER,
+  commentsProviderFor as hostCommentsProviderFor,
+  compileMjmlDemo,
+  getLastMjmlWarnings,
+  mediaProviderFor,
+  savedBlocksProviderFor as hostSavedBlocksProviderFor,
+  templatesProviderFor as hostTemplatesProviderFor,
+  testEmailProvider,
+  versionHistoryProviderFor as hostVersionHistoryProviderFor,
+} from "@/host/providers";
 import {
   resolveInitialShadowMode,
   SHADOW_STORAGE_KEY,
@@ -200,618 +198,48 @@ function cancelDataSourcePicker(): void {
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
 
-/** Shared slug for every per-template storage key (and the demo template id). */
-function slugFor(templateName: string): string {
-  return templateName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 /** Stand-in template name for content that came from an import or a share link. */
 const SCRATCH_TEMPLATE_NAME = "Scratch";
-
-/** Storage key per template, so each gets its own library and its own defaults. */
-function savedBlocksKeyFor(templateName: string): string {
-  return `templatical:saved-blocks:${slugFor(templateName)}`;
-}
-
-/**
- * Seed a template's demo saved blocks the first time it is opened.
- *
- * Only when the key is absent — never a merge or a re-seed. Re-seeding would
- * resurrect entries the user deleted and overwrite their renames, which would
- * make delete and rename look broken in the very demo meant to show them off.
- * The fixtures each include one entry the store marks `canUpdate: false` /
- * `canDelete: false`, and that entry is what keeps a library from being emptied,
- * so nothing is lost by seeding exactly once.
- */
-function seedSavedBlocks(
-  key: string,
-  defaults: SavedBlock[] | undefined,
-): void {
-  if (!defaults?.length) return;
-  if (localStorage.getItem(key) !== null) return;
-  localStorage.setItem(key, JSON.stringify(defaults));
-}
-
-/**
- * Providers are memoised per template, NOT per `init()` call. `init()` re-runs
- * whenever config or locale changes, and a fresh provider each time would be
- * harmless in itself — but recreating on template *name* keeps one instance per
- * library, so a locale switch can't reset what the user saved. Switching
- * template switches library.
- *
- * Setting `tpl-playground-saved-blocks-readonly` demonstrates the read-only
- * library: a provider withholds its mutations by passing `false` instead of a
- * function, and the editor then hides every affordance that would need them
- * while browsing, previewing and inserting keep working.
- */
-const savedBlocksProviders = new Map<string, SavedBlocksProvider>();
 
 function savedBlocksProviderFor(
   template?: TemplateOption,
 ): SavedBlocksProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = savedBlocksProviders.get(name);
-  if (cached) return cached;
-
-  const key = savedBlocksKeyFor(name);
-  seedSavedBlocks(key, template?.savedBlocks);
-  const base = createLocalStorageSavedBlocksProvider({ key });
-
-  // `…-delay` stands in for a sluggish backend, so the browser's first-open
-  // skeleton is exercisable: localStorage answers instantly, which is the one
-  // latency profile that can't reproduce it.
-  const delayMs = Number(
-    localStorage.getItem("tpl-playground-saved-blocks-delay") ?? "0",
-  );
-  const withDelay: SavedBlocksProvider =
-    delayMs > 0
-      ? {
-          ...base,
-          list: async (params) => {
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-            return base.list(params);
-          },
-        }
-      : base;
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-saved-blocks-readonly") === "true";
-  const provider = readOnly
-    ? {
-        ...withDelay,
-        create: false as const,
-        update: false as const,
-        delete: false as const,
-      }
-    : withDelay;
-
-  savedBlocksProviders.set(name, provider);
-  return provider;
+  return hostSavedBlocksProviderFor(template?.name ?? SCRATCH_TEMPLATE_NAME, {
+    readonly:
+      localStorage.getItem("tpl-playground-saved-blocks-readonly") === "true",
+    delay: Number(
+      localStorage.getItem("tpl-playground-saved-blocks-delay") ?? "0",
+    ),
+    seed: template?.savedBlocks,
+  });
 }
 
-const MEDIA_STORAGE_KEY = "templatical:media";
-
-/**
- * Remote HTTPS images so a first open is not an empty library. Data-URL
- * uploads from `create` eat `localStorage` quota; these do not.
- *
- * Seeded only when the key is absent — never when it holds `[]`. An empty
- * array is the user having cleared the library, and re-seeding would make
- * delete look broken.
- */
-const PLAYGROUND_MEDIA_SEED: MediaAsset[] = [
-  {
-    id: "seed-product-shot",
-    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
-    filename: "product-shot.jpg",
-    alt: "Product shot",
-    mimeType: "image/jpeg",
-  },
-  {
-    id: "seed-team-photo",
-    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
-    filename: "team-photo.jpg",
-    alt: "Team photo",
-    mimeType: "image/jpeg",
-  },
-  {
-    id: "seed-abstract",
-    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
-    filename: "abstract.jpg",
-    alt: "Abstract",
-    mimeType: "image/jpeg",
-  },
-];
-
-function seedMediaLibrary(): void {
-  if (localStorage.getItem(MEDIA_STORAGE_KEY) !== null) return;
-  localStorage.setItem(
-    MEDIA_STORAGE_KEY,
-    JSON.stringify(PLAYGROUND_MEDIA_SEED),
-  );
+function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
+  return hostTemplatesProviderFor(template?.name ?? SCRATCH_TEMPLATE_NAME, {
+    readonly:
+      localStorage.getItem("tpl-playground-templates-readonly") === "true",
+  });
 }
-
-let mediaProvider: MediaProvider | undefined;
-
-function mediaProviderFor(): MediaProvider {
-  if (mediaProvider) return mediaProvider;
-  seedMediaLibrary();
-  mediaProvider = createLocalStorageMediaProvider({ key: MEDIA_STORAGE_KEY });
-  return mediaProvider;
-}
-
-/**
- * Demo version store: one localStorage array per template, appended to by the
- * templates provider's `save` and read by the version-history provider.
- *
- * It sits between the two providers on purpose. That is exactly the arrangement
- * the contract describes — the editor never records a version, the thing that
- * *persists* does — and having the demo do it the same way is what makes the
- * playground's history fill up as you work.
- */
-const versionStores = new Map<string, VersionStore>();
-
-interface StoredVersion {
-  id: string;
-  createdAt: string;
-  isAutomatic: boolean;
-  content: TemplateContent;
-}
-
-interface VersionStore {
-  read: () => StoredVersion[];
-  append: (content: TemplateContent, isAutomatic: boolean) => StoredVersion;
-}
-
-/**
- * How many of the newest versions carry their content in `list()`.
- *
- * The hint is evaluated per entry, so a store may hydrate the recent ones and
- * make the rest a round-trip. Doing that here keeps both paths live in the demo:
- * scrubbing the recent versions never awaits, and stepping past the cut-off
- * exercises `get` — and the editor's cache, so the second visit is instant too.
- */
-const HYDRATED_VERSIONS = 5;
-
-function versionStoreFor(templateName: string): VersionStore {
-  const cached = versionStores.get(templateName);
-  if (cached) return cached;
-
-  const key = `templatical:versions:${slugFor(templateName)}`;
-
-  function read(): StoredVersion[] {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return [];
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as StoredVersion[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function append(
-    content: TemplateContent,
-    isAutomatic: boolean,
-  ): StoredVersion {
-    const version: StoredVersion = {
-      id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
-      isAutomatic,
-      content: JSON.parse(JSON.stringify(content)) as TemplateContent,
-    };
-    // Newest first, matching the order the editor renders verbatim.
-    localStorage.setItem(key, JSON.stringify([version, ...read()]));
-    return version;
-  }
-
-  const store: VersionStore = { read, append };
-  versionStores.set(templateName, store);
-  return store;
-}
-
-/**
- * Demo version-history provider over that same store, memoised per template
- * name — the rule every provider here follows, because `init()` re-runs on a
- * locale or config change and a fresh provider each time would be churn around
- * one stored document.
- *
- * `tpl-playground-version-history-readonly` withholds `restore` by passing
- * `false`, which leaves history browsable and previewable with no Restore
- * button — the read-only tier of the contract.
- */
-const versionHistoryProviders = new Map<string, VersionHistoryProvider>();
 
 function versionHistoryProviderFor(
   template?: TemplateOption,
 ): VersionHistoryProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = versionHistoryProviders.get(name);
-  if (cached) return cached;
-
-  const store = versionStoreFor(name);
-  const templates = templatesProviderFor(template);
-
-  function requireVersion(versionId: string): StoredVersion {
-    const version = store.read().find((v) => v.id === versionId);
-    if (!version) throw new Error(`No version stored under "${versionId}"`);
-    return version;
-  }
-
-  const base: VersionHistoryProvider = {
-    // The demo store holds everything in localStorage, so one page is the
-    // whole history and there is no `nextCursor` to hand back.
-    list: async () => ({
-      versions: store.read().map((version, index) => {
-        const entry: TemplateVersion = {
-          id: version.id,
-          createdAt: version.createdAt,
-          isAutomatic: version.isAutomatic,
-        };
-        // The hint, on the recent entries only — see HYDRATED_VERSIONS.
-        if (index < HYDRATED_VERSIONS) entry.content = version.content;
-        return entry;
-      }),
-    }),
-    get: async (_templateId, versionId) => requireVersion(versionId).content,
-    create: async (_templateId, content) => {
-      const version = store.append(content, false);
-      return {
-        id: version.id,
-        createdAt: version.createdAt,
-        isAutomatic: false,
-        content: version.content,
-      };
+  return hostVersionHistoryProviderFor(
+    template?.name ?? SCRATCH_TEMPLATE_NAME,
+    {
+      readonly:
+        localStorage.getItem("tpl-playground-version-history-readonly") ===
+        "true",
     },
-    // The one-line composition the contract documents for a backend with no
-    // atomic restore endpoint: read the old content, then save it. It is
-    // append-only for free, because this demo's `save` records a version.
-    restore: async (templateId, versionId) => {
-      const content = requireVersion(versionId).content;
-      if (typeof templates.save !== "function") {
-        throw new Error("Templates provider is read-only — cannot restore.");
-      }
-      return templates.save(templateId, { content });
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-version-history-readonly") === "true";
-  const provider = readOnly ? { ...base, restore: false as const } : base;
-
-  versionHistoryProviders.set(name, provider);
-  return provider;
+  );
 }
-
-/** Storage key per template, so each template is its own stored document. */
-function templatesKeyFor(templateName: string): string {
-  return `templatical:template:${slugFor(templateName)}`;
-}
-
-/** What the demo store keeps under that key — exactly the `Template` shape. */
-interface StoredTemplate {
-  id: string;
-  name?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  content: TemplateContent;
-}
-
-/**
- * Demo templates provider: one localStorage record per template, standing in for
- * the API a real consumer would call.
- *
- * Memoised per template **name**, not per `init()` call — same rule as
- * `savedBlocksProviderFor`, and for the same reason: `init()` re-runs whenever
- * the locale or config changes, and a fresh provider each time would be pointless
- * churn around a single stored document. Switching template switches document.
- *
- * Two storage flags mirror the saved-blocks demo:
- *  - `tpl-playground-templates-readonly` withholds `create`/`save` by passing
- *    `false`, which hides the save button, the status indicator, and makes the
- *    name read-only while loading and editing keep working.
- *  - `tpl-playground-templates-autosave` turns on the SDK's debounced autosave,
- *    so the Save button stops being the only way content is persisted.
- */
-const templatesProviders = new Map<string, TemplatesProvider>();
-
-function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = templatesProviders.get(name);
-  if (cached) return cached;
-
-  const key = templatesKeyFor(name);
-
-  function read(): StoredTemplate | null {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return null;
-    try {
-      return JSON.parse(raw) as StoredTemplate;
-    } catch {
-      // A corrupt record reads as "nothing stored", so the next create() heals it
-      // rather than wedging the demo.
-      return null;
-    }
-  }
-
-  function write(stored: StoredTemplate): StoredTemplate {
-    localStorage.setItem(key, JSON.stringify(stored));
-    return stored;
-  }
-
-  function requireStored(templateId: string): StoredTemplate {
-    const stored = read();
-    if (!stored || stored.id !== templateId) {
-      throw new Error(`No template stored under "${templateId}"`);
-    }
-    return stored;
-  }
-
-  const versions = versionStoreFor(name);
-
-  const base: TemplatesProvider = {
-    load: async (templateId) => requireStored(templateId),
-    create: async (input) => {
-      // A store stamps its own writes, so the demo does too — that is what the
-      // header's write time reads, and the editor never sends either field.
-      //
-      // `createdAt` only. Stamping `updatedAt` here too would claim an update
-      // that never happened, and the header believes the store: it prefers
-      // `updatedAt` and labels it "Updated", so a brand-new template read
-      // "Updated just now" before anyone had edited anything. Leaving it unset
-      // is what lets the header fall back to "Created", which is the whole point
-      // of the timestamp carrying which field it came from. `save()` below is
-      // the first thing that can honestly set it.
-      //
-      // Worth copying in a real backend: a column default of
-      // `updated_at = created_at` produces the same lie.
-      return write({
-        id: slugFor(name),
-        name: input.name,
-        content: input.content,
-        createdAt: new Date().toISOString(),
-      });
-    },
-    save: async (templateId, patch) => {
-      const stored = write({
-        ...requireStored(templateId),
-        ...patch,
-        updatedAt: new Date().toISOString(),
-      });
-      // The contract puts automatic versions on whoever implements `save` — the
-      // side that knows what storage costs. Cloud throttles here; the demo
-      // records one per save, because a demo you have to wait out demonstrates
-      // nothing. A rename patch carries no content and records nothing.
-      if (patch.content) versions.append(patch.content, true);
-      return stored;
-    },
-    onSaved: (_template, { trigger }) => {
-      // Recorded on `window` rather than rendered: a visible trigger log would be
-      // test-only UI in front of every visitor. e2e reads it with page.evaluate.
-      const w = window as unknown as {
-        __tplPlaygroundSaveTriggers?: TemplateSaveTrigger[];
-      };
-      (w.__tplPlaygroundSaveTriggers ??= []).push(trigger);
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-templates-readonly") === "true";
-  const provider = readOnly
-    ? { ...base, create: false as const, save: false as const }
-    : base;
-
-  templatesProviders.set(name, provider);
-  return provider;
-}
-
-/**
- * Demo comments store: one localStorage array per template, memoised per template
- * name — the rule every provider here follows, because `init()` re-runs on a locale
- * or config change and a fresh provider each time would be churn around one stored
- * conversation.
- *
- * `tpl-playground-comments-readonly` withholds all four mutations by passing
- * `false`, which leaves threads readable and jump-to-block working with no way to
- * add, edit, delete or resolve — the read-only tier of the contract.
- *
- * There is deliberately **no `subscribe`**: the playground is one browser tab with
- * no backend, so a realtime transport would have nothing to carry. Its absence is
- * the point — comments work identically without it, which is exactly what the
- * contract promises.
- */
-const commentsProviders = new Map<string, CommentsProvider>();
-
-/** Who the playground says you are. Drives "You" and the edit/delete affordances. */
-const PLAYGROUND_USER: EditorUser = {
-  id: "playground-user",
-  name: "Playground User",
-};
 
 function commentsProviderFor(template?: TemplateOption): CommentsProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = commentsProviders.get(name);
-  if (cached) return cached;
-
-  const key = `templatical:comments:${slugFor(name)}`;
-
-  function read(): Comment[] {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return [];
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as Comment[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function write(threads: Comment[]): void {
-    localStorage.setItem(key, JSON.stringify(threads));
-  }
-
-  /** Roots and replies, flat, so an id can be located wherever it lives. */
-  function locate(
-    threads: Comment[],
-    commentId: string,
-  ): { thread: Comment; reply?: Comment } | null {
-    for (const thread of threads) {
-      if (thread.id === commentId) return { thread };
-      for (const reply of thread.replies ?? []) {
-        if (reply.id === commentId) return { thread, reply };
-      }
-    }
-    return null;
-  }
-
-  function nextId(): string {
-    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  const base: CommentsProvider = {
-    list: async () => read(),
-
-    create: async (_templateId, input) => {
-      const threads = read();
-      const comment: Comment = {
-        id: nextId(),
-        body: input.body,
-        author: { ...PLAYGROUND_USER },
-        createdAt: new Date().toISOString(),
-        blockId: input.blockId ?? null,
-        parentId: input.parentId ?? null,
-        resolvedAt: null,
-      };
-
-      if (input.parentId) {
-        const found = locate(threads, input.parentId);
-        if (!found)
-          throw new Error(`No thread stored under "${input.parentId}"`);
-        found.thread.replies = [...(found.thread.replies ?? []), comment];
-      } else {
-        threads.push(comment);
-      }
-      write(threads);
-      return comment;
-    },
-
-    update: async (_templateId, commentId, patch) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) throw new Error(`No comment stored under "${commentId}"`);
-      const target = found.reply ?? found.thread;
-      if (patch.body !== undefined) target.body = patch.body;
-      // Stamped only on a real edit, which is what makes the "(edited)" marker
-      // mean something — a store that sets it on creation marks everything edited.
-      target.updatedAt = new Date().toISOString();
-      write(threads);
-      return target;
-    },
-
-    delete: async (_templateId, commentId) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) return;
-      if (found.reply) {
-        found.thread.replies = (found.thread.replies ?? []).filter(
-          (r) => r.id !== commentId,
-        );
-        write(threads);
-        return;
-      }
-      write(threads.filter((t) => t.id !== commentId));
-    },
-
-    setResolved: async (_templateId, commentId, resolved) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) throw new Error(`No comment stored under "${commentId}"`);
-      const target = found.reply ?? found.thread;
-      // The target state is applied, not toggled — the contract's whole reason for
-      // taking a boolean rather than flipping whatever it finds.
-      target.resolvedAt = resolved ? new Date().toISOString() : null;
-      target.resolvedBy = resolved ? { ...PLAYGROUND_USER } : null;
-      write(threads);
-      return target;
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-comments-readonly") === "true";
-  const provider: CommentsProvider = readOnly
-    ? {
-        ...base,
-        create: false as const,
-        update: false as const,
-        delete: false as const,
-        setResolved: false as const,
-      }
-    : base;
-
-  commentsProviders.set(name, provider);
-  return provider;
+  return hostCommentsProviderFor(template?.name ?? SCRATCH_TEMPLATE_NAME, {
+    readonly:
+      localStorage.getItem("tpl-playground-comments-readonly") === "true",
+  });
 }
-
-/**
- * Fake test-email sender, on for every template.
- *
- * Nothing is delivered — the playground has no backend and shouldn't acquire
- * one. The provider waits, logs exactly what a real `send` would have received,
- * and resolves. That exercises the full UI path: the sending spinner, the success
- * confirmation and the auto-close.
- *
- * Unlike `savedBlocksProviderFor`, this is a single module-level provider rather
- * than one per template: a sender depends on the recipient and the current
- * content, never on which template is open.
- *
- * Everything is fixed rather than flag-driven, so what a visitor sees is what a
- * sensible integration looks like:
- *
- *  - **Two allowed recipients**, which is the realistic shape (send only to
- *    verified addresses) and renders the picker rather than a free-text field.
- *    `example.com` is IANA-reserved for documentation, so nothing here could
- *    resolve to a real mailbox even if the send weren't faked.
- *  - **`includeMjml` on**, so the logged payload shows the rendered MJML a real
- *    backend would hand to its mail service.
- *  - **Always succeeds.** A demo that intermittently errors reads as broken.
- *
- * The other branches — free text, a single read-only recipient, an empty
- * allowlist hiding the button, and a rejected send — are covered by unit and
- * component tests rather than here, where they'd need a control surface no
- * visitor would find.
- */
-const FAKE_SEND_LATENCY_MS = 800;
-
-const testEmailProvider: TestEmailProvider = {
-  includeMjml: true,
-  allowedRecipients: ["you@example.com", "teammate@example.com"],
-
-  send: async (payload) => {
-    await new Promise((resolve) => setTimeout(resolve, FAKE_SEND_LATENCY_MS));
-
-    console.info("[playground] test email 'sent'", {
-      recipient: payload.recipient,
-      blocks: payload.content.blocks.length,
-      mjmlBytes: payload.mjml?.length ?? null,
-      allowedRecipients: payload.allowedRecipients ?? null,
-    });
-
-    // E2E affordance, same rationale as `__tplPlaygroundGetMjml` below: lets a
-    // spec assert on the payload without scraping console output.
-    (
-      window as { __tplPlaygroundLastTestEmail?: unknown }
-    ).__tplPlaygroundLastTestEmail = payload;
-  },
-};
 
 /**
  * Demo `resolvePreview`: evaluates the Liquid logic tags the showcase templates
@@ -2089,13 +1517,6 @@ const exportFilename: Record<ExportTab, { name: string; mime: string }> = {
 };
 
 /**
- * Whatever the last `compileMjml` call reported. Stashed rather than returned
- * because `RenderProvider.compileMjml` resolves to HTML — a real backend would
- * put warnings in its response body; the demo has nowhere else to put them.
- */
-const lastMjmlWarnings = ref<string[]>([]);
-
-/**
  * Demo `render.compileMjml`: MJML in, HTML out.
  *
  * This is the **cheap tier** of the render provider, and the whole reason the
@@ -2105,41 +1526,18 @@ const lastMjmlWarnings = ref<string[]>([]);
  * A non-Node backend does the same thing with any mjml2html endpoint instead of
  * standing up a Node sidecar to understand the block model.
  */
-async function compileMjmlDemo(mjml: string): Promise<string> {
-  const mod = (await import("mjml-browser")) as unknown as {
-    default: unknown;
-  };
-  type Mjml2Html = (
-    mjml: string,
-    options?: { validationLevel?: "strict" | "soft" | "skip" },
-  ) => Promise<{
-    html: string;
-    errors: { formattedMessage?: string; message: string }[];
-  }>;
-  const mjml2html: Mjml2Html =
-    typeof mod.default === "function"
-      ? (mod.default as Mjml2Html)
-      : ((mod.default as { default: Mjml2Html }).default as Mjml2Html);
-  const result = await mjml2html(mjml, { validationLevel: "soft" });
-  lastMjmlWarnings.value = (result.errors ?? []).map(
-    (e) => e.formattedMessage ?? e.message,
-  );
-  return result.html ?? "";
-}
-
 async function compileExportHtml(): Promise<void> {
   if (!editor.value || exportHtml.value || exportHtmlLoading.value) return;
   exportHtmlLoading.value = true;
   exportHtmlError.value = "";
   exportHtmlMjmlErrors.value = [];
-  lastMjmlWarnings.value = [];
   try {
     // `toHtml()` — not a local mjml2html call. It renders MJML through the SDK,
     // then hands it to `render.compileMjml` above. Rejects with an explanatory
     // error if the `render` provider is ever dropped, since there is no local HTML
     // path.
     exportHtml.value = await editor.value.toHtml();
-    exportHtmlMjmlErrors.value = lastMjmlWarnings.value;
+    exportHtmlMjmlErrors.value = [...getLastMjmlWarnings()];
   } catch (e) {
     exportHtmlError.value = e instanceof Error ? e.message : String(e);
   } finally {

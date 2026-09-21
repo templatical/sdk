@@ -1,10 +1,11 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * The BYO version-history provider in the OSS editor, backed by the playground's
- * localStorage store (`versionHistoryProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (`versionHistoryProviderFor` in `apps/playground/src/host/providers.ts`).
  *
  * The demo's *templates* provider is what records versions — one per save, the
  * arrangement the contract prescribes — so history fills up by using the editor
@@ -19,9 +20,8 @@ import { SELECTORS } from "../helpers/selectors";
  * visitors.
  */
 
-// `selectFirstTemplate()` opens Product Launch, so that's the history under test.
-const VERSIONS_KEY = "templatical:versions:product-launch";
-const TEMPLATE_KEY = "templatical:template:product-launch";
+const VERSIONS_KEY = "templatical:versions:version-history";
+const TEMPLATE_KEY = "templatical:template:version-history";
 
 /** How many entries the demo store hydrates — mirrors `HYDRATED_VERSIONS`. */
 const HYDRATED = 5;
@@ -45,33 +45,18 @@ async function readStoredBlockCount(page: Page): Promise<number> {
   }, TEMPLATE_KEY);
 }
 
-/**
- * Storage flags are set through `addInitScript` because the provider is built
- * during the editor's mount — writing them after `goto()` races the initial load.
- */
-async function openEditor(
+async function openVersionHistoryScene(
   page: Page,
-  fixtures: {
-    chooserPage: {
-      goto: () => Promise<void>;
-      selectFirstTemplate: () => Promise<void>;
-    };
-    editorPage: {
-      waitForReady: () => Promise<void>;
-      dismissOverlays: () => Promise<void>;
-    };
+  shadowDom: boolean,
+  editorPage: {
+    waitForReady: () => Promise<void>;
+    dismissOverlays: () => Promise<void>;
   },
-  flags: Record<string, string> = {},
+  query: Record<string, string> = {},
 ): Promise<void> {
-  await page.addInitScript((entries) => {
-    for (const [key, value] of entries as [string, string][]) {
-      localStorage.setItem(key, value);
-    }
-  }, Object.entries(flags));
-  await fixtures.chooserPage.goto();
-  await fixtures.chooserPage.selectFirstTemplate();
-  await fixtures.editorPage.waitForReady();
-  await fixtures.editorPage.dismissOverlays();
+  await new ScenePage(page, { shadowDom }).goto("version-history", query);
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
 }
 
 /** Duplicate a block, then save — one edit, one recorded version. */
@@ -92,13 +77,14 @@ async function editAndSave(
 }
 
 test.describe("version history provider", () => {
-  test.describe("editorReady", () => {
-    test.skip(true, "cookbook-task-5: version-history scene");
+  test.describe("version-history scene", () => {
+    test.beforeEach(async ({ page, shadowDom, editorPage }) => {
+      await openVersionHistoryScene(page, shadowDom, editorPage);
+    });
 
     test("the control renders once a template is attached, with no versions yet", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       await expect(page.locator(SELECTORS.versionHistory)).toBeVisible();
@@ -112,9 +98,8 @@ test.describe("version history provider", () => {
     });
 
     test("a save records a version, and it is listed as automatic", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       await editAndSave(page, editorPage, 1);
@@ -129,9 +114,8 @@ test.describe("version history provider", () => {
     });
 
     test("previewing a version swaps the canvas, and Cancel puts the work back", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       const blocksAtStart = await editorPage.getBlockCount();
@@ -157,9 +141,8 @@ test.describe("version history provider", () => {
     });
 
     test("Restore makes the version current and appends to history", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       const blocksAtStart = await editorPage.getBlockCount();
@@ -192,9 +175,8 @@ test.describe("version history provider", () => {
     });
 
     test("a version the store did not hydrate is fetched through get()", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       const blocksAtStart = await editorPage.getBlockCount();
@@ -226,9 +208,8 @@ test.describe("version history provider", () => {
      */
     test.describe("restoring with unsaved changes", () => {
       test("saves the unsaved work first, then restores", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         const blocksAtStart = await editorPage.getBlockCount();
@@ -270,9 +251,8 @@ test.describe("version history provider", () => {
       });
 
       test("Restore anyway discards the unsaved work", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         const blocksAtStart = await editorPage.getBlockCount();
@@ -302,9 +282,8 @@ test.describe("version history provider", () => {
       });
 
       test("Cancel leaves the preview up and restores nothing", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         const blocksAtStart = await editorPage.getBlockCount();
@@ -341,16 +320,12 @@ test.describe("version history provider", () => {
      */
     test("hides Restore but keeps preview and cancel working", async ({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
     }) => {
-      await openEditor(
-        page,
-        { chooserPage, editorPage },
-        {
-          "tpl-playground-version-history-readonly": "true",
-        },
-      );
+      await openVersionHistoryScene(page, shadowDom, editorPage, {
+        readonly: "1",
+      });
 
       const blocksAtStart = await editorPage.getBlockCount();
       await editAndSave(page, editorPage, 1);

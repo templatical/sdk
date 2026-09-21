@@ -1,5 +1,12 @@
 import { exampleLaunchpadLaunch } from "./examples/launchpad-launch";
 import { minimum } from "./minimum";
+import { comments } from "./storage/comments";
+import { media } from "./storage/media";
+import { render } from "./storage/render";
+import { savedBlocks } from "./storage/saved-blocks";
+import { templates } from "./storage/templates";
+import { testEmail } from "./storage/test-email";
+import { versionHistory } from "./storage/version-history";
 import type { Scene, SceneGroup } from "./types";
 
 export type {
@@ -10,7 +17,17 @@ export type {
   SceneVariant,
 } from "./types";
 
-export const SCENES: readonly Scene[] = [minimum, exampleLaunchpadLaunch];
+export const SCENES: readonly Scene[] = [
+  minimum,
+  templates,
+  versionHistory,
+  comments,
+  savedBlocks,
+  media,
+  testEmail,
+  render,
+  exampleLaunchpadLaunch,
+];
 
 export function getScene(id: string): Scene | undefined {
   return SCENES.find((scene) => scene.id === id);

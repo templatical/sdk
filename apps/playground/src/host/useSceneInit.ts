@@ -8,12 +8,20 @@ export async function mountScene(
   ctx: SceneContext,
   shadowDom: boolean,
 ): Promise<TemplaticalEditor> {
+  const config = scene.config(ctx);
   const editor = await init({
     container,
     shadowDom,
     content: scene.content(ctx),
-    ...scene.config(ctx),
+    ...config,
   });
+  if (typeof config.templates?.create === "function") {
+    try {
+      await editor.create({ name: scene.title });
+    } catch {
+      // Read-only store, or attach failed — the canvas still edits.
+    }
+  }
   const testHooks = window as {
     __tplPlaygroundGetMjml?: () => Promise<string>;
     __tplPlaygroundGetHtml?: () => Promise<string>;

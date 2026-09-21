@@ -41,14 +41,35 @@ describe("parsePlaygroundRoute", () => {
   });
 });
 
+const STORAGE_IDS = [
+  "templates",
+  "version-history",
+  "comments",
+  "saved-blocks",
+  "media",
+  "test-email",
+  "render",
+] as const;
+
 describe("registry", () => {
-  it("registers minimum then Launchpad launch", () => {
+  it("registers minimum, storage scenes, then Launchpad launch", () => {
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
+      ...STORAGE_IDS,
       "example-launchpad-launch",
     ]);
     expect(getScene("minimum")?.group).toBe("minimum");
     expect(getScene("minimum")?.docs).toBe("/getting-started/quick-start");
+    expect(getScene("saved-blocks")?.docs).toBe("/backend/saved-blocks");
+    expect(getScene("templates")?.docs).toBe("/backend/templates");
+    expect(getScene("version-history")?.docs).toBe("/backend/version-history");
+    expect(getScene("comments")?.docs).toBe("/backend/comments");
+    expect(getScene("media")?.docs).toBe("/backend/media");
+    expect(getScene("test-email")?.docs).toBe("/backend/test-email");
+    expect(getScene("render")?.docs).toBe("/backend/render");
+    for (const id of STORAGE_IDS) {
+      expect(getScene(id)?.group).toBe("storage");
+    }
     expect(getScene("example-launchpad-launch")?.group).toBe("examples");
     expect(getScene("example-launchpad-launch")?.docs).toBe(
       "/guide/examples#launchpad-launch",
@@ -56,9 +77,10 @@ describe("registry", () => {
     expect(getScene("nope")).toBeUndefined();
   });
 
-  it("groups minimum first", () => {
+  it("groups minimum first, then storage", () => {
     const groups = [...scenesByGroup().keys()];
     expect(groups[0]).toBe("minimum");
+    expect(groups[1]).toBe("storage");
   });
 });
 

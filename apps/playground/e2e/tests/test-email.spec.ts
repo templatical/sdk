@@ -31,20 +31,21 @@ type CapturedPayload = {
 };
 
 test.describe("Test email", () => {
-  test.skip(true, "cookbook-task-5: test-email scene");
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("test-email");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+  });
 
-  test("the trigger renders in the editor header", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
-
+  test("the trigger renders in the editor header", async ({ editorPage }) => {
     await expect(
       editorPage.page.locator(SELECTORS.testEmailTrigger),
     ).toBeVisible();
   });
 
   test("opens a dialog offering exactly the allowed recipients", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -57,31 +58,24 @@ test.describe("Test email", () => {
     await expect(field).toHaveValue(ALLOWED[0]);
   });
 
-  test("shows the preview without any interaction", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("shows the preview without any interaction", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
 
     // No disclosure to open — the preview is part of the dialog.
     await expect(page.locator(SELECTORS.testEmailPreview)).toBeVisible();
-    await expect(
-      page.locator(SELECTORS.blockPreviewCanvas),
-    ).toBeVisible();
+    await expect(page.locator(SELECTORS.blockPreviewCanvas)).toBeVisible();
   });
 
   test("the preview renders the template's actual blocks", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     // Take a distinctive string off the canvas first, so the assertion is about
     // this template rather than any non-empty render.
-    const canvasText = await editorPage
-      .getBlocks()
-      .first()
-      .innerText();
+    const canvasText = await editorPage.getBlocks().first().innerText();
     const needle = canvasText.trim().split("\n")[0].slice(0, 24);
     expect(needle.length).toBeGreaterThan(3);
 
@@ -93,9 +87,8 @@ test.describe("Test email", () => {
   });
 
   test("switching the preview viewport narrows the frame", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -121,9 +114,8 @@ test.describe("Test email", () => {
   });
 
   test("sends to the selected recipient and confirms, then closes itself", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -140,15 +132,12 @@ test.describe("Test email", () => {
   });
 
   test("hands the provider the recipient, the content and the MJML", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
-    await page
-      .locator(SELECTORS.testEmailRecipient)
-      .selectOption(ALLOWED[1]);
+    await page.locator(SELECTORS.testEmailRecipient).selectOption(ALLOWED[1]);
     await page.locator(SELECTORS.testEmailSend).click();
     await expect(page.locator(SELECTORS.testEmailSuccess)).toBeVisible({
       timeout: FAKE_LATENCY_MS + 4000,
@@ -172,8 +161,7 @@ test.describe("Test email", () => {
     expect(payload?.allowedRecipients).toEqual(ALLOWED);
   });
 
-  test("Cancel closes without sending", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("Cancel closes without sending", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.evaluate(() => {
@@ -195,14 +183,15 @@ test.describe("Test email", () => {
     expect(payload).toBeUndefined();
   });
 
-  test("Escape closes the dialog", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("Escape closes the dialog", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
+    const dialog = page.locator(SELECTORS.testEmailDialog);
+    await expect(dialog).toBeVisible();
     await expect(page.locator(SELECTORS.testEmailRecipient)).toBeVisible();
 
-    await page.keyboard.press("Escape");
+    await dialog.press("Escape");
 
     await expect(page.locator(SELECTORS.testEmailRecipient)).toBeHidden();
   });
@@ -218,9 +207,8 @@ test.describe("Test email", () => {
    * what the template said.
    */
   test("the preview renders the template's background colour", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
     const BACKGROUND = "rgb(28, 37, 255)";
 
@@ -266,9 +254,8 @@ test.describe("Test email", () => {
    * width — which is every showcase template.
    */
   test("leaves room for the background band beside the email", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -289,9 +276,8 @@ test.describe("Test email", () => {
   });
 
   test("reopening starts clean rather than showing the last result", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();

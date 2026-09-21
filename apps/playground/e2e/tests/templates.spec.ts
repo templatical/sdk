@@ -1,10 +1,11 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * The BYO templates provider in the OSS editor, backed by the playground's
- * localStorage store (`templatesProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (`templatesProviderFor` in `apps/playground/src/host/providers.ts`).
  *
  * The playground attaches a template right after `init()` — `create()` on a
  * fresh chooser open — so the header's name field, status indicator and Save
@@ -14,8 +15,7 @@ import { SELECTORS } from "../helpers/selectors";
  * in `useTemplatesFeature.test.ts` / `editor-templates.test.ts`.
  */
 
-// `selectFirstTemplate()` opens Product Launch, so that's the record under test.
-const STORE_KEY = "templatical:template:product-launch";
+const STORE_KEY = "templatical:template:templates";
 
 type StoredTemplate = {
   id: string;
@@ -30,67 +30,50 @@ async function readStored(page: Page): Promise<StoredTemplate | null> {
   }, STORE_KEY);
 }
 
-/**
- * Storage flags are set through `addInitScript` because the provider is built
- * during the editor's mount — writing them after `goto()` races the initial load.
- */
-async function openEditor(
+async function openTemplatesScene(
   page: Page,
-  fixtures: {
-    chooserPage: {
-      goto: () => Promise<void>;
-      selectFirstTemplate: () => Promise<void>;
-    };
-    editorPage: {
-      waitForReady: () => Promise<void>;
-      dismissOverlays: () => Promise<void>;
-    };
+  shadowDom: boolean,
+  editorPage: {
+    waitForReady: () => Promise<void>;
+    dismissOverlays: () => Promise<void>;
   },
-  flags: Record<string, string> = {},
+  query: Record<string, string> = {},
 ): Promise<void> {
-  await page.addInitScript((entries) => {
-    for (const [key, value] of entries as [string, string][]) {
-      localStorage.setItem(key, value);
-    }
-  }, Object.entries(flags));
-  await fixtures.chooserPage.goto();
-  await fixtures.chooserPage.selectFirstTemplate();
-  await fixtures.editorPage.waitForReady();
-  await fixtures.editorPage.dismissOverlays();
+  await new ScenePage(page, { shadowDom }).goto("templates", query);
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
 }
 
 test.describe("templates provider", () => {
-  test.describe("editorReady", () => {
-    test.skip(true, "cookbook-task-5: templates scene");
+  test.describe("templates scene", () => {
+    test.beforeEach(async ({ page, shadowDom, editorPage }) => {
+      await openTemplatesScene(page, shadowDom, editorPage);
+    });
 
     test("the header shows the attached template's name and a save button", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       await expect(page.locator(SELECTORS.templateName)).toHaveText(
-        "Product Launch",
+        "Templates",
       );
       await expect(page.locator(SELECTORS.templateSave)).toBeVisible();
       await expect(page.locator(SELECTORS.templateSave)).toBeEnabled();
     });
 
     test("create() stored the chosen template on first open", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
-
       const stored = await readStored(editorPage.page);
-      expect(stored?.id).toBe("product-launch");
-      expect(stored?.name).toBe("Product Launch");
+      expect(stored?.id).toBe("templates");
+      expect(stored?.name).toBe("Templates");
       expect(stored?.content.blocks.length).toBeGreaterThan(0);
     });
 
     test("no status badge is shown while nothing is unsaved", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
@@ -98,9 +81,8 @@ test.describe("templates provider", () => {
     });
 
     test("an edit shows Unsaved, and Save persists it and confirms", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       const before = await readStored(page);
@@ -120,9 +102,8 @@ test.describe("templates provider", () => {
     });
 
     test("Cmd+S persists without touching the button", async ({
-      editorReady,
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
       const blocksBefore = (await readStored(page))!.content.blocks.length;
@@ -141,15 +122,14 @@ test.describe("templates provider", () => {
 
     test.describe("inline rename", () => {
       test("commits on Enter and persists through the save patch", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         await page.locator(SELECTORS.templateName).click();
         const input = page.locator(SELECTORS.templateNameInput);
         await expect(input).toBeVisible();
-        await expect(input).toHaveValue("Product Launch");
+        await expect(input).toHaveValue("Templates");
 
         await input.fill("Spring Campaign");
         await input.press("Enter");
@@ -163,9 +143,8 @@ test.describe("templates provider", () => {
       });
 
       test("Escape discards the draft and stores nothing", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         await page.locator(SELECTORS.templateName).click();
@@ -174,15 +153,14 @@ test.describe("templates provider", () => {
         await input.press("Escape");
 
         await expect(page.locator(SELECTORS.templateName)).toHaveText(
-          "Product Launch",
+          "Templates",
         );
-        expect((await readStored(page))!.name).toBe("Product Launch");
+        expect((await readStored(page))!.name).toBe("Templates");
       });
 
       test("an emptied name reverts instead of clearing the title", async ({
-        editorReady,
+        editorPage,
       }) => {
-        const { editorPage } = editorReady;
         const page = editorPage.page;
 
         await page.locator(SELECTORS.templateName).click();
@@ -191,9 +169,9 @@ test.describe("templates provider", () => {
         await input.press("Enter");
 
         await expect(page.locator(SELECTORS.templateName)).toHaveText(
-          "Product Launch",
+          "Templates",
         );
-        expect((await readStored(page))!.name).toBe("Product Launch");
+        expect((await readStored(page))!.name).toBe("Templates");
       });
     });
   });
@@ -207,16 +185,12 @@ test.describe("templates provider", () => {
      */
     test("hides the save button and the status indicator", async ({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
     }) => {
-      await openEditor(
-        page,
-        { chooserPage, editorPage },
-        {
-          "tpl-playground-templates-readonly": "true",
-        },
-      );
+      await openTemplatesScene(page, shadowDom, editorPage, {
+        readonly: "1",
+      });
 
       await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
       await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
@@ -229,14 +203,10 @@ test.describe("templates provider", () => {
       await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
     });
 
-    test("keeps editing working", async ({ page, chooserPage, editorPage }) => {
-      await openEditor(
-        page,
-        { chooserPage, editorPage },
-        {
-          "tpl-playground-templates-readonly": "true",
-        },
-      );
+    test("keeps editing working", async ({ page, shadowDom, editorPage }) => {
+      await openTemplatesScene(page, shadowDom, editorPage, {
+        readonly: "1",
+      });
 
       const before = await editorPage.getBlockCount();
       await editorPage.selectBlock(0);
