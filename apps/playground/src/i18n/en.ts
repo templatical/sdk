@@ -47,6 +47,8 @@ export default {
     code: "Code",
     docs: "Docs",
     notFound: "Scene not found",
+    notFoundNamed: "No scene named {id}.",
+    notFoundHint: "That id is not in the setup catalog.",
     catalog: "Catalog",
     catalogTitle: "Setup catalog",
     catalogSubtitle:
@@ -343,7 +345,6 @@ export default {
     backToCatalog: "Back to catalog",
     openScene: "Open {name} scene",
     startFromScratch: "Start from scratch with empty canvas",
-    chooseTemplate: "Choose {name} template",
     githubRepo: "GitHub repository",
     authMethod: "Authentication method",
     realtimeMode: "Realtime mode",

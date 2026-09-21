@@ -1,4 +1,4 @@
-import { templates } from "../../templates";
+import { productLaunchSavedBlocks } from "../../templates";
 import { savedBlocksProviderFor } from "../../host/providers";
 import type { Scene } from "../types";
 import { storageCanvas } from "./canvas";
@@ -19,7 +19,7 @@ export const savedBlocks: Scene = {
       savedBlocks: savedBlocksProviderFor("saved-blocks", {
         readonly,
         delay,
-        seed: templates.find((t) => t.preview === "product")?.savedBlocks,
+        seed: productLaunchSavedBlocks,
       }),
     };
   },

@@ -1,7 +1,7 @@
 import { createLocalStorageSavedBlocksProvider } from "@templatical/core";
 import {
   createProductLaunchTemplate,
-  templates,
+  productLaunchSavedBlocks,
   testimonialBlock,
 } from "../../templates";
 import type { Scene } from "../types";
@@ -16,7 +16,7 @@ const SAVED_BLOCKS_KEY = "templatical:saved-blocks:launchpad-launch";
 function seedLaunchpadSavedBlocks(): void {
   if (typeof localStorage === "undefined") return;
   if (localStorage.getItem(SAVED_BLOCKS_KEY) !== null) return;
-  const seed = templates.find((t) => t.preview === "product")?.savedBlocks;
+  const seed = productLaunchSavedBlocks;
   if (!seed?.length) return;
   localStorage.setItem(SAVED_BLOCKS_KEY, JSON.stringify(seed));
 }

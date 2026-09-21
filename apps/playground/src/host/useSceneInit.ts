@@ -1,5 +1,13 @@
 import { init, unmount as unmountEditor } from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
+import { overlayTemplateSettings } from "./hostOverlays";
+import { compileMjmlDemo } from "./providers";
+import {
+  fetchShare,
+  SHARE_LOAD_FAILED,
+  SHARE_NOT_FOUND,
+  ShareError,
+} from "./share";
 import type { Scene, SceneContext } from "../scenes/types";
 
 export async function mountScene(
@@ -9,10 +17,26 @@ export async function mountScene(
   shadowDom: boolean,
 ): Promise<TemplaticalEditor> {
   const config = scene.config(ctx);
+  const shareId = ctx.search.get("s");
+  let content = scene.content(ctx);
+  if (shareId) {
+    try {
+      content = (await fetchShare(shareId)).content;
+    } catch (err) {
+      if (err instanceof ShareError && err.code === "not-found") {
+        throw new Error(SHARE_NOT_FOUND);
+      }
+      throw new Error(SHARE_LOAD_FAILED);
+    }
+  }
   const editor = await init({
     container,
-    content: scene.content(ctx),
+    content,
+    // Host overlay for Export HTML. Scenes may replace `render`; snippets
+    // stay honest because this is not in `scene.config()`.
+    render: { compileMjml: compileMjmlDemo },
     ...config,
+    ...overlayTemplateSettings(ctx.search),
     // Host `?shadowDom=` wins over a scene's snippet value (`shadow-dom-off`).
     shadowDom,
   });

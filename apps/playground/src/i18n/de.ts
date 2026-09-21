@@ -49,6 +49,8 @@ export default {
     code: "Code",
     docs: "Dokumentation",
     notFound: "Szene nicht gefunden",
+    notFoundNamed: "Keine Szene namens {id}.",
+    notFoundHint: "Diese ID steht nicht im Setup-Katalog.",
     catalog: "Katalog",
     catalogTitle: "Setup-Katalog",
     catalogSubtitle:
@@ -358,7 +360,6 @@ export default {
     backToCatalog: "Zur\u00fcck zum Katalog",
     openScene: "Szene {name} öffnen",
     startFromScratch: "Neu beginnen mit leerer Leinwand",
-    chooseTemplate: "Vorlage {name} w\u00e4hlen",
     githubRepo: "GitHub-Repository",
     authMethod: "Authentifizierungsmethode",
     realtimeMode: "Echtzeitmodus",

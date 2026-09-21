@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
-import { ChevronDown, ChevronLeft } from "@lucide/vue";
+import { ChevronDown, ChevronLeft, Download, Upload } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
+import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
+import ShareModal from "@/host/ShareModal.vue";
 import { navigatePlayground, sceneHref } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
+import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
@@ -33,6 +36,28 @@ const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const editor = shallowRef<TemplaticalEditor | null>(null);
 const titleOpen = ref(false);
 const switcherList = ref<HTMLElement | null>(null);
+const exportOpen = ref(false);
+const shareOpen = ref(false);
+const retryTick = ref(0);
+
+const isShareError = computed(
+  () =>
+    initError.value === SHARE_NOT_FOUND ||
+    initError.value === SHARE_LOAD_FAILED,
+);
+
+const initErrorCopy = computed(() => {
+  if (initError.value === SHARE_NOT_FOUND)
+    return t.value.sharedTemplate.notFound;
+  if (initError.value === SHARE_LOAD_FAILED) {
+    return t.value.sharedTemplate.error;
+  }
+  return initError.value;
+});
+
+function retryInit(): void {
+  retryTick.value += 1;
+}
 
 const grouped = scenesByGroup();
 const switcherSections = computed(() =>
@@ -87,7 +112,13 @@ watch(uiTheme, (theme) => {
 const boot = createSerializedBoot();
 
 watch(
-  () => [props.sceneId, props.search.toString(), shadowMode.value] as const,
+  () =>
+    [
+      props.sceneId,
+      props.search.toString(),
+      shadowMode.value,
+      retryTick.value,
+    ] as const,
   () => {
     void boot.enqueue(async (isCurrent) => {
       const current = scene.value;
@@ -111,9 +142,13 @@ watch(
         return;
       }
       if (result.initError) {
-        initError.value = format(t.value.error.initFailed, {
-          message: result.initError,
-        });
+        initError.value =
+          result.initError === SHARE_NOT_FOUND ||
+          result.initError === SHARE_LOAD_FAILED
+            ? result.initError
+            : format(t.value.error.initFailed, {
+                message: result.initError,
+              });
       } else {
         editor.value = result.editor;
         if (result.editor) {
@@ -137,10 +172,13 @@ onUnmounted(() => {
   <main
     v-if="!scene"
     data-testid="scene-not-found"
-    class="flex flex-col items-center justify-center min-h-screen gap-3 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    class="flex flex-col items-center justify-center min-h-screen gap-3 px-6 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
+    <h1 class="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
+      {{ format(t.host.notFoundNamed, { id: sceneId }) }}
+    </h1>
     <p class="m-0 text-sm text-gray-600 dark:text-gray-300">
-      {{ t.host.notFound }}
+      {{ t.host.notFoundHint }}
     </p>
     <a href="/" class="pg-toolbar-btn no-underline">{{ t.host.back }}</a>
   </main>
@@ -229,6 +267,30 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="flex items-center gap-1 shrink-0 overflow-x-auto">
+        <button
+          type="button"
+          data-testid="toolbar-export"
+          class="pg-toolbar-btn"
+          :title="t.toolbar.export"
+          :aria-label="t.toolbar.export"
+          :disabled="!editor"
+          @click="exportOpen = true"
+        >
+          <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
+          <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
+        </button>
+        <button
+          type="button"
+          data-testid="toolbar-share"
+          class="pg-toolbar-btn"
+          :title="t.toolbar.share"
+          :aria-label="t.toolbar.share"
+          :disabled="!editor"
+          @click="shareOpen = true"
+        >
+          <Upload :size="14" aria-hidden="true" />
+          <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
+        </button>
         <a
           :href="'https://docs.templatical.com' + scene.docs"
           target="_blank"
@@ -253,9 +315,22 @@ onUnmounted(() => {
       <div class="relative flex-1 min-w-0 min-h-0">
         <div
           v-if="initError"
-          class="absolute inset-0 z-10 flex items-center justify-center p-8 text-sm text-red-600 dark:text-red-400 bg-white dark:bg-gray-900"
+          class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-8 text-sm bg-white dark:bg-gray-900"
+          role="alert"
         >
-          {{ initError }}
+          <p class="m-0 text-red-700 dark:text-red-400">{{ initErrorCopy }}</p>
+          <a v-if="isShareError" href="/" class="pg-toolbar-btn no-underline">{{
+            t.sharedTemplate.goToPlayground
+          }}</a>
+          <button
+            v-else
+            type="button"
+            data-testid="init-retry"
+            class="pg-toolbar-btn"
+            @click="retryInit"
+          >
+            {{ t.toolbar.retry }}
+          </button>
         </div>
         <div
           ref="editorContainer"
@@ -280,6 +355,12 @@ onUnmounted(() => {
         }}</pre>
       </aside>
     </div>
+    <ExportModal v-model:open="exportOpen" :editor="editor" />
+    <ShareModal
+      v-model:open="shareOpen"
+      :editor="editor"
+      :scene-id="scene.id"
+    />
   </div>
 </template>
 

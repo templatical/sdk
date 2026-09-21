@@ -56,6 +56,12 @@ export default {
         );
       }
 
+      const sceneId =
+        typeof body.sceneId === "string" &&
+        /^[a-z0-9-]{1,64}$/.test(body.sceneId)
+          ? body.sceneId
+          : undefined;
+
       const createdAt = new Date().toISOString();
 
       let id = "";
@@ -73,7 +79,7 @@ export default {
 
       await env.SHARES_KV.put(
         `share:${id}`,
-        JSON.stringify({ content, createdAt }),
+        JSON.stringify({ content, sceneId, createdAt }),
         { expirationTtl: TTL_SECONDS }
       );
 
@@ -102,6 +108,7 @@ export default {
       return Response.json({
         id,
         content: data.content,
+        sceneId: data.sceneId,
         createdAt: data.createdAt,
       });
     }

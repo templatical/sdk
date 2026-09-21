@@ -43,7 +43,7 @@ html.dark body {
 /* Shared playground patterns */
 
 .pg-toolbar-btn {
-    @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700;
+    @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
 }
 
 @media (pointer: coarse) {

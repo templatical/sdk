@@ -2,7 +2,7 @@ import { createLocalStorageSavedBlocksProvider } from "@templatical/core";
 import {
   createNewsletterTemplate,
   featuredArticleBlock,
-  templates,
+  newsletterSavedBlocks,
 } from "../../templates";
 import type { Scene } from "../types";
 import {
@@ -16,7 +16,7 @@ const SAVED_BLOCKS_KEY = "templatical:saved-blocks:flowwork-newsletter";
 function seedFlowworkSavedBlocks(): void {
   if (typeof localStorage === "undefined") return;
   if (localStorage.getItem(SAVED_BLOCKS_KEY) !== null) return;
-  const seed = templates.find((t) => t.preview === "newsletter")?.savedBlocks;
+  const seed = newsletterSavedBlocks;
   if (!seed?.length) return;
   localStorage.setItem(SAVED_BLOCKS_KEY, JSON.stringify(seed));
 }

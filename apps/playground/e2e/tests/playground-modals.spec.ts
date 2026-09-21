@@ -2,12 +2,10 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Playground modals", () => {
-  test.skip(true, "cookbook-task-11: sink export");
-
-  test.beforeEach(async ({ chooserPage, editorPage }) => {
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
+    await editorPage.closeCodeDrawer();
   });
 
   test("export modal shows MJML on open", async ({ editorPage, page }) => {
@@ -58,30 +56,20 @@ test.describe("Playground modals", () => {
 
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
+    await expect(page.locator(SELECTORS.exportTabJson)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect
+      .poll(async () =>
+        page.locator(SELECTORS.exportModal).locator(".cm-editor").innerText(),
+      )
+      .toContain("blocks");
     const text = await page
       .locator(SELECTORS.exportModal)
       .locator(".cm-editor")
       .innerText();
-    expect(text).toContain("blocks");
     expect(text).toContain("type");
-  });
-
-  test("config modal closes on Escape", async ({ editorPage, page }) => {
-    await editorPage.openConfig();
-    const dialog = page.getByRole("dialog", { name: "Editor Configuration" });
-    await expect(dialog).toBeVisible();
-    // Options tab is a CodeMirror; a focused editor swallows Escape. Fire the
-    // key on the playground backdrop, which is where `@keydown.escape` is bound.
-    await page.locator(SELECTORS.modalBackdrop).evaluate((el) => {
-      el.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: "Escape",
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    });
-    await expect(dialog).toBeHidden();
   });
 
   test("feature overlay does not render", async ({ page }) => {

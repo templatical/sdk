@@ -59,11 +59,6 @@ export class ChooserPage {
     await this.page.waitForSelector(SELECTORS.catalogScreen);
   }
 
-  async selectFirstTemplate() {
-    const cards = this.page.locator(SELECTORS.templateCard);
-    await cards.first().click();
-  }
-
   async selectBlankTemplate() {
     await this.page.locator(SELECTORS.blankTemplateCard).click();
   }

@@ -69,18 +69,35 @@ test.describe("Playground smoke tests", () => {
   });
 
   test("export modal shows JSON tab content", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    test.skip(true, "cookbook-task-11: sink export");
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
+    await editorPage.closeCodeDrawer();
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
-    const content = await page.locator(".cm-content").first().textContent();
-    expect(content).toContain('"blocks"');
+    await expect(page.locator(SELECTORS.exportTabJson)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect
+      .poll(async () => page.locator(".cm-content").first().textContent())
+      .toContain('"blocks"');
+  });
+
+  test("unknown scene id shows not-found with recovery", async ({ page }) => {
+    await page.goto("/scenes/nope");
+    const notFound = page.locator(SELECTORS.sceneNotFound);
+    await expect(notFound).toBeVisible();
+    await expect(notFound.getByRole("heading", { level: 1 })).toContainText(
+      "nope",
+    );
+    await expect(notFound.getByRole("link", { name: "Back" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   test("theme toggle works", async ({ chooserPage, editorPage, page }) => {
