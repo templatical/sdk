@@ -150,9 +150,43 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           DEPLOY_HOOK: ${{ secrets.TEMPLATICAL_COM_DEPLOY_HOOK }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
+          set -euo pipefail
           if [ -z "$DEPLOY_HOOK" ]; then
             echo "TEMPLATICAL_COM_DEPLOY_HOOK secret not set — skipping rebuild trigger."
             exit 0
+          fi
+          VERSION="$(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[0].version // empty')"
+          # Same unversioned URL the marketing site's vite.config.ts fetches at
+          # SSG time. unpkg 302s it to @<latest>/dist/bundle-stats.json and
+          # caches that redirect (s-maxage=300), so a hook fired the moment
+          # changeset publish returns still bakes the previous version into
+          # the homepage pill. Do not cache-bust: a cache-busted hit would
+          # pass while Pages' own GET still sees the cached 302.
+          STATS_URL="https://unpkg.com/@templatical/editor/dist/bundle-stats.json"
+          if [ -n "$VERSION" ]; then
+            echo "Waiting for $STATS_URL to serve version $VERSION"
+            seen=""
+            # 40 × 15s = 10m: npm's own timestamp can lag changeset publish
+            # by several minutes, then unpkg's 302 cache is another 5m.
+            for _ in $(seq 1 40); do
+              if seen="$(curl -fsSL --max-time 15 "$STATS_URL" | jq -r '.version // empty')"; then
+                :
+              else
+                seen=""
+              fi
+              if [ "$seen" = "$VERSION" ]; then
+                echo "unpkg is serving bundle-stats.json for $VERSION"
+                break
+              fi
+              echo "unpkg still serving ${seen:-nothing} (want $VERSION) — retrying in 15s"
+              sleep 15
+            done
+            if [ "$seen" != "$VERSION" ]; then
+              echo "::warning::unpkg still serving ${seen:-nothing} after 10m — triggering rebuild anyway."
+            fi
+          else
+            echo "::warning::Could not determine the published version — triggering rebuild without an unpkg wait."
           fi
           curl -fsSL -X POST "$DEPLOY_HOOK" -o /dev/null -w "HTTP %{http_code}\n"
