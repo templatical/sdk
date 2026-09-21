@@ -19,26 +19,40 @@ SaaS-Produktankündigung. Merge-Tags, Logik-Tags, Anzeigebedingungen, ein Testim
 
 Transaktionaler Zugangsdaten-Reset im selben Launchpad-Kit.
 
+[Im Playground öffnen](https://play.templatical.com/scenes/example-launchpad-reset)
+
 ## Flowwork-Willkommen {#flowwork-welcome}
 
 Onboarding-Mail. Die Vorschau nutzt `resolvePreview`.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/example-flowwork-welcome)
 
 ## Flowwork-Newsletter {#flowwork-newsletter}
 
 Regelmäßiges Update. Kuratierte Schriften im Flowwork-Kit.
 
+[Im Playground öffnen](https://play.templatical.com/scenes/example-flowwork-newsletter)
+
 ## Sable-Bestellbestätigung {#sable-order}
 
 Shop-Beleg. Produktfotografie im Sable-Kit.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/example-sable-order)
 
 ## Sable-Black-Friday {#sable-friday}
 
 Sale-Kampagne. `htmlBlockPreview` als zusammengesetzte Scene.
 
+[Im Playground öffnen](https://play.templatical.com/scenes/example-sable-friday)
+
 ## Northstage-Eventeinladung {#northstage-event}
 
 Konferenz-Einladung. Markenfarben als zusammengesetzte Scene.
 
+[Im Playground öffnen](https://play.templatical.com/scenes/example-northstage-event)
+
 ## Northstage-arabische Einladung {#northstage-ar}
 
 Dasselbe Northstage-Event, Locale `ar`.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/example-northstage-ar)

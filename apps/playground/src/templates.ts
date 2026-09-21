@@ -97,7 +97,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       type: "text",
       key: "eventName",
       label: "Event Name",
-      default: "My Event",
+      default: "Northstage Summit",
       required: true,
     },
     {
@@ -120,7 +120,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       type: "text",
       key: "location",
       label: "Location",
-      default: "The Moscone Center, San Francisco",
+      default: "Harbor Hall, Portland",
     },
     { type: "text", key: "mapUrl", label: "Map Link (optional)", default: "" },
     {
@@ -398,13 +398,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-1",
             label: "Why Most Design Systems Fail",
             description: "By Elena Martinez \u00b7 8 min read",
-            thumbnail: "https://placehold.co/80x60/fef2f2/dc2626?text=DS",
+            thumbnail: "/examples/flowwork/article-design-systems.png",
             data: {
               title: "Why Most Design Systems Fail (And How to Fix Yours)",
               excerpt:
                 "The problem is not the tokens or the components \u2014 it is adoption. After working with 50+ teams, here are the three patterns that separate the design systems people actually use from the ones that collect dust.",
-              imageUrl:
-                "https://placehold.co/560x280/fef2f2/dc2626?text=Design+Systems",
+              imageUrl: "/examples/flowwork/article-design-systems.png",
               author: "Elena Martinez",
               readTime: "8 min read",
               url: "https://example.com/blog/design-systems",
@@ -414,13 +413,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-2",
             label: "Ship Fast, Fix Later",
             description: "By James Park \u00b7 5 min read",
-            thumbnail: "https://placehold.co/80x60/eff6ff/2563eb?text=SF",
+            thumbnail: "/examples/flowwork/article-ship-fast.png",
             data: {
               title: "Ship Fast, Fix Later: When Speed Beats Quality",
               excerpt:
                 'Every startup says "move fast and break things" but few actually know when to slow down. Here is a practical framework for deciding when shipping speed matters more than polish.',
-              imageUrl:
-                "https://placehold.co/560x280/eff6ff/2563eb?text=Ship+Fast",
+              imageUrl: "/examples/flowwork/article-ship-fast.png",
               author: "James Park",
               readTime: "5 min read",
               url: "https://example.com/blog/ship-fast",
@@ -430,13 +428,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-3",
             label: "Accessible Color Palettes",
             description: "By Priya Sharma \u00b7 12 min read",
-            thumbnail: "https://placehold.co/80x60/ecfdf5/059669?text=A11y",
+            thumbnail: "/examples/flowwork/article-color-a11y.png",
             data: {
               title: "A Practical Guide to Accessible Color Palettes",
               excerpt:
                 "WCAG AA compliance is not optional \u2014 it is a baseline. This guide walks through OKLch-based palette generation that guarantees contrast ratios while keeping your brand colors intact.",
-              imageUrl:
-                "https://placehold.co/560x280/ecfdf5/059669?text=Color+A11y",
+              imageUrl: "/examples/flowwork/article-color-a11y.png",
               author: "Priya Sharma",
               readTime: "12 min read",
               url: "https://example.com/blog/accessible-colors",
@@ -536,30 +533,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-bestsellers",
             label: "Best Sellers",
             description: "3 items \u00b7 Electronics",
-            thumbnail: "https://placehold.co/80x60/f3f4f6/6b7280?text=Best",
+            thumbnail: "/examples/sable/headphones.png",
             data: {
               products: [
                 {
                   name: "Wireless Pro Max",
                   price: "$99",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Headphones",
+                  image: "/examples/sable/headphones.png",
                   badge: "-50%",
                   url: "https://example.com/headphones",
                 },
                 {
                   name: "Boom Speaker",
                   price: "$59",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Speaker",
+                  image: "/examples/sable/speaker.png",
                   badge: "-34%",
                   url: "https://example.com/speaker",
                 },
                 {
                   name: "Chrono Smart",
                   price: "$249",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Watch",
+                  image: "/examples/sable/watch.png",
                   badge: "NEW",
                   url: "https://example.com/watch",
                 },
@@ -570,29 +564,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-new-arrivals",
             label: "New Arrivals",
             description: "3 items \u00b7 Fresh drops",
-            thumbnail: "https://placehold.co/80x60/eff6ff/2563eb?text=New",
+            thumbnail: "/examples/sable/earbuds.png",
             data: {
               products: [
                 {
-                  name: "AirPods Ultra",
+                  name: "Ceramic Buds",
                   price: "$179",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=AirPods",
+                  image: "/examples/sable/earbuds.png",
                   badge: "NEW",
                   url: "https://example.com/airpods",
                 },
                 {
                   name: "Smart Ring",
                   price: "$299",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Ring",
+                  image: "/examples/sable/ring.png",
                   badge: "NEW",
                   url: "https://example.com/ring",
                 },
                 {
                   name: "Nano Charger",
                   price: "$39",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Charger",
+                  image: "/examples/sable/charger.png",
                   badge: "",
                   url: "https://example.com/charger",
                 },
@@ -603,27 +595,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-clearance",
             label: "Clearance Sale",
             description: "3 items \u00b7 Up to 60% off",
-            thumbnail: "https://placehold.co/80x60/fef2f2/dc2626?text=Sale",
+            thumbnail: "/examples/sable/buds.png",
             data: {
               products: [
                 {
                   name: "Classic Buds",
                   price: "$29",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Buds",
+                  image: "/examples/sable/buds.png",
                   badge: "-60%",
                   url: "https://example.com/buds",
                 },
                 {
                   name: "Travel Case",
                   price: "$15",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Case",
+                  image: "/examples/sable/case.png",
                   badge: "-40%",
                   url: "https://example.com/case",
                 },
                 {
                   name: "USB Hub Pro",
                   price: "$19",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Hub",
+                  image: "/examples/sable/hub.png",
                   badge: "-55%",
                   url: "https://example.com/hub",
                 },
@@ -806,7 +798,7 @@ export function createProductLaunchTemplate(): TemplateContent {
         styles: white(15, 15, 15, 15),
       }),
       createImageBlock({
-        src: "https://placehold.co/560x300/f0fdfa/0d9488?text=Dashboard+Preview",
+        src: "/examples/launchpad/dashboard.png",
         alt: "Launchpad v2.0 dashboard",
         width: "full",
         align: "center",
@@ -870,7 +862,7 @@ export function createProductLaunchTemplate(): TemplateContent {
             "Launchpad v2 is the upgrade we didn\u2019t know we needed. Our team onboarded in minutes.",
           authorName: "Maria Santos",
           authorTitle: "VP of Engineering, NovaTech",
-          avatarUrl: "https://placehold.co/96x96/0d9488/ffffff?text=MS",
+          avatarUrl: "/examples/launchpad/avatar-maria.png",
         },
         styles: white(16, 24, 16, 24),
       },
@@ -989,11 +981,18 @@ export function createNewsletterTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
+        content: "<p>\u2726 flowwork</p>",
+        level: 3,
+        color: "#2563eb",
+        textAlign: "center",
+        styles: white(32, 20, 4, 20),
+      }),
+      createTitleBlock({
         content: "<p>The Weekly Brief</p>",
         level: 3,
         color: "#111827",
         textAlign: "center",
-        styles: white(32, 20, 4, 20),
+        styles: white(8, 20, 4, 20),
       }),
       createParagraphBlock({
         content:
@@ -1016,8 +1015,7 @@ export function createNewsletterTemplate(): TemplateContent {
           title: "Why Most Design Systems Fail (And How to Fix Yours)",
           excerpt:
             "The problem is not the tokens or the components \u2014 it is adoption. After working with 50+ teams, here are the three patterns that separate the design systems people actually use from the ones that collect dust.",
-          imageUrl:
-            "https://placehold.co/560x280/fef2f2/dc2626?text=Design+Systems",
+          imageUrl: "/examples/flowwork/article-design-systems.png",
           author: "Elena Martinez",
           readTime: "8 min read",
           url: "https://example.com/blog/design-systems",
@@ -1057,7 +1055,7 @@ export function createNewsletterTemplate(): TemplateContent {
       // Footer
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Flowwork Inc. \u00b7 You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></span></p>',
         styles: white(20, 24, 32, 24),
       }),
     ],
@@ -1232,9 +1230,9 @@ export function createOrderConfirmationTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25cf shopfront</p>",
+        content: "<p>SABLE</p>",
         level: 3,
-        color: "#047857",
+        color: "#9a3412",
         textAlign: "center",
         styles: white(28, 20, 16, 20),
       }),
@@ -1255,8 +1253,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Logic Merge Tag: shipping method message ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 14px; color: #059669"><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#ecfdf5" },
+          '<p style="text-align: center"><span style="font-size: 14px; color: #9a3412"><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
       }),
 
       createDividerBlock({
@@ -1376,8 +1374,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Logic Merge Tag: free shipping unlocked ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #059669"><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f0fdf4" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9a3412"><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
       }),
 
       createDividerBlock({
@@ -1397,7 +1395,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           trackingNumber: "7489 2034 8561",
           estimatedDelivery: "{{estimated_delivery}}",
           trackingUrl: "{{tracking_url}}",
-          accentColor: "#059669",
+          accentColor: "#9a3412",
         },
         styles: white(16, 24, 24, 24),
       },
@@ -1424,7 +1422,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Shopfront \u00b7 456 Commerce Ave, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Sable \u00b7 210 Stone Row, Portland, OR 97209<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(16, 20, 32, 20),
       }),
     ],
@@ -1442,12 +1440,13 @@ export function createEventInvitationTemplate(): TemplateContent {
       textColor: "#1a1a1a",
       linkUnderline: true,
       fontFamily: "Arial",
-      preheaderText: "You are invited — join us for Config 2026 on April 15.",
+      preheaderText:
+        "You are invited \u2014 join us for Northstage Summit on April 15.",
       locale: "en",
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25c6 config 2026</p>",
+        content: "<p>NORTHSTAGE</p>",
         level: 3,
         color: "#7c3aed",
         textAlign: "center",
@@ -1467,8 +1466,8 @@ export function createEventInvitationTemplate(): TemplateContent {
       }),
 
       createImageBlock({
-        src: "https://placehold.co/560x260/f5f3ff/7c3aed?text=Config+2026",
-        alt: "Config 2026 event banner",
+        src: "/examples/northstage/banner.png",
+        alt: "Northstage Summit event banner",
         width: "full",
         align: "center",
         styles: white(0, 0, 0, 0),
@@ -1480,11 +1479,11 @@ export function createEventInvitationTemplate(): TemplateContent {
       {
         ...createCustomBlock(eventDetailsBlock),
         fieldValues: {
-          eventName: "Config 2026",
+          eventName: "Northstage Summit",
           date: "April 15, 2026",
           time: "9:00 AM \u2013 6:00 PM PT",
-          location: "The Moscone Center, San Francisco",
-          mapUrl: "https://maps.google.com/?q=Moscone+Center",
+          location: "Harbor Hall, Portland",
+          mapUrl: "https://maps.google.com/?q=Harbor+Hall+Portland",
           accentColor: "#7c3aed",
         },
         styles: white(0, 24, 8, 24),
@@ -1582,17 +1581,17 @@ export function createEventInvitationTemplate(): TemplateContent {
           {
             id: generateId(),
             platform: "twitter",
-            url: "https://twitter.com/config",
+            url: "https://twitter.com/northstage",
           },
           {
             id: generateId(),
             platform: "linkedin",
-            url: "https://linkedin.com/company/config",
+            url: "https://linkedin.com/company/northstage",
           },
           {
             id: generateId(),
             platform: "instagram",
-            url: "https://instagram.com/config",
+            url: "https://instagram.com/northstage",
           },
         ],
         iconStyle: "solid",
@@ -1604,7 +1603,7 @@ export function createEventInvitationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Config Events \u00b7 San Francisco, CA<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Northstage Events \u00b7 Portland, OR<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1627,9 +1626,9 @@ export function createPasswordResetTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25a0 vaultkey</p>",
+        content: "<p>\u25b2 launchpad</p>",
         level: 3,
-        color: "#111827",
+        color: "#0d9488",
         textAlign: "center",
         styles: white(32, 20, 24, 20),
       }),
@@ -1650,7 +1649,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       createButtonBlock({
         text: "Reset Password",
         url: "https://example.com/reset?token=abc123",
-        backgroundColor: "#111827",
+        backgroundColor: "#0f766e",
         textColor: "#ffffff",
         borderRadius: 6,
         fontSize: 16,
@@ -1675,7 +1674,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       // ── Responsive: Desktop-only detailed security tips ──
       createParagraphBlock({
         content:
-          '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://vaultkey.com before entering credentials</span></p>',
+          '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://launchpad.example.com before entering credentials</span></p>',
         styles: white(16, 40, 16, 40),
         visibility: { desktop: true, mobile: false },
       }),
@@ -1696,7 +1695,7 @@ export function createPasswordResetTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">VaultKey Security \u00b7 <a href="https://example.com/support">Help Center</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Launchpad Inc. \u00b7 <a href="https://example.com/support">Help Center</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1710,8 +1709,8 @@ export function createBlackFridayTemplate(): TemplateContent {
   return {
     settings: {
       width: 600,
-      backgroundColor: "#111827",
-      textColor: "#f9fafb",
+      backgroundColor: "#1c1917",
+      textColor: "#faf8f5",
       linkUnderline: true,
       fontFamily: "Arial",
       preheaderText: "Up to 50% off everything \u2014 Black Friday starts now.",
@@ -1719,41 +1718,41 @@ export function createBlackFridayTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u26a1 NEONSHOP</p>",
+        content: "<p>SABLE</p>",
         level: 3,
-        color: "#fbbf24",
+        color: "#e7e5e4",
         textAlign: "center",
-        styles: { ...pad(28, 20, 12, 20), backgroundColor: "#111827" },
+        styles: { ...pad(28, 20, 12, 20), backgroundColor: "#1c1917" },
       }),
       createTitleBlock({
-        content: "<p>BLACK FRIDAY</p>",
+        content: "<p>Black Friday</p>",
         level: 1,
-        color: "#ffffff",
+        color: "#faf8f5",
         textAlign: "center",
-        styles: { ...pad(0, 20, 0, 20), backgroundColor: "#111827" },
+        styles: { ...pad(0, 20, 0, 20), backgroundColor: "#1c1917" },
       }),
       createTitleBlock({
         content: "<p>Up to 50% off everything</p>",
         level: 2,
-        color: "#fbbf24",
+        color: "#c2410c",
         textAlign: "center",
-        styles: { ...pad(4, 20, 8, 20), backgroundColor: "#111827" },
+        styles: { ...pad(4, 20, 8, 20), backgroundColor: "#1c1917" },
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 15px; color: #d1d5db">Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</span></p>',
-        styles: { ...pad(0, 40, 12, 40), backgroundColor: "#111827" },
+          '<p style="text-align: center"><span style="font-size: 15px; color: #d6d3d1">Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</span></p>',
+        styles: { ...pad(0, 40, 12, 40), backgroundColor: "#1c1917" },
       }),
 
       createButtonBlock({
         text: "Shop the Sale",
         url: "https://example.com/sale",
-        backgroundColor: "#fbbf24",
-        textColor: "#111827",
+        backgroundColor: "#faf8f5",
+        textColor: "#1c1917",
         borderRadius: 6,
         fontSize: 16,
         buttonPadding: { top: 14, right: 36, bottom: 14, left: 36 },
-        styles: { ...pad(8, 20, 28, 20), backgroundColor: "#111827" },
+        styles: { ...pad(8, 20, 28, 20), backgroundColor: "#1c1917" },
       }),
 
       // ── Custom HTML block — raw markup rendered live on the canvas ──
@@ -1762,23 +1761,23 @@ export function createBlackFridayTemplate(): TemplateContent {
       // sandboxed iframe on the canvas instead of the static placeholder card.
       // A gradient "countdown" banner the built-in blocks can't express.
       createHtmlBlock({
-        content: `<div style="background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);border-radius:12px;padding:20px;text-align:center;font-family:Arial,Helvetica,sans-serif">
-  <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#7c2d12">HURRY &mdash; SALE ENDS SOON</div>
+        content: `<div style="background:linear-gradient(135deg,#c2410c 0%,#9a3412 100%);border-radius:12px;padding:20px;text-align:center;font-family:Arial,Helvetica,sans-serif">
+  <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#faf8f5">HURRY &mdash; SALE ENDS SOON</div>
   <div style="margin-top:10px">
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">02</span>
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">14</span>
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">37</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">02</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">14</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">37</span>
   </div>
-  <div style="font-size:11px;color:#7c2d12;margin-top:8px;letter-spacing:2px">DAYS &nbsp;&middot;&nbsp; HOURS &nbsp;&middot;&nbsp; MINS</div>
+  <div style="font-size:11px;color:#faf8f5;margin-top:8px;letter-spacing:2px">DAYS &nbsp;&middot;&nbsp; HOURS &nbsp;&middot;&nbsp; MINS</div>
 </div>`,
-        styles: { ...pad(4, 20, 24, 20), backgroundColor: "#111827" },
+        styles: { ...pad(4, 20, 24, 20), backgroundColor: "#1c1917" },
       }),
 
       // ── Display Condition: Enterprise special ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #d1d5db"><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #fbbf24;">Contact sales</a></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#1f2937" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #e7e5e4"><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #faf8f5;">Contact sales</a></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#292524" },
         displayCondition: {
           label: "Enterprise",
           before: '{% if plan == "enterprise" %}',
@@ -1795,27 +1794,26 @@ export function createBlackFridayTemplate(): TemplateContent {
         fieldValues: {
           heading: "Top Picks for You",
           productCategory: "electronics",
-          accentColor: "#dc2626",
+          accentColor: "#9a3412",
           products: [
             {
               name: "Wireless Pro Max",
               price: "$99",
-              image:
-                "https://placehold.co/200x160/f3f4f6/6b7280?text=Headphones",
+              image: "/examples/sable/headphones.png",
               badge: "-50%",
               url: "https://example.com/headphones",
             },
             {
               name: "Boom Speaker",
               price: "$59",
-              image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Speaker",
+              image: "/examples/sable/speaker.png",
               badge: "-34%",
               url: "https://example.com/speaker",
             },
             {
               name: "Chrono Smart",
               price: "$249",
-              image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Watch",
+              image: "/examples/sable/watch.png",
               badge: "NEW",
               url: "https://example.com/watch",
             },
@@ -1827,8 +1825,8 @@ export function createBlackFridayTemplate(): TemplateContent {
       createButtonBlock({
         text: "View All Deals \u2192",
         url: "https://example.com/sale",
-        backgroundColor: "#111827",
-        textColor: "#ffffff",
+        backgroundColor: "#1c1917",
+        textColor: "#faf8f5",
         borderRadius: 6,
         fontSize: 15,
         buttonPadding: { top: 12, right: 28, bottom: 12, left: 28 },
@@ -1854,17 +1852,17 @@ export function createBlackFridayTemplate(): TemplateContent {
           {
             id: generateId(),
             platform: "twitter",
-            url: "https://twitter.com/neonshop",
+            url: "https://twitter.com/sable",
           },
           {
             id: generateId(),
             platform: "instagram",
-            url: "https://instagram.com/neonshop",
+            url: "https://instagram.com/sable",
           },
           {
             id: generateId(),
             platform: "tiktok",
-            url: "https://tiktok.com/@neonshop",
+            url: "https://tiktok.com/@sable",
           },
         ],
         iconStyle: "solid",
@@ -1876,7 +1874,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">NeonShop \u00b7 789 Retail Blvd, Los Angeles, CA 90012<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Sable \u00b7 210 Stone Row, Portland, OR 97209<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -2105,27 +2103,27 @@ export function createArabicInvitationTemplate(): TemplateContent {
       textColor: "#1a1a1a",
       linkUnderline: true,
       fontFamily: "Arial",
-      preheaderText: "دعوة لحضور الحدث — أكّد حضورك اليوم.",
+      preheaderText: "دعوة لحضور قمة نورثستيج — أكّد حضورك اليوم.",
       locale: "ar",
       direction: "rtl",
     },
     blocks: [
       createTitleBlock({
-        content: "<p>دعوة الحدث</p>",
+        content: "<p>قمة نورثستيج</p>",
         level: 2,
-        color: "#111827",
+        color: "#7c3aed",
         textAlign: "right",
         styles: white(32, 24, 8, 24),
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: right"><span style="font-size: 15px; color: #4b5563">مرحبًا <span data-merge-tag="{{first_name}}">الاسم الأول</span>، نتشرف بدعوتك لحضور الحدث. أكّد حضورك بالزر أدناه.</span></p>',
+          '<p style="text-align: right"><span style="font-size: 15px; color: #4b5563">مرحبًا <span data-merge-tag="{{first_name}}">الاسم الأول</span>، نتشرف بدعوتك لحضور قمة نورثستيج. أكّد حضورك بالزر أدناه.</span></p>',
         styles: white(0, 24, 16, 24),
       }),
       createButtonBlock({
         text: "تأكيد الحضور",
         url: "https://example.com/rsvp",
-        backgroundColor: "#1d4ed8",
+        backgroundColor: "#7c3aed",
         textColor: "#ffffff",
         borderRadius: 6,
         fontSize: 16,
@@ -2139,13 +2137,13 @@ export function createArabicInvitationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<p style="text-align: right"><span style="font-size: 14px; color: #111827"><strong>عمود البداية</strong></span></p><p style="text-align: right"><span style="font-size: 14px; color: #4b5563">التاريخ والمكان يظهران هنا.</span></p>',
+                '<p style="text-align: right"><span style="font-size: 14px; color: #111827"><strong>عمود البداية</strong></span></p><p style="text-align: right"><span style="font-size: 14px; color: #4b5563">15 أبريل 2026 — هاربر هول، بورتلاند.</span></p>',
               styles: pad(8, 8, 8, 8),
             }),
           ],
           [
             createImageBlock({
-              src: "https://placehold.co/260x160/eff6ff/1d4ed8?text=Event",
+              src: "/examples/northstage/venue.png",
               alt: "صورة توضيحية للحدث",
               width: "full",
               align: "center",
@@ -2157,7 +2155,7 @@ export function createArabicInvitationTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af"><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
+          '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af">Northstage Events · Portland, OR<br/><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
         styles: white(0, 24, 32, 24),
       }),
     ],

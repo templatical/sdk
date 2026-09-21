@@ -110,30 +110,27 @@ const MEDIA_STORAGE_KEY = "templatical:media";
 const PLAYGROUND_MEDIA_SEED: MediaAsset[] = [
   {
     id: "seed-product-shot",
-    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
-    filename: "product-shot.jpg",
-    alt: "Product shot",
-    mimeType: "image/jpeg",
+    url: "/examples/sable/headphones.png",
+    thumbnailUrl: "/examples/sable/headphones.png",
+    filename: "sable-headphones.png",
+    alt: "Sable Wireless Pro Max headphones",
+    mimeType: "image/png",
   },
   {
     id: "seed-team-photo",
-    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
-    filename: "team-photo.jpg",
-    alt: "Team photo",
-    mimeType: "image/jpeg",
+    url: "/examples/flowwork/team.png",
+    thumbnailUrl: "/examples/flowwork/team.png",
+    filename: "flowwork-team.png",
+    alt: "Flowwork team in the studio",
+    mimeType: "image/png",
   },
   {
     id: "seed-abstract",
-    url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
-    filename: "abstract.jpg",
-    alt: "Abstract",
-    mimeType: "image/jpeg",
+    url: "/examples/northstage/abstract.png",
+    thumbnailUrl: "/examples/northstage/abstract.png",
+    filename: "northstage-lights.png",
+    alt: "Northstage hall lighting",
+    mimeType: "image/png",
   },
 ];
 

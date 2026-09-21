@@ -23,14 +23,11 @@ async function openButtonColorPicker(editorPage: EditorPage, page: Page) {
   return popover;
 }
 
-test.describe("Color presets — Event Invitation brand-locked palette", () => {
-  test.skip(true, "cookbook-task-10: examples");
-
-  // The Event Invitation template passes `colors: { presets, allowCustom: false }`
+test.describe("Color presets — Northstage brand-locked palette", () => {
+  // The Northstage event scene passes `colors: { presets, allowCustom: false }`
   // to init(), so every picker in it is a preset-only grid.
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Event Invitation");
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("example-northstage-event");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
   });

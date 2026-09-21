@@ -9,10 +9,10 @@ import { ScenePage } from "../pages/scene.page";
  * `createLocalStorageMediaProvider({ key: "templatical:media" })`.
  *
  * Media is on for `/scenes/media` and off on `/scenes/minimum`. The first
- * open of an absent store seeds three Unsplash HTTPS assets; this spec reads
- * that seed rather than writing its own. Drop uses the same synthetic
- * DataTransfer as `imageDropUpload.spec.ts` — Playwright's `dragTo` cannot
- * carry a File.
+ * open of an absent store seeds three first-party `/examples/...` assets;
+ * this spec reads that seed rather than writing its own. Drop uses the same
+ * synthetic DataTransfer as `imageDropUpload.spec.ts` — Playwright's `dragTo`
+ * cannot carry a File.
  *
  * Both Playwright projects pick this spec up; do not `forEach` DOM modes.
  *
@@ -20,8 +20,7 @@ import { ScenePage } from "../pages/scene.page";
  * cover that branch.
  */
 
-const FIRST_SEED_URL =
-  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80";
+const FIRST_SEED_URL = "/examples/sable/headphones.png";
 
 /**
  * Tiny PNG header. Enough for `image/png` MIME filtering and a FileReader

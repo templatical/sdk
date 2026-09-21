@@ -227,16 +227,13 @@ test.describe("Merge tag picker — onRequest precedence", () => {
   });
 });
 
-test.describe("Welcome Email template — built-in picker is the default", () => {
-  test.skip(true, "cookbook-task-10: examples");
-
+test.describe("Flowwork welcome — built-in picker is the default", () => {
   test("opens the SDK picker without flipping any config toggle", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Welcome Email");
+    await scenePage.goto("example-flowwork-welcome");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await openParagraphToolbar(editorPage);

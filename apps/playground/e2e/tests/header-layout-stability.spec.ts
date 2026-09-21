@@ -15,7 +15,7 @@ import { SELECTORS } from "../helpers/selectors";
  * left. Re-clicking Preview to leave the mode meant hunting for a button half
  * a toggle's width from where it had just been (#574).
  *
- * **Order Confirmation is the template that can prove this.** The toggle only
+ * **Sable order is the template that can prove this.** The toggle only
  * renders when some configured merge tag declares a `sample`, and this is the
  * playground's Sample/Label showcase. On a template that never shows the
  * toggle, nothing changes width and every assertion below passes for the wrong
@@ -23,7 +23,7 @@ import { SELECTORS } from "../helpers/selectors";
  * before checking that nothing moved.
  */
 
-const TEMPLATE = "Order Confirmation";
+const SCENE = "example-sable-order";
 
 /** Horizontal centre of an element, or null when it isn't rendered. */
 async function centreX(
@@ -35,11 +35,8 @@ async function centreX(
 }
 
 test.describe("header layout stability", () => {
-  test.skip(true, "cookbook-task-10: examples");
-
-  test.beforeEach(async ({ chooserPage, editorPage }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName(TEMPLATE);
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto(SCENE);
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
   });
@@ -127,11 +124,8 @@ test.describe("header layout stability", () => {
  * the recipe changing for every caller.
  */
 test.describe("preview overlay pills are one family", () => {
-  test.skip(true, "cookbook-task-10: examples");
-
-  test.beforeEach(async ({ chooserPage, editorPage }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName(TEMPLATE);
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto(SCENE);
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
   });
@@ -201,7 +195,10 @@ test.describe("preview overlay pills are one family", () => {
       .locator(SELECTORS.restoreHiddenBlocks)
       .boundingBox();
     const header = await page.locator(SELECTORS.editorHeader).boundingBox();
-    const firstBlock = await page.locator(SELECTORS.block).first().boundingBox();
+    const firstBlock = await page
+      .locator(SELECTORS.block)
+      .first()
+      .boundingBox();
 
     // Tucked under the header rather than pushed down into the content.
     const offsetBelowHeader = pill!.y - (header!.y + header!.height);

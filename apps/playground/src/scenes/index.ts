@@ -11,7 +11,14 @@ import { mergeTagsResolvePreview } from "./author/merge-tags-resolve-preview";
 import { mergeTagsSamples } from "./author/merge-tags-samples";
 import { shadowDomOff } from "./author/shadow-dom-off";
 import { theming } from "./author/theming";
+import { exampleFlowworkNewsletter } from "./examples/flowwork-newsletter";
+import { exampleFlowworkWelcome } from "./examples/flowwork-welcome";
 import { exampleLaunchpadLaunch } from "./examples/launchpad-launch";
+import { exampleLaunchpadReset } from "./examples/launchpad-reset";
+import { exampleNorthstageAr } from "./examples/northstage-ar";
+import { exampleNorthstageEvent } from "./examples/northstage-event";
+import { exampleSableFriday } from "./examples/sable-friday";
+import { exampleSableOrder } from "./examples/sable-order";
 import { importBeefree } from "./import/import-beefree";
 import { importChamaileon } from "./import/import-chamaileon";
 import { importEasyEmailPro } from "./import/import-easy-email-pro";
@@ -69,6 +76,13 @@ export const SCENES: readonly Scene[] = [
   importChamaileon,
   importEasyEmailPro,
   exampleLaunchpadLaunch,
+  exampleLaunchpadReset,
+  exampleFlowworkWelcome,
+  exampleFlowworkNewsletter,
+  exampleSableOrder,
+  exampleSableFriday,
+  exampleNorthstageEvent,
+  exampleNorthstageAr,
 ];
 
 export const SCENE_GROUP_ORDER: readonly SceneGroup[] = [

@@ -176,12 +176,10 @@ test.describe("Merge tag samples", () => {
   });
 
   test("the test-email preview substitutes too, sharing the same choice", async ({
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    test.skip(true, "cookbook-task-10: examples");
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Order Confirmation");
+    await scenePage.goto("example-sable-order");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     const page = editorPage.page;

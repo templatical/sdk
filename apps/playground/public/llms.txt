@@ -48,3 +48,10 @@ Each scene is also raw markdown: /scenes/<id>.md
 ## Examples
 
 - [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.
+- [Launchpad reset](https://play.templatical.com/scenes/example-launchpad-reset): Composed Launchpad password reset: merge tags on the teal transactional kit.
+- [Flowwork welcome](https://play.templatical.com/scenes/example-flowwork-welcome): Composed Flowwork onboarding: merge tags, logic tags, resolvePreview, and test email.
+- [Flowwork newsletter](https://play.templatical.com/scenes/example-flowwork-newsletter): Composed Flowwork weekly: curated fonts, a featured-article custom block, and saved blocks.
+- [Sable order](https://play.templatical.com/scenes/example-sable-order): Composed Sable receipt: merge-tag samples, logic tags, display conditions, and test email.
+- [Sable Friday](https://play.templatical.com/scenes/example-sable-friday): Composed Sable sale: htmlBlockPreview, a product-showcase custom block, and display conditions.
+- [Northstage event](https://play.templatical.com/scenes/example-northstage-event): Composed Northstage Summit invitation: brand-locked colors, event-details custom block, and display conditions.
+- [Northstage Arabic](https://play.templatical.com/scenes/example-northstage-ar): Same Northstage Summit invitation in ar, RTL canvas, brand-locked colors.

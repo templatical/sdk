@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Playground example UI frames</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #d6d3d1;
+        font-family: Arial, Helvetica, sans-serif;
+        padding: 32px;
+      }
+      h1 {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #44403c;
+        margin-bottom: 16px;
+      }
+      .label {
+        font-size: 11px;
+        color: #57534e;
+        margin: 20px 0 8px;
+      }
+      /* Frames are the screenshot targets. System Arial — not Geist. */
+      #launchpad-dashboard {
+        width: 560px;
+        height: 300px;
+        background: #f0fdfa;
+        color: #111827;
+        display: flex;
+        overflow: hidden;
+      }
+      #northstage-banner {
+        width: 560px;
+        height: 260px;
+        background: #111827;
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Example UI frames — screenshot the #ids, commit the PNGs</h1>
+    <p class="label">#launchpad-dashboard 560×300</p>
+    <div id="launchpad-dashboard">
+      <aside
+        style="
+          width: 148px;
+          background: #0f766e;
+          color: #ecfdf5;
+          padding: 18px 16px;
+          flex-shrink: 0;
+        "
+      >
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em">
+          ▲ Launchpad
+        </div>
+        <div style="font-size: 10px; opacity: 0.75; margin-top: 4px">v2.0</div>
+        <nav style="margin-top: 28px; font-size: 12px; line-height: 2.1">
+          <div style="font-weight: 700">Overview</div>
+          <div style="opacity: 0.8">Projects</div>
+          <div style="opacity: 0.8">Analytics</div>
+          <div style="opacity: 0.8">Settings</div>
+        </nav>
+      </aside>
+      <main style="flex: 1; padding: 18px 20px 16px">
+        <div
+          style="
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0f766e;
+            font-weight: 700;
+          "
+        >
+          This week
+        </div>
+        <h2 style="font-size: 22px; margin: 6px 0 16px; font-weight: 700">
+          Overview
+        </h2>
+        <div style="display: flex; gap: 10px">
+          <div
+            style="
+              flex: 1;
+              background: #ffffff;
+              border: 1px solid #99f6e4;
+              border-radius: 8px;
+              padding: 12px;
+            "
+          >
+            <div style="font-size: 11px; color: #4b5563">Activation</div>
+            <div style="font-size: 22px; font-weight: 700; color: #0f766e">
+              64%
+            </div>
+          </div>
+          <div
+            style="
+              flex: 1;
+              background: #ffffff;
+              border: 1px solid #99f6e4;
+              border-radius: 8px;
+              padding: 12px;
+            "
+          >
+            <div style="font-size: 11px; color: #4b5563">Projects</div>
+            <div style="font-size: 22px; font-weight: 700; color: #111827">
+              128
+            </div>
+          </div>
+          <div
+            style="
+              flex: 1;
+              background: #ffffff;
+              border: 1px solid #99f6e4;
+              border-radius: 8px;
+              padding: 12px;
+            "
+          >
+            <div style="font-size: 11px; color: #4b5563">API calls</div>
+            <div style="font-size: 22px; font-weight: 700; color: #111827">
+              12.4k
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: 16px;
+            height: 92px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 0 4px;
+          "
+        >
+          <div
+            style="flex: 1; height: 38%; background: #5eead4; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 55%; background: #2dd4bf; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 46%; background: #5eead4; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 72%; background: #14b8a6; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 64%; background: #0d9488; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 88%; background: #0f766e; border-radius: 3px 3px 0 0"
+          ></div>
+          <div
+            style="flex: 1; height: 70%; background: #0d9488; border-radius: 3px 3px 0 0"
+          ></div>
+        </div>
+      </main>
+    </div>
+
+    <p class="label">#northstage-banner 560×260</p>
+    <div id="northstage-banner">
+      <div
+        style="
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+              80% 90% at 80% 20%,
+              #7c3aed 0%,
+              transparent 55%
+            ),
+            radial-gradient(70% 80% at 10% 90%, #ec4899 0%, transparent 50%),
+            #111827;
+        "
+      ></div>
+      <div
+        style="
+          position: relative;
+          z-index: 1;
+          height: 100%;
+          padding: 36px 40px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        "
+      >
+        <div
+          style="
+            font-size: 11px;
+            letter-spacing: 0.28em;
+            font-weight: 700;
+            color: #f9a8d4;
+          "
+        >
+          NORTHSTAGE
+        </div>
+        <div
+          style="
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-top: 8px;
+            line-height: 1;
+          "
+        >
+          Summit
+        </div>
+        <div
+          style="
+            margin-top: 16px;
+            width: 48px;
+            height: 3px;
+            background: #ec4899;
+          "
+        ></div>
+        <div style="margin-top: 16px; font-size: 15px; color: #e5e7eb">
+          April 15, 2026 · Harbor Hall, Portland
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

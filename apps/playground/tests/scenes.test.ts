@@ -131,13 +131,20 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 };
 
 describe("registry", () => {
-  it("registers minimum, storage, author, import scenes, then Launchpad launch", () => {
+  it("registers minimum, storage, author, import scenes, then eight examples", () => {
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...STORAGE_IDS,
       ...AUTHOR_IDS,
       ...IMPORT_IDS,
       "example-launchpad-launch",
+      "example-launchpad-reset",
+      "example-flowwork-welcome",
+      "example-flowwork-newsletter",
+      "example-sable-order",
+      "example-sable-friday",
+      "example-northstage-event",
+      "example-northstage-ar",
     ]);
     expect(getScene("minimum")?.group).toBe("minimum");
     expect(getScene("minimum")?.docs).toBe("/getting-started/quick-start");
@@ -166,6 +173,28 @@ describe("registry", () => {
     expect(getScene("example-launchpad-launch")?.docs).toBe(
       "/guide/examples#launchpad-launch",
     );
+    expect(getScene("example-launchpad-reset")?.docs).toBe(
+      "/guide/examples#launchpad-reset",
+    );
+    expect(getScene("example-flowwork-welcome")?.docs).toBe(
+      "/guide/examples#flowwork-welcome",
+    );
+    expect(getScene("example-flowwork-newsletter")?.docs).toBe(
+      "/guide/examples#flowwork-newsletter",
+    );
+    expect(getScene("example-sable-order")?.docs).toBe(
+      "/guide/examples#sable-order",
+    );
+    expect(getScene("example-sable-friday")?.docs).toBe(
+      "/guide/examples#sable-friday",
+    );
+    expect(getScene("example-northstage-event")?.docs).toBe(
+      "/guide/examples#northstage-event",
+    );
+    expect(getScene("example-northstage-ar")?.docs).toBe(
+      "/guide/examples#northstage-ar",
+    );
+    expect(getScene("example-northstage-event")?.group).toBe("examples");
     expect(getScene("nope")).toBeUndefined();
   });
 

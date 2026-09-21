@@ -223,12 +223,10 @@ test.describe("Preview resolution", () => {
   });
 
   test("the test-email preview resolves for the selected recipient", async ({
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    test.skip(true, "cookbook-task-10: examples");
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Welcome Email");
+    await scenePage.goto("example-flowwork-welcome");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     const page = editorPage.page;
