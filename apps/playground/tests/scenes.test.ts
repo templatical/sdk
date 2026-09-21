@@ -212,6 +212,12 @@ describe("snippet honesty", () => {
     },
   );
 
+  it("Chamaileon snippet does not bind convert() to window.document", () => {
+    const snippet = getScene("import-chamaileon")?.snippet ?? "";
+    expect(snippet).toContain("chamaileonJson");
+    expect(snippet).not.toMatch(/convertChamaileonTemplate\(\s*document\s*\)/);
+  });
+
   it.each(IMPORT_IDS)(
     "%s snippet is convertXTemplate + init({ content }), not a playground API",
     (id) => {

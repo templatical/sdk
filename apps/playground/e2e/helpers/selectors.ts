@@ -305,6 +305,8 @@ export const SELECTORS = {
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
   importPanel: '[data-testid="import-panel"]',
+  importCancel: '[data-testid="import-cancel"]',
+  importClose: '[data-testid="import-close"]',
 } as const;
 
 /** Dynamic selector for block by type */

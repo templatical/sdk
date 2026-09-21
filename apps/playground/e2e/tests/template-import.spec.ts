@@ -154,6 +154,38 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
+  test("paste panel leaves host chrome and the snippet reachable", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    await expect(page.locator(SELECTORS.codeDrawer)).toBeVisible();
+    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
+      "convertUnlayerTemplate",
+    );
+    await expect(page.locator(SELECTORS.backButton)).toBeVisible();
+    await page.locator(SELECTORS.backButton).click();
+    await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
+  });
+
+  test("cancel dismisses the paste panel without converting", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    await page.locator(SELECTORS.importCancel).click();
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
+      "convertUnlayerTemplate",
+    );
+  });
+
+  test("Escape dismisses the paste panel", async ({ scenePage, page }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+  });
+
   test("Unlayer scene shows only the Unlayer textarea", async ({
     scenePage,
     page,

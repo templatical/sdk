@@ -8,5 +8,5 @@ export const importChamaileon = makeImportScene({
   docs: "/guide/migration-from-chamaileon",
   pkg: "@templatical/import-chamaileon",
   convertFn: "convertChamaileonTemplate",
-  sourceExpr: "document",
+  sourceExpr: "chamaileonJson",
 });

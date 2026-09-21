@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { Upload } from "@lucide/vue";
 import { useFileDialog } from "@vueuse/core";
 import type { TemplaticalEditor } from "@templatical/editor";
@@ -119,6 +119,34 @@ function copyFor(current: ImportKind) {
 
 const copy = computed(() => (kind.value ? copyFor(kind.value) : null));
 
+function dismiss(): void {
+  open.value = false;
+  error.value = "";
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape" && open.value) {
+    event.preventDefault();
+    dismiss();
+  }
+}
+
+watch(
+  open,
+  (isOpen) => {
+    if (isOpen) {
+      window.addEventListener("keydown", onKeydown);
+    } else {
+      window.removeEventListener("keydown", onKeydown);
+    }
+  },
+  { immediate: true },
+);
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", onKeydown);
+});
+
 async function runConvert(): Promise<void> {
   const current = kind.value;
   if (!current || !copy.value) return;
@@ -155,15 +183,17 @@ onImportFileChange(async (files) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="open && kind && copy" class="pg-modal-backdrop">
-      <div
-        data-testid="import-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="import-panel-title"
-        class="flex w-full max-w-[40rem] max-h-[85vh] flex-col gap-3 overflow-auto rounded-xl border border-gray-200 bg-white p-5 shadow-modal dark:border-gray-700 dark:bg-gray-800"
-      >
+  <div
+    v-if="open && kind && copy"
+    class="absolute inset-0 z-[10000] flex items-start justify-center overflow-auto bg-black/40 p-4 pointer-events-none"
+  >
+    <div
+      data-testid="import-panel"
+      role="dialog"
+      aria-labelledby="import-panel-title"
+      class="pointer-events-auto flex w-full max-w-[40rem] max-h-full flex-col gap-3 overflow-auto rounded-xl border border-gray-200 bg-white p-5 shadow-modal dark:border-gray-700 dark:bg-gray-800"
+    >
+      <div class="flex items-start justify-between gap-3">
         <div>
           <p
             id="import-panel-title"
@@ -177,45 +207,60 @@ onImportFileChange(async (files) => {
         </div>
         <button
           type="button"
-          class="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-transparent py-5 text-gray-600 transition-[border-color,color] duration-150 hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
-          @click="() => openImportFile()"
+          class="pg-modal-close"
+          :aria-label="t.common.close"
+          data-testid="import-close"
+          @click="dismiss"
         >
-          <Upload :size="20" :stroke-width="1.5" aria-hidden="true" />
-          <span class="text-sm font-medium">{{
-            t.importModal.chooseFile
-          }}</span>
+          &times;
         </button>
-        <div
-          class="flex items-center gap-4 text-xs uppercase tracking-[0.5px] text-gray-600 before:h-px before:flex-1 before:bg-gray-200 after:h-px after:flex-1 after:bg-gray-200 dark:text-gray-400 before:dark:bg-gray-700 after:dark:bg-gray-700"
+      </div>
+      <button
+        type="button"
+        class="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 bg-transparent py-5 text-gray-600 transition-[border-color,color] duration-150 hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
+        @click="() => openImportFile()"
+      >
+        <Upload :size="20" :stroke-width="1.5" aria-hidden="true" />
+        <span class="text-sm font-medium">{{ t.importModal.chooseFile }}</span>
+      </button>
+      <div
+        class="flex items-center gap-4 text-xs uppercase tracking-[0.5px] text-gray-600 before:h-px before:flex-1 before:bg-gray-200 after:h-px after:flex-1 after:bg-gray-200 dark:text-gray-400 before:dark:bg-gray-700 after:dark:bg-gray-700"
+      >
+        <span>{{ t.importModal.orPaste }}</span>
+      </div>
+      <textarea
+        v-model="source"
+        :aria-label="copy.ariaLabel"
+        :data-testid="TEXTAREA_TESTID[kind]"
+        :placeholder="PLACEHOLDER[kind]"
+        class="pg-input h-[10rem] resize-y p-4 font-mono text-xs leading-relaxed bg-gray-50 placeholder:text-gray-500 dark:bg-gray-700/50"
+      />
+      <p
+        v-if="error"
+        data-testid="import-error"
+        class="m-0 text-[13px] text-red-600 dark:text-red-400"
+      >
+        {{ error }}
+      </p>
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="pg-cancel-btn"
+          data-testid="import-cancel"
+          @click="dismiss"
         >
-          <span>{{ t.importModal.orPaste }}</span>
-        </div>
-        <textarea
-          v-model="source"
-          :aria-label="copy.ariaLabel"
-          :data-testid="TEXTAREA_TESTID[kind]"
-          :placeholder="PLACEHOLDER[kind]"
-          class="pg-input h-[10rem] resize-y p-4 font-mono text-xs leading-relaxed bg-gray-50 placeholder:text-gray-500 dark:bg-gray-700/50"
-        />
-        <p
-          v-if="error"
-          data-testid="import-error"
-          class="m-0 text-[13px] text-red-600 dark:text-red-400"
+          {{ t.importModal.cancel }}
+        </button>
+        <button
+          type="button"
+          class="pg-cta h-9 px-4 text-[13px] rounded-md"
+          data-testid="import-confirm"
+          :disabled="converting || !editor"
+          @click="runConvert"
         >
-          {{ error }}
-        </p>
-        <div class="flex justify-end">
-          <button
-            type="button"
-            class="pg-cta h-9 px-4 text-[13px] rounded-md"
-            data-testid="import-confirm"
-            :disabled="converting || !editor"
-            @click="runConvert"
-          >
-            {{ t.importModal.import }}
-          </button>
-        </div>
+          {{ t.importModal.import }}
+        </button>
       </div>
     </div>
-  </Teleport>
+  </div>
 </template>
