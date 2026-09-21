@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.39.3
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Align Cloud chrome with the editor dialog and token recipes: the save-gate uses `TplModal` (trap, Escape, outlined danger), icon-only sidebar controls are named, primary hover deepens instead of fading, and chrome type sits on 10px or 12px.**
+
+`@templatical/editor`
+
 ## 0.39.2
 
 <time datetime="2026-09-21">2026-09-21</time>

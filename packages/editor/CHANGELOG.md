@@ -1,5 +1,13 @@
 # @templatical/editor
 
+## 0.39.3
+
+### Patch Changes
+
+- 11341ff: Align Cloud chrome with the editor dialog and token recipes: the save-gate uses `TplModal` (trap, Escape, outlined danger), icon-only sidebar controls are named, primary hover deepens instead of fading, and chrome type sits on 10px or 12px.
+- @templatical/quality@0.39.3
+  - @templatical/renderer@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes

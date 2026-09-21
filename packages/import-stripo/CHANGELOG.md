@@ -1,5 +1,12 @@
 # @templatical/import-stripo
 
+## 0.39.3
+
+### Patch Changes
+
+- @templatical/import-html@0.39.3
+  - @templatical/types@0.39.3
+
 ## 0.39.2
 
 ### Patch Changes
