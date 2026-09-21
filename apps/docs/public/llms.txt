@@ -2,7 +2,7 @@
 
 > Drag-and-drop email editor for modern apps — source-available, MIT after two years.
 
-Documentation for SDK version 0.39.1. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
+Documentation for SDK version 0.39.2. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
 
 ## Overview
 

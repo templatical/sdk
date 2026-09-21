@@ -17,8 +17,24 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.39.1",
+  "latest": "0.39.2",
   "versions": [
+    {
+      "version": "0.39.2",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "a87e523",
+          "level": "patch",
+          "title": "Match the editor's dialog contract, `--tpl-user-*` tokens, and button recipes in the media library. Signal Amber keeps the documented contrast exception (`--tpl-on-primary` on `--tpl-primary`). Overlay backdrops no longer redeclare `.tpl` when they inherit the editor popover root.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/media-library"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.39.1",
       "date": "2026-09-21",

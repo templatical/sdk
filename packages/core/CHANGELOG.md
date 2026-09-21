@@ -1,5 +1,11 @@
 # @templatical/core
 
+## 0.39.2
+
+### Patch Changes
+
+- @templatical/types@0.39.2
+
 ## 0.39.1
 
 ### Patch Changes

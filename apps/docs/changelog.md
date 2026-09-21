@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.39.2
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Match the editor's dialog contract, `--tpl-user-*` tokens, and button recipes in the media library. Signal Amber keeps the documented contrast exception (`--tpl-on-primary` on `--tpl-primary`). Overlay backdrops no longer redeclare `.tpl` when they inherit the editor popover root.**
+
+`@templatical/editor` · `@templatical/media-library`
+
 ## 0.39.1
 
 <time datetime="2026-09-21">2026-09-21</time>
