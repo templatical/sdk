@@ -334,10 +334,14 @@ describe("standalone visual", () => {
 
     instance.setTheme({ primaryColor: "#abc", borderRadius: 5 });
 
-    expect(container.style.getPropertyValue("--tpl-primary")).toBe("#abc");
-    expect(container.style.getPropertyValue("--tpl-radius")).toBe("5px");
-    expect(container.style.getPropertyValue("--tpl-radius-sm")).toBe("2px");
-    expect(container.style.getPropertyValue("--tpl-radius-lg")).toBe("9px");
+    expect(container.style.getPropertyValue("--tpl-user-primary")).toBe("#abc");
+    expect(container.style.getPropertyValue("--tpl-user-radius")).toBe("5px");
+    expect(container.style.getPropertyValue("--tpl-user-radius-sm")).toBe(
+      "2px",
+    );
+    expect(container.style.getPropertyValue("--tpl-user-radius-lg")).toBe(
+      "9px",
+    );
   });
 
   it("rejects when createApp/mount throws", async () => {
@@ -395,10 +399,10 @@ describe("applyTheme", () => {
     const theme = { primaryColor: "#ff6600" };
 
     if (theme.primaryColor) {
-      el.style.setProperty("--tpl-primary", theme.primaryColor);
+      el.style.setProperty("--tpl-user-primary", theme.primaryColor);
     }
 
-    expect(el.style.getPropertyValue("--tpl-primary")).toBe("#ff6600");
+    expect(el.style.getPropertyValue("--tpl-user-primary")).toBe("#ff6600");
   });
 
   it("sets CSS variables for borderRadius", () => {
@@ -406,17 +410,20 @@ describe("applyTheme", () => {
     const theme = { borderRadius: 10 };
 
     if (theme.borderRadius !== undefined) {
-      el.style.setProperty("--tpl-radius", `${theme.borderRadius}px`);
+      el.style.setProperty("--tpl-user-radius", `${theme.borderRadius}px`);
       el.style.setProperty(
-        "--tpl-radius-sm",
+        "--tpl-user-radius-sm",
         `${Math.max(0, theme.borderRadius - 3)}px`,
       );
-      el.style.setProperty("--tpl-radius-lg", `${theme.borderRadius + 4}px`);
+      el.style.setProperty(
+        "--tpl-user-radius-lg",
+        `${theme.borderRadius + 4}px`,
+      );
     }
 
-    expect(el.style.getPropertyValue("--tpl-radius")).toBe("10px");
-    expect(el.style.getPropertyValue("--tpl-radius-sm")).toBe("7px");
-    expect(el.style.getPropertyValue("--tpl-radius-lg")).toBe("14px");
+    expect(el.style.getPropertyValue("--tpl-user-radius")).toBe("10px");
+    expect(el.style.getPropertyValue("--tpl-user-radius-sm")).toBe("7px");
+    expect(el.style.getPropertyValue("--tpl-user-radius-lg")).toBe("14px");
   });
 
   it("borderRadius of 0 sets radius-sm to 0", () => {
@@ -424,17 +431,20 @@ describe("applyTheme", () => {
     const theme = { borderRadius: 0 };
 
     if (theme.borderRadius !== undefined) {
-      el.style.setProperty("--tpl-radius", `${theme.borderRadius}px`);
+      el.style.setProperty("--tpl-user-radius", `${theme.borderRadius}px`);
       el.style.setProperty(
-        "--tpl-radius-sm",
+        "--tpl-user-radius-sm",
         `${Math.max(0, theme.borderRadius - 3)}px`,
       );
-      el.style.setProperty("--tpl-radius-lg", `${theme.borderRadius + 4}px`);
+      el.style.setProperty(
+        "--tpl-user-radius-lg",
+        `${theme.borderRadius + 4}px`,
+      );
     }
 
-    expect(el.style.getPropertyValue("--tpl-radius")).toBe("0px");
-    expect(el.style.getPropertyValue("--tpl-radius-sm")).toBe("0px");
-    expect(el.style.getPropertyValue("--tpl-radius-lg")).toBe("4px");
+    expect(el.style.getPropertyValue("--tpl-user-radius")).toBe("0px");
+    expect(el.style.getPropertyValue("--tpl-user-radius-sm")).toBe("0px");
+    expect(el.style.getPropertyValue("--tpl-user-radius-lg")).toBe("4px");
   });
 
   it("does not set CSS variables when theme is undefined", () => {
@@ -442,9 +452,9 @@ describe("applyTheme", () => {
     const theme: { primaryColor?: string } | undefined = undefined;
 
     if (theme) {
-      el.style.setProperty("--tpl-primary", "should-not-be-set");
+      el.style.setProperty("--tpl-user-primary", "should-not-be-set");
     }
 
-    expect(el.style.getPropertyValue("--tpl-primary")).toBe("");
+    expect(el.style.getPropertyValue("--tpl-user-primary")).toBe("");
   });
 });

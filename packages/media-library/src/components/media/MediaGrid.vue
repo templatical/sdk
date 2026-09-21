@@ -210,7 +210,7 @@ function formatDate(dateStr: string): string {
             {{ item.filename || item.url }}
           </p>
           <p
-            class="tpl:flex tpl:justify-between tpl:text-[9px]"
+            class="tpl:flex tpl:justify-between tpl:text-[10px]"
             style="color: var(--tpl-text-muted)"
           >
             <span v-if="item.size != null">{{ formatSize(item.size) }}</span>

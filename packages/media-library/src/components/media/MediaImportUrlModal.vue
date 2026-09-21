@@ -75,7 +75,10 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        :class="[
+          popoverTarget ? undefined : 'tpl',
+          'tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4',
+        ]"
         style="background-color: var(--tpl-overlay)"
         @click.self="handleClose"
         @keydown="handleKeydown"
@@ -102,6 +105,8 @@ function handleKeydown(event: KeyboardEvent): void {
               v-model="urlValue"
               type="url"
               :aria-label="t.mediaLibrary.importFromUrl"
+              :aria-invalid="!!error"
+              :aria-describedby="error ? 'tpl-media-import-error' : undefined"
               class="tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:outline-none"
               style="
                 border-color: var(--tpl-border);
@@ -114,9 +119,10 @@ function handleKeydown(event: KeyboardEvent): void {
             />
           </div>
 
-          <!-- Error message -->
           <p
             v-if="error"
+            id="tpl-media-import-error"
+            role="alert"
             class="tpl:mb-3 tpl:text-xs"
             style="color: var(--tpl-danger)"
           >

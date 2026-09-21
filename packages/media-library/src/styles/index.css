@@ -311,7 +311,7 @@
 /* Standalone and any host that loads this stylesheet rather than the editor's.
    Hosted Browse also gets these from editor CSS; a second copy here is the
    same values, so they cannot disagree. */
-.tpl.tpl-media-overlay {
+.tpl-media-overlay {
   background-color: var(--tpl-overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);

@@ -7,7 +7,7 @@ import type {
 } from "@templatical/types";
 import type { MediaTranslations } from "../i18n";
 import { computed, provide, ref, toRef } from "vue";
-import { TRANSLATIONS_KEY, UI_LOCALE_KEY } from "../keys";
+import { POPOVER_TARGET_KEY, TRANSLATIONS_KEY, UI_LOCALE_KEY } from "../keys";
 
 const props = defineProps<{
   /**
@@ -38,6 +38,9 @@ provide(
   toRef(() => props.locale),
 );
 
+const popoverRoot = ref<HTMLElement | null>(null);
+provide(POPOVER_TARGET_KEY, popoverRoot);
+
 function handleConfirm(item: MediaAsset): void {
   props.onSelect?.(item);
 }
@@ -45,6 +48,7 @@ function handleConfirm(item: MediaAsset): void {
 
 <template>
   <div
+    ref="popoverRoot"
     class="tpl tpl:flex tpl:flex-col tpl:overflow-hidden tpl:rounded-[var(--tpl-radius-lg)]"
     style="
       width: 100%;

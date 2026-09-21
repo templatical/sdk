@@ -89,6 +89,24 @@ describe("MediaLibraryModal source contract", () => {
     expect(css).toContain("--tpl-on-primary");
     expect(css).toContain("--tpl-user-bg");
     expect(css).toContain(".tpl-upload-zone-active");
+    expect(css).toMatch(/^\.tpl-media-overlay\s*\{/m);
+    expect(css).not.toContain(".tpl.tpl-media-overlay");
+  });
+
+  it("writes theme overrides onto --tpl-user-* so .tpl can see them", () => {
+    const source = readSrc("standalone/visual.ts");
+    expect(source).toContain("--tpl-user-primary");
+    expect(source).toContain("--tpl-user-radius");
+    expect(source).not.toMatch(/setProperty\(\s*"--tpl-primary"/);
+  });
+
+  it("loads the cropper only when Edit opens", () => {
+    const chrome = readSrc("components/MediaLibraryChrome.vue");
+    expect(chrome).toContain("defineAsyncComponent");
+    expect(chrome).toContain("./media/MediaEditModal.vue");
+    expect(chrome).not.toMatch(
+      /import MediaEditModal from "\.\/media\/MediaEditModal\.vue"/,
+    );
   });
 
   it("does not paint primary actions with a gradient or #fff", () => {
@@ -442,6 +460,36 @@ describe("MediaLibraryModal chrome", () => {
 });
 
 describe("MediaLibraryModal dialog contract", () => {
+  it("omits the bare tpl class on the overlay when a popover target is set", async () => {
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    await mountModal(fakeProvider(), { popoverTarget: root });
+    const overlay = document.querySelector(
+      '[data-testid="media-library-modal"]',
+    );
+    expect(overlay?.classList.contains("tpl-media-overlay")).toBe(true);
+    expect(overlay?.classList.contains("tpl")).toBe(false);
+  });
+
+  it("keeps tpl on the overlay when teleported to body", async () => {
+    await mountModal(fakeProvider());
+    const overlay = document.querySelector(
+      '[data-testid="media-library-modal"]',
+    );
+    expect(overlay?.classList.contains("tpl")).toBe(true);
+  });
+
+  it("names the storage ring for keyboard and screen-reader users", async () => {
+    await mountModal(
+      fakeProvider({
+        storage: vi.fn(async () => ({ usedBytes: 10, limitBytes: 100 })),
+      }),
+    );
+    const ring = document.querySelector('[data-testid="media-storage-ring"]');
+    expect(ring?.getAttribute("tabindex")).toBe("0");
+    expect(ring?.getAttribute("aria-label") ?? "").toMatch(/10/);
+  });
+
   it("exposes a labelled dialog and close control", async () => {
     await mountModal(fakeProvider());
 

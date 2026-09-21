@@ -224,7 +224,10 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible && item"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        :class="[
+          popoverTarget ? undefined : 'tpl',
+          'tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4',
+        ]"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"
         @keydown="handleKeydown"

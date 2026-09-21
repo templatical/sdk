@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import MediaBreadcrumb from "./media/MediaBreadcrumb.vue";
-import MediaEditModal from "./media/MediaEditModal.vue";
 import MediaFolderTree from "./media/MediaFolderTree.vue";
 import MediaGrid from "./media/MediaGrid.vue";
 import MediaImportUrlModal from "./media/MediaImportUrlModal.vue";
@@ -27,7 +26,13 @@ import {
   Search,
   X,
 } from "@lucide/vue";
-import { computed, onBeforeUnmount, provide, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  provide,
+  watch,
+} from "vue";
 import type { MediaTranslations } from "../i18n";
 import { MEDIA_LIMITS_KEY } from "../keys";
 
@@ -47,6 +52,10 @@ const emit = defineEmits<{
   (e: "confirm", item: MediaAsset): void;
   (e: "ready"): void;
 }>();
+
+const MediaEditModal = defineAsyncComponent(
+  () => import("./media/MediaEditModal.vue"),
+);
 
 const t = computed(() => props.translations);
 const resolvedConfirmTestId = computed(
@@ -495,7 +504,8 @@ defineExpose({ nestedDialogOpen, handleEscape, library, ui });
     />
 
     <MediaEditModal
-      :visible="!!ui.editingItem.value"
+      v-if="ui.editingItem.value"
+      :visible="true"
       :item="ui.editingItem.value"
       @save="ui.handleEditSave"
       @close="ui.editingItem.value = null"

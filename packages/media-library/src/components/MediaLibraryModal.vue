@@ -133,7 +133,15 @@ function handleConfirm(item: MediaAsset): void {
         v-if="visible && translations"
         data-testid="media-library-modal"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        :class="[
+          popoverTarget ? undefined : 'tpl',
+          'tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4',
+        ]"
+        style="
+          background-color: var(--tpl-overlay);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        "
         @click.self="emit('close')"
       >
         <!-- Caps are percentages of the overlay, never viewport units. This

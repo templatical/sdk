@@ -819,7 +819,7 @@
 }
 
 /* Media Library Modal */
-.tpl.tpl-media-overlay {
+.tpl-media-overlay {
     display: flex;
     flex-direction: row;
     align-items: center;
