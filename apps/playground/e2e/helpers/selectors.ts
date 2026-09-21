@@ -4,6 +4,10 @@ export const SELECTORS = {
   // Screens
   chooserScreen: '[data-testid="chooser-screen"]',
   editorScreen: '[data-testid="editor-screen"]',
+  sceneHost: '[data-testid="scene-host"]',
+  sceneNotFound: '[data-testid="scene-not-found"]',
+  codeDrawer: '[data-testid="code-drawer"]',
+  catalogScreen: '[data-testid="catalog-screen"]',
 
   // Chooser
   templateCard: '[data-testid="template-card"]',

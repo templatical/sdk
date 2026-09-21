@@ -1,5 +1,6 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 test.describe("Playground smoke tests", () => {
   test("playground loads and shows template chooser", async ({
@@ -23,15 +24,20 @@ test.describe("Playground smoke tests", () => {
     await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
   });
 
+  test("minimum scene URL mounts an empty editor", async ({
+    page,
+    shadowDom,
+  }) => {
+    const scenePage = new ScenePage(page, { shadowDom });
+    await scenePage.goto("minimum");
+    await expect(page.locator('[data-testid="scene-host"]')).toBeVisible();
+    await expect(page.locator('[data-testid="code-drawer"]')).toBeVisible();
+  });
+
   test("blank template shows empty canvas", async ({
-    chooserPage,
-    editorPage,
+    blankEditorReady,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectBlankTemplate();
-    await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
     await expect(page.locator(SELECTORS.editorContainer)).toBeVisible();
   });
 

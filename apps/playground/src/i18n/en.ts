@@ -42,6 +42,13 @@ export default {
     share: "Share",
     tour: "Tour",
   },
+  host: {
+    back: "Back",
+    code: "Code",
+    docs: "Docs",
+    notFound: "Scene not found",
+    catalog: "Catalog",
+  },
   configModal: {
     tabs: {
       options: "Options",

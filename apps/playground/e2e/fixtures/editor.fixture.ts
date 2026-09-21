@@ -1,6 +1,7 @@
 import { test as base } from "@playwright/test";
 import { ChooserPage } from "../pages/chooser.page";
 import { EditorPage } from "../pages/editor.page";
+import { ScenePage } from "../pages/scene.page";
 
 type EditorFixtures = {
   /**
@@ -46,8 +47,7 @@ export const test = base.extend<EditorFixtures>({
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
     });
-    await chooserPage.goto();
-    await chooserPage.selectBlankTemplate();
+    await new ScenePage(page, { shadowDom }).goto("minimum");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await use({ chooserPage, editorPage });

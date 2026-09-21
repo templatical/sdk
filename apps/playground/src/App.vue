@@ -68,6 +68,12 @@ import type {
 } from "@/templates";
 const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
 import LogoIcon from "@/LogoIcon.vue";
+import SceneHost from "@/host/SceneHost.vue";
+import { parsePlaygroundRoute } from "@/scenes";
+import {
+  resolveInitialShadowMode,
+  SHADOW_STORAGE_KEY,
+} from "@/host/shadowMode";
 import {
   Monitor,
   Sun,
@@ -117,6 +123,12 @@ function createBlankTemplate() {
 }
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
+
+const playgroundRoute = parsePlaygroundRoute(
+  window.location.pathname,
+  window.location.search,
+);
+const sceneRoute = playgroundRoute.kind === "scene" ? playgroundRoute : null;
 
 function cycleTheme(): void {
   const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
@@ -1867,35 +1879,9 @@ let currentSerializableConfig = buildSerializableConfig();
 
 const initError = ref("");
 
-// Shadow DOM mount mode. Resolution order on first load:
-//   1. URL param `?shadowDom=0/1/false/true` — strongest (e2e fixture relies
-//      on this for deterministic project pinning).
-//   2. localStorage `tpl-playground-shadow-mode` — persists user's toggle.
-//   3. SDK default — `'shadow'`.
-// Once mounted, the header toggle button mutates this ref + localStorage and
-// re-inits the editor with the new mode.
-const SHADOW_STORAGE_KEY = "tpl-playground-shadow-mode";
-
-function readShadowDomFlag(): boolean | undefined {
-  if (typeof window === "undefined") return undefined;
-  const v = new URLSearchParams(window.location.search).get("shadowDom");
-  if (v === "1" || v === "true") return true;
-  if (v === "0" || v === "false") return false;
-  return undefined;
-}
-
-function readStoredShadowMode(): "shadow" | "light" | null {
-  if (typeof window === "undefined") return null;
-  const v = window.localStorage.getItem(SHADOW_STORAGE_KEY);
-  return v === "shadow" || v === "light" ? v : null;
-}
-
-function resolveInitialShadowMode(): "shadow" | "light" {
-  const urlFlag = readShadowDomFlag();
-  if (urlFlag !== undefined) return urlFlag ? "shadow" : "light";
-  return readStoredShadowMode() ?? "shadow";
-}
-
+// Shadow DOM mount mode. Resolution lives in `host/shadowMode.ts` so SceneHost
+// and this leftover chooser share one `?shadowDom=` → localStorage → `'shadow'`
+// order. The header toggle still mutates the ref + localStorage and re-inits.
 const shadowDomMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 
 async function cycleShadowDom(): Promise<void> {
@@ -2500,7 +2486,13 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <SceneHost
+    v-if="sceneRoute"
+    :scene-id="sceneRoute.id"
+    :search="sceneRoute.search"
+  />
   <div
+    v-else
     class="box-border flex flex-col min-h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">

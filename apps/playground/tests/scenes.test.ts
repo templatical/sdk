@@ -30,6 +30,15 @@ describe("parsePlaygroundRoute", () => {
   it("does not treat /scenes/minimum.md as a scene route", () => {
     expect(parsePlaygroundRoute("/scenes/minimum.md").kind).toBe("unknown");
   });
+
+  it("treats an unknown id as a scene route", () => {
+    const r = parsePlaygroundRoute("/scenes/nope");
+    expect(r).toEqual({
+      kind: "scene",
+      id: "nope",
+      search: expect.any(URLSearchParams),
+    });
+  });
 });
 
 describe("registry", () => {

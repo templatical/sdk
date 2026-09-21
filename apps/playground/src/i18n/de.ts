@@ -44,6 +44,13 @@ export default {
     share: "Teilen",
     tour: "Tour",
   },
+  host: {
+    back: "Zur\u00fcck",
+    code: "Code",
+    docs: "Dokumentation",
+    notFound: "Szene nicht gefunden",
+    catalog: "Katalog",
+  },
   configModal: {
     tabs: {
       options: "Optionen",
