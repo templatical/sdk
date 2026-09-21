@@ -145,8 +145,20 @@ export const SELECTORS = {
   rightTabSettings: "#tpl-tab-settings",
   rightTabIssues: "#tpl-tab-issues",
   rightPanelContent: "#tpl-tabpanel-content",
+  /**
+   * Hydrated block properties panel. RightSidebar loads Toolbar via
+   * `defineAsyncComponent`, so `#tpl-tabpanel-content` is visible (empty)
+   * before this lands. `selectBlock` / `selectBlockByType` wait on it.
+   */
+  blockToolbar: '[data-testid="block-toolbar"]',
   paragraphSpacing: '[data-testid="paragraph-spacing"]',
   rightPanelSettings: "#tpl-tabpanel-settings",
+  /**
+   * Hydrated template-settings panel. Same async-chunk race as
+   * `blockToolbar`: the tabpanel shell is up before TemplateSettings
+   * mounts. `openSettingsTab` waits on it.
+   */
+  templateSettings: '[data-testid="template-settings"]',
   templateSettingsBackground: '[data-testid="template-settings-background"]',
   // Settings-panel cards and fields. `templateSettings.fields` narrows which of
   // them render, so a spec asserting the allowlist needs both levels: a card

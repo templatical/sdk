@@ -47,3 +47,30 @@ describe("RightSidebar lazy-loads the properties panels", () => {
     expect(src).toMatch(/v-if="activeTab === 'settings' && settingsEnabled"/);
   });
 });
+
+describe("lazy panels expose a hydration testid", () => {
+  // E2E selectBlock / openSettingsTab wait on these. The tabpanel shells
+  // are visible before the async chunks land, so a missing testid sends
+  // those waits back to a snapshot of an empty panel.
+  it("Toolbar root carries data-testid=block-toolbar", () => {
+    const toolbar = readFileSync(
+      join(import.meta.dirname, "..", "src", "components", "Toolbar.vue"),
+      "utf8",
+    );
+    expect(toolbar).toMatch(/data-testid="block-toolbar"/);
+  });
+
+  it("TemplateSettings root carries data-testid=template-settings", () => {
+    const settings = readFileSync(
+      join(
+        import.meta.dirname,
+        "..",
+        "src",
+        "components",
+        "TemplateSettings.vue",
+      ),
+      "utf8",
+    );
+    expect(settings).toMatch(/data-testid="template-settings"/);
+  });
+});

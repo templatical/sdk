@@ -146,16 +146,22 @@ export class EditorPage {
   async selectBlock(index: number): Promise<void> {
     await this.getBlocks().nth(index).click();
     await this.page.locator(SELECTORS.blockSelected).waitFor();
+    // Toolbar is `defineAsyncComponent` — selection chrome is up before
+    // the properties panel hydrates. Callers that snapshot the panel
+    // (`count()`, `innerHTML`) would otherwise read the empty tabpanel.
+    await this.page.locator(SELECTORS.blockToolbar).waitFor();
   }
 
   async selectBlockByType(type: string): Promise<void> {
     await this.getBlockByType(type).first().click();
     await this.page.locator(SELECTORS.blockSelected).waitFor();
+    await this.page.locator(SELECTORS.blockToolbar).waitFor();
   }
 
   async deselectBlock(): Promise<void> {
     await this.page.keyboard.press("Escape");
     await expect(this.page.locator(SELECTORS.blockSelected)).toHaveCount(0);
+    await expect(this.page.locator(SELECTORS.blockToolbar)).toHaveCount(0);
   }
 
   async duplicateSelectedBlock(): Promise<void> {
@@ -1125,6 +1131,18 @@ export class EditorPage {
     await tab.waitFor();
     await tab.click();
     await this.page.locator(SELECTORS.rightPanelIssues).waitFor();
+  }
+
+  /**
+   * Open the right-sidebar Settings tab. Waits for TemplateSettings to
+   * hydrate — the tabpanel shell is visible immediately, the async chunk
+   * is not.
+   */
+  async openSettingsTab(): Promise<void> {
+    const tab = this.page.locator(SELECTORS.rightTabSettings);
+    await tab.waitFor();
+    await tab.click();
+    await this.page.locator(SELECTORS.templateSettings).waitFor();
   }
 
   /**

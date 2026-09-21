@@ -89,8 +89,7 @@ test.describe("content direction", () => {
     await openArabicInvitation(page, chooserPage, editorPage);
     await expect(page.locator(SELECTORS.canvas)).toHaveAttribute("dir", "rtl");
 
-    await page.locator(SELECTORS.rightTabSettings).click();
-    await expect(page.locator(SELECTORS.rightPanelSettings)).toBeVisible();
+    await editorPage.openSettingsTab();
     const toggle = page
       .locator(SELECTORS.templateSettingsDirection)
       .getByRole("switch");

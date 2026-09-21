@@ -39,11 +39,7 @@ test.describe("Editor right sidebar", () => {
     page,
   }) => {
     await editorPage.selectBlock(0);
-    const panel = page.locator(SELECTORS.rightPanelContent);
-    await expect(panel).toBeVisible();
-    // Should have content (toolbar for the selected block)
-    const panelContent = await panel.innerHTML();
-    expect(panelContent.length).toBeGreaterThan(50);
+    await expect(page.locator(SELECTORS.blockToolbar)).toBeVisible();
   });
 
   test("toolbar header shows block type label", async ({
@@ -51,9 +47,9 @@ test.describe("Editor right sidebar", () => {
     page,
   }) => {
     await editorPage.selectBlock(0);
-    const panel = page.locator(SELECTORS.rightPanelContent);
-    // The toolbar should have visible text content (block type name)
-    const panelText = await panel.textContent();
+    const toolbar = page.locator(SELECTORS.blockToolbar);
+    await expect(toolbar).toBeVisible();
+    const panelText = await toolbar.textContent();
     expect(panelText!.length).toBeGreaterThan(0);
   });
 
@@ -69,8 +65,11 @@ test.describe("Editor right sidebar", () => {
     await expect(panel.getByRole("button", { name: /delete/i })).toBeVisible();
   });
 
-  test("settings tab switches panel", async ({ editorReady, page }) => {
-    await page.locator(SELECTORS.rightTabSettings).click();
+  test("settings tab switches panel", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.openSettingsTab();
     await expect(page.locator(SELECTORS.rightTabSettings)).toHaveAttribute(
       "aria-selected",
       "true",
@@ -83,15 +82,14 @@ test.describe("Editor right sidebar", () => {
   });
 
   test("settings panel shows template controls", async ({
-    editorReady,
+    editorReady: { editorPage },
     page,
   }) => {
-    await page.locator(SELECTORS.rightTabSettings).click();
-    const panel = page.locator(SELECTORS.rightPanelSettings);
+    await editorPage.openSettingsTab();
+    const panel = page.locator(SELECTORS.templateSettings);
     await expect(panel).toBeVisible();
-    // Settings panel should have interactive controls (inputs, buttons, selects)
     const controls = panel.locator("input, button, select");
-    expect(await controls.count()).toBeGreaterThan(0);
+    await expect.poll(() => controls.count()).toBeGreaterThan(0);
   });
 
   test("switching back to content tab preserves selection", async ({
@@ -104,8 +102,7 @@ test.describe("Editor right sidebar", () => {
       .first()
       .getAttribute("data-block-id");
 
-    await page.locator(SELECTORS.rightTabSettings).click();
-    await expect(page.locator(SELECTORS.rightPanelSettings)).toBeVisible();
+    await editorPage.openSettingsTab();
     await page.locator(SELECTORS.rightTabContent).click();
     await expect(page.locator(SELECTORS.rightPanelContent)).toBeVisible();
 

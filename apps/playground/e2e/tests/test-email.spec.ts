@@ -222,7 +222,7 @@ test.describe("Test email", () => {
     const page = editorPage.page;
     const BACKGROUND = "rgb(28, 37, 255)";
 
-    await page.locator(SELECTORS.rightTabSettings).click();
+    await editorPage.openSettingsTab();
     const hex = page
       .locator(SELECTORS.templateSettingsBackground)
       .locator('input[type="text"]');
