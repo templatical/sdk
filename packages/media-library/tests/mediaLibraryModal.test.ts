@@ -79,6 +79,29 @@ afterEach(() => {
 });
 
 describe("MediaLibraryModal source contract", () => {
+  it("respects reduced motion in the package stylesheet", () => {
+    expect(readSrc("styles/index.css")).toContain("prefers-reduced-motion");
+  });
+
+  it("declares overlay, on-primary, and user-override tokens", () => {
+    const css = readSrc("styles/index.css");
+    expect(css).toContain("--tpl-overlay");
+    expect(css).toContain("--tpl-on-primary");
+    expect(css).toContain("--tpl-user-bg");
+    expect(css).toContain(".tpl-upload-zone-active");
+  });
+
+  it("does not paint primary actions with a gradient or #fff", () => {
+    const chrome = readSrc("components/MediaLibraryChrome.vue");
+    const edit = readSrc("components/media/MediaEditModal.vue");
+    const imported = readSrc("components/media/MediaImportUrlModal.vue");
+    const replace = readSrc("components/media/MediaReplaceModal.vue");
+    for (const source of [chrome, edit, imported, replace]) {
+      expect(source).not.toContain("linear-gradient");
+      expect(source).not.toContain("tpl:text-white");
+    }
+  });
+
   it("does not contain conversion picker, AuthManager, or plan config", () => {
     const source = readSrc("components/MediaLibraryModal.vue");
     for (const banned of ["selectedConversion", "authManager", "planConfig"]) {
@@ -229,7 +252,7 @@ describe("MediaLibraryModal chrome", () => {
     const wrapper = await mountModal(fakeProvider({ list }));
 
     const input = document.querySelector<HTMLInputElement>(
-      '.tpl-media-modal input[type="text"]',
+      '.tpl-media-modal input[type="search"]',
     );
     expect(input).not.toBeNull();
     input!.value = "logo";
@@ -418,6 +441,115 @@ describe("MediaLibraryModal chrome", () => {
   });
 });
 
+describe("MediaLibraryModal dialog contract", () => {
+  it("exposes a labelled dialog and close control", async () => {
+    await mountModal(fakeProvider());
+
+    const dialog = document.querySelector(
+      '[data-testid="media-library-dialog"]',
+    );
+    expect(dialog?.getAttribute("role")).toBe("dialog");
+    expect(dialog?.getAttribute("aria-modal")).toBe("true");
+    expect(dialog?.getAttribute("aria-labelledby")).toBe(
+      "tpl-media-library-title",
+    );
+    expect(document.querySelector('button[aria-label="Close"]')).not.toBeNull();
+    expect(
+      document.querySelector('input[aria-label="Search files"]'),
+    ).not.toBeNull();
+  });
+
+  it("closes on Escape when no nested dialog is open", async () => {
+    const wrapper = await mountModal(fakeProvider());
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    await flushPromises();
+    expect(wrapper.emitted("close")).toHaveLength(1);
+  });
+
+  it("does not close the library when Escape dismisses the import dialog", async () => {
+    const wrapper = await mountModal(fakeProvider());
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="media-import-url"]')!
+      .click();
+    await flushPromises();
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    await flushPromises();
+
+    expect(wrapper.emitted("close")).toBeUndefined();
+  });
+
+  it("selects a file from the keyboard", async () => {
+    const asset = createAsset("hero");
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [asset] })),
+      }),
+    );
+
+    const item = document.querySelector<HTMLElement>(
+      '[data-testid="media-library-item"]',
+    );
+    expect(item?.getAttribute("role")).toBe("option");
+    item!.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+    );
+    await flushPromises();
+
+    expect(
+      document.querySelector<HTMLButtonElement>(
+        '[data-testid="media-confirm"]',
+      )!.disabled,
+    ).toBe(false);
+  });
+
+  it("upload zone is a named button", async () => {
+    await mountModal(fakeProvider());
+    const zone = document.querySelector('[data-testid="media-upload-zone"]');
+    expect(zone?.tagName).toBe("BUTTON");
+    expect(zone?.getAttribute("aria-label")).toBe(
+      "Drop files here or click to upload",
+    );
+  });
+
+  it("folder delete asks for a second click", async () => {
+    const del = vi.fn(async () => {});
+    await mountModal(
+      fakeProvider({
+        folders: {
+          list: vi.fn(async () => [{ id: "f1", name: "Heroes" }]),
+          create: vi.fn(async ({ name }) => ({ id: "f2", name })),
+          update: vi.fn(async (id, { name }) => ({ id, name })),
+          delete: del,
+          move: vi.fn(async () => []),
+        },
+      }),
+    );
+
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="media-folder-toggle"]')!
+      .click();
+    await flushPromises();
+
+    const trash = document.querySelector<HTMLButtonElement>(
+      '[data-testid="media-folder-delete"]',
+    );
+    expect(trash).not.toBeNull();
+    await trash!.click();
+    await flushPromises();
+    expect(del).not.toHaveBeenCalled();
+    expect(trash!.getAttribute("aria-label")).toBe("Confirm delete");
+
+    await trash!.click();
+    await flushPromises();
+    expect(del).toHaveBeenCalledWith("f1");
+  });
+});
+
 describe("MediaLibraryModal onError", () => {
   it("forwards list failures to the onError prop", async () => {
     const onError = vi.fn();
@@ -438,7 +570,7 @@ describe("MediaLibraryModal onError", () => {
 
 describe("standalone shell mutation flags", () => {
   it("derives canUpdate/canReplace/folder flags from typeof, not hardcoded true", () => {
-    const source = readSrc("standalone/MediaLibrary.vue");
+    const source = readSrc("components/MediaLibraryChrome.vue");
     expect(source).toMatch(/:can-update="/);
     expect(source).toMatch(/:can-replace="/);
     expect(source).toMatch(/:can-create-folder="/);

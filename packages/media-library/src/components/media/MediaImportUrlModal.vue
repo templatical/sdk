@@ -2,7 +2,8 @@
 import { useI18n } from "../../composables/useI18n";
 import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
 import { LoaderCircle } from "@lucide/vue";
-import { inject, ref, watch } from "vue";
+import { useFocusTrap } from "../../composables/useFocusTrap";
+import { computed, inject, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -45,7 +46,12 @@ function handleClose(): void {
   }
 }
 
+const dialogRef = ref<HTMLElement | null>(null);
+const trapActive = computed(() => props.visible);
+useFocusTrap(dialogRef, trapActive);
+
 function handleKeydown(event: KeyboardEvent): void {
+  event.stopPropagation();
   if (event.key === "Enter") {
     event.preventDefault();
     handleImport();
@@ -75,10 +81,15 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       >
         <div
+          ref="dialogRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-media-import-title"
           class="tpl:max-h-[90%] tpl:w-full tpl:max-w-sm tpl:overflow-y-auto tpl:rounded-lg tpl:p-5 tpl:shadow-xl"
           style="background-color: var(--tpl-bg-elevated)"
         >
           <h3
+            id="tpl-media-import-title"
             class="tpl:mb-4 tpl:text-sm tpl:font-semibold"
             style="color: var(--tpl-text)"
           >
@@ -90,6 +101,7 @@ function handleKeydown(event: KeyboardEvent): void {
             <input
               v-model="urlValue"
               type="url"
+              :aria-label="t.mediaLibrary.importFromUrl"
               class="tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:outline-none"
               style="
                 border-color: var(--tpl-border);
@@ -129,13 +141,10 @@ function handleKeydown(event: KeyboardEvent): void {
               {{ t.mediaLibrary.cancel }}
             </button>
             <button
-              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-white tpl:transition-all tpl:duration-150 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
               style="
-                background: linear-gradient(
-                  135deg,
-                  var(--tpl-primary),
-                  var(--tpl-primary-hover)
-                );
+                background-color: var(--tpl-primary);
+                color: var(--tpl-on-primary);
               "
               :disabled="!urlValue.trim() || isImporting"
               @click="handleImport"

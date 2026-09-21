@@ -11,6 +11,7 @@ import {
 } from "../../composables/useImageCrop";
 import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
 import type { MediaAsset } from "@templatical/types";
+import { useFocusTrap } from "../../composables/useFocusTrap";
 import { computed, inject, ref, watch } from "vue";
 import { Cropper, type CropperResult } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
@@ -190,8 +191,17 @@ async function handleSave(): Promise<void> {
   emit("close");
 }
 
+const dialogRef = ref<HTMLElement | null>(null);
+const trapActive = computed(() => props.visible && props.item !== null);
+useFocusTrap(dialogRef, trapActive);
+
 function handleKeydown(event: KeyboardEvent): void {
+  event.stopPropagation();
   if (event.key === "Enter" && !isSaving.value) {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("textarea, [contenteditable]")) {
+      return;
+    }
     event.preventDefault();
     handleSave();
   }
@@ -220,6 +230,10 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       >
         <div
+          ref="dialogRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-media-edit-title"
           class="tpl:flex tpl:max-h-[90%] tpl:w-full tpl:flex-col tpl:overflow-hidden tpl:rounded-lg tpl:shadow-xl"
           :class="isCroppableImage ? 'tpl:max-w-2xl' : 'tpl:max-w-sm'"
           style="background-color: var(--tpl-bg-elevated)"
@@ -227,6 +241,7 @@ function handleKeydown(event: KeyboardEvent): void {
           <!-- Header -->
           <div class="tpl:shrink-0 tpl:p-5 tpl:pb-4">
             <h3
+              id="tpl-media-edit-title"
               class="tpl:text-sm tpl:font-semibold"
               style="color: var(--tpl-text)"
             >
@@ -400,12 +415,14 @@ function handleKeydown(event: KeyboardEvent): void {
             <!-- Filename -->
             <div class="tpl:mb-3">
               <label
+                for="tpl-media-filename"
                 class="tpl:mb-1 tpl:block tpl:text-xs tpl:font-medium"
                 style="color: var(--tpl-text-muted)"
               >
                 {{ t.mediaLibrary.fileName }}
               </label>
               <input
+                id="tpl-media-filename"
                 v-model="filenameValue"
                 type="text"
                 class="tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:outline-none"
@@ -421,12 +438,14 @@ function handleKeydown(event: KeyboardEvent): void {
             <!-- Alt Text (images only) -->
             <div v-if="isImageMimeType(item.mimeType ?? '')" class="tpl:mb-4">
               <label
+                for="tpl-media-alt"
                 class="tpl:mb-1 tpl:block tpl:text-xs tpl:font-medium"
                 style="color: var(--tpl-text-muted)"
               >
                 {{ t.mediaLibrary.altText }}
               </label>
               <input
+                id="tpl-media-alt"
                 v-model="altTextValue"
                 type="text"
                 class="tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:outline-none"
@@ -456,13 +475,10 @@ function handleKeydown(event: KeyboardEvent): void {
               {{ t.mediaLibrary.cancel }}
             </button>
             <button
-              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-white tpl:transition-all tpl:duration-150 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
               style="
-                background: linear-gradient(
-                  135deg,
-                  var(--tpl-primary),
-                  var(--tpl-primary-hover)
-                );
+                background-color: var(--tpl-primary);
+                color: var(--tpl-on-primary);
               "
               :disabled="isSaving"
               @click="handleSave"

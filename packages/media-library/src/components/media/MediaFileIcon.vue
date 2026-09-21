@@ -15,100 +15,100 @@ interface FileTypeConfig {
 const FILE_TYPE_MAP: Record<string, FileTypeConfig> = {
   "application/pdf": {
     label: "PDF",
-    color: "#dc2626",
-    bgColor: "#fef2f2",
+    color: "var(--tpl-danger)",
+    bgColor: "var(--tpl-danger-light)",
     icon: "document",
   },
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
     label: "DOC",
-    color: "#2563eb",
-    bgColor: "#eff6ff",
+    color: "var(--tpl-secondary)",
+    bgColor: "var(--tpl-secondary-light)",
     icon: "document",
   },
   "application/msword": {
     label: "DOC",
-    color: "#2563eb",
-    bgColor: "#eff6ff",
+    color: "var(--tpl-secondary)",
+    bgColor: "var(--tpl-secondary-light)",
     icon: "document",
   },
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
     label: "XLS",
-    color: "#16a34a",
-    bgColor: "#f0fdf4",
+    color: "var(--tpl-success)",
+    bgColor: "var(--tpl-success-light)",
     icon: "document",
   },
   "application/vnd.ms-excel": {
     label: "XLS",
-    color: "#16a34a",
-    bgColor: "#f0fdf4",
+    color: "var(--tpl-success)",
+    bgColor: "var(--tpl-success-light)",
     icon: "document",
   },
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
     label: "PPT",
-    color: "#ea580c",
-    bgColor: "#fff7ed",
+    color: "var(--tpl-warning)",
+    bgColor: "var(--tpl-warning-light)",
     icon: "document",
   },
   "application/vnd.ms-powerpoint": {
     label: "PPT",
-    color: "#ea580c",
-    bgColor: "#fff7ed",
+    color: "var(--tpl-warning)",
+    bgColor: "var(--tpl-warning-light)",
     icon: "document",
   },
   "text/csv": {
     label: "CSV",
-    color: "#16a34a",
-    bgColor: "#f0fdf4",
+    color: "var(--tpl-success)",
+    bgColor: "var(--tpl-success-light)",
     icon: "document",
   },
   "text/plain": {
     label: "TXT",
-    color: "#6b7280",
-    bgColor: "#f9fafb",
+    color: "var(--tpl-text-muted)",
+    bgColor: "var(--tpl-bg-hover)",
     icon: "document",
   },
   "video/mp4": {
     label: "MP4",
-    color: "#9333ea",
-    bgColor: "#faf5ff",
+    color: "var(--tpl-primary)",
+    bgColor: "var(--tpl-primary-light)",
     icon: "video",
   },
   "video/quicktime": {
     label: "MOV",
-    color: "#9333ea",
-    bgColor: "#faf5ff",
+    color: "var(--tpl-primary)",
+    bgColor: "var(--tpl-primary-light)",
     icon: "video",
   },
   "video/webm": {
     label: "WEBM",
-    color: "#9333ea",
-    bgColor: "#faf5ff",
+    color: "var(--tpl-primary)",
+    bgColor: "var(--tpl-primary-light)",
     icon: "video",
   },
   "audio/mpeg": {
     label: "MP3",
-    color: "#0d9488",
-    bgColor: "#f0fdfa",
+    color: "var(--tpl-secondary)",
+    bgColor: "var(--tpl-secondary-light)",
     icon: "audio",
   },
   "audio/wav": {
     label: "WAV",
-    color: "#0d9488",
-    bgColor: "#f0fdfa",
+    color: "var(--tpl-secondary)",
+    bgColor: "var(--tpl-secondary-light)",
     icon: "audio",
   },
   "audio/ogg": {
     label: "OGG",
-    color: "#0d9488",
-    bgColor: "#f0fdfa",
+    color: "var(--tpl-secondary)",
+    bgColor: "var(--tpl-secondary-light)",
     icon: "audio",
   },
 };
 
 const DEFAULT_CONFIG: FileTypeConfig = {
   label: "FILE",
-  color: "#6b7280",
-  bgColor: "#f9fafb",
+  color: "var(--tpl-text-muted)",
+  bgColor: "var(--tpl-bg-hover)",
   icon: "document",
 };
 
@@ -120,8 +120,8 @@ const config = computed(
 <template>
   <div
     class="tpl:flex tpl:aspect-square tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2"
+    :style="{ backgroundColor: config.bgColor }"
   >
-    <!-- Document icon -->
     <svg
       v-if="config.icon === 'document'"
       width="60"
@@ -138,7 +138,6 @@ const config = computed(
       <line x1="8" y1="17" x2="12" y2="17" />
     </svg>
 
-    <!-- Video icon -->
     <svg
       v-else-if="config.icon === 'video'"
       width="40"
@@ -153,7 +152,6 @@ const config = computed(
       <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
     </svg>
 
-    <!-- Audio icon -->
     <svg
       v-else
       width="40"

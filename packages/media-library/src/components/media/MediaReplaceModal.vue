@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
+import { useFocusTrap } from "../../composables/useFocusTrap";
 import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
 import type { MediaAsset, MediaUsageInfo } from "@templatical/types";
 import { computed, inject, ref, watch } from "vue";
@@ -66,7 +67,12 @@ function handleReplace(): void {
   }
 }
 
+const dialogRef = ref<HTMLElement | null>(null);
+const trapActive = computed(() => props.visible && props.item !== null);
+useFocusTrap(dialogRef, trapActive);
+
 function handleKeydown(event: KeyboardEvent): void {
+  event.stopPropagation();
   if (event.key === "Escape") {
     emit("close");
   }
@@ -92,10 +98,15 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       >
         <div
+          ref="dialogRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-media-replace-title"
           class="tpl:max-h-[90%] tpl:w-full tpl:max-w-sm tpl:overflow-y-auto tpl:rounded-lg tpl:p-5 tpl:shadow-xl"
           style="background-color: var(--tpl-bg-elevated)"
         >
           <h3
+            id="tpl-media-replace-title"
             class="tpl:mb-2 tpl:text-sm tpl:font-semibold"
             style="color: var(--tpl-text)"
           >
@@ -116,7 +127,7 @@ function handleKeydown(event: KeyboardEvent): void {
           <p
             v-if="hasUsage"
             class="tpl:mb-3 tpl:text-xs"
-            style="color: var(--tpl-warning)"
+            style="color: var(--tpl-text-muted)"
           >
             {{
               t.mediaLibrary.replaceWarningUsageNote.replace(
@@ -185,13 +196,10 @@ function handleKeydown(event: KeyboardEvent): void {
               {{ t.mediaLibrary.cancel }}
             </button>
             <button
-              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-white tpl:transition-all tpl:duration-150 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+              class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
               style="
-                background: linear-gradient(
-                  135deg,
-                  var(--tpl-primary),
-                  var(--tpl-primary-hover)
-                );
+                background-color: var(--tpl-primary);
+                color: var(--tpl-on-primary);
               "
               :disabled="!selectedFile || isReplacing"
               @click="handleReplace"

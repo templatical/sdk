@@ -30,7 +30,7 @@ const progressColor = computed(() => {
     return "var(--tpl-danger)";
   }
   if (percentage.value >= 75) {
-    return "var(--tpl-warning, #f59e0b)";
+    return "var(--tpl-warning)";
   }
   return "var(--tpl-primary)";
 });

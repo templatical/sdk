@@ -5,39 +5,39 @@
  * Contains only essential styles that cannot be inlined with Tailwind.
  */
 
-@import url('https://fonts.bunny.net/css?family=geist:400,500,600');
-@import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
+@import url("https://fonts.bunny.net/css?family=geist:400,500,600");
+@import "tailwindcss/theme.css" layer(theme) theme(inline) prefix(tpl);
 /* Preflight deliberately omitted — SDK must not reset consumer styles */
 /* Utilities are intentionally NOT in a @layer so they won't be overridden
    by unlayered consumer CSS resets (e.g. * { margin: 0 }). */
-@import 'tailwindcss/utilities.css' prefix(tpl);
+@import "tailwindcss/utilities.css" prefix(tpl);
 
 @layer theme, base, components;
 
 @theme inline {
-    --font-sans:
-        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-sans:
+    "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-    /* Base-size rebase (issue #209) — anchor Tailwind's length scales to
+  /* Base-size rebase (issue #209) — anchor Tailwind's length scales to
      * `--tpl-base-size` (a fixed px on `.tpl`, below) instead of `rem`, so the
      * standalone media library is immune to the host page's `html { font-size }`.
      * `rem` always resolves against the document root, even inside a shadow
      * root. The `var(--tpl-base-size)` reference survives `theme(inline)` and
      * resolves on `.tpl`. Consumers scale via `--tpl-user-base-size`. Only the
      * scale steps the package uses are overridden. */
-    --spacing: calc(var(--tpl-base-size) / 4);
+  --spacing: calc(var(--tpl-base-size) / 4);
 
-    --text-xs: calc(0.75 * var(--tpl-base-size));
-    --text-sm: calc(0.875 * var(--tpl-base-size));
+  --text-xs: calc(0.75 * var(--tpl-base-size));
+  --text-sm: calc(0.875 * var(--tpl-base-size));
 
-    --radius: calc(0.25 * var(--tpl-base-size));
-    --radius-sm: calc(0.25 * var(--tpl-base-size));
-    --radius-md: calc(0.375 * var(--tpl-base-size));
-    --radius-lg: calc(0.5 * var(--tpl-base-size));
+  --radius: calc(0.25 * var(--tpl-base-size));
+  --radius-sm: calc(0.25 * var(--tpl-base-size));
+  --radius-md: calc(0.375 * var(--tpl-base-size));
+  --radius-lg: calc(0.5 * var(--tpl-base-size));
 
-    --container-sm: calc(24 * var(--tpl-base-size));
-    --container-2xl: calc(42 * var(--tpl-base-size));
+  --container-sm: calc(24 * var(--tpl-base-size));
+  --container-2xl: calc(42 * var(--tpl-base-size));
 }
 
 /* Source paths for Tailwind scanning */
@@ -46,103 +46,164 @@
 
 /* SDK CSS Variables - Default theme, can be overridden via inline styles */
 .tpl {
-    /* Base sizing unit (issue #209). A fixed px so the media library is
+  /* Base sizing unit (issue #209). A fixed px so the media library is
      * independent of the host's `html { font-size }`; defined on `.tpl` so it
      * resolves inside the shadow root. Consumers set `--tpl-user-base-size` to
      * scale the whole UI. The Tailwind length scale derives from this via the
      * `@theme inline` overrides above. */
-    --tpl-base-size: var(--tpl-user-base-size, 16px);
+  --tpl-base-size: var(--tpl-user-base-size, 16px);
 
-    /* Warm palette */
-    --tpl-bg: oklch(99.5% 0.002 60);
-    --tpl-bg-elevated: oklch(98% 0.004 60);
-    --tpl-bg-hover: oklch(96% 0.006 60);
-    --tpl-bg-active: oklch(93.5% 0.008 60);
-    --tpl-border: oklch(92% 0.006 60);
-    --tpl-border-light: oklch(86% 0.01 60);
-    --tpl-text: oklch(18% 0.01 60);
-    --tpl-text-muted: oklch(50% 0.015 60);
-    --tpl-text-dim: oklch(68% 0.012 60);
-    --tpl-primary: oklch(70% 0.16 55);
-    --tpl-primary-hover: oklch(63% 0.17 55);
-    --tpl-primary-light: oklch(95% 0.04 55);
-    --tpl-secondary: oklch(60% 0.118 184.71);
-    --tpl-secondary-hover: oklch(53.2% 0.105 186.39);
-    --tpl-secondary-light: oklch(93.8% 0.03 186.82);
-    --tpl-success: oklch(62.8% 0.194 155.1);
-    --tpl-success-light: oklch(93.6% 0.043 163.51);
-    --tpl-warning: oklch(76.9% 0.168 70.08);
-    --tpl-warning-light: oklch(95% 0.038 73.59);
-    --tpl-danger: oklch(63.7% 0.237 25.33);
-    --tpl-danger-light: oklch(93.6% 0.032 17.72);
+  /* Warm palette — `--tpl-user-*` first, same contract as the editor. */
+  --tpl-bg: var(--tpl-user-bg, oklch(99.5% 0.002 60));
+  --tpl-bg-elevated: var(--tpl-user-bg-elevated, oklch(98% 0.004 60));
+  --tpl-bg-hover: var(--tpl-user-bg-hover, oklch(96% 0.006 60));
+  --tpl-bg-active: var(--tpl-user-bg-active, oklch(93.5% 0.008 60));
+  --tpl-border: var(--tpl-user-border, oklch(92% 0.006 60));
+  --tpl-border-light: var(--tpl-user-border-light, oklch(86% 0.01 60));
+  --tpl-text: var(--tpl-user-text, oklch(18% 0.01 60));
+  --tpl-text-muted: var(--tpl-user-text-muted, oklch(50% 0.015 60));
+  --tpl-text-dim: var(--tpl-user-text-dim, oklch(68% 0.012 60));
+  --tpl-primary: var(--tpl-user-primary, oklch(70% 0.16 55));
+  --tpl-primary-hover: var(--tpl-user-primary-hover, oklch(63% 0.17 55));
+  --tpl-primary-light: var(--tpl-user-primary-light, oklch(95% 0.04 55));
+  /* Label on Signal Amber. Alias of paper so light is near-white and dark is
+     near-black. Light mode is 2.80:1 — the Amber Contrast Exception. */
+  --tpl-on-primary: var(--tpl-user-on-primary, var(--tpl-bg));
+  --tpl-secondary: var(--tpl-user-secondary, oklch(60% 0.118 184.71));
+  --tpl-secondary-hover: var(
+    --tpl-user-secondary-hover,
+    oklch(53.2% 0.105 186.39)
+  );
+  --tpl-secondary-light: var(
+    --tpl-user-secondary-light,
+    oklch(93.8% 0.03 186.82)
+  );
+  --tpl-success: var(--tpl-user-success, oklch(62.8% 0.194 155.1));
+  --tpl-success-light: var(--tpl-user-success-light, oklch(93.6% 0.043 163.51));
+  --tpl-warning: var(--tpl-user-warning, oklch(76.9% 0.168 70.08));
+  --tpl-warning-light: var(--tpl-user-warning-light, oklch(95% 0.038 73.59));
+  --tpl-danger: var(--tpl-user-danger, oklch(63.7% 0.237 25.33));
+  --tpl-danger-light: var(--tpl-user-danger-light, oklch(93.6% 0.032 17.72));
 
-    /* 3-level radius */
-    --tpl-radius: 10px;
-    --tpl-radius-sm: 7px;
-    --tpl-radius-lg: 14px;
+  /* 3-level radius */
+  --tpl-radius: var(--tpl-user-radius, 10px);
+  --tpl-radius-sm: var(--tpl-user-radius-sm, 7px);
+  --tpl-radius-lg: var(--tpl-user-radius-lg, 14px);
 
-    /* Font — Geist */
-    --tpl-font-family:
-        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  /* Font — Geist */
+  --tpl-font-family: var(
+    --tpl-user-font-family,
+    "Geist",
+    ui-sans-serif,
+    system-ui,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji"
+  );
 
-    /* 4-level shadow system */
-    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
-    --tpl-shadow-md:
-        0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-    --tpl-shadow-lg:
-        0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-    --tpl-shadow-xl:
-        0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+  /* 4-level shadow system */
+  --tpl-shadow: var(
+    --tpl-user-shadow,
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.03)
+  );
+  --tpl-shadow-md: var(
+    --tpl-user-shadow-md,
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04)
+  );
+  --tpl-shadow-lg: var(
+    --tpl-user-shadow-lg,
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.04)
+  );
+  --tpl-shadow-xl: var(
+    --tpl-user-shadow-xl,
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.06)
+  );
 
-    /* Focus ring with amber accent */
-    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+  --tpl-overlay: var(--tpl-user-overlay, rgba(0, 0, 0, 0.5));
 
-    /* Spring easing transition */
-    --tpl-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Focus ring with amber accent */
+  --tpl-ring: var(--tpl-user-ring, 0 0 0 3px var(--tpl-primary-light));
+
+  /* Spring easing transition */
+  --tpl-transition: var(
+    --tpl-user-transition,
+    120ms cubic-bezier(0.16, 1, 0.3, 1)
+  );
 }
 
 /* Dark theme defaults — activated by data attribute, overridden by inline styles */
 .tpl[data-tpl-theme="dark"] {
-    --tpl-bg: oklch(16% 0.005 60);
-    --tpl-bg-elevated: oklch(21% 0.006 60);
-    --tpl-bg-hover: oklch(26% 0.007 60);
-    --tpl-bg-active: oklch(30% 0.008 60);
-    --tpl-border: oklch(30% 0.006 60);
-    --tpl-border-light: oklch(38% 0.008 60);
-    --tpl-text: oklch(93% 0.005 60);
-    --tpl-text-muted: oklch(65% 0.01 60);
-    --tpl-text-dim: oklch(50% 0.008 60);
-    --tpl-primary: oklch(73% 0.15 55);
-    --tpl-primary-hover: oklch(78% 0.14 55);
-    --tpl-primary-light: oklch(28% 0.05 55);
-    --tpl-secondary: oklch(63% 0.11 184.71);
-    --tpl-secondary-hover: oklch(68% 0.1 186.39);
-    --tpl-secondary-light: oklch(25% 0.03 186.82);
-    --tpl-success: oklch(65% 0.18 155.1);
-    --tpl-success-light: oklch(25% 0.04 163.51);
-    --tpl-warning: oklch(78% 0.16 70.08);
-    --tpl-warning-light: oklch(28% 0.04 73.59);
-    --tpl-danger: oklch(65% 0.22 25.33);
-    --tpl-danger-light: oklch(25% 0.04 17.72);
+  --tpl-bg: var(--tpl-user-dark-bg, oklch(16% 0.005 60));
+  --tpl-bg-elevated: var(--tpl-user-dark-bg-elevated, oklch(21% 0.006 60));
+  --tpl-bg-hover: var(--tpl-user-dark-bg-hover, oklch(26% 0.007 60));
+  --tpl-bg-active: var(--tpl-user-dark-bg-active, oklch(30% 0.008 60));
+  --tpl-border: var(--tpl-user-dark-border, oklch(30% 0.006 60));
+  --tpl-border-light: var(--tpl-user-dark-border-light, oklch(38% 0.008 60));
+  --tpl-text: var(--tpl-user-dark-text, oklch(93% 0.005 60));
+  --tpl-text-muted: var(--tpl-user-dark-text-muted, oklch(65% 0.01 60));
+  --tpl-text-dim: var(--tpl-user-dark-text-dim, oklch(50% 0.008 60));
+  --tpl-primary: var(--tpl-user-dark-primary, oklch(73% 0.15 55));
+  --tpl-primary-hover: var(--tpl-user-dark-primary-hover, oklch(78% 0.14 55));
+  --tpl-primary-light: var(--tpl-user-dark-primary-light, oklch(28% 0.05 55));
+  --tpl-secondary: var(--tpl-user-dark-secondary, oklch(63% 0.11 184.71));
+  --tpl-secondary-hover: var(
+    --tpl-user-dark-secondary-hover,
+    oklch(68% 0.1 186.39)
+  );
+  --tpl-secondary-light: var(
+    --tpl-user-dark-secondary-light,
+    oklch(25% 0.03 186.82)
+  );
+  --tpl-success: var(--tpl-user-dark-success, oklch(65% 0.18 155.1));
+  --tpl-success-light: var(
+    --tpl-user-dark-success-light,
+    oklch(25% 0.04 163.51)
+  );
+  --tpl-warning: var(--tpl-user-dark-warning, oklch(78% 0.16 70.08));
+  --tpl-warning-light: var(
+    --tpl-user-dark-warning-light,
+    oklch(28% 0.04 73.59)
+  );
+  --tpl-danger: var(--tpl-user-dark-danger, oklch(65% 0.22 25.33));
+  --tpl-danger-light: var(--tpl-user-dark-danger-light, oklch(25% 0.04 17.72));
 
-    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-    --tpl-shadow-md:
-        0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
-    --tpl-shadow-lg:
-        0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
-    --tpl-shadow-xl:
-        0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --tpl-shadow: var(
+    --tpl-user-dark-shadow,
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2)
+  );
+  --tpl-shadow-md: var(
+    --tpl-user-dark-shadow-md,
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.25)
+  );
+  --tpl-shadow-lg: var(
+    --tpl-user-dark-shadow-lg,
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.3)
+  );
+  --tpl-shadow-xl: var(
+    --tpl-user-dark-shadow-xl,
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.35)
+  );
 
-    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+  --tpl-overlay: var(--tpl-user-dark-overlay, rgba(0, 0, 0, 0.7));
+  --tpl-ring: var(--tpl-user-dark-ring, 0 0 0 3px var(--tpl-primary-light));
 }
 
 /* SDK Base Styles */
 .tpl {
-    @apply tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;
-    background-color: var(--tpl-bg);
-    color: var(--tpl-text);
-    font-family: var(--tpl-font-family);
+  @apply tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;
+  background-color: var(--tpl-bg);
+  color: var(--tpl-text);
+  font-family: var(--tpl-font-family);
 }
 
 /* Form element reset — Preflight is omitted so form controls use browser
@@ -162,14 +223,14 @@
 :where(.tpl) input,
 :where(.tpl) select,
 :where(.tpl) textarea {
-    font-family: inherit;
-    box-sizing: border-box;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 :where(.tpl) button {
-    border: none;
-    background: none;
-    cursor: pointer;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 /* Focus ring — visible only for keyboard navigation */
@@ -177,72 +238,103 @@
 :where(.tpl) input:focus-visible,
 :where(.tpl) select:focus-visible,
 :where(.tpl) textarea:focus-visible {
-    outline: none;
-    box-shadow: var(--tpl-ring);
+  outline: none;
+  box-shadow: var(--tpl-ring);
 }
 
 /* Scrollbar Styles */
 .tpl ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  width: 6px;
+  height: 6px;
 }
 
 .tpl ::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 .tpl ::-webkit-scrollbar-thumb {
-    background-color: color-mix(
-        in srgb,
-        var(--tpl-border-light) 60%,
-        transparent
-    );
-    @apply tpl:rounded;
+  background-color: color-mix(
+    in srgb,
+    var(--tpl-border-light) 60%,
+    transparent
+  );
+  @apply tpl:rounded;
 }
 
 .tpl ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--tpl-border-light);
+  background-color: var(--tpl-border-light);
 }
 
 /* Animations */
 @keyframes tpl-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes tpl-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes tpl-scale-in {
-    from {
-        opacity: 0;
-        transform: scale(0.97);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .tpl-pulse {
-    animation: tpl-pulse 2s infinite;
+  animation: tpl-pulse 2s infinite;
 }
 
 .tpl-spinner {
-    animation: tpl-spin 1s linear infinite;
+  animation: tpl-spin 1s linear infinite;
 }
 
 .tpl-scale-in {
-    animation: tpl-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: tpl-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Standalone and any host that loads this stylesheet rather than the editor's.
+   Hosted Browse also gets these from editor CSS; a second copy here is the
+   same values, so they cannot disagree. */
+.tpl.tpl-media-overlay {
+  background-color: var(--tpl-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tpl-upload-zone-active {
+  border-color: var(--tpl-primary) !important;
+  background-color: var(--tpl-primary-light) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpl-pulse,
+  .tpl-scale-in {
+    animation: none;
+  }
+
+  .tpl *,
+  .tpl *::before,
+  .tpl *::after {
+    transition-duration: 0.01ms !important;
+  }
+
+  .tpl-spinner {
+    animation: tpl-spin 1s linear infinite;
+  }
 }

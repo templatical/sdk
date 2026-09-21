@@ -89,10 +89,9 @@ describe("cross-package injection audit", () => {
     expect(filesMatching(stringInject)).toEqual([]);
   });
 
-  it("only the two host components provide MEDIA_LIMITS_KEY", () => {
+  it("only the chrome host provides MEDIA_LIMITS_KEY", () => {
     expect(filesMatching(/provide\(\s*MEDIA_LIMITS_KEY/)).toEqual([
-      "components/MediaLibraryModal.vue",
-      "standalone/MediaLibrary.vue",
+      "components/MediaLibraryChrome.vue",
     ]);
   });
 
@@ -119,14 +118,13 @@ describe("cross-package injection audit", () => {
 
   /**
    * A component never sees its own `provide` — Vue resolves `inject` against the
-   * *parent* chain. Both hosts provide `MEDIA_LIMITS_KEY` and then call
+   * *parent* chain. Chrome provides `MEDIA_LIMITS_KEY` and then calls
    * `useMediaCategories` with that same object, because injecting it from the
    * host itself would throw. The composables that a host both provides for and
    * consumes therefore take an explicit argument at the host call site.
    */
   it.each([
-    ["components/MediaLibraryModal.vue", /useMediaCategories\(\s*mediaLimits/],
-    ["standalone/MediaLibrary.vue", /useMediaCategories\(\s*mediaLimits/],
+    ["components/MediaLibraryChrome.vue", /useMediaCategories\(\s*mediaLimits/],
   ])(
     "%s passes its media limits to useMediaCategories rather than injecting it",
     (file, pattern) => {

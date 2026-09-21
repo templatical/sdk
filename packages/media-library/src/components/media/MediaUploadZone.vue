@@ -18,7 +18,7 @@ const { t, format } = useI18n();
 
 const { allAcceptedInputString, isAcceptedFile } = useMediaCategories();
 
-const dropZoneRef = ref<HTMLDivElement>();
+const dropZoneRef = ref<HTMLElement>();
 
 function validateFiles(fileList: File[] | FileList): File[] {
   const valid: File[] = [];
@@ -58,11 +58,14 @@ onChange((fileList) => {
 </script>
 
 <template>
-  <div
+  <button
     ref="dropZoneRef"
+    type="button"
     data-testid="media-upload-zone"
-    class="tpl-upload-zone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-lg tpl:border-2 tpl:border-dashed tpl:p-5 tpl:text-center tpl:transition-all tpl:duration-150"
+    class="tpl-upload-zone tpl:flex tpl:w-full tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-lg tpl:border-2 tpl:border-dashed tpl:p-5 tpl:text-center tpl:transition-all tpl:duration-150"
     :class="isOverDropZone ? 'tpl-upload-zone-active' : ''"
+    :aria-label="t.mediaLibrary.dropOrClick"
+    :aria-busy="isUploading"
     style="
       border-color: var(--tpl-border-light);
       background-color: var(--tpl-bg);
@@ -99,5 +102,5 @@ onChange((fileList) => {
         {{ t.mediaLibrary.acceptedFormats }}
       </p>
     </template>
-  </div>
+  </button>
 </template>
