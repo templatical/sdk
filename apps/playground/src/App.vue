@@ -2686,107 +2686,107 @@ onUnmounted(() => {
         </div>
       </Transition>
     </Teleport>
+  </div>
 
-    <!-- Data Source Picker Modal -->
-    <Teleport to="body">
-      <Transition name="pg-modal">
+  <!-- Data Source Picker Modal — also used by example scene routes -->
+  <Teleport to="body">
+    <Transition name="pg-modal">
+      <div
+        v-if="dataSourcePickerOpen && dataSourcePickerRequest"
+        class="pg-modal-backdrop"
+        @click.self="cancelDataSourcePicker"
+        @keydown.escape="cancelDataSourcePicker"
+      >
         <div
-          v-if="dataSourcePickerOpen && dataSourcePickerRequest"
-          class="pg-modal-backdrop"
-          @click.self="cancelDataSourcePicker"
-          @keydown.escape="cancelDataSourcePicker"
+          ref="dataSourceModalRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="datasource-modal-title"
+          class="pg-modal-dialog w-[500px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
         >
           <div
-            ref="dataSourceModalRef"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="datasource-modal-title"
-            class="pg-modal-dialog w-[500px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
+            class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
           >
-            <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
+            <span
+              id="datasource-modal-title"
+              class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+              >{{ dataSourcePickerRequest.title }}</span
             >
-              <span
-                id="datasource-modal-title"
-                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ dataSourcePickerRequest.title }}</span
-              >
-              <button
-                :aria-label="t.common.close"
-                class="pg-modal-close"
-                @click="cancelDataSourcePicker"
-              >
-                &times;
-              </button>
-            </div>
-            <!-- Loading state: simulated API request -->
-            <div
-              v-if="dataSourcePickerFetching"
-              role="status"
-              class="flex flex-col items-center justify-center gap-4 py-12 px-5"
+            <button
+              :aria-label="t.common.close"
+              class="pg-modal-close"
+              @click="cancelDataSourcePicker"
             >
-              <LoaderCircle
-                class="h-6 w-6 animate-spin text-primary"
-                aria-hidden="true"
-              />
-              <div class="text-center space-y-2">
-                <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t.dataSourceModal.fetching }}
-                </p>
-                <code
-                  class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                  >{{ dataSourcePickerRequest.endpoint }}</code
-                >
-                <p
-                  class="m-0 text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed max-w-xs mx-auto"
-                >
-                  {{ t.dataSourceModal.fetchDescription }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Items revealed after loading -->
-            <div v-else class="flex-1 overflow-auto p-3 space-y-2">
-              <p
-                class="m-0 px-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.5px] font-medium"
-              >
-                {{ t.dataSourceModal.responseReceived }}
+              &times;
+            </button>
+          </div>
+          <!-- Loading state: simulated API request -->
+          <div
+            v-if="dataSourcePickerFetching"
+            role="status"
+            class="flex flex-col items-center justify-center gap-4 py-12 px-5"
+          >
+            <LoaderCircle
+              class="h-6 w-6 animate-spin text-primary"
+              aria-hidden="true"
+            />
+            <div class="text-center space-y-2">
+              <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
+                {{ t.dataSourceModal.fetching }}
               </p>
-              <button
-                v-for="item in dataSourcePickerRequest.items"
-                :key="item.id"
-                class="group flex w-full items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-150 text-left font-sans hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
-                @click="selectDataSourceItem(item)"
+              <code
+                class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                >{{ dataSourcePickerRequest.endpoint }}</code
               >
-                <img
-                  v-if="item.thumbnail"
-                  :src="item.thumbnail"
-                  :alt="item.label"
-                  class="shrink-0 size-12 rounded-md object-cover border border-gray-100 dark:border-gray-600"
-                />
-                <div class="min-w-0 flex-1">
-                  <div
-                    class="text-[13px] font-semibold text-gray-900 group-hover:text-primary transition-colors duration-150 dark:text-gray-100"
-                  >
-                    {{ item.label }}
-                  </div>
-                  <p
-                    class="m-0 mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate"
-                  >
-                    {{ item.description }}
-                  </p>
-                </div>
-                <ChevronRight
-                  class="shrink-0 text-gray-300 group-hover:text-primary transition-colors duration-150"
-                  :size="16"
-                  :stroke-width="1.5"
-                  aria-hidden="true"
-                />
-              </button>
+              <p
+                class="m-0 text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed max-w-xs mx-auto"
+              >
+                {{ t.dataSourceModal.fetchDescription }}
+              </p>
             </div>
           </div>
+
+          <!-- Items revealed after loading -->
+          <div v-else class="flex-1 overflow-auto p-3 space-y-2">
+            <p
+              class="m-0 px-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.5px] font-medium"
+            >
+              {{ t.dataSourceModal.responseReceived }}
+            </p>
+            <button
+              v-for="item in dataSourcePickerRequest.items"
+              :key="item.id"
+              class="group flex w-full items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-150 text-left font-sans hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
+              @click="selectDataSourceItem(item)"
+            >
+              <img
+                v-if="item.thumbnail"
+                :src="item.thumbnail"
+                :alt="item.label"
+                class="shrink-0 size-12 rounded-md object-cover border border-gray-100 dark:border-gray-600"
+              />
+              <div class="min-w-0 flex-1">
+                <div
+                  class="text-[13px] font-semibold text-gray-900 group-hover:text-primary transition-colors duration-150 dark:text-gray-100"
+                >
+                  {{ item.label }}
+                </div>
+                <p
+                  class="m-0 mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate"
+                >
+                  {{ item.description }}
+                </p>
+              </div>
+              <ChevronRight
+                class="shrink-0 text-gray-300 group-hover:text-primary transition-colors duration-150"
+                :size="16"
+                :stroke-width="1.5"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
         </div>
-      </Transition>
-    </Teleport>
-  </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>

@@ -1286,7 +1286,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "Wireless Headphones" },
+              { id: generateId(), content: "Wireless Pro Max" },
               { id: generateId(), content: "1" },
               { id: generateId(), content: "$89.00" },
             ],
@@ -1294,7 +1294,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "USB-C Cable (2m)" },
+              { id: generateId(), content: "Ceramic Buds" },
               { id: generateId(), content: "2" },
               { id: generateId(), content: "$24.00" },
             ],
@@ -1302,7 +1302,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "Phone Case" },
+              { id: generateId(), content: "Travel Case" },
               { id: generateId(), content: "1" },
               { id: generateId(), content: "$19.00" },
             ],
@@ -1325,7 +1325,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<p><span style="font-size: 13px; color: #4b5563"><strong>Shipping Address</strong></span></p><p><span style="font-size: 13px; color: #4b5563"><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>123 Main St, Apt 4B<br/>San Francisco, CA 94105</span></p>',
+                '<p><span style="font-size: 13px; color: #4b5563"><strong>Shipping Address</strong></span></p><p><span style="font-size: 13px; color: #4b5563"><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>210 Stone Row, Apt 4B<br/>Portland, OR 97209</span></p>',
               styles: pad(16, 8, 16, 0),
             }),
           ],
@@ -1403,8 +1403,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Display Condition: VIP loyalty offer ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #7c3aed">\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f5f3ff" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9a3412">\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
         displayCondition: {
           label: "VIP Partners",
           before: "{% if vip_partner %}",
