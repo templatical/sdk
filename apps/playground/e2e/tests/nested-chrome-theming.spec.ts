@@ -43,12 +43,11 @@ async function readActionBar(
 test.describe("nested block chrome theming (dark UI)", () => {
   test("a section child's action bar matches a top-level block's", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootDarkEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -88,12 +87,11 @@ test.describe("nested block chrome theming (dark UI)", () => {
 
   test("nested chrome does not inherit the email content's light background", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootDarkEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 

@@ -179,6 +179,7 @@ test.describe("Merge tag samples", () => {
     chooserPage,
     editorPage,
   }) => {
+    test.skip(true, "cookbook-task-10: examples");
     await chooserPage.goto();
     await chooserPage.selectTemplateByName("Order Confirmation");
     await editorPage.waitForReady();

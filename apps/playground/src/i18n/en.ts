@@ -48,6 +48,22 @@ export default {
     docs: "Docs",
     notFound: "Scene not found",
     catalog: "Catalog",
+    catalogTitle: "Setup catalog",
+    catalogSubtitle:
+      "Each scene is one pasteable init() shape with a live editor. Open Minimum for the empty mount, a setup row for a single provider, or an Example for a finished email.",
+    catalogFooter: "Playground links",
+    openScene: "Open scene",
+    switchScene: "Switch scene",
+    sceneList: "Scenes",
+    snippet: "init() snippet",
+    groups: {
+      minimum: "Minimum",
+      storage: "Storage",
+      author: "Author",
+      render: "Render",
+      import: "Import",
+      examples: "Examples",
+    },
   },
   configModal: {
     tabs: {
@@ -324,6 +340,8 @@ export default {
   },
   a11y: {
     backToTemplates: "Back to templates",
+    backToCatalog: "Back to catalog",
+    openScene: "Open {name} scene",
     startFromScratch: "Start from scratch with empty canvas",
     chooseTemplate: "Choose {name} template",
     githubRepo: "GitHub repository",

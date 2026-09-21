@@ -19,5 +19,4 @@ const editor = await init({
   container: document.getElementById("editor"),
   locale: "de",
 });`,
-  variants: [{ name: "English", query: { locale: "en" } }],
 };

@@ -2,7 +2,13 @@ import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "../helpers/selectors";
 
 type ImportSource =
-  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "chamaileon" | "easyEmailPro";
+  | "beefree"
+  | "unlayer"
+  | "html"
+  | "mjml"
+  | "topol"
+  | "chamaileon"
+  | "easyEmailPro";
 
 const TRIGGER_BY_SOURCE: Record<ImportSource, string> = {
   beefree: SELECTORS.chooserImportBeefree,
@@ -50,7 +56,7 @@ export class ChooserPage {
   async goto() {
     const url = this.options.shadowDom ? "/?shadowDom=1" : "/?shadowDom=0";
     await this.page.goto(url);
-    await this.page.waitForSelector(SELECTORS.chooserScreen);
+    await this.page.waitForSelector(SELECTORS.catalogScreen);
   }
 
   async selectFirstTemplate() {

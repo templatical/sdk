@@ -55,6 +55,15 @@ export const SCENES: readonly Scene[] = [
   exampleLaunchpadLaunch,
 ];
 
+export const SCENE_GROUP_ORDER: readonly SceneGroup[] = [
+  "minimum",
+  "storage",
+  "author",
+  "render",
+  "import",
+  "examples",
+];
+
 export function getScene(id: string): Scene | undefined {
   return SCENES.find((scene) => scene.id === id);
 }

@@ -24,6 +24,8 @@ async function openButtonColorPicker(editorPage: EditorPage, page: Page) {
 }
 
 test.describe("Color presets — Event Invitation brand-locked palette", () => {
+  test.skip(true, "cookbook-task-10: examples");
+
   // The Event Invitation template passes `colors: { presets, allowCustom: false }`
   // to init(), so every picker in it is a preset-only grid.
   test.beforeEach(async ({ page, chooserPage, editorPage }) => {

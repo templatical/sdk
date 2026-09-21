@@ -1,104 +1,45 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
-test.describe("Template chooser", () => {
-  test("shows 7 template cards plus blank", async ({
+test.describe("Setup catalog", () => {
+  test("shows the catalog with Minimum first", async ({
     chooserPage,
     page,
   }) => {
     await chooserPage.goto();
-    const templateCards = page.locator(SELECTORS.templateCard);
-    expect(await templateCards.count()).toBe(8);
-
-    const blankCard = page.locator(SELECTORS.blankTemplateCard);
-    await expect(blankCard).toBeVisible();
+    await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
+    const hero = page.locator('[data-testid="scene-link-minimum"]');
+    await expect(hero).toBeVisible();
+    const firstLink = page.locator("[data-testid^='scene-link-']").first();
+    await expect(firstLink).toHaveAttribute(
+      "data-testid",
+      "scene-link-minimum",
+    );
   });
 
-  test("each template card shows name and description", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    const cards = page.locator(SELECTORS.templateCard);
-    const count = await cards.count();
-
-    for (let i = 0; i < count; i++) {
-      const card = cards.nth(i);
-      // Each card should have at least two spans (name + description)
-      const spans = card.locator("span");
-      expect(await spans.count()).toBeGreaterThanOrEqual(2);
-
-      // Name should be non-empty
-      const name = await spans.first().textContent();
-      expect(name!.trim().length).toBeGreaterThan(0);
-
-      // Description should be non-empty
-      const desc = await spans.nth(1).textContent();
-      expect(desc!.trim().length).toBeGreaterThan(0);
-    }
-  });
-
-  test("each template card has accessible label", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    const cards = page.locator(SELECTORS.templateCard);
-    const count = await cards.count();
-
-    for (let i = 0; i < count; i++) {
-      const label = (await cards.nth(i).getAttribute("aria-label")) ?? "";
-      expect(label.length).toBeGreaterThan(5);
-    }
-  });
-
-  test("blank template card has accessible label", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    const blank = page.locator(SELECTORS.blankTemplateCard);
-    const label = (await blank.getAttribute("aria-label")) ?? "";
-    expect(label.length).toBeGreaterThan(0);
-  });
-
-  test("selecting a template opens editor with blocks", async ({
+  test("Minimum hero opens the minimum scene host", async ({
     chooserPage,
     editorPage,
     page,
   }) => {
     await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await page.locator('[data-testid="scene-link-minimum"]').click();
+    await expect(page.locator(SELECTORS.sceneHost)).toBeVisible();
+    await expect(page).toHaveURL(/\/scenes\/minimum/);
     await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
-    const count = await editorPage.getBlockCount();
-    expect(count).toBeGreaterThan(0);
   });
 
-  test("selecting blank template opens editor with empty canvas", async ({
+  test("example card opens Launchpad launch", async ({
     chooserPage,
     editorPage,
     page,
   }) => {
     await chooserPage.goto();
-    await chooserPage.selectBlankTemplate();
+    await page
+      .locator('[data-testid="scene-link-example-launchpad-launch"]')
+      .click();
+    await expect(page.locator(SELECTORS.sceneHost)).toBeVisible();
+    await expect(page).toHaveURL(/\/scenes\/example-launchpad-launch/);
     await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
-    await expect(page.locator(SELECTORS.canvasEmpty)).toBeVisible();
-  });
-
-  test("template cards have visual previews", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    const cards = page.locator(SELECTORS.templateCard);
-    const count = await cards.count();
-
-    for (let i = 0; i < count; i++) {
-      const previewArea = cards.nth(i).locator("div").first();
-      const box = await previewArea.boundingBox();
-      expect(box?.height ?? 0).toBeGreaterThan(50);
-    }
   });
 });

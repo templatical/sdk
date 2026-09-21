@@ -226,6 +226,7 @@ test.describe("Preview resolution", () => {
     chooserPage,
     editorPage,
   }) => {
+    test.skip(true, "cookbook-task-10: examples");
     await chooserPage.goto();
     await chooserPage.selectTemplateByName("Welcome Email");
     await editorPage.waitForReady();

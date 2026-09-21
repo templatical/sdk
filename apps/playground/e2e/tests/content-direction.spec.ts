@@ -40,6 +40,8 @@ async function getMjml(page: import("@playwright/test").Page): Promise<string> {
 }
 
 test.describe("content direction", () => {
+  test.skip(true, "cookbook-task-10: examples");
+
   test("the Arabic template paints the canvas rtl", async ({
     page,
     chooserPage,

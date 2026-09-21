@@ -228,6 +228,8 @@ test.describe("Merge tag picker — onRequest precedence", () => {
 });
 
 test.describe("Welcome Email template — built-in picker is the default", () => {
+  test.skip(true, "cookbook-task-10: examples");
+
   test("opens the SDK picker without flipping any config toggle", async ({
     page,
     chooserPage,

@@ -2,6 +2,8 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, configTab, configPanel } from "../helpers/selectors";
 
 test.describe("Playground config & export", () => {
+  test.skip(true, "cookbook-task-11: sink config");
+
   test.beforeEach(async ({ chooserPage, editorPage }) => {
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();

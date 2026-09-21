@@ -3,7 +3,6 @@ import {
   ref,
   computed,
   watch,
-  inject,
   provide,
   onMounted,
   onUnmounted,
@@ -39,7 +38,7 @@ import type {
 } from "@templatical/types";
 import { createDefaultTemplateContent } from "@templatical/types";
 import {
-  templates,
+  templates as _templates,
   customBlockDefinitions,
   registerDataSourcePicker,
   resolveDataSourcePicker,
@@ -50,7 +49,7 @@ import type {
   DataSourcePickerItem,
 } from "@/templates";
 const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
-import LogoIcon from "@/LogoIcon.vue";
+import Catalog from "@/host/Catalog.vue";
 import SceneHost from "@/host/SceneHost.vue";
 import { parsePlaygroundRoute } from "@/scenes";
 import {
@@ -73,10 +72,8 @@ import {
   Sun,
   Moon,
   LoaderCircle,
-  Plus,
   Upload,
   Download,
-  ArrowRight,
   ChevronRight,
   ChevronLeft,
   Zap,
@@ -104,33 +101,30 @@ const { sdkLocale } = useSdkLocale();
  * bypassed — a German editor produced `<mjml lang="en">` over German copy. A
  * consumer that supplies content owns the language it declares.
  */
-function createBlankTemplate() {
+function _createBlankTemplate() {
   return createDefaultTemplateContent(undefined, { locale: sdkLocale.value });
 }
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
 
-const playgroundRoute = parsePlaygroundRoute(
-  window.location.pathname,
-  window.location.search,
+const locPath = ref(window.location.pathname);
+const locSearch = ref(window.location.search);
+
+function syncPlaygroundLocation(): void {
+  locPath.value = window.location.pathname;
+  locSearch.value = window.location.search;
+}
+
+const playgroundRoute = computed(() =>
+  parsePlaygroundRoute(locPath.value, locSearch.value),
 );
-const sceneRoute = playgroundRoute.kind === "scene" ? playgroundRoute : null;
+const sceneRoute = computed(() =>
+  playgroundRoute.value.kind === "scene" ? playgroundRoute.value : null,
+);
 
 function cycleTheme(): void {
   const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
   uiTheme.value = cycle[uiTheme.value];
-}
-
-function tplName(tpl: TemplateOption): string {
-  const entry =
-    t.value.templates[tpl.preview as keyof typeof t.value.templates];
-  return entry?.name ?? tpl.name;
-}
-
-function tplDesc(tpl: TemplateOption): string {
-  const entry =
-    t.value.templates[tpl.preview as keyof typeof t.value.templates];
-  return entry?.description ?? tpl.description;
 }
 
 type Screen = "chooser" | "editor";
@@ -853,7 +847,7 @@ function closeImportModal(): void {
   easyEmailProError.value = "";
 }
 
-function openImportFromSource(source: ImportSource): void {
+function _openImportFromSource(source: ImportSource): void {
   importSource.value = source;
   showImport.value = true;
 }
@@ -1398,13 +1392,10 @@ function applyConfig(): void {
 }
 
 // --- Share ---
-const shareId = inject<string | null>("shareId", null);
 const shareModalOpen = ref(false);
 const shareUrl = ref("");
 const shareLoading = ref(false);
 const shareError = ref("");
-const shareLoadPending = ref(!!shareId);
-const shareLoadError = ref(false);
 
 const {
   copy: copyShareUrl,
@@ -1435,18 +1426,8 @@ async function handleShare(): Promise<void> {
   }
 }
 
-onMounted(async () => {
-  if (!shareId) return;
-  try {
-    const res = await fetch(`/api/shares/${shareId}`);
-    if (!res.ok) throw new Error(res.status === 404 ? "not-found" : "error");
-    const data = await res.json();
-    chooseTemplate(data.content);
-  } catch {
-    shareLoadError.value = true;
-  } finally {
-    shareLoadPending.value = false;
-  }
+onMounted(() => {
+  window.addEventListener("popstate", syncPlaygroundLocation);
 });
 
 // --- Focus traps for modals (useFocusTrap) ---
@@ -1592,6 +1573,7 @@ watch(uiTheme, (theme) => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener("popstate", syncPlaygroundLocation);
   unmount();
 });
 </script>
@@ -1599,6 +1581,7 @@ onUnmounted(() => {
 <template>
   <SceneHost
     v-if="sceneRoute"
+    :key="sceneRoute.id"
     :scene-id="sceneRoute.id"
     :search="sceneRoute.search"
   />
@@ -1607,573 +1590,7 @@ onUnmounted(() => {
     class="box-border flex flex-col min-h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
-      <!-- Template Chooser Screen -->
-      <main
-        v-if="screen === 'chooser'"
-        key="chooser"
-        data-testid="chooser-screen"
-        class="relative flex flex-col items-center justify-center-safe min-h-screen bg-white py-12 dark:bg-gray-900"
-      >
-        <div class="absolute top-4 right-4 flex items-center gap-1.5">
-          <button
-            class="pg-toolbar-btn"
-            :title="t.a11y.toggleShadowDom"
-            :aria-label="t.a11y.toggleShadowDom"
-            data-testid="toolbar-shadow-toggle"
-            @click="cycleShadowDom"
-          >
-            <Layers
-              v-if="shadowDomMode === 'shadow'"
-              :size="14"
-              aria-hidden="true"
-            />
-            <Square v-else :size="14" aria-hidden="true" />
-            <span class="pg-toolbar-label">{{
-              t.shadowMode[shadowDomMode]
-            }}</span>
-          </button>
-          <button
-            class="pg-theme-btn"
-            :title="t.theme[uiTheme]"
-            :aria-label="t.a11y.selectTheme"
-            @click="cycleTheme"
-          >
-            <Monitor v-if="uiTheme === 'auto'" :size="14" aria-hidden="true" />
-            <Sun
-              v-else-if="uiTheme === 'light'"
-              :size="14"
-              aria-hidden="true"
-            />
-            <Moon v-else :size="14" aria-hidden="true" />
-          </button>
-          <select
-            v-model="locale"
-            :aria-label="t.a11y.selectLanguage"
-            class="pg-locale-select"
-          >
-            <option v-for="loc in supportedLocales" :key="loc" :value="loc">
-              {{ loc.toUpperCase() }}
-            </option>
-          </select>
-        </div>
-        <!-- Shared template loading -->
-        <div
-          v-if="shareLoadPending"
-          role="status"
-          class="flex flex-col items-center gap-3 py-20"
-        >
-          <LoaderCircle
-            class="animate-spin h-6 w-6 text-gray-400 dark:text-gray-500"
-            aria-hidden="true"
-          />
-          <span class="text-sm text-gray-500 dark:text-gray-400">{{
-            t.sharedTemplate.loading
-          }}</span>
-        </div>
-
-        <!-- Shared template error -->
-        <div
-          v-else-if="shareLoadError"
-          class="flex flex-col items-center gap-4 py-20"
-        >
-          <LogoIcon class="mb-2" />
-          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">
-            {{ t.sharedTemplate.notFound }}
-          </p>
-          <a
-            href="/"
-            class="h-9 px-5 inline-flex items-center bg-gray-900 text-white text-sm font-medium font-sans rounded-md no-underline transition-colors duration-150 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
-          >
-            {{ t.sharedTemplate.goToPlayground }}
-          </a>
-        </div>
-
-        <div
-          v-else
-          class="flex flex-col items-center max-w-[860px] w-full px-4 sm:px-6"
-        >
-          <LogoIcon class="mb-5" />
-          <h1
-            class="m-0 mb-4 text-[22px] font-semibold text-gray-900 tracking-[-0.02em] dark:text-gray-100"
-          >
-            {{ t.chooser.title }}
-          </h1>
-
-          <div
-            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 mb-5"
-            aria-label="Project facts"
-          >
-            <span
-              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
-            >
-              {{ t.chooser.pills.openSource }}
-            </span>
-            <span
-              aria-hidden="true"
-              class="text-gray-300 text-xs select-none dark:text-gray-600"
-              >·</span
-            >
-            <span
-              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
-            >
-              {{ t.chooser.pills.clientSide }}
-            </span>
-            <span
-              aria-hidden="true"
-              class="text-gray-300 text-xs select-none dark:text-gray-600"
-              >·</span
-            >
-            <span
-              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
-            >
-              {{ t.chooser.pills.noTelemetry }}
-            </span>
-          </div>
-
-          <p
-            class="m-0 mb-9 max-w-[640px] text-center text-[15px] text-gray-500 dark:text-gray-400"
-          >
-            {{ t.chooser.subtitle }}
-          </p>
-
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[14px] w-full"
-          >
-            <button
-              v-for="(tpl, i) in templates"
-              :key="tpl.name"
-              data-testid="template-card"
-              :aria-label="format(t.a11y.chooseTemplate, { name: tpl.name })"
-              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
-              :style="{ animationDelay: `${i * 40}ms` }"
-              @click="chooseTemplate(tpl.create(), tpl)"
-            >
-              <div
-                aria-hidden="true"
-                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 dark:bg-gray-700/50 dark:border-gray-700"
-              >
-                <!-- Product launch wireframe -->
-                <div
-                  v-if="tpl.preview === 'product'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto my-1 h-5 w-[40%] rounded bg-primary/30"
-                  ></div>
-                  <div
-                    class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                </div>
-                <!-- Newsletter wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'newsletter'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[30%] rounded-[3px] bg-gray-200/40 dark:bg-gray-500/30"
-                  ></div>
-                  <div
-                    class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[90%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[80%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                </div>
-                <!-- Welcome wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'welcome'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[60%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div class="flex items-center gap-1.5">
-                    <div
-                      class="size-2.5 shrink-0 rounded-full bg-primary/30"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[70%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <div
-                      class="size-2.5 shrink-0 rounded-full bg-primary/30"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[65%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <div
-                      class="size-2.5 shrink-0 rounded-full bg-primary/30"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[60%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                  </div>
-                </div>
-                <!-- Order confirmation wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'order'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[55%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
-                  ></div>
-                  <div class="flex gap-1">
-                    <div
-                      class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[20%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[25%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                  </div>
-                  <div class="flex gap-1">
-                    <div
-                      class="h-1.5 w-[40%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[20%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[25%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
-                    ></div>
-                  </div>
-                  <div
-                    class="mx-auto my-1 h-5 w-[40%] rounded bg-emerald-600/30"
-                  ></div>
-                </div>
-                <!-- Event invitation wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'event'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[45%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[65%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="my-0.5 h-8 w-full rounded bg-gray-200/40 dark:bg-gray-500/30"
-                  ></div>
-                  <div class="flex justify-center gap-1">
-                    <div
-                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                    <div
-                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                    ></div>
-                  </div>
-                  <div
-                    class="mx-auto my-1 h-5 w-[40%] rounded bg-violet-600/30"
-                  ></div>
-                </div>
-                <!-- Sale wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'sale'"
-                  class="flex flex-col gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-amber-400/60"
-                  ></div>
-                  <div
-                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div class="mt-0.5 flex gap-1">
-                    <div
-                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
-                    ></div>
-                    <div
-                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
-                    ></div>
-                    <div
-                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
-                    ></div>
-                  </div>
-                  <div
-                    class="mx-auto my-1 h-5 w-[40%] rounded bg-amber-400/50"
-                  ></div>
-                </div>
-                <!-- Password reset wireframe -->
-                <div
-                  v-else-if="tpl.preview === 'reset'"
-                  class="flex flex-col items-center gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
-                  ></div>
-                  <div class="my-1.5 h-5 w-[45%] rounded bg-primary/30"></div>
-                  <div
-                    class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"
-                  ></div>
-                </div>
-                <!-- Arabic invitation wireframe (RTL) -->
-                <div
-                  v-else-if="tpl.preview === 'rtl'"
-                  class="flex flex-col items-end gap-1.5 w-[60%]"
-                >
-                  <div
-                    class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div
-                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
-                  ></div>
-                  <div class="my-1 h-5 w-[45%] rounded bg-blue-500/40"></div>
-                  <div class="flex w-full gap-1">
-                    <div
-                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
-                    ></div>
-                    <div
-                      class="h-7 w-[38%] rounded-[3px] bg-gray-200/60 dark:bg-gray-500/40"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <span
-                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ tplName(tpl) }}</span
-              >
-              <span
-                class="block px-[14px] pb-[14px] text-xs text-gray-500 dark:text-gray-400 leading-[1.4]"
-                >{{ tplDesc(tpl) }}</span
-              >
-            </button>
-
-            <button
-              data-testid="blank-template-card"
-              :aria-label="t.a11y.startFromScratch"
-              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
-              :style="{ animationDelay: `${templates.length * 40}ms` }"
-              @click="chooseTemplate(createBlankTemplate())"
-            >
-              <div
-                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"
-              >
-                <Plus :size="32" :stroke-width="1.5" aria-hidden="true" />
-              </div>
-              <span
-                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ t.chooser.startFromScratch }}</span
-              >
-              <span
-                class="block px-[14px] pb-[14px] text-xs text-gray-500 dark:text-gray-400 leading-[1.4]"
-                >{{ t.chooser.emptyCanvas }}</span
-              >
-            </button>
-          </div>
-
-          <section
-            data-testid="chooser-migration-band"
-            class="pg-card-stagger mt-8 w-full flex flex-col gap-4 p-5 sm:p-6 border border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50/40 dark:border-gray-700 dark:from-gray-800/60 dark:to-gray-800/30"
-            :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
-          >
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div
-                class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
-                aria-hidden="true"
-              >
-                <Upload :size="20" :stroke-width="1.75" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <h3
-                  class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >
-                  {{ t.chooser.migration.headline }}
-                </h3>
-                <p
-                  class="mt-1 mb-0 text-xs leading-[1.5] text-gray-500 dark:text-gray-400"
-                >
-                  {{ t.chooser.migration.description }}
-                </p>
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-2 sm:gap-3">
-              <button
-                data-testid="chooser-import-unlayer"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('unlayer')"
-              >
-                {{ t.chooser.migration.importFromUnlayer }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-beefree"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('beefree')"
-              >
-                {{ t.chooser.migration.importFromBeefree }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-stripo"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('stripo')"
-              >
-                {{ t.chooser.migration.importFromStripo }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-topol"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('topol')"
-              >
-                {{ t.chooser.migration.importFromTopol }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-chamaileon"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('chamaileon')"
-              >
-                {{ t.chooser.migration.importFromChamaileon }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-easy-email-pro"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('easyEmailPro')"
-              >
-                {{ t.chooser.migration.importFromEasyEmailPro }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-mjml"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('mjml')"
-              >
-                {{ t.chooser.migration.importFromMjml }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-              <button
-                data-testid="chooser-import-html"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
-                @click="openImportFromSource('html')"
-              >
-                {{ t.chooser.migration.importFromHtml }}
-                <ArrowRight
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  :stroke-width="1.6"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          </section>
-
-          <!-- Cloud Promotion Banner -->
-          <a
-            href="#cloud"
-            class="group pg-card-stagger mt-8 w-full flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 p-4 sm:p-5 border border-primary/20 rounded-xl bg-primary/[0.04] no-underline text-left transition-all duration-200 hover:border-primary/30 hover:-translate-y-px"
-            :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
-          >
-            <div
-              class="shrink-0 flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15"
-            >
-              <Zap :size="20" :stroke-width="1.5" aria-hidden="true" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div
-                class="text-sm font-semibold text-gray-900 mb-0.5 dark:text-gray-100"
-              >
-                {{ t.cloudBanner.title }}
-              </div>
-              <div
-                class="text-xs text-gray-500 leading-relaxed dark:text-gray-400"
-              >
-                {{ t.cloudBanner.description }}
-              </div>
-            </div>
-            <div
-              class="shrink-0 flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors group-hover:text-primary-hover"
-            >
-              {{ t.cloudBanner.cta }}
-              <ChevronRight :size="14" :stroke-width="1.5" aria-hidden="true" />
-            </div>
-          </a>
-
-          <div
-            class="mt-8 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 [&_a]:dark:text-gray-400 [&_a:hover]:dark:text-gray-100"
-          >
-            <a
-              href="https://docs.templatical.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ t.toolbar.docs }}</a
-            >
-            <span class="text-gray-200 dark:text-gray-700">&middot;</span>
-            <a
-              href="https://github.com/templatical/sdk"
-              target="_blank"
-              rel="noopener noreferrer"
-              >GitHub</a
-            >
-          </div>
-        </div>
-      </main>
+      <Catalog v-if="screen === 'chooser'" key="chooser" />
 
       <!-- Editor Screen -->
       <div

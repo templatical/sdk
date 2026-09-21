@@ -50,6 +50,22 @@ export default {
     docs: "Dokumentation",
     notFound: "Szene nicht gefunden",
     catalog: "Katalog",
+    catalogTitle: "Setup-Katalog",
+    catalogSubtitle:
+      "Jede Szene ist eine einfügbare init()-Form mit einem Live-Editor. Öffnen Sie Minimum für den leeren Mount, eine Setup-Zeile für einen einzelnen Provider oder ein Example für eine fertige E-Mail.",
+    catalogFooter: "Playground-Links",
+    openScene: "Szene öffnen",
+    switchScene: "Szene wechseln",
+    sceneList: "Szenen",
+    snippet: "init()-Snippet",
+    groups: {
+      minimum: "Minimum",
+      storage: "Speicher",
+      author: "Authoring",
+      render: "Render",
+      import: "Import",
+      examples: "Examples",
+    },
   },
   configModal: {
     tabs: {
@@ -339,6 +355,8 @@ export default {
   },
   a11y: {
     backToTemplates: "Zur\u00fcck zu Vorlagen",
+    backToCatalog: "Zur\u00fcck zum Katalog",
+    openScene: "Szene {name} öffnen",
     startFromScratch: "Neu beginnen mit leerer Leinwand",
     chooseTemplate: "Vorlage {name} w\u00e4hlen",
     githubRepo: "GitHub-Repository",

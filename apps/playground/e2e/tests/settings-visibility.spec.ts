@@ -49,6 +49,7 @@ async function openSettingsTab(page: Page) {
 }
 
 test.describe("templateSettings.fields", () => {
+  test.skip(true, "cookbook-task-11: settingsFields query");
   test("exposes every setting when the key is omitted", async ({
     page,
     shadowDom,

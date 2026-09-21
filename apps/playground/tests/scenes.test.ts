@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   SCENES,
+  SCENE_GROUP_ORDER,
   getScene,
   parsePlaygroundRoute,
   scenesByGroup,
 } from "../src/scenes/index";
+import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
 
 describe("parsePlaygroundRoute", () => {
@@ -130,6 +132,24 @@ describe("registry", () => {
 
   it("shadow-dom-off snippet contains shadowDom: false", () => {
     expect(getScene("shadow-dom-off")?.snippet).toMatch(/shadowDom:\s*false/);
+  });
+
+  it("does not advertise i18n English as a catalog variant", () => {
+    expect(getScene("i18n")?.variants).toBeUndefined();
+  });
+
+  it("orders catalog groups with minimum first and examples last", () => {
+    expect(SCENE_GROUP_ORDER[0]).toBe("minimum");
+    expect(SCENE_GROUP_ORDER.at(-1)).toBe("examples");
+  });
+});
+
+describe("sceneHref", () => {
+  it("keeps the host shadowDom pin and drops other query keys", () => {
+    expect(sceneHref("templates", "shadowDom=0&readonly=1")).toBe(
+      "/scenes/templates?shadowDom=0",
+    );
+    expect(sceneHref("minimum")).toBe("/scenes/minimum");
   });
 });
 
