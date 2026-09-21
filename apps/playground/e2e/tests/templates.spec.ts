@@ -215,4 +215,34 @@ test.describe("templates provider", () => {
       await expect.poll(() => editorPage.getBlockCount()).toBe(before + 1);
     });
   });
+
+  test("pushState back to Templates after readonly does not pin the readonly store", async ({
+    page,
+    shadowDom,
+    editorPage,
+  }) => {
+    await openTemplatesScene(page, shadowDom, editorPage, { readonly: "1" });
+    await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
+
+    await page.getByTestId("scene-switcher").click();
+    await page
+      .locator('[data-testid="scene-switcher-list"] a[href*="/scenes/minimum"]')
+      .click();
+    await page
+      .locator('[data-testid="scene-host"][data-scene-ready="true"]')
+      .waitFor();
+
+    await page.getByTestId("scene-switcher").click();
+    await page
+      .locator(
+        '[data-testid="scene-switcher-list"] a[href*="/scenes/templates"]',
+      )
+      .click();
+    await page
+      .locator('[data-testid="scene-host"][data-scene-ready="true"]')
+      .waitFor();
+    await editorPage.waitForReady();
+
+    await expect(page.locator(SELECTORS.templateSave)).toBeVisible();
+  });
 });

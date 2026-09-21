@@ -4,8 +4,9 @@ import { ChevronDown, ChevronLeft } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
 import HostKnobs from "@/host/HostKnobs.vue";
 import { navigatePlayground, sceneHref } from "@/host/sceneHref";
+import { createSerializedBoot } from "@/host/bootQueue";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
-import { unmountEditor, useSceneInit } from "@/host/useSceneInit";
+import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
 import {
   getScene,
@@ -82,50 +83,52 @@ watch(uiTheme, (theme) => {
   editor.value?.setTheme(theme);
 });
 
-let bootGen = 0;
+const boot = createSerializedBoot();
 
 watch(
   () => [props.sceneId, props.search.toString(), shadowMode.value] as const,
-  async () => {
-    const gen = ++bootGen;
-    const current = scene.value;
-    sceneReady.value = false;
-    initError.value = "";
-    editor.value = null;
-    unmountEditor();
-    if (!current) return;
-    await nextTick();
-    if (gen !== bootGen) return;
-    const container = editorContainer.value;
-    if (!container) return;
-    const result = await useSceneInit(
-      current,
-      container,
-      { search: props.search },
-      shadowMode.value === "shadow",
-    );
-    if (gen !== bootGen) {
-      unmountEditor();
-      return;
-    }
-    if (result.initError) {
-      initError.value = format(t.value.error.initFailed, {
-        message: result.initError,
-      });
-    } else {
-      editor.value = result.editor;
-      if (result.editor) {
-        result.editor.setTheme(uiTheme.value);
+  () => {
+    void boot.enqueue(async (isCurrent) => {
+      const current = scene.value;
+      sceneReady.value = false;
+      initError.value = "";
+      editor.value?.unmount();
+      editor.value = null;
+      if (!current || !isCurrent()) return;
+      await nextTick();
+      if (!isCurrent()) return;
+      const container = editorContainer.value;
+      if (!container) return;
+      const result = await useSceneInit(
+        current,
+        container,
+        { search: props.search },
+        shadowMode.value === "shadow",
+      );
+      if (!isCurrent()) {
+        result.editor?.unmount();
+        return;
       }
-    }
-    sceneReady.value = true;
+      if (result.initError) {
+        initError.value = format(t.value.error.initFailed, {
+          message: result.initError,
+        });
+      } else {
+        editor.value = result.editor;
+        if (result.editor) {
+          result.editor.setTheme(uiTheme.value);
+        }
+      }
+      sceneReady.value = true;
+    });
   },
   { immediate: true, flush: "post" },
 );
 
 onUnmounted(() => {
-  bootGen += 1;
-  unmountEditor();
+  boot.invalidate();
+  editor.value?.unmount();
+  editor.value = null;
 });
 </script>
 

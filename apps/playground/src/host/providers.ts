@@ -44,9 +44,25 @@ function seedSavedBlocks(
   localStorage.setItem(key, JSON.stringify(defaults));
 }
 
-export interface SavedBlocksProviderOptions {
+export interface ProviderCacheOptions {
   readonly?: boolean;
   delay?: number;
+  autosave?: boolean;
+}
+
+export function providerCacheKey(
+  name: string,
+  options: ProviderCacheOptions = {},
+): string {
+  return [
+    name,
+    options.readonly ? "readonly" : "rw",
+    `delay=${options.delay ?? 0}`,
+    options.autosave ? "autosave" : "manual",
+  ].join(":");
+}
+
+export interface SavedBlocksProviderOptions extends ProviderCacheOptions {
   seed?: SavedBlock[];
 }
 
@@ -56,7 +72,8 @@ export function savedBlocksProviderFor(
   name: string,
   options: SavedBlocksProviderOptions = {},
 ): SavedBlocksProvider {
-  const cached = savedBlocksProviders.get(name);
+  const cacheKey = providerCacheKey(name, options);
+  const cached = savedBlocksProviders.get(cacheKey);
   if (cached) return cached;
 
   const key = savedBlocksKeyFor(name);
@@ -84,7 +101,7 @@ export function savedBlocksProviderFor(
       }
     : withDelay;
 
-  savedBlocksProviders.set(name, provider);
+  savedBlocksProviders.set(cacheKey, provider);
   return provider;
 }
 
@@ -189,9 +206,7 @@ function versionStoreFor(name: string): VersionStore {
   return store;
 }
 
-export interface VersionHistoryProviderOptions {
-  readonly?: boolean;
-}
+export type VersionHistoryProviderOptions = ProviderCacheOptions;
 
 const versionHistoryProviders = new Map<string, VersionHistoryProvider>();
 
@@ -199,7 +214,8 @@ export function versionHistoryProviderFor(
   name: string,
   options: VersionHistoryProviderOptions = {},
 ): VersionHistoryProvider {
-  const cached = versionHistoryProviders.get(name);
+  const cacheKey = providerCacheKey(name, options);
+  const cached = versionHistoryProviders.get(cacheKey);
   if (cached) return cached;
 
   const store = versionStoreFor(name);
@@ -246,7 +262,7 @@ export function versionHistoryProviderFor(
     ? { ...base, restore: false as const }
     : base;
 
-  versionHistoryProviders.set(name, provider);
+  versionHistoryProviders.set(cacheKey, provider);
   return provider;
 }
 
@@ -258,9 +274,7 @@ interface StoredTemplate {
   content: TemplateContent;
 }
 
-export interface TemplatesProviderOptions {
-  readonly?: boolean;
-}
+export type TemplatesProviderOptions = ProviderCacheOptions;
 
 const templatesProviders = new Map<string, TemplatesProvider>();
 
@@ -268,7 +282,8 @@ export function templatesProviderFor(
   name: string,
   options: TemplatesProviderOptions = {},
 ): TemplatesProvider {
-  const cached = templatesProviders.get(name);
+  const cacheKey = providerCacheKey(name, options);
+  const cached = templatesProviders.get(cacheKey);
   if (cached) return cached;
 
   const key = templatesKeyFor(name);
@@ -329,7 +344,7 @@ export function templatesProviderFor(
     ? { ...base, create: false as const, save: false as const }
     : base;
 
-  templatesProviders.set(name, provider);
+  templatesProviders.set(cacheKey, provider);
   return provider;
 }
 
@@ -339,9 +354,7 @@ export const PLAYGROUND_USER: EditorUser = {
   name: "Playground User",
 };
 
-export interface CommentsProviderOptions {
-  readonly?: boolean;
-}
+export type CommentsProviderOptions = ProviderCacheOptions;
 
 const commentsProviders = new Map<string, CommentsProvider>();
 
@@ -349,7 +362,8 @@ export function commentsProviderFor(
   name: string,
   options: CommentsProviderOptions = {},
 ): CommentsProvider {
-  const cached = commentsProviders.get(name);
+  const cacheKey = providerCacheKey(name, options);
+  const cached = commentsProviders.get(cacheKey);
   if (cached) return cached;
 
   const key = `templatical:comments:${slugFor(name)}`;
@@ -461,7 +475,7 @@ export function commentsProviderFor(
       }
     : base;
 
-  commentsProviders.set(name, provider);
+  commentsProviders.set(cacheKey, provider);
   return provider;
 }
 

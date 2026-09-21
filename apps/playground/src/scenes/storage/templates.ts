@@ -15,7 +15,10 @@ export const templates: Scene = {
     const autoSave = ctx.search.get("autosave") === "1";
     return {
       templates: {
-        ...templatesProviderFor("templates", { readonly }),
+        ...templatesProviderFor("templates", {
+          readonly,
+          autosave: autoSave,
+        }),
         autoSave,
       },
     };
