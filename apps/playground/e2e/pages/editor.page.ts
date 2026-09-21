@@ -27,11 +27,6 @@ export class EditorPage {
    * Idempotent — safe to call multiple times.
    */
   async dismissOverlays(): Promise<void> {
-    await this.page.evaluate(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-
     const featureClose = this.page.locator(SELECTORS.featureOverlayClose);
     if (await featureClose.isVisible()) {
       await featureClose.click();

@@ -67,12 +67,6 @@ test.describe("Template chooser", () => {
     editorPage,
     page,
   }) => {
-    // Use addInitScript since this test creates its own navigation
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -86,11 +80,6 @@ test.describe("Template chooser", () => {
     editorPage,
     page,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-
     await chooserPage.goto();
     await chooserPage.selectBlankTemplate();
     await editorPage.waitForReady();

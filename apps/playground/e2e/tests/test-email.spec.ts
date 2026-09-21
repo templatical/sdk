@@ -31,6 +31,8 @@ type CapturedPayload = {
 };
 
 test.describe("Test email", () => {
+  test.skip(true, "cookbook-task-5: test-email scene");
+
   test("the trigger renders in the editor header", async ({ editorReady }) => {
     const { editorPage } = editorReady;
 

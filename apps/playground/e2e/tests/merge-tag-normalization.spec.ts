@@ -53,10 +53,6 @@ function deliveryContact(page: import("@playwright/test").Page) {
 
 test.describe("Merge tag normalization", () => {
   test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectTemplateByName(TEMPLATE);
     await editorPage.waitForReady();

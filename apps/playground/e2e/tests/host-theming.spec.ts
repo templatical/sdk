@@ -22,10 +22,6 @@ import { test, expect } from "@playwright/test";
  */
 test.describe("Host-level CSS custom property theming", () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await page.goto("/#multi");
     await page.locator('[data-testid="multi-instance-screen"]').waitFor();
     await page.waitForFunction(() => {

@@ -26,8 +26,6 @@ async function openEditorWith(
   const chooserPage = new ChooserPage(page, { shadowDom });
   const editorPage = new EditorPage(page);
   await page.addInitScript((value) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     if (value === null) {
       localStorage.removeItem("tpl-playground-settings-fields");
     } else {

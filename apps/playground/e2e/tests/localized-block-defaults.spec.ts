@@ -32,8 +32,6 @@ test.describe("localized block defaults", () => {
     sdkLocale: string,
   ): Promise<void> {
     await editorPage.page.addInitScript((locale) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem("tpl-playground-sdk-locale", locale);
     }, sdkLocale);
     await chooserPage.goto();

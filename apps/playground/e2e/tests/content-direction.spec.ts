@@ -21,10 +21,6 @@ async function openArabicInvitation(
     dismissOverlays(): Promise<void>;
   },
 ) {
-  await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-  });
   await chooserPage.goto();
   await chooserPage.selectTemplateByName(TEMPLATE);
   await editorPage.waitForReady();

@@ -7,3 +7,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 ## Minimum
 
 - [Minimum setup](https://play.templatical.com/scenes/minimum): init({ container }) — empty canvas, no providers.
+
+## Examples
+
+- [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.

@@ -42,10 +42,17 @@ describe("parsePlaygroundRoute", () => {
 });
 
 describe("registry", () => {
-  it("registers minimum as the only scene in Task 1", () => {
-    expect(SCENES.map((s) => s.id)).toEqual(["minimum"]);
+  it("registers minimum then Launchpad launch", () => {
+    expect(SCENES.map((s) => s.id)).toEqual([
+      "minimum",
+      "example-launchpad-launch",
+    ]);
     expect(getScene("minimum")?.group).toBe("minimum");
     expect(getScene("minimum")?.docs).toBe("/getting-started/quick-start");
+    expect(getScene("example-launchpad-launch")?.group).toBe("examples");
+    expect(getScene("example-launchpad-launch")?.docs).toBe(
+      "/guide/examples#launchpad-launch",
+    );
     expect(getScene("nope")).toBeUndefined();
   });
 
@@ -56,16 +63,19 @@ describe("registry", () => {
 });
 
 describe("snippet honesty", () => {
-  it("minimum snippet names every config() key except none (empty config)", () => {
-    const scene = getScene("minimum");
-    if (!scene) throw new Error("missing minimum");
-    const ctx = { search: new URLSearchParams() };
-    const cfg = scene.config(ctx);
-    const missing = snippetContainsKeys(scene.snippet, configKeys(cfg));
-    expect(missing).toEqual([]);
-    expect(scene.snippet).toContain("init(");
-    expect(scene.snippet).toContain("container");
-    expect(scene.snippet).not.toContain("tpl-playground");
-    expect(scene.snippet).not.toContain("__tplPlayground");
-  });
+  it.each(SCENES.map((s) => s.id))(
+    "%s snippet names every config() key",
+    (id) => {
+      const scene = getScene(id);
+      if (!scene) throw new Error(`missing ${id}`);
+      const ctx = { search: new URLSearchParams() };
+      const cfg = scene.config(ctx);
+      const missing = snippetContainsKeys(scene.snippet, configKeys(cfg));
+      expect(missing).toEqual([]);
+      expect(scene.snippet).toContain("init(");
+      expect(scene.snippet).toContain("container");
+      expect(scene.snippet).not.toContain("tpl-playground");
+      expect(scene.snippet).not.toContain("__tplPlayground");
+    },
+  );
 });

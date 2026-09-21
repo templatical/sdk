@@ -35,10 +35,6 @@ test.describe("Merge tag samples", () => {
   test.beforeEach(async ({ page, chooserPage, editorPage }) => {
     // Set before any page JS runs, or the onboarding overlay intercepts the
     // template-card click.
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectTemplateByName(TEMPLATE);
     await editorPage.waitForReady();

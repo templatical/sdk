@@ -37,10 +37,6 @@ const easyEmailProSource = readFileSync(
 test.describe("Template import", () => {
   test.beforeEach(async ({ page }) => {
     // Suppress overlays so the editor screen reaches a stable state after import.
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
   });
 
   test("imports a BeeFree template and renders converted blocks", async ({

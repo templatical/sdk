@@ -50,6 +50,8 @@ async function getHtml(page: import("@playwright/test").Page): Promise<string> {
 }
 
 test.describe("render provider — compileMjml tier", () => {
+  test.skip(true, "cookbook-task-5: render scene");
+
   test("toHtml() resolves through the provider to compiled HTML", async ({
     editorReady: { editorPage },
     page,

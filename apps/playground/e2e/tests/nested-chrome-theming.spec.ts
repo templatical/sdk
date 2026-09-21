@@ -17,8 +17,6 @@ import type { Page } from "@playwright/test";
 
 async function bootDarkEditor(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     // Raw string, not JSON — VueUse's useLocalStorage uses the string serializer.
     localStorage.setItem("tpl-playground-theme", "dark");
   });

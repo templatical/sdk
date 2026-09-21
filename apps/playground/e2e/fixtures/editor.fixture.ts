@@ -29,13 +29,7 @@ export const test = base.extend<EditorFixtures>({
   editorReady: async ({ page, shadowDom }, use) => {
     const chooserPage = new ChooserPage(page, { shadowDom });
     const editorPage = new EditorPage(page);
-    // Set localStorage BEFORE any page JS runs to prevent overlays
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await new ScenePage(page, { shadowDom }).goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await use({ chooserPage, editorPage });
@@ -43,10 +37,6 @@ export const test = base.extend<EditorFixtures>({
   blankEditorReady: async ({ page, shadowDom }, use) => {
     const chooserPage = new ChooserPage(page, { shadowDom });
     const editorPage = new EditorPage(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await new ScenePage(page, { shadowDom }).goto("minimum");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();

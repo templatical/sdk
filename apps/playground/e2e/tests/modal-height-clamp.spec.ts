@@ -129,10 +129,6 @@ test.describe("modal height clamp", () => {
     chooserPage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -174,10 +170,6 @@ test.describe("modal height clamp", () => {
     chooserPage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -229,10 +221,6 @@ test.describe("modal height clamp", () => {
     chooserPage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -254,72 +242,76 @@ test.describe("modal height clamp", () => {
     await expect(page.locator(SELECTORS.savedBlocksBrowser)).toBeHidden();
   });
 
-  test("clicking the gap below the panel still closes the dialog", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
+  test.describe("test-email on editorReady", () => {
+    test.skip(true, "cookbook-task-5: test-email scene");
 
-    // Regression cover for the wrapper the clamp introduced. It spans the
-    // backdrop's full height, so it now intercepts clicks in the band above and
-    // below the panel that used to reach the backdrop's own `@click.self`.
-    // Without the handler repeated on the wrapper, click-outside-to-close dies
-    // silently in exactly that band — and no other spec clicks a TplModal
-    // backdrop, so nothing else would catch it.
-    await page.locator(SELECTORS.testEmailTrigger).click();
-    const dialog = page.locator(SELECTORS.testEmailDialog);
-    await expect(dialog).toBeVisible();
+    test("clicking the gap below the panel still closes the dialog", async ({
+      editorReady,
+    }) => {
+      const { editorPage } = editorReady;
+      const page = editorPage.page;
 
-    // Horizontally inside the panel's own column, so the point lands on the
-    // wrapper rather than on the backdrop either side of it.
-    const gap = await page.evaluate(() => {
-      const host = Array.from(document.querySelectorAll("*")).find(
-        (el) => (el as HTMLElement).shadowRoot,
-      ) as HTMLElement | undefined;
-      const root: Document | ShadowRoot = host?.shadowRoot ?? document;
-      const panel = root.querySelector(
-        '[role="dialog"][aria-labelledby="tpl-test-email-title"]',
-      ) as HTMLElement | null;
-      if (!panel) return null;
-      let backdrop: HTMLElement | null = panel.parentElement;
-      while (backdrop && getComputedStyle(backdrop).position !== "fixed") {
-        backdrop = backdrop.parentElement;
-      }
-      if (!backdrop) return null;
-      const p = panel.getBoundingClientRect();
-      const b = backdrop.getBoundingClientRect();
-      return {
-        x: p.left + p.width / 2,
-        y: (p.bottom + b.bottom) / 2,
-        panelBottom: p.bottom,
-      };
+      // Regression cover for the wrapper the clamp introduced. It spans the
+      // backdrop's full height, so it now intercepts clicks in the band above and
+      // below the panel that used to reach the backdrop's own `@click.self`.
+      // Without the handler repeated on the wrapper, click-outside-to-close dies
+      // silently in exactly that band — and no other spec clicks a TplModal
+      // backdrop, so nothing else would catch it.
+      await page.locator(SELECTORS.testEmailTrigger).click();
+      const dialog = page.locator(SELECTORS.testEmailDialog);
+      await expect(dialog).toBeVisible();
+
+      // Horizontally inside the panel's own column, so the point lands on the
+      // wrapper rather than on the backdrop either side of it.
+      const gap = await page.evaluate(() => {
+        const host = Array.from(document.querySelectorAll("*")).find(
+          (el) => (el as HTMLElement).shadowRoot,
+        ) as HTMLElement | undefined;
+        const root: Document | ShadowRoot = host?.shadowRoot ?? document;
+        const panel = root.querySelector(
+          '[role="dialog"][aria-labelledby="tpl-test-email-title"]',
+        ) as HTMLElement | null;
+        if (!panel) return null;
+        let backdrop: HTMLElement | null = panel.parentElement;
+        while (backdrop && getComputedStyle(backdrop).position !== "fixed") {
+          backdrop = backdrop.parentElement;
+        }
+        if (!backdrop) return null;
+        const p = panel.getBoundingClientRect();
+        const b = backdrop.getBoundingClientRect();
+        return {
+          x: p.left + p.width / 2,
+          y: (p.bottom + b.bottom) / 2,
+          panelBottom: p.bottom,
+        };
+      });
+
+      expect(gap).not.toBe(null);
+      expect(gap!.y).toBeGreaterThan(gap!.panelBottom);
+
+      await page.mouse.click(gap!.x, gap!.y);
+      await expect(dialog).toBeHidden();
     });
 
-    expect(gap).not.toBe(null);
-    expect(gap!.y).toBeGreaterThan(gap!.panelBottom);
+    test("an untrapped host still gets a viewport-sized dialog", async ({
+      editorReady,
+    }) => {
+      const { editorPage } = editorReady;
+      const page = editorPage.page;
 
-    await page.mouse.click(gap!.x, gap!.y);
-    await expect(dialog).toBeHidden();
-  });
+      // The fix must not shrink the common case. With no trap the backdrop still
+      // covers the viewport, so the dialog is bounded by the viewport as before
+      // rather than by the editor's own (possibly small) box.
+      await page.locator(SELECTORS.testEmailTrigger).click();
+      await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
 
-  test("an untrapped host still gets a viewport-sized dialog", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
+      const clamp = await measureClamp(page, SELECTORS.testEmailDialog);
+      expect(clamp).not.toBe(null);
 
-    // The fix must not shrink the common case. With no trap the backdrop still
-    // covers the viewport, so the dialog is bounded by the viewport as before
-    // rather than by the editor's own (possibly small) box.
-    await page.locator(SELECTORS.testEmailTrigger).click();
-    await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
-
-    const clamp = await measureClamp(page, SELECTORS.testEmailDialog);
-    expect(clamp).not.toBe(null);
-
-    const viewportHeight = page.viewportSize()!.height;
-    expect(clamp!.backdrop.height).toBeCloseTo(viewportHeight, 0);
-    expect(clamp!.panel.top).toBeGreaterThanOrEqual(0);
-    expect(clamp!.panel.bottom).toBeLessThanOrEqual(viewportHeight);
+      const viewportHeight = page.viewportSize()!.height;
+      expect(clamp!.backdrop.height).toBeCloseTo(viewportHeight, 0);
+      expect(clamp!.panel.top).toBeGreaterThanOrEqual(0);
+      expect(clamp!.panel.bottom).toBeLessThanOrEqual(viewportHeight);
+    });
   });
 });

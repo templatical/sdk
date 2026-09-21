@@ -35,13 +35,7 @@ async function centreX(
 }
 
 test.describe("header layout stability", () => {
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    // Set before any page JS runs, or the onboarding overlay intercepts the
-    // template-card click.
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
+  test.beforeEach(async ({ chooserPage, editorPage }) => {
     await chooserPage.goto();
     await chooserPage.selectTemplateByName(TEMPLATE);
     await editorPage.waitForReady();
@@ -131,11 +125,7 @@ test.describe("header layout stability", () => {
  * the recipe changing for every caller.
  */
 test.describe("preview overlay pills are one family", () => {
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
+  test.beforeEach(async ({ chooserPage, editorPage }) => {
     await chooserPage.goto();
     await chooserPage.selectTemplateByName(TEMPLATE);
     await editorPage.waitForReady();

@@ -85,9 +85,6 @@ test.describe("Custom block stylesheet (#155)", () => {
     // here gives us the exact string the user would have copied without
     // any OS-clipboard involvement.
     await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-
       // VueUse's `useClipboard` checks `clipboard-write` permission first.
       // In headless Chromium without `grantPermissions`, that permission is
       // denied → useClipboard falls back to its `legacyCopy` path:

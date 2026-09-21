@@ -54,8 +54,6 @@ async function openEditor(options: {
   const { page, chooserPage, editorPage } = options;
   await page.addInitScript(
     ({ entries, key, seed }) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.removeItem(key as string);
       for (const [flag, value] of entries as [string, string][]) {
         localStorage.setItem(flag, value);

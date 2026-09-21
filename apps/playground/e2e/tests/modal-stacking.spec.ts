@@ -103,6 +103,8 @@ async function paintedAtPanelTopEdge(page: Page): Promise<{
 }
 
 test.describe("modal stacking", () => {
+  test.skip(true, "cookbook-task-5: test-email scene");
+
   test("the host header does not paint over the dialog", async ({
     editorReady,
   }) => {

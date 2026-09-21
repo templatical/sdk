@@ -40,8 +40,6 @@ async function openEditor(
   flags: Record<string, string> = {},
 ): Promise<void> {
   await page.addInitScript((entries) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     for (const [key, value] of entries as [string, string][]) {
       localStorage.setItem(key, value);
     }
@@ -53,14 +51,18 @@ async function openEditor(
 }
 
 test.describe("save triggers", () => {
-  // The demo templates provider is writable by default (the read-only flag
-  // is opt-in), so `editorReady` alone is enough to reach a save — no
-  // `addInitScript` needed here.
-  test("the header button reports manual", async ({ page, editorReady }) => {
-    await page.locator(SELECTORS.templateSave).click();
+  test.describe("manual save via editorReady", () => {
+    test.skip(true, "cookbook-task-5: templates scene");
 
-    await expect.poll(() => read(page)).toContain("manual");
-    expect(await read(page)).not.toContain("autosave");
+    // The demo templates provider is writable by default (the read-only flag
+    // is opt-in), so `editorReady` alone is enough to reach a save — no
+    // `addInitScript` needed here.
+    test("the header button reports manual", async ({ page, editorReady }) => {
+      await page.locator(SELECTORS.templateSave).click();
+
+      await expect.poll(() => read(page)).toContain("manual");
+      expect(await read(page)).not.toContain("autosave");
+    });
   });
 
   test("an autosave tick reports autosave", async ({

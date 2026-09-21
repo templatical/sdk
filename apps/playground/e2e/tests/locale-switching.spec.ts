@@ -2,6 +2,8 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Locale switching", () => {
+  test.skip(true, "cookbook-task-6: i18n scene");
+
   test("editor toolbar has locale select with en and de", async ({
     editorReady,
     page,

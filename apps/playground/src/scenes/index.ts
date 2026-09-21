@@ -1,3 +1,4 @@
+import { exampleLaunchpadLaunch } from "./examples/launchpad-launch";
 import { minimum } from "./minimum";
 import type { Scene, SceneGroup } from "./types";
 
@@ -9,7 +10,7 @@ export type {
   SceneVariant,
 } from "./types";
 
-export const SCENES: readonly Scene[] = [minimum];
+export const SCENES: readonly Scene[] = [minimum, exampleLaunchpadLaunch];
 
 export function getScene(id: string): Scene | undefined {
   return SCENES.find((scene) => scene.id === id);

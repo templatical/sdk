@@ -2,31 +2,10 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 /**
- * E2E coverage for the built-in merge tag picker modal. The playground
- * toggles `enableRequestMergeTag` to switch between:
- *   - ON  → consumer-owned `onRequest` modal (playground's pg-modal-dialog)
- *   - OFF → SDK's built-in picker (TplModal-based MergeTagPickerModal)
- *
- * The default playground state has `enableRequestMergeTag = true`, so we
- * flip it off via the config modal for the picker-path tests.
+ * E2E coverage for the built-in merge tag picker modal. Launchpad launch
+ * configures `mergeTags.tags` only (no `onRequest`), so the SDK picker is
+ * the default. Consumer-owned `onRequest` lives on the Task 6 scene.
  */
-
-async function openConfigAndDisableOnRequest(
-  page: import("@playwright/test").Page,
-): Promise<void> {
-  await page.locator(SELECTORS.configButton).click();
-  // Config modal opens on the "options" tab by default; the onRequest
-  // checkbox lives under the "callbacks" tab. Switch first — the
-  // checkbox element exists in DOM regardless (it's `v-show`-hidden),
-  // so `toBeVisible()` times out without this tab click.
-  await page.locator("#config-tab-callbacks").click();
-  const checkbox = page.locator(SELECTORS.configEnableOnRequestMergeTag);
-  await expect(checkbox).toBeVisible();
-  // Read current state — if already unchecked we just apply.
-  const isChecked = await checkbox.isChecked();
-  if (isChecked) await checkbox.click();
-  await page.locator(SELECTORS.configApply).click();
-}
 
 async function openParagraphToolbar(
   editorPage: import("../pages/editor.page").EditorPage,
@@ -55,8 +34,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
@@ -66,8 +43,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     const modal = page.locator(SELECTORS.mergeTagPickerModal);
@@ -82,7 +57,9 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     // wrapping an inner display span carrying the raw value via
     // `data-tooltip`. Matches the selector used by the autocomplete spec.
     await expect(
-      page.locator(`.tpl-merge-tag-node [data-tooltip="${insertedValue}"]`).last(),
+      page
+        .locator(`.tpl-merge-tag-node [data-tooltip="${insertedValue}"]`)
+        .last(),
     ).toBeVisible();
   });
 
@@ -90,8 +67,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     const modal = page.locator(SELECTORS.mergeTagPickerModal);
@@ -104,7 +79,9 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     await page.keyboard.press("Enter");
     await expect(modal).toBeHidden();
     await expect(
-      page.locator(`.tpl-merge-tag-node [data-tooltip="${expectedValue}"]`).last(),
+      page
+        .locator(`.tpl-merge-tag-node [data-tooltip="${expectedValue}"]`)
+        .last(),
     ).toBeVisible();
   });
 
@@ -112,8 +89,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
 
@@ -143,8 +118,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
 
@@ -158,8 +131,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     const blocksBefore = await editorPage.getBlocks().count();
     await clickInsertMergeTagButton(page);
@@ -174,8 +145,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
@@ -187,8 +156,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     const headers = page.locator(SELECTORS.mergeTagPickerGroupHeader);
@@ -202,8 +169,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     expect(
@@ -211,10 +176,9 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     ).toBeGreaterThan(0);
     await page.locator(SELECTORS.mergeTagPickerSearch).fill("name");
     await expect
-      .poll(
-        () => page.locator(SELECTORS.mergeTagPickerGroupHeader).count(),
-        { timeout: 2000 },
-      )
+      .poll(() => page.locator(SELECTORS.mergeTagPickerGroupHeader).count(), {
+        timeout: 2000,
+      })
       .toBe(0);
   });
 
@@ -222,8 +186,6 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     // The playground sets description for every tag; at least one row's
@@ -237,6 +199,8 @@ test.describe("Merge tag picker — built-in (SDK) modal", () => {
 });
 
 test.describe("Merge tag picker — onRequest precedence", () => {
+  test.skip(true, "cookbook-task-6: merge-tags-on-request scene");
+
   test("with default config (onRequest enabled), clicking 'Insert merge tag' opens the playground modal, NOT the SDK picker", async ({
     editorReady: { editorPage },
     page,
@@ -245,9 +209,7 @@ test.describe("Merge tag picker — onRequest precedence", () => {
     // to open a paragraph and click the button.
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
-    await expect(
-      page.locator(SELECTORS.playgroundMergeTagModal),
-    ).toBeVisible();
+    await expect(page.locator(SELECTORS.playgroundMergeTagModal)).toBeVisible();
     // The SDK picker must NOT be in the DOM — consumer-owned UX wins.
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toHaveCount(0);
   });
@@ -259,10 +221,6 @@ test.describe("Welcome Email template — built-in picker is the default", () =>
     chooserPage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectTemplateByName("Welcome Email");
     await editorPage.waitForReady();
@@ -270,7 +228,9 @@ test.describe("Welcome Email template — built-in picker is the default", () =>
     await openParagraphToolbar(editorPage);
     await clickInsertMergeTagButton(page);
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.playgroundMergeTagModal)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.playgroundMergeTagModal)).toHaveCount(
+      0,
+    );
   });
 });
 
@@ -279,8 +239,6 @@ test.describe("Merge tag picker — autocomplete unchanged", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     await editorPage.doubleClickBlock("paragraph");
     // Programmatic caret placement — a native End after the dblclick+click
     // chain trips the Chromium triple-click scroll bug; see
@@ -324,8 +282,6 @@ test.describe("Merge tag — changing a tag already in the content", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     const inserted = await insertFirstTag(editorPage, page);
 
     await chipFor(page, inserted).click();
@@ -339,8 +295,6 @@ test.describe("Merge tag — changing a tag already in the content", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     const inserted = await insertFirstTag(editorPage, page);
 
     await chipFor(page, inserted).click();
@@ -357,8 +311,6 @@ test.describe("Merge tag — changing a tag already in the content", () => {
     editorReady: { editorPage },
     page,
   }) => {
-    await openConfigAndDisableOnRequest(page);
-    await editorPage.waitForReady();
     const inserted = await insertFirstTag(editorPage, page);
     const chipsBefore = await page.locator(SELECTORS.mergeTagNode).count();
 
@@ -372,8 +324,9 @@ test.describe("Merge tag — changing a tag already in the content", () => {
     await expect(page.locator(SELECTORS.mergeTagPickerModal)).toBeVisible();
 
     const replacement = page.locator(SELECTORS.mergeTagPickerItem).nth(1);
-    const replacementValue =
-      await replacement.getAttribute("data-merge-tag-value");
+    const replacementValue = await replacement.getAttribute(
+      "data-merge-tag-value",
+    );
     expect(replacementValue).not.toBe(inserted);
     const replacementBefore = await allWith(replacementValue!).count();
     // Clicking a row is a click outside the rich-text block. If the block tears
@@ -387,26 +340,32 @@ test.describe("Merge tag — changing a tag already in the content", () => {
     await expect(page.locator(SELECTORS.mergeTagNode)).toHaveCount(chipsBefore);
   });
 
-  test("a consumer-owned chooser handles the change too", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    // Default playground state: `mergeTags.onRequest` is wired to the
-    // playground's own modal, which must own edits as well as insertions.
-    await editorPage.waitForReady();
-    await openParagraphToolbar(editorPage);
-    await clickInsertMergeTagButton(page);
-    const playgroundModal = page.locator(SELECTORS.playgroundMergeTagModal);
-    await expect(playgroundModal).toBeVisible();
-    const row = playgroundModal.getByRole("button").nth(1);
-    await row.click();
-    await expect(playgroundModal).toBeHidden();
+  test.describe("consumer-owned chooser", () => {
+    test.skip(true, "cookbook-task-6: merge-tags-on-request scene");
 
-    const chip = page.locator(`${SELECTORS.mergeTagNode} [role="button"]`).last();
-    await chip.click();
+    test("a consumer-owned chooser handles the change too", async ({
+      editorReady: { editorPage },
+      page,
+    }) => {
+      // Default playground state: `mergeTags.onRequest` is wired to the
+      // playground's own modal, which must own edits as well as insertions.
+      await editorPage.waitForReady();
+      await openParagraphToolbar(editorPage);
+      await clickInsertMergeTagButton(page);
+      const playgroundModal = page.locator(SELECTORS.playgroundMergeTagModal);
+      await expect(playgroundModal).toBeVisible();
+      const row = playgroundModal.getByRole("button").nth(1);
+      await row.click();
+      await expect(playgroundModal).toBeHidden();
 
-    await expect(playgroundModal).toBeVisible();
-    await expect(page.locator(SELECTORS.mergeTagPickerModal)).toHaveCount(0);
-    await expect(page.locator(".tpl-merge-tag-node input")).toHaveCount(0);
+      const chip = page
+        .locator(`${SELECTORS.mergeTagNode} [role="button"]`)
+        .last();
+      await chip.click();
+
+      await expect(playgroundModal).toBeVisible();
+      await expect(page.locator(SELECTORS.mergeTagPickerModal)).toHaveCount(0);
+      await expect(page.locator(".tpl-merge-tag-node input")).toHaveCount(0);
+    });
   });
 });

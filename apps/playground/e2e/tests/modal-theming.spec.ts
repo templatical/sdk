@@ -21,8 +21,6 @@ const THEMED_ELEVATED = "rgb(255, 0, 0)";
 
 async function bootThemedEditor(page: Page): Promise<void> {
   await page.addInitScript((elevated) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     localStorage.setItem(
       "tpl-playground-theme-override",
       JSON.stringify({ bgElevated: elevated }),

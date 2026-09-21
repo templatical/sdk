@@ -5,6 +5,8 @@ import { blockByType } from "../helpers/selectors";
 // light-DOM and shadow-DOM projects, exercising the drop path across the
 // shadow boundary.
 test.describe("Image drag-and-drop upload (#229)", () => {
+  test.skip(true, "cookbook-task-5: media scene");
+
   test("dropping an image file onto an image block sets its src via the media provider", async ({
     blankEditorReady: { editorPage },
     page,

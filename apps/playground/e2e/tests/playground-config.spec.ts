@@ -2,10 +2,13 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, configTab, configPanel } from "../helpers/selectors";
 
 test.describe("Playground config & export", () => {
-  test("config modal opens with 5 tabs", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test.beforeEach(async ({ chooserPage, editorPage }) => {
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+  });
+
+  test("config modal opens with 5 tabs", async ({ editorPage, page }) => {
     await editorPage.openConfig();
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible();
@@ -15,10 +18,7 @@ test.describe("Playground config & export", () => {
     }
   });
 
-  test("each tab switches panel", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("each tab switches panel", async ({ editorPage, page }) => {
     await editorPage.openConfig();
     const tabs = ["options", "content", "theme", "defaults", "callbacks"];
     for (const tab of tabs) {
@@ -31,10 +31,7 @@ test.describe("Playground config & export", () => {
     }
   });
 
-  test("arrow keys navigate tabs", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("arrow keys navigate tabs", async ({ editorPage, page }) => {
     await editorPage.openConfig();
     // Focus first tab
     await page.locator(configTab("options")).focus();
@@ -45,10 +42,7 @@ test.describe("Playground config & export", () => {
     );
   });
 
-  test("defaults tab shows preset selector", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("defaults tab shows preset selector", async ({ editorPage, page }) => {
     await editorPage.openConfig();
     await page.locator(configTab("defaults")).click();
     const panel = page.locator(configPanel("defaults"));
@@ -58,7 +52,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("cancel closes config without applying", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openConfig();
@@ -70,7 +64,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("export modal opens with MJML as default tab", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -81,20 +75,14 @@ test.describe("Playground config & export", () => {
     );
   });
 
-  test("export modal closes on Escape", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("export modal closes on Escape", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator(SELECTORS.exportModal)).toHaveCount(0);
   });
 
-  test("MJML tab shows compiled MJML source", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("MJML tab shows compiled MJML source", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     const content = await page.locator(".cm-content").first().textContent();
@@ -102,23 +90,18 @@ test.describe("Playground config & export", () => {
   });
 
   test("HTML tab compiles to email-ready HTML", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabHtml).click();
     await expect(page.locator(SELECTORS.exportHtmlError)).toHaveCount(0);
     await expect
-      .poll(async () =>
-        page.locator(".cm-content").first().textContent(),
-      )
+      .poll(async () => page.locator(".cm-content").first().textContent())
       .toMatch(/<!doctype html|<html/i);
   });
 
-  test("JSON tab shows template block JSON", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("JSON tab shows template block JSON", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
     const content = await page.locator(".cm-content").first().textContent();
@@ -126,7 +109,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("MJML download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -141,7 +124,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("JSON download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -158,7 +141,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("HTML download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();

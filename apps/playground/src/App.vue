@@ -13,9 +13,6 @@ import {
 import {
   useClipboard,
   useFileDialog,
-  useIntervalFn,
-  useLocalStorage,
-  usePreferredReducedMotion,
   useScrollLock,
   useTimeoutFn,
 } from "@vueuse/core";
@@ -62,7 +59,6 @@ import {
 } from "@/templates";
 import type {
   TemplateOption,
-  TemplateFeature,
   DataSourcePickerRequest,
   DataSourcePickerItem,
 } from "@/templates";
@@ -87,16 +83,8 @@ import {
   ChevronLeft,
   Zap,
   Crosshair,
-  CircleAlert,
-  Info,
-  Braces,
-  Clock,
-  Database,
-  Blocks,
-  MonitorSmartphone,
   Layers,
   Square,
-  Code,
 } from "@lucide/vue";
 import {
   usePlaygroundI18n,
@@ -176,60 +164,6 @@ const chamaileonSource = ref("");
 const chamaileonError = ref("");
 const easyEmailProSource = ref("");
 const easyEmailProError = ref("");
-
-// Feature showcase overlay
-const showFeatureOverlay = ref(false);
-const currentFeatures = ref<TemplateFeature[]>([]);
-const currentTemplateName = ref("");
-
-// Stored as either a string[] of dismissed template names, or the literal
-// boolean `true` meaning "all dismissed" (legacy flag-shaped value still
-// used by some e2e tests to bypass the overlay). Normalize on every read.
-const dismissedTemplatesRaw = useLocalStorage<string[] | true>(
-  "tpl-playground-features-dismissed",
-  [],
-);
-
-function isTemplateDismissed(name: string): boolean {
-  const v = dismissedTemplatesRaw.value;
-  if (v === true) return true;
-  return Array.isArray(v) && v.includes(name);
-}
-
-function asDismissedList(): string[] {
-  const v = dismissedTemplatesRaw.value;
-  return Array.isArray(v) ? v : [];
-}
-
-function dismissFeatureOverlay(): void {
-  showFeatureOverlay.value = false;
-  if (
-    currentTemplateName.value &&
-    !isTemplateDismissed(currentTemplateName.value)
-  ) {
-    dismissedTemplatesRaw.value = [
-      ...asDismissedList(),
-      currentTemplateName.value,
-    ];
-  }
-  // Start onboarding after feature overlay closes
-  if (!onboardingDismissed.value) {
-    const id = setTimeout(() => {
-      pendingOnboardingTimers.delete(id);
-      startOnboarding();
-    }, 1000);
-    pendingOnboardingTimers.add(id);
-  }
-}
-
-function reopenFeatureOverlay(): void {
-  if (currentTemplateName.value) {
-    dismissedTemplatesRaw.value = asDismissedList().filter(
-      (n) => n !== currentTemplateName.value,
-    );
-  }
-  showFeatureOverlay.value = true;
-}
 
 // Data source picker modal
 const dataSourcePickerOpen = ref(false);
@@ -1468,18 +1402,6 @@ function chooseTemplate(
   currentSerializableConfig = buildSerializableConfig();
   pendingEditorInit = true;
   screen.value = "editor";
-
-  // Show feature overlay if not dismissed
-  if (template?.features?.length) {
-    currentFeatures.value = template.features;
-    currentTemplateName.value = template.name;
-    if (!isTemplateDismissed(template.name)) {
-      showFeatureOverlay.value = true;
-    }
-  } else {
-    currentFeatures.value = [];
-    currentTemplateName.value = "";
-  }
 }
 
 function onScreenEnter(): void {
@@ -1487,14 +1409,6 @@ function onScreenEnter(): void {
     pendingEditorInit = false;
     nextTick(() => {
       initEditor();
-      // Start onboarding after editor has mounted (slight delay to let user orient)
-      if (!onboardingDismissed.value && !showFeatureOverlay.value) {
-        const id = setTimeout(() => {
-          pendingOnboardingTimers.delete(id);
-          startOnboarding();
-        }, 1000);
-        pendingOnboardingTimers.add(id);
-      }
     });
   }
 }
@@ -2130,13 +2044,8 @@ const mergeTagModalRef = useModalTrap(mergeTagPickerOpen);
 const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
-const onboardingActive = ref(false);
-const pendingOnboardingTimers = new Set<ReturnType<typeof setTimeout>>();
-
-const featureModalRef = useModalTrap(showFeatureOverlay);
 const shareModalRef = useModalTrap(shareModalOpen);
 const exportModalRef = useModalTrap(exportModalOpen);
-const onboardingTooltipRef = useModalTrap(onboardingActive);
 
 // --- Lock body scroll when any modal is open ---
 const bodyScrollLocked = useScrollLock(document.body);
@@ -2146,10 +2055,8 @@ watch(
     showImport.value ||
     mergeTagPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
-    showFeatureOverlay.value ||
     shareModalOpen.value ||
-    exportModalOpen.value ||
-    onboardingActive.value,
+    exportModalOpen.value,
   (locked) => {
     bodyScrollLocked.value = locked;
   },
@@ -2286,201 +2193,7 @@ watch(uiTheme, (theme) => {
   }
 });
 
-// --- Onboarding tour ---
-type OnboardingStep =
-  | "canvas"
-  | "sidebar"
-  | "rightSidebar"
-  | "config"
-  | "export"
-  | "share"
-  | "cloud";
-
-const onboardingSteps: OnboardingStep[] = [
-  "canvas",
-  "sidebar",
-  "rightSidebar",
-  "config",
-  "export",
-  "share",
-  "cloud",
-];
-
-const onboardingDismissed = useLocalStorage(
-  "tpl-playground-onboarding-dismissed",
-  false,
-);
-const onboardingStepIndex = ref(0);
-const onboardingRect = ref<DOMRect | null>(null);
-const typedText = ref("");
-const prefersReducedMotion = usePreferredReducedMotion();
-let typewriterCharIndex = 0;
-const { pause: stopTypewriter, resume: resumeTypewriter } = useIntervalFn(
-  () => {
-    const fullText = onboardingStepData.value.text;
-    if (typewriterCharIndex < fullText.length) {
-      typedText.value = fullText.slice(0, typewriterCharIndex + 1);
-      typewriterCharIndex++;
-    } else {
-      stopTypewriter();
-    }
-  },
-  25,
-  { immediate: false },
-);
-
-const currentOnboardingStep = computed(
-  () => onboardingSteps[onboardingStepIndex.value],
-);
-
-const onboardingI18nKey: Record<OnboardingStep, string> = {
-  canvas: "canvas",
-  sidebar: "sidebar",
-  rightSidebar: "rightSidebar",
-  config: "config",
-  export: "exportBtn",
-  share: "share",
-  cloud: "cloud",
-};
-
-const onboardingStepData = computed(() => {
-  const key = onboardingI18nKey[currentOnboardingStep.value];
-  const data = t.value.onboarding[key as keyof typeof t.value.onboarding] as {
-    title: string;
-    text: string;
-  };
-  return { title: data.title, text: data.text };
-});
-
-const onboardingSelector: Partial<Record<OnboardingStep, string>> = {
-  canvas: ".tpl-body",
-  sidebar: ".tpl-sidebar-rail",
-  rightSidebar: ".tpl-right-sidebar",
-};
-
-function updateOnboardingRect(): void {
-  const step = currentOnboardingStep.value;
-  const selector = onboardingSelector[step] ?? `[data-onboarding="${step}"]`;
-  const el = document.querySelector<HTMLElement>(selector);
-  if (el) {
-    // Scroll toolbar items into view on mobile before measuring
-    if (!onboardingSelector[step]) {
-      el.scrollIntoView({
-        behavior: "instant",
-        block: "nearest",
-        inline: "nearest",
-      });
-    }
-    onboardingRect.value = el.getBoundingClientRect();
-  }
-}
-
-function startTypewriter(): void {
-  stopTypewriter();
-  const fullText = onboardingStepData.value.text;
-  typedText.value = "";
-  if (prefersReducedMotion.value === "reduce") {
-    typedText.value = fullText;
-    return;
-  }
-  typewriterCharIndex = 0;
-  resumeTypewriter();
-}
-
-function startOnboarding(): void {
-  if (onboardingDismissed.value) return;
-  onboardingStepIndex.value = 0;
-  onboardingActive.value = true;
-  nextTick(() => {
-    updateOnboardingRect();
-    startTypewriter();
-  });
-}
-
-function nextOnboardingStep(): void {
-  if (onboardingStepIndex.value < onboardingSteps.length - 1) {
-    onboardingStepIndex.value++;
-    nextTick(() => {
-      updateOnboardingRect();
-      startTypewriter();
-    });
-  } else {
-    dismissOnboarding();
-  }
-}
-
-function dismissOnboarding(): void {
-  stopTypewriter();
-  onboardingActive.value = false;
-  onboardingDismissed.value = true;
-}
-
-function restartOnboarding(): void {
-  onboardingDismissed.value = false;
-  startOnboarding();
-}
-
-const onboardingTooltipStyle = computed(() => {
-  const rect = onboardingRect.value;
-  if (!rect) return {};
-  const step = currentOnboardingStep.value;
-  const pad = 12;
-
-  // Canvas: center the tooltip over the canvas area
-  if (step === "canvas") {
-    return {
-      top: `${rect.top + rect.height / 3}px`,
-      left: `${rect.left + rect.width / 2}px`,
-      transform: "translate(-50%, -50%)",
-    };
-  }
-
-  // Sidebar: position tooltip to the right of the sidebar
-  if (step === "sidebar") {
-    return {
-      top: `${rect.top + rect.height / 3}px`,
-      left: `${rect.right + pad}px`,
-    };
-  }
-
-  // Right sidebar: position tooltip to the left of the sidebar
-  if (step === "rightSidebar") {
-    return {
-      top: `${rect.top + rect.height / 3}px`,
-      left: `${rect.left - 300 - pad}px`,
-    };
-  }
-
-  // Toolbar buttons: position below
-  return {
-    top: `${rect.bottom + pad}px`,
-    left: `${Math.min(rect.left, window.innerWidth - 320)}px`,
-  };
-});
-
-const onboardingSpotlightStyle = computed(() => {
-  const rect = onboardingRect.value;
-  if (!rect) return {};
-  const step = currentOnboardingStep.value;
-  const pad = 6;
-  const isLargePanel =
-    step === "canvas" || step === "sidebar" || step === "rightSidebar";
-  const w = rect.width + pad * 2;
-  const h = rect.height + pad * 2;
-  const x = rect.left - pad;
-  const y = rect.top - pad;
-  return {
-    width: `${w}px`,
-    height: `${h}px`,
-    transform: `translate(${x}px, ${y}px)`,
-    borderRadius: isLargePanel ? "14px" : "8px",
-  };
-});
-
 onUnmounted(() => {
-  stopTypewriter();
-  pendingOnboardingTimers.forEach(clearTimeout);
-  pendingOnboardingTimers.clear();
   unmount();
 });
 </script>
@@ -3093,24 +2806,6 @@ onUnmounted(() => {
             >
               <Crosshair :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.config }}</span>
-            </button>
-            <button
-              v-if="currentFeatures.length"
-              class="pg-toolbar-btn"
-              :title="t.toolbar.features"
-              @click="reopenFeatureOverlay"
-            >
-              <CircleAlert :size="16" :stroke-width="1.5" aria-hidden="true" />
-              <span class="pg-toolbar-label">{{ t.toolbar.features }}</span>
-            </button>
-            <button
-              data-testid="toolbar-tour"
-              class="pg-toolbar-btn"
-              :title="t.toolbar.tour"
-              @click="restartOnboarding"
-            >
-              <Info :size="16" :stroke-width="1.5" aria-hidden="true" />
-              <span class="pg-toolbar-label">{{ t.toolbar.tour }}</span>
             </button>
           </div>
 
@@ -4270,219 +3965,6 @@ onUnmounted(() => {
                   class="shrink-0 text-gray-300 group-hover:text-primary transition-colors duration-150"
                   :size="16"
                   :stroke-width="1.5"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Feature Showcase Overlay -->
-    <Teleport to="body">
-      <Transition name="pg-modal">
-        <div
-          v-if="showFeatureOverlay"
-          class="pg-modal-backdrop"
-          @click.self="dismissFeatureOverlay"
-          @keydown.escape="dismissFeatureOverlay"
-        >
-          <div
-            ref="featureModalRef"
-            data-testid="feature-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="features-modal-title"
-            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
-          >
-            <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
-            >
-              <div>
-                <span
-                  id="features-modal-title"
-                  class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                  >{{ t.featureModal.title }}</span
-                >
-                <p class="m-0 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {{
-                    format(t.featureModal.subtitle, {
-                      name: currentTemplateName,
-                    })
-                  }}
-                </p>
-              </div>
-              <button
-                data-testid="feature-overlay-close"
-                :aria-label="t.common.close"
-                class="pg-modal-close"
-                @click="dismissFeatureOverlay"
-              >
-                &times;
-              </button>
-            </div>
-            <div class="flex-1 overflow-auto p-5 space-y-4">
-              <div
-                v-for="(feature, i) in currentFeatures"
-                :key="i"
-                class="flex gap-3 p-3.5 bg-gray-50 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600"
-              >
-                <div
-                  class="shrink-0 flex items-center justify-center size-8 rounded-md bg-primary/10 text-primary mt-0.5"
-                >
-                  <Braces
-                    v-if="feature.icon === 'merge-tag'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <Clock
-                    v-else-if="feature.icon === 'display-condition'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <Database
-                    v-else-if="feature.icon === 'data-source'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <Blocks
-                    v-else-if="feature.icon === 'custom-block'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <MonitorSmartphone
-                    v-else-if="feature.icon === 'responsive'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <Code
-                    v-else-if="feature.icon === 'html'"
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                  <Zap
-                    v-else
-                    :size="16"
-                    :stroke-width="1.5"
-                    aria-hidden="true"
-                  />
-                </div>
-                <div class="min-w-0">
-                  <div
-                    class="text-[13px] font-semibold text-gray-900 dark:text-gray-100"
-                  >
-                    {{ feature.label }}
-                  </div>
-                  <p
-                    v-for="(para, pi) in feature.description.split('\n')"
-                    :key="pi"
-                    class="text-xs text-gray-500 leading-relaxed dark:text-gray-400"
-                    :class="pi === 0 ? 'm-0 mt-1.5' : 'm-0 mt-2'"
-                  >
-                    {{ para }}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div
-              class="flex items-center justify-end px-5 py-4 border-t border-gray-200 shrink-0 dark:border-gray-700"
-            >
-              <button
-                class="pg-cta h-9 px-5 text-[13px] rounded-md"
-                @click="dismissFeatureOverlay"
-              >
-                {{ t.featureModal.dismiss }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-
-    <!-- Onboarding Tour Overlay -->
-    <Teleport to="body">
-      <Transition name="pg-modal">
-        <div
-          v-if="onboardingActive"
-          class="fixed inset-0 z-[10001]"
-          @click.self="dismissOnboarding"
-          @keydown.escape="dismissOnboarding"
-        >
-          <!-- Spotlight with backdrop shadow -->
-          <div
-            v-if="onboardingRect"
-            class="pg-onboarding-spotlight absolute top-0 left-0"
-            :style="onboardingSpotlightStyle"
-            @click="dismissOnboarding"
-          />
-
-          <!-- Tooltip -->
-          <div
-            v-if="onboardingRect"
-            ref="onboardingTooltipRef"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="onboardingStepData.title"
-            class="pg-onboarding-tooltip fixed z-[10002] w-[300px] bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
-            :style="onboardingTooltipStyle"
-          >
-            <div class="px-4 pt-4 pb-3">
-              <div
-                class="text-xs font-medium text-primary mb-1 tracking-wide uppercase"
-              >
-                {{
-                  format(t.onboarding.stepCounter, {
-                    current: String(onboardingStepIndex + 1),
-                    total: String(onboardingSteps.length),
-                  })
-                }}
-              </div>
-              <div
-                class="text-[15px] font-semibold text-gray-900 mb-1.5 dark:text-gray-100"
-              >
-                {{ onboardingStepData.title }}
-              </div>
-              <div
-                class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed min-h-[40px]"
-              >
-                {{ typedText
-                }}<span
-                  v-if="typedText.length < onboardingStepData.text.length"
-                  class="pg-onboarding-cursor"
-                  >|</span
-                >
-              </div>
-            </div>
-            <div
-              class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50"
-            >
-              <button
-                data-testid="onboarding-skip"
-                class="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer font-sans transition-colors duration-150 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                @click="dismissOnboarding"
-              >
-                {{ t.onboarding.skip }}
-              </button>
-              <button
-                data-testid="onboarding-next"
-                class="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary text-white text-[13px] font-medium font-sans border-none cursor-pointer transition-all duration-150 hover:bg-primary-hover"
-                @click="nextOnboardingStep"
-              >
-                {{
-                  onboardingStepIndex < onboardingSteps.length - 1
-                    ? t.onboarding.next
-                    : t.onboarding.done
-                }}
-                <ChevronRight
-                  v-if="onboardingStepIndex < onboardingSteps.length - 1"
-                  :size="12"
                   aria-hidden="true"
                 />
               </button>

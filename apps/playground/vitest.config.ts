@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       // Workspace packages export dist/; tests run without a prior build.
       "@templatical/types": resolve(packagesDir, "types/src/index.ts"),
+      "@templatical/core": resolve(packagesDir, "core/src/index.ts"),
     },
   },
   test: {

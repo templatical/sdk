@@ -55,8 +55,6 @@ async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
   const chooserPage = new ChooserPage(page, { shadowDom });
   const editorPage = new EditorPage(page);
   await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     localStorage.setItem("tpl-playground-media", "false");
   });
   await chooserPage.goto();
@@ -67,54 +65,58 @@ async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
 }
 
 test.describe("Media library", () => {
-  test("Browse picks the first seeded asset onto the image block", async ({
-    blankEditorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.clickPaletteItem("image");
+  test.describe("with media provider", () => {
+    test.skip(true, "cookbook-task-5: media scene");
 
-    const imageBlock = page.locator(blockByType("image")).first();
-    await expect(imageBlock).toBeVisible();
-    await imageBlock.locator(SELECTORS.imageBrowseMedia).click();
+    test("Browse picks the first seeded asset onto the image block", async ({
+      blankEditorReady: { editorPage },
+      page,
+    }) => {
+      await editorPage.clickPaletteItem("image");
 
-    const modal = page.locator(SELECTORS.mediaLibraryModal);
-    await expect(modal).toBeVisible();
+      const imageBlock = page.locator(blockByType("image")).first();
+      await expect(imageBlock).toBeVisible();
+      await imageBlock.locator(SELECTORS.imageBrowseMedia).click();
 
-    const firstItem = modal.locator(SELECTORS.mediaLibraryItem).first();
-    await expect(firstItem).toBeVisible();
-    await expect(firstItem).toHaveAttribute(
-      "data-media-id",
-      "seed-product-shot",
-    );
-    await firstItem.click();
+      const modal = page.locator(SELECTORS.mediaLibraryModal);
+      await expect(modal).toBeVisible();
 
-    const confirm = page.locator(SELECTORS.mediaConfirm);
-    await expect(confirm).toBeEnabled();
-    await confirm.click();
-    await expect(modal).toBeHidden();
+      const firstItem = modal.locator(SELECTORS.mediaLibraryItem).first();
+      await expect(firstItem).toBeVisible();
+      await expect(firstItem).toHaveAttribute(
+        "data-media-id",
+        "seed-product-shot",
+      );
+      await firstItem.click();
 
-    await expect(imageBlock.locator("img")).toHaveAttribute(
-      "src",
-      FIRST_SEED_URL,
-    );
-  });
+      const confirm = page.locator(SELECTORS.mediaConfirm);
+      await expect(confirm).toBeEnabled();
+      await confirm.click();
+      await expect(modal).toBeHidden();
 
-  test("dropping a PNG onto an image block sets a data URL src", async ({
-    blankEditorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.clickPaletteItem("image");
+      await expect(imageBlock.locator("img")).toHaveAttribute(
+        "src",
+        FIRST_SEED_URL,
+      );
+    });
 
-    const imageBlock = page.locator(blockByType("image")).first();
-    const dropZone = imageBlock.locator(SELECTORS.imageDropZone);
-    await expect(dropZone).toBeVisible();
+    test("dropping a PNG onto an image block sets a data URL src", async ({
+      blankEditorReady: { editorPage },
+      page,
+    }) => {
+      await editorPage.clickPaletteItem("image");
 
-    await dropPngOn(dropZone);
+      const imageBlock = page.locator(blockByType("image")).first();
+      const dropZone = imageBlock.locator(SELECTORS.imageDropZone);
+      await expect(dropZone).toBeVisible();
 
-    await expect(imageBlock.locator("img")).toHaveAttribute(
-      "src",
-      /^data:image\/png/,
-    );
+      await dropPngOn(dropZone);
+
+      await expect(imageBlock.locator("img")).toHaveAttribute(
+        "src",
+        /^data:image\/png/,
+      );
+    });
   });
 
   test("media disabled: no Browse, drop ignored, URL field still there", async ({

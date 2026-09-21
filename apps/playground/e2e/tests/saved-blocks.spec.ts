@@ -97,10 +97,6 @@ test.describe("saved blocks", () => {
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -124,10 +120,6 @@ test.describe("saved blocks", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -146,10 +138,6 @@ test.describe("saved blocks", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -222,10 +210,6 @@ test.describe("saved blocks", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -270,10 +254,6 @@ test.describe("saved blocks", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -321,10 +301,6 @@ test.describe("saved blocks", () => {
 test.describe("saved blocks — pick session", () => {
   async function bootEmptyStore(page: Page): Promise<void> {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
   }
 
   /** Select the first block and start a session from its bookmark action. */
@@ -662,10 +638,6 @@ test.describe("saved blocks — categories", () => {
     chooserPage: { goto(): Promise<void>; selectFirstTemplate(): Promise<void> },
     editorPage: { waitForReady(): Promise<void>; dismissOverlays(): Promise<void> },
   ): Promise<void> {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -718,10 +690,6 @@ test.describe("saved blocks — categories", () => {
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -767,10 +735,6 @@ test.describe("saved blocks — categories", () => {
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -853,8 +817,6 @@ test.describe("saved blocks — read-only library", () => {
   async function bootReadOnly(page: Page): Promise<void> {
     await seedSavedBlocks(page, SEEDED);
     await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem("tpl-playground-saved-blocks-readonly", "true");
     });
   }
@@ -940,8 +902,6 @@ test.describe("saved blocks — slow list()", () => {
   }) => {
     await seedSavedBlocks(page, SEEDED);
     await page.addInitScript((delay) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem(
         "tpl-playground-saved-blocks-delay",
         String(delay as number),
@@ -981,8 +941,6 @@ test.describe("saved blocks — slow list()", () => {
   }) => {
     await seedSavedBlocks(page, SEEDED);
     await page.addInitScript((delay) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem(
         "tpl-playground-saved-blocks-delay",
         String(delay as number),
@@ -1019,10 +977,6 @@ test.describe("saved blocks — browser modal width", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -1069,19 +1023,11 @@ test.describe("saved blocks — playground demo defaults", () => {
    * it, which is precisely what the persistence assertion below needs to rule
    * out.
    */
-  async function bootFresh(page: Page): Promise<void> {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-  }
-
   test("seeds a library on first open, with the locked entry among them", async ({
     page,
     chooserPage,
     editorPage,
   }) => {
-    await bootFresh(page);
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -1105,7 +1051,6 @@ test.describe("saved blocks — playground demo defaults", () => {
     chooserPage,
     editorPage,
   }) => {
-    await bootFresh(page);
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -1131,7 +1076,6 @@ test.describe("saved blocks — playground demo defaults", () => {
     chooserPage,
     editorPage,
   }) => {
-    await bootFresh(page);
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -1172,7 +1116,6 @@ test.describe("saved blocks — playground demo defaults", () => {
     chooserPage,
     editorPage,
   }) => {
-    await bootFresh(page);
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -1201,10 +1144,6 @@ test.describe("saved blocks — playground demo defaults", () => {
     chooserPage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     // Newsletter is the second card and carries a different fixture set.
     await page.locator(SELECTORS.templateCard).nth(1).click();

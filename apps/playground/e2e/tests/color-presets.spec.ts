@@ -27,10 +27,6 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
   // The Event Invitation template passes `colors: { presets, allowCustom: false }`
   // to init(), so every picker in it is a preset-only grid.
   test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
     await chooserPage.goto();
     await chooserPage.selectTemplateByName("Event Invitation");
     await editorPage.waitForReady();

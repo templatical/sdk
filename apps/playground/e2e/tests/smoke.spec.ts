@@ -49,24 +49,32 @@ test.describe("Playground smoke tests", () => {
   });
 
   test("can navigate back to template chooser", async ({
-    editorReady: { editorPage },
+    editorReady,
     page,
   }) => {
-    await editorPage.clickBack();
+    void editorReady;
+    await page.locator('[data-testid="scene-host"] a[href="/"]').click();
     await expect(page.locator(SELECTORS.chooserScreen)).toBeVisible();
   });
 
   test("export modal shows JSON tab content", async ({
-    editorReady: { editorPage },
+    chooserPage,
+    editorPage,
     page,
   }) => {
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
     const content = await page.locator(".cm-content").first().textContent();
     expect(content).toContain('"blocks"');
   });
 
-  test("theme toggle works", async ({ editorReady: { editorPage }, page }) => {
+  test("theme toggle works", async ({ chooserPage, editorPage, page }) => {
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
     const root = page.locator("html");
     const classBefore = await root.getAttribute("class");
     await editorPage.clickThemeToggle();
