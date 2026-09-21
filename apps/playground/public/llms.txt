@@ -1,0 +1,9 @@
+# Templatical Playground
+
+> Live init() setups for the Templatical email editor SDK.
+
+Each scene is also raw markdown: /scenes/<id>.md
+
+## Minimum
+
+- [Minimum setup](https://play.templatical.com/scenes/minimum): init({ container }) — empty canvas, no providers.

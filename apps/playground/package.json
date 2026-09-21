@@ -42,7 +42,8 @@
   },
   "private": true,
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm run build:agent-surface && vite build",
+    "build:agent-surface": "tsx --tsconfig tsconfig.json scripts/build-agent-surface.mjs",
     "dev": "vite",
     "dev:share": "wrangler pages dev --kv SHARES_KV --directory public -- vite",
     "lint:templates": "tsx --tsconfig scripts/tsconfig.json scripts/lint-templates.ts",

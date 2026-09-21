@@ -106,7 +106,18 @@ export default {
       });
     }
 
-    // Everything else — serve static assets
+    // Everything else — SPA fallback for /scenes/:id; static files as-is
+    if (request.method === "GET") {
+      const p = url.pathname;
+      const isAsset =
+        p.startsWith("/assets/") ||
+        p.startsWith("/api/") ||
+        /\.(md|txt|js|css|png|svg|json|ico|map|woff2?)$/.test(p);
+      if (!isAsset) {
+        return env.ASSETS.fetch(new Request(new URL("/index.html", url), request));
+      }
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
