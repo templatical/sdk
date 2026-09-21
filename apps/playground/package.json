@@ -22,7 +22,7 @@
     "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@vueuse/core": "^14.4.0",
+    "@vueuse/core": "^15.0.0",
     "@vueuse/integrations": "^14.4.0",
     "codemirror": "^6.0.2",
     "focus-trap": "^8.2.2",
