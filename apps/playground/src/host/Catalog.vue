@@ -158,11 +158,11 @@ function onNavKeydown(event: KeyboardEvent): void {
             :aria-selected="activeGroup === tab.group"
             :aria-controls="`catalog-tabpanel-${tab.group}`"
             :tabindex="activeGroup === tab.group ? 0 : -1"
-            class="px-3 py-2.5 rounded-r-lg rounded-l-none text-left bg-transparent border-0 border-l-2 cursor-pointer font-sans transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            class="px-3 py-2.5 rounded-lg text-left bg-transparent border-0 cursor-pointer font-sans transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             :class="
               activeGroup === tab.group
-                ? 'border-primary bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                : 'border-transparent text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
+                ? 'catalog-tab-active bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60'
             "
             @click="activeGroup = tab.group"
           >

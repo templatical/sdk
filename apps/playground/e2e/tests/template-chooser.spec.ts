@@ -51,7 +51,7 @@ test.describe("Setup catalog", () => {
       '[data-testid="catalog-tab-personalization"]',
     );
     await expect(configure).toHaveAttribute("aria-selected", "true");
-    await expect(configure).toHaveClass(/border-primary/);
+    await expect(configure).toHaveClass(/catalog-tab-active/);
     await configure.focus();
     await page.keyboard.press("ArrowDown");
     await expect(personalization).toHaveAttribute("aria-selected", "true");
