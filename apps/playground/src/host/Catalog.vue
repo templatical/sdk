@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, type Component } from "vue";
-import { ArrowRight } from "@lucide/vue";
+import { ArrowRight, ChevronRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
@@ -128,7 +128,7 @@ function onNavKeydown(event: KeyboardEvent): void {
             >{{ t.host.minimumPaste }}</pre>
         </span>
         <span
-          class="inline-flex items-center gap-1.5 shrink-0 text-sm font-medium text-gray-900 dark:text-gray-100"
+          class="inline-flex items-center gap-1.5 shrink-0 text-sm font-medium text-primary dark:text-primary-dark"
         >
           {{ t.host.openScene }}
           <ArrowRight
@@ -145,7 +145,7 @@ function onNavKeydown(event: KeyboardEvent): void {
           role="tablist"
           aria-orientation="vertical"
           :aria-label="t.host.setups"
-          class="w-52 shrink-0 flex flex-col gap-0.5"
+          class="w-52 shrink-0 flex flex-col gap-1.5"
           @keydown="onNavKeydown"
         >
           <button
@@ -158,25 +158,45 @@ function onNavKeydown(event: KeyboardEvent): void {
             :aria-selected="activeGroup === tab.group"
             :aria-controls="`catalog-tabpanel-${tab.group}`"
             :tabindex="activeGroup === tab.group ? 0 : -1"
-            class="px-3 py-2.5 rounded-lg text-left bg-transparent border-0 cursor-pointer font-sans transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-left cursor-pointer font-sans transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             :class="
               activeGroup === tab.group
-                ? 'catalog-tab-active bg-gray-200 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60'
+                ? 'catalog-tab-active border border-primary/30 bg-primary/10 text-gray-900 dark:border-primary/40 dark:bg-primary/15 dark:text-gray-100'
+                : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800'
             "
             @click="activeGroup = tab.group"
           >
-            <span
-              class="block text-sm"
+            <span class="min-w-0 flex-1">
+              <span
+                class="block text-sm"
+                :class="
+                  activeGroup === tab.group
+                    ? 'font-semibold text-gray-900 dark:text-gray-100'
+                    : 'font-medium'
+                "
+                >{{ groupLabel(tab.group) }}</span
+              >
+              <span
+                class="block mt-0.5 text-xs leading-snug"
+                :class="
+                  activeGroup === tab.group
+                    ? 'text-gray-700 dark:text-gray-300'
+                    : 'text-gray-600 dark:text-gray-400'
+                "
+                >{{ groupJob(tab.group) }}</span
+              >
+            </span>
+            <ChevronRight
+              :size="14"
+              :stroke-width="1.75"
+              aria-hidden="true"
+              class="shrink-0"
               :class="
-                activeGroup === tab.group ? 'font-semibold' : 'font-medium'
+                activeGroup === tab.group
+                  ? 'text-primary'
+                  : 'text-gray-400 dark:text-gray-500'
               "
-              >{{ groupLabel(tab.group) }}</span
-            >
-            <span
-              class="block mt-0.5 text-xs leading-snug text-gray-600 dark:text-gray-300"
-              >{{ groupJob(tab.group) }}</span
-            >
+            />
           </button>
         </div>
         <div
@@ -222,7 +242,7 @@ function onNavKeydown(event: KeyboardEvent): void {
                 class="group flex gap-3 h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               >
                 <span
-                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-dark"
                 >
                   <component
                     :is="iconFor(scene)"
