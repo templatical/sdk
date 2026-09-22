@@ -31,4 +31,9 @@ describe("catalogInitKey", () => {
     const scene = getScene("i18n")!;
     expect(catalogInitKey(scene.title, scene.snippet)).toBe("locale");
   });
+
+  it("omits blockDefaults under Defaults", () => {
+    const scene = getScene("defaults")!;
+    expect(catalogInitKey(scene.title, scene.snippet)).toBeNull();
+  });
 });

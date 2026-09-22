@@ -49,6 +49,9 @@ function compact(value: string): string {
 export function catalogInitKey(title: string, snippet: string): string | null {
   const key = snippetChipKeys(snippet)[0];
   if (!key) return null;
-  if (compact(title) === compact(key)) return null;
+  const titleSlug = compact(title);
+  const keySlug = compact(key);
+  if (titleSlug === keySlug) return null;
+  if (titleSlug.length >= 4 && keySlug.endsWith(titleSlug)) return null;
   return key;
 }

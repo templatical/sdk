@@ -41,6 +41,24 @@ test.describe("Setup catalog", () => {
     await expect(page.locator('[data-testid="scene-link-saved-blocks"]')).toHaveCount(0);
   });
 
+  test("setup nav looks selected and moves with arrows", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    const configure = page.locator('[data-testid="catalog-tab-configure"]');
+    const personalization = page.locator(
+      '[data-testid="catalog-tab-personalization"]',
+    );
+    await expect(configure).toHaveAttribute("aria-selected", "true");
+    await expect(configure).toHaveClass(/border-primary/);
+    await configure.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(personalization).toHaveAttribute("aria-selected", "true");
+    await expect(personalization).toBeFocused();
+    await expect(page.locator('[data-testid="scene-link-merge-tags"]')).toBeVisible();
+  });
+
   test("example card opens Launchpad launch", async ({
     chooserPage,
     editorPage,

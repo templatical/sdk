@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type Component } from "vue";
+import { computed, nextTick, ref, type Component } from "vue";
 import { ArrowRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
@@ -60,6 +60,31 @@ function iconFor(scene: Scene): Component | undefined {
 function initKeyFor(scene: Scene): string | null {
   return catalogInitKey(scene.title, scene.snippet);
 }
+
+function onNavKeydown(event: KeyboardEvent): void {
+  const groups = setupTabs.value.map((tab) => tab.group);
+  const index = groups.indexOf(activeGroup.value);
+  if (index < 0) return;
+  let next = index;
+  if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+    next = Math.min(groups.length - 1, index + 1);
+  } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+    next = Math.max(0, index - 1);
+  } else if (event.key === "Home") {
+    next = 0;
+  } else if (event.key === "End") {
+    next = groups.length - 1;
+  } else {
+    return;
+  }
+  event.preventDefault();
+  const group = groups[next];
+  if (!group) return;
+  activeGroup.value = group;
+  void nextTick(() => {
+    document.getElementById(`catalog-tab-${group}`)?.focus();
+  });
+}
 </script>
 
 <template>
@@ -93,10 +118,11 @@ function initKeyFor(scene: Scene): string | null {
         class="group flex items-center justify-between gap-6 mb-12 p-5 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
       >
         <span class="min-w-0">
-          <span
-            class="block text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
-            >{{ minimum.title }}</span
+          <h2
+            class="m-0 text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
           >
+            {{ minimum.title }}
+          </h2>
           <pre
             class="m-0 mt-2 text-[13px] font-mono text-gray-600 dark:text-gray-300"
             >{{ t.host.minimumPaste }}</pre>
@@ -120,6 +146,7 @@ function initKeyFor(scene: Scene): string | null {
           aria-orientation="vertical"
           :aria-label="t.host.setups"
           class="w-52 shrink-0 flex flex-col gap-0.5"
+          @keydown="onNavKeydown"
         >
           <button
             v-for="tab in setupTabs"
@@ -131,17 +158,21 @@ function initKeyFor(scene: Scene): string | null {
             :aria-selected="activeGroup === tab.group"
             :aria-controls="`catalog-tabpanel-${tab.group}`"
             :tabindex="activeGroup === tab.group ? 0 : -1"
-            class="px-3 py-2.5 rounded-lg text-left bg-transparent border-0 cursor-pointer font-sans"
+            class="px-3 py-2.5 rounded-r-lg rounded-l-none text-left bg-transparent border-0 border-l-2 cursor-pointer font-sans transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             :class="
               activeGroup === tab.group
-                ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
+                ? 'border-primary bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                : 'border-transparent text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
             "
             @click="activeGroup = tab.group"
           >
-            <span class="block text-sm font-medium">{{
-              groupLabel(tab.group)
-            }}</span>
+            <span
+              class="block text-sm"
+              :class="
+                activeGroup === tab.group ? 'font-semibold' : 'font-medium'
+              "
+              >{{ groupLabel(tab.group) }}</span
+            >
             <span
               class="block mt-0.5 text-xs leading-snug text-gray-600 dark:text-gray-300"
               >{{ groupJob(tab.group) }}</span
