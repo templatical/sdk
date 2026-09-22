@@ -87,6 +87,13 @@ export default {
       import: "Import",
       examples: "Examples",
     },
+    groupJobs: {
+      configure: "Chrome, Schriften, Locale",
+      personalization: "Tags, Logik, Sichtbarkeit",
+      backend: "Laden, speichern, senden",
+      import: "Bestehende Vorlage konvertieren",
+      examples: "Fertige E-Mails",
+    },
   },
   configModal: {
     tabs: {

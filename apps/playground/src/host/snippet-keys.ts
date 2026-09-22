@@ -40,3 +40,15 @@ export function snippetChipKeys(snippet: string): string[] {
     (key) => snippetContainsKeys(snippet, [key]).length === 0,
   );
 }
+
+function compact(value: string): string {
+  return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+/** Catalog caption: first init() key, omitted when it restates the title. */
+export function catalogInitKey(title: string, snippet: string): string | null {
+  const key = snippetChipKeys(snippet)[0];
+  if (!key) return null;
+  if (compact(title) === compact(key)) return null;
+  return key;
+}

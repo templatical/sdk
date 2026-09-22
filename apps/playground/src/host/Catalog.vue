@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, type Component } from "vue";
 import { ArrowRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
+import { SCENE_ICONS } from "@/host/catalogIcons";
 import HostKnobs from "@/host/HostKnobs.vue";
-import SetupSketch from "@/host/SetupSketch.vue";
 import { sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
+import { catalogInitKey } from "@/host/snippet-keys";
 import { format, usePlaygroundI18n } from "@/i18n";
 import { getScene, scenesByGroup, type Scene, type SceneGroup } from "@/scenes";
 
@@ -16,16 +17,17 @@ const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const minimum = getScene("minimum");
 const grouped = scenesByGroup();
 
-const TAB_GROUPS: SceneGroup[] = [
+const NAV_GROUPS: SceneGroup[] = [
   "configure",
   "personalization",
   "backend",
   "import",
+  "examples",
 ];
 const activeGroup = ref<SceneGroup>("configure");
 
 const setupTabs = computed(() =>
-  TAB_GROUPS.flatMap((group) => {
+  NAV_GROUPS.flatMap((group) => {
     const scenes = grouped.get(group);
     if (!scenes?.length) return [];
     return [{ group, scenes }];
@@ -38,14 +40,25 @@ const activeScenes = computed(
     [],
 );
 
-const exampleScenes = computed(() => grouped.get("examples") ?? []);
-
 function hrefFor(scene: Scene): string {
   return sceneHref(scene.id, window.location.search);
 }
 
 function groupLabel(group: SceneGroup): string {
   return t.value.host.groups[group];
+}
+
+function groupJob(group: SceneGroup): string {
+  if (group === "minimum") return "";
+  return t.value.host.groupJobs[group];
+}
+
+function iconFor(scene: Scene): Component | undefined {
+  return SCENE_ICONS[scene.id];
+}
+
+function initKeyFor(scene: Scene): string | null {
+  return catalogInitKey(scene.title, scene.snippet);
 }
 </script>
 
@@ -101,11 +114,12 @@ function groupLabel(group: SceneGroup): string {
         </span>
       </a>
 
-      <section class="mb-12" :aria-label="t.host.setups">
+      <section class="mb-12 flex gap-8 items-start" :aria-label="t.host.setups">
         <div
           role="tablist"
+          aria-orientation="vertical"
           :aria-label="t.host.setups"
-          class="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700"
+          class="w-52 shrink-0 flex flex-col gap-0.5"
         >
           <button
             v-for="tab in setupTabs"
@@ -117,24 +131,32 @@ function groupLabel(group: SceneGroup): string {
             :aria-selected="activeGroup === tab.group"
             :aria-controls="`catalog-tabpanel-${tab.group}`"
             :tabindex="activeGroup === tab.group ? 0 : -1"
-            class="px-3 py-2 -mb-px text-sm font-medium bg-transparent border-0 border-b-2 cursor-pointer font-sans"
+            class="px-3 py-2.5 rounded-lg text-left bg-transparent border-0 cursor-pointer font-sans"
             :class="
               activeGroup === tab.group
-                ? 'border-primary text-gray-900 dark:text-gray-100'
-                : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+                ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
             "
             @click="activeGroup = tab.group"
           >
-            {{ groupLabel(tab.group) }}
+            <span class="block text-sm font-medium">{{
+              groupLabel(tab.group)
+            }}</span>
+            <span
+              class="block mt-0.5 text-xs leading-snug text-gray-600 dark:text-gray-300"
+              >{{ groupJob(tab.group) }}</span
+            >
           </button>
         </div>
         <div
           role="tabpanel"
+          class="min-w-0 flex-1"
           :id="`catalog-tabpanel-${activeGroup}`"
           :aria-labelledby="`catalog-tab-${activeGroup}`"
         >
           <ul
-            class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+            v-if="activeGroup === 'examples'"
+            class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 gap-3"
           >
             <li v-for="scene in activeScenes" :key="scene.id">
               <a
@@ -143,7 +165,7 @@ function groupLabel(group: SceneGroup): string {
                 :aria-label="format(t.a11y.openScene, { name: scene.title })"
                 class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               >
-                <SetupSketch v-if="scene.affordance" :kind="scene.affordance" />
+                <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
                 <span class="flex flex-col gap-1 p-3">
                   <span
                     class="text-sm font-medium text-gray-900 dark:text-gray-100"
@@ -157,43 +179,47 @@ function groupLabel(group: SceneGroup): string {
               </a>
             </li>
           </ul>
+          <ul
+            v-else
+            class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 gap-3"
+          >
+            <li v-for="scene in activeScenes" :key="scene.id">
+              <a
+                :href="hrefFor(scene)"
+                :data-testid="`scene-link-${scene.id}`"
+                :aria-label="format(t.a11y.openScene, { name: scene.title })"
+                class="group flex gap-3 h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+              >
+                <span
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                >
+                  <component
+                    :is="iconFor(scene)"
+                    v-if="iconFor(scene)"
+                    :size="18"
+                    :stroke-width="1.75"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span class="min-w-0 flex flex-col gap-1">
+                  <span
+                    class="text-sm font-medium text-gray-900 dark:text-gray-100"
+                    >{{ scene.title }}</span
+                  >
+                  <span
+                    class="text-xs leading-snug text-gray-600 dark:text-gray-300"
+                    >{{ scene.job }}</span
+                  >
+                  <span
+                    v-if="initKeyFor(scene)"
+                    class="font-mono text-[11px] text-gray-500 dark:text-gray-400"
+                    >{{ initKeyFor(scene) }}</span
+                  >
+                </span>
+              </a>
+            </li>
+          </ul>
         </div>
-      </section>
-
-      <section
-        v-if="exampleScenes.length"
-        aria-labelledby="catalog-group-examples"
-      >
-        <h2
-          id="catalog-group-examples"
-          class="m-0 mb-3 text-xs font-semibold uppercase tracking-[0.04em] text-gray-600 dark:text-gray-300"
-        >
-          {{ t.host.groups.examples }}
-        </h2>
-        <ul
-          class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
-        >
-          <li v-for="scene in exampleScenes" :key="scene.id">
-            <a
-              :href="hrefFor(scene)"
-              :data-testid="`scene-link-${scene.id}`"
-              :aria-label="format(t.a11y.openScene, { name: scene.title })"
-              class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
-            >
-              <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
-              <span class="flex flex-col gap-1 p-3">
-                <span
-                  class="text-sm font-medium text-gray-900 dark:text-gray-100"
-                  >{{ scene.title }}</span
-                >
-                <span
-                  class="text-xs leading-snug text-gray-600 dark:text-gray-300"
-                  >{{ scene.job }}</span
-                >
-              </span>
-            </a>
-          </li>
-        </ul>
       </section>
 
       <nav

@@ -50,6 +50,7 @@ test.describe("Setup catalog", () => {
     const card = page.locator(
       '[data-testid="scene-link-example-launchpad-launch"]',
     );
+    await page.locator('[data-testid="catalog-tab-examples"]').click();
     await expect(card.locator('[data-testid="catalog-sketch"]')).toBeVisible();
     await card.click();
     await expect(page.locator(SELECTORS.sceneHost)).toBeVisible();
