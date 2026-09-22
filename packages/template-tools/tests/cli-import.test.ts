@@ -26,6 +26,7 @@ import {
   FORMATS,
   runImport,
   summarizeReport,
+  unpackStripoSource,
 } from "../src/cli/commands/import";
 import { UsageError } from "../src/cli/io";
 import { resolveOptional } from "../src/cli/resolve-optional";
@@ -72,6 +73,61 @@ describe("detectFormat", () => {
   it("returns null when it cannot tell", () => {
     expect(detectFormat("a.json", JSON.stringify({ whatever: 1 }))).toBeNull();
     expect(detectFormat("a.bin", " binary")).toBeNull();
+    expect(detectFormat("a.json", "{not json")).toBeNull();
+  });
+
+  it("reads mjml from the extension and from a leading tag, even as .html", () => {
+    expect(detectFormat("a.mjml", "<mjml></mjml>")).toBe("mjml");
+    expect(detectFormat("a.html", "<mjml><mj-body></mj-body></mjml>")).toBe(
+      "mjml",
+    );
+    expect(detectFormat("a.html", "<mj-body></mj-body>")).toBe("mjml");
+  });
+
+  it("reads stripo from class tokens before the generic html branch", () => {
+    expect(detectFormat("a.html", '<div class="esd-structure">x</div>')).toBe(
+      "stripo",
+    );
+    expect(
+      detectFormat(
+        "a.json",
+        JSON.stringify({ html: '<div class="es-wrapper"></div>', css: "p{}" }),
+      ),
+    ).toBe("stripo");
+  });
+
+  it("reads topol, chamaileon and easy-email-pro from their persist shapes", () => {
+    expect(
+      detectFormat("a.json", JSON.stringify({ tagName: "mj-global-style" })),
+    ).toBe("topol");
+    expect(
+      detectFormat("a.json", JSON.stringify({ body: { type: "body" } })),
+    ).toBe("chamaileon");
+    expect(
+      detectFormat(
+        "a.json",
+        JSON.stringify({
+          content: {
+            type: "page",
+            children: [{ type: "standard-section" }],
+          },
+        }),
+      ),
+    ).toBe("easy-email-pro");
+  });
+});
+
+describe("unpackStripoSource", () => {
+  it("unwraps a JSON envelope and falls back to raw markup", () => {
+    expect(
+      unpackStripoSource(
+        JSON.stringify({ html: "<div></div>", css: "p{color:red}" }),
+      ),
+    ).toEqual({ html: "<div></div>", css: "p{color:red}" });
+    expect(unpackStripoSource("<div class='es-wrapper'></div>")).toEqual({
+      html: "<div class='es-wrapper'></div>",
+    });
+    expect(unpackStripoSource("{not json")).toEqual({ html: "{not json" });
   });
 });
 
@@ -156,6 +212,15 @@ describe("import command", () => {
       runImport(parseArgs(["import", src, "--cwd", dir])),
     ).rejects.toThrow(/npm install @templatical.import-unlayer/);
   });
+
+  it("refuses a missing source file", async () => {
+    await expect(
+      runImport(parseArgs(["import", "--cwd", dir])),
+    ).rejects.toThrow(/needs a source file/);
+    await expect(
+      runImport(parseArgs(["import", "nope.json", "--cwd", dir])),
+    ).rejects.toThrow(/Could not read/);
+  });
 });
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
@@ -192,11 +257,23 @@ describe("import command — real fixtures convert to valid Templatical JSON", (
       if (!available) return;
 
       const src = join(dir, basename(fixture));
-      writeFileSync(src, readFileSync(resolve(REPO_ROOT, fixture), "utf8"), "utf8");
+      writeFileSync(
+        src,
+        readFileSync(resolve(REPO_ROOT, fixture), "utf8"),
+        "utf8",
+      );
       setJsonMode(true);
       expect(
         await runImport(
-          parseArgs(["import", src, "--format", format, "--cwd", dir, "--json"]),
+          parseArgs([
+            "import",
+            src,
+            "--format",
+            format,
+            "--cwd",
+            dir,
+            "--json",
+          ]),
         ),
       ).toBe(0);
       const out = JSON.parse(stdout.join(""));
