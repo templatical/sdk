@@ -17,6 +17,7 @@ export const exampleSableFriday: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#sable-friday",
+  preview: "/examples/sable/speaker.png",
   content: () => createBlackFridayTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

@@ -7,6 +7,9 @@ export class ScenePage {
   ) {}
 
   async goto(id: string, query: Record<string, string> = {}) {
+    await this.page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-host-tour-dismissed", "true");
+    });
     const params = new URLSearchParams(query);
     params.set("shadowDom", this.options.shadowDom ? "1" : "0");
     await this.page.goto(`/scenes/${id}?${params.toString()}`);

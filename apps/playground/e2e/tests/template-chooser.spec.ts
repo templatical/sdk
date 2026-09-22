@@ -35,9 +35,11 @@ test.describe("Setup catalog", () => {
     page,
   }) => {
     await chooserPage.goto();
-    await page
-      .locator('[data-testid="scene-link-example-launchpad-launch"]')
-      .click();
+    const card = page.locator(
+      '[data-testid="scene-link-example-launchpad-launch"]',
+    );
+    await expect(card.locator("img")).toBeVisible();
+    await card.click();
     await expect(page.locator(SELECTORS.sceneHost)).toBeVisible();
     await expect(page).toHaveURL(/\/scenes\/example-launchpad-launch/);
     await editorPage.waitForReady();

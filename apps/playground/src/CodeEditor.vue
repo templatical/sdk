@@ -9,6 +9,7 @@ import {
 } from "@codemirror/view";
 import { EditorState, Compartment } from "@codemirror/state";
 import { json } from "@codemirror/lang-json";
+import { javascript } from "@codemirror/lang-javascript";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import {
   syntaxHighlighting,
@@ -21,10 +22,15 @@ import { oneDark } from "@codemirror/theme-one-dark";
 
 const isDark = inject<Ref<boolean>>("isDark", ref(false));
 
-const props = defineProps<{
-  modelValue: string;
-  ariaLabel?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    ariaLabel?: string;
+    language?: "json" | "javascript";
+    readOnly?: boolean;
+  }>(),
+  { language: "json", readOnly: false, ariaLabel: undefined },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: string];
@@ -53,8 +59,12 @@ onMounted(() => {
         foldGutter(),
         bracketMatching(),
         closeBrackets(),
-        json(),
+        props.language === "javascript"
+          ? javascript({ typescript: true })
+          : json(),
         themeConf.of(getThemeExtension(isDark.value)),
+        EditorState.readOnly.of(props.readOnly),
+        EditorView.editable.of(!props.readOnly),
         keymap.of([...defaultKeymap, indentWithTab]),
         ...(props.ariaLabel
           ? [

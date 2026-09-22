@@ -6,6 +6,7 @@ import HostKnobs from "@/host/HostKnobs.vue";
 import { sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { format, usePlaygroundI18n } from "@/i18n";
+import { snippetChipKeys } from "@/host/snippet-keys";
 import {
   getScene,
   SCENE_GROUP_ORDER,
@@ -41,6 +42,18 @@ function hrefFor(scene: Scene): string {
 function groupLabel(group: SceneGroup): string {
   return t.value.host.groups[group];
 }
+
+function chipsFor(scene: Scene): string[] {
+  return snippetChipKeys(scene.snippet);
+}
+
+function exampleTint(id: string): string {
+  if (id.includes("launchpad")) return "#0f766e";
+  if (id.includes("flowwork")) return "#2563eb";
+  if (id.includes("sable")) return "#9a3412";
+  if (id.includes("northstage")) return "#6d28d9";
+  return "#737373";
+}
 </script>
 
 <template>
@@ -75,19 +88,19 @@ function groupLabel(group: SceneGroup): string {
         :aria-label="format(t.a11y.openScene, { name: minimum.title })"
         class="group block mb-12 p-6 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
       >
-        <p class="m-0 mb-2 font-mono text-xs text-gray-600 dark:text-gray-300">
-          {{ minimum.id }}
-        </p>
         <h2
           class="m-0 mb-2 text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
         >
           {{ minimum.title }}
         </h2>
         <p
-          class="m-0 mb-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
+          class="m-0 mb-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
         >
           {{ minimum.summary }}
         </p>
+        <pre
+          class="m-0 mb-4 px-3 py-2 rounded-md bg-gray-50 text-[13px] font-mono text-gray-800 overflow-x-auto dark:bg-gray-900 dark:text-gray-100"
+          >{{ t.host.minimumPaste }}</pre>
         <span
           class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-100"
         >
@@ -138,9 +151,16 @@ function groupLabel(group: SceneGroup): string {
                 >
               </span>
               <span
-                class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-300"
-                >{{ scene.id }}</span
+                v-if="chipsFor(scene).length"
+                class="shrink-0 flex flex-wrap justify-end gap-1 max-w-[40%]"
               >
+                <span
+                  v-for="chip in chipsFor(scene)"
+                  :key="chip"
+                  class="font-mono text-[11px] leading-none px-1.5 py-1 rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                  >{{ chip }}</span
+                >
+              </span>
             </a>
           </li>
         </ul>
@@ -162,20 +182,30 @@ function groupLabel(group: SceneGroup): string {
               :href="hrefFor(scene)"
               :data-testid="`scene-link-${scene.id}`"
               :aria-label="format(t.a11y.openScene, { name: scene.title })"
-              class="group flex flex-col h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+              class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+              :style="{
+                borderLeftColor: exampleTint(scene.id),
+                borderLeftWidth: '3px',
+              }"
             >
-              <span
-                class="font-mono text-xs text-gray-600 dark:text-gray-300"
-                >{{ scene.id }}</span
-              >
-              <span
-                class="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ scene.title }}</span
-              >
-              <span
-                class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
-                >{{ scene.summary }}</span
-              >
+              <img
+                v-if="scene.preview"
+                :src="scene.preview"
+                alt=""
+                width="600"
+                height="200"
+                class="block w-full h-[120px] object-cover bg-gray-100 dark:bg-gray-700"
+              />
+              <span class="flex flex-col p-4">
+                <span
+                  class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                  >{{ scene.title }}</span
+                >
+                <span
+                  class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
+                  >{{ scene.summary }}</span
+                >
+              </span>
             </a>
           </li>
         </ul>

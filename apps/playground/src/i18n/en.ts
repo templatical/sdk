@@ -58,6 +58,25 @@ export default {
     switchScene: "Switch scene",
     sceneList: "Scenes",
     snippet: "init() snippet",
+    minimumPaste: "init({ container })",
+    tour: {
+      skip: "Skip tour",
+      next: "Next",
+      done: "Got it",
+      stepCounter: "{current} of {total}",
+      frame: {
+        title: "The editor",
+        text: "This frame is the editor you embed in your app. Click a block to edit it.",
+      },
+      code: {
+        title: "Code",
+        text: "Copy the init() for this setup.",
+      },
+      docs: {
+        title: "Docs",
+        text: "The contract for this setup.",
+      },
+    },
     groups: {
       minimum: "Minimum",
       storage: "Storage",

@@ -22,6 +22,8 @@ export interface Scene {
   catalog: SceneCatalog;
   group: SceneGroup;
   docs: string;
+  /** Catalog thumbnail for Examples. HTTPS path under /examples/. */
+  preview?: string;
   content: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;
   snippet: string;

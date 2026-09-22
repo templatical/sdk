@@ -54,6 +54,9 @@ export class ChooserPage {
    * that here.
    */
   async goto() {
+    await this.page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-host-tour-dismissed", "true");
+    });
     const url = this.options.shadowDom ? "/?shadowDom=1" : "/?shadowDom=0";
     await this.page.goto(url);
     await this.page.waitForSelector(SELECTORS.catalogScreen);

@@ -2,8 +2,10 @@
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 import { ChevronDown, ChevronLeft, Download, Upload } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
+import CodeDialog from "@/host/CodeDialog.vue";
 import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
+import HostTour from "@/host/HostTour.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
 import ShareModal from "@/host/ShareModal.vue";
 import { navigatePlayground, sceneHref } from "@/host/sceneHref";
@@ -96,14 +98,6 @@ function onSwitcherClick(event: MouseEvent, target: Scene): void {
 function onSwitcherToggle(event: Event): void {
   titleOpen.value = (event as ToggleEvent).newState === "open";
 }
-
-watch(
-  () => scene.value?.group,
-  (group) => {
-    codeOpen.value = group !== "examples";
-  },
-  { immediate: true },
-);
 
 watch(uiTheme, (theme) => {
   editor.value?.setTheme(theme);
@@ -293,6 +287,7 @@ onUnmounted(() => {
         </button>
         <a
           :href="'https://docs.templatical.com' + scene.docs"
+          data-testid="toolbar-docs"
           target="_blank"
           rel="noopener noreferrer"
           class="pg-toolbar-btn no-underline"
@@ -300,19 +295,31 @@ onUnmounted(() => {
         >
         <button
           type="button"
+          data-testid="toolbar-code"
           class="pg-toolbar-btn"
           :aria-pressed="codeOpen"
           :aria-expanded="codeOpen"
-          aria-controls="code-drawer"
-          @click="codeOpen = !codeOpen"
+          aria-controls="code-dialog"
+          @click="codeOpen = true"
         >
           {{ t.host.code }}
         </button>
         <HostKnobs v-model:shadow-mode="shadowMode" />
       </div>
     </header>
-    <div data-testid="editor-screen" class="flex flex-1 min-h-0">
-      <div class="relative flex-1 min-w-0 min-h-0">
+    <!--
+      Gray well + rounded card. Do not add `isolate` — that traps the
+      editor popover root (z 10000) so the playground header paints over
+      dialogs.
+    -->
+    <div
+      data-testid="editor-screen"
+      class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
+    >
+      <div
+        data-testid="editor-stage"
+        class="relative flex-1 min-w-0 min-h-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
+      >
         <div
           v-if="initError"
           class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-8 text-sm bg-white dark:bg-gray-900"
@@ -343,24 +350,19 @@ onUnmounted(() => {
           :editor="editor"
         />
       </div>
-      <aside
-        v-show="codeOpen"
-        id="code-drawer"
-        data-testid="code-drawer"
-        :aria-label="t.host.snippet"
-        class="w-[min(28rem,40vw)] shrink-0 overflow-auto border-l border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"
-      >
-        <pre class="m-0 text-xs font-mono whitespace-pre-wrap">{{
-          scene.snippet
-        }}</pre>
-      </aside>
     </div>
+    <CodeDialog
+      v-model:open="codeOpen"
+      :snippet="scene.snippet"
+      :docs="scene.docs"
+    />
     <ExportModal v-model:open="exportOpen" :editor="editor" />
     <ShareModal
       v-model:open="shareOpen"
       :editor="editor"
       :scene-id="scene.id"
     />
+    <HostTour :ready="sceneReady" />
   </div>
 </template>
 

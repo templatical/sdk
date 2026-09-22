@@ -47,12 +47,12 @@ export class EditorPage {
     }
   }
 
-  /** Feature scenes open the code drawer; canvas clicks need the width back. */
+  /** Close the snippet dialog if it is open. No-op when it is already closed. */
   async closeCodeDrawer(): Promise<void> {
-    const drawer = this.page.locator(SELECTORS.codeDrawer);
-    if (await drawer.isVisible()) {
-      await this.page.getByRole("button", { name: "Code" }).click();
-      await expect(drawer).toBeHidden();
+    const dialog = this.page.locator(SELECTORS.codeDialog);
+    if (await dialog.isVisible()) {
+      await this.page.locator('[data-testid="code-dialog-close"]').click();
+      await expect(dialog).toBeHidden();
     }
   }
 

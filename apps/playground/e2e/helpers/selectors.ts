@@ -6,8 +6,13 @@ export const SELECTORS = {
   editorScreen: '[data-testid="editor-screen"]',
   sceneHost: '[data-testid="scene-host"]',
   sceneNotFound: '[data-testid="scene-not-found"]',
-  codeDrawer: '[data-testid="code-drawer"]',
+  codeDrawer: '[data-testid="code-dialog"]',
+  codeDialog: '[data-testid="code-dialog"]',
   catalogScreen: '[data-testid="catalog-screen"]',
+  editorStage: '[data-testid="editor-stage"]',
+  toolbarCode: '[data-testid="toolbar-code"]',
+  toolbarDocs: '[data-testid="toolbar-docs"]',
+  hostTour: '[data-testid="host-tour"]',
 
   // Chooser
   templateCard: '[data-testid="template-card"]',

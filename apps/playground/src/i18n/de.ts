@@ -60,6 +60,25 @@ export default {
     switchScene: "Szene wechseln",
     sceneList: "Szenen",
     snippet: "init()-Snippet",
+    minimumPaste: "init({ container })",
+    tour: {
+      skip: "Tour \u00fcberspringen",
+      next: "Weiter",
+      done: "Verstanden",
+      stepCounter: "{current} von {total}",
+      frame: {
+        title: "Der Editor",
+        text: "Dieser Rahmen ist der Editor, den Sie in Ihre App einbetten. Klicken Sie einen Block, um ihn zu bearbeiten.",
+      },
+      code: {
+        title: "Code",
+        text: "Hier kopieren Sie das init() f\u00fcr dieses Setup.",
+      },
+      docs: {
+        title: "Dokumentation",
+        text: "Der Vertrag zu diesem Setup.",
+      },
+    },
     groups: {
       minimum: "Minimum",
       storage: "Speicher",

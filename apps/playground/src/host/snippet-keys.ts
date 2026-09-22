@@ -9,3 +9,34 @@ export function snippetContainsKeys(snippet: string, keys: string[]): string[] {
     (key) => !new RegExp(String.raw`(?:^|[\s,{])${key}\s*:`).test(snippet),
   );
 }
+
+/** init() keys shown as catalog chips. Order is display order. */
+export const SNIPPET_CHIP_KEYS = [
+  "savedBlocks",
+  "templates",
+  "versionHistory",
+  "comments",
+  "media",
+  "testEmail",
+  "render",
+  "mergeTags",
+  "logicTags",
+  "displayConditions",
+  "customBlocks",
+  "resolvePreview",
+  "fonts",
+  "theme",
+  "locale",
+  "shadowDom",
+  "lint",
+  "htmlBlockPreview",
+  "colors",
+  "blockDefaults",
+  "templateDefaults",
+] as const;
+
+export function snippetChipKeys(snippet: string): string[] {
+  return SNIPPET_CHIP_KEYS.filter(
+    (key) => snippetContainsKeys(snippet, [key]).length === 0,
+  );
+}

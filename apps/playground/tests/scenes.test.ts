@@ -234,6 +234,16 @@ describe("registry", () => {
   );
 });
 
+describe("example previews", () => {
+  it("every Example scene has a catalog thumbnail", () => {
+    const examples = SCENES.filter((s) => s.group === "examples");
+    expect(examples.length).toBeGreaterThan(0);
+    for (const scene of examples) {
+      expect(scene.preview, scene.id).toMatch(/^\/examples\//);
+    }
+  });
+});
+
 describe("sceneHref", () => {
   it("keeps the host shadowDom pin and drops other query keys", () => {
     expect(sceneHref("templates", "shadowDom=0&readonly=1")).toBe(
