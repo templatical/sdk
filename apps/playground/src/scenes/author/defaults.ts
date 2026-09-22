@@ -4,8 +4,10 @@ import { emptyCanvas } from "./shared";
 export const defaults: Scene = {
   id: "defaults",
   title: "Defaults",
+  job: "New blocks stay on-brand",
   summary:
     "init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.",
+  affordance: "defaults",
   catalog: "oss",
   group: "author",
   docs: "/guide/defaults",

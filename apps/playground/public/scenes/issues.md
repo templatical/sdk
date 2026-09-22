@@ -1,5 +1,7 @@
 # Issues
 
+Lint the template as you edit
+
 init({ lint }) — Issues tab from the optional @templatical/quality peer.
 
 Contract: https://docs.templatical.com/quality/

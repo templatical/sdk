@@ -1,5 +1,7 @@
 # Merge tags on request
 
+Pick fields from your app
+
 init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.
 
 Contract: https://docs.templatical.com/guide/merge-tags

@@ -4,7 +4,9 @@ import { AUTHOR_MERGE_TAGS, paragraphCanvas } from "./shared";
 export const mergeTags: Scene = {
   id: "merge-tags",
   title: "Merge tags",
+  job: "Insert a field from the list",
   summary: "init({ mergeTags }) — static tags, built-in picker, no onRequest.",
+  affordance: "tag",
   catalog: "oss",
   group: "author",
   docs: "/guide/merge-tags",

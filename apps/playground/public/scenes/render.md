@@ -1,5 +1,7 @@
 # Render
 
+Export MJML and HTML
+
 init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.
 
 Contract: https://docs.templatical.com/backend/render

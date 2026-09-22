@@ -1,5 +1,7 @@
 # Version history
 
+Restore an earlier snapshot
+
 init({ templates, versionHistory }) — browse, preview, and restore past saves.
 
 Contract: https://docs.templatical.com/backend/version-history

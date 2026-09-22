@@ -9,8 +9,10 @@ import {
 export const mergeTagsResolvePreview: Scene = {
   id: "merge-tags-resolve-preview",
   title: "Resolve preview",
+  job: "Preview with real recipient data",
   summary:
     "init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.",
+  affordance: "resolve",
   catalog: "oss",
   group: "author",
   docs: "/guide/preview-rendering",

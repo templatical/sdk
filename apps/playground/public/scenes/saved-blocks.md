@@ -1,5 +1,7 @@
 # Saved blocks
 
+Bookmark a reusable group
+
 init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.
 
 Contract: https://docs.templatical.com/backend/saved-blocks

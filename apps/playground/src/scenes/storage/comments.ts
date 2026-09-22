@@ -9,8 +9,10 @@ import { storageCanvas } from "./canvas";
 export const comments: Scene = {
   id: "comments",
   title: "Comments",
+  job: "Thread a note on a block",
   summary:
     "init({ templates, comments, user }) — threaded review on the attached template.",
+  affordance: "comment",
   catalog: "oss",
   group: "storage",
   docs: "/backend/comments",

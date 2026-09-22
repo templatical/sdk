@@ -11,8 +11,10 @@ const THEME_OVERRIDE = { bgElevated: "rgb(255, 0, 0)" };
 export const theming: Scene = {
   id: "theming",
   title: "Theming",
+  job: "Paint the chrome your colors",
   summary:
     "init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.",
+  affordance: "theme",
   catalog: "oss",
   group: "author",
   docs: "/guide/theming",

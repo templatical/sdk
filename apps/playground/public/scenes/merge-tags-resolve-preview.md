@@ -1,5 +1,7 @@
 # Resolve preview
 
+Preview with real recipient data
+
 init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.
 
 Contract: https://docs.templatical.com/guide/preview-rendering

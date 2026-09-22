@@ -234,6 +234,24 @@ describe("registry", () => {
   );
 });
 
+describe("catalog copy", () => {
+  it("every scene has a short job", () => {
+    for (const scene of SCENES) {
+      const words = scene.job.trim().split(/\s+/);
+      expect(words.length, scene.id).toBeGreaterThanOrEqual(3);
+      expect(words.length, scene.id).toBeLessThanOrEqual(8);
+      expect(scene.job, scene.id).not.toMatch(/init\(/);
+    }
+  });
+
+  it("every setup scene has an affordance sketch", () => {
+    for (const scene of SCENES.filter((s) => s.group !== "examples")) {
+      if (scene.id === "minimum") continue;
+      expect(scene.affordance, scene.id).toBeTruthy();
+    }
+  });
+});
+
 describe("example previews", () => {
   it("every Example scene has a catalog thumbnail", () => {
     const examples = SCENES.filter((s) => s.group === "examples");

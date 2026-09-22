@@ -1,5 +1,7 @@
 # Sable Friday
 
+Sale with live HTML preview
+
 Composed Sable sale: htmlBlockPreview, a product-showcase custom block, and display conditions.
 
 Contract: https://docs.templatical.com/guide/examples#sable-friday

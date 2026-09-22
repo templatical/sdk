@@ -1,5 +1,7 @@
 # Test email
 
+Send this to an inbox
+
 init({ testEmail }) — header Test button, recipient picker, fake send.
 
 Contract: https://docs.templatical.com/backend/test-email

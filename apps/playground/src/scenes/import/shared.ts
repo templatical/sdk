@@ -38,6 +38,7 @@ export const IMPORT_KIND_BY_ID: Record<ImportSceneId, ImportKind> = {
 export function makeImportScene(spec: {
   id: ImportSceneId;
   title: string;
+  job: string;
   summary: string;
   docs: string;
   pkg: string;
@@ -47,10 +48,12 @@ export function makeImportScene(spec: {
   return {
     id: spec.id,
     title: spec.title,
+    job: spec.job,
     summary: spec.summary,
     catalog: "oss",
     group: "import",
     docs: spec.docs,
+    affordance: "import",
     content: () => createDefaultTemplateContent(),
     config: () => ({}),
     snippet: `import { ${spec.convertFn} } from "${spec.pkg}";

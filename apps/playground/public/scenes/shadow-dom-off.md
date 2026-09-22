@@ -1,5 +1,7 @@
 # Shadow DOM off
 
+Mount in the page light DOM
+
 init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.
 
 Contract: https://docs.templatical.com/guide/shadow-dom

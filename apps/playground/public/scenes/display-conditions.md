@@ -1,5 +1,7 @@
 # Display conditions
 
+Hide a block per recipient
+
 init({ displayConditions }) — show or hide a block per recipient.
 
 Contract: https://docs.templatical.com/guide/display-conditions

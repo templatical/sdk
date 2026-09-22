@@ -5,7 +5,9 @@ import { storageCanvas } from "./canvas";
 export const templates: Scene = {
   id: "templates",
   title: "Templates",
+  job: "Load and save the template",
   summary: "init({ templates }) — save, load, rename, and optional autosave.",
+  affordance: "save",
   catalog: "oss",
   group: "storage",
   docs: "/backend/templates",

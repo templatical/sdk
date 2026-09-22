@@ -15,6 +15,7 @@ import {
 export const exampleNorthstageEvent: Scene = {
   id: "example-northstage-event",
   title: "Northstage event",
+  job: "Event invite, locked colors",
   summary:
     "Composed Northstage Summit invitation: brand-locked colors, event-details custom block, and display conditions.",
   catalog: "oss",

@@ -1,5 +1,7 @@
 # Flowwork welcome
 
+Onboarding with resolved tags
+
 Composed Flowwork onboarding: merge tags, logic tags, resolvePreview, and test email.
 
 Contract: https://docs.templatical.com/guide/examples#flowwork-welcome

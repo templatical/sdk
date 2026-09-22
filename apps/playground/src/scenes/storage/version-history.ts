@@ -8,8 +8,10 @@ import { storageCanvas } from "./canvas";
 export const versionHistory: Scene = {
   id: "version-history",
   title: "Version history",
+  job: "Restore an earlier snapshot",
   summary:
     "init({ templates, versionHistory }) — browse, preview, and restore past saves.",
+  affordance: "history",
   catalog: "oss",
   group: "storage",
   docs: "/backend/version-history",

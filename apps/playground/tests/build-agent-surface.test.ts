@@ -20,6 +20,7 @@ describe("playground agent surface", () => {
     );
     for (const scene of SCENES) {
       const body = pages[`scenes/${scene.id}.md`];
+      expect(body).toContain(scene.job);
       expect(body).toContain(scene.snippet);
       expect(body).toContain(`https://docs.templatical.com${scene.docs}`);
       expect(body).toContain(`https://play.templatical.com/scenes/${scene.id}`);

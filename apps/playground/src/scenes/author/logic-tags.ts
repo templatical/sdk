@@ -4,8 +4,10 @@ import { AUTHOR_LOGIC_TAGS, logicCanvas } from "./shared";
 export const logicTags: Scene = {
   id: "logic-tags",
   title: "Logic tags",
+  job: "Branch copy with IF / ENDIF",
   summary:
     "init({ logicTags }) — insert control-flow tokens from a dedicated picker.",
+  affordance: "logic",
   catalog: "oss",
   group: "author",
   docs: "/guide/logic-tags",

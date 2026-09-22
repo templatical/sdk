@@ -1,5 +1,7 @@
 # Defaults
 
+New blocks stay on-brand
+
 init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.
 
 Contract: https://docs.templatical.com/guide/defaults

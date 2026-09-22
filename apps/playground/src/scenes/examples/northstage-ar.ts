@@ -11,6 +11,7 @@ import {
 export const exampleNorthstageAr: Scene = {
   id: "example-northstage-ar",
   title: "Northstage Arabic",
+  job: "Same invite, Arabic RTL",
   summary:
     "Same Northstage Summit invitation in ar, RTL canvas, brand-locked colors.",
   catalog: "oss",

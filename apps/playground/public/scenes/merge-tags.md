@@ -1,5 +1,7 @@
 # Merge tags
 
+Insert a field from the list
+
 init({ mergeTags }) — static tags, built-in picker, no onRequest.
 
 Contract: https://docs.templatical.com/guide/merge-tags

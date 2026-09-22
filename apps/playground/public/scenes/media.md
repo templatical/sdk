@@ -1,5 +1,7 @@
 # Media
 
+Upload and pick an image
+
 init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.
 
 Contract: https://docs.templatical.com/backend/media

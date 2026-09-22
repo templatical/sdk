@@ -1,5 +1,7 @@
 # Easy Email Pro
 
+Paste Easy Email Pro JSON
+
 convertEasyEmailProTemplate + init({ content }) — persist { subject, content } page.
 
 Contract: https://docs.templatical.com/guide/migration-from-easy-email-pro

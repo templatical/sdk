@@ -38,6 +38,7 @@ import { versionHistory } from "./storage/version-history";
 import type { Scene, SceneGroup } from "./types";
 
 export type {
+  SetupAffordance,
   SceneSketch,
   Scene,
   SceneCatalog,

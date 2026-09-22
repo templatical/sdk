@@ -1,5 +1,7 @@
 # Theming
 
+Paint the chrome your colors
+
 init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.
 
 Contract: https://docs.templatical.com/guide/theming

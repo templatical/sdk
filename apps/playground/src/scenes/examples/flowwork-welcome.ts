@@ -11,6 +11,7 @@ import {
 export const exampleFlowworkWelcome: Scene = {
   id: "example-flowwork-welcome",
   title: "Flowwork welcome",
+  job: "Onboarding with resolved tags",
   summary:
     "Composed Flowwork onboarding: merge tags, logic tags, resolvePreview, and test email.",
   catalog: "oss",

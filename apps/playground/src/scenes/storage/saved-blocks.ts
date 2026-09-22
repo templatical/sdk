@@ -6,8 +6,10 @@ import { storageCanvas } from "./canvas";
 export const savedBlocks: Scene = {
   id: "saved-blocks",
   title: "Saved blocks",
+  job: "Bookmark a reusable group",
   summary:
     "init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.",
+  affordance: "bookmark",
   catalog: "oss",
   group: "storage",
   docs: "/backend/saved-blocks",

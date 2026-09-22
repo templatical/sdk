@@ -4,6 +4,7 @@ import type { Scene } from "./types";
 export const minimum: Scene = {
   id: "minimum",
   title: "Minimum setup",
+  job: "Empty canvas, nothing wired",
   summary: "init({ container }) — empty canvas, no providers.",
   catalog: "oss",
   group: "minimum",

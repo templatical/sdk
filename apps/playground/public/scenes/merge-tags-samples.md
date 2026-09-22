@@ -1,5 +1,7 @@
 # Merge tag samples
 
+Preview with sample values
+
 init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.
 
 Contract: https://docs.templatical.com/guide/preview-rendering

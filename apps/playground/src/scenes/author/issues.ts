@@ -4,8 +4,10 @@ import { emptyCanvas } from "./shared";
 export const issues: Scene = {
   id: "issues",
   title: "Issues",
+  job: "Lint the template as you edit",
   summary:
     "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
+  affordance: "lint",
   catalog: "oss",
   group: "author",
   docs: "/quality/",

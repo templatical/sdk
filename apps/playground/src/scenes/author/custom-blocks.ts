@@ -4,7 +4,9 @@ import { AUTHOR_TESTIMONIAL, customBlockCanvas } from "./shared";
 export const customBlocks: Scene = {
   id: "custom-blocks",
   title: "Custom blocks",
+  job: "Register your own block type",
   summary: "init({ customBlocks }) — one registered block on the palette.",
+  affordance: "custom",
   catalog: "oss",
   group: "author",
   docs: "/guide/custom-blocks",

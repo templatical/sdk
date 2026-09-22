@@ -1,5 +1,7 @@
 # Northstage event
 
+Event invite, locked colors
+
 Composed Northstage Summit invitation: brand-locked colors, event-details custom block, and display conditions.
 
 Contract: https://docs.templatical.com/guide/examples#northstage-event

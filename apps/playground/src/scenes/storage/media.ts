@@ -5,8 +5,10 @@ import type { Scene } from "../types";
 export const media: Scene = {
   id: "media",
   title: "Media",
+  job: "Upload and pick an image",
   summary:
     "init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.",
+  affordance: "media",
   catalog: "oss",
   group: "storage",
   docs: "/backend/media",

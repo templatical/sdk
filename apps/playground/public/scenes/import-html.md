@@ -1,5 +1,7 @@
 # HTML
 
+Paste table-based HTML
+
 convertHtmlTemplate + init({ content }) — table-based email HTML.
 
 Contract: https://docs.templatical.com/guide/migration-from-html

@@ -1,5 +1,7 @@
 # Custom blocks
 
+Register your own block type
+
 init({ customBlocks }) — one registered block on the palette.
 
 Contract: https://docs.templatical.com/guide/custom-blocks

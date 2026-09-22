@@ -1,5 +1,7 @@
 # Launchpad reset
 
+Password reset, same brand
+
 Composed Launchpad password reset: merge tags on the teal transactional kit.
 
 Contract: https://docs.templatical.com/guide/examples#launchpad-reset

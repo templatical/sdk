@@ -1,5 +1,7 @@
 # Minimum setup
 
+Empty canvas, nothing wired
+
 init({ container }) — empty canvas, no providers.
 
 Contract: https://docs.templatical.com/getting-started/quick-start

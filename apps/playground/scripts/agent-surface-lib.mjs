@@ -49,7 +49,7 @@ function renderIndex(scenes) {
     lines.push(`## ${headingFor(group)}`, "");
     for (const scene of scenes.filter((s) => s.group === group)) {
       lines.push(
-        `- [${scene.title}](${SITE}/scenes/${scene.id}): ${scene.summary}`,
+        `- [${scene.title}](${SITE}/scenes/${scene.id}): ${scene.job}`,
       );
     }
     lines.push("");
@@ -60,6 +60,8 @@ function renderIndex(scenes) {
 function renderPage(scene) {
   return `${[
     `# ${scene.title}`,
+    "",
+    scene.job,
     "",
     scene.summary,
     "",

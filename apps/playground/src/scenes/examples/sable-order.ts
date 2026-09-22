@@ -14,6 +14,7 @@ import {
 export const exampleSableOrder: Scene = {
   id: "example-sable-order",
   title: "Sable order",
+  job: "Order receipt with sample values",
   summary:
     "Composed Sable receipt: merge-tag samples, logic tags, display conditions, and test email.",
   catalog: "oss",

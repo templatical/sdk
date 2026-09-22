@@ -24,6 +24,7 @@ function seedFlowworkSavedBlocks(): void {
 export const exampleFlowworkNewsletter: Scene = {
   id: "example-flowwork-newsletter",
   title: "Flowwork newsletter",
+  job: "Weekly digest with curated fonts",
   summary:
     "Composed Flowwork weekly: curated fonts, a featured-article custom block, and saved blocks.",
   catalog: "oss",

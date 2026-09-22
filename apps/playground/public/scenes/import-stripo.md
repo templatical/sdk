@@ -1,5 +1,7 @@
 # Stripo
 
+Paste Stripo HTML
+
 convertStripoTemplate + init({ content }) — Stripo HTML or { html, css }.
 
 Contract: https://docs.templatical.com/guide/migration-from-stripo

@@ -5,8 +5,10 @@ import { storageCanvas } from "./canvas";
 export const testEmail: Scene = {
   id: "test-email",
   title: "Test email",
+  job: "Send this to an inbox",
   summary:
     "init({ testEmail }) — header Test button, recipient picker, fake send.",
+  affordance: "send",
   catalog: "oss",
   group: "storage",
   docs: "/backend/test-email",

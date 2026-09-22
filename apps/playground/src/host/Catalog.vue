@@ -4,10 +4,10 @@ import { ArrowRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
+import SetupSketch from "@/host/SetupSketch.vue";
 import { sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { format, usePlaygroundI18n } from "@/i18n";
-import { snippetChipKeys } from "@/host/snippet-keys";
 import { getScene, scenesByGroup, type Scene, type SceneGroup } from "@/scenes";
 
 const { t } = usePlaygroundI18n();
@@ -41,10 +41,6 @@ function hrefFor(scene: Scene): string {
 
 function groupLabel(group: SceneGroup): string {
   return t.value.host.groups[group];
-}
-
-function chipsFor(scene: Scene): string[] {
-  return snippetChipKeys(scene.snippet);
 }
 </script>
 
@@ -140,21 +136,17 @@ function chipsFor(scene: Scene): string[] {
                 :href="hrefFor(scene)"
                 :data-testid="`scene-link-${scene.id}`"
                 :aria-label="format(t.a11y.openScene, { name: scene.title })"
-                class="group flex flex-col h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+                class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               >
-                <span
-                  class="text-sm font-medium text-gray-900 dark:text-gray-100"
-                  >{{ scene.title }}</span
-                >
-                <span
-                  v-if="chipsFor(scene).length"
-                  class="mt-2 flex flex-wrap gap-1"
-                >
+                <SetupSketch v-if="scene.affordance" :kind="scene.affordance" />
+                <span class="flex flex-col gap-1 p-3">
                   <span
-                    v-for="chip in chipsFor(scene)"
-                    :key="chip"
-                    class="font-mono text-[11px] leading-none px-1.5 py-1 rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                    >{{ chip }}</span
+                    class="text-sm font-medium text-gray-900 dark:text-gray-100"
+                    >{{ scene.title }}</span
+                  >
+                  <span
+                    class="text-xs leading-snug text-gray-600 dark:text-gray-300"
+                    >{{ scene.job }}</span
                   >
                 </span>
               </a>
@@ -184,10 +176,16 @@ function chipsFor(scene: Scene): string[] {
               class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
             >
               <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
-              <span
-                class="block p-3 text-sm font-medium text-gray-900 dark:text-gray-100"
-                >{{ scene.title }}</span
-              >
+              <span class="flex flex-col gap-1 p-3">
+                <span
+                  class="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  >{{ scene.title }}</span
+                >
+                <span
+                  class="text-xs leading-snug text-gray-600 dark:text-gray-300"
+                  >{{ scene.job }}</span
+                >
+              </span>
             </a>
           </li>
         </ul>

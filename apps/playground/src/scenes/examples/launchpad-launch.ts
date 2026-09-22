@@ -24,6 +24,7 @@ function seedLaunchpadSavedBlocks(): void {
 export const exampleLaunchpadLaunch: Scene = {
   id: "example-launchpad-launch",
   title: "Launchpad launch",
+  job: "SaaS product launch email",
   summary:
     "Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.",
   catalog: "oss",

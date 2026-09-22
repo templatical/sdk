@@ -1,5 +1,7 @@
 # Sable order
 
+Order receipt with sample values
+
 Composed Sable receipt: merge-tag samples, logic tags, display conditions, and test email.
 
 Contract: https://docs.templatical.com/guide/examples#sable-order

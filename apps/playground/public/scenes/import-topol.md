@@ -1,5 +1,7 @@
 # Topol
 
+Paste Topol JSON
+
 convertTopolTemplate + init({ content }) — Topol design JSON.
 
 Contract: https://docs.templatical.com/guide/migration-from-topol

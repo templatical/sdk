@@ -5,6 +5,7 @@ import { EXAMPLE_MERGE_TAGS, SNIPPET_MERGE_TAGS } from "./shared";
 export const exampleLaunchpadReset: Scene = {
   id: "example-launchpad-reset",
   title: "Launchpad reset",
+  job: "Password reset, same brand",
   summary:
     "Composed Launchpad password reset: merge tags on the teal transactional kit.",
   catalog: "oss",

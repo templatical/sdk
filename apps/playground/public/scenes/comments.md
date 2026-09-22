@@ -1,5 +1,7 @@
 # Comments
 
+Thread a note on a block
+
 init({ templates, comments, user }) — threaded review on the attached template.
 
 Contract: https://docs.templatical.com/backend/comments

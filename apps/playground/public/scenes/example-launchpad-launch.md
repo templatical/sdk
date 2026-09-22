@@ -1,5 +1,7 @@
 # Launchpad launch
 
+SaaS product launch email
+
 Composed Product Launch: merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.
 
 Contract: https://docs.templatical.com/guide/examples#launchpad-launch

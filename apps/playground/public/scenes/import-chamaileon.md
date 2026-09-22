@@ -1,5 +1,7 @@
 # Chamaileon
 
+Paste Chamaileon JSON
+
 convertChamaileonTemplate + init({ content }) — getDocument() JSON.
 
 Contract: https://docs.templatical.com/guide/migration-from-chamaileon

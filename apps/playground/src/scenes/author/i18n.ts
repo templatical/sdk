@@ -4,7 +4,9 @@ import { emptyCanvas } from "./shared";
 export const i18n: Scene = {
   id: "i18n",
   title: "Internationalization",
+  job: "German chrome and placeholders",
   summary: 'init({ locale: "de" }) — German editor chrome and block defaults.',
+  affordance: "locale",
   catalog: "oss",
   group: "author",
   docs: "/guide/i18n",

@@ -1,5 +1,7 @@
 # Northstage Arabic
 
+Same invite, Arabic RTL
+
 Same Northstage Summit invitation in ar, RTL canvas, brand-locked colors.
 
 Contract: https://docs.templatical.com/guide/examples#northstage-ar

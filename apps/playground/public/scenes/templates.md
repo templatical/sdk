@@ -1,5 +1,7 @@
 # Templates
 
+Load and save the template
+
 init({ templates }) — save, load, rename, and optional autosave.
 
 Contract: https://docs.templatical.com/backend/templates

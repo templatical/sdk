@@ -4,8 +4,10 @@ import { AUTHOR_MERGE_TAGS, samplesCanvas } from "./shared";
 export const mergeTagsSamples: Scene = {
   id: "merge-tags-samples",
   title: "Merge tag samples",
+  job: "Preview with sample values",
   summary:
     "init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.",
+  affordance: "sample",
   catalog: "oss",
   group: "author",
   docs: "/guide/preview-rendering",

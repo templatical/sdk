@@ -1,5 +1,7 @@
 # Flowwork newsletter
 
+Weekly digest with curated fonts
+
 Composed Flowwork weekly: curated fonts, a featured-article custom block, and saved blocks.
 
 Contract: https://docs.templatical.com/guide/examples#flowwork-newsletter

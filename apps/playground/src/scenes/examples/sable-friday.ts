@@ -12,6 +12,7 @@ import {
 export const exampleSableFriday: Scene = {
   id: "example-sable-friday",
   title: "Sable Friday",
+  job: "Sale with live HTML preview",
   summary:
     "Composed Sable sale: htmlBlockPreview, a product-showcase custom block, and display conditions.",
   catalog: "oss",

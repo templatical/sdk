@@ -4,7 +4,9 @@ import { AUTHOR_DISPLAY_CONDITIONS, displayConditionCanvas } from "./shared";
 export const displayConditions: Scene = {
   id: "display-conditions",
   title: "Display conditions",
+  job: "Hide a block per recipient",
   summary: "init({ displayConditions }) — show or hide a block per recipient.",
+  affordance: "condition",
   catalog: "oss",
   group: "author",
   docs: "/guide/display-conditions",

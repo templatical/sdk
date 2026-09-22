@@ -1,5 +1,7 @@
 # Fonts
 
+Limit the type menu
+
 init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.
 
 Contract: https://docs.templatical.com/guide/fonts
