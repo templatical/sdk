@@ -6,6 +6,16 @@ export type SceneGroup =
 
 export type SceneCatalog = "oss";
 
+export type SceneSketch =
+  | "product"
+  | "newsletter"
+  | "welcome"
+  | "order"
+  | "event"
+  | "sale"
+  | "reset"
+  | "rtl";
+
 export interface SceneContext {
   search: URLSearchParams;
 }
@@ -22,8 +32,8 @@ export interface Scene {
   catalog: SceneCatalog;
   group: SceneGroup;
   docs: string;
-  /** Catalog thumbnail for Examples. HTTPS path under /examples/. */
-  preview?: string;
+  /** Catalog wireframe for Examples. Same sketches as the old chooser. */
+  preview?: SceneSketch;
   content: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;
   snippet: string;

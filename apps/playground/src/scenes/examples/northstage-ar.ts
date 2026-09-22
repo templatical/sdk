@@ -16,7 +16,7 @@ export const exampleNorthstageAr: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#northstage-ar",
-  preview: "/examples/northstage/venue.png",
+  preview: "rtl",
   content: () => createArabicInvitationTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

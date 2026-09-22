@@ -239,7 +239,19 @@ describe("example previews", () => {
     const examples = SCENES.filter((s) => s.group === "examples");
     expect(examples.length).toBeGreaterThan(0);
     for (const scene of examples) {
-      expect(scene.preview, scene.id).toMatch(/^\/examples\//);
+      expect(
+        [
+          "product",
+          "newsletter",
+          "welcome",
+          "order",
+          "event",
+          "sale",
+          "reset",
+          "rtl",
+        ],
+        scene.id,
+      ).toContain(scene.preview);
     }
   });
 });

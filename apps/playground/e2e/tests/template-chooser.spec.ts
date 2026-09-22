@@ -38,7 +38,7 @@ test.describe("Setup catalog", () => {
     const card = page.locator(
       '[data-testid="scene-link-example-launchpad-launch"]',
     );
-    await expect(card.locator("img")).toBeVisible();
+    await expect(card.locator('[data-testid="catalog-sketch"]')).toBeVisible();
     await card.click();
     await expect(page.locator(SELECTORS.sceneHost)).toBeVisible();
     await expect(page).toHaveURL(/\/scenes\/example-launchpad-launch/);

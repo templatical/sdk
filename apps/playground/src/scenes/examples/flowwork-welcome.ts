@@ -16,7 +16,7 @@ export const exampleFlowworkWelcome: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#flowwork-welcome",
-  preview: "/examples/flowwork/team.png",
+  preview: "welcome",
   content: () => createWelcomeTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

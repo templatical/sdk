@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { ArrowRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
+import CatalogSketch from "@/host/CatalogSketch.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import { sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
@@ -45,14 +46,6 @@ function groupLabel(group: SceneGroup): string {
 
 function chipsFor(scene: Scene): string[] {
   return snippetChipKeys(scene.snippet);
-}
-
-function exampleTint(id: string): string {
-  if (id.includes("launchpad")) return "#0f766e";
-  if (id.includes("flowwork")) return "#2563eb";
-  if (id.includes("sable")) return "#9a3412";
-  if (id.includes("northstage")) return "#6d28d9";
-  return "#737373";
 }
 </script>
 
@@ -183,19 +176,8 @@ function exampleTint(id: string): string {
               :data-testid="`scene-link-${scene.id}`"
               :aria-label="format(t.a11y.openScene, { name: scene.title })"
               class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
-              :style="{
-                borderLeftColor: exampleTint(scene.id),
-                borderLeftWidth: '3px',
-              }"
             >
-              <img
-                v-if="scene.preview"
-                :src="scene.preview"
-                alt=""
-                width="600"
-                height="200"
-                class="block w-full h-[120px] object-cover bg-gray-100 dark:bg-gray-700"
-              />
+              <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
               <span class="flex flex-col p-4">
                 <span
                   class="text-sm font-semibold text-gray-900 dark:text-gray-100"

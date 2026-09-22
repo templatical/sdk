@@ -10,7 +10,7 @@ export const exampleLaunchpadReset: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#launchpad-reset",
-  preview: "/examples/launchpad/dashboard.png",
+  preview: "reset",
   content: () => createPasswordResetTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

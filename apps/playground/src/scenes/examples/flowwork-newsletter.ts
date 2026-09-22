@@ -29,7 +29,7 @@ export const exampleFlowworkNewsletter: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#flowwork-newsletter",
-  preview: "/examples/flowwork/article-design-systems.png",
+  preview: "newsletter",
   content: () => createNewsletterTemplate(),
   config: () => {
     seedFlowworkSavedBlocks();

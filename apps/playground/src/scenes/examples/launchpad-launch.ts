@@ -29,7 +29,7 @@ export const exampleLaunchpadLaunch: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#launchpad-launch",
-  preview: "/examples/launchpad/dashboard.png",
+  preview: "product",
   content: () => createProductLaunchTemplate(),
   config: () => {
     seedLaunchpadSavedBlocks();

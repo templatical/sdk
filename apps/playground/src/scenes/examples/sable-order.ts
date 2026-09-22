@@ -19,7 +19,7 @@ export const exampleSableOrder: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#sable-order",
-  preview: "/examples/sable/headphones.png",
+  preview: "order",
   content: () => createOrderConfirmationTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },
