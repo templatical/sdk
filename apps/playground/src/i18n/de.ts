@@ -52,9 +52,9 @@ export default {
     notFoundNamed: "Keine Szene namens {id}.",
     notFoundHint: "Diese ID steht nicht im Setup-Katalog.",
     catalog: "Katalog",
-    catalogTitle: "Setup-Katalog",
-    catalogSubtitle:
-      "Jede Szene ist eine einfügbare init()-Form mit einem Live-Editor. Öffnen Sie Minimum für den leeren Mount, eine Setup-Zeile für einen einzelnen Provider oder ein Example für eine fertige E-Mail.",
+    catalogTitle: "Playground",
+    catalogSubtitle: "Einfügbare init()-Setups und Live-Mails.",
+    setups: "Setups",
     catalogFooter: "Playground-Links",
     openScene: "Szene öffnen",
     switchScene: "Szene wechseln",

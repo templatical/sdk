@@ -29,6 +29,15 @@ test.describe("Setup catalog", () => {
     await editorPage.waitForReady();
   });
 
+  test("setup tabs switch the card grid", async ({ chooserPage, page }) => {
+    await chooserPage.goto();
+    await expect(page.locator('[data-testid="scene-link-saved-blocks"]')).toBeVisible();
+    await expect(page.locator('[data-testid="scene-link-import-unlayer"]')).toHaveCount(0);
+    await page.locator('[data-testid="catalog-tab-import"]').click();
+    await expect(page.locator('[data-testid="scene-link-import-unlayer"]')).toBeVisible();
+    await expect(page.locator('[data-testid="scene-link-saved-blocks"]')).toHaveCount(0);
+  });
+
   test("example card opens Launchpad launch", async ({
     chooserPage,
     editorPage,

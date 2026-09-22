@@ -110,6 +110,7 @@ test.describe("Template import", () => {
     page,
   }) => {
     await chooserPage.goto();
+    await page.locator('[data-testid="catalog-tab-import"]').click();
     const links = page.locator("[data-testid^='scene-link-import-']");
     await expect(links).toHaveCount(8);
     const ids = await links.evaluateAll((els) =>

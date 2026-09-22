@@ -8,13 +8,7 @@ import { sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { format, usePlaygroundI18n } from "@/i18n";
 import { snippetChipKeys } from "@/host/snippet-keys";
-import {
-  getScene,
-  SCENE_GROUP_ORDER,
-  scenesByGroup,
-  type Scene,
-  type SceneGroup,
-} from "@/scenes";
+import { getScene, scenesByGroup, type Scene, type SceneGroup } from "@/scenes";
 
 const { t } = usePlaygroundI18n();
 const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
@@ -22,16 +16,21 @@ const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const minimum = getScene("minimum");
 const grouped = scenesByGroup();
 
-const SETUP_GROUPS: SceneGroup[] = SCENE_GROUP_ORDER.filter(
-  (group) => group !== "minimum" && group !== "examples",
-);
+const TAB_GROUPS: SceneGroup[] = ["storage", "author", "import"];
+const activeGroup = ref<SceneGroup>("storage");
 
-const setupSections = computed(() =>
-  SETUP_GROUPS.flatMap((group) => {
+const setupTabs = computed(() =>
+  TAB_GROUPS.flatMap((group) => {
     const scenes = grouped.get(group);
     if (!scenes?.length) return [];
     return [{ group, scenes }];
   }),
+);
+
+const activeScenes = computed(
+  () =>
+    setupTabs.value.find((tab) => tab.group === activeGroup.value)?.scenes ??
+    [],
 );
 
 const exampleScenes = computed(() => grouped.get("examples") ?? []);
@@ -59,17 +58,15 @@ function chipsFor(scene: Scene): string[] {
     </div>
 
     <div
-      class="flex flex-col items-stretch max-w-[720px] w-full mx-auto px-6 pt-16 pb-20"
+      class="flex flex-col items-stretch max-w-[1080px] w-full mx-auto px-6 pt-12 pb-20"
     >
       <LogoIcon class="mb-5" />
       <h1
-        class="m-0 mb-3 text-[22px] font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
+        class="m-0 mb-2 text-[22px] font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
       >
         {{ t.host.catalogTitle }}
       </h1>
-      <p
-        class="m-0 mb-10 max-w-[65ch] text-[15px] leading-relaxed text-gray-600 dark:text-gray-300"
-      >
+      <p class="m-0 mb-8 text-[15px] text-gray-600 dark:text-gray-300">
         {{ t.host.catalogSubtitle }}
       </p>
 
@@ -79,23 +76,19 @@ function chipsFor(scene: Scene): string[] {
         data-testid="scene-link-minimum"
         data-catalog-hero
         :aria-label="format(t.a11y.openScene, { name: minimum.title })"
-        class="group block mb-12 p-6 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+        class="group flex items-center justify-between gap-6 mb-12 p-5 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
       >
-        <h2
-          class="m-0 mb-2 text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
-        >
-          {{ minimum.title }}
-        </h2>
-        <p
-          class="m-0 mb-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
-        >
-          {{ minimum.summary }}
-        </p>
-        <pre
-          class="m-0 mb-4 px-3 py-2 rounded-md bg-gray-50 text-[13px] font-mono text-gray-800 overflow-x-auto dark:bg-gray-900 dark:text-gray-100"
-          >{{ t.host.minimumPaste }}</pre>
+        <span class="min-w-0">
+          <span
+            class="block text-lg font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-100"
+            >{{ minimum.title }}</span
+          >
+          <pre
+            class="m-0 mt-2 text-[13px] font-mono text-gray-600 dark:text-gray-300"
+            >{{ t.host.minimumPaste }}</pre>
+        </span>
         <span
-          class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-gray-100"
+          class="inline-flex items-center gap-1.5 shrink-0 text-sm font-medium text-gray-900 dark:text-gray-100"
         >
           {{ t.host.openScene }}
           <ArrowRight
@@ -107,56 +100,67 @@ function chipsFor(scene: Scene): string[] {
         </span>
       </a>
 
-      <section
-        v-for="section in setupSections"
-        :key="section.group"
-        class="mb-10"
-        :aria-labelledby="`catalog-group-${section.group}`"
-      >
-        <h2
-          :id="`catalog-group-${section.group}`"
-          class="m-0 mb-3 text-xs font-semibold uppercase tracking-[0.04em] text-gray-600 dark:text-gray-300"
+      <section class="mb-12" :aria-label="t.host.setups">
+        <div
+          role="tablist"
+          :aria-label="t.host.setups"
+          class="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700"
         >
-          {{ groupLabel(section.group) }}
-        </h2>
-        <ul
-          class="m-0 p-0 list-none flex flex-col border-t border-gray-200 dark:border-gray-700"
-        >
-          <li
-            v-for="scene in section.scenes"
-            :key="scene.id"
-            class="border-b border-gray-200 dark:border-gray-700"
+          <button
+            v-for="tab in setupTabs"
+            :key="tab.group"
+            type="button"
+            role="tab"
+            :id="`catalog-tab-${tab.group}`"
+            :data-testid="`catalog-tab-${tab.group}`"
+            :aria-selected="activeGroup === tab.group"
+            :aria-controls="`catalog-tabpanel-${tab.group}`"
+            :tabindex="activeGroup === tab.group ? 0 : -1"
+            class="px-3 py-2 -mb-px text-sm font-medium bg-transparent border-0 border-b-2 cursor-pointer font-sans"
+            :class="
+              activeGroup === tab.group
+                ? 'border-primary text-gray-900 dark:text-gray-100'
+                : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+            "
+            @click="activeGroup = tab.group"
           >
-            <a
-              :href="hrefFor(scene)"
-              :data-testid="`scene-link-${scene.id}`"
-              :aria-label="format(t.a11y.openScene, { name: scene.title })"
-              class="group flex items-baseline justify-between gap-4 py-3 no-underline text-inherit rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <span class="min-w-0">
+            {{ groupLabel(tab.group) }}
+          </button>
+        </div>
+        <div
+          role="tabpanel"
+          :id="`catalog-tabpanel-${activeGroup}`"
+          :aria-labelledby="`catalog-tab-${activeGroup}`"
+        >
+          <ul
+            class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+          >
+            <li v-for="scene in activeScenes" :key="scene.id">
+              <a
+                :href="hrefFor(scene)"
+                :data-testid="`scene-link-${scene.id}`"
+                :aria-label="format(t.a11y.openScene, { name: scene.title })"
+                class="group flex flex-col h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+              >
                 <span
-                  class="block text-sm font-medium text-gray-900 dark:text-gray-100"
+                  class="text-sm font-medium text-gray-900 dark:text-gray-100"
                   >{{ scene.title }}</span
                 >
                 <span
-                  class="block mt-0.5 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
-                  >{{ scene.summary }}</span
+                  v-if="chipsFor(scene).length"
+                  class="mt-2 flex flex-wrap gap-1"
                 >
-              </span>
-              <span
-                v-if="chipsFor(scene).length"
-                class="shrink-0 flex flex-wrap justify-end gap-1 max-w-[40%]"
-              >
-                <span
-                  v-for="chip in chipsFor(scene)"
-                  :key="chip"
-                  class="font-mono text-[11px] leading-none px-1.5 py-1 rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                  >{{ chip }}</span
-                >
-              </span>
-            </a>
-          </li>
-        </ul>
+                  <span
+                    v-for="chip in chipsFor(scene)"
+                    :key="chip"
+                    class="font-mono text-[11px] leading-none px-1.5 py-1 rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                    >{{ chip }}</span
+                  >
+                </span>
+              </a>
+            </li>
+          </ul>
+        </div>
       </section>
 
       <section
@@ -169,7 +173,9 @@ function chipsFor(scene: Scene): string[] {
         >
           {{ t.host.groups.examples }}
         </h2>
-        <ul class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ul
+          class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+        >
           <li v-for="scene in exampleScenes" :key="scene.id">
             <a
               :href="hrefFor(scene)"
@@ -178,16 +184,10 @@ function chipsFor(scene: Scene): string[] {
               class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
             >
               <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
-              <span class="flex flex-col p-4">
-                <span
-                  class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                  >{{ scene.title }}</span
-                >
-                <span
-                  class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300"
-                  >{{ scene.summary }}</span
-                >
-              </span>
+              <span
+                class="block p-3 text-sm font-medium text-gray-900 dark:text-gray-100"
+                >{{ scene.title }}</span
+              >
             </a>
           </li>
         </ul>

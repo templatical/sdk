@@ -50,9 +50,9 @@ export default {
     notFoundNamed: "No scene named {id}.",
     notFoundHint: "That id is not in the setup catalog.",
     catalog: "Catalog",
-    catalogTitle: "Setup catalog",
-    catalogSubtitle:
-      "Each scene is one pasteable init() shape with a live editor. Open Minimum for the empty mount, a setup row for a single provider, or an Example for a finished email.",
+    catalogTitle: "Playground",
+    catalogSubtitle: "Pasteable init() setups and live emails.",
+    setups: "Setups",
     catalogFooter: "Playground links",
     openScene: "Open scene",
     switchScene: "Switch scene",
