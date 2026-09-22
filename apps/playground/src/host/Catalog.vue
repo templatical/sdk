@@ -5,7 +5,8 @@ import LogoIcon from "@/LogoIcon.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
 import HostKnobs from "@/host/HostKnobs.vue";
-import { sceneHref } from "@/host/sceneHref";
+import { CATALOG_NAV_GROUPS } from "@/host/catalogNav";
+import { navigatePlayground, sceneHref } from "@/host/sceneHref";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { catalogInitKey } from "@/host/snippet-keys";
 import { format, usePlaygroundI18n } from "@/i18n";
@@ -17,13 +18,7 @@ const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const minimum = getScene("minimum");
 const grouped = scenesByGroup();
 
-const NAV_GROUPS: SceneGroup[] = [
-  "configure",
-  "personalization",
-  "backend",
-  "import",
-  "examples",
-];
+const NAV_GROUPS = CATALOG_NAV_GROUPS;
 const activeGroup = ref<SceneGroup>("configure");
 
 const setupTabs = computed(() =>
@@ -42,6 +37,20 @@ const activeScenes = computed(
 
 function hrefFor(scene: Scene): string {
   return sceneHref(scene.id, window.location.search);
+}
+
+function onSceneClick(event: MouseEvent, scene: Scene): void {
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    event.button !== 0
+  ) {
+    return;
+  }
+  event.preventDefault();
+  navigatePlayground(hrefFor(scene));
 }
 
 function groupLabel(group: SceneGroup): string {
@@ -116,6 +125,7 @@ function onNavKeydown(event: KeyboardEvent): void {
         data-catalog-hero
         :aria-label="format(t.a11y.openScene, { name: minimum.title })"
         class="group flex items-center justify-between gap-6 mb-12 p-5 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+        @click="onSceneClick($event, minimum)"
       >
         <span class="min-w-0">
           <h2
@@ -145,7 +155,7 @@ function onNavKeydown(event: KeyboardEvent): void {
           role="tablist"
           aria-orientation="vertical"
           :aria-label="t.host.setups"
-          class="w-52 shrink-0 flex flex-col gap-1.5"
+          class="pg-catalog-nav w-52 shrink-0 flex flex-col gap-1.5"
           @keydown="onNavKeydown"
         >
           <button
@@ -215,6 +225,7 @@ function onNavKeydown(event: KeyboardEvent): void {
                 :data-testid="`scene-link-${scene.id}`"
                 :aria-label="format(t.a11y.openScene, { name: scene.title })"
                 class="group flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+                @click="onSceneClick($event, scene)"
               >
                 <CatalogSketch v-if="scene.preview" :kind="scene.preview" />
                 <span class="flex flex-col gap-1 p-3">
@@ -240,6 +251,7 @@ function onNavKeydown(event: KeyboardEvent): void {
                 :data-testid="`scene-link-${scene.id}`"
                 :aria-label="format(t.a11y.openScene, { name: scene.title })"
                 class="group flex gap-3 h-full p-4 rounded-xl border border-gray-200 bg-white no-underline text-inherit transition-[border-color,box-shadow] duration-150 hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
+                @click="onSceneClick($event, scene)"
               >
                 <span
                   class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-dark"

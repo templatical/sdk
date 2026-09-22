@@ -17,11 +17,13 @@ test.describe("Playground smoke tests", () => {
     page,
   }) => {
     await chooserPage.goto();
+    await page.locator('[data-testid="catalog-tab-examples"]').click();
     await page
       .locator('[data-testid="scene-link-example-launchpad-launch"]')
       .click();
     await editorPage.waitForReady();
     await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
+    await expect(page.locator('[data-testid="catalog-rail"]')).toBeVisible();
   });
 
   test("minimum scene URL mounts an empty editor", async ({
@@ -69,7 +71,7 @@ test.describe("Playground smoke tests", () => {
     page,
   }) => {
     void editorReady;
-    await page.locator('[data-testid="scene-host"] a[href="/"]').click();
+    await page.locator('[data-testid="toolbar-back"]').click();
     await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
   });
 
@@ -107,6 +109,7 @@ test.describe("Playground smoke tests", () => {
 
   test("theme toggle works", async ({ chooserPage, editorPage, page }) => {
     await chooserPage.goto();
+    await page.locator('[data-testid="catalog-tab-examples"]').click();
     await page
       .locator('[data-testid="scene-link-example-launchpad-launch"]')
       .click();

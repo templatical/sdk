@@ -1,26 +1,21 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
-import { ChevronDown, ChevronLeft, Download, Upload } from "@lucide/vue";
+import { ChevronLeft, Download, Upload } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
+import CatalogRail from "@/host/CatalogRail.vue";
 import CodeDialog from "@/host/CodeDialog.vue";
 import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import HostTour from "@/host/HostTour.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
 import ShareModal from "@/host/ShareModal.vue";
-import { navigatePlayground, sceneHref } from "@/host/sceneHref";
+import { navigatePlayground } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { resolveInitialShadowMode } from "@/host/shadowMode";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
-import {
-  getScene,
-  SCENE_GROUP_ORDER,
-  scenesByGroup,
-  type Scene,
-  type SceneGroup,
-} from "@/scenes";
+import { getScene } from "@/scenes";
 
 const props = defineProps<{
   sceneId: string;
@@ -36,8 +31,6 @@ const sceneReady = ref(false);
 const codeOpen = ref(false);
 const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const editor = shallowRef<TemplaticalEditor | null>(null);
-const titleOpen = ref(false);
-const switcherList = ref<HTMLElement | null>(null);
 const exportOpen = ref(false);
 const shareOpen = ref(false);
 const retryTick = ref(0);
@@ -61,24 +54,12 @@ function retryInit(): void {
   retryTick.value += 1;
 }
 
-const grouped = scenesByGroup();
-const switcherSections = computed(() =>
-  SCENE_GROUP_ORDER.flatMap((group) => {
-    const scenes = grouped.get(group);
-    if (!scenes?.length) return [];
-    return [{ group, scenes }];
-  }),
-);
-
-function groupLabel(group: SceneGroup): string {
-  return t.value.host.groups[group];
+function catalogHref(): string {
+  const shadow = props.search.get("shadowDom");
+  return shadow !== null ? `/?shadowDom=${shadow}` : "/";
 }
 
-function hrefFor(target: Scene): string {
-  return sceneHref(target.id, props.search);
-}
-
-function onSwitcherClick(event: MouseEvent, target: Scene): void {
+function onBack(event: MouseEvent): void {
   if (
     event.metaKey ||
     event.ctrlKey ||
@@ -89,14 +70,7 @@ function onSwitcherClick(event: MouseEvent, target: Scene): void {
     return;
   }
   event.preventDefault();
-  switcherList.value?.hidePopover();
-  titleOpen.value = false;
-  if (target.id === props.sceneId) return;
-  navigatePlayground(hrefFor(target));
-}
-
-function onSwitcherToggle(event: Event): void {
-  titleOpen.value = (event as ToggleEvent).newState === "open";
+  navigatePlayground(catalogHref());
 }
 
 watch(uiTheme, (theme) => {
@@ -180,201 +154,139 @@ onUnmounted(() => {
     v-else
     data-testid="scene-host"
     :data-scene-ready="sceneReady ? 'true' : undefined"
-    class="flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    class="flex h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
-    <header
-      class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
-    >
-      <div class="flex items-center gap-2 min-w-0">
-        <a
-          href="/"
-          data-testid="toolbar-back"
-          class="pg-toolbar-btn no-underline"
-          :title="t.a11y.backToCatalog"
-          :aria-label="t.a11y.backToCatalog"
-        >
-          <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
-          <span class="pg-toolbar-label">{{ t.host.back }}</span>
-        </a>
-        <h1 class="m-0 min-w-0">
+    <CatalogRail :current-id="scene.id" />
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header
+        class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <a
+            :href="catalogHref()"
+            data-testid="toolbar-back"
+            class="pg-toolbar-btn no-underline"
+            :title="t.a11y.backToCatalog"
+            :aria-label="t.a11y.backToCatalog"
+            @click="onBack"
+          >
+            <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
+            <span class="pg-toolbar-label">{{ t.host.back }}</span>
+          </a>
+          <h1
+            class="m-0 truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
+          >
+            {{ scene.title }}
+          </h1>
+        </div>
+        <div class="flex items-center gap-1 shrink-0 overflow-x-auto">
           <button
             type="button"
-            data-testid="scene-switcher"
-            class="scene-switcher-btn pg-toolbar-btn max-w-[min(20rem,40vw)]"
-            popovertarget="scene-switcher-list"
-            :aria-expanded="titleOpen"
-            aria-haspopup="true"
-            aria-controls="scene-switcher-list"
-            :title="t.host.switchScene"
+            data-testid="toolbar-export"
+            class="pg-toolbar-btn"
+            :title="t.toolbar.export"
+            :aria-label="t.toolbar.export"
+            :disabled="!editor"
+            @click="exportOpen = true"
           >
-            <span class="truncate">{{ scene.title }}</span>
-            <ChevronDown
-              :size="14"
-              :stroke-width="1.5"
-              aria-hidden="true"
-              class="shrink-0"
-            />
+            <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
+            <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
           </button>
-        </h1>
-        <div
-          id="scene-switcher-list"
-          ref="switcherList"
-          popover
-          data-testid="scene-switcher-list"
-          role="navigation"
-          :aria-label="t.host.sceneList"
-          class="scene-switcher-list w-[min(22rem,calc(100vw-2rem))] max-h-[min(24rem,70vh)] overflow-auto rounded-lg border border-gray-200 bg-white p-2 shadow-float dark:border-gray-700 dark:bg-gray-800"
-          @toggle="onSwitcherToggle"
-        >
-          <section
-            v-for="section in switcherSections"
-            :key="section.group"
-            class="mb-2 last:mb-0"
+          <button
+            type="button"
+            data-testid="toolbar-share"
+            class="pg-toolbar-btn"
+            :title="t.toolbar.share"
+            :aria-label="t.toolbar.share"
+            :disabled="!editor"
+            @click="shareOpen = true"
           >
-            <h2
-              class="m-0 px-2 py-1 text-xs font-semibold uppercase tracking-[0.04em] text-gray-600 dark:text-gray-300"
-            >
-              {{ groupLabel(section.group) }}
-            </h2>
-            <ul class="m-0 p-0 list-none">
-              <li v-for="item in section.scenes" :key="item.id">
-                <a
-                  :href="hrefFor(item)"
-                  :aria-current="item.id === scene.id ? 'page' : undefined"
-                  class="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md text-sm no-underline text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-100 dark:hover:bg-gray-700"
-                  :class="
-                    item.id === scene.id
-                      ? 'bg-gray-100 font-medium dark:bg-gray-700'
-                      : ''
-                  "
-                  @click="onSwitcherClick($event, item)"
-                >
-                  <span class="truncate">{{ item.title }}</span>
-                  <span
-                    class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-300"
-                    >{{ item.id }}</span
-                  >
-                </a>
-              </li>
-            </ul>
-          </section>
+            <Upload :size="14" aria-hidden="true" />
+            <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
+          </button>
+          <a
+            :href="'https://docs.templatical.com' + scene.docs"
+            data-testid="toolbar-docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pg-toolbar-btn no-underline"
+            >{{ t.host.docs }}</a
+          >
+          <button
+            type="button"
+            data-testid="toolbar-code"
+            class="pg-toolbar-btn"
+            :aria-pressed="codeOpen"
+            :aria-expanded="codeOpen"
+            aria-controls="code-dialog"
+            @click="codeOpen = true"
+          >
+            {{ t.host.code }}
+          </button>
+          <HostKnobs v-model:shadow-mode="shadowMode" />
         </div>
-      </div>
-      <div class="flex items-center gap-1 shrink-0 overflow-x-auto">
-        <button
-          type="button"
-          data-testid="toolbar-export"
-          class="pg-toolbar-btn"
-          :title="t.toolbar.export"
-          :aria-label="t.toolbar.export"
-          :disabled="!editor"
-          @click="exportOpen = true"
-        >
-          <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
-          <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
-        </button>
-        <button
-          type="button"
-          data-testid="toolbar-share"
-          class="pg-toolbar-btn"
-          :title="t.toolbar.share"
-          :aria-label="t.toolbar.share"
-          :disabled="!editor"
-          @click="shareOpen = true"
-        >
-          <Upload :size="14" aria-hidden="true" />
-          <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
-        </button>
-        <a
-          :href="'https://docs.templatical.com' + scene.docs"
-          data-testid="toolbar-docs"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="pg-toolbar-btn no-underline"
-          >{{ t.host.docs }}</a
-        >
-        <button
-          type="button"
-          data-testid="toolbar-code"
-          class="pg-toolbar-btn"
-          :aria-pressed="codeOpen"
-          :aria-expanded="codeOpen"
-          aria-controls="code-dialog"
-          @click="codeOpen = true"
-        >
-          {{ t.host.code }}
-        </button>
-        <HostKnobs v-model:shadow-mode="shadowMode" />
-      </div>
-    </header>
-    <!--
+      </header>
+      <!--
       Gray well + rounded card. Do not add `isolate` — that traps the
       editor popover root (z 10000) so the playground header paints over
       dialogs.
     -->
-    <div
-      data-testid="editor-screen"
-      class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
-    >
       <div
-        data-testid="editor-stage"
-        class="relative flex-1 min-w-0 min-h-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
+        data-testid="editor-screen"
+        class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
       >
         <div
-          v-if="initError"
-          class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-8 text-sm bg-white dark:bg-gray-900"
-          role="alert"
+          data-testid="editor-stage"
+          class="relative flex-1 min-w-0 min-h-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
         >
-          <p class="m-0 text-red-700 dark:text-red-400">{{ initErrorCopy }}</p>
-          <a v-if="isShareError" href="/" class="pg-toolbar-btn no-underline">{{
-            t.sharedTemplate.goToPlayground
-          }}</a>
-          <button
-            v-else
-            type="button"
-            data-testid="init-retry"
-            class="pg-toolbar-btn"
-            @click="retryInit"
+          <div
+            v-if="initError"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-8 text-sm bg-white dark:bg-gray-900"
+            role="alert"
           >
-            {{ t.toolbar.retry }}
-          </button>
+            <p class="m-0 text-red-700 dark:text-red-400">
+              {{ initErrorCopy }}
+            </p>
+            <a
+              v-if="isShareError"
+              href="/"
+              class="pg-toolbar-btn no-underline"
+              >{{ t.sharedTemplate.goToPlayground }}</a
+            >
+            <button
+              v-else
+              type="button"
+              data-testid="init-retry"
+              class="pg-toolbar-btn"
+              @click="retryInit"
+            >
+              {{ t.toolbar.retry }}
+            </button>
+          </div>
+          <div
+            ref="editorContainer"
+            data-testid="editor-container"
+            class="h-full min-w-0 min-h-0 overflow-hidden bg-white dark:bg-gray-800"
+          />
+          <ImportPastePanel
+            v-if="scene.group === 'import'"
+            :scene-id="scene.id"
+            :editor="editor"
+          />
         </div>
-        <div
-          ref="editorContainer"
-          data-testid="editor-container"
-          class="h-full min-w-0 min-h-0 overflow-hidden bg-white dark:bg-gray-800"
-        />
-        <ImportPastePanel
-          v-if="scene.group === 'import'"
-          :scene-id="scene.id"
-          :editor="editor"
-        />
       </div>
+      <CodeDialog
+        v-model:open="codeOpen"
+        :snippet="scene.snippet"
+        :docs="scene.docs"
+      />
+      <ExportModal v-model:open="exportOpen" :editor="editor" />
+      <ShareModal
+        v-model:open="shareOpen"
+        :editor="editor"
+        :scene-id="scene.id"
+      />
+      <HostTour :ready="sceneReady" />
     </div>
-    <CodeDialog
-      v-model:open="codeOpen"
-      :snippet="scene.snippet"
-      :docs="scene.docs"
-    />
-    <ExportModal v-model:open="exportOpen" :editor="editor" />
-    <ShareModal
-      v-model:open="shareOpen"
-      :editor="editor"
-      :scene-id="scene.id"
-    />
-    <HostTour :ready="sceneReady" />
   </div>
 </template>
-
-<style scoped>
-.scene-switcher-btn {
-  anchor-name: --scene-switcher;
-}
-.scene-switcher-list {
-  position-anchor: --scene-switcher;
-  inset: unset;
-  top: anchor(bottom);
-  left: anchor(left);
-  margin: 4px 0 0;
-}
-</style>

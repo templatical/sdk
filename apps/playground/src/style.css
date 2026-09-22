@@ -118,6 +118,23 @@ html.dark body {
     @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
 }
 
+.pg-catalog-nav {
+    view-transition-name: pg-catalog-nav;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
+
 .pg-modal-backdrop {
     @apply fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-[4px];
 }

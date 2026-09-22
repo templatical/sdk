@@ -224,20 +224,14 @@ test.describe("templates provider", () => {
     await openTemplatesScene(page, shadowDom, editorPage, { readonly: "1" });
     await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
 
-    await page.getByTestId("scene-switcher").click();
-    await page
-      .locator('[data-testid="scene-switcher-list"] a[href*="/scenes/minimum"]')
-      .click();
+    await page.getByTestId("catalog-tab-minimum").click();
+    await page.getByTestId("rail-scene-minimum").click();
     await page
       .locator('[data-testid="scene-host"][data-scene-ready="true"]')
       .waitFor();
 
-    await page.getByTestId("scene-switcher").click();
-    await page
-      .locator(
-        '[data-testid="scene-switcher-list"] a[href*="/scenes/templates"]',
-      )
-      .click();
+    await page.getByTestId("catalog-tab-backend").click();
+    await page.getByTestId("rail-scene-templates").click();
     await page
       .locator('[data-testid="scene-host"][data-scene-ready="true"]')
       .waitFor();

@@ -12,6 +12,23 @@ export function sceneHref(
 }
 
 export function navigatePlayground(url: string): void {
-  history.pushState({}, "", url);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  const go = (): void => {
+    history.pushState({}, "", url);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+  const doc = document as Document & {
+    startViewTransition?: (update: () => void) => void;
+  };
+  if (
+    !prefersReducedMotion() &&
+    typeof doc.startViewTransition === "function"
+  ) {
+    doc.startViewTransition(go);
+    return;
+  }
+  go();
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

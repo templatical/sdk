@@ -2,6 +2,7 @@ import type { Component } from "vue";
 import {
   AppWindow,
   Bookmark,
+  Box,
   Braces,
   CircleAlert,
   CodeXml,
@@ -23,6 +24,7 @@ import {
 } from "@lucide/vue";
 
 export const SCENE_ICONS: Record<string, Component> = {
+  minimum: Box,
   fonts: Type,
   defaults: Palette,
   theming: Paintbrush,
