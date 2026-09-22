@@ -9,7 +9,7 @@ export const defaults: Scene = {
     "init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.",
   affordance: "defaults",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/guide/defaults",
   content: () => emptyCanvas(),
   config: () => ({

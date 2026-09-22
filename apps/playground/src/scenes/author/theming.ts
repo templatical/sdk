@@ -16,7 +16,7 @@ export const theming: Scene = {
     "init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.",
   affordance: "theme",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/guide/theming",
   content: () => emptyCanvas(),
   config(ctx) {

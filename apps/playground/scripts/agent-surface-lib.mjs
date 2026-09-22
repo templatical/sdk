@@ -7,18 +7,18 @@ export const DOCS_SITE = "https://docs.templatical.com";
 
 const GROUP_HEADINGS = {
   minimum: "Minimum",
-  storage: "Storage",
-  author: "Author",
-  render: "Render",
+  configure: "Configure",
+  personalization: "Personalization",
+  backend: "Your backend",
   import: "Import",
   examples: "Examples",
 };
 
 const GROUP_ORDER = [
   "minimum",
-  "storage",
-  "author",
-  "render",
+  "configure",
+  "personalization",
+  "backend",
   "import",
   "examples",
 ];

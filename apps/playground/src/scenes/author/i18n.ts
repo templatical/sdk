@@ -8,7 +8,7 @@ export const i18n: Scene = {
   summary: 'init({ locale: "de" }) — German editor chrome and block defaults.',
   affordance: "locale",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/guide/i18n",
   content: (ctx) => emptyCanvas(ctx.search.get("locale") ?? "de"),
   config(ctx) {

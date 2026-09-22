@@ -8,7 +8,7 @@ export const customBlocks: Scene = {
   summary: "init({ customBlocks }) — one registered block on the palette.",
   affordance: "custom",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/guide/custom-blocks",
   content: () => customBlockCanvas(),
   config: () => ({

@@ -14,7 +14,7 @@ export const comments: Scene = {
     "init({ templates, comments, user }) — threaded review on the attached template.",
   affordance: "comment",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/comments",
   content: () => storageCanvas(),
   config(ctx) {

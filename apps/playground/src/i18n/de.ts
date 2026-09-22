@@ -81,9 +81,9 @@ export default {
     },
     groups: {
       minimum: "Minimum",
-      storage: "Speicher",
-      author: "Authoring",
-      render: "Render",
+      configure: "Konfiguration",
+      personalization: "Personalisierung",
+      backend: "Ihr Backend",
       import: "Import",
       examples: "Examples",
     },

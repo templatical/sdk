@@ -9,7 +9,7 @@ export const fonts: Scene = {
     "init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.",
   affordance: "font",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/guide/fonts",
   content: () => emptyCanvas(),
   config: () => ({

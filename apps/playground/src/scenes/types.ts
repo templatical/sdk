@@ -2,7 +2,12 @@ import type { TemplaticalEditorConfig } from "@templatical/editor";
 import type { TemplateContent } from "@templatical/types";
 
 export type SceneGroup =
-  "minimum" | "storage" | "author" | "render" | "import" | "examples";
+  | "minimum"
+  | "configure"
+  | "personalization"
+  | "backend"
+  | "import"
+  | "examples";
 
 export type SceneCatalog = "oss";
 

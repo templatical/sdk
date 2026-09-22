@@ -13,7 +13,7 @@ export const versionHistory: Scene = {
     "init({ templates, versionHistory }) — browse, preview, and restore past saves.",
   affordance: "history",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/version-history",
   content: () => storageCanvas(),
   config(ctx) {

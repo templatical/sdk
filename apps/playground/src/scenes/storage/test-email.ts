@@ -10,7 +10,7 @@ export const testEmail: Scene = {
     "init({ testEmail }) — header Test button, recipient picker, fake send.",
   affordance: "send",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/test-email",
   content: () => storageCanvas(),
   config: () => ({

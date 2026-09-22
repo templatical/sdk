@@ -10,7 +10,7 @@ export const media: Scene = {
     "init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.",
   affordance: "media",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/media",
   content: () => createDefaultTemplateContent(),
   config: () => ({

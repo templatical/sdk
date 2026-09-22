@@ -79,9 +79,9 @@ export default {
     },
     groups: {
       minimum: "Minimum",
-      storage: "Storage",
-      author: "Author",
-      render: "Render",
+      configure: "Configure",
+      personalization: "Personalization",
+      backend: "Your backend",
       import: "Import",
       examples: "Examples",
     },

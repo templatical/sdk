@@ -8,7 +8,7 @@ export const mergeTags: Scene = {
   summary: "init({ mergeTags }) — static tags, built-in picker, no onRequest.",
   affordance: "tag",
   catalog: "oss",
-  group: "author",
+  group: "personalization",
   docs: "/guide/merge-tags",
   content: () => paragraphCanvas(),
   config: () => ({

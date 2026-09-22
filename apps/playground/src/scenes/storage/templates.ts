@@ -9,7 +9,7 @@ export const templates: Scene = {
   summary: "init({ templates }) — save, load, rename, and optional autosave.",
   affordance: "save",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/templates",
   content: () => storageCanvas(),
   config(ctx) {

@@ -11,7 +11,7 @@ export const savedBlocks: Scene = {
     "init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.",
   affordance: "bookmark",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/saved-blocks",
   content: () => storageCanvas(),
   config(ctx) {

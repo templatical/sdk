@@ -8,7 +8,7 @@ export const displayConditions: Scene = {
   summary: "init({ displayConditions }) — show or hide a block per recipient.",
   affordance: "condition",
   catalog: "oss",
-  group: "author",
+  group: "personalization",
   docs: "/guide/display-conditions",
   content: () => displayConditionCanvas(),
   config: () => ({

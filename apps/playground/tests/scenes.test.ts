@@ -55,7 +55,26 @@ describe("parsePlaygroundRoute", () => {
   });
 });
 
-const STORAGE_IDS = [
+const CONFIGURE_IDS = [
+  "fonts",
+  "defaults",
+  "theming",
+  "i18n",
+  "shadow-dom-off",
+  "issues",
+  "custom-blocks",
+] as const;
+
+const PERSONALIZATION_IDS = [
+  "merge-tags",
+  "merge-tags-on-request",
+  "merge-tags-samples",
+  "merge-tags-resolve-preview",
+  "logic-tags",
+  "display-conditions",
+] as const;
+
+const BACKEND_IDS = [
   "templates",
   "version-history",
   "comments",
@@ -65,21 +84,7 @@ const STORAGE_IDS = [
   "render",
 ] as const;
 
-const AUTHOR_IDS = [
-  "merge-tags",
-  "merge-tags-on-request",
-  "merge-tags-samples",
-  "merge-tags-resolve-preview",
-  "logic-tags",
-  "display-conditions",
-  "custom-blocks",
-  "issues",
-  "fonts",
-  "defaults",
-  "theming",
-  "i18n",
-  "shadow-dom-off",
-] as const;
+const AUTHOR_IDS = [...PERSONALIZATION_IDS, ...CONFIGURE_IDS] as const;
 
 const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   "merge-tags": "/guide/merge-tags",
@@ -131,11 +136,12 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 };
 
 describe("registry", () => {
-  it("registers minimum, storage, author, import scenes, then eight examples", () => {
+  it("registers minimum, then configure, personalization, backend, import, examples", () => {
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
-      ...STORAGE_IDS,
-      ...AUTHOR_IDS,
+      ...CONFIGURE_IDS,
+      ...PERSONALIZATION_IDS,
+      ...BACKEND_IDS,
       ...IMPORT_IDS,
       "example-launchpad-launch",
       "example-launchpad-reset",
@@ -155,11 +161,16 @@ describe("registry", () => {
     expect(getScene("media")?.docs).toBe("/backend/media");
     expect(getScene("test-email")?.docs).toBe("/backend/test-email");
     expect(getScene("render")?.docs).toBe("/backend/render");
-    for (const id of STORAGE_IDS) {
-      expect(getScene(id)?.group).toBe("storage");
+    for (const id of CONFIGURE_IDS) {
+      expect(getScene(id)?.group).toBe("configure");
+    }
+    for (const id of PERSONALIZATION_IDS) {
+      expect(getScene(id)?.group).toBe("personalization");
+    }
+    for (const id of BACKEND_IDS) {
+      expect(getScene(id)?.group).toBe("backend");
     }
     for (const id of AUTHOR_IDS) {
-      expect(getScene(id)?.group).toBe("author");
       expect(getScene(id)?.docs).toBe(AUTHOR_DOCS[id]);
     }
     for (const id of IMPORT_IDS) {
@@ -198,12 +209,13 @@ describe("registry", () => {
     expect(getScene("nope")).toBeUndefined();
   });
 
-  it("groups minimum first, then storage, author, import, examples", () => {
+  it("groups minimum, configure, personalization, backend, import, examples", () => {
     const groups = [...scenesByGroup().keys()];
     expect(groups).toEqual([
       "minimum",
-      "storage",
-      "author",
+      "configure",
+      "personalization",
+      "backend",
       "import",
       "examples",
     ]);

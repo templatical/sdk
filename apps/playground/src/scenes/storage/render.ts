@@ -10,7 +10,7 @@ export const render: Scene = {
     "init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.",
   affordance: "export",
   catalog: "oss",
-  group: "storage",
+  group: "backend",
   docs: "/backend/render",
   content: () => storageCanvas(),
   config: () => ({

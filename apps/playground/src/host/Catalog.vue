@@ -16,8 +16,13 @@ const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 const minimum = getScene("minimum");
 const grouped = scenesByGroup();
 
-const TAB_GROUPS: SceneGroup[] = ["storage", "author", "import"];
-const activeGroup = ref<SceneGroup>("storage");
+const TAB_GROUPS: SceneGroup[] = [
+  "configure",
+  "personalization",
+  "backend",
+  "import",
+];
+const activeGroup = ref<SceneGroup>("configure");
 
 const setupTabs = computed(() =>
   TAB_GROUPS.flatMap((group) => {

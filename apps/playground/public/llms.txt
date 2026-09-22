@@ -8,7 +8,26 @@ Each scene is also raw markdown: /scenes/<id>.md
 
 - [Minimum setup](https://play.templatical.com/scenes/minimum): Empty canvas, nothing wired
 
-## Storage
+## Configure
+
+- [Fonts](https://play.templatical.com/scenes/fonts): Limit the type menu
+- [Defaults](https://play.templatical.com/scenes/defaults): New blocks stay on-brand
+- [Theming](https://play.templatical.com/scenes/theming): Paint the chrome your colors
+- [Internationalization](https://play.templatical.com/scenes/i18n): German chrome and placeholders
+- [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): Mount in the page light DOM
+- [Issues](https://play.templatical.com/scenes/issues): Lint the template as you edit
+- [Custom blocks](https://play.templatical.com/scenes/custom-blocks): Register your own block type
+
+## Personalization
+
+- [Merge tags](https://play.templatical.com/scenes/merge-tags): Insert a field from the list
+- [Merge tags on request](https://play.templatical.com/scenes/merge-tags-on-request): Pick fields from your app
+- [Merge tag samples](https://play.templatical.com/scenes/merge-tags-samples): Preview with sample values
+- [Resolve preview](https://play.templatical.com/scenes/merge-tags-resolve-preview): Preview with real recipient data
+- [Logic tags](https://play.templatical.com/scenes/logic-tags): Branch copy with IF / ENDIF
+- [Display conditions](https://play.templatical.com/scenes/display-conditions): Hide a block per recipient
+
+## Your backend
 
 - [Templates](https://play.templatical.com/scenes/templates): Load and save the template
 - [Version history](https://play.templatical.com/scenes/version-history): Restore an earlier snapshot
@@ -17,22 +36,6 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Media](https://play.templatical.com/scenes/media): Upload and pick an image
 - [Test email](https://play.templatical.com/scenes/test-email): Send this to an inbox
 - [Render](https://play.templatical.com/scenes/render): Export MJML and HTML
-
-## Author
-
-- [Merge tags](https://play.templatical.com/scenes/merge-tags): Insert a field from the list
-- [Merge tags on request](https://play.templatical.com/scenes/merge-tags-on-request): Pick fields from your app
-- [Merge tag samples](https://play.templatical.com/scenes/merge-tags-samples): Preview with sample values
-- [Resolve preview](https://play.templatical.com/scenes/merge-tags-resolve-preview): Preview with real recipient data
-- [Logic tags](https://play.templatical.com/scenes/logic-tags): Branch copy with IF / ENDIF
-- [Display conditions](https://play.templatical.com/scenes/display-conditions): Hide a block per recipient
-- [Custom blocks](https://play.templatical.com/scenes/custom-blocks): Register your own block type
-- [Issues](https://play.templatical.com/scenes/issues): Lint the template as you edit
-- [Fonts](https://play.templatical.com/scenes/fonts): Limit the type menu
-- [Defaults](https://play.templatical.com/scenes/defaults): New blocks stay on-brand
-- [Theming](https://play.templatical.com/scenes/theming): Paint the chrome your colors
-- [Internationalization](https://play.templatical.com/scenes/i18n): German chrome and placeholders
-- [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): Mount in the page light DOM
 
 ## Import
 

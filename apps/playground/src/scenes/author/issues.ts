@@ -9,7 +9,7 @@ export const issues: Scene = {
     "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
   affordance: "lint",
   catalog: "oss",
-  group: "author",
+  group: "configure",
   docs: "/quality/",
   content: () => emptyCanvas(),
   config: () => ({
