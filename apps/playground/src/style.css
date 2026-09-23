@@ -9,6 +9,12 @@
     --color-primary-hover: oklch(63% 0.17 55);
     --color-primary-dark: oklch(78% 0.14 55);
     --color-primary-dark-hover: oklch(70% 0.16 55);
+    --color-mark-configure: oklch(70% 0.16 55);
+    --color-mark-personalization: oklch(60% 0.118 184.71);
+    --color-mark-backend: oklch(48% 0.04 250);
+    --color-mark-import: oklch(50% 0.05 280);
+    --color-mark-examples: oklch(62% 0.1 55);
+    --color-mark-minimum: oklch(50% 0.02 60);
     --shadow-primary-ring: 0 0 0 3px oklch(70% 0.16 55 / 0.15);
     --shadow-primary-glow: 0 4px 12px oklch(70% 0.16 55 / 0.25);
     --shadow-primary-ring-subtle: 0 0 0 3px oklch(70% 0.16 55 / 0.12);
@@ -120,6 +126,46 @@ html.dark body {
 
 .pg-catalog-nav {
     view-transition-name: pg-catalog-nav;
+}
+
+.pg-group-mark {
+    color: var(--pg-mark, var(--color-primary));
+    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 14%, white);
+}
+.dark .pg-group-mark {
+    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.015 261));
+}
+.pg-group-mark .pg-mark-fill {
+    fill: var(--pg-mark, var(--color-primary));
+}
+.pg-group-mark .pg-mark-fill-2 {
+    fill: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 45%, white);
+}
+.dark .pg-group-mark .pg-mark-fill-2 {
+    fill: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 55%, oklch(27% 0.015 261));
+}
+.pg-group-mark .pg-mark-stroke {
+    color: var(--pg-mark, var(--color-primary));
+}
+.pg-group-mark[data-group="configure"] { --pg-mark: var(--color-mark-configure); }
+.pg-group-mark[data-group="personalization"] { --pg-mark: var(--color-mark-personalization); }
+.pg-group-mark[data-group="backend"] { --pg-mark: var(--color-mark-backend); }
+.pg-group-mark[data-group="import"] { --pg-mark: var(--color-mark-import); }
+.pg-group-mark[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
+.pg-group-mark[data-group="minimum"] { --pg-mark: var(--color-mark-minimum); }
+
+.pg-card-panel[data-group="configure"] { --pg-mark: var(--color-mark-configure); }
+.pg-card-panel[data-group="personalization"] { --pg-mark: var(--color-mark-personalization); }
+.pg-card-panel[data-group="backend"] { --pg-mark: var(--color-mark-backend); }
+.pg-card-panel[data-group="import"] { --pg-mark: var(--color-mark-import); }
+.pg-card-panel[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
+
+.pg-card-icon {
+    color: var(--pg-mark, var(--color-primary));
+    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 14%, white);
+}
+.dark .pg-card-icon {
+    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.015 261));
 }
 
 ::view-transition-old(root),

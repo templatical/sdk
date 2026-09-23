@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Component } from "vue";
 import { ChevronRight } from "@lucide/vue";
+import CatalogGroupMark from "@/host/CatalogGroupMark.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
 import { RAIL_NAV_GROUPS } from "@/host/catalogNav";
 import { navigatePlayground, sceneHref } from "@/host/sceneHref";
@@ -89,6 +90,7 @@ function toggleGroup(group: SceneGroup): void {
         "
         @click="toggleGroup(section.group)"
       >
+        <CatalogGroupMark :group="section.group" />
         <span class="min-w-0 flex-1">
           <span
             class="block text-sm"

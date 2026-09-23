@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, type Component } from "vue";
 import { ArrowRight, ChevronRight } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
+import CatalogGroupMark from "@/host/CatalogGroupMark.vue";
 import CatalogSketch from "@/host/CatalogSketch.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
 import HostKnobs from "@/host/HostKnobs.vue";
@@ -176,6 +177,7 @@ function onNavKeydown(event: KeyboardEvent): void {
             "
             @click="activeGroup = tab.group"
           >
+            <CatalogGroupMark :group="tab.group" />
             <span class="min-w-0 flex-1">
               <span
                 class="block text-sm"
@@ -211,9 +213,10 @@ function onNavKeydown(event: KeyboardEvent): void {
         </div>
         <div
           role="tabpanel"
-          class="min-w-0 flex-1"
+          class="pg-card-panel min-w-0 flex-1"
           :id="`catalog-tabpanel-${activeGroup}`"
           :aria-labelledby="`catalog-tab-${activeGroup}`"
+          :data-group="activeGroup"
         >
           <ul
             v-if="activeGroup === 'examples'"
@@ -254,7 +257,7 @@ function onNavKeydown(event: KeyboardEvent): void {
                 @click="onSceneClick($event, scene)"
               >
                 <span
-                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-dark"
+                  class="pg-card-icon flex size-9 shrink-0 items-center justify-center rounded-lg"
                 >
                   <component
                     :is="iconFor(scene)"
