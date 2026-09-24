@@ -2,9 +2,8 @@
 import "./dom-stubs";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { nextTick } from "vue";
 import {
   createDefaultTemplateContent,
   createSectionBlock,
@@ -195,7 +194,16 @@ describe("config.sectionWrapper reaches SectionToolbar through Editor.vue", () =
       global: { stubs: { teleport: true } },
     });
     await wrapper.get(`[data-block-id="${section.id}"]`).trigger("click");
-    await nextTick();
+    // Toolbar is defineAsyncComponent. Its import graph is the whole
+    // properties panel, so a single nextTick returns before it renders.
+    await vi.waitFor(
+      () => {
+        expect(wrapper.find('[data-testid="block-toolbar"]').exists()).toBe(
+          true,
+        );
+      },
+      { timeout: 10_000 },
+    );
     return { wrapper, translations };
   }
 
