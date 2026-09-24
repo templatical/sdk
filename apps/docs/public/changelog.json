@@ -17,8 +17,27 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.39.4",
+  "latest": "0.40.0",
   "versions": [
+    {
+      "version": "0.40.0",
+      "date": "2026-09-24",
+      "changes": [
+        {
+          "hash": "b7ff7d9",
+          "level": "minor",
+          "title": "Add an embedder `layout` overlay: a Templatical JSON shell with one `slot` (top-level or inside a layout `wrapper` card), applied at preview and `toMjml` / `toHtml`, never written into `getContent()`.",
+          "body": "",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor",
+            "@templatical/quality",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.39.4",
       "date": "2026-09-21",

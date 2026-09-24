@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.40.0
+
+<time datetime="2026-09-24">2026-09-24</time>
+
+### Features
+
+**Add an embedder `layout` overlay: a Templatical JSON shell with one `slot` (top-level or inside a layout `wrapper` card), applied at preview and `toMjml` / `toHtml`, never written into `getContent()`.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/quality` · `@templatical/renderer` · `@templatical/types`
+
 ## 0.39.4
 
 <time datetime="2026-09-21">2026-09-21</time>
