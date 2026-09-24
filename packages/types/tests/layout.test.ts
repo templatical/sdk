@@ -297,6 +297,39 @@ describe("applyLayout", () => {
     expect(freeze(content)).toBe(contentBefore);
   });
 
+  it("splices an author section with no wrapper into a card", () => {
+    const paragraph = createParagraphBlock({ content: "<p>Inside</p>" });
+    const section = createSectionBlock({ children: [[paragraph]] });
+    const layout = cardLayout();
+    const content = withBlocks([section]);
+
+    const result = applyLayout(layout, content);
+
+    const card = result.blocks[1] as WrapperBlock;
+    expect(isWrapper(card)).toBe(true);
+    expect(card.children.map((child) => child.id)).toEqual([section.id]);
+    const authored = card.children[0];
+    expect(isSection(authored!)).toBe(true);
+    if (!isSection(authored!)) return;
+    expect(authored.wrapper).toBeUndefined();
+    expect(authored.children[0]?.[0]?.id).toBe(paragraph.id);
+  });
+
+  it("throws when a section nested in a column emits mj-wrapper under a card", () => {
+    const inner = createSectionBlock({
+      wrapper: { backgroundColor: "#ffffff" },
+    });
+    const outer = createSectionBlock({ children: [[inner]] });
+    const layout = cardLayout();
+    const content = withBlocks([outer]);
+    const layoutBefore = freeze(layout);
+    const contentBefore = freeze(content);
+
+    expect(() => applyLayout(layout, content)).toThrow(NESTED_MJ_WRAPPER);
+    expect(freeze(layout)).toBe(layoutBefore);
+    expect(freeze(content)).toBe(contentBefore);
+  });
+
   it("keeps author section.wrapper when the slot is a top-level sibling", () => {
     const layout = siblingLayout();
     const section = createSectionBlock({
