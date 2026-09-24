@@ -124,7 +124,7 @@ describe("CommentsSidebar", () => {
       expect(wrapper.text()).not.toContain("Ada");
     });
 
-    it('marks an edited comment, and only an edited one', async () => {
+    it("marks an edited comment, and only an edited one", async () => {
       const { wrapper } = await mountSidebar({
         threads: [
           comment("c-1", { updatedAt: "2026-08-17T11:00:00Z" }),
@@ -154,6 +154,21 @@ describe("CommentsSidebar", () => {
         .trigger("click");
 
       expect(wrapper.text()).toContain("comments.resolvedBy");
+    });
+
+    it("names the close control and exposes filter pressed state", async () => {
+      const { wrapper } = await mountSidebar();
+      expect(wrapper.find('[aria-label="comments.close"]').exists()).toBe(true);
+      expect(
+        wrapper
+          .get('[data-testid="comments-filter-unresolved"]')
+          .attributes("aria-pressed"),
+      ).toBe("true");
+      expect(
+        wrapper
+          .get('[data-testid="comments-filter-all"]')
+          .attributes("aria-pressed"),
+      ).toBe("false");
     });
 
     it("filters to unresolved by default", async () => {
@@ -226,7 +241,9 @@ describe("CommentsSidebar", () => {
     });
 
     it("hides only the edit action when update is withheld", async () => {
-      const { wrapper } = await mountSidebar({ permissions: { update: false } });
+      const { wrapper } = await mountSidebar({
+        permissions: { update: false },
+      });
       const titles = wrapper
         .findAll("button")
         .map((b) => b.attributes("title") ?? "");
@@ -237,7 +254,9 @@ describe("CommentsSidebar", () => {
     });
 
     it("hides only the delete action when delete is withheld", async () => {
-      const { wrapper } = await mountSidebar({ permissions: { delete: false } });
+      const { wrapper } = await mountSidebar({
+        permissions: { delete: false },
+      });
       const titles = wrapper
         .findAll("button")
         .map((b) => b.attributes("title") ?? "");
@@ -348,6 +367,172 @@ describe("CommentsSidebar", () => {
       // string in this component before it moved to the OSS chunk.
       expect(wrapper.text()).toContain("comments.jumpToBlock");
       expect(wrapper.text()).not.toMatch(/\bBlock\b/);
+    });
+  });
+});
+
+describe("CommentsSidebar mutations", () => {
+  it("replies on the parent with the parent's block id", async () => {
+    const { wrapper, provider } = await mountSidebar({
+      threads: [comment("c-1", { blockId: "blk-1" })],
+      canvasBlockIds: ["blk-1"],
+    });
+
+    await wrapper.get('[data-testid="comment-reply"]').trigger("click");
+    await nextTick();
+
+    const reply = wrapper.find(
+      'textarea[placeholder="comments.replyPlaceholder"]',
+    );
+    await reply.setValue("a reply");
+    await reply.trigger("keydown", { key: "Enter" });
+
+    expect(provider.create).toHaveBeenCalledWith("tpl-1", {
+      body: "a reply",
+      blockId: "blk-1",
+      parentId: "c-1",
+    });
+  });
+
+  it("edits on Enter and cancels on Escape", async () => {
+    const { wrapper, provider } = await mountSidebar();
+
+    await wrapper.get('[data-testid="comment-edit"]').trigger("click");
+    await nextTick();
+    const editor = wrapper.findAll("textarea")[0];
+    await editor.setValue("revised");
+    await editor.trigger("keydown", { key: "Enter" });
+    expect(provider.update).toHaveBeenCalledWith("tpl-1", "c-1", {
+      body: "revised",
+    });
+
+    await wrapper.get('[data-testid="comment-edit"]').trigger("click");
+    await nextTick();
+    await wrapper.findAll("textarea")[0].setValue("never mind");
+    await wrapper.findAll("textarea")[0].trigger("keydown", { key: "Escape" });
+    await nextTick();
+    // The mock update returns `{ body: "edited" }`; Escape must drop the draft
+    // and show the stored body again.
+    expect(wrapper.text()).toContain("edited");
+    expect(wrapper.text()).not.toContain("never mind");
+  });
+
+  it("asks for a second click before deleting, and cancel restores the actions", async () => {
+    const { wrapper, provider } = await mountSidebar();
+
+    await wrapper.get('[data-testid="comment-delete"]').trigger("click");
+    await nextTick();
+    expect(provider.delete).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("comments.deleteConfirm");
+
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "comments.cancel")!
+      .trigger("click");
+    await nextTick();
+    expect(
+      wrapper.find('[data-testid="comment-delete-confirm"]').exists(),
+    ).toBe(false);
+
+    await wrapper.get('[data-testid="comment-delete"]').trigger("click");
+    await wrapper
+      .get('[data-testid="comment-delete-confirm"]')
+      .trigger("click");
+    expect(provider.delete).toHaveBeenCalledWith("tpl-1", "c-1");
+  });
+
+  it("does not throw when a write is rejected", async () => {
+    const { wrapper, provider } = await mountSidebar();
+    vi.mocked(provider.create).mockRejectedValueOnce(new Error("offline"));
+
+    await wrapper.find('[data-testid="comments-input"]').setValue("note");
+    await wrapper.get('[data-testid="comments-send"]').trigger("click");
+    await nextTick();
+
+    expect(wrapper.find('[data-testid="comments-input"]').exists()).toBe(true);
+  });
+
+  it("marks a comment whose block is gone, and jumps when it is still on the canvas", async () => {
+    const missing = await mountSidebar({
+      threads: [comment("c-1", { blockId: "gone" })],
+      canvasBlockIds: [],
+    });
+    expect(missing.wrapper.text()).toContain("comments.missingBlock");
+
+    const { wrapper, editor } = await mountSidebar({
+      threads: [comment("c-1", { blockId: "blk-1" })],
+      canvasBlockIds: ["blk-1"],
+    });
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "comments.jumpToBlock")!
+      .trigger("click");
+    expect(editor.selectBlock).toHaveBeenCalledWith("blk-1");
+  });
+
+  it("follows the selected block while the block filter is on", async () => {
+    const { wrapper, feature, editor } = await mountSidebar({
+      threads: [
+        comment("c-1", { blockId: "blk-1", body: "one" }),
+        comment("c-2", { blockId: "blk-2", body: "two" }),
+      ],
+      canvasBlockIds: ["blk-1", "blk-2"],
+      filterBlockId: "blk-1",
+    });
+    expect(wrapper.text()).toContain("one");
+    expect(wrapper.text()).not.toContain("two");
+
+    editor.state.selectedBlockId = "blk-2";
+    await nextTick();
+    expect(feature.filterBlockId.value).toBe("blk-2");
+    expect(wrapper.text()).toContain("two");
+    expect(wrapper.text()).not.toContain("one");
+  });
+
+  it("expands a thread to show its replies", async () => {
+    const { wrapper } = await mountSidebar({
+      threads: [
+        comment("c-1", {
+          replies: [comment("r-1", { parentId: "c-1", body: "nested" })],
+        }),
+      ],
+    });
+    expect(wrapper.text()).not.toContain("nested");
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("comments.replyOne"))!
+      .trigger("click");
+    await nextTick();
+    expect(wrapper.text()).toContain("nested");
+  });
+
+  it("shows the first-load spinner and the empty copy for each filter", async () => {
+    const loading = await mountSidebar({ threads: [] });
+    loading.feature.headless.isLoading.value = true;
+    await nextTick();
+    expect(loading.wrapper.find(".tpl-spinner").exists()).toBe(true);
+
+    const empty = await mountSidebar({ threads: [] });
+    expect(empty.wrapper.text()).toContain("comments.noComments");
+    await empty.wrapper
+      .get('[data-testid="comments-filter-all"]')
+      .trigger("click");
+    await nextTick();
+    expect(empty.wrapper.text()).toContain("comments.noCommentsHint");
+  });
+
+  it("anchors a new comment to the block filter", async () => {
+    const { wrapper, provider } = await mountSidebar({
+      threads: [],
+      filterBlockId: "blk-1",
+      canvasBlockIds: ["blk-1"],
+      isBlockSaved: () => true,
+    });
+    await wrapper.find('[data-testid="comments-input"]').setValue("on this");
+    await wrapper.get('[data-testid="comments-send"]').trigger("click");
+    expect(provider.create).toHaveBeenCalledWith("tpl-1", {
+      body: "on this",
+      blockId: "blk-1",
     });
   });
 });

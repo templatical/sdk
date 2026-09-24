@@ -14,7 +14,7 @@ test.describe("Block-specific settings", () => {
     // MergeTagInput renders a plain <input>, or — once the value contains a
     // tag — a role="group" holding a button per tag plus Edit and Clear.
     const inputs = panel.locator('input, [role="group"]');
-    expect(await inputs.count()).toBeGreaterThanOrEqual(1);
+    await expect.poll(() => inputs.count()).toBeGreaterThanOrEqual(1);
   });
 
   test("image block shows width select", async ({
@@ -26,7 +26,7 @@ test.describe("Block-specific settings", () => {
 
     // Width select should exist
     const selects = panel.locator("select");
-    expect(await selects.count()).toBeGreaterThanOrEqual(1);
+    await expect.poll(() => selects.count()).toBeGreaterThanOrEqual(1);
   });
 
   test("image block shows alignment options", async ({
@@ -39,7 +39,7 @@ test.describe("Block-specific settings", () => {
     // Alignment is a SlidingPillSelect with radio buttons
     const alignButtons = panel.locator('[role="radio"]');
     // Should have left, center, right options
-    expect(await alignButtons.count()).toBe(3);
+    await expect(alignButtons).toHaveCount(3);
   });
 
   test("button block shows text and URL inputs", async ({
@@ -52,7 +52,7 @@ test.describe("Block-specific settings", () => {
 
     // Should have inputs for text and URL (see the note above on role="group")
     const inputs = panel.locator('input, [role="group"]');
-    expect(await inputs.count()).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => inputs.count()).toBeGreaterThanOrEqual(2);
   });
 
   test("button block shows color pickers", async ({
@@ -65,7 +65,7 @@ test.describe("Block-specific settings", () => {
     // Color pickers use text inputs with # prefix for hex values
     // Look for inputs that have color-like values or color picker triggers
     const textInputs = panel.locator('input[type="text"]');
-    expect(await textInputs.count()).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => textInputs.count()).toBeGreaterThanOrEqual(2);
   });
 
   test("button block shows border radius and font size", async ({
@@ -77,7 +77,7 @@ test.describe("Block-specific settings", () => {
 
     // Number inputs for border radius and font size
     const numberInputs = panel.locator('input[type="number"]');
-    expect(await numberInputs.count()).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => numberInputs.count()).toBeGreaterThanOrEqual(2);
   });
 
   test("changing button border radius updates value", async ({

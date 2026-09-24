@@ -258,7 +258,7 @@ function activeOptionId(): string | undefined {
           ref="searchInputRef"
           v-model="rawSearch"
           type="text"
-          class="tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)]"
+          class="tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
           :placeholder="t.logicTag.picker.searchPlaceholder"
           :aria-label="t.logicTag.picker.searchAriaLabel"
           :aria-controls="listId"

@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
+
 defineProps<{
   visible: boolean;
 }>();
+
+const { t: cloudT } = useCloudI18nStrict();
 </script>
 
 <template>
   <div
     v-if="visible"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    :aria-label="cloudT.loading.initializing"
     class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-[100] tpl:flex tpl:flex-col tpl:bg-[var(--tpl-bg)]"
   >
     <!-- Skeleton header -->

@@ -1,22 +1,22 @@
 {
   "name": "@templatical/media-library",
   "description": "Media library management for Templatical email editor",
-  "version": "0.39.0",
+  "version": "0.39.4",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.45.0",
+    "@lucide/vue": "^1.47.0",
     "@templatical/types": "workspace:*",
-    "@vueuse/core": "^14.4.0",
+    "@vueuse/core": "^15.0.0",
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.8",
-    "@vue/test-utils": "^2.5.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vite": "^8.3.0",
-    "vitest": "^5.0.0",
-    "vue": "^3.5.42",
+    "vitest": "^5.0.1",
+    "vue": "^3.5.43",
     "vue-tsc": "^3.3.11"
   },
   "exports": {
@@ -41,7 +41,7 @@
   "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
-    "vue": "^3.5.42"
+    "vue": "^3.5.43"
   },
   "publishConfig": {
     "access": "public"

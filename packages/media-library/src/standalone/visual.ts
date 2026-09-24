@@ -85,17 +85,19 @@ function applyTheme(
   }
 
   if (theme.primaryColor) {
-    container.style.setProperty("--tpl-primary", theme.primaryColor);
+    // `--tpl-user-*`: `.tpl` redeclares `--tpl-primary` from this override.
+    // Writing `--tpl-primary` on the container is wiped by that declaration.
+    container.style.setProperty("--tpl-user-primary", theme.primaryColor);
   }
 
   if (theme.borderRadius !== undefined) {
-    container.style.setProperty("--tpl-radius", `${theme.borderRadius}px`);
+    container.style.setProperty("--tpl-user-radius", `${theme.borderRadius}px`);
     container.style.setProperty(
-      "--tpl-radius-sm",
+      "--tpl-user-radius-sm",
       `${Math.max(0, theme.borderRadius - 3)}px`,
     );
     container.style.setProperty(
-      "--tpl-radius-lg",
+      "--tpl-user-radius-lg",
       `${theme.borderRadius + 4}px`,
     );
   }

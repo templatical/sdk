@@ -32,7 +32,7 @@ function optionLabel(opt: string | OptionItem): string {
 <template>
   <select
     :class="[
-      'tpl:h-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none',
+      'tpl:h-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]',
       widthClass ?? 'tpl:w-20',
     ]"
     :value="modelValue"

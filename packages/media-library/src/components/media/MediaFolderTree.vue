@@ -102,7 +102,7 @@ function cancelCreate(): void {
         :placeholder="t.mediaLibrary.folderName"
         autofocus
         @keydown.enter="confirmCreateFolder"
-        @keydown.escape="cancelCreate"
+        @keydown.escape.stop="cancelCreate"
         @blur="confirmCreateFolder"
       />
     </div>

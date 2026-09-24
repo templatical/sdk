@@ -622,6 +622,7 @@ const de: typeof en = {
   comments: {
     button: "Kommentare",
     title: "Kommentare",
+    close: "Schließen",
     placeholder: "Kommentar schreiben...",
     replyPlaceholder: "Antwort schreiben...",
     reply: "Antworten",

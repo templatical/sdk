@@ -80,17 +80,18 @@ afterEach(() => {
 
 describe("standalone MediaLibrary source", () => {
   it("takes a provider and derives chrome from typeof, not hardcoded true", () => {
-    const source = readSrc("standalone/MediaLibrary.vue");
-    expect(source).toContain("provider: MediaProvider");
-    expect(source).not.toContain("authManager");
-    expect(source).not.toContain("planConfig");
-    expect(source).not.toContain("projectId");
-    expect(source).toMatch(/typeof props\.provider\.update === "function"/);
-    expect(source).toMatch(/typeof props\.provider\.replace === "function"/);
-    expect(source).toMatch(/typeof folders\.create === "function"/);
-    expect(source).not.toMatch(/const canUpdate = true/);
-    expect(source).not.toMatch(/const canReplace = true/);
-    expect(source).not.toContain("sortNewest");
+    const shell = readSrc("standalone/MediaLibrary.vue");
+    const chrome = readSrc("components/MediaLibraryChrome.vue");
+    expect(shell).toContain("provider: MediaProvider");
+    expect(shell).not.toContain("authManager");
+    expect(shell).not.toContain("planConfig");
+    expect(shell).not.toContain("projectId");
+    expect(chrome).toMatch(/typeof props\.provider\.update === "function"/);
+    expect(chrome).toMatch(/typeof props\.provider\.replace === "function"/);
+    expect(chrome).toMatch(/typeof folders\.create === "function"/);
+    expect(chrome).not.toMatch(/const canUpdate = true/);
+    expect(chrome).not.toMatch(/const canReplace = true/);
+    expect(shell).not.toContain("sortNewest");
   });
 
   it("declares provider as a required prop", () => {

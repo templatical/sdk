@@ -615,6 +615,7 @@ const ptBR: typeof en = {
   comments: {
     button: "Comentários",
     title: "Comentários",
+    close: "Fechar",
     placeholder: "Escreva um comentário...",
     replyPlaceholder: "Escreva uma resposta...",
     reply: "Responder",

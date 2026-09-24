@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
+import { primaryBtnClass } from "../../constants/styleConstants";
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import { useDesignReference } from "@templatical/core/cloud";
 import { EDITOR_KEY, AUTH_MANAGER_KEY, requireInject } from "../../keys";
@@ -196,6 +197,8 @@ onBeforeUnmount(() => {
   >
     <div
       v-if="visible"
+      role="complementary"
+      :aria-label="cloudT.designReference.title"
       class="tpl-design-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
       <!-- Header -->
@@ -209,7 +212,9 @@ onBeforeUnmount(() => {
           <span>{{ cloudT.designReference.title }}</span>
         </div>
         <button
+          type="button"
           class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+          :aria-label="cloudT.designReference.close"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -339,7 +344,7 @@ onBeforeUnmount(() => {
                 {{ cloudT.designReference.dropHint }}
               </span>
               <span
-                class="tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+                class="tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
               >
                 {{
                   activeTab === "image"
@@ -370,7 +375,7 @@ onBeforeUnmount(() => {
             </label>
             <textarea
               v-model="prompt"
-              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]"
               :class="['tpl-design-prompt-input']"
               :placeholder="cloudT.designReference.promptPlaceholder"
               rows="3"
@@ -394,7 +399,8 @@ onBeforeUnmount(() => {
                 {{ cloudT.designReference.replaceCancel }}
               </button>
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+                type="button"
+                :class="[primaryBtnClass, 'tpl:flex-1']"
                 @click="handleGenerate"
               >
                 {{ cloudT.designReference.replaceConfirm }}
@@ -418,7 +424,8 @@ onBeforeUnmount(() => {
           <!-- Generate button -->
           <button
             v-if="!showConfirmation"
-            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+            type="button"
+            :class="[primaryBtnClass, 'tpl:w-full']"
             :disabled="!canGenerate"
             @click="handleGenerate"
           >
@@ -428,7 +435,7 @@ onBeforeUnmount(() => {
 
           <!-- AI disclaimer -->
           <p
-            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
           >
             {{ cloudT.aiMenu.disclaimer }}
           </p>

@@ -301,4 +301,100 @@ describe("buildFullwidth", () => {
     );
     expect(entries.filter((e) => e.sourceTag === "box")).toEqual([]);
   });
+
+  it("returns nothing for an empty fullwidth", () => {
+    expect(build({ type: "fullwidth", children: [] }).blocks).toEqual([]);
+    expect(
+      build({
+        type: "fullwidth",
+        children: [{ type: "placeholder" }],
+      }).blocks,
+    ).toEqual([]);
+  });
+
+  it("honours stacking none and unknown stacking, and hideOnMobile", () => {
+    const none = sectionOf({
+      type: "fullwidth",
+      children: [
+        {
+          type: "multicolumn",
+          attrs: { stacking: "none" },
+          children: [
+            column("300px", text("<p>A</p>")),
+            column("300px", text("<p>B</p>")),
+          ],
+        },
+      ],
+    });
+    expect(none.section.stackOnMobile).toBe(false);
+    expect(none.entries.find((e) => e.sourceTag === "fullwidth")?.status).toBe(
+      "converted",
+    );
+
+    const unknown = sectionOf({
+      type: "fullwidth",
+      children: [
+        {
+          type: "multicolumn",
+          attrs: { stacking: "right-on-top" },
+          children: [
+            column("300px", text("<p>A</p>")),
+            column("300px", text("<p>B</p>")),
+          ],
+        },
+      ],
+    });
+    expect(
+      unknown.entries.find((e) => e.sourceTag === "fullwidth")?.note,
+    ).toContain("unknown stacking");
+
+    const hidden = sectionOf({
+      type: "fullwidth",
+      attrs: { hideOnMobile: true },
+      children: [text("<p>Only desktop</p>")],
+    });
+    expect(hidden.section.visibility).toEqual({ desktop: true, mobile: false });
+  });
+
+  it("drops a nested painted box fill and approximates empty vs populated loops", () => {
+    const painted = sectionOf({
+      type: "fullwidth",
+      children: [
+        text("<p>Lead</p>"),
+        {
+          type: "box",
+          style: { backgroundColor: "#00ff00" },
+          children: [text("<p>Card</p>")],
+        },
+      ],
+    });
+    expect(
+      painted.entries.some(
+        (e) => e.sourceTag === "box" && e.note?.includes("#00ff00"),
+      ),
+    ).toBe(true);
+
+    const emptyLoop = sectionOf({
+      type: "fullwidth",
+      children: [
+        { type: "loop", attrs: { expression: "items" }, children: [] },
+      ],
+    });
+    expect(emptyLoop.entries.some((e) => e.status === "skipped")).toBe(true);
+
+    const filled = sectionOf({
+      type: "fullwidth",
+      children: [
+        {
+          type: "loop",
+          attrs: { expression: "items" },
+          children: [text("<p>Row</p>")],
+        },
+      ],
+    });
+    expect((filled.section.children[0][0] as ParagraphBlock).content).toBe(
+      "<p>Row</p>",
+    );
+    expect(filled.entries.some((e) => e.status === "approximated")).toBe(true);
+  });
 });

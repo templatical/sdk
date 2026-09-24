@@ -98,6 +98,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
 
 <template>
   <aside
+    data-testid="template-settings"
     class="tpl:flex tpl:w-full tpl:flex-1 tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)]"
   >
     <div

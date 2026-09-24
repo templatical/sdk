@@ -45,7 +45,7 @@ async function openSettingsTab(page: Page) {
   const tab = page.locator(SELECTORS.rightTabSettings);
   await expect(tab).toBeVisible();
   await tab.click();
-  const panel = page.locator(SELECTORS.rightPanelSettings);
+  const panel = page.locator(SELECTORS.templateSettings);
   await expect(panel).toBeVisible();
   return panel;
 }

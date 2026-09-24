@@ -19,6 +19,7 @@ const de: typeof en = {
   },
   aiChat: {
     title: "KI-Assistent",
+    close: "Schließen",
     button: "KI",
     inputPlaceholder: "Beschreiben Sie Ihre E-Mail-Vorlage...",
     applied: "Änderungen auf Vorlage angewendet.",
@@ -34,6 +35,7 @@ const de: typeof en = {
   },
   scoring: {
     title: "Vorlagenbewertung",
+    close: "Schließen",
     rescore: "Neu bewerten",
     scoring: "Vorlage wird analysiert...",
     overallScore: "Gesamtbewertung",
@@ -74,6 +76,7 @@ const de: typeof en = {
   },
   designReference: {
     title: "Designvorlage",
+    close: "Schließen",
     uploadImage: "Bild",
     uploadPdf: "PDF",
     dropHint: "Datei hierher ziehen oder klicken zum Durchsuchen",

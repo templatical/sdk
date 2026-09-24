@@ -4,7 +4,11 @@ import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import { useI18n } from "../../composables/useI18n";
-import { labelClass, monoTextareaClass } from "../../constants/styleConstants";
+import {
+  labelClass,
+  monoTextareaClass,
+  primaryBtnClass,
+} from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
@@ -256,7 +260,7 @@ function toggleVisibility(key: VisibilityKey): void {
           <div class="tpl:space-y-2">
             <div>
               <label
-                class="tpl:mb-1 tpl:block tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                class="tpl:mb-1 tpl:block tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
                 >{{ t.blockSettings.customConditionBefore }}</label
               >
               <textarea
@@ -267,7 +271,7 @@ function toggleVisibility(key: VisibilityKey): void {
             </div>
             <div>
               <label
-                class="tpl:mb-1 tpl:block tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+                class="tpl:mb-1 tpl:block tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
                 >{{ t.blockSettings.customConditionAfter }}</label
               >
               <textarea
@@ -279,7 +283,7 @@ function toggleVisibility(key: VisibilityKey): void {
             <div class="tpl:flex tpl:justify-end">
               <button
                 type="button"
-                class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-on-primary)] tpl:transition-all tpl:hover:opacity-90 tpl:disabled:opacity-50"
+                :class="primaryBtnClass"
                 :disabled="!customBefore.trim()"
                 @click="applyCustomCondition"
               >
@@ -292,7 +296,7 @@ function toggleVisibility(key: VisibilityKey): void {
         <template v-else-if="block.displayCondition && !isCustomCondition">
           <p
             v-if="block.displayCondition.description"
-            class="tpl:text-[11px] tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
           >
             {{ block.displayCondition.description }}
           </p>

@@ -4,8 +4,8 @@ export { LineBoundaryKeys } from "./LineBoundaryKeys";
 export { LineHeight } from "./LineHeight";
 export { LogicMergeTagNode } from "./LogicMergeTagNode";
 export { MergeTagNode } from "./MergeTagNode";
+export { MergeTagSuggestion } from "./MergeTagSuggestion";
 export {
-  MergeTagSuggestion,
   filterMergeTags,
   handleSuggestionKeyDown,
-} from "./MergeTagSuggestion";
+} from "../utils/mergeTagPopup";

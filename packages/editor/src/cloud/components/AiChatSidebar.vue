@@ -169,6 +169,8 @@ function handleKeydown(event: KeyboardEvent): void {
   >
     <div
       v-if="visible"
+      role="complementary"
+      :aria-label="cloudTranslations.aiChat.title"
       class="tpl-ai-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
       <!-- Header -->
@@ -186,14 +188,18 @@ function handleKeydown(event: KeyboardEvent): void {
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="(aiChat.messages.value?.length ?? 0) > 0"
+            type="button"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+            :aria-label="cloudTranslations.aiChat.clear"
             :title="cloudTranslations.aiChat.clear"
             @click="aiChat.clearChat()"
           >
             <Trash2 :size="14" :stroke-width="2" />
           </button>
           <button
+            type="button"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
+            :aria-label="cloudTranslations.aiChat.close"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -395,7 +401,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <!-- AI disclaimer -->
         <p
-          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
         >
           {{ cloudTranslations.aiMenu.disclaimer }}
         </p>

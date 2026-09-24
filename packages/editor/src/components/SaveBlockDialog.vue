@@ -208,7 +208,7 @@ function handleKeydown(event: KeyboardEvent): void {
           type="text"
           data-testid="saved-blocks-name-input"
           :placeholder="t.savedBlocks.namePlaceholder"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
       </div>
@@ -231,7 +231,7 @@ function handleKeydown(event: KeyboardEvent): void {
           data-testid="saved-blocks-category-input"
           list="tpl-saved-block-categories"
           :placeholder="t.savedBlocks.categoryPlaceholder"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
         <datalist id="tpl-saved-block-categories">
@@ -259,7 +259,7 @@ function handleKeydown(event: KeyboardEvent): void {
            can never exchange items with the canvas or a section column. -->
       <p
         v-if="pickedBlocks.length > 1"
-        class="tpl:mb-1.5 tpl:shrink-0 tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
+        class="tpl:mb-1.5 tpl:shrink-0 tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
       >
         {{ t.savedBlocks.reorderHint }}
       </p>

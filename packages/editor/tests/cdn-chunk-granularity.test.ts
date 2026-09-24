@@ -67,7 +67,8 @@ function findLazyComponents(): Set<string> {
   const found = new Set<string>();
   // `defineAsyncComponent(() => import("./Foo.vue"))`, with or without a
   // wrapping async arrow, across one or more lines.
-  const pattern = /defineAsyncComponent\s*\([\s\S]{0,200}?import\(\s*["']([^"']+\.vue)["']/g;
+  const pattern =
+    /defineAsyncComponent\s*\([\s\S]{0,200}?import\(\s*["']([^"']+\.vue)["']/g;
   for (const file of listSources(SRC)) {
     const src = readFileSync(file, "utf8");
     for (const match of src.matchAll(pattern)) {
@@ -93,7 +94,7 @@ describe("CDN chunk granularity", () => {
         `dist/cdn/ not found. Run \`pnpm --filter @templatical/editor run build:cdn\` before running this test.`,
       );
     }
-    await initLexer;
+    await initLexer();
 
     chunks = listChunks(CDN);
     staticImports = new Map();
@@ -105,11 +106,19 @@ describe("CDN chunk granularity", () => {
       staticImports.set(
         rel,
         imports
-          // `d === -1` marks a static import. Dynamic imports (`d > -1`) are
-          // separate on-demand fetches and must NOT count toward reachability —
-          // they are the whole mechanism under test.
-          .filter((i) => i.d === -1 && i.n?.startsWith("."))
-          .map((i) => posix.normalize(posix.join(posix.dirname(rel), i.n!))),
+          // es-module-lexer v3: `type === "static"` is a static import.
+          // Dynamic `import()` (`type === "dynamic"`) is an on-demand fetch
+          // and must NOT count toward reachability — that is the mechanism
+          // under test. `typeOnly` imports are erased and never emit an edge.
+          .filter(
+            (i) =>
+              i.type === "static" &&
+              !i.typeOnly &&
+              i.specifier?.startsWith("."),
+          )
+          .map((i) =>
+            posix.normalize(posix.join(posix.dirname(rel), i.specifier)),
+          ),
       );
 
       // Sourcemaps are the only reliable way to map a component to its chunk:
@@ -145,6 +154,12 @@ describe("CDN chunk granularity", () => {
     // If the sourcemap->component mapping silently produced nothing, every
     // reachability assertion below would pass vacuously.
     expect(owner.size).toBeGreaterThan(20);
+    // es-module-lexer v3 renamed `n`/`d` → `specifier`/`type`. An adapter
+    // that still reads the v2 fields walks an empty graph, `eager` is just
+    // the entry, and every reachability assertion passes for the wrong
+    // reason. The entry statically imports Vue, the chrome, and the canvas.
+    expect(eager.size).toBeGreaterThan(10);
+    expect((staticImports.get(ENTRY) ?? []).length).toBeGreaterThan(5);
   });
 
   it("finds the lazy components by reading source, and they resolve to chunks", () => {
@@ -154,6 +169,8 @@ describe("CDN chunk granularity", () => {
     expect(lazyComponents.has("TestEmailModal")).toBe(true);
     expect(lazyComponents.has("SaveBlockDialog")).toBe(true);
     expect(lazyComponents.has("AiChatSidebar")).toBe(true);
+    expect(lazyComponents.has("Toolbar")).toBe(true);
+    expect(lazyComponents.has("TemplateSettings")).toBe(true);
     expect(lazyComponents.size).toBeGreaterThanOrEqual(10);
   });
 
@@ -206,5 +223,55 @@ describe("CDN chunk granularity", () => {
       .map((chunk) => basename(chunk))
       .filter((name) => banned.some((prefix) => name.startsWith(prefix)));
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps @tiptap and prosemirror out of the entry's static-import closure", () => {
+    // Field autocomplete used to import the TipTap MergeTagSuggestion module
+    // for a shared popup helper. `manualChunks` then grouped every @tiptap /
+    // prosemirror file into one chunk, so that single static import made the
+    // entire ~150 KB gzip `tiptap` chunk eagerly reachable. Rich-text editing
+    // already dynamic-imports TipTap from ParagraphEditor / TitleEditor; the
+    // eager graph must not.
+    // pnpm nests as `node_modules/.pnpm/@tiptap+core@…/node_modules/@tiptap/core`.
+    const TIPTAP = /(?:@tiptap[/+]|\/prosemirror-)/;
+    const offenders: string[] = [];
+    for (const chunk of eager) {
+      const mapPath = join(CDN, `${chunk}.map`);
+      if (!existsSync(mapPath)) continue;
+      let map: { sources?: string[] };
+      try {
+        map = JSON.parse(readFileSync(mapPath, "utf8"));
+      } catch {
+        continue;
+      }
+      for (const src of map.sources ?? []) {
+        const normalized = src.replace(/\\/g, "/");
+        if (TIPTAP.test(normalized)) {
+          offenders.push(`${chunk} <- ${normalized}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the properties-panel graph out of the entry's static-import closure", () => {
+    // Toolbar + TemplateSettings are the only chrome that pull ColorPicker,
+    // MergeTagInput, and the per-type toolbars. They render behind v-if, so
+    // a static import is the only reason this graph would be eager.
+    const names = [
+      "Toolbar",
+      "TemplateSettings",
+      "ColorPicker",
+      "MergeTagInput",
+    ];
+    const eagerlyShipped: string[] = [];
+    for (const name of names) {
+      const chunk = owner.get(name);
+      expect(typeof chunk, `${name} must resolve to a chunk`).toBe("string");
+      if (chunk && eager.has(chunk)) {
+        eagerlyShipped.push(`${name} -> ${chunk}`);
+      }
+    }
+    expect(eagerlyShipped).toEqual([]);
   });
 });

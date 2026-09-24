@@ -142,15 +142,18 @@ const BACKDROP = (() => {
 /** The wrapper between backdrop and panel — it carries the focus-trap ref. */
 const WRAPPER = (() => {
   const index = TPL_MODAL.indexOf('ref="dialogRef"');
-  return index === -1 ? "" : openingTagFrom(TPL_MODAL, TPL_MODAL.lastIndexOf("<", index));
+  return index === -1
+    ? ""
+    : openingTagFrom(TPL_MODAL, TPL_MODAL.lastIndexOf("<", index));
 })();
 
 describe("overlay height scope", () => {
   it("finds every TplModal panel (sanity check)", () => {
     // Guards against the scanner silently returning [] — a broken walker would
-    // otherwise make every case below pass. These six are the current floor.
+    // otherwise make every case below pass. These seven are the current floor.
     const files = PANELS.map((panel) => panel.file).sort();
     expect(files).toEqual([
+      "cloud/components/CloudSaveGateModal.vue",
       "components/LogicTagPickerModal.vue",
       "components/MergeTagPickerModal.vue",
       "components/RestoreVersionDialog.vue",
@@ -212,25 +215,6 @@ describe("overlay height scope", () => {
     });
   });
 
-  it("caps the cloud save-gate panel against its own backdrop", () => {
-    // Rolls its own backdrop rather than going through TplModal, so it is not
-    // in PANELS — but it is the same `fixed inset-0` + `vh` mismatch. Its panel
-    // is a direct child of the flex backdrop, so no wrapper link is needed.
-    const source = readFileSync(
-      join(SRC, "cloud/components/CloudSaveGateModal.vue"),
-      "utf8",
-    );
-    const backdropIndex = source.search(/<div[^>]*tpl:fixed/);
-    expect(backdropIndex).toBeGreaterThan(-1);
-    const backdrop = openingTagFrom(source, backdropIndex);
-    expect(backdrop).toMatch(/tpl:inset-0/);
-    expect(backdrop).toMatch(/tpl:p-/);
-
-    const panel = nextElementTag(source, backdropIndex + backdrop.length);
-    expect(panel).toMatch(PERCENTAGE_HEIGHT_CAP);
-    expect(panel).not.toMatch(VIEWPORT_CAP);
-  });
-
   it("detects a viewport cap when one is reintroduced (guard is live)", () => {
     // Proves VIEWPORT_CAP matches the shapes this bug actually took, so the
     // cases above fail loudly instead of passing on a regex that stopped
@@ -258,8 +242,8 @@ describe("overlay height scope", () => {
 
     // The percentage matcher accepts both shapes and rejects the vh one, so a
     // panel cannot satisfy the rule by swapping units.
-    expect('tpl:max-h-full').toMatch(PERCENTAGE_HEIGHT_CAP);
-    expect('tpl:max-h-[90%]').toMatch(PERCENTAGE_HEIGHT_CAP);
-    expect('tpl:max-h-[90vh]').not.toMatch(PERCENTAGE_HEIGHT_CAP);
+    expect("tpl:max-h-full").toMatch(PERCENTAGE_HEIGHT_CAP);
+    expect("tpl:max-h-[90%]").toMatch(PERCENTAGE_HEIGHT_CAP);
+    expect("tpl:max-h-[90vh]").not.toMatch(PERCENTAGE_HEIGHT_CAP);
   });
 });

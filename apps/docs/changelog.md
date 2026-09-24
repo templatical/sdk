@@ -15,6 +15,52 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.39.4
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.**
+
+`@templatical/media-library`
+
+## 0.39.3
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Align Cloud chrome with the editor dialog and token recipes: the save-gate uses `TplModal` (trap, Escape, outlined danger), icon-only sidebar controls are named, primary hover deepens instead of fading, and chrome type sits on 10px or 12px.**
+
+`@templatical/editor`
+
+## 0.39.2
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Match the editor's dialog contract, `--tpl-user-*` tokens, and button recipes in the media library. Signal Amber keeps the documented contrast exception (`--tpl-on-primary` on `--tpl-primary`). Overlay backdrops no longer redeclare `.tpl` when they inherit the editor popover root.**
+
+`@templatical/editor` · `@templatical/media-library`
+
+## 0.39.1
+
+<time datetime="2026-09-21">2026-09-21</time>
+
+### Fixes and improvements
+
+**Cut the editor's initial JS load by keeping TipTap and the properties panel off the eager graph**
+
+`@templatical/editor`
+
+Field autocomplete imported the shared merge-tag popup from the TipTap `MergeTagSuggestion` extension, so `@tiptap/core` (and, on the CDN, the whole `tiptap` vendor chunk) downloaded with every session. The popup helpers now live in a TipTap-free module; the extension still loads when a title or paragraph enters edit.
+
+`RightSidebar` now lazy-loads Toolbar and Template Settings behind the `v-if`s that already gated them, so ColorPicker, MergeTagInput and the per-type toolbars fetch on first block select / first Settings visit.
+
+npm initial JS: 314 kB gzip → 169 kB. CDN eager: 335 kB gzip → 152 kB.
+
 ## 0.39.0
 
 <time datetime="2026-09-16">2026-09-16</time>

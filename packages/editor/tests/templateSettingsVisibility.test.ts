@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import {
   createDefaultTemplateContent,
   type TemplateSettings,
@@ -412,6 +412,7 @@ describe("templateSettings reaches the panel through init's config", () => {
     });
     // The Settings tab has to be opened first — the panel is `v-if`'d on it.
     await wrapper.find("#tpl-tab-settings").trigger("click");
+    await flushPromises();
     expect(
       wrapper.find('[data-testid="template-settings-card-language"]').exists(),
     ).toBe(false);
@@ -425,6 +426,7 @@ describe("templateSettings reaches the panel through init's config", () => {
       templateSettings: { fields: ["width", "direction"] },
     });
     await wrapper.find("#tpl-tab-settings").trigger("click");
+    await flushPromises();
     expect(
       wrapper.find('[data-testid="template-settings-direction"]').exists(),
     ).toBe(true);
@@ -447,6 +449,7 @@ describe("templateSettings reaches the panel through init's config", () => {
   it("keeps every card for a real config that omits the key", async () => {
     const wrapper = await mountRealEditor({});
     await wrapper.find("#tpl-tab-settings").trigger("click");
+    await flushPromises();
     for (const card of CARDS) {
       expect(
         wrapper.find(`[data-testid="template-settings-card-${card}"]`).exists(),
@@ -461,6 +464,7 @@ describe("templateSettings reaches the panel through init's config", () => {
       templateSettings: { fields: ["width", "colour"] },
     });
     await wrapper.find("#tpl-tab-settings").trigger("click");
+    await flushPromises();
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toContain(
       'config.templateSettings.fields: "colour" is not a template setting',

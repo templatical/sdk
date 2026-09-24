@@ -27,6 +27,7 @@ const isRenaming = ref(false);
 const renameValue = ref("");
 const isCreatingSubfolder = ref(false);
 const subfolderName = ref("");
+const confirmDelete = ref(false);
 
 const MAX_DEPTH = 5;
 
@@ -94,6 +95,23 @@ function cancelCreateSubfolder(): void {
   isCreatingSubfolder.value = false;
   subfolderName.value = "";
 }
+
+function handleDeleteClick(): void {
+  if (confirmDelete.value) {
+    emit("deleteFolder", props.folder.id);
+    confirmDelete.value = false;
+    return;
+  }
+  confirmDelete.value = true;
+}
+
+function onRowFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Node | null;
+  if (next && (event.currentTarget as HTMLElement).contains(next)) {
+    return;
+  }
+  confirmDelete.value = false;
+}
 </script>
 
 <template>
@@ -106,11 +124,19 @@ function cancelCreateSubfolder(): void {
         backgroundColor: isActive ? 'var(--tpl-bg-active)' : 'transparent',
         color: isActive ? 'var(--tpl-primary)' : 'var(--tpl-text)',
       }"
+      @focusout="onRowFocusOut"
     >
       <!-- Expand/collapse chevron -->
       <button
         v-if="hasChildren || isCreatingSubfolder"
+        type="button"
         class="tpl:flex tpl:size-4 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
+        :aria-expanded="shouldExpand"
+        :aria-label="
+          shouldExpand
+            ? t.mediaLibrary.collapseFolder
+            : t.mediaLibrary.expandFolder
+        "
         @click.stop="toggleExpand"
       >
         <ChevronRight
@@ -124,6 +150,7 @@ function cancelCreateSubfolder(): void {
 
       <!-- Folder icon + name (clickable) -->
       <button
+        type="button"
         class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:items-center tpl:gap-1.5"
         @click="emit('navigate', folder.id)"
       >
@@ -146,39 +173,56 @@ function cancelCreateSubfolder(): void {
         "
         autofocus
         @keydown.enter="confirmRename"
-        @keydown.escape="cancelRename"
+        @keydown.escape.stop="cancelRename"
         @blur="confirmRename"
         @click.stop
       />
 
-      <!-- Hover actions -->
       <span
         v-if="!isRenaming"
-        class="tpl:flex tpl:shrink-0 tpl:items-center tpl:gap-0.5 tpl:opacity-0 tpl:transition-opacity tpl:group-hover:opacity-100"
+        class="tpl:flex tpl:shrink-0 tpl:items-center tpl:gap-0.5 tpl:transition-opacity"
+        :class="
+          isActive || confirmDelete
+            ? 'tpl:opacity-100'
+            : 'tpl:opacity-0 tpl:group-hover:opacity-100 tpl:group-focus-within:opacity-100'
+        "
       >
-        <!-- Add subfolder -->
         <button
           v-if="canCreateSubfolder && canCreateFolder"
+          type="button"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
           :title="t.mediaLibrary.addSubfolder"
+          :aria-label="t.mediaLibrary.addSubfolder"
           @click.stop="startCreateSubfolder"
         >
           <Plus :size="12" :stroke-width="2" />
         </button>
-        <!-- Rename -->
         <button
           v-if="canRenameFolder"
+          type="button"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
           :title="t.mediaLibrary.renameFolder"
+          :aria-label="t.mediaLibrary.renameFolder"
           @click.stop="startRename"
         >
           <Pencil :size="12" :stroke-width="2" />
         </button>
-        <!-- Delete -->
         <button
           v-if="canDeleteFolder"
+          type="button"
+          data-testid="media-folder-delete"
           class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded tpl:transition-colors"
-          @click.stop="emit('deleteFolder', folder.id)"
+          :title="
+            confirmDelete
+              ? t.mediaLibrary.deleteFolderConfirm
+              : t.mediaLibrary.deleteFolder
+          "
+          :aria-label="
+            confirmDelete
+              ? t.mediaLibrary.deleteFolderConfirm
+              : t.mediaLibrary.deleteFolder
+          "
+          @click.stop="handleDeleteClick"
         >
           <Trash2
             :size="12"
@@ -226,7 +270,7 @@ function cancelCreateSubfolder(): void {
           :placeholder="t.mediaLibrary.subfolderName"
           autofocus
           @keydown.enter="confirmCreateSubfolder"
-          @keydown.escape="cancelCreateSubfolder"
+          @keydown.escape.stop="cancelCreateSubfolder"
           @blur="confirmCreateSubfolder"
         />
       </div>

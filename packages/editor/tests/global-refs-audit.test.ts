@@ -33,7 +33,9 @@ function listSourceFiles(): string[] {
         !entry.name.endsWith(".d.ts"),
     )
     .map((entry) =>
-      relative(SRC, join(entry.parentPath ?? SRC, entry.name)).split(sep).join("/"),
+      relative(SRC, join(entry.parentPath ?? SRC, entry.name))
+        .split(sep)
+        .join("/"),
     )
     .sort();
 }
@@ -53,17 +55,19 @@ describe("editor global DOM-reference audit", () => {
   });
 
   it("only the expected source files reference `document.body`", () => {
-    // Shadow DOM migration will rework MergeTagSuggestion's `appendChild`
-    // (Phase 3.1) to mount inside the editor's popover root.
+    // `utils/mergeTagPopup.ts` mounts the merge-tag suggestion popup into
+    // the editor's popover root, falling back to `document.body` for
+    // headless callers. `extensions/MergeTagSuggestion.ts` mentions the
+    // fallback in JSDoc only.
     //
     // `composables/useEditorCore.ts` and `keys.ts` mention `document.body`
-    // in JSDoc explaining the Phase 2 popover-root migration — no code
-    // reference.
+    // in JSDoc explaining the popover-root migration — no code reference.
     const actual = filesMatching(FILES, /document\.body/);
     expect(actual).toEqual([
       "composables/useEditorCore.ts",
       "extensions/MergeTagSuggestion.ts",
       "keys.ts",
+      "utils/mergeTagPopup.ts",
     ]);
   });
 
@@ -98,7 +102,7 @@ describe("editor global DOM-reference audit", () => {
     expect(actual).toEqual([]);
   });
 
-  it("no source file declares `<Teleport to=\"body\">`", () => {
+  it('no source file declares `<Teleport to="body">`', () => {
     // Phase 2 rewrote all four historical teleports (RichTextLinkDialog,
     // TitleEditor, ParagraphToolbar, TplModal) to teleport to the editor's
     // injected popover root (`POPOVER_ROOT_KEY`) instead of `document.body`.
@@ -112,7 +116,10 @@ describe("editor global DOM-reference audit", () => {
     // teleported to body must now teleport via `:to="popoverRoot"`. If one
     // is renamed or removed, this list updates in the same PR — keeping the
     // two assertions in lock-step.
-    const actual = filesMatching(FILES, /<Teleport[^>]*:to=["']popoverRoot["']/);
+    const actual = filesMatching(
+      FILES,
+      /<Teleport[^>]*:to=["']popoverRoot["']/,
+    );
     expect(actual).toEqual([
       // ColorPicker's wheel teleports so it escapes overflow-clipping
       // containers (e.g. the link dialog card); see issue #373 follow-up.

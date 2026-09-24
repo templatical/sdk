@@ -49,6 +49,12 @@ describe("bin dispatch", () => {
     expect(await main(["frobnicate"])).toBe(2);
     expect(stderr.join("")).toContain('Unknown command "frobnicate"');
   });
+
+  it("dispatches list through main", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tt-bin-list-"));
+    expect(await main(["list", "--cwd", dir, "--json"])).toBe(0);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 // isEntryPoint is what decides whether main() self-invokes. It can't be

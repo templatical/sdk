@@ -30,7 +30,7 @@ const progressColor = computed(() => {
     return "var(--tpl-danger)";
   }
   if (percentage.value >= 75) {
-    return "var(--tpl-warning, #f59e0b)";
+    return "var(--tpl-warning)";
   }
   return "var(--tpl-primary)";
 });
@@ -66,8 +66,12 @@ const tooltipText = computed(() =>
   <div
     data-testid="media-storage-ring"
     class="tpl:relative tpl:inline-flex tpl:cursor-help tpl:items-center tpl:justify-center"
+    tabindex="0"
+    :aria-label="tooltipText"
     @mouseenter="showTooltip = true"
     @mouseleave="showTooltip = false"
+    @focus="showTooltip = true"
+    @blur="showTooltip = false"
   >
     <svg
       :width="size"

@@ -206,6 +206,31 @@ describe("compiled pipeline", () => {
     ).toBe(true);
   });
 
+  it("falls back to the root when there are no header/content/footer stripes", () => {
+    const html = `<table class="es-wrapper"><tr><td><a class="es-button" href="https://example.com/x" style="background:#000;color:#fff">Go</a></td></tr></table>`;
+    const { content } = convertStripoTemplate(html);
+    const buttons = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .filter((b) => b.type === "button");
+    expect(buttons.length).toBeGreaterThanOrEqual(1);
+    expect(JSON.stringify(buttons)).toContain("Go");
+  });
+
+  it("maps an es-spacer", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table class="es-wrapper"><tr><td>
+<table class="es-content"><tr><td>
+  <div class="es-spacer" style="height:24px"></div>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content } = convertStripoTemplate(html);
+    const spacers = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .filter((b) => b.type === "spacer");
+    expect(spacers.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("maps es-social icons from title/src/alt", () => {
     const { content } = convertStripoTemplate(social);
     const icons = content.blocks

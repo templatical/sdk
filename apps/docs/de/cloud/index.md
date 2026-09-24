@@ -68,4 +68,4 @@ Wenn Ihnen der ganze Satz gehören soll, nutzen Sie [`init()`](/de/backend/).
 
 Pläne starten bei 99 $/Monat. Alle Pläne enthalten den vollständigen Editor, KI-Funktionen und Zusammenarbeit.
 
-[Kostenlose Testversion starten](https://templatical.com) &nbsp;·&nbsp; [Preise ansehen](https://templatical.com/pricing) &nbsp;·&nbsp; [Vertrieb kontaktieren](mailto:sales@templatical.com)
+[Kostenlose Testversion starten](https://templatical.com) &nbsp;·&nbsp; [Preise ansehen](https://templatical.com/pricing) &nbsp;·&nbsp; [Vertrieb kontaktieren](mailto:hi@templatical.com)

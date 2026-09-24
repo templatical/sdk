@@ -46,6 +46,7 @@ onClickOutside(pickerRef, () => {
 <template>
   <div
     ref="pickerRef"
+    data-testid="media-move-picker"
     class="tpl:absolute tpl:bottom-full tpl:left-0 tpl:z-10 tpl:mb-2 tpl:w-56 tpl:overflow-hidden tpl:rounded-lg tpl:border tpl:shadow-lg"
     style="
       border-color: var(--tpl-border);

@@ -43,7 +43,7 @@ function getInitials(name: string): string {
   <div class="tpl-collaborator-bar tpl:flex tpl:items-center tpl:gap-2">
     <!-- Connection indicator -->
     <div
-      class="tpl:flex tpl:items-center tpl:gap-1 tpl:text-[11px]"
+      class="tpl:flex tpl:items-center tpl:gap-1 tpl:text-xs"
       :style="{
         color: isConnected ? 'var(--tpl-success)' : 'var(--tpl-text-muted)',
       }"
@@ -76,7 +76,7 @@ function getInitials(name: string): string {
       </div>
       <div
         v-if="overflowCount > 0"
-        class="tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[9px] tpl:font-bold tpl:border-[var(--tpl-bg)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
+        class="tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[10px] tpl:font-bold tpl:border-[var(--tpl-bg)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
         :title="overflowNames"
       >
         +{{ overflowCount }}

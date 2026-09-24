@@ -142,16 +142,14 @@ function keyPaths(file: string): { leaves: Set<string>; objects: Set<string> } {
  * "Rückgängig")` proves the German loader works, and needs some key to prove it
  * with. Deleting them would mean editing nine assertions to accommodate the
  * deletion, which is the wrong way round; a reference from a test is still a
- * reference. Both also label plausible near-future UI: undo/redo are
- * keyboard-only today (no button exists to label), and `CloudLoadingOverlay`
- * renders a shimmer skeleton with no text.
+ * reference. Undo/redo are keyboard-only today (no button exists to label).
  *
  * Add to this list only with a reason. An entry that is *also* unreferenced by
  * tests is just dead code wearing an exemption.
  */
 const KEPT_WITHOUT_A_READER: Record<"oss" | "cloud", readonly string[]> = {
   oss: ["history.undo", "history.redo"],
-  cloud: ["loading.initializing"],
+  cloud: [],
 };
 
 interface Analysis {
@@ -234,7 +232,9 @@ describe("i18n keys agree with the source that reads them", () => {
    * a place where dead keys go to hide.
    */
   it("nothing on the exemption list has since gained a reader", () => {
-    expect(KEPT_WITHOUT_A_READER.oss.filter((k) => OSS.used.has(k))).toEqual([]);
+    expect(KEPT_WITHOUT_A_READER.oss.filter((k) => OSS.used.has(k))).toEqual(
+      [],
+    );
     expect(
       KEPT_WITHOUT_A_READER.cloud.filter((k) => CLOUD.used.has(k)),
     ).toEqual([]);
@@ -242,9 +242,9 @@ describe("i18n keys agree with the source that reads them", () => {
 
   /** An exemption for a key that no longer exists is equally stale. */
   it("every exempted key still exists in its locale", () => {
-    expect(
-      KEPT_WITHOUT_A_READER.oss.filter((k) => !OSS.leaves.has(k)),
-    ).toEqual([]);
+    expect(KEPT_WITHOUT_A_READER.oss.filter((k) => !OSS.leaves.has(k))).toEqual(
+      [],
+    );
     expect(
       KEPT_WITHOUT_A_READER.cloud.filter((k) => !CLOUD.leaves.has(k)),
     ).toEqual([]);

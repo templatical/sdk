@@ -17,8 +17,69 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.39.0",
+  "latest": "0.39.4",
   "versions": [
+    {
+      "version": "0.39.4",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "14531d2",
+          "level": "patch",
+          "title": "Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.",
+          "body": "",
+          "packages": [
+            "@templatical/media-library"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.39.3",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "11341ff",
+          "level": "patch",
+          "title": "Align Cloud chrome with the editor dialog and token recipes: the save-gate uses `TplModal` (trap, Escape, outlined danger), icon-only sidebar controls are named, primary hover deepens instead of fading, and chrome type sits on 10px or 12px.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.39.2",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "a87e523",
+          "level": "patch",
+          "title": "Match the editor's dialog contract, `--tpl-user-*` tokens, and button recipes in the media library. Signal Amber keeps the documented contrast exception (`--tpl-on-primary` on `--tpl-primary`). Overlay backdrops no longer redeclare `.tpl` when they inherit the editor popover root.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/media-library"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.39.1",
+      "date": "2026-09-21",
+      "changes": [
+        {
+          "hash": "2a79d9b",
+          "level": "patch",
+          "title": "Cut the editor's initial JS load by keeping TipTap and the properties panel off the eager graph",
+          "body": "Field autocomplete imported the shared merge-tag popup from the TipTap `MergeTagSuggestion` extension, so `@tiptap/core` (and, on the CDN, the whole `tiptap` vendor chunk) downloaded with every session. The popup helpers now live in a TipTap-free module; the extension still loads when a title or paragraph enters edit.\n\n`RightSidebar` now lazy-loads Toolbar and Template Settings behind the `v-if`s that already gated them, so ColorPicker, MergeTagInput and the per-type toolbars fetch on first block select / first Settings visit.\n\nnpm initial JS: 314 kB gzip → 169 kB. CDN eager: 335 kB gzip → 152 kB.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.39.0",
       "date": "2026-09-16",

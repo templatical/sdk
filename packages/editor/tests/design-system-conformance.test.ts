@@ -21,7 +21,9 @@ function listSourceFiles(): string[] {
   return entries
     .filter(
       (entry) =>
-        entry.isFile() && /\.(vue|ts|css)$/.test(entry.name) && !entry.name.endsWith(".d.ts"),
+        entry.isFile() &&
+        /\.(vue|ts|css)$/.test(entry.name) &&
+        !entry.name.endsWith(".d.ts"),
     )
     .map((entry) =>
       relative(SRC, join(entry.parentPath ?? SRC, entry.name))
@@ -34,7 +36,10 @@ function listSourceFiles(): string[] {
 const FILES = listSourceFiles();
 
 /** Every `pattern` match in the tree, as actionable `path:line  match` strings. */
-function offenders(pattern: RegExp, skip: (relPath: string) => boolean = () => false): string[] {
+function offenders(
+  pattern: RegExp,
+  skip: (relPath: string) => boolean = () => false,
+): string[] {
   const hits: string[] = [];
   for (const relPath of FILES) {
     if (skip(relPath)) continue;
@@ -75,6 +80,18 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("Focus ring on outlined fields", () => {
+    it("merge and logic picker search inputs paint the house ring", () => {
+      for (const rel of [
+        "components/MergeTagPickerModal.vue",
+        "components/LogicTagPickerModal.vue",
+      ]) {
+        const src = readFileSync(join(SRC, rel), "utf8");
+        expect(src).toContain("tpl:focus:shadow-[var(--tpl-ring)]");
+      }
+    });
+  });
+
   describe("Z-index — only utilities Tailwind actually emits", () => {
     /**
      * Tailwind 4 derives z-index utilities from the `--z-index-*` theme
@@ -103,20 +120,26 @@ describe("design system conformance", () => {
      */
     it("no named z-index utilities — they compile to nothing", () => {
       expect(
-        offenders(/\btpl:(?:[a-z][a-z0-9-]*:)*z-(?![0-9]|\[|auto\b)[a-z][a-z0-9-]*/g),
+        offenders(
+          /\btpl:(?:[a-z][a-z0-9-]*:)*z-(?![0-9]|\[|auto\b)[a-z][a-z0-9-]*/g,
+        ),
       ).toEqual([]);
     });
 
     it("no named z layer survives in the theme block", () => {
       // The tokens are what make the dead utilities look plausible; leaving
       // them behind invites the classes back.
-      expect(INDEX_CSS()).not.toMatch(/--z-(?:panel|toast|overlay|popover|modal)\s*:/);
+      expect(INDEX_CSS()).not.toMatch(
+        /--z-(?:panel|toast|overlay|popover|modal)\s*:/,
+      );
     });
 
     it("numeric z utilities are actually in use (positive control)", () => {
       // Without this, the first assertion would also pass if every z utility
       // were deleted rather than corrected.
-      expect(offenders(/\btpl:z-(?:[0-9]+|\[[0-9]+\])/g).length).toBeGreaterThan(8);
+      expect(
+        offenders(/\btpl:z-(?:[0-9]+|\[[0-9]+\])/g).length,
+      ).toBeGreaterThan(8);
     });
   });
 
@@ -139,7 +162,9 @@ describe("design system conformance", () => {
     });
 
     it("tokenised shadows are actually in use (positive control)", () => {
-      expect(offenders(/shadow-\[var\(--tpl-shadow/g).length).toBeGreaterThan(20);
+      expect(offenders(/shadow-\[var\(--tpl-shadow/g).length).toBeGreaterThan(
+        20,
+      );
     });
   });
 
@@ -174,11 +199,17 @@ describe("design system conformance", () => {
       // One declaration: `var(--tpl-bg)` already carries the theme, so a second
       // in the dark block would be a literal that silently stops tracking it.
       expect(css.match(/--tpl-on-primary:/g) ?? []).toHaveLength(1);
-      expect(css).toContain("--tpl-on-primary: var(--tpl-user-on-primary, var(--tpl-bg))");
+      expect(css).toContain(
+        "--tpl-on-primary: var(--tpl-user-on-primary, var(--tpl-bg))",
+      );
     });
 
     it("the amber surfaces actually use it (positive control)", () => {
-      expect(offenders(/text-\[var\(--tpl-on-primary\)\]/g).length).toBeGreaterThan(10);
+      // Primary buttons share `primaryBtnClass`, which is one occurrence.
+      // Badges and a few compact fills still spell the token inline.
+      expect(
+        offenders(/text-\[var\(--tpl-on-primary\)\]/g).length,
+      ).toBeGreaterThan(5);
     });
   });
 
@@ -201,7 +232,9 @@ describe("design system conformance", () => {
     it("no duration-150 — it restates the default we replaced", () => {
       // An explicit 150 is now always an accident: it opts a call site back out
       // of the house tempo to the exact value Tailwind shipped.
-      expect(offenders(/\btpl:(?:[a-z][a-z0-9-]*:)*duration-150\b/g)).toEqual([]);
+      expect(offenders(/\btpl:(?:[a-z][a-z0-9-]*:)*duration-150\b/g)).toEqual(
+        [],
+      );
     });
   });
 
@@ -249,9 +282,16 @@ describe("design system conformance", () => {
         src.split("\n").forEach((line, i) => {
           if (!/backdrop-filter:\s*blur/.test(line)) return;
           // Look at the surrounding declaration block for the paired fill.
-          const ctx = src.split("\n").slice(Math.max(0, i - 8), i + 3).join("\n");
-          const translucent = /color-mix\(|rgba?\([^)]*,\s*0?\.\d|--tpl-overlay/.test(ctx);
-          const opaqueToken = /bg-\[var\(--tpl-(bg|bg-elevated|bg-hover|canvas-bg)\)\]|background-color:\s*var\(--tpl-(bg|bg-elevated)\)/.test(ctx);
+          const ctx = src
+            .split("\n")
+            .slice(Math.max(0, i - 8), i + 3)
+            .join("\n");
+          const translucent =
+            /color-mix\(|rgba?\([^)]*,\s*0?\.\d|--tpl-overlay/.test(ctx);
+          const opaqueToken =
+            /bg-\[var\(--tpl-(bg|bg-elevated|bg-hover|canvas-bg)\)\]|background-color:\s*var\(--tpl-(bg|bg-elevated)\)/.test(
+              ctx,
+            );
           if (opaqueToken && !translucent) {
             offending.push(`${relPath}:${i + 1}  blur behind an opaque fill`);
           }
@@ -270,15 +310,20 @@ describe("design system conformance", () => {
      * radius, the surface and the focus ring come from one place.
      */
     it("both composers use the bordered wrapper, not a bordered field", () => {
-      const src = readFileSync(join(SRC, "components", "CommentsSidebar.vue"), "utf8");
+      const src = readFileSync(
+        join(SRC, "components", "CommentsSidebar.vue"),
+        "utf8",
+      );
       // Two wrappers: the reply and the new comment.
-      expect(src.match(/tpl-comments-input-wrapper tpl-focus-ring-host/g) ?? []).toHaveLength(2);
+      expect(
+        src.match(/tpl-comments-input-wrapper tpl-focus-ring-host/g) ?? [],
+      ).toHaveLength(2);
       // Scoped to the two composers. The `editBody` textareas are a different
       // pattern on purpose — an inline edit form with Save and Cancel in a row
       // beneath it, so the field is bordered in its own right and takes the
       // reset's ring directly, with nothing to double up against.
-      const composers = (src.match(/<textarea[\s\S]*?\/>/g) ?? []).filter((ta) =>
-        /v-model="(replyBody|newCommentBody)"/.test(ta),
+      const composers = (src.match(/<textarea[\s\S]*?\/>/g) ?? []).filter(
+        (ta) => /v-model="(replyBody|newCommentBody)"/.test(ta),
       );
       expect(composers).toHaveLength(2);
       for (const ta of composers) {
@@ -289,9 +334,14 @@ describe("design system conformance", () => {
     });
 
     it("both send buttons share the send-button class", () => {
-      const src = readFileSync(join(SRC, "components", "CommentsSidebar.vue"), "utf8");
+      const src = readFileSync(
+        join(SRC, "components", "CommentsSidebar.vue"),
+        "utf8",
+      );
       // Reply send, reply cancel, new-comment send — plus the CSS rule itself.
-      expect((src.match(/tpl-comments-send-btn/g) ?? []).length).toBeGreaterThanOrEqual(4);
+      expect(
+        (src.match(/tpl-comments-send-btn/g) ?? []).length,
+      ).toBeGreaterThanOrEqual(4);
     });
   });
 
@@ -334,10 +384,13 @@ describe("design system conformance", () => {
       for (const relPath of FILES) {
         const src = readFileSync(join(SRC, relPath), "utf8");
         // A component painting the ring on a `:focus-within` wrapper.
-        const paints = /:focus-within\s*\{[^}]*box-shadow:\s*var\(--tpl-ring\)/s.test(src);
+        const paints =
+          /:focus-within\s*\{[^}]*box-shadow:\s*var\(--tpl-ring\)/s.test(src);
         if (!paints) continue;
         if (!src.includes("tpl-focus-ring-host")) {
-          offending.push(`${relPath}  paints a :focus-within ring without tpl-focus-ring-host`);
+          offending.push(
+            `${relPath}  paints a :focus-within ring without tpl-focus-ring-host`,
+          );
         }
       }
       expect(offending).toEqual([]);
@@ -346,10 +399,14 @@ describe("design system conformance", () => {
     it("the suppressing rule exists and is opt-in (positive control)", () => {
       const css = INDEX_CSS();
       expect(css).toContain(".tpl-focus-ring-host:focus-within");
-      expect(css).toMatch(/\.tpl-focus-ring-host:focus-within\s*\n?\s*:is\(input, select, textarea\):focus-visible/);
+      expect(css).toMatch(
+        /\.tpl-focus-ring-host:focus-within\s*\n?\s*:is\(input, select, textarea\):focus-visible/,
+      );
       // Two wrappers use it today; a bare `:focus-within :is(...)` rule without
       // the marker class would strip the ring from every input in the editor.
-      expect(offenders(/tpl-focus-ring-host/g).length).toBeGreaterThanOrEqual(3);
+      expect(offenders(/tpl-focus-ring-host/g).length).toBeGreaterThanOrEqual(
+        3,
+      );
     });
   });
 
@@ -390,9 +447,57 @@ describe("design system conformance", () => {
 
       const unguarded = withKeyframes.filter(
         (relPath) =>
-          !readFileSync(join(SRC, relPath), "utf8").includes("prefers-reduced-motion"),
+          !readFileSync(join(SRC, relPath), "utf8").includes(
+            "prefers-reduced-motion",
+          ),
       );
       expect(unguarded).toEqual([]);
+    });
+
+    it("LoadingTrack's reduced-motion rule targets the bar's class", () => {
+      const src = readFileSync(
+        join(SRC, "components", "LoadingTrack.vue"),
+        "utf8",
+      );
+      expect(src).toMatch(
+        /prefers-reduced-motion: reduce[\s\S]*\.tpl-loading-track\s*\{/,
+      );
+      expect(src).not.toContain(".tpl-loading-track-fill");
+    });
+
+    it("does not blanket-kill every transition under .tpl", () => {
+      // A 0.01ms duration on `*` destroys useful state change (focus ring,
+      // hover lift) along with decorative motion. Named keyframes stay
+      // guarded by the cases above.
+      expect(INDEX_CSS()).not.toMatch(/transition-duration:\s*0\.01ms/);
+    });
+  });
+
+  describe("Primary hover deepens, never fades", () => {
+    it("no hover:opacity on a Signal Amber fill", () => {
+      expect(
+        offenders(
+          /hover:opacity-\d+[^"'`]*bg-\[var\(--tpl-primary\)\]|bg-\[var\(--tpl-primary\)\][^"'`]*hover:opacity-\d+/g,
+        ),
+      ).toEqual([]);
+    });
+  });
+
+  describe("Chrome type density — 10px or Label 12px", () => {
+    it("does not sit on 11px between the two roles", () => {
+      expect(offenders(/text-\[11px\]/g)).toEqual([]);
+    });
+  });
+
+  describe("Cloud loading overlay is announced", () => {
+    it("is a polite busy status labelled from the locale", () => {
+      const src = readFileSync(
+        join(SRC, "cloud/components/CloudLoadingOverlay.vue"),
+        "utf8",
+      );
+      expect(src).toContain('role="status"');
+      expect(src).toContain('aria-busy="true"');
+      expect(src).toContain("cloudT.loading.initializing");
     });
   });
 });

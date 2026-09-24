@@ -99,10 +99,6 @@ jobs:
             echo "Could not determine the published version — skipping release creation."
             exit 0
           fi
-          if gh release view "v$VERSION" >/dev/null 2>&1; then
-            echo "Release v$VERSION already exists — nothing to do."
-            exit 0
-          fi
           # npm publish already succeeded by this point, so a notes-generation problem
           # must not fail the run — fall back to a minimal body and surface the reason
           # in the log instead of leaving the release missing and the workflow red.
@@ -124,25 +120,33 @@ jobs:
           # match leaves the literal glob in the array.
           shopt -s nullglob
           ASSETS=(release-assets/*.tgz)
+          if [ "${#ASSETS[@]}" -eq 0 ]; then
+            echo "::warning::No tarballs were packed — v$VERSION will carry none."
+          fi
 
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --notes-file release-notes.md \
-            --target "$GITHUB_SHA"
-          # Upload separately, never as `gh release create` asset arguments. An
-          # inline upload failure fails this step after npm publish has already
-          # succeeded, which skips the marketing-site rebuild below and leaves
-          # the `gh release view` guard above to short-circuit the re-run — so
-          # the assets never land and the run stays red. Same reasoning as the
-          # notes fallback: the packages are on npm either way, so a release
-          # missing an asset beats no release at all.
-          if [ "${#ASSETS[@]}" -gt 0 ]; then
-            echo "Attaching ${#ASSETS[@]} tarball(s) to v$VERSION."
-            if ! gh release upload "v$VERSION" "${ASSETS[@]}"; then
-              echo "::warning::Could not attach the tarballs to v$VERSION."
+          # Immutable releases 422 any upload after publish. gh's create-with-files
+          # path drafts, uploads, then publishes, so the lock happens with the
+          # tarballs already attached. A leftover draft from a failed run is
+          # still mutable — finish it rather than treating `gh release view` as
+          # "already done". A published release cannot gain assets.
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            if [ "$(gh release view "v$VERSION" --json isDraft --jq .isDraft)" = "true" ]; then
+              echo "Draft v$VERSION already exists — attaching assets and publishing."
+              if [ "${#ASSETS[@]}" -gt 0 ]; then
+                echo "Attaching ${#ASSETS[@]} tarball(s) to draft v$VERSION."
+                gh release upload "v$VERSION" --clobber "${ASSETS[@]}"
+              fi
+              gh release edit "v$VERSION" --draft=false --title "v$VERSION" --notes-file release-notes.md
+            else
+              echo "Release v$VERSION already exists — nothing to do."
             fi
           else
-            echo "::warning::No tarballs were packed — v$VERSION will carry none."
+            echo "Creating v$VERSION with ${#ASSETS[@]} tarball(s)."
+            gh release create "v$VERSION" \
+              --title "v$VERSION" \
+              --notes-file release-notes.md \
+              --target "$GITHUB_SHA" \
+              "${ASSETS[@]}"
           fi
           rm -rf release-notes.md release-assets
 
@@ -150,9 +154,43 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           DEPLOY_HOOK: ${{ secrets.TEMPLATICAL_COM_DEPLOY_HOOK }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
+          set -euo pipefail
           if [ -z "$DEPLOY_HOOK" ]; then
             echo "TEMPLATICAL_COM_DEPLOY_HOOK secret not set — skipping rebuild trigger."
             exit 0
+          fi
+          VERSION="$(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[0].version // empty')"
+          # Same unversioned URL the marketing site's vite.config.ts fetches at
+          # SSG time. unpkg 302s it to @<latest>/dist/bundle-stats.json and
+          # caches that redirect (s-maxage=300), so a hook fired the moment
+          # changeset publish returns still bakes the previous version into
+          # the homepage pill. Do not cache-bust: a cache-busted hit would
+          # pass while Pages' own GET still sees the cached 302.
+          STATS_URL="https://unpkg.com/@templatical/editor/dist/bundle-stats.json"
+          if [ -n "$VERSION" ]; then
+            echo "Waiting for $STATS_URL to serve version $VERSION"
+            seen=""
+            # 40 × 15s = 10m: npm's own timestamp can lag changeset publish
+            # by several minutes, then unpkg's 302 cache is another 5m.
+            for _ in $(seq 1 40); do
+              if seen="$(curl -fsSL --max-time 15 "$STATS_URL" | jq -r '.version // empty')"; then
+                :
+              else
+                seen=""
+              fi
+              if [ "$seen" = "$VERSION" ]; then
+                echo "unpkg is serving bundle-stats.json for $VERSION"
+                break
+              fi
+              echo "unpkg still serving ${seen:-nothing} (want $VERSION) — retrying in 15s"
+              sleep 15
+            done
+            if [ "$seen" != "$VERSION" ]; then
+              echo "::warning::unpkg still serving ${seen:-nothing} after 10m — triggering rebuild anyway."
+            fi
+          else
+            echo "::warning::Could not determine the published version — triggering rebuild without an unpkg wait."
           fi
           curl -fsSL -X POST "$DEPLOY_HOOK" -o /dev/null -w "HTTP %{http_code}\n"

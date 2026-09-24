@@ -140,7 +140,9 @@ describe("RepeatableField explains both absent controls", () => {
       { title: "a" },
       { title: "b" },
     ]);
-    expect(wrapper.text()).not.toContain(en.customBlocks.fields.maxItemsReached);
+    expect(wrapper.text()).not.toContain(
+      en.customBlocks.fields.maxItemsReached,
+    );
     expect(wrapper.text()).not.toContain("Minimum");
   });
 
@@ -171,7 +173,77 @@ describe("RepeatableField explains both absent controls", () => {
       },
       provides: { [TRANSLATIONS_KEY]: en },
     });
-    expect(wrapper.text()).not.toContain(en.customBlocks.fields.maxItemsReached);
+    expect(wrapper.text()).not.toContain(
+      en.customBlocks.fields.maxItemsReached,
+    );
     expect(wrapper.text()).not.toContain("Minimum");
+  });
+});
+
+describe("RepeatableField mutations", () => {
+  it("appends an item with field defaults and refuses past maxItems", async () => {
+    const wrapper = mountRepeatable(
+      repeatable({
+        maxItems: 2,
+        fields: [{ key: "title", label: "Title", type: "text", default: "n" }],
+      }),
+      [{ title: "a" }],
+    );
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().includes(en.customBlocks.fields.addItem))!
+      .trigger("click");
+    expect(wrapper.emitted("update:modelValue")?.[0]?.[0]).toEqual([
+      { title: "a" },
+      { title: "n" },
+    ]);
+
+    const full = mountRepeatable(repeatable({ maxItems: 1 }), [{ title: "a" }]);
+    expect(
+      full
+        .findAll("button")
+        .some((b) => b.text().includes(en.customBlocks.fields.addItem)),
+    ).toBe(false);
+  });
+
+  it("removes an item and refuses at minItems", async () => {
+    const wrapper = mountRepeatable(repeatable({ minItems: 1 }), [
+      { title: "a" },
+      { title: "b" },
+    ]);
+    await wrapper
+      .findAll("button")
+      .find((b) => b.attributes("title") === en.customBlocks.fields.removeItem)!
+      .trigger("click");
+    expect(wrapper.emitted("update:modelValue")?.[0]?.[0]).toEqual([
+      { title: "b" },
+    ]);
+
+    const floor = mountRepeatable(repeatable({ minItems: 1 }), [
+      { title: "a" },
+    ]);
+    expect(
+      floor
+        .findAll("button")
+        .some(
+          (b) => b.attributes("title") === en.customBlocks.fields.removeItem,
+        ),
+    ).toBe(false);
+  });
+
+  it("writes through a nested field and treats a missing model as empty", async () => {
+    const wrapper = mountRepeatable(repeatable(), [{ title: "a" }]);
+    const input = wrapper.find("input:not([disabled])");
+    await input.setValue("renamed");
+    expect(wrapper.emitted("update:modelValue")?.[0]?.[0]).toEqual([
+      { title: "renamed" },
+    ]);
+
+    const empty = mountRepeatable(repeatable({ maxItems: 3 }), []);
+    expect(
+      empty
+        .findAll("button")
+        .some((b) => b.text().includes(en.customBlocks.fields.addItem)),
+    ).toBe(true);
   });
 });

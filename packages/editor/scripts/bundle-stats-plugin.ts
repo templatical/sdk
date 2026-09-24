@@ -6,9 +6,11 @@ import type { Plugin } from 'vite'
 // Walks the static-import graph from the entry, gzips each chunk individually,
 // and writes dist/bundle-stats.json. The marketing site fetches this from
 // unpkg at build time to render the bundle-size pill with honest numbers
-// (initial static bundle vs. lazy chunks). Static walk stops at dynamic
-// import() boundaries — that's the whole point: report what a real consumer's
-// bundler will inline up-front, not a bundlejs-style overcount.
+// (initial static bundle vs. lazy chunks). publish.yml polls that same
+// unversioned URL after npm publish before triggering the rebuild, because
+// unpkg caches the 302 to @<latest> (s-maxage=300). Static walk stops at
+// dynamic import() boundaries — that's the whole point: report what a real
+// consumer's bundler will inline up-front, not a bundlejs-style overcount.
 export function bundleStatsPlugin(opts: {
   distDir: string
   entry: string

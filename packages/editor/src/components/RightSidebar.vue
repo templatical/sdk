@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import TemplateSettingsPanel from "./TemplateSettings.vue";
-import Toolbar from "./Toolbar.vue";
+/**
+ * Toolbar and Template Settings are `defineAsyncComponent` behind the
+ * `v-if`s that already gate them (a selected block, the Settings tab).
+ * `defineAsyncComponent` fetches on first render, so a static import here
+ * would pull ColorPicker, MergeTagInput, and every per-type toolbar into
+ * the eager graph for every session. IssuesPanel in this file is the same
+ * contract. Guarded by `tests/rightSidebarLazy.test.ts` and the
+ * properties-panel cases in `cdn-chunk-granularity.test.ts` /
+ * `bundle-topology.test.ts`.
+ */
 import { useI18n } from "../composables/useI18n";
 import { TEMPLATE_LINT_KEY, TEMPLATE_SETTINGS_FIELDS_KEY } from "../keys";
 import { ALL_TEMPLATE_SETTINGS_FIELDS } from "../utils/templateSettingsFields";
@@ -8,6 +16,10 @@ import type { Block, TemplateSettings } from "@templatical/types";
 import { ListChecks, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
 
+const Toolbar = defineAsyncComponent(() => import("./Toolbar.vue"));
+const TemplateSettingsPanel = defineAsyncComponent(
+  () => import("./TemplateSettings.vue"),
+);
 const IssuesPanel = defineAsyncComponent(
   () => import("./sidebar/IssuesPanel.vue"),
 );

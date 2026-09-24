@@ -70,6 +70,25 @@ function handleItemDblClick(item: MediaAsset): void {
   }
 }
 
+function handleItemKeydown(item: MediaAsset, event: KeyboardEvent): void {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  emit("select", item);
+}
+
+function isSelected(item: MediaAsset): boolean {
+  return props.selectedIds.has(item.id);
+}
+
+function actionChromeClass(item: MediaAsset): string {
+  return isSelected(item)
+    ? "tpl:opacity-100"
+    : "tpl:opacity-0 tpl:group-hover:opacity-100 tpl:group-focus-within:opacity-100";
+}
+
 const { t } = useI18n();
 const uiLocale = inject(UI_LOCALE_KEY, null);
 
@@ -106,6 +125,7 @@ function formatDate(dateStr: string): string {
       v-if="isLoading && items.length === 0"
       role="status"
       aria-busy="true"
+      :aria-label="t.mediaLibrary.loading"
       :class="
         layout === 'list'
           ? 'tpl:flex tpl:flex-col tpl:gap-1'
@@ -141,32 +161,36 @@ function formatDate(dateStr: string): string {
 
     <div
       v-else-if="layout !== 'list'"
+      role="listbox"
+      :aria-label="t.mediaLibrary.filesListAriaLabel"
+      aria-multiselectable="true"
       class="tpl:grid tpl:grid-cols-4 tpl:gap-3"
     >
       <div
         v-for="item in items"
         :key="item.id"
+        role="option"
+        tabindex="0"
         data-testid="media-library-item"
         class="tpl-media-item tpl:group tpl:relative tpl:overflow-hidden tpl:rounded-lg tpl:border-2 tpl:transition-all tpl:duration-150"
         :data-media-id="item.id"
+        :aria-selected="isSelected(item)"
+        :aria-label="item.filename || item.url"
         :class="[
           'tpl:cursor-pointer',
-          !isSelectable(item) && !selectedIds.has(item.id)
-            ? 'tpl:opacity-60'
-            : '',
-          selectedIds.has(item.id) ? 'tpl-media-item--selected' : '',
+          !isSelectable(item) && !isSelected(item) ? 'tpl:opacity-60' : '',
+          isSelected(item) ? 'tpl-media-item--selected' : '',
         ]"
         :style="{
-          borderColor: selectedIds.has(item.id)
-            ? 'var(--tpl-primary)'
-            : 'transparent',
+          borderColor: isSelected(item) ? 'var(--tpl-primary)' : 'transparent',
           backgroundColor:
-            !isSelectable(item) && !selectedIds.has(item.id)
+            !isSelectable(item) && !isSelected(item)
               ? 'var(--tpl-bg)'
               : 'var(--tpl-bg-hover)',
         }"
         @click="handleItemClick(item, $event)"
         @dblclick="handleItemDblClick(item)"
+        @keydown="handleItemKeydown(item, $event)"
       >
         <div class="tpl:aspect-square">
           <img
@@ -186,7 +210,7 @@ function formatDate(dateStr: string): string {
             {{ item.filename || item.url }}
           </p>
           <p
-            class="tpl:flex tpl:justify-between tpl:text-[9px]"
+            class="tpl:flex tpl:justify-between tpl:text-[10px]"
             style="color: var(--tpl-text-muted)"
           >
             <span v-if="item.size != null">{{ formatSize(item.size) }}</span>
@@ -198,58 +222,82 @@ function formatDate(dateStr: string): string {
           </p>
         </div>
         <div
-          class="tpl:absolute tpl:top-1.5 tpl:left-1.5 tpl:flex tpl:gap-1 tpl:opacity-0 tpl:transition-opacity tpl:duration-150 tpl:group-hover:opacity-100"
+          class="tpl:absolute tpl:top-1.5 tpl:left-1.5 tpl:flex tpl:gap-1 tpl:transition-opacity tpl:duration-150"
+          :class="actionChromeClass(item)"
         >
           <button
             v-if="showEdit(item)"
+            type="button"
             data-testid="media-edit"
-            class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
-            style="background-color: rgba(0, 0, 0, 0.6)"
+            class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full"
+            style="
+              background-color: var(--tpl-overlay);
+              color: var(--tpl-on-primary);
+            "
             :title="t.mediaLibrary.editFile"
+            :aria-label="t.mediaLibrary.editFile"
             @click.stop="emit('edit', item)"
           >
             <Pencil :size="11" :stroke-width="2" />
           </button>
           <button
             v-if="showReplace(item)"
+            type="button"
             data-testid="media-replace"
-            class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
-            style="background-color: rgba(0, 0, 0, 0.6)"
+            class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full"
+            style="
+              background-color: var(--tpl-overlay);
+              color: var(--tpl-on-primary);
+            "
             :title="t.mediaLibrary.replaceFile"
+            :aria-label="t.mediaLibrary.replaceFile"
             @click.stop="emit('replace', item)"
           >
             <RefreshCw :size="11" :stroke-width="2" />
           </button>
         </div>
         <div
-          v-if="selectedIds.has(item.id)"
-          class="tpl:absolute tpl:top-1.5 tpl:right-1.5 tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
-          style="background-color: var(--tpl-primary)"
+          v-if="isSelected(item)"
+          aria-hidden="true"
+          class="tpl:absolute tpl:top-1.5 tpl:right-1.5 tpl:flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full"
+          style="
+            background-color: var(--tpl-primary);
+            color: var(--tpl-on-primary);
+          "
         >
           <Check :size="12" :stroke-width="3" />
         </div>
       </div>
     </div>
 
-    <div v-else class="tpl:flex tpl:flex-col tpl:gap-1">
+    <div
+      v-else
+      role="listbox"
+      :aria-label="t.mediaLibrary.filesListAriaLabel"
+      aria-multiselectable="true"
+      class="tpl:flex tpl:flex-col tpl:gap-1"
+    >
       <div
         v-for="item in items"
         :key="item.id"
+        role="option"
+        tabindex="0"
         data-testid="media-library-item"
         class="tpl-media-list-item tpl:group tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:transition-all tpl:duration-150"
         :data-media-id="item.id"
+        :aria-selected="isSelected(item)"
+        :aria-label="item.filename || item.url"
         :class="[
-          !isSelectable(item) && !selectedIds.has(item.id)
-            ? 'tpl:opacity-60'
-            : '',
+          !isSelectable(item) && !isSelected(item) ? 'tpl:opacity-60' : '',
         ]"
         :style="{
-          backgroundColor: selectedIds.has(item.id)
+          backgroundColor: isSelected(item)
             ? 'var(--tpl-bg-hover)'
             : 'transparent',
         }"
         @click="handleItemClick(item, $event)"
         @dblclick="handleItemDblClick(item)"
+        @keydown="handleItemKeydown(item, $event)"
       >
         <div
           class="tpl:size-10 tpl:shrink-0 tpl:overflow-hidden tpl:rounded"
@@ -292,24 +340,29 @@ function formatDate(dateStr: string): string {
         </div>
 
         <div
-          class="tpl:flex tpl:gap-1 tpl:opacity-0 tpl:transition-opacity tpl:duration-150 tpl:group-hover:opacity-100"
+          class="tpl:flex tpl:gap-1 tpl:transition-opacity tpl:duration-150"
+          :class="actionChromeClass(item)"
         >
           <button
             v-if="showEdit(item)"
+            type="button"
             data-testid="media-edit"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.editFile"
+            :aria-label="t.mediaLibrary.editFile"
             @click.stop="emit('edit', item)"
           >
             <Pencil :size="12" :stroke-width="2" />
           </button>
           <button
             v-if="showReplace(item)"
+            type="button"
             data-testid="media-replace"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.replaceFile"
+            :aria-label="t.mediaLibrary.replaceFile"
             @click.stop="emit('replace', item)"
           >
             <RefreshCw :size="12" :stroke-width="2" />
@@ -317,9 +370,13 @@ function formatDate(dateStr: string): string {
         </div>
 
         <div
-          v-if="selectedIds.has(item.id)"
-          class="tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
-          style="background-color: var(--tpl-primary)"
+          v-if="isSelected(item)"
+          aria-hidden="true"
+          class="tpl:flex tpl:size-5 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-full"
+          style="
+            background-color: var(--tpl-primary);
+            color: var(--tpl-on-primary);
+          "
         >
           <Check :size="12" :stroke-width="3" />
         </div>

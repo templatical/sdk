@@ -224,7 +224,7 @@ test.describe("Test email", () => {
     // CARD_LAYOUT mat in templates.ts (`#f3f4f6`).
     const LAYOUT_MAT = "rgb(243, 244, 246)";
 
-    await page.locator(SELECTORS.rightTabSettings).click();
+    await editorPage.openSettingsTab();
     const hex = page
       .locator(SELECTORS.templateSettingsBackground)
       .locator('input[type="text"]');

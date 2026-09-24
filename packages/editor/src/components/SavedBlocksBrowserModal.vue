@@ -350,7 +350,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 type="text"
                 :placeholder="t.savedBlocks.search"
                 :disabled="isInitialLoad"
-                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
               />
             </div>
             <!-- Only worth showing once something is actually categorised. -->
@@ -359,7 +359,7 @@ function handleKeydown(event: KeyboardEvent): void {
               v-model="categoryFilter"
               data-testid="saved-blocks-category-filter"
               :aria-label="t.savedBlocks.filterByCategory"
-              class="tpl:h-8 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+              class="tpl:h-8 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
             >
               <option value="">{{ t.savedBlocks.allCategories }}</option>
               <option
@@ -428,7 +428,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     v-model="renameDraft"
                     type="text"
                     :aria-label="t.savedBlocks.rename"
-                    class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                    class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
                     @keydown.enter.prevent.stop="commitRename(item.id)"
                     @keydown.esc.prevent.stop="cancelRename()"
                   />
@@ -439,7 +439,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     :aria-label="t.savedBlocks.category"
                     :placeholder="t.savedBlocks.categoryPlaceholder"
                     list="tpl-saved-block-browser-categories"
-                    class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                    class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
                     @keydown.enter.prevent.stop="commitRename(item.id)"
                     @keydown.esc.prevent.stop="cancelRename()"
                   />
@@ -628,7 +628,7 @@ function handleKeydown(event: KeyboardEvent): void {
           </label>
           <select
             v-model="insertPosition"
-            class="tpl:h-7 tpl:max-w-[220px] tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+            class="tpl:h-7 tpl:max-w-[220px] tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           >
             <option
               v-for="opt in positionOptions"

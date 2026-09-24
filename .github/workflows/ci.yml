@@ -140,7 +140,11 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: .
-          fail_ci_if_error: false
+          # The CLI can report a queued upload while Codecov never processes
+          # it (deactivated repo, rejected token). The README badge then sits
+          # on a stale percentage with a green test job. Failing here is the
+          # signal that the badge has gone stale.
+          fail_ci_if_error: true
 
   e2e:
     runs-on: ubuntu-latest
