@@ -2,7 +2,7 @@ import type en from "./en";
 
 const translations: typeof en = {
   footer: {
-    poweredBy: "提供",
+    poweredBy: "提供元:",
     openSource: "オープンソース",
   },
   header: {
@@ -118,7 +118,7 @@ const translations: typeof en = {
     saveAsBlock: "ブロックとして保存",
     conditionToggle: "表示条件を切り替え",
     comments: "コメント ({count})",
-    lifted: "{block} を選択しました。{total} 個中 {position} 番目です。",
+    lifted: "{block} を持ち上げました。{total} 個中 {position} 番目です。",
     moved: "{block} を {total} 個中 {position} 番目に移動しました。",
     dropped: "{block} を {total} 個中 {position} 番目に配置しました。",
     cancelled:
@@ -554,7 +554,7 @@ const translations: typeof en = {
     jumpToBlock: "ブロックへ移動",
     ownedByYou: "あなた",
     edited: "編集済み",
-    resolvedBy: "{name} が解決",
+    resolvedBy: "{name} が解決しました",
     replyOne: "{count} 件の返信",
     replyMany: "{count} 件の返信",
     missingBlock: "ブロックが見つかりません",
