@@ -8,8 +8,9 @@ import {
   Share2,
 } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
+import { useLocalStorage } from "@vueuse/core";
 import CatalogRail from "@/host/CatalogRail.vue";
-import CodeDialog from "@/host/CodeDialog.vue";
+import CodeDrawer from "@/host/CodeDrawer.vue";
 import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import HostTour from "@/host/HostTour.vue";
@@ -34,7 +35,14 @@ const scene = computed(() => getScene(props.sceneId));
 const editorContainer = ref<HTMLElement | null>(null);
 const initError = ref("");
 const sceneReady = ref(false);
-const codeOpen = ref(false);
+// Remembered per browser: once opened, the snippet stays open across scenes.
+const codeOpen = useLocalStorage("tpl-playground-code-open", false);
+const codeButton = ref<HTMLButtonElement | null>(null);
+
+function closeCode(): void {
+  codeOpen.value = false;
+  void nextTick(() => codeButton.value?.focus());
+}
 const shadowDom = resolveShadowDom();
 const editor = shallowRef<TemplaticalEditor | null>(null);
 const exportOpen = ref(false);
@@ -228,12 +236,12 @@ onUnmounted(() => {
           </button>
           <button
             type="button"
+            ref="codeButton"
             data-testid="toolbar-code"
             class="pg-toolbar-primary ml-1"
-            :aria-pressed="codeOpen"
             :aria-expanded="codeOpen"
-            aria-controls="code-dialog"
-            @click="codeOpen = true"
+            aria-controls="code-drawer"
+            @click="codeOpen = !codeOpen"
           >
             <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.code }}
@@ -248,7 +256,7 @@ onUnmounted(() => {
     -->
       <div
         data-testid="editor-screen"
-        class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
+        class="flex flex-1 flex-col gap-[15px] min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
       >
         <div
           data-testid="editor-stage"
@@ -289,12 +297,12 @@ onUnmounted(() => {
             :editor="editor"
           />
         </div>
+        <CodeDrawer
+          v-if="codeOpen"
+          :snippet="scene.snippet"
+          @close="closeCode"
+        />
       </div>
-      <CodeDialog
-        v-model:open="codeOpen"
-        :snippet="scene.snippet"
-        :docs="scene.docs"
-      />
       <ExportModal v-model:open="exportOpen" :editor="editor" />
       <ShareModal
         v-model:open="shareOpen"

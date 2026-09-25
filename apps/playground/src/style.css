@@ -144,6 +144,10 @@ textarea {
     @apply inline-flex items-center gap-1 h-8 px-2 rounded-md text-[13px] font-medium font-sans text-gray-600 no-underline underline-offset-4 transition-colors duration-150 hover:text-gray-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:text-gray-100;
 }
 
+.pg-code-drawer {
+    @apply flex shrink-0 flex-col h-[36vh] min-h-[200px] max-h-[420px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700;
+}
+
 .pg-settings-panel {
     @apply absolute right-0 top-full z-[120] mt-2 w-60 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:bg-gray-800 dark:border-gray-700;
 }

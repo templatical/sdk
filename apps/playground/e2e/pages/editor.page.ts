@@ -48,12 +48,12 @@ export class EditorPage {
     }
   }
 
-  /** Close the snippet dialog if it is open. No-op when it is already closed. */
+  /** Close the snippet drawer if it is open. No-op when it is already closed. */
   async closeCodeDrawer(): Promise<void> {
-    const dialog = this.page.locator(SELECTORS.codeDialog);
-    if (await dialog.isVisible()) {
-      await this.page.locator('[data-testid="code-dialog-close"]').click();
-      await expect(dialog).toBeHidden();
+    const drawer = this.page.locator(SELECTORS.codeDrawer);
+    if (await drawer.isVisible()) {
+      await this.page.locator(SELECTORS.codeDrawerClose).click();
+      await expect(drawer).toHaveCount(0);
     }
   }
 

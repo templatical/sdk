@@ -294,7 +294,7 @@ test.describe("saved blocks — pick session", () => {
     await clearSavedBlocks(page);
   }
 
-  /** Feature scenes open the code drawer; pick-session clicks need a wide canvas. */
+  /** An open code drawer shortens the canvas; pick-session clicks need room. */
   async function closeCodeDrawer(page: Page): Promise<void> {
     const drawer = page.locator(SELECTORS.codeDrawer);
     if (await drawer.isVisible()) {

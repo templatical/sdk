@@ -35,8 +35,8 @@ test.describe("Playground smoke tests", () => {
     await expect(page.locator(SELECTORS.editorStage)).toBeVisible();
     await expect(page.locator(SELECTORS.toolbarCode)).toBeVisible();
     await page.locator(SELECTORS.toolbarCode).click();
-    await expect(page.locator(SELECTORS.codeDialog)).toBeVisible();
-    await expect(page.locator(SELECTORS.codeDialog)).toContainText("init(");
+    await expect(page.locator(SELECTORS.codeDrawer)).toBeVisible();
+    await expect(page.locator(SELECTORS.codeDrawer)).toContainText("init(");
   });
 
   test("shadow-dom-off snippet contains shadowDom: false", async ({
@@ -46,7 +46,7 @@ test.describe("Playground smoke tests", () => {
     const scenePage = new ScenePage(page, { shadowDom });
     await scenePage.goto("shadow-dom-off");
     await page.locator(SELECTORS.toolbarCode).click();
-    await expect(page.locator(SELECTORS.codeDialog)).toContainText(
+    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
       "shadowDom: false",
     );
   });

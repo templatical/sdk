@@ -24,7 +24,7 @@ const handlers = readdirSync(HOST_DIR)
 describe("host dialog Escape handlers", () => {
   it("covers every host dialog that closes on Escape", () => {
     expect(handlers.map((handler) => handler.file).sort()).toEqual([
-      "CodeDialog.vue",
+      "CodeDrawer.vue",
       "DataSourcePicker.vue",
       "ExportModal.vue",
       "HostKnobs.vue",

@@ -159,12 +159,13 @@ test.describe("Template import", () => {
     page,
   }) => {
     await openImportScene(scenePage, page, "unlayer");
-    const dialog = page.locator(SELECTORS.codeDialog);
+    const drawer = page.locator(SELECTORS.codeDrawer);
     await page.locator(SELECTORS.toolbarCode).click();
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText("convertUnlayerTemplate");
-    await page.locator(SELECTORS.codeDialogClose).click();
-    await expect(dialog).toBeHidden();
+    await expect(drawer).toContainText("convertUnlayerTemplate");
+    // The drawer sits under the editor, so the paste panel stays in view.
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await page.locator(SELECTORS.codeDrawerClose).click();
+    await expect(drawer).toHaveCount(0);
     await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
     await page.locator(SELECTORS.backButton).click();
     await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
@@ -197,11 +198,11 @@ test.describe("Template import", () => {
     await openImportScene(scenePage, page, "unlayer");
     const textarea = page.locator(TEXTAREA_BY_SOURCE.unlayer);
     await textarea.fill(unlayerJson);
-    const dialog = page.locator(SELECTORS.codeDialog);
-    await page.locator(SELECTORS.toolbarCode).click();
+    const dialog = page.locator(SELECTORS.exportModal);
+    await page.locator(SELECTORS.exportButton).click();
     await expect(dialog).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    await expect(dialog).toHaveCount(0);
     await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
     await expect(textarea).toHaveValue(unlayerJson);
   });
