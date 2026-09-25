@@ -143,10 +143,6 @@ textarea {
     @apply inline-flex items-center justify-center size-8 rounded-md border border-gray-200 bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
 }
 
-.pg-toolbar-icon-btn[aria-pressed="true"] {
-    @apply border-gray-300 bg-gray-100 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100;
-}
-
 .pg-toolbar-primary {
     @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-transparent bg-gray-900 text-gray-50 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white;
 }
@@ -240,6 +236,14 @@ textarea {
 
 .pg-settings-label {
     @apply mb-1.5 block p-0 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400;
+}
+
+.pg-settings-divider {
+    @apply mt-3 border-t border-gray-200 pt-2 dark:border-gray-700;
+}
+
+.pg-settings-action {
+    @apply flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-sans text-[13px] text-gray-700 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100;
 }
 
 .pg-theme-options {
@@ -817,7 +821,7 @@ textarea {
     animation-delay: calc(var(--pg-note-i) * 60ms + 300ms);
 }
 
-/* Kept in step with NOTE_FONT and NOTE_LINE_HEIGHT in SceneNotes.vue. */
+/* SceneNotes.vue sizes each note by measuring a hidden .pg-note. */
 .pg-note {
     position: absolute;
     margin: 0;

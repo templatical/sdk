@@ -15,19 +15,25 @@ const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ dismiss: [] }>();
 
 const { t } = usePlaygroundI18n();
-const layer = ref<HTMLElement | null>(null);
 const placed = ref<PlacedNote[]>([]);
 // Which parts were found to point at, whether or not their note fit. The
 // e2e suite reads it to catch an editor markup change orphaning a note.
 const measured = ref<NoteId[]>([]);
 
-/** Kept in step with `.pg-note` in style.css, which draws what this measures. */
-const NOTE_FONT = "600 27px Caveat";
-const NOTE_LINE_HEIGHT = 31;
 const FONT_URL = "https://fonts.bunny.net/css?family=caveat:600&display=swap";
 const FONT_TIMEOUT_MS = 2000;
 
 let fontReady: Promise<void> | null = null;
+
+/** A hidden `.pg-note` holding `text`, for reading what a note resolves to. */
+function noteProbe(text: string): HTMLElement {
+  const probe = document.createElement("span");
+  probe.className = "pg-note";
+  probe.style.cssText = "visibility: hidden; top: 0; left: 0";
+  probe.textContent = text;
+  document.body.appendChild(probe);
+  return probe;
+}
 
 /**
  * The note font loads the first time notes show, not with the page: most
@@ -38,14 +44,22 @@ function loadNoteFont(): Promise<void> {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = FONT_URL;
-    link.onload = () => {
-      document.fonts.load(NOTE_FONT).then(
-        () => resolve(),
-        () => resolve(),
-      );
-    };
+    link.onload = () => resolve();
     link.onerror = () => resolve();
     document.head.appendChild(link);
+  }).then(() => {
+    // Every face `.pg-note` lists, not only Caveat: when Caveat never loads
+    // the notes render in the sans fallback, and sizing them while that is
+    // still on its way measures a third face.
+    const probe = noteProbe("");
+    const style = getComputedStyle(probe);
+    const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    probe.remove();
+    const text = Object.values(t.value.host.notes.items).join("");
+    return document.fonts.load(font, text).then(
+      () => undefined,
+      () => undefined,
+    );
   });
   return Promise.race([
     fontReady,
@@ -81,8 +95,6 @@ function measureTargets(): NoteTargets {
   const targets: NoteTargets = {};
   const code = document.querySelector('[data-testid="toolbar-code"]');
   if (shown(code)) targets.code = toBox(code.getBoundingClientRect());
-  const docs = document.querySelector('[data-testid="toolbar-docs"]');
-  if (shown(docs)) targets.docs = toBox(docs.getBoundingClientRect());
   const share = document.querySelector('[data-testid="toolbar-share"]');
   if (shown(share)) targets.share = toBox(share.getBoundingClientRect());
 
@@ -100,21 +112,10 @@ function measureTargets(): NoteTargets {
   if (!editor || document.querySelector('[data-testid="import-panel"]')) {
     return targets;
   }
-  const viewport = editor.querySelector('[role="radiogroup"]');
-  if (shown(viewport)) {
-    targets.viewport = toBox(viewport.getBoundingClientRect());
-  }
   // The header's centre track is exactly viewport, dark mode, preview.
-  const preview = viewport?.parentElement?.lastElementChild;
+  const preview = editor.querySelector('[role="radiogroup"]')?.parentElement
+    ?.lastElementChild;
   if (shown(preview)) targets.preview = toBox(preview.getBoundingClientRect());
-  const stage = editor.querySelector(".tpl-canvas-stage");
-  const body = editor.querySelector(".tpl-body");
-  if (shown(stage) && shown(body)) {
-    targets.canvas = {
-      stage: toBox(stage.getBoundingClientRect()),
-      body: toBox(body.getBoundingClientRect()),
-    };
-  }
   const panel = editor.querySelector(".tpl-right-sidebar");
   const tabs = panel?.querySelector('[role="tablist"]');
   if (shown(panel) && shown(tabs)) {
@@ -123,65 +124,32 @@ function measureTargets(): NoteTargets {
       tabs: toBox(tabs.getBoundingClientRect()),
     };
   }
-  const column = editor.querySelector(".tpl-sidebar-rail");
-  const items = column?.querySelectorAll("[data-palette-type]");
-  const last = items?.[items.length - 1];
-  if (shown(column) && shown(last)) {
-    targets.palette = {
-      column: toBox(column.getBoundingClientRect()),
-      last: toBox(last.getBoundingClientRect()),
+  // Rendered only while the linter is on, so the note goes with it.
+  const issues = panel?.querySelector("#tpl-tab-issues");
+  if (shown(panel) && shown(issues)) {
+    targets.issues = {
+      panel: toBox(panel.getBoundingClientRect()),
+      tab: toBox(issues.getBoundingClientRect()),
     };
+  }
+  const column = editor.querySelector(".tpl-sidebar-rail");
+  if (shown(column) && column.querySelector("[data-palette-type]")) {
+    targets.palette = toBox(column.getBoundingClientRect());
   }
   return targets;
 }
 
-const ICONS = "svg, img, input, select, textarea, canvas, iframe, video";
-
-/** Every visible run of text and every icon or control on the page. */
-function measureObstacles(): Box[] {
-  const boxes: Box[] = [];
-  const range = document.createRange();
-  const roots: Node[] = [document.body];
-  const editor = editorRoot();
-  if (editor instanceof ShadowRoot) roots.push(editor);
-  for (const root of roots) {
-    const walker = document.createTreeWalker(
-      root,
-      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (node) =>
-          node === layer.value
-            ? NodeFilter.FILTER_REJECT
-            : NodeFilter.FILTER_ACCEPT,
-      },
-    );
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      if (node instanceof Element) {
-        if (node.matches(ICONS) && shown(node)) {
-          boxes.push(toBox(node.getBoundingClientRect()));
-        }
-        continue;
-      }
-      if (!node.textContent?.trim() || !shown(node.parentElement)) continue;
-      range.selectNodeContents(node);
-      for (const rect of range.getClientRects()) boxes.push(toBox(rect));
-    }
-  }
-  return boxes;
-}
-
-const measureContext = document.createElement("canvas").getContext("2d");
-
+/**
+ * A note's size, read off a hidden `.pg-note` rather than computed from a
+ * font string: when Caveat never loads, the note renders in the sans
+ * fallback, and a canvas measuring "Caveat" falls back to serif instead,
+ * which is up to a fifth narrower and lets notes overrun what they avoid.
+ */
 function measureNote(id: NoteId): { width: number; height: number } {
-  const text = t.value.host.notes.items[id];
-  if (!measureContext) {
-    return { width: text.length * 12, height: NOTE_LINE_HEIGHT };
-  }
-  measureContext.font = NOTE_FONT;
-  return {
-    width: Math.ceil(measureContext.measureText(text).width),
-    height: NOTE_LINE_HEIGHT,
-  };
+  const probe = noteProbe(t.value.host.notes.items[id]);
+  const rect = probe.getBoundingClientRect();
+  probe.remove();
+  return { width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
 }
 
 /** Where the close pill sits (bottom centre), kept clear of notes. */
@@ -199,7 +167,7 @@ function place(): void {
   measured.value = NOTE_IDS.filter((id) => targets[id] !== undefined);
   placed.value = placeNotes(targets, {
     viewport: { width: window.innerWidth, height: window.innerHeight },
-    obstacles: [...measureObstacles(), closePillArea()],
+    reserved: [closePillArea()],
     measure: measureNote,
   });
 }
@@ -208,18 +176,10 @@ const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
 /**
  * The first interaction anywhere puts the notes away, and still does its
- * job: nothing here stops or prevents it. The header's notes button is left
- * to its own click, which toggles them.
+ * job: nothing here stops or prevents it.
  */
 function onInteract(event: Event): void {
   if (event instanceof KeyboardEvent && MODIFIER_KEYS.has(event.key)) return;
-  const target = event.target;
-  if (
-    target instanceof Element &&
-    target.closest('[data-testid="toolbar-notes"]')
-  ) {
-    return;
-  }
   emit("dismiss");
 }
 
@@ -282,7 +242,6 @@ function head(note: PlacedNote): string {
   <Transition name="pg-notes">
     <aside
       v-if="open && placed.length"
-      ref="layer"
       data-testid="scene-notes"
       :data-targets="measured.join(' ')"
       :aria-label="t.host.notes.label"

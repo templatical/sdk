@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Monitor, Moon, Settings2, Sun } from "@lucide/vue";
+import { Monitor, Moon, PencilLine, Settings2, Sun } from "@lucide/vue";
 import { onClickOutside } from "@vueuse/core";
 import { nextTick, ref, useId } from "vue";
 import {
@@ -7,6 +7,12 @@ import {
   usePlaygroundI18n,
   usePlaygroundTheme,
 } from "@/i18n";
+
+const props = defineProps<{
+  /** Offer "Show notes": scene pages have notes, the home page doesn't. */
+  notes?: boolean;
+}>();
+const emit = defineEmits<{ showNotes: [] }>();
 
 const { locale, t } = usePlaygroundI18n();
 const { theme: uiTheme } = usePlaygroundTheme();
@@ -38,6 +44,21 @@ function close(returnFocus: boolean): void {
   if (returnFocus) trigger.value?.focus();
 }
 
+// The notes open once the menu has finished leaving: while it fades it
+// still covers the header, right where the Code and Share notes draw.
+let notesAfterClose = false;
+
+function showNotes(): void {
+  notesAfterClose = true;
+  close(true);
+}
+
+function onMenuLeft(): void {
+  if (!notesAfterClose) return;
+  notesAfterClose = false;
+  emit("showNotes");
+}
+
 onClickOutside(root, () => close(false));
 </script>
 
@@ -63,7 +84,7 @@ onClickOutside(root, () => close(false));
     >
       <Settings2 :size="16" :stroke-width="1.5" aria-hidden="true" />
     </button>
-    <Transition name="pg-pop">
+    <Transition name="pg-pop" @after-leave="onMenuLeft">
       <div
         v-if="open"
         :id="panelId"
@@ -108,6 +129,17 @@ onClickOutside(root, () => close(false));
             {{ loc.toUpperCase() }}
           </option>
         </select>
+        <div v-if="props.notes" class="pg-settings-divider">
+          <button
+            type="button"
+            data-testid="settings-show-notes"
+            class="pg-settings-action"
+            @click="showNotes"
+          >
+            <PencilLine :size="14" :stroke-width="1.75" aria-hidden="true" />
+            {{ t.host.settings.showNotes }}
+          </button>
+        </div>
       </div>
     </Transition>
   </div>

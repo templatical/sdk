@@ -8,7 +8,6 @@ import {
   Download,
   PanelLeftClose,
   PanelLeftOpen,
-  PencilLine,
   Share2,
 } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
@@ -49,7 +48,7 @@ const codeOpen = useLocalStorage("tpl-playground-code-open", false);
 const railOpen = useLocalStorage("tpl-playground-rail-open", true);
 const neighbours = computed(() => sceneNeighbours(props.sceneId));
 // The notes show by themselves once per browser, on the first scene that
-// opens; the pencil button brings them back on any scene.
+// opens; the settings menu's "Show notes" brings them back on any scene.
 const notesSeen = useLocalStorage("tpl-playground-notes-seen", false);
 const notesOpen = ref(false);
 const codeButton = ref<HTMLButtonElement | null>(null);
@@ -188,6 +187,7 @@ onUnmounted(() => {
     v-else
     data-testid="scene-host"
     :data-scene-ready="sceneReady ? 'true' : undefined"
+    :data-notes="notesOpen ? 'open' : undefined"
     class="flex h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <div class="pg-rail-slot" :data-open="railOpen">
@@ -353,19 +353,7 @@ onUnmounted(() => {
             <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.code }}
           </button>
-          <button
-            type="button"
-            data-testid="toolbar-notes"
-            class="pg-toolbar-icon-btn"
-            :title="t.host.notes.toggle"
-            :aria-label="t.host.notes.toggle"
-            :aria-pressed="notesOpen"
-            :disabled="!editor"
-            @click="notesOpen = !notesOpen"
-          >
-            <PencilLine :size="16" :stroke-width="1.5" aria-hidden="true" />
-          </button>
-          <HostKnobs />
+          <HostKnobs notes @show-notes="notesOpen = true" />
         </div>
       </header>
       <!--

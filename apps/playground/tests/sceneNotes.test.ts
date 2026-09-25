@@ -4,124 +4,169 @@ import en from "../src/i18n/en";
 import {
   NOTE_IDS,
   arrowBetween,
-  intersects,
   placeNotes,
   type Box,
   type NoteTargets,
   type PlaceOptions,
+  type Point,
 } from "../src/host/sceneNotes";
 
 const SIZE = { width: 120, height: 31 };
 const VIEWPORT = { width: 1440, height: 900 };
-const CODE: Box = { left: 1272, top: 12, width: 80, height: 32 };
+const CODE: Box = { left: 1308, top: 12, width: 80, height: 32 };
+
+function box(left: number, top: number, right: number, bottom: number): Box {
+  return { left, top, width: right - left, height: bottom - top };
+}
+
+/** The Minimum scene's parts at 1440x900, as the page measures them. */
+const WIDE: NoteTargets = {
+  code: CODE,
+  share: box(1232, 12, 1264, 44),
+  preview: box(971, 83, 1005, 117),
+  properties: {
+    panel: box(1104, 128, 1424, 884),
+    tabs: box(1105, 128, 1424, 173),
+  },
+  issues: { panel: box(1104, 128, 1424, 884), tab: box(1354, 134, 1418, 166) },
+  palette: box(240, 128, 288, 884),
+  rail: { rail: box(0, 0, 224, 900), foot: 236 },
+};
+
+/** The same parts at 1024x768, where the preview toggle sits over the panel. */
+const NARROW: NoteTargets = {
+  preview: box(759, 83, 793, 117),
+  properties: {
+    panel: box(688, 128, 1008, 752),
+    tabs: box(689, 128, 1008, 173),
+  },
+};
 
 function options(overrides: Partial<PlaceOptions> = {}): PlaceOptions {
   return {
     viewport: VIEWPORT,
-    obstacles: [],
+    reserved: [],
     measure: () => SIZE,
     ...overrides,
   };
 }
 
+function length(arrow: { from: Point; to: Point }): number {
+  return Math.hypot(arrow.to.x - arrow.from.x, arrow.to.y - arrow.from.y);
+}
+
 describe("placeNotes", () => {
-  it("puts a note at its first spot when nothing is in the way", () => {
-    const [note] = placeNotes({ code: CODE }, options());
-    expect(note.id).toBe("code");
-    expect(note.box).toEqual({
-      left: CODE.left - 4,
-      top: CODE.top + CODE.height + 34,
-      width: SIZE.width,
-      height: SIZE.height,
-    });
-    expect(note.arrow.to).toEqual({ x: 1306, y: 50 });
+  it("writes every note at its one spot beside its target", () => {
+    const placed = placeNotes(WIDE, options());
+    expect(placed.map((note) => note.id)).toEqual([...NOTE_IDS]);
+    const code = placed.find((note) => note.id === "code")!;
+    expect(code.box).toEqual({ left: 1304, top: 78, ...SIZE });
+    expect(code.arrow.to).toEqual({ x: 1342, y: 50 });
   });
 
-  it("moves to the next spot when the first covers the page's text", () => {
-    // Inside the first spot (1268–1388) and clear of the second (1232–1352).
-    const text: Box = { left: 1362, top: 80, width: 24, height: 20 };
-    const [note] = placeNotes({ code: CODE }, options({ obstacles: [text] }));
-    expect(note.box.left).toBe(CODE.left + CODE.width - SIZE.width);
-    expect(intersects(note.box, text)).toBe(false);
+  it("writes the preview note down and to the left, with an arrow to follow", () => {
+    const [note] = placeNotes({ preview: WIDE.preview }, options());
+    // Over the canvas, clear of the header's gutter: 60px under the toggle,
+    // ending 14px left of its centre.
+    expect(note.box).toEqual({ left: 854, top: 177, ...SIZE });
+    expect(note.arrow.to).toEqual({ x: 986, y: 123 });
+    expect(length(note.arrow)).toBeGreaterThan(48);
   });
 
-  it("leaves a note out when every spot is covered", () => {
-    const wall: Box = { left: 0, top: 44, width: 1440, height: 200 };
-    expect(placeNotes({ code: CODE }, options({ obstacles: [wall] }))).toEqual(
-      [],
+  it("runs the properties arrow up the panel's margin to its tabs", () => {
+    const [note] = placeNotes({ properties: WIDE.properties }, options());
+    expect(note.box).toEqual({ left: 1118, top: 353, ...SIZE });
+    expect(note.arrow.from).toEqual({ x: 1126, y: 349 });
+    expect(note.arrow.to).toEqual({ x: 1126, y: 181 });
+  });
+
+  it("points the palette note back at the column from the canvas", () => {
+    const [note] = placeNotes({ palette: WIDE.palette }, options());
+    expect(note.box).toEqual({ left: 322, top: 324, ...SIZE });
+    expect(note.arrow.to).toEqual({ x: 294, y: 278 });
+    expect(note.arrow.to.x).toBeLessThan(note.arrow.from.x);
+  });
+
+  it("hangs the issues note under its tab, kept inside the panel", () => {
+    const panel = box(1104, 128, 1424, 884);
+    const tab = box(1200, 134, 1240, 166);
+    const [under] = placeNotes({ issues: { tab, panel } }, options());
+    expect(under.box).toEqual({ left: 1200, top: 194, ...SIZE });
+    // A tab at the panel's right edge pulls the note back inside.
+    const edge = { ...tab, left: 1380 };
+    const [inside] = placeNotes({ issues: { tab: edge, panel } }, options());
+    expect(inside.box.left).toBe(1424 - 10 - SIZE.width);
+  });
+
+  it("pulls a spot that would leave the viewport back inside it", () => {
+    const near = box(1400, 12, 1432, 44);
+    const [note] = placeNotes({ code: near }, options());
+    expect(note.box.left + note.box.width).toBe(VIEWPORT.width - 8);
+    // The arrow leaves from where the note ended up, and still ends at Code.
+    expect(note.arrow.from).toEqual({ x: note.box.left + 28, y: 74 });
+    expect(note.arrow.to).toEqual({ x: 1410, y: 50 });
+  });
+
+  it("keeps a pulled-in note only while its arrow still points away from it", () => {
+    const rail = { rail: box(0, 0, 224, 720), foot: 635 };
+    const [kept] = placeNotes(
+      { rail },
+      options({ viewport: { width: 1280, height: 720 } }),
     );
+    expect(kept.box.top).toBe(720 - 8 - SIZE.height);
+    expect(kept.arrow.to.y).toBeLessThan(kept.box.top);
+    // With no room under the list the arrow would run back down through
+    // the note, so it is left out.
+    const short = { rail: { ...rail, rail: box(0, 0, 224, 640) } };
+    expect(
+      placeNotes(short, options({ viewport: { width: 1024, height: 640 } })),
+    ).toEqual([]);
+  });
+
+  it("leaves a note out rather than stack it on another", () => {
+    // Share right against Code: its one spot would crowd Code's note, and
+    // no other spot is tried.
+    const targets: NoteTargets = { code: CODE, share: box(1270, 12, 1302, 44) };
+    const placed = placeNotes(targets, options());
+    expect(placed.map((note) => note.id)).toEqual(["code"]);
+    expect(placed[0].box.left).toBe(1304);
+  });
+
+  it("keeps the close pill clear", () => {
+    const pill: Box = { left: 300, top: 300, width: 200, height: 70 };
+    const placed = placeNotes(
+      { palette: WIDE.palette, rail: WIDE.rail },
+      options({ reserved: [pill] }),
+    );
+    expect(placed.map((note) => note.id)).toEqual(["rail"]);
+  });
+
+  it("never writes a note over another note's arrow", () => {
+    // At 1024 the preview note's spot lands on the properties arrow, and the
+    // panel's note goes first.
+    const narrow = placeNotes(
+      NARROW,
+      options({ viewport: { width: 1024, height: 768 } }),
+    );
+    expect(narrow.map((note) => note.id)).toEqual(["properties"]);
+    const wide = placeNotes(
+      { preview: WIDE.preview, properties: WIDE.properties },
+      options(),
+    );
+    expect(wide.map((note) => note.id)).toEqual(["properties", "preview"]);
   });
 
   it("leaves out a note whose target was not measured", () => {
     expect(placeNotes({}, options())).toEqual([]);
   });
 
-  it("never places a note outside the viewport", () => {
-    // Near the edge the left-aligned spot overhangs, and the right-aligned
-    // one ends exactly on the 8px margin.
-    const near: Box = { left: 1400, top: 12, width: 32, height: 32 };
-    const [note] = placeNotes({ code: near }, options());
-    expect(note.box.left).toBe(1312);
-    expect(note.box.left + note.box.width).toBe(VIEWPORT.width - 8);
-    // Right against it, both overhang, so the note is left out.
-    const against: Box = { left: 1420, top: 12, width: 16, height: 32 };
-    expect(placeNotes({ code: against }, options())).toEqual([]);
-  });
-
-  it("keeps two notes far enough apart to read as two", () => {
-    const targets: NoteTargets = {
-      code: CODE,
-      share: { left: 1196, top: 12, width: 36, height: 32 },
-      docs: { left: 1135, top: 18, width: 46, height: 20 },
-    };
-    const placed = placeNotes(targets, options());
-    expect(placed.map((note) => note.id)).toEqual(["code", "share", "docs"]);
-    for (const a of placed) {
-      for (const b of placed) {
-        if (a === b) continue;
-        const gap: Box = {
-          left: a.box.left - 25,
-          top: a.box.top - 25,
-          width: a.box.width + 50,
-          height: a.box.height + 50,
-        };
-        expect(intersects(gap, b.box), `${a.id} and ${b.id}`).toBe(false);
-      }
-    }
-  });
-
-  it("refuses a spot whose arrow would cut through the page's text", () => {
-    const panel: Box = { left: 1105, top: 130, width: 320, height: 760 };
-    const tabs: Box = { left: 1113, top: 138, width: 300, height: 34 };
-    const across: Box = { left: 1115, top: 300, width: 16, height: 18 };
-    const clear = placeNotes({ properties: { panel, tabs } }, options());
-    const blocked = placeNotes(
-      { properties: { panel, tabs } },
-      options({ obstacles: [across] }),
+  it("puts the panel's notes before the preview note", () => {
+    expect(NOTE_IDS.indexOf("properties")).toBeLessThan(
+      NOTE_IDS.indexOf("preview"),
     );
-    // Clear: the first depth. Blocked: the arrow up the margin crosses the
-    // text at y 300 from every depth, so the note is left out.
-    expect(clear[0].box.top).toBe(panel.top + panel.height * 0.3);
-    expect(blocked).toEqual([]);
-  });
-
-  it("writes the canvas note only below a card that leaves room", () => {
-    const body: Box = { left: 290, top: 130, width: 815, height: 770 };
-    const short: Box = { left: 320, top: 160, width: 752, height: 448 };
-    const full: Box = { left: 320, top: 160, width: 752, height: 1400 };
-    const [below] = placeNotes({ canvas: { stage: short, body } }, options());
-    expect(below.box.top).toBe(short.top + short.height + 34);
-    expect(placeNotes({ canvas: { stage: full, body } }, options())).toEqual(
-      [],
+    expect(NOTE_IDS.indexOf("issues")).toBeLessThan(
+      NOTE_IDS.indexOf("preview"),
     );
-  });
-
-  it("writes the rail note only in a foot with room for it", () => {
-    const rail: Box = { left: 0, top: 0, width: 224, height: 900 };
-    expect(placeNotes({ rail: { rail, foot: 240 } }, options())).toHaveLength(
-      1,
-    );
-    expect(placeNotes({ rail: { rail, foot: 820 } }, options())).toEqual([]);
   });
 });
 

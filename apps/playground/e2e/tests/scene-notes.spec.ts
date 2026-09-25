@@ -5,8 +5,7 @@ import { SELECTORS } from "../helpers/selectors";
 
 const READY = '[data-testid="scene-host"][data-scene-ready="true"]';
 // NOTE_IDS order, which is what data-targets lists.
-const EVERY_TARGET =
-  "code share docs preview viewport properties canvas palette rail";
+const EVERY_TARGET = "code share properties issues preview palette rail";
 
 /**
  * Serves the note font as an empty stylesheet, so the notes render in their
@@ -19,6 +18,21 @@ async function stubNoteFont(page: Page): Promise<string[]> {
     return route.fulfill({ contentType: "text/css", body: "" });
   });
   return requests;
+}
+
+/** Opens the notes from the header's settings menu, where they live. */
+async function showNotes(page: Page) {
+  await page.locator(SELECTORS.hostSettings).click();
+  await page.locator(SELECTORS.settingsShowNotes).click();
+  await expect(page.locator(SELECTORS.sceneNotes)).toBeVisible();
+}
+
+/**
+ * The notes' open state, from the scene host. A dismissed layer stays
+ * visible while it fades, so its visibility would pass either way.
+ */
+function host(page: Page) {
+  return page.getByTestId("scene-host");
 }
 
 /** A first visit: nothing has marked the notes as seen yet. */
@@ -43,10 +57,7 @@ test.describe("Scene notes", () => {
     await expect(notes).toBeVisible();
     await expect(notes).toHaveAttribute("data-targets", EVERY_TARGET);
     await expect(notes).toHaveAccessibleName("Notes");
-    await expect(page.locator(SELECTORS.notesButton)).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(host(page)).toHaveAttribute("data-notes", "open");
     await expect(page.locator('[data-note="code"]')).toHaveText(
       "Code button: copy this setup",
     );
@@ -79,6 +90,56 @@ test.describe("Scene notes", () => {
     }
   });
 
+  test("notes sit on the email when that is where their spot is", async ({
+    page,
+    shadowDom,
+  }) => {
+    await firstVisit(page, shadowDom, "example-launchpad-launch");
+    const canvas = (await page
+      .locator('[data-testid="canvas-wrapper"]')
+      .boundingBox())!;
+    for (const id of ["preview", "palette"]) {
+      const locator = page.locator(`[data-note="${id}"]`);
+      await expect(locator).toBeVisible();
+      const note = (await locator.boundingBox())!;
+      const over =
+        note.x < canvas.x + canvas.width &&
+        canvas.x < note.x + note.width &&
+        note.y < canvas.y + canvas.height &&
+        canvas.y < note.y + note.height;
+      expect(over, `${id} note over the email`).toBe(true);
+    }
+  });
+
+  test("the preview note sits well below its toggle, on a long arrow", async ({
+    page,
+    shadowDom,
+  }) => {
+    await firstVisit(page, shadowDom);
+    await expect(page.locator('[data-note="preview"]')).toBeVisible();
+    // Its arrow leaves from the note's far end, so length alone passes a
+    // note crammed right under the toggle: the gap is what says it isn't.
+    const gap = await page.evaluate(() => {
+      const container = document.querySelector(
+        '[data-testid="editor-container"]',
+      );
+      const root = container?.shadowRoot ?? container;
+      const toggle = root?.querySelector('[role="radiogroup"]')?.parentElement
+        ?.lastElementChild;
+      const note = document.querySelector('[data-note="preview"]');
+      return (
+        note!.getBoundingClientRect().top -
+        toggle!.getBoundingClientRect().bottom
+      );
+    });
+    expect(gap).toBeGreaterThan(50);
+    const length = await page
+      .locator('[data-note-arrow="preview"] .pg-note-stroke')
+      .first()
+      .evaluate((el) => (el as SVGPathElement).getTotalLength());
+    expect(length).toBeGreaterThan(45);
+  });
+
   test("they show once: a reload does not bring them back", async ({
     page,
     shadowDom,
@@ -87,10 +148,7 @@ test.describe("Scene notes", () => {
     await expect(page.locator(SELECTORS.sceneNotes)).toBeVisible();
     await page.reload();
     await page.locator(READY).waitFor();
-    await expect(page.locator(SELECTORS.notesButton)).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    await expect(host(page)).not.toHaveAttribute("data-notes");
     await expect(page.locator(SELECTORS.sceneNotes)).toHaveCount(0);
   });
 
@@ -114,37 +172,44 @@ test.describe("Scene notes", () => {
   }) => {
     await firstVisit(page, shadowDom);
     const notes = page.locator(SELECTORS.sceneNotes);
-    const button = page.locator(SELECTORS.notesButton);
     await expect(notes).toBeVisible();
-    // The button's state, not the layer's visibility: a dismissed layer
-    // stays visible while it fades, which would pass either way.
     await page.keyboard.press("Shift");
-    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(host(page)).toHaveAttribute("data-notes", "open");
     await page.keyboard.press("Escape");
-    await expect(button).toHaveAttribute("aria-pressed", "false");
+    await expect(host(page)).not.toHaveAttribute("data-notes");
     await expect(notes).toHaveCount(0);
   });
 
-  test("the pencil button brings them back and puts them away", async ({
+  test("the settings menu brings them back, and closes behind itself", async ({
     scenePage,
     page,
   }) => {
     await scenePage.goto("minimum");
-    const button = page.locator(SELECTORS.notesButton);
-    const notes = page.locator(SELECTORS.sceneNotes);
-    await expect(notes).toHaveCount(0);
+    await expect(page.locator(SELECTORS.sceneNotes)).toHaveCount(0);
 
-    await button.click();
-    await expect(notes).toBeVisible();
-    await expect(button).toHaveAttribute("aria-pressed", "true");
-    await button.click();
-    await expect(notes).toHaveCount(0);
-    await expect(button).toHaveAttribute("aria-pressed", "false");
+    await showNotes(page);
+    await expect(host(page)).toHaveAttribute("data-notes", "open");
+    await expect(page.locator(SELECTORS.hostSettingsPanel)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.hostSettings)).toBeFocused();
+    // The notes open once the menu is gone, so Code's note draws on a clear
+    // header. (Share's depends on the note font's width, and the stubbed
+    // fallback face is wider than Caveat.)
+    await expect(page.locator('[data-note="code"]')).toBeVisible();
+  });
+
+  test("the home page's settings menu offers no notes", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await page.locator(SELECTORS.hostSettings).click();
+    await expect(page.locator(SELECTORS.hostSettingsPanel)).toBeVisible();
+    await expect(page.locator(SELECTORS.settingsShowNotes)).toHaveCount(0);
   });
 
   test("the close pill puts them away", async ({ scenePage, page }) => {
     await scenePage.goto("minimum");
-    await page.locator(SELECTORS.notesButton).click();
+    await showNotes(page);
     await page.locator(SELECTORS.sceneNotesClose).click();
     await expect(page.locator(SELECTORS.sceneNotes)).toHaveCount(0);
   });
@@ -153,9 +218,8 @@ test.describe("Scene notes", () => {
     await scenePage.goto("minimum");
     await page.getByTestId("toolbar-rail").click();
     await expect(page.locator('[data-testid="catalog-rail"]')).toBeHidden();
-    await page.locator(SELECTORS.notesButton).click();
+    await showNotes(page);
     const notes = page.locator(SELECTORS.sceneNotes);
-    await expect(notes).toBeVisible();
     await expect(notes).not.toHaveAttribute("data-targets", /rail/);
     await expect(page.locator('[data-note="rail"]')).toHaveCount(0);
   });
@@ -166,10 +230,10 @@ test.describe("Scene notes", () => {
   }) => {
     await scenePage.goto("import-unlayer");
     await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
-    await page.locator(SELECTORS.notesButton).click();
+    await showNotes(page);
     await expect(page.locator(SELECTORS.sceneNotes)).toHaveAttribute(
       "data-targets",
-      "code share docs rail",
+      "code share rail",
     );
   });
 
@@ -180,8 +244,7 @@ test.describe("Scene notes", () => {
     const requests = await stubNoteFont(page);
     await scenePage.goto("minimum");
     expect(requests).toEqual([]);
-    await page.locator(SELECTORS.notesButton).click();
-    await expect(page.locator(SELECTORS.sceneNotes)).toBeVisible();
+    await showNotes(page);
     expect(requests).toHaveLength(1);
   });
 
@@ -196,17 +259,18 @@ test.describe("Scene notes", () => {
     const offset = () =>
       stroke.evaluate((el) => getComputedStyle(el).strokeDashoffset);
 
+    await page.locator(SELECTORS.hostSettings).click();
     const resume = await freezeMotion(page);
-    await page.locator(SELECTORS.notesButton).click();
+    await page.locator(SELECTORS.settingsShowNotes).click();
     await expect(stroke).toHaveCount(1);
     expect(await offset()).toBe("1px");
     await resume();
     await expect.poll(offset).toBe("0px");
 
-    await page.locator(SELECTORS.notesButton).click();
+    await page.locator(SELECTORS.sceneNotesClose).click();
     await expect(page.locator(SELECTORS.sceneNotes)).toHaveCount(0);
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.locator(SELECTORS.notesButton).click();
+    await showNotes(page);
     await expect(stroke).toHaveCount(1);
     expect(await offset()).toBe("0px");
   });

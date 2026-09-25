@@ -236,7 +236,7 @@ export const SELECTORS = {
   featureOverlay: '[data-testid="feature-overlay"]',
   sceneNotes: '[data-testid="scene-notes"]',
   sceneNotesClose: '[data-testid="scene-notes-close"]',
-  notesButton: '[data-testid="toolbar-notes"]',
+  settingsShowNotes: '[data-testid="settings-show-notes"]',
   featureOverlayClose: '[data-testid="feature-overlay-close"]',
 
   // Onboarding
