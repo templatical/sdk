@@ -491,6 +491,44 @@ textarea {
 }
 
 /*
+ * The home hero's aurora (HeroAurora.vue, palette in aurora.ts): behind the
+ * header and hero only, at z -1 inside an isolated wrapper so it paints over
+ * the page's paper and under the hero's text, then fades into that paper
+ * before the setup list. The fallback paints the same palette without WebGL2.
+ */
+.pg-hero-aurora {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.pg-hero-aurora-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 55%, var(--color-white));
+}
+
+.dark .pg-hero-aurora-fade {
+    background: linear-gradient(to bottom, transparent 55%, var(--color-gray-900));
+}
+
+.pg-hero-aurora-fallback {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(60% 50% at 30% 20%, oklch(91.5% 0.06 55 / 0.6), transparent 70%),
+        radial-gradient(55% 45% at 75% 35%, oklch(95.5% 0.03 80 / 0.5), transparent 70%);
+}
+
+.dark .pg-hero-aurora-fallback {
+    background:
+        radial-gradient(60% 50% at 30% 20%, oklch(25.5% 0.05 55 / 0.8), transparent 70%),
+        radial-gradient(55% 45% at 75% 35%, oklch(21.5% 0.02 80 / 0.7), transparent 70%);
+}
+
+/*
  * One lift for every email proof on the home page, the hero's fan and the
  * examples band alike. A quint curve over 320ms glides where the old 200ms
  * expo snapped. will-change keeps each proof on its own layer: without it

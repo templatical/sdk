@@ -5,6 +5,7 @@ import { ArrowRight, Check, Copy } from "@lucide/vue";
 import LogoIcon from "@/LogoIcon.vue";
 import CatalogGroupMark from "@/host/CatalogGroupMark.vue";
 import CatalogProofs from "@/host/CatalogProofs.vue";
+import HeroAurora from "@/host/HeroAurora.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import type { CodeTheme, HighlightedToken } from "@/host/codeHighlight";
 import { proofFor } from "@/host/proofs";
@@ -119,149 +120,159 @@ onMounted(() => {
     data-testid="catalog-screen"
     class="min-h-screen bg-white font-sans text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
-    <div class="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
-      <header class="flex items-center justify-between gap-4 py-5">
-        <a
-          href="/"
-          class="flex items-center rounded-md text-inherit no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <LogoIcon :size="36" decorative class="translate-y-[3px]" />
-          <span class="text-base font-semibold tracking-[-0.01em]">{{
-            t.host.brand
-          }}</span>
-          <span class="ml-1.5 text-base text-gray-500 dark:text-gray-400">{{
-            t.host.catalogTitle
-          }}</span>
-        </a>
-        <div class="flex items-center gap-5">
-          <nav
-            :aria-label="t.host.catalogNav"
-            class="hidden items-center gap-5 text-sm md:flex [&_a]:text-gray-600 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 dark:[&_a]:text-gray-300 dark:[&_a:hover]:text-gray-100"
+    <!-- The aurora belongs to the header and hero alone; the setup list
+         below keeps the plain paper. -->
+    <div class="relative isolate">
+      <HeroAurora />
+      <div class="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
+        <header class="flex items-center justify-between gap-4 py-5">
+          <a
+            href="/"
+            class="flex items-center rounded-md text-inherit no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <a
-              href="https://docs.templatical.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ t.toolbar.docs }}</a
+            <LogoIcon :size="36" decorative class="translate-y-[3px]" />
+            <span class="text-base font-semibold tracking-[-0.01em]">{{
+              t.host.brand
+            }}</span>
+            <span class="ml-1.5 text-base text-gray-600 dark:text-gray-400">{{
+              t.host.catalogTitle
+            }}</span>
+          </a>
+          <div class="flex items-center gap-5">
+            <nav
+              :aria-label="t.host.catalogNav"
+              class="hidden items-center gap-5 text-sm md:flex [&_a]:text-gray-600 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 dark:[&_a]:text-gray-300 dark:[&_a:hover]:text-gray-100"
             >
-            <a
-              href="https://github.com/templatical/sdk"
-              target="_blank"
-              rel="noopener noreferrer"
-              :aria-label="t.a11y.githubRepo"
-              >GitHub</a
-            >
-          </nav>
-          <HostKnobs />
-        </div>
-      </header>
-
-      <section
-        class="grid items-center gap-10 pb-16 pt-6 lg:grid-cols-12 lg:gap-12 lg:pb-24 lg:pt-10"
-      >
-        <div class="min-w-0 lg:col-span-5">
-          <h1 class="m-0 text-balance text-display font-semibold">
-            {{ t.host.headline }}
-          </h1>
-          <p
-            class="m-0 mt-5 max-w-[34ch] text-pretty text-lede text-gray-600 dark:text-gray-300"
-          >
-            {{ t.host.lede }}
-          </p>
-          <div class="mt-9 flex min-w-0 flex-col items-start gap-4">
-            <figure
-              v-if="minimum"
-              data-testid="catalog-setup"
-              class="m-0 w-full min-w-0 max-w-[30rem] overflow-hidden rounded-[10px] border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
-            >
-              <figcaption class="sr-only">{{ t.host.snippetLabel }}</figcaption>
-              <div
-                data-testid="catalog-install"
-                class="flex items-center justify-between gap-3 border-b border-gray-200 py-1.5 pl-3.5 pr-1.5 dark:border-gray-700"
+              <a
+                href="https://docs.templatical.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ t.toolbar.docs }}</a
               >
-                <code class="font-mono text-xs text-gray-900 dark:text-gray-100"
-                  ><span class="select-none text-gray-500" aria-hidden="true"
-                    >$ </span
-                  >{{ t.host.installCommand }}</code
+              <a
+                href="https://github.com/templatical/sdk"
+                target="_blank"
+                rel="noopener noreferrer"
+                :aria-label="t.a11y.githubRepo"
+                >GitHub</a
+              >
+            </nav>
+            <HostKnobs />
+          </div>
+        </header>
+
+        <section
+          class="grid items-center gap-10 pb-16 pt-6 lg:grid-cols-12 lg:gap-12 lg:pb-24 lg:pt-10"
+        >
+          <div class="min-w-0 lg:col-span-5">
+            <h1 class="m-0 text-balance text-display font-semibold">
+              {{ t.host.headline }}
+            </h1>
+            <p
+              class="m-0 mt-5 max-w-[34ch] text-pretty text-lede text-gray-600 dark:text-gray-300"
+            >
+              {{ t.host.lede }}
+            </p>
+            <div class="mt-9 flex min-w-0 flex-col items-start gap-4">
+              <figure
+                v-if="minimum"
+                data-testid="catalog-setup"
+                class="m-0 w-full min-w-0 max-w-[30rem] overflow-hidden rounded-[10px] border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+              >
+                <figcaption class="sr-only">
+                  {{ t.host.snippetLabel }}
+                </figcaption>
+                <div
+                  data-testid="catalog-install"
+                  class="flex items-center justify-between gap-3 border-b border-gray-200 py-1.5 pl-3.5 pr-1.5 dark:border-gray-700"
                 >
-                <button
-                  type="button"
-                  data-testid="catalog-install-copy"
-                  class="pg-copy-btn"
-                  :aria-label="t.host.copyInstall"
-                  @click="copyText('install', t.host.installCommand)"
-                >
-                  <Check
-                    v-if="isCopied('install')"
-                    :size="14"
-                    :stroke-width="2"
-                    aria-hidden="true"
-                  />
-                  <Copy
-                    v-else
-                    :size="14"
-                    :stroke-width="1.75"
-                    aria-hidden="true"
-                  />
-                </button>
-              </div>
-              <div class="relative">
-                <pre
-                  data-testid="catalog-snippet"
-                  class="m-0 overflow-x-auto py-3 pl-3.5 pr-10 font-mono text-xs leading-relaxed text-gray-900 dark:text-gray-100"
-                ><code><span
+                  <code
+                    class="font-mono text-xs text-gray-900 dark:text-gray-100"
+                    ><span class="select-none text-gray-500" aria-hidden="true"
+                      >$ </span
+                    >{{ t.host.installCommand }}</code
+                  >
+                  <button
+                    type="button"
+                    data-testid="catalog-install-copy"
+                    class="pg-copy-btn"
+                    :aria-label="t.host.copyInstall"
+                    @click="copyText('install', t.host.installCommand)"
+                  >
+                    <Check
+                      v-if="isCopied('install')"
+                      :size="14"
+                      :stroke-width="2"
+                      aria-hidden="true"
+                    />
+                    <Copy
+                      v-else
+                      :size="14"
+                      :stroke-width="1.75"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+                <div class="relative">
+                  <pre
+                    data-testid="catalog-snippet"
+                    class="m-0 overflow-x-auto py-3 pl-3.5 pr-10 font-mono text-xs leading-relaxed text-gray-900 dark:text-gray-100"
+                  ><code><span
                   v-for="(token, index) in snippetTokens"
                   :key="index"
                   :style="token.color ? { color: token.color } : undefined"
                 >{{ token.text }}</span></code></pre>
-                <button
-                  type="button"
-                  data-testid="catalog-snippet-copy"
-                  class="pg-copy-btn absolute right-1.5 top-1.5 bg-gray-50 dark:bg-gray-800"
-                  :aria-label="t.host.copySnippet"
-                  @click="copyText('snippet', minimalSnippet)"
-                >
-                  <Check
-                    v-if="isCopied('snippet')"
-                    :size="14"
-                    :stroke-width="2"
-                    aria-hidden="true"
-                  />
-                  <Copy
-                    v-else
-                    :size="14"
-                    :stroke-width="1.75"
-                    aria-hidden="true"
-                  />
-                </button>
-              </div>
-              <span class="sr-only" aria-live="polite">{{
-                copied ? t.host.copied : ""
-              }}</span>
-            </figure>
-            <a
-              v-if="minimum"
-              :href="hrefFor(minimum)"
-              data-testid="scene-link-minimum"
-              data-catalog-hero
-              class="pg-cta group no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              @click="openScene($event, minimum)"
-            >
-              {{ t.host.runTheseLines }}
-              <ArrowRight
-                :size="16"
-                :stroke-width="2"
-                aria-hidden="true"
-                class="transition-transform duration-150 ease-out-expo group-hover:translate-x-0.5"
-              />
-            </a>
+                  <button
+                    type="button"
+                    data-testid="catalog-snippet-copy"
+                    class="pg-copy-btn absolute right-1.5 top-1.5 bg-gray-50 dark:bg-gray-800"
+                    :aria-label="t.host.copySnippet"
+                    @click="copyText('snippet', minimalSnippet)"
+                  >
+                    <Check
+                      v-if="isCopied('snippet')"
+                      :size="14"
+                      :stroke-width="2"
+                      aria-hidden="true"
+                    />
+                    <Copy
+                      v-else
+                      :size="14"
+                      :stroke-width="1.75"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+                <span class="sr-only" aria-live="polite">{{
+                  copied ? t.host.copied : ""
+                }}</span>
+              </figure>
+              <a
+                v-if="minimum"
+                :href="hrefFor(minimum)"
+                data-testid="scene-link-minimum"
+                data-catalog-hero
+                class="pg-cta group no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                @click="openScene($event, minimum)"
+              >
+                {{ t.host.runTheseLines }}
+                <ArrowRight
+                  :size="16"
+                  :stroke-width="2"
+                  aria-hidden="true"
+                  class="transition-transform duration-150 ease-out-expo group-hover:translate-x-0.5"
+                />
+              </a>
+            </div>
           </div>
-        </div>
-        <div class="lg:col-span-7">
-          <CatalogProofs @open="openHeroProof" />
-        </div>
-      </section>
+          <div class="lg:col-span-7">
+            <CatalogProofs @open="openHeroProof" />
+          </div>
+        </section>
+      </div>
+    </div>
 
+    <div class="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
       <section aria-labelledby="catalog-setups" class="pb-20">
         <h2 id="catalog-setups" class="sr-only">{{ t.host.setups }}</h2>
         <div class="grid gap-x-12 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
