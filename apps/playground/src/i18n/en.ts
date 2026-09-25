@@ -68,6 +68,11 @@ export default {
     snippetLabel: "Minimal setup",
     proofsLabel: "Finished examples",
     openProof: "Open {name}",
+    settings: {
+      label: "Settings",
+      theme: "Theme",
+      language: "Language",
+    },
     tour: {
       skip: "Skip tour",
       next: "Next",

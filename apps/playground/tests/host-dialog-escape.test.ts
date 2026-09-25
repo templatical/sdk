@@ -27,6 +27,7 @@ describe("host dialog Escape handlers", () => {
       "CodeDialog.vue",
       "DataSourcePicker.vue",
       "ExportModal.vue",
+      "HostKnobs.vue",
       "ShareModal.vue",
     ]);
   });

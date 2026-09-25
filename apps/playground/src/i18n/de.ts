@@ -70,6 +70,11 @@ export default {
     snippetLabel: "Minimales Setup",
     proofsLabel: "Fertige Beispiele",
     openProof: "{name} öffnen",
+    settings: {
+      label: "Einstellungen",
+      theme: "Darstellung",
+      language: "Sprache",
+    },
     tour: {
       skip: "Tour \u00fcberspringen",
       next: "Weiter",

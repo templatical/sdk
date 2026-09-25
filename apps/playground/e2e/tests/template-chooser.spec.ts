@@ -183,8 +183,8 @@ test.describe("Setup catalog", () => {
     await chooserPage.goto();
     // CodeMirror's defaultHighlightStyle keyword colour (#708).
     await expect.poll(importColor).toBe("rgb(119, 0, 136)");
-    await page.getByTestId("toolbar-theme").click(); // auto → light
-    await page.getByTestId("toolbar-theme").click(); // light → dark
+    await page.getByTestId("host-settings").click();
+    await page.getByTestId("theme-option-dark").click();
     // One Dark's keyword colour (#c678dd).
     await expect.poll(importColor).toBe("rgb(198, 120, 221)");
   });

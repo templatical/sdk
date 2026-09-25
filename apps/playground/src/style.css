@@ -128,14 +128,50 @@ textarea {
     @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
 }
 
+/* Host header: one primary action (Code), icon buttons for the secondary
+   ones, a text link for Docs. The primary is a neutral fill rather than
+   amber, because the editor toolbar right below uses amber for its active
+   states. */
+.pg-toolbar-icon-btn {
+    @apply inline-flex items-center justify-center size-8 rounded-md border border-gray-200 bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
+}
+
+.pg-toolbar-primary {
+    @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-transparent bg-gray-900 text-gray-50 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white;
+}
+
+.pg-toolbar-link {
+    @apply inline-flex items-center gap-1 h-8 px-2 rounded-md text-[13px] font-medium font-sans text-gray-600 no-underline underline-offset-4 transition-colors duration-150 hover:text-gray-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:text-gray-100;
+}
+
+.pg-settings-panel {
+    @apply absolute right-0 top-full z-[120] mt-2 w-60 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:bg-gray-800 dark:border-gray-700;
+}
+
+.pg-settings-label {
+    @apply mb-1.5 block p-0 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400;
+}
+
+.pg-theme-options {
+    @apply grid grid-cols-3 gap-1 rounded-md bg-gray-100 p-1 dark:bg-gray-900;
+}
+
+.pg-theme-option {
+    @apply flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded text-[12px] font-medium text-gray-600 transition-colors duration-150 hover:text-gray-900 has-[:checked]:bg-white has-[:checked]:text-gray-900 has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary dark:text-gray-400 dark:hover:text-gray-100 dark:has-[:checked]:bg-gray-700 dark:has-[:checked]:text-gray-100;
+}
+
 @media (pointer: coarse) {
     .pg-toolbar-btn,
+    .pg-toolbar-icon-btn,
+    .pg-toolbar-primary,
+    .pg-toolbar-link,
     .pg-cta,
     select {
         min-height: 44px;
     }
 
-    .pg-toolbar-btn {
+    .pg-toolbar-btn,
+    .pg-toolbar-icon-btn {
         min-width: 44px;
         justify-content: center;
     }

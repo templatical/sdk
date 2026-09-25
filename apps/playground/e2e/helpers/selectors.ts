@@ -24,7 +24,8 @@ export const SELECTORS = {
   configButton: '[data-testid="toolbar-config"]',
   exportButton: '[data-testid="toolbar-export"]',
   shareButton: '[data-testid="toolbar-share"]',
-  themeButton: '[data-testid="toolbar-theme"]',
+  hostSettings: '[data-testid="host-settings"]',
+  hostSettingsPanel: '[data-testid="host-settings-panel"]',
   tourButton: '[data-testid="toolbar-tour"]',
   localeSelect: '[data-testid="locale-select"]',
 
@@ -316,6 +317,10 @@ export const SELECTORS = {
 } as const;
 
 /** Dynamic selector for block by type */
+export function themeOption(theme: "auto" | "light" | "dark") {
+  return `[data-testid="theme-option-${theme}"]`;
+}
+
 export function blockByType(type: string) {
   return `[data-block-type="${type}"]`;
 }

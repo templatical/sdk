@@ -1,43 +1,112 @@
 <script setup lang="ts">
-import { Monitor, Sun, Moon } from "@lucide/vue";
+import { Monitor, Moon, Settings2, Sun } from "@lucide/vue";
+import { onClickOutside } from "@vueuse/core";
+import { nextTick, ref, useId } from "vue";
 import {
+  supportedLocales,
   usePlaygroundI18n,
   usePlaygroundTheme,
-  supportedLocales,
 } from "@/i18n";
 
 const { locale, t } = usePlaygroundI18n();
 const { theme: uiTheme } = usePlaygroundTheme();
 
-function cycleTheme(): void {
-  const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
-  uiTheme.value = cycle[uiTheme.value];
+const THEMES = [
+  { value: "auto", icon: Monitor },
+  { value: "light", icon: Sun },
+  { value: "dark", icon: Moon },
+] as const;
+
+const open = ref(false);
+const root = ref<HTMLElement | null>(null);
+const trigger = ref<HTMLButtonElement | null>(null);
+const panelId = useId();
+const localeId = useId();
+
+async function toggle(): Promise<void> {
+  open.value = !open.value;
+  if (!open.value) return;
+  await nextTick();
+  root.value
+    ?.querySelector<HTMLInputElement>('input[name="pg-theme"]:checked')
+    ?.focus();
 }
+
+function close(returnFocus: boolean): void {
+  if (!open.value) return;
+  open.value = false;
+  if (returnFocus) trigger.value?.focus();
+}
+
+onClickOutside(root, () => close(false));
 </script>
 
 <template>
-  <div class="flex items-center gap-1.5">
+  <!-- .prevent marks the Escape handled, so a layer under the menu (the
+       import paste panel) doesn't close on the same press. -->
+  <div
+    ref="root"
+    class="relative"
+    @keydown.escape.capture.prevent="close(true)"
+  >
     <button
+      ref="trigger"
       type="button"
-      class="pg-theme-btn"
-      data-testid="toolbar-theme"
-      :title="t.theme[uiTheme]"
-      :aria-label="t.a11y.selectTheme"
-      @click="cycleTheme"
+      class="pg-toolbar-icon-btn"
+      data-testid="host-settings"
+      :title="t.host.settings.label"
+      :aria-label="t.host.settings.label"
+      aria-haspopup="dialog"
+      :aria-expanded="open"
+      :aria-controls="panelId"
+      @click="toggle"
     >
-      <Monitor v-if="uiTheme === 'auto'" :size="14" aria-hidden="true" />
-      <Sun v-else-if="uiTheme === 'light'" :size="14" aria-hidden="true" />
-      <Moon v-else :size="14" aria-hidden="true" />
+      <Settings2 :size="16" :stroke-width="1.5" aria-hidden="true" />
     </button>
-    <select
-      v-model="locale"
-      data-testid="locale-select"
-      :aria-label="t.a11y.selectLanguage"
-      class="pg-locale-select"
+    <div
+      v-if="open"
+      :id="panelId"
+      role="dialog"
+      :aria-label="t.host.settings.label"
+      data-testid="host-settings-panel"
+      class="pg-settings-panel"
     >
-      <option v-for="loc in supportedLocales" :key="loc" :value="loc">
-        {{ loc.toUpperCase() }}
-      </option>
-    </select>
+      <fieldset class="m-0 border-0 p-0">
+        <legend class="pg-settings-label">
+          {{ t.host.settings.theme }}
+        </legend>
+        <div class="pg-theme-options">
+          <label
+            v-for="option in THEMES"
+            :key="option.value"
+            class="pg-theme-option"
+            :data-testid="`theme-option-${option.value}`"
+          >
+            <input
+              v-model="uiTheme"
+              type="radio"
+              name="pg-theme"
+              :value="option.value"
+              class="sr-only"
+            />
+            <component :is="option.icon" :size="14" aria-hidden="true" />
+            {{ t.theme[option.value] }}
+          </label>
+        </div>
+      </fieldset>
+      <label :for="localeId" class="pg-settings-label mt-3">
+        {{ t.host.settings.language }}
+      </label>
+      <select
+        :id="localeId"
+        v-model="locale"
+        data-testid="locale-select"
+        class="pg-select"
+      >
+        <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+          {{ loc.toUpperCase() }}
+        </option>
+      </select>
+    </div>
   </div>
 </template>

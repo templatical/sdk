@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
-import { ChevronLeft, Download, Upload } from "@lucide/vue";
+import {
+  ArrowUpRight,
+  ChevronLeft,
+  CodeXml,
+  Download,
+  Share2,
+} from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
 import CatalogRail from "@/host/CatalogRail.vue";
 import CodeDialog from "@/host/CodeDialog.vue";
@@ -156,6 +162,7 @@ onUnmounted(() => {
     <CatalogRail :current-id="scene.id" />
     <div class="flex min-w-0 flex-1 flex-col">
       <header
+        data-testid="scene-header"
         class="flex items-center justify-between h-14 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-3"
       >
         <div class="flex items-center gap-3 min-w-0">
@@ -185,48 +192,50 @@ onUnmounted(() => {
             </p>
           </div>
         </div>
-        <div class="flex items-center gap-1 shrink-0 overflow-x-auto">
+        <!-- No overflow clipping here: the settings popover hangs below. -->
+        <div class="flex items-center gap-1 shrink-0">
+          <a
+            :href="'https://docs.templatical.com' + scene.docs"
+            data-testid="toolbar-docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pg-toolbar-link"
+          >
+            {{ t.host.docs }}
+            <ArrowUpRight :size="14" :stroke-width="1.75" aria-hidden="true" />
+          </a>
+          <button
+            type="button"
+            data-testid="toolbar-share"
+            class="pg-toolbar-icon-btn"
+            :title="t.toolbar.share"
+            :aria-label="t.toolbar.share"
+            :disabled="!editor"
+            @click="shareOpen = true"
+          >
+            <Share2 :size="16" :stroke-width="1.5" aria-hidden="true" />
+          </button>
           <button
             type="button"
             data-testid="toolbar-export"
-            class="pg-toolbar-btn"
+            class="pg-toolbar-icon-btn"
             :title="t.toolbar.export"
             :aria-label="t.toolbar.export"
             :disabled="!editor"
             @click="exportOpen = true"
           >
             <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
-            <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
           </button>
-          <button
-            type="button"
-            data-testid="toolbar-share"
-            class="pg-toolbar-btn"
-            :title="t.toolbar.share"
-            :aria-label="t.toolbar.share"
-            :disabled="!editor"
-            @click="shareOpen = true"
-          >
-            <Upload :size="14" aria-hidden="true" />
-            <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
-          </button>
-          <a
-            :href="'https://docs.templatical.com' + scene.docs"
-            data-testid="toolbar-docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="pg-toolbar-btn no-underline"
-            >{{ t.host.docs }}</a
-          >
           <button
             type="button"
             data-testid="toolbar-code"
-            class="pg-toolbar-btn"
+            class="pg-toolbar-primary ml-1"
             :aria-pressed="codeOpen"
             :aria-expanded="codeOpen"
             aria-controls="code-dialog"
             @click="codeOpen = true"
           >
+            <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.code }}
           </button>
           <HostKnobs />

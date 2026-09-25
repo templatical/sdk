@@ -106,16 +106,18 @@ test.describe("Playground smoke tests", () => {
     );
   });
 
-  test("theme toggle works", async ({ chooserPage, editorPage, page }) => {
+  test("the settings menu switches the playground theme", async ({
+    chooserPage,
+    editorPage,
+    page,
+  }) => {
     await chooserPage.goto();
     await page
       .locator('[data-testid="scene-link-example-launchpad-launch"]')
       .click();
     await editorPage.waitForReady();
-    const root = page.locator("html");
-    const classBefore = await root.getAttribute("class");
-    await editorPage.clickThemeToggle();
-    // Theme should have changed — class attribute should differ
-    await expect(root).not.toHaveAttribute("class", classBefore ?? "");
+    await expect(page.locator("html")).not.toHaveClass(/(^|\s)dark(\s|$)/);
+    await editorPage.chooseTheme("dark");
+    await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
   });
 });
