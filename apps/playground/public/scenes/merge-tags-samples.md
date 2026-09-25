@@ -4,7 +4,7 @@ Preview with sample values
 
 init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.
 
-Contract: https://docs.templatical.com/guide/preview-rendering
+Contract: https://docs.templatical.com/guide/preview-rendering#sample-values
 Live: https://play.templatical.com/scenes/merge-tags-samples
 
 ## Snippet

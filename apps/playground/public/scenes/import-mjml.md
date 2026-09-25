@@ -4,7 +4,7 @@ Paste MJML source
 
 convertMjmlTemplate + init({ content }) — raw MJML source.
 
-Contract: https://docs.templatical.com/guide/migration-from-mjml
+Contract: https://docs.templatical.com/guide/migration-from-mjml#usage
 Live: https://play.templatical.com/scenes/import-mjml
 
 ## Snippet

@@ -5,8 +5,6 @@ description: Übergeben Sie eine JSON-Hülle mit einem Slot. Vorschau und Export
 
 # Layout
 
-[Im Playground öffnen](https://play.templatical.com/scenes/layout)
-
 Übergeben Sie ein JSON-Dokument mit genau einem `slot`. Vorschau und Export legen die E-Mail des Autors in diese Hülle. Speichern tut das nicht: `getContent()` ist nur die verfasste Vorlage.
 
 ```ts
@@ -203,3 +201,9 @@ Test-E-Mail: `payload.content` ist die verfasste Vorlage; MJML/HTML aus `toMjml`
 Lint läuft über den Editor-Inhalt. Die Hülle wird nicht gelintet.
 
 Ein Versandpfad, der gespeichertes JSON ohne `layout` neu rendert, lässt die Hülle weg. Übergeben Sie dasselbe `layout` an `renderToMjml` (oder rufen Sie `applyLayout` auf) auf dem Server.
+
+## Im Playground
+
+Das Setup **Layout** legt eine Kartenhülle um die E-Mail. Sie erscheint in der Vorschau und im MJML-Export, nie im gespeicherten JSON.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/layout)

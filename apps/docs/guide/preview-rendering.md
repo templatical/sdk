@@ -5,8 +5,6 @@ description: Control what the editor's preview surfaces show — labels, sample 
 
 # Preview Rendering
 
-[Open in playground](https://play.templatical.com/scenes/merge-tags-samples) — `MergeTag.sample`. [Open in playground](https://play.templatical.com/scenes/merge-tags-resolve-preview) — `resolvePreview`.
-
 A template is full of things that aren't content: <code v-pre>{{first_name}}</code>, <code v-pre>{% if plan_name == 'pro' %}</code>. The editor has to show *something* for them, and what it shows depends on how much you've told it.
 
 There are three layers, each one more realistic than the last. All of them apply **only to preview surfaces** — the editor's preview mode and the test-email dialog. The editing canvas always shows the tag you inserted, so you never edit text you didn't write.
@@ -25,7 +23,7 @@ With `mergeTags.tags` configured, a tag renders as its human-readable `label` wi
 
 This answers *"which field goes here?"*. It doesn't tell you what the email will look like.
 
-## Sample values
+## Sample values {#sample-values}
 
 Give a tag a `sample` and previews render that instead of its label:
 
@@ -37,6 +35,8 @@ mergeTags: {
   ],
 }
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples)
 
 Setting `sample` is the whole opt-in — there is no flag alongside it. See [Merge Tags](/guide/merge-tags#sample-values) for the field itself.
 
@@ -57,7 +57,7 @@ So a partly-configured template reads naturally where you've supplied data and s
 
 **Samples can't evaluate logic.** Substituting a value is not the same as taking a branch, so `{% if %}` … `{% endif %}` blocks stay visible as badges no matter how many samples you set. That ceiling is what the next layer exists for.
 
-## Resolved data with `resolvePreview`
+## Resolved data with `resolvePreview` {#resolved-data-with-resolvepreview}
 
 Pass a callback and your own backend resolves the template:
 
@@ -77,6 +77,8 @@ await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-resolve-preview)
 
 ### Why a callback rather than a built-in engine
 
@@ -192,12 +194,6 @@ None of it can double up. Resolved content reaches preview surfaces only, so wha
 ### Pull in live data
 
 Prices, stock levels, a personalised product grid. Anything the template references but doesn't store can be fetched at preview time, so the preview reflects reality rather than whatever was authored.
-
-## Playground
-
-The [playground](https://play.templatical.com) wires a fake resolver on the **Welcome Email** template only — it substitutes values and evaluates that template's `{% if plan_name == … %}` branches after a short delay, so you can watch the skeleton and see the conditional collapse to just the branch that applies.
-
-Every other template leaves it off, so they demonstrate the Sample / Label switch instead. Both templates describe which feature they're showing in their "what's on this template" panel.
 
 ## See also
 

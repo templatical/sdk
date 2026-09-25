@@ -5,8 +5,6 @@ description: Ein Template in MJML oder versandfertiges HTML verwandeln — lokal
 
 # Rendering & Export
 
-[Im Playground öffnen](https://play.templatical.com/scenes/render)
-
 Zwei Methoden auf jeder Editor-Instanz:
 
 ```ts
@@ -284,9 +282,14 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 `UNRENDERABLE_MARKER_PREFIX` ist der stabile Anfangstext des Markers — prüfen Sie darauf, bevor Sie versenden. `renderUnrenderableBlock(block)` erzeugt einen Marker und protokolliert die Warnung. Eine `blockRenderers`-Überschreibung kann damit für eine Variante, die sie nicht verarbeiten kann, genauso degradieren, anstatt `""` zurückzugeben und das stille Verschwinden wieder einzuführen.
 
+## Im Playground
+
+Das Setup **Render** führt `editor.toMjml()` im Browser aus und `toHtml()` über eine einzige `compileMjml`-Funktion.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/render)
+
 ## Referenz
 
 - [`@templatical/renderer`-API](/de/api/renderer-typescript)
 - [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies getrennt ist
 - [Custom Blocks](/de/guide/custom-blocks) — warum das Vorrendern Teil des Payloads ist
-

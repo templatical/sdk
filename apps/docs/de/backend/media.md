@@ -5,8 +5,6 @@ description: Hinterlegen Sie die Bildauswahl des Editors mit Ihrer eigenen Galer
 
 # Medien
 
-[Im Playground öffnen](https://play.templatical.com/scenes/media)
-
 Der Editor übernimmt die Auswahl: Durchsuchen an Bildfeldern, Video-Thumbnails und Bildfeldern benutzerdefinierter Blöcke, Drag-and-Drop-Upload, Zuschnitt, Ordner, Suche. **Der Speicher liegt bei Ihnen.**
 
 `onRequestMedia` ist eine eigene Schnittstelle — eine UI-Überschreibung für ein Host-Widget (Bynder, Cloudinary, ein eigenes Modal). Das ist nicht dieser Speicher. Sind beide gesetzt, hat der Callback Vorrang und das eingebaute Modal öffnet sich nie. Siehe [Bilder](/de/guide/images).
@@ -364,3 +362,9 @@ await init({ container: '#editor', media });
 ```
 
 Eine CMS-Galerie, die listet und hochlädt und sonst nichts, hat dieselbe Form wie das Berechtigungsbeispiel oben. Geteilte und vorlagenspezifische Galerien führen Sie in `list({ templateId })` zusammen.
+
+## Im Playground
+
+Das Setup **Media** übergibt einen `media`-Provider mit einer vorbefüllten Galerie im Speicher dieses Browsers: durchsuchen, per Drag-and-drop hochladen, ein Bild auswählen.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/media)

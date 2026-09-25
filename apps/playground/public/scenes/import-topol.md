@@ -4,7 +4,7 @@ Paste Topol JSON
 
 convertTopolTemplate + init({ content }) — Topol design JSON.
 
-Contract: https://docs.templatical.com/guide/migration-from-topol
+Contract: https://docs.templatical.com/guide/migration-from-topol#usage
 Live: https://play.templatical.com/scenes/import-topol
 
 ## Snippet

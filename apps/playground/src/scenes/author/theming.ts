@@ -42,7 +42,7 @@ export const theming: Scene = {
     "init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.",
   catalog: "oss",
   group: "configure",
-  docs: "/guide/theming",
+  docs: "/guide/theming#themeoverrides-config",
   content: () => setupBaseCanvas(),
   config(ctx) {
     const theme = { ...BRAND_THEME };

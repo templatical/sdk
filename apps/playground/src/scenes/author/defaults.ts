@@ -10,7 +10,7 @@ export const defaults: Scene = {
     "init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.",
   catalog: "oss",
   group: "configure",
-  docs: "/guide/defaults",
+  docs: "/guide/defaults#block-defaults",
   content: () => setupBaseCanvas(),
   config: () => ({
     blockDefaults: {

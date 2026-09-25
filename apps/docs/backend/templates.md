@@ -5,8 +5,6 @@ description: Wire the editor's save/load lifecycle to your own storage — name,
 
 # Saving & Loading Templates
 
-[Open in playground](https://play.templatical.com/scenes/templates)
-
 Give the editor somewhere to save to and it grows the chrome that goes with it: an inline-editable template name, a save button, a save-status indicator, `Cmd`/`Ctrl`+`S`, optional autosave, and a warning before the tab closes with unsaved work.
 
 The editor owns all of that. **You own persistence** — three methods against your own API.
@@ -270,10 +268,15 @@ await init({
 
 `Cmd`/`Ctrl`+`S` flushes that debounce immediately, so the keystroke still reaches you. You then own the save button, the status and the dirty prompt as well. Use `onChange` when the editor's chrome isn't what you want; use the provider when it is.
 
+## In the playground
+
+The **Templates** setup wires a `templates` provider: save, load, rename, and optional autosave.
+
+[Open in playground](https://play.templatical.com/scenes/templates)
+
 ## Reference
 
 - [`init()` options](/api/editor)
 - [Rendering & Export](/backend/render) — bring-your-own MJML/HTML rendering
 - [Saved Blocks](/backend/saved-blocks) — the same bring-your-own-storage shape, for reusable groups of blocks
 - [Test Emails](/backend/test-email) — bring-your-own sending
-

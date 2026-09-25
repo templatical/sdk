@@ -5,8 +5,6 @@ description: Wie Templatical den Editor mit Shadow DOM vom Host-Seiten-CSS isoli
 
 # Shadow DOM
 
-[Im Playground öffnen](https://play.templatical.com/scenes/shadow-dom-off)
-
 Templatical wird standardmäßig innerhalb eines [Shadow DOM](https://developer.mozilla.org/de/docs/Web/API/Web_components/Using_shadow_DOM) eingebunden. Die Shadow-Grenze isoliert die Chrome-, Canvas- und Rich-Text-Inhalte des Editors vom CSS Ihrer Host-Seite — selbst globale Resets wie `* { color: red !important }` können sie nicht überschreiben.
 
 Diese Seite ist die kanonische Referenz für das Isolationsmodell. Wenn Sie den Editor nur stylen möchten, springen Sie zum [Theming-Leitfaden](./theming).
@@ -94,7 +92,7 @@ Setzen Sie die Variablen auf dem Container, den Sie an `init()` übergeben (oder
 
 Siehe den [Theming-Leitfaden](./theming) für die vollständige Token-Liste und die Dark-Mode-Behandlung.
 
-## Opt-out: `shadowDom: false`
+## Opt-out: `shadowDom: false` {#opt-out-shadowdom-false}
 
 Wann Sie sich abmelden würden:
 
@@ -108,6 +106,8 @@ const editor = await init({
   shadowDom: false,
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/shadow-dom-off)
 
 Was Sie verlieren:
 

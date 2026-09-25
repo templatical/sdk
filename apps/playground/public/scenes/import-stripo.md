@@ -4,7 +4,7 @@ Paste Stripo HTML
 
 convertStripoTemplate + init({ content }) — Stripo HTML or { html, css }.
 
-Contract: https://docs.templatical.com/guide/migration-from-stripo
+Contract: https://docs.templatical.com/guide/migration-from-stripo#usage
 Live: https://play.templatical.com/scenes/import-stripo
 
 ## Snippet

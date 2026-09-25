@@ -5,8 +5,6 @@ description: Conditional block visibility using display conditions in Templatica
 
 # Display Conditions
 
-[Open in playground](https://play.templatical.com/scenes/display-conditions)
-
 Display conditions allow users to change block visibility based on conditions. When a condition is applied to a block, the renderer wraps its output in the conditional syntax you define (e.g., Liquid `{% if %}` / `{% endif %}`). The conditions pass through unchanged — your sending platform or templating engine should render them before sending.
 
 ## Configuration
@@ -158,3 +156,9 @@ Two ways, and they answer different questions:
 - **[Preview Rendering](/guide/preview-rendering)** — wire `resolvePreview` and each variation renders in the editor, without sending anything. Fastest loop while authoring, and the only one that shows a variation for a recipient you can't mail.
 - **[Test emails](/backend/test-email)** — send to different recipient profiles and confirm each renders in a real inbox. Slower, but it exercises your platform's own evaluation and the mail client, which no preview can.
   :::
+
+## In the playground
+
+The **Display conditions** setup passes `displayConditions`, so any block can be shown or hidden per recipient.
+
+[Open in playground](https://play.templatical.com/scenes/display-conditions)

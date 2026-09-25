@@ -58,3 +58,48 @@
     transform: none;
     border-radius: 10px;
 }
+
+/*
+ * A playground link alone in its paragraph reads as a quiet pill: neutral
+ * label, amber play mark. The markdown stays a plain link, so agents reading
+ * llms-full.txt still get the URL; inline mentions keep the normal link style.
+ */
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px 5px 12px;
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 999px;
+    background-color: var(--vp-c-bg-soft);
+    color: var(--vp-c-text-1);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-decoration: none;
+    transition:
+        border-color 0.2s,
+        background-color 0.2s;
+}
+
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child::before {
+    content: "";
+    width: 8px;
+    height: 10px;
+    background-color: var(--vp-c-brand-1);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10'%3E%3Cpath d='M0 1.2v7.6a1 1 0 0 0 1.5.86l6-3.8a1 1 0 0 0 0-1.72l-6-3.8A1 1 0 0 0 0 1.2z'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10'%3E%3Cpath d='M0 1.2v7.6a1 1 0 0 0 1.5.86l6-3.8a1 1 0 0 0 0-1.72l-6-3.8A1 1 0 0 0 0 1.2z'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+}
+
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:hover {
+    border-color: var(--vp-c-brand-1);
+    background-color: var(--vp-c-brand-soft);
+    color: var(--vp-c-text-1);
+}
+
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:focus-visible {
+    outline: 2px solid var(--vp-c-brand-1);
+    outline-offset: 2px;
+}

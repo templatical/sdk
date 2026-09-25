@@ -6,7 +6,7 @@ export const importEasyEmailPro = makeImportScene({
   job: "Paste Easy Email Pro JSON",
   summary:
     "convertEasyEmailProTemplate + init({ content }) — persist { subject, content } page.",
-  docs: "/guide/migration-from-easy-email-pro",
+  docs: "/guide/migration-from-easy-email-pro#usage",
   pkg: "@templatical/import-easy-email-pro",
   convertFn: "convertEasyEmailProTemplate",
   sourceExpr: "emailTemplate",

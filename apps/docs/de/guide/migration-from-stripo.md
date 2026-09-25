@@ -5,8 +5,6 @@ description: Stripo-E-Mail-Templates mit @templatical/import-stripo in das Templ
 
 # Migration von Stripo
 
-[Im Playground öffnen](https://play.templatical.com/scenes/import-stripo)
-
 Diese Anleitung richtet sich an Teams, die E-Mail-Templates in [Stripo](https://stripo.email) erstellt haben — im gehosteten Editor oder über ein Produkt, das das Stripo-Plugin einbettet — und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-stripo`** konvertiert Stripo-HTML in Templaticals `TemplateContent`-Format. Installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
 Stripo speichert zwei verschiedene HTML-Oberflächen. Der Konverter erkennt selbst, welche Sie übergeben. Es gibt kein Mode-Flag.
@@ -49,7 +47,7 @@ bun add @templatical/import-stripo
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertStripoTemplate } from '@templatical/import-stripo';
@@ -67,6 +65,8 @@ const editor = await init({
   content: compiled.content,
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-stripo)
 
 `convertStripoTemplate` ist synchron und gibt ein `ImportResult` zurück mit:
 

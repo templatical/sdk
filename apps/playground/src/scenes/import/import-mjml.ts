@@ -5,7 +5,7 @@ export const importMjml = makeImportScene({
   title: "MJML",
   job: "Paste MJML source",
   summary: "convertMjmlTemplate + init({ content }) — raw MJML source.",
-  docs: "/guide/migration-from-mjml",
+  docs: "/guide/migration-from-mjml#usage",
   pkg: "@templatical/import-mjml",
   convertFn: "convertMjmlTemplate",
   sourceExpr: "mjml",

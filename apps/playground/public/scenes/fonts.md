@@ -4,7 +4,7 @@ Limit the type menu
 
 init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.
 
-Contract: https://docs.templatical.com/guide/fonts
+Contract: https://docs.templatical.com/guide/fonts#restricting-the-built-in-fonts
 Live: https://play.templatical.com/scenes/fonts
 
 ## Snippet

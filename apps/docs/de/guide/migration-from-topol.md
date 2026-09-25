@@ -5,8 +5,6 @@ description: Topol.io-E-Mail-Templates mit @templatical/import-topol in das Temp
 
 # Migration von Topol
 
-[Im Playground öffnen](https://play.templatical.com/scenes/import-topol)
-
 Diese Anleitung richtet sich an Teams, die E-Mail-Templates im Drag-and-Drop-Editor von [Topol.io](https://topol.io) erstellt haben — direkt, oder über ein Produkt, das ihn einbettet — und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-topol`** konvertiert ein Topol-Design direkt in Templaticals `TemplateContent`-Format — installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
 ## Installation
@@ -42,7 +40,7 @@ Sie können es auch von einem CDN laden:
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertTopolTemplate } from '@templatical/import-topol';
@@ -65,6 +63,8 @@ const editor = await init({
 // Konvertierungsbericht auf Auffälligkeiten prüfen
 console.log(report);
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-topol)
 
 `convertTopolTemplate` arbeitet synchron und gibt ein `ImportResult` zurück mit:
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor

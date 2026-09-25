@@ -4,7 +4,7 @@ Paste Unlayer JSON
 
 convertUnlayerTemplate + init({ content }) — Unlayer saveDesign JSON.
 
-Contract: https://docs.templatical.com/guide/migration-from-unlayer
+Contract: https://docs.templatical.com/guide/migration-from-unlayer#usage
 Live: https://play.templatical.com/scenes/import-unlayer
 
 ## Snippet

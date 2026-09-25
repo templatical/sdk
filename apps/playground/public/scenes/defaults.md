@@ -4,7 +4,7 @@ New blocks stay on-brand
 
 init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.
 
-Contract: https://docs.templatical.com/guide/defaults
+Contract: https://docs.templatical.com/guide/defaults#block-defaults
 Live: https://play.templatical.com/scenes/defaults
 
 ## Snippet

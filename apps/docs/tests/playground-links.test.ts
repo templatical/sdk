@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Docs ↔ playground: every play.templatical.com/scenes/<id> in OSS docs is a
- * registry id. Scene ids are read from quoted `id: "…"` fields under
+ * registry id, and every scene is linked from the place its own Docs button
+ * opens. Scene ids are read from quoted `id: "…"` fields under
  * apps/playground/src/scenes (kebab-case only, so snippet `id: "u_7"` is not
- * a scene). No runtime import of the playground package.
+ * a scene), each paired with the `docs: "…"` that follows it. No runtime
+ * import of the playground package.
  */
 
 const DOCS = join(import.meta.dirname, "..");
@@ -24,6 +26,8 @@ const SKIP_DIRS = new Set([
 ]);
 
 const SCENE_ID = /\bid:\s*"([a-z0-9]+(?:-[a-z0-9]+)*)"/g;
+const FIELD = /\b(id|docs):\s*"([^"]+)"/g;
+const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PLAY_SCENE =
   /https:\/\/play\.templatical\.com\/scenes\/([a-z0-9]+(?:-[a-z0-9]+)*)/g;
 
@@ -90,6 +94,87 @@ function sceneIds(): Set<string> {
   return ids;
 }
 
+/** Scene id → its docs target (`/guide/fonts#restricting-the-built-in-fonts`). */
+function sceneDocs(): Map<string, string> {
+  const docs = new Map<string, string>();
+  for (const abs of walkFiles(SCENES_DIR)) {
+    if (!abs.endsWith(".ts")) continue;
+    let id: string | undefined;
+    for (const m of readFileSync(abs, "utf8").matchAll(FIELD)) {
+      if (m[1] === "id") {
+        id = KEBAB.test(m[2]!) ? m[2] : undefined;
+      } else if (id) {
+        docs.set(id, m[2]!);
+        id = undefined;
+      }
+    }
+  }
+  return docs;
+}
+
+interface Heading {
+  line: number;
+  level: number;
+  text: string;
+  id?: string;
+}
+
+/** Headings outside fenced code, with any explicit `{#id}`. */
+function headingsOf(src: string): Heading[] {
+  const found: Heading[] = [];
+  let fenced = false;
+  src.split("\n").forEach((raw, line) => {
+    if (/^\s*(```|~~~)/.test(raw)) {
+      fenced = !fenced;
+      return;
+    }
+    const m = fenced ? null : /^(#{1,6})\s+(.*?)\s*$/.exec(raw);
+    if (!m) return;
+    const id = /\{#([\w-]+)\}$/.exec(m[2]!)?.[1];
+    found.push({
+      line,
+      level: m[1]!.length,
+      text: m[2]!.replace(/\s*\{#[\w-]+\}$/, ""),
+      id,
+    });
+  });
+  return found;
+}
+
+/** Lines a heading's section covers, up to the next heading at its level. */
+function sectionLines(src: string, heading: Heading): [number, number] {
+  const next = headingsOf(src).find(
+    (other) => other.line > heading.line && other.level <= heading.level,
+  );
+  return [heading.line, next ? next.line : src.split("\n").length];
+}
+
+/** Lines holding a link to this scene (and not to one whose id extends it). */
+function linkLines(src: string, id: string): number[] {
+  const link = new RegExp(`play\\.templatical\\.com/scenes/${id}(?![a-z0-9-])`);
+  return src.split("\n").flatMap((raw, line) => (link.test(raw) ? [line] : []));
+}
+
+function pageFor(docs: string, locale: "en" | "de"): string {
+  const path = docs.split("#")[0]!.replace(/^\//, "");
+  const rel = path.endsWith("/") ? `${path}index.md` : `${path}.md`;
+  return locale === "de" ? `de/${rel}` : rel;
+}
+
+/** The closing section for a scene that covers its whole page. */
+const PLAYGROUND_SECTION = { en: "In the playground", de: "Im Playground" };
+/** Closing link lists, which "In the playground" sits above. */
+const LINK_LISTS = {
+  en: ["See also", "Reference"],
+  de: ["Siehe auch", "Referenz"],
+};
+
+/** Sections that link a scene besides the one its Docs button opens. */
+const EXTRA_LINKS = [
+  ["guide/merge-tags.md", "sample-values", "merge-tags-samples"],
+  ["guide/merge-tags.md", "logic-tag-highlighting", "logic-tags"],
+] as const;
+
 function playgroundIdsIn(src: string): string[] {
   return [...src.matchAll(PLAY_SCENE)].map((m) => m[1]!);
 }
@@ -118,6 +203,90 @@ describe("docs playground links", () => {
       }
     }
     expect(unknown).toEqual([]);
+  });
+
+  it("pairs every scene with its docs target", () => {
+    const docs = sceneDocs();
+    expect(docs.get("minimum")).toBe(
+      "/getting-started/quick-start#mount-the-editor",
+    );
+    expect(docs.get("templates")).toBe("/backend/templates");
+    expect(docs.get("import-mjml")).toBe("/guide/migration-from-mjml#usage");
+    expect(docs.get("example-sable-order")).toBe("/guide/examples#sable-order");
+    for (const id of ids) {
+      if (id.startsWith("example-") || id.startsWith("import-")) {
+        expect(docs.has(id), id).toBe(true);
+      }
+    }
+  });
+
+  it("links every scene from the section its Docs button opens", () => {
+    // A scene that shows one section deep-links to it; one that covers the
+    // whole page is linked from the page's closing "In the playground".
+    const misplaced: string[] = [];
+    for (const [id, docs] of sceneDocs()) {
+      const anchor = docs.split("#")[1];
+      for (const locale of ["en", "de"] as const) {
+        const rel = pageFor(docs, locale);
+        const src = readDocs(rel);
+        const heads = headingsOf(src);
+        const home = anchor
+          ? heads.find((h) => h.id === anchor)
+          : heads.find(
+              (h) => h.level === 2 && h.text === PLAYGROUND_SECTION[locale],
+            );
+        if (!home) {
+          misplaced.push(
+            `${rel}: no ${anchor ? `{#${anchor}}` : PLAYGROUND_SECTION[locale]} for ${id}`,
+          );
+          continue;
+        }
+        const [start, end] = sectionLines(src, home);
+        if (!linkLines(src, id).some((line) => line > start && line < end)) {
+          misplaced.push(`${rel}: ${id} is not linked under "${home.text}"`);
+        }
+        const seeAlso = heads.find(
+          (h) => h.level === 2 && LINK_LISTS[locale].includes(h.text),
+        );
+        if (!anchor && seeAlso && seeAlso.line < home.line) {
+          misplaced.push(
+            `${rel}: "${home.text}" comes after "${seeAlso.text}"`,
+          );
+        }
+      }
+    }
+    expect(misplaced).toEqual([]);
+  });
+
+  it("links other sections that show a scene, in both languages", () => {
+    const missing: string[] = [];
+    for (const [page, anchor, id] of EXTRA_LINKS) {
+      for (const rel of [page, `de/${page}`]) {
+        const src = readDocs(rel);
+        const home = headingsOf(src).find((h) => h.id === anchor);
+        const [start, end] = home ? sectionLines(src, home) : [0, 0];
+        if (!linkLines(src, id).some((line) => line > start && line < end)) {
+          missing.push(`${rel}#${anchor}: ${id}`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("never links a scene above a page's first section", () => {
+    // The title's own line is where these links used to sit, all of them.
+    const early: string[] = [];
+    for (const rel of pages) {
+      const src = readDocs(rel);
+      const first = headingsOf(src).find((h) => h.level === 2);
+      const cutoff = first ? first.line : Infinity;
+      for (const id of playgroundIdsIn(src)) {
+        if (linkLines(src, id).some((line) => line < cutoff)) {
+          early.push(`${rel}: ${id}`);
+        }
+      }
+    }
+    expect([...new Set(early)]).toEqual([]);
   });
 
   it("author-features Playground column matches the registry rows", () => {

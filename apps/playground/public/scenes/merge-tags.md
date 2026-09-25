@@ -4,7 +4,7 @@ Insert a field from the list
 
 init({ mergeTags }) — static tags, built-in picker, no onRequest.
 
-Contract: https://docs.templatical.com/guide/merge-tags
+Contract: https://docs.templatical.com/guide/merge-tags#configuration
 Live: https://play.templatical.com/scenes/merge-tags
 
 ## Snippet

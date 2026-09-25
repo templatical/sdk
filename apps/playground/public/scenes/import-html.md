@@ -4,7 +4,7 @@ Paste table-based HTML
 
 convertHtmlTemplate + init({ content }) — table-based email HTML.
 
-Contract: https://docs.templatical.com/guide/migration-from-html
+Contract: https://docs.templatical.com/guide/migration-from-html#usage
 Live: https://play.templatical.com/scenes/import-html
 
 ## Snippet

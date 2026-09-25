@@ -5,8 +5,6 @@ description: Ein Review-Gespräch mit Threads an einer Vorlage — über Ihren e
 
 # Kommentare
 
-[Im Playground öffnen](https://play.templatical.com/scenes/comments)
-
 Geben Sie dem Editor einen Ort, an dem er Kommentare lesen und schreiben kann, und er erhält ein Review-Panel: Threads mit Antworten, Anker an einzelnen Blöcken, Lösen und Wiedereröffnen sowie eine Zähler-Markierung an jedem kommentierten Block im Canvas.
 
 ```ts
@@ -264,3 +262,8 @@ useCommentListener({
 });
 ```
 
+## Im Playground
+
+Das Setup **Comments** ergänzt einen `comments`-Provider und einen `user`, sodass Blöcke Review-Threads tragen.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/comments)

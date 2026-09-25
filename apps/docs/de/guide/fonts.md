@@ -5,8 +5,6 @@ description: Konfigurieren Sie benutzerdefinierte Schriftarten für die Schrifta
 
 # Benutzerdefinierte Schriftarten
 
-[Im Playground öffnen](https://play.templatical.com/scenes/fonts)
-
 Standardmäßig enthält der Editor eine Reihe gängiger websicherer Schriftarten (Arial, Georgia, Verdana usw.) in der Schriftauswahl. Sie können diese Liste mit Ihren eigenen Schriftarten erweitern — beispielsweise durch das Laden benutzerdefinierter Schriftarten von Google Fonts oder Ihrem eigenen CDN. Wenn eine benutzerdefinierte Schriftart verwendet wird, wird sie automatisch als `<mj-font>`-Deklaration in der gerenderten MJML-Ausgabe aufgenommen.
 
 Konfigurieren Sie, welche Schriftarten verfügbar sind, über die Option `fonts`:
@@ -44,7 +42,7 @@ const editor = await init({
 | `defaultFont` | `string` | Schriftartname, der in neuen Templates standardmäßig ausgewählt ist |
 | `defaultFallback` | `string` | Fallback-Stack, der verwendet wird, wenn eine benutzerdefinierte Schriftart nicht verfügbar ist |
 | `customFonts` | `CustomFont[]` | Liste benutzerdefinierter Schriftarten, die registriert werden sollen |
-| `builtIns` | `boolean \| string[]` | Schränkt ein, welche integrierten Schriftarten in der Auswahl erscheinen (siehe [unten](#integrierte-schriftarten-einschraenken)) |
+| `builtIns` | `boolean \| string[]` | Schränkt ein, welche integrierten Schriftarten in der Auswahl erscheinen (siehe [unten](#restricting-the-built-in-fonts)) |
 
 ## CustomFont
 
@@ -56,7 +54,7 @@ const editor = await init({
 
 Benutzerdefinierte Schriftarten werden automatisch als `<mj-font>`-Deklarationen in der gerenderten MJML-Ausgabe eingefügt.
 
-## Integrierte Schriftarten einschränken {#integrierte-schriftarten-einschraenken}
+## Integrierte Schriftarten einschränken {#restricting-the-built-in-fonts}
 
 Standardmäßig bietet die Auswahl alle sieben integrierten websicheren Schriftarten (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) zusammen mit Ihren `customFonts` an. Verwenden Sie `builtIns`, um diese Liste einzugrenzen — nützlich, wenn Sie den Editor als White-Label- / Brand-Kit-Werkzeug einbetten und möchten, dass Autoren bei genehmigten Schriftarten bleiben.
 
@@ -71,6 +69,8 @@ const fonts: FontsConfig = {
   ],
 };
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/fonts)
 
 - `true` oder weggelassen — alle sieben integrierten Schriftarten werden angeboten (Standard).
 - `false` — keine integrierten Schriftarten; die Auswahl listet nur Ihre `customFonts`.

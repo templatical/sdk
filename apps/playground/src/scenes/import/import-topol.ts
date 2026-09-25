@@ -5,7 +5,7 @@ export const importTopol = makeImportScene({
   title: "Topol",
   job: "Paste Topol JSON",
   summary: "convertTopolTemplate + init({ content }) — Topol design JSON.",
-  docs: "/guide/migration-from-topol",
+  docs: "/guide/migration-from-topol#usage",
   pkg: "@templatical/import-topol",
   convertFn: "convertTopolTemplate",
   sourceExpr: "design",

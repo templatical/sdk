@@ -5,8 +5,6 @@ description: Back the editor's image picker with your own gallery, DAM or CMS â€
 
 # Media
 
-[Open in playground](https://play.templatical.com/scenes/media)
-
 The editor owns the picker: Browse on image fields, video thumbnails and custom-block image fields, drag-and-drop upload, crop, folders, search. **You own storage.**
 
 `onRequestMedia` is a separate seam â€” a UI override for a host widget (Bynder, Cloudinary, a modal of your own). It is not this store. When both are set, the callback wins and the built-in modal never opens. See [Images](/guide/images).
@@ -364,3 +362,9 @@ await init({ container: '#editor', media });
 ```
 
 A CMS gallery that lists and uploads, and nothing else, is the same shape as the permissions example above. Shared and per-template galleries merge inside `list({ templateId })`.
+
+## In the playground
+
+The **Media** setup passes a `media` provider with a seeded gallery in this browser's storage: browse, drop a file to upload, pick an image.
+
+[Open in playground](https://play.templatical.com/scenes/media)

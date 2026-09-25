@@ -14,7 +14,7 @@ export const mergeTagsOnRequest: Scene = {
     "init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.",
   catalog: "oss",
   group: "personalization",
-  docs: "/guide/merge-tags",
+  docs: "/guide/merge-tags#dynamic-tag-loading",
   content: () => paragraphCanvas(),
   config: () => ({
     mergeTags: {

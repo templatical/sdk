@@ -5,8 +5,6 @@ description: Pass a JSON shell with one slot. Preview and export wrap the author
 
 # Layout
 
-[Open in playground](https://play.templatical.com/scenes/layout)
-
 Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell. Save does not: `getContent()` is the authored template only.
 
 ```ts
@@ -203,3 +201,9 @@ Test email: `payload.content` is the authored template; MJML/HTML from `toMjml` 
 Lint runs on editor content. The shell is not linted.
 
 A send path that re-renders from stored JSON without `layout` will drop the shell. Pass the same `layout` to `renderToMjml` (or call `applyLayout`) on the server.
+
+## In the playground
+
+The **Layout** setup wraps the email in a card shell, which shows in preview and in the MJML export and never in the saved JSON.
+
+[Open in playground](https://play.templatical.com/scenes/layout)

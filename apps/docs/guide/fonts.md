@@ -5,8 +5,6 @@ description: Configure custom fonts for the email editor's font picker.
 
 # Custom Fonts
 
-[Open in playground](https://play.templatical.com/scenes/fonts)
-
 By default, the editor includes a set of common web-safe fonts (Arial, Georgia, Verdana, etc.) in the font picker. You can extend this list with your own fonts — for example, loading custom typefaces from Google Fonts or your own CDN. When a custom font is used, it's automatically included as an `<mj-font>` declaration in the rendered MJML output.
 
 Configure which fonts are available using the `fonts` option:
@@ -56,7 +54,7 @@ const editor = await init({
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
 
-## Restricting the built-in fonts
+## Restricting the built-in fonts {#restricting-the-built-in-fonts}
 
 By default the picker offers all seven built-in web-safe fonts (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) alongside your `customFonts`. Use `builtIns` to narrow that list — useful when you embed the editor as a white-label / brand-kit tool and want authors to stay on approved typefaces.
 
@@ -71,6 +69,8 @@ const fonts: FontsConfig = {
   ],
 };
 ```
+
+[Open in playground](https://play.templatical.com/scenes/fonts)
 
 - `true` or omitted — all seven built-ins are offered (the default).
 - `false` — no built-ins; the picker lists only your `customFonts`.

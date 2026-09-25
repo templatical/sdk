@@ -9,7 +9,7 @@ export const i18n: Scene = {
   summary: 'init({ locale: "de" }) — German editor chrome and block defaults.',
   catalog: "oss",
   group: "configure",
-  docs: "/guide/i18n",
+  docs: "/guide/i18n#setting-the-locale",
   content: (ctx) => emptyCanvas(ctx.search.get("locale") ?? "de"),
   config(ctx) {
     return { locale: ctx.search.get("locale") ?? "de" };

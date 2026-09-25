@@ -1,7 +1,5 @@
 # Qualität
 
-[Im Playground öffnen](https://play.templatical.com/scenes/issues)
-
 `@templatical/quality` ist das Dachpaket für die Template-Qualitäts-Werkzeuge von Templatical — deterministische, ausschließlich JSON-basierte Linter, die Autorenfehler im Editor und in Headless- / CI-Prüfungen erkennen. MIT-lizenziert, ESM, kein Vue, kein DOM.
 
 ## Linter
@@ -81,7 +79,7 @@ Das Paket ist ein **optionaler Peer** von `@templatical/editor`. Installieren Si
 Wenn Sie Templatical per CDN laden, gibt es nichts zu installieren. Das Editor-CDN-Bundle liefert `@templatical/quality` als separat ausgelagerten Code-Split-Chunk aus, der automatisch nachgeladen wird, sobald Linting aktiv ist.
 :::
 
-## Editor anbinden
+## Editor anbinden {#wire-into-the-editor}
 
 Übergeben Sie `lint` an `init()` oder `initCloud()`:
 
@@ -109,6 +107,8 @@ const editor = init({
   },
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/issues)
 
 Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
 

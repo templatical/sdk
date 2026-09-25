@@ -10,7 +10,7 @@ export const mergeTagsSamples: Scene = {
     "init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.",
   catalog: "oss",
   group: "personalization",
-  docs: "/guide/preview-rendering",
+  docs: "/guide/preview-rendering#sample-values",
   content: () => samplesCanvas(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: AUTHOR_MERGE_TAGS },

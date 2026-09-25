@@ -15,7 +15,7 @@ export const mergeTagsResolvePreview: Scene = {
     "init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.",
   catalog: "oss",
   group: "personalization",
-  docs: "/guide/preview-rendering",
+  docs: "/guide/preview-rendering#resolved-data-with-resolvepreview",
   content: () => resolvePreviewCanvas(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: AUTHOR_MERGE_TAGS },

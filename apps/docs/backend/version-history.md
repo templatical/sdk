@@ -5,8 +5,6 @@ description: Browse, preview and restore a template's past versions — over you
 
 # Version History
 
-[Open in playground](https://play.templatical.com/scenes/version-history)
-
 Give the editor a place to read versions from and it grows a history control in the header: step back through past states, preview one on the canvas, and restore it.
 
 ```ts
@@ -199,3 +197,8 @@ await history.resolveContent(v);             // the hint, or get(), cached
 await history.restore(v.id);
 ```
 
+## In the playground
+
+The **Version history** setup adds a `versionHistory` provider next to `templates`, so past saves can be browsed, previewed and restored.
+
+[Open in playground](https://play.templatical.com/scenes/version-history)

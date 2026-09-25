@@ -5,8 +5,6 @@ description: A threaded review conversation on a template — over your own stor
 
 # Comments
 
-[Open in playground](https://play.templatical.com/scenes/comments)
-
 Give the editor a place to read and write comments from and it grows a review panel: threads with replies, per-block anchors, resolve and reopen, and a count badge on every commented block in the canvas.
 
 ```ts
@@ -264,3 +262,8 @@ useCommentListener({
 });
 ```
 
+## In the playground
+
+The **Comments** setup adds a `comments` provider and a `user`, so blocks carry threaded review notes.
+
+[Open in playground](https://play.templatical.com/scenes/comments)

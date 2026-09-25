@@ -5,8 +5,6 @@ description: Let users save reusable groups of blocks and insert them into other
 
 # Saved Blocks
 
-[Open in playground](https://play.templatical.com/scenes/saved-blocks)
-
 Saved blocks let your users capture a group of blocks — a header, a footer, a product grid, a CTA — and re-insert it into any other template.
 
 The editor owns the experience: a save action on every block, a searchable browser with live preview, insert-at-position, rename and delete. **You own storage.**
@@ -262,3 +260,8 @@ It keeps the list in sync after each successful call — prepending on create, r
 
 Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a withheld mutation — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.
 
+## In the playground
+
+The **Saved blocks** setup keeps a library in this browser's storage: save a group of blocks, then insert, rename or delete it.
+
+[Open in playground](https://play.templatical.com/scenes/saved-blocks)

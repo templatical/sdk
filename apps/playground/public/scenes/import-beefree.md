@@ -4,7 +4,7 @@ Paste BeeFree JSON
 
 convertBeeFreeTemplate + init({ content }) — BeeFree page.rows JSON.
 
-Contract: https://docs.templatical.com/guide/migration-from-beefree
+Contract: https://docs.templatical.com/guide/migration-from-beefree#usage
 Live: https://play.templatical.com/scenes/import-beefree
 
 ## Snippet

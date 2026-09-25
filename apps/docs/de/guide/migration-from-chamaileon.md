@@ -5,8 +5,6 @@ description: Chamaileon-E-Mail-Templates mit @templatical/import-chamaileon in d
 
 # Migration von Chamaileon
 
-[Im Playground öffnen](https://play.templatical.com/scenes/import-chamaileon)
-
 Diese Anleitung richtet sich an Teams, die E-Mail-Templates in [Chamaileon](https://chamaileon.io) erstellt haben — im gehosteten Editor oder über ein Produkt, das das SDK einbettet — und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-chamaileon`** konvertiert ein Chamaileon-Persist-Dokument in Templaticals `TemplateContent`-Format. Installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
 Die Eingabe ist `editorInstance.methods.getDocument()`, nicht `getEmailHtml()` / der HTML-Generator.
@@ -44,7 +42,7 @@ Sie können es auch von einem CDN laden:
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertChamaileonTemplate } from '@templatical/import-chamaileon';
@@ -60,6 +58,8 @@ const editor = await init({
 
 console.log(report);
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-chamaileon)
 
 `convertChamaileonTemplate` arbeitet synchron und gibt ein `ImportResult` zurück mit:
 

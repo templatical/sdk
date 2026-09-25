@@ -6,7 +6,7 @@ export const importStripo = makeImportScene({
   job: "Paste Stripo HTML",
   summary:
     "convertStripoTemplate + init({ content }) — Stripo HTML or { html, css }.",
-  docs: "/guide/migration-from-stripo",
+  docs: "/guide/migration-from-stripo#usage",
   pkg: "@templatical/import-stripo",
   convertFn: "convertStripoTemplate",
   sourceExpr: "html",

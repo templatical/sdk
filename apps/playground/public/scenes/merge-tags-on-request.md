@@ -4,7 +4,7 @@ Pick fields from your app
 
 init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.
 
-Contract: https://docs.templatical.com/guide/merge-tags
+Contract: https://docs.templatical.com/guide/merge-tags#dynamic-tag-loading
 Live: https://play.templatical.com/scenes/merge-tags-on-request
 
 ## Snippet

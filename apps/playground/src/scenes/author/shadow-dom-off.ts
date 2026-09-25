@@ -10,7 +10,7 @@ export const shadowDomOff: Scene = {
     "init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.",
   catalog: "oss",
   group: "configure",
-  docs: "/guide/shadow-dom",
+  docs: "/guide/shadow-dom#opt-out-shadowdom-false",
   content: () => setupBaseCanvas(),
   config: () => ({
     shadowDom: false,

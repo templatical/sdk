@@ -5,11 +5,9 @@ description: Passen Sie Standardeigenschaften für neu erstellte Blöcke und Tem
 
 # Block- & Template-Standardwerte
 
-[Im Playground öffnen](https://play.templatical.com/scenes/defaults)
-
 Blockeigenschaften (Farben, Schriftgrößen, Padding, Platzhaltertexte usw.) sind in Factory-Funktionen fest einprogrammiert. Mit `blockDefaults` und `templateDefaults` können Sie diese überschreiben, sodass jeder neue Block und jedes neue Template standardmäßig zu Ihrer Marke passt.
 
-## Block-Standardwerte
+## Block-Standardwerte {#block-defaults}
 
 Übergeben Sie ein `blockDefaults`-Objekt an `init()`. Jeder Schlüssel wird einem Blocktyp zugeordnet und akzeptiert eine partielle Überschreibung der Eigenschaften dieses Blocks:
 
@@ -31,6 +29,8 @@ const editor = await init({
   },
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/defaults)
 
 Standardwerte werden angewendet bei:
 - Ziehen eines Blocks aus der Seitenleiste

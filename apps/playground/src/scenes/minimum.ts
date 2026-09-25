@@ -8,7 +8,7 @@ export const minimum: Scene = {
   summary: "init({ container }) — empty canvas, no providers.",
   catalog: "oss",
   group: "minimum",
-  docs: "/getting-started/quick-start",
+  docs: "/getting-started/quick-start#mount-the-editor",
   content: () => createDefaultTemplateContent(),
   config: () => ({}),
   snippet: `import { init } from "@templatical/editor";

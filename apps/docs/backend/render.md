@@ -5,8 +5,6 @@ description: Turn a template into MJML or sending-ready HTML — locally, on you
 
 # Rendering & Export
 
-[Open in playground](https://play.templatical.com/scenes/render)
-
 Two methods on every editor instance:
 
 ```ts
@@ -284,9 +282,14 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 `UNRENDERABLE_MARKER_PREFIX` is the marker's stable leading text — scan for it before shipping. `renderUnrenderableBlock(block)` emits one and logs the warning, so a `blockRenderers` override can degrade the same way for a variant it cannot handle, instead of returning `""` and reintroducing a silent drop.
 
+## In the playground
+
+The **Render** setup runs `editor.toMjml()` in the browser and `toHtml()` through one `compileMjml` function.
+
+[Open in playground](https://play.templatical.com/scenes/render)
+
 ## Reference
 
 - [`@templatical/renderer` API](/api/renderer-typescript)
 - [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
-

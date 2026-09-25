@@ -9,7 +9,7 @@ export const mergeTags: Scene = {
   summary: "init({ mergeTags }) — static tags, built-in picker, no onRequest.",
   catalog: "oss",
   group: "personalization",
-  docs: "/guide/merge-tags",
+  docs: "/guide/merge-tags#configuration",
   content: () => paragraphCanvas(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: AUTHOR_MERGE_TAGS },

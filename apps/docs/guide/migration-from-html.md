@@ -5,8 +5,6 @@ description: Convert HTML email templates to Templatical format using @templatic
 
 # Migration from HTML
 
-[Open in playground](https://play.templatical.com/scenes/import-html)
-
 The `@templatical/import-html` package converts HTML email templates into Templatical's `TemplateContent` format. It's designed for the table-based HTML that real marketing emails actually ship — output of MJML, Mailchimp/SendGrid/Campaign Monitor exports, hand-coded campaigns.
 
 ::: warning
@@ -46,7 +44,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertHtmlTemplate } from '@templatical/import-html';
@@ -67,6 +65,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-html)
 
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor

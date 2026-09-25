@@ -35,6 +35,12 @@ export interface Scene {
   summary: string;
   catalog: SceneCatalog;
   group: SceneGroup;
+  /**
+   * The docs the setup demonstrates. A setup that shows one section points
+   * at `page#id`, and that section links back; one that covers the whole
+   * page points at the page, and its closing "In the playground" section
+   * links back. apps/docs/tests/playground-links.test.ts holds both ends.
+   */
   docs: string;
   content: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;

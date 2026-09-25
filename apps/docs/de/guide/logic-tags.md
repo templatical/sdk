@@ -5,15 +5,13 @@ description: Control-Flow-Logik-Tags in Templatical-E-Mail-Vorlagen einfügen un
 
 # Logik-Tags
 
-[Im Playground öffnen](https://play.templatical.com/scenes/logic-tags)
-
 Logik-Tags sind die Control-Flow-Tokens Ihrer Vorlagensyntax — Bedingungen und Schleifen wie <code v-pre>{% if vip %}</code> … <code v-pre>{% endif %}</code> oder <code v-pre>{% for item in items %}</code> … <code v-pre>{% endfor %}</code>. Sie sind **getrennt von [Merge-Tags](/de/guide/merge-tags)**: Merge-Tags sind Daten-Platzhalter, die man aus einer Liste auswählt, Logik-Tags sind Struktur, die Ihre Versandplattform zum Sendezeitpunkt auswertet.
 
 Weil sie erst beim Versand ausgewertet werden, zeigt der Editor sie als Badges an, statt die Verzweigung zu nehmen. Um Verzweigungen **in einer Vorschau aufgelöst** zu sehen, verdrahten Sie den `resolvePreview`-Hook — siehe [Vorschau-Rendering](/de/guide/preview-rendering). Das ist der einzige Weg, Logik aufzulösen: Beispielwerte können einen Wert ersetzen, aber keine Verzweigung auswerten.
 
 Es gibt zwei unabhängige Teile:
 
-- **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Hervorhebung von Logik-Tags](/de/guide/merge-tags#hervorhebung-von-logik-tags) für Details zur Erkennung und zu den Syntax-Presets.
+- **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Hervorhebung von Logik-Tags](/de/guide/merge-tags#logic-tag-highlighting) für Details zur Erkennung und zu den Syntax-Presets.
 - **Einfügen** — konfigurieren Sie eine `logicTags`-Option, um Autoren eine eigene Schaltfläche **Logik** zu geben, damit sie Control-Flow einfügen können, ohne die Syntax von Hand zu schreiben. Darum geht es auf dieser Seite.
 
 ## Konfiguration
@@ -133,3 +131,9 @@ Machen Sie z. B. den Button-Text bedingt:
 `{% if guest.status == 'vip' %}VIP-Zugang{% else %}Registrieren{% endif %}`
 
 In einem Textfeld wird ein Tag an der Cursorposition eingefügt und ein Paar umschließt den ausgewählten Text (als Zeichenkette) — genau wie im Rich-Text.
+
+## Im Playground
+
+Das Setup **Logic tags** übergibt `logicTags`, sodass ein eigener Picker Steuerungs-Tokens wie IF / ENDIF einfügt.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/logic-tags)

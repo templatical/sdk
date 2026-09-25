@@ -91,20 +91,21 @@ const BACKEND_IDS = [
 const AUTHOR_IDS = [...PERSONALIZATION_IDS, ...CONFIGURE_IDS] as const;
 
 const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
-  "merge-tags": "/guide/merge-tags",
-  "merge-tags-on-request": "/guide/merge-tags",
-  "merge-tags-samples": "/guide/preview-rendering",
-  "merge-tags-resolve-preview": "/guide/preview-rendering",
+  "merge-tags": "/guide/merge-tags#configuration",
+  "merge-tags-on-request": "/guide/merge-tags#dynamic-tag-loading",
+  "merge-tags-samples": "/guide/preview-rendering#sample-values",
+  "merge-tags-resolve-preview":
+    "/guide/preview-rendering#resolved-data-with-resolvepreview",
   "logic-tags": "/guide/logic-tags",
   "display-conditions": "/guide/display-conditions",
   "custom-blocks": "/guide/custom-blocks",
-  issues: "/quality/",
-  fonts: "/guide/fonts",
-  defaults: "/guide/defaults",
-  theming: "/guide/theming",
+  issues: "/quality/#wire-into-the-editor",
+  fonts: "/guide/fonts#restricting-the-built-in-fonts",
+  defaults: "/guide/defaults#block-defaults",
+  theming: "/guide/theming#themeoverrides-config",
   layout: "/guide/layout",
-  i18n: "/guide/i18n",
-  "shadow-dom-off": "/guide/shadow-dom",
+  i18n: "/guide/i18n#setting-the-locale",
+  "shadow-dom-off": "/guide/shadow-dom#opt-out-shadowdom-false",
 };
 
 const IMPORT_IDS = [
@@ -119,14 +120,14 @@ const IMPORT_IDS = [
 ] as const;
 
 const IMPORT_DOCS: Record<(typeof IMPORT_IDS)[number], string> = {
-  "import-unlayer": "/guide/migration-from-unlayer",
-  "import-beefree": "/guide/migration-from-beefree",
-  "import-html": "/guide/migration-from-html",
-  "import-mjml": "/guide/migration-from-mjml",
-  "import-topol": "/guide/migration-from-topol",
-  "import-stripo": "/guide/migration-from-stripo",
-  "import-chamaileon": "/guide/migration-from-chamaileon",
-  "import-easy-email-pro": "/guide/migration-from-easy-email-pro",
+  "import-unlayer": "/guide/migration-from-unlayer#usage",
+  "import-beefree": "/guide/migration-from-beefree#usage",
+  "import-html": "/guide/migration-from-html#usage",
+  "import-mjml": "/guide/migration-from-mjml#usage",
+  "import-topol": "/guide/migration-from-topol#usage",
+  "import-stripo": "/guide/migration-from-stripo#usage",
+  "import-chamaileon": "/guide/migration-from-chamaileon#usage",
+  "import-easy-email-pro": "/guide/migration-from-easy-email-pro#usage",
 };
 
 const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
@@ -158,7 +159,9 @@ describe("registry", () => {
       "example-northstage-ar",
     ]);
     expect(getScene("minimum")?.group).toBe("minimum");
-    expect(getScene("minimum")?.docs).toBe("/getting-started/quick-start");
+    expect(getScene("minimum")?.docs).toBe(
+      "/getting-started/quick-start#mount-the-editor",
+    );
     expect(getScene("saved-blocks")?.docs).toBe("/backend/saved-blocks");
     expect(getScene("templates")?.docs).toBe("/backend/templates");
     expect(getScene("version-history")?.docs).toBe("/backend/version-history");

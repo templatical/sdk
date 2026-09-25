@@ -6,7 +6,7 @@ export const importChamaileon = makeImportScene({
   job: "Paste Chamaileon JSON",
   summary:
     "convertChamaileonTemplate + init({ content }) — getDocument() JSON.",
-  docs: "/guide/migration-from-chamaileon",
+  docs: "/guide/migration-from-chamaileon#usage",
   pkg: "@templatical/import-chamaileon",
   convertFn: "convertChamaileonTemplate",
   sourceExpr: "chamaileonJson",

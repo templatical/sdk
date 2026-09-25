@@ -5,8 +5,6 @@ description: Convert MJML email templates to Templatical format using @templatic
 
 # Migrating from MJML
 
-[Open in playground](https://play.templatical.com/scenes/import-mjml)
-
 This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor. **`@templatical/import-mjml`** converts an MJML document into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 
 ## Installation
@@ -42,7 +40,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertMjmlTemplate } from '@templatical/import-mjml';
@@ -63,6 +61,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-mjml)
 
 `convertMjmlTemplate` is synchronous and returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor

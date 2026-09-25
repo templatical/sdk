@@ -4,7 +4,7 @@ Preview with real recipient data
 
 init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.
 
-Contract: https://docs.templatical.com/guide/preview-rendering
+Contract: https://docs.templatical.com/guide/preview-rendering#resolved-data-with-resolvepreview
 Live: https://play.templatical.com/scenes/merge-tags-resolve-preview
 
 ## Snippet

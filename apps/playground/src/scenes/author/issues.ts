@@ -10,7 +10,7 @@ export const issues: Scene = {
     "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
   catalog: "oss",
   group: "configure",
-  docs: "/quality/",
+  docs: "/quality/#wire-into-the-editor",
   content: (ctx) =>
     ctx.search.get("canvas") === "blank" ? emptyCanvas() : issuesCanvas(),
   variants: [{ name: "Blank canvas", query: { canvas: "blank" } }],

@@ -5,8 +5,6 @@ description: Frühere Versionen einer Vorlage durchsehen, in der Vorschau ansehe
 
 # Versionsverlauf
 
-[Im Playground öffnen](https://play.templatical.com/scenes/version-history)
-
 Geben Sie dem Editor einen Ort, an dem er Versionen lesen kann, und er zeigt im Header ein Verlaufs-Steuerelement: durch frühere Stände blättern, eine Version auf der Arbeitsfläche in der Vorschau ansehen und sie wiederherstellen.
 
 ```ts
@@ -199,3 +197,8 @@ await history.resolveContent(v);             // der Hinweis oder get(), zwischen
 await history.restore(v.id);
 ```
 
+## Im Playground
+
+Das Setup **Version history** ergänzt `templates` um einen `versionHistory`-Provider, sodass sich frühere Speicherstände durchsuchen, ansehen und wiederherstellen lassen.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/version-history)

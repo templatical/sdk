@@ -5,8 +5,6 @@ description: Convert Unlayer email templates to Templatical format using @templa
 
 # Migration from Unlayer
 
-[Open in playground](https://play.templatical.com/scenes/import-unlayer)
-
 The `@templatical/import-unlayer` package converts Unlayer design JSON (the output of `editor.saveDesign(...)` from `react-email-editor` or the Unlayer hosted editor) into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -46,7 +44,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertUnlayerTemplate } from '@templatical/import-unlayer';
@@ -67,6 +65,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-unlayer)
 
 Each `report.entries` item is one source module:
 

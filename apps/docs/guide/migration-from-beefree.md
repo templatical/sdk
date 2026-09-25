@@ -5,8 +5,6 @@ description: Convert BeeFree email templates to Templatical format using @templa
 
 # Migration from BeeFree
 
-[Open in playground](https://play.templatical.com/scenes/import-beefree)
-
 The `@templatical/import-beefree` package converts BeeFree (BEE) JSON templates into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -46,7 +44,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertBeeFreeTemplate } from '@templatical/import-beefree';
@@ -67,6 +65,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-beefree)
 
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor

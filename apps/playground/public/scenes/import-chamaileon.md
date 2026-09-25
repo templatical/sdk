@@ -4,7 +4,7 @@ Paste Chamaileon JSON
 
 convertChamaileonTemplate + init({ content }) — getDocument() JSON.
 
-Contract: https://docs.templatical.com/guide/migration-from-chamaileon
+Contract: https://docs.templatical.com/guide/migration-from-chamaileon#usage
 Live: https://play.templatical.com/scenes/import-chamaileon
 
 ## Snippet

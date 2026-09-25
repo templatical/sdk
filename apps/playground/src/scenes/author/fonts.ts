@@ -10,7 +10,7 @@ export const fonts: Scene = {
     "init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.",
   catalog: "oss",
   group: "configure",
-  docs: "/guide/fonts",
+  docs: "/guide/fonts#restricting-the-built-in-fonts",
   content: () => setupBaseCanvas(),
   config: () => ({
     fonts: {

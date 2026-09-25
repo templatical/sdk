@@ -5,8 +5,6 @@ description: Define your own block types with custom fields, Liquid templates, a
 
 # Custom Blocks
 
-[Open in playground](https://play.templatical.com/scenes/custom-blocks)
-
 Custom blocks let you extend Templatical with your own block types. Define a set of fields, write a Liquid template for rendering, and optionally connect a data source. Users interact with custom blocks through the same drag-and-drop interface as built-in blocks.
 
 ::: warning Shadow DOM and host-side queries
@@ -600,3 +598,9 @@ dataSource: {
   },
 },
 ```
+
+## In the playground
+
+The **Custom blocks** setup registers one block type, which appears on the palette next to the built-in ones.
+
+[Open in playground](https://play.templatical.com/scenes/custom-blocks)
