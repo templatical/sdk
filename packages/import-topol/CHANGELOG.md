@@ -1,5 +1,13 @@
 # @templatical/import-topol
 
+## 0.42.0
+
+### Patch Changes
+
+- Updated dependencies [5758c24]
+- Updated dependencies [cb82f7e]
+  - @templatical/types@0.42.0
+
 ## 0.41.0
 
 ### Patch Changes
