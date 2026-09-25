@@ -527,6 +527,7 @@ const ptBR: typeof en = {
     hexValue: "Valor hexadecimal da cor",
     notSet: "Não definido",
     clear: "Limpar cor",
+    transparent: "Transparente",
     presetColors: "Cores predefinidas",
   },
 

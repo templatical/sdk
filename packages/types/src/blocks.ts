@@ -318,8 +318,10 @@ export interface ButtonBlock extends BaseBlock {
   /**
    * Border around the button itself, per side. Omitted = no border; a side
    * with width 0 is not drawn. For an outline ("ghost") button, set
-   * `backgroundColor` to the keyword `"transparent"` and set `textColor` too —
-   * a new button is `#333333` with white text.
+   * `backgroundColor` to the keyword `"transparent"` (the background control
+   * stores it) and set `textColor` too — a new button is `#333333` with white
+   * text. An empty fill exports as `transparent`, because MJML paints
+   * `#414141` when the attribute is omitted.
    */
   border?: BorderValue;
   fontSize: number;

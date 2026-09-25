@@ -455,6 +455,7 @@ const translations: typeof en = {
     hexValue: "16進数の色コード",
     notSet: "未設定",
     clear: "色の指定を解除",
+    transparent: "透明",
     presetColors: "プリセットの色",
   },
   mergeTag: {

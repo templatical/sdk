@@ -159,6 +159,7 @@ function toggleVisibility(key: VisibilityKey): void {
       <label :class="labelClass">{{ t.blockSettings.color }}</label>
       <ColorPicker
         :model-value="block.styles.backgroundColor ?? ''"
+        allow-transparent
         @update:model-value="updateStyle('backgroundColor', $event)"
       />
     </CollapsibleSection>

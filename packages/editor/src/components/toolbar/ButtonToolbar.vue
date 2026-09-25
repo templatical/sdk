@@ -117,6 +117,7 @@ function updateCustomWidth(raw: string): void {
     <label :class="labelClass">{{ t.button.background }}</label>
     <ColorPicker
       :model-value="block.backgroundColor"
+      allow-transparent
       @update:model-value="updateField('backgroundColor', $event)"
     />
   </div>

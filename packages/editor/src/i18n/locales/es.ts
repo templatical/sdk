@@ -528,6 +528,7 @@ const es: typeof en = {
     hexValue: "Valor de color Hex",
     notSet: "No establecido",
     clear: "Limpiar color",
+    transparent: "Transparente",
     presetColors: "Colores predefinidos",
   },
 
