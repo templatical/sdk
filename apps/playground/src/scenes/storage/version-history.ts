@@ -12,7 +12,6 @@ export const versionHistory: Scene = {
   initKey: "versionHistory",
   summary:
     "init({ templates, versionHistory }) — browse, preview, and restore past saves.",
-  affordance: "history",
   catalog: "oss",
   group: "backend",
   docs: "/backend/version-history",

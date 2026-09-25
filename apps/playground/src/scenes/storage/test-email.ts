@@ -9,7 +9,6 @@ export const testEmail: Scene = {
   initKey: "testEmail",
   summary:
     "init({ testEmail }) — header Test button, recipient picker, fake send.",
-  affordance: "send",
   catalog: "oss",
   group: "backend",
   docs: "/backend/test-email",

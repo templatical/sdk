@@ -8,7 +8,6 @@ export const issues: Scene = {
   initKey: "lint",
   summary:
     "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
-  affordance: "lint",
   catalog: "oss",
   group: "configure",
   docs: "/quality/",

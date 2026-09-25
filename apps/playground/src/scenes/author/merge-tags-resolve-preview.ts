@@ -13,7 +13,6 @@ export const mergeTagsResolvePreview: Scene = {
   initKey: "resolvePreview",
   summary:
     "init({ resolvePreview }) — backend resolves tags and evaluates logic in preview.",
-  affordance: "resolve",
   catalog: "oss",
   group: "personalization",
   docs: "/guide/preview-rendering",

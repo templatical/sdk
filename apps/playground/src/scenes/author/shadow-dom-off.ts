@@ -8,7 +8,6 @@ export const shadowDomOff: Scene = {
   initKey: "shadowDom: false",
   summary:
     "init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.",
-  affordance: "light-dom",
   catalog: "oss",
   group: "configure",
   docs: "/guide/shadow-dom",

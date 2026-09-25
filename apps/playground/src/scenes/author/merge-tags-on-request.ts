@@ -12,7 +12,6 @@ export const mergeTagsOnRequest: Scene = {
   initKey: "mergeTags.onRequest",
   summary:
     "init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.",
-  affordance: "picker",
   catalog: "oss",
   group: "personalization",
   docs: "/guide/merge-tags",

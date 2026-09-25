@@ -7,7 +7,6 @@ export const mergeTags: Scene = {
   job: "Insert a field from the list",
   initKey: "mergeTags",
   summary: "init({ mergeTags }) — static tags, built-in picker, no onRequest.",
-  affordance: "tag",
   catalog: "oss",
   group: "personalization",
   docs: "/guide/merge-tags",

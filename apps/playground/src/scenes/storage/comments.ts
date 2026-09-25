@@ -13,7 +13,6 @@ export const comments: Scene = {
   initKey: "comments",
   summary:
     "init({ templates, comments, user }) — threaded review on the attached template.",
-  affordance: "comment",
   catalog: "oss",
   group: "backend",
   docs: "/backend/comments",

@@ -9,7 +9,6 @@ export const media: Scene = {
   initKey: "media",
   summary:
     "init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.",
-  affordance: "media",
   catalog: "oss",
   group: "backend",
   docs: "/backend/media",

@@ -8,7 +8,6 @@ export const logicTags: Scene = {
   initKey: "logicTags",
   summary:
     "init({ logicTags }) — insert control-flow tokens from a dedicated picker.",
-  affordance: "logic",
   catalog: "oss",
   group: "personalization",
   docs: "/guide/logic-tags",

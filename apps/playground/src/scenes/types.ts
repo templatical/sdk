@@ -11,30 +11,6 @@ export type SceneGroup =
 
 export type SceneCatalog = "oss";
 
-export type SetupAffordance =
-  | "save"
-  | "history"
-  | "comment"
-  | "bookmark"
-  | "media"
-  | "send"
-  | "export"
-  | "tag"
-  | "picker"
-  | "sample"
-  | "resolve"
-  | "logic"
-  | "condition"
-  | "custom"
-  | "lint"
-  | "font"
-  | "defaults"
-  | "theme"
-  | "layout"
-  | "locale"
-  | "light-dom"
-  | "import";
-
 export interface SceneContext {
   search: URLSearchParams;
 }
@@ -60,8 +36,6 @@ export interface Scene {
   catalog: SceneCatalog;
   group: SceneGroup;
   docs: string;
-  /** Mini editor chrome for setup cards. */
-  affordance?: SetupAffordance;
   content: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;
   snippet: string;

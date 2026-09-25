@@ -41,7 +41,6 @@ export const layout: Scene = {
   title: "Layout",
   job: "Wrap every email in your shell",
   initKey: "layout",
-  affordance: "layout",
   summary:
     "init({ layout }) — your shell wraps the email in preview and export, never in saved JSON.",
   catalog: "oss",

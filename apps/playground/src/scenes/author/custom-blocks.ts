@@ -7,7 +7,6 @@ export const customBlocks: Scene = {
   job: "Register your own block type",
   initKey: "customBlocks",
   summary: "init({ customBlocks }) — one registered block on the palette.",
-  affordance: "custom",
   catalog: "oss",
   group: "configure",
   docs: "/guide/custom-blocks",

@@ -10,7 +10,6 @@ export const savedBlocks: Scene = {
   initKey: "savedBlocks",
   summary:
     "init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.",
-  affordance: "bookmark",
   catalog: "oss",
   group: "backend",
   docs: "/backend/saved-blocks",

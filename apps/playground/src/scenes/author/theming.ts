@@ -40,7 +40,6 @@ export const theming: Scene = {
   initKey: "theme",
   summary:
     "init({ theme }) — ThemeOverrides reach the editor root and teleported dialogs.",
-  affordance: "theme",
   catalog: "oss",
   group: "configure",
   docs: "/guide/theming",

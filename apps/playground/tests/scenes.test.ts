@@ -8,6 +8,7 @@ import {
   parsePlaygroundRoute,
   scenesByGroup,
 } from "../src/scenes/index";
+import { SCENE_ICONS } from "../src/host/catalogIcons";
 import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
 
@@ -258,11 +259,16 @@ describe("catalog copy", () => {
     }
   });
 
-  it("every setup scene has an affordance sketch", () => {
-    for (const scene of SCENES.filter((s) => s.group !== "examples")) {
-      if (scene.id === "minimum") continue;
-      expect(scene.affordance, scene.id).toBeTruthy();
-    }
+  it("every scene outside the examples has a rail icon", () => {
+    const missing = SCENES.filter((s) => s.group !== "examples")
+      .map((s) => s.id)
+      .filter((id) => !(id in SCENE_ICONS));
+    expect(missing).toEqual([]);
+  });
+
+  it("no rail icon points at a scene that does not exist", () => {
+    const stale = Object.keys(SCENE_ICONS).filter((id) => !getScene(id));
+    expect(stale).toEqual([]);
   });
 });
 

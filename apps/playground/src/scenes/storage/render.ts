@@ -9,7 +9,6 @@ export const render: Scene = {
   initKey: "render",
   summary:
     "init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.",
-  affordance: "export",
   catalog: "oss",
   group: "backend",
   docs: "/backend/render",

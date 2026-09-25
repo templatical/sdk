@@ -8,7 +8,6 @@ export const templates: Scene = {
   job: "Load and save the template",
   initKey: "templates",
   summary: "init({ templates }) — save, load, rename, and optional autosave.",
-  affordance: "save",
   catalog: "oss",
   group: "backend",
   docs: "/backend/templates",

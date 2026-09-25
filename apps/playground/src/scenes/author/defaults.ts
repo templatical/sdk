@@ -8,7 +8,6 @@ export const defaults: Scene = {
   initKey: "blockDefaults",
   summary:
     "init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.",
-  affordance: "defaults",
   catalog: "oss",
   group: "configure",
   docs: "/guide/defaults",

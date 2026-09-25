@@ -53,7 +53,6 @@ export function makeImportScene(spec: {
     catalog: "oss",
     group: "import",
     docs: spec.docs,
-    affordance: "import",
     content: () => createDefaultTemplateContent(),
     config: () => ({}),
     snippet: `import { ${spec.convertFn} } from "${spec.pkg}";
