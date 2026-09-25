@@ -1624,7 +1624,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25b2 launchpad</p>",
         level: 3,
-        color: "#0d9488",
+        color: "#0f766e",
         textAlign: "center",
         styles: white(32, 20, 24, 20),
       }),
