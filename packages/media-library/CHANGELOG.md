@@ -1,5 +1,15 @@
 # @templatical/media-library
 
+## 0.41.0
+
+### Minor Changes
+
+- 88fdfe4: Add Japanese editor and media library translations and localized recipient-facing content defaults.
+
+### Patch Changes
+
+- @templatical/types@0.41.0
+
 ## 0.40.0
 
 ### Patch Changes

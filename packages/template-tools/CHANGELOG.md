@@ -1,5 +1,21 @@
 # @templatical/template-tools
 
+## 0.41.0
+
+### Patch Changes
+
+- @templatical/import-beefree@0.41.0
+  - @templatical/import-chamaileon@0.41.0
+  - @templatical/import-easy-email-pro@0.41.0
+  - @templatical/import-html@0.41.0
+  - @templatical/import-mjml@0.41.0
+  - @templatical/import-stripo@0.41.0
+  - @templatical/import-topol@0.41.0
+  - @templatical/import-unlayer@0.41.0
+  - @templatical/quality@0.41.0
+  - @templatical/renderer@0.41.0
+  - @templatical/types@0.41.0
+
 ## 0.40.0
 
 ### Patch Changes

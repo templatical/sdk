@@ -17,8 +17,24 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.40.0",
+  "latest": "0.41.0",
   "versions": [
+    {
+      "version": "0.41.0",
+      "date": "2026-09-25",
+      "changes": [
+        {
+          "hash": "88fdfe4",
+          "level": "minor",
+          "title": "Add Japanese editor and media library translations and localized recipient-facing content defaults.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/media-library"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.40.0",
       "date": "2026-09-24",

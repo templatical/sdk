@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.41.0
+
+<time datetime="2026-09-25">2026-09-25</time>
+
+### Features
+
+**Add Japanese editor and media library translations and localized recipient-facing content defaults.**
+
+`@templatical/editor` · `@templatical/media-library`
+
 ## 0.40.0
 
 <time datetime="2026-09-24">2026-09-24</time>
