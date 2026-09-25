@@ -185,6 +185,30 @@ test.describe("Template import", () => {
     await expect(editorPage.getBlocks()).toHaveCount(0);
   });
 
+  test("the paste panel leaves through the dialog transition", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    // Vue applies its leave classes synchronously, so recording them is
+    // exact where sampling the fade would be a race.
+    await page.locator(SELECTORS.importPanel).evaluate((panel) => {
+      const root = panel.parentElement!;
+      const seen: string[] = [];
+      (window as unknown as { __leaveClasses: string[] }).__leaveClasses = seen;
+      new MutationObserver(() => seen.push(root.className)).observe(root, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    });
+    await page.locator(SELECTORS.importCancel).click();
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+    const classes = await page.evaluate(
+      () => (window as unknown as { __leaveClasses: string[] }).__leaveClasses,
+    );
+    expect(classes.some((c) => c.includes("pg-modal-leave-active"))).toBe(true);
+  });
+
   test("Escape dismisses the paste panel", async ({ scenePage, page }) => {
     await openImportScene(scenePage, page, "unlayer");
     await page.keyboard.press("Escape");

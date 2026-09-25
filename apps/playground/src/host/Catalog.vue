@@ -385,12 +385,13 @@ onMounted(() => {
               :href="hrefFor(scene)"
               :data-testid="`scene-link-${scene.id}`"
               :aria-label="format(t.a11y.openScene, { name: scene.title })"
-              class="group block rounded-lg text-inherit no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-table"
+              class="pg-proof-link block rounded-lg text-inherit no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-table"
               @click="openProof($event, scene)"
             >
               <span
                 data-proof
-                class="block aspect-[3/4] overflow-hidden rounded-[7px] border border-gray-200 bg-white shadow-xs transition-[transform,box-shadow] duration-200 ease-out-expo group-hover:-translate-y-1 group-hover:shadow-lg dark:border-gray-700"
+                data-testid="catalog-proof-tile"
+                class="pg-proof-tile block aspect-[3/4] overflow-hidden rounded-[7px] border border-gray-200 bg-white dark:border-gray-700"
               >
                 <img
                   v-if="proofFor(scene.id)"

@@ -63,50 +63,52 @@ onClickOutside(root, () => close(false));
     >
       <Settings2 :size="16" :stroke-width="1.5" aria-hidden="true" />
     </button>
-    <div
-      v-if="open"
-      :id="panelId"
-      role="dialog"
-      :aria-label="t.host.settings.label"
-      data-testid="host-settings-panel"
-      class="pg-settings-panel"
-    >
-      <fieldset class="m-0 border-0 p-0">
-        <legend class="pg-settings-label">
-          {{ t.host.settings.theme }}
-        </legend>
-        <div class="pg-theme-options">
-          <label
-            v-for="option in THEMES"
-            :key="option.value"
-            class="pg-theme-option"
-            :data-testid="`theme-option-${option.value}`"
-          >
-            <input
-              v-model="uiTheme"
-              type="radio"
-              name="pg-theme"
-              :value="option.value"
-              class="sr-only"
-            />
-            <component :is="option.icon" :size="14" aria-hidden="true" />
-            {{ t.theme[option.value] }}
-          </label>
-        </div>
-      </fieldset>
-      <label :for="localeId" class="pg-settings-label mt-3">
-        {{ t.host.settings.language }}
-      </label>
-      <select
-        :id="localeId"
-        v-model="locale"
-        data-testid="locale-select"
-        class="pg-select"
+    <Transition name="pg-pop">
+      <div
+        v-if="open"
+        :id="panelId"
+        role="dialog"
+        :aria-label="t.host.settings.label"
+        data-testid="host-settings-panel"
+        class="pg-settings-panel"
       >
-        <option v-for="loc in supportedLocales" :key="loc" :value="loc">
-          {{ loc.toUpperCase() }}
-        </option>
-      </select>
-    </div>
+        <fieldset class="m-0 border-0 p-0">
+          <legend class="pg-settings-label">
+            {{ t.host.settings.theme }}
+          </legend>
+          <div class="pg-theme-options">
+            <label
+              v-for="option in THEMES"
+              :key="option.value"
+              class="pg-theme-option"
+              :data-testid="`theme-option-${option.value}`"
+            >
+              <input
+                v-model="uiTheme"
+                type="radio"
+                name="pg-theme"
+                :value="option.value"
+                class="sr-only"
+              />
+              <component :is="option.icon" :size="14" aria-hidden="true" />
+              {{ t.theme[option.value] }}
+            </label>
+          </div>
+        </fieldset>
+        <label :for="localeId" class="pg-settings-label mt-3">
+          {{ t.host.settings.language }}
+        </label>
+        <select
+          :id="localeId"
+          v-model="locale"
+          data-testid="locale-select"
+          class="pg-select"
+        >
+          <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+            {{ loc.toUpperCase() }}
+          </option>
+        </select>
+      </div>
+    </Transition>
   </div>
 </template>

@@ -179,7 +179,9 @@ onUnmounted(() => {
     :data-scene-ready="sceneReady ? 'true' : undefined"
     class="flex h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
-    <CatalogRail v-show="railOpen" id="catalog-rail" :current-id="scene.id" />
+    <div class="pg-rail-slot" :data-open="railOpen">
+      <CatalogRail id="catalog-rail" :current-id="scene.id" />
+    </div>
     <div class="flex min-w-0 flex-1 flex-col">
       <header
         data-testid="scene-header"
@@ -350,7 +352,7 @@ onUnmounted(() => {
     -->
       <div
         data-testid="editor-screen"
-        class="flex flex-1 flex-col gap-[15px] min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
+        class="flex flex-1 flex-col min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
       >
         <div
           data-testid="editor-stage"
@@ -391,11 +393,15 @@ onUnmounted(() => {
             :editor="editor"
           />
         </div>
-        <CodeDrawer
-          v-if="codeOpen"
-          :snippet="scene.snippet"
-          @close="closeCode"
-        />
+        <!-- The gap to the stage is the slot's margin, not a flex gap, so it
+             grows with the drawer instead of appearing before it. -->
+        <Transition name="pg-drawer">
+          <div v-if="codeOpen" class="pg-code-drawer-slot">
+            <div class="pg-code-drawer-clip">
+              <CodeDrawer :snippet="scene.snippet" @close="closeCode" />
+            </div>
+          </div>
+        </Transition>
       </div>
       <ExportModal v-model:open="exportOpen" :editor="editor" />
       <ShareModal

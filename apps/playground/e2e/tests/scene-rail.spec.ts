@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
+import { freezeMotion } from "../helpers/motion";
 
 const RAIL = '[data-testid="catalog-rail"]';
 const READY = '[data-testid="scene-host"][data-scene-ready="true"]';
@@ -101,6 +102,60 @@ test.describe("Scene rail", () => {
     expect(await motion()).toBe("grid-template-rows, visibility 0.24s, 0s");
     await page.emulateMedia({ reducedMotion: "reduce" });
     expect(await motion()).toBe("none 0s");
+  });
+
+  test("a group slides open while the open one slides shut", async ({
+    scenePage,
+    page,
+  }) => {
+    await scenePage.goto("fonts");
+    const panel = (group: string) =>
+      page
+        .locator(`#rail-panel-${group}`)
+        .locator("../..")
+        .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    const configureOpen = await panel("configure");
+    expect(configureOpen).toBeGreaterThan(200);
+
+    const resume = await freezeMotion(page);
+    await page.getByTestId("catalog-tab-personalization").click();
+    expect(await panel("personalization")).toBe(0);
+    expect(await panel("configure")).toBe(configureOpen);
+
+    await resume();
+    await expect.poll(() => panel("configure")).toBe(0);
+    expect(await panel("personalization")).toBeGreaterThan(200);
+  });
+
+  test("hiding the rail slides it shut and widens the editor in step", async ({
+    scenePage,
+    page,
+  }) => {
+    await scenePage.goto("fonts");
+    const toggle = page.getByTestId("toolbar-rail");
+    const rail = page.locator(RAIL);
+    const slotWidth = () =>
+      page
+        .locator(".pg-rail-slot")
+        .evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    expect(await slotWidth()).toBe(224);
+
+    let resume = await freezeMotion(page);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(await slotWidth()).toBe(224);
+    await expect(rail).toBeVisible();
+    await resume();
+    await expect.poll(slotWidth).toBe(0);
+    await expect(rail).toBeHidden();
+
+    resume = await freezeMotion(page);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(await slotWidth()).toBe(0);
+    await resume();
+    await expect.poll(slotWidth).toBe(224);
+    await expect(rail).toBeVisible();
   });
 
   test.describe("at 900px tall", () => {

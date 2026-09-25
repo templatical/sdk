@@ -34,6 +34,13 @@
     --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
 
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    /*
+     * The host's one easing for anything that opens, closes or lifts: the
+     * rail, its groups, the Code drawer, the settings menu, dialogs and the
+     * home page's proofs. Expo front-loads so hard that short moves read as
+     * a snap; quint glides.
+     */
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 
     /*
      * Four roles on the catalog: display, lede/heading (20px, split by
@@ -166,8 +173,65 @@ textarea {
     @apply flex shrink-0 flex-col h-[36vh] min-h-[200px] max-h-[420px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700;
 }
 
+/*
+ * The drawer grows out of the stage's bottom edge instead of popping in: its
+ * row animates 0fr to 1fr, so the stage above shrinks in step rather than
+ * jumping by the drawer's height. The transition sits on the slot, not on
+ * Vue's -active classes, so a phase Vue ends on its fallback timeout can't
+ * cut it short.
+ */
+.pg-code-drawer-slot {
+    display: grid;
+    grid-template-rows: 1fr;
+    margin-top: 15px;
+    transition:
+        grid-template-rows 280ms var(--ease-out-quint),
+        margin-top 280ms var(--ease-out-quint),
+        opacity 200ms ease-out;
+}
+
+.pg-drawer-enter-from,
+.pg-drawer-leave-to {
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    opacity: 0;
+}
+
+/* Clipped only while it animates: at rest the drawer's shadow must show. */
+.pg-code-drawer-clip {
+    min-height: 0;
+}
+
+.pg-drawer-enter-active > .pg-code-drawer-clip,
+.pg-drawer-leave-active > .pg-code-drawer-clip {
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-code-drawer-slot {
+        transition: none;
+    }
+}
+
 .pg-settings-panel {
     @apply absolute right-0 top-full z-[120] mt-2 w-60 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:bg-gray-800 dark:border-gray-700;
+    transform-origin: top right;
+    transition:
+        opacity 160ms var(--ease-out-quint),
+        transform 160ms var(--ease-out-quint);
+}
+
+/* On the panel's own class, not Vue's -active ones, like the Code drawer. */
+.pg-pop-enter-from,
+.pg-pop-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-settings-panel {
+        transition: none;
+    }
 }
 
 .pg-settings-label {
@@ -260,9 +324,45 @@ textarea {
     @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
 }
 
+/*
+ * Hiding the rail animates its slot's width, so the editor widens in step
+ * instead of jumping 224px. Like a closed group, a closed slot holds
+ * visibility until it has shrunk, then hides the rail, which is what takes
+ * its links out of the tab order.
+ */
+.pg-rail-slot {
+    display: flex;
+    flex-shrink: 0;
+    width: 14rem;
+    overflow: hidden;
+    transition:
+        width 260ms var(--ease-out-quint),
+        visibility 0s;
+}
+
+.pg-rail-slot[data-open="false"] {
+    width: 0;
+    visibility: hidden;
+    transition:
+        width 260ms var(--ease-out-quint),
+        visibility 0s linear 260ms;
+}
+
+/* A hidden rail has nothing to carry across a scene change. */
+.pg-rail-slot[data-open="false"] .pg-catalog-nav {
+    view-transition-name: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-rail-slot,
+    .pg-rail-slot[data-open="false"] {
+        transition: none;
+    }
+}
+
 .pg-catalog-nav {
     view-transition-name: pg-catalog-nav;
-    --pg-rail-motion: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    --pg-rail-motion: 240ms var(--ease-out-quint);
 }
 
 /*
@@ -386,6 +486,41 @@ textarea {
     aspect-ratio: 5 / 4;
 }
 
+/*
+ * One lift for every email proof on the home page, the hero's fan and the
+ * examples band alike. A quint curve over 320ms glides where the old 200ms
+ * expo snapped. will-change keeps each proof on its own layer: without it
+ * the layer is dropped when the transition ends and the image re-rasters a
+ * subpixel off, which reads as a jolt. The glow is an offset, blurred amber
+ * shadow (lit from above), not a zero-offset halo.
+ */
+:root {
+    --pg-lift-motion: 320ms var(--ease-out-quint);
+    --pg-glow: 0 18px 36px -14px color-mix(in oklab, var(--color-primary) 60%, transparent), 0 6px 14px -8px oklch(0% 0 0 / 0.12);
+}
+.dark {
+    --pg-glow: 0 18px 40px -12px color-mix(in oklab, var(--color-primary-dark) 45%, transparent), 0 6px 14px -8px oklch(0% 0 0 / 0.5);
+}
+
+.pg-proof-tile {
+    box-shadow: var(--shadow-xs);
+    transition:
+        transform var(--pg-lift-motion),
+        box-shadow var(--pg-lift-motion);
+    will-change: transform;
+}
+.pg-proof-link:hover .pg-proof-tile,
+.pg-proof-link:focus-visible .pg-proof-tile {
+    transform: translateY(-6px);
+    box-shadow: var(--pg-glow);
+}
+@media (prefers-reduced-motion: reduce) {
+    .pg-proof-link:hover .pg-proof-tile,
+    .pg-proof-link:focus-visible .pg-proof-tile {
+        transform: none;
+    }
+}
+
 .pg-fan-card {
     --fan-x: 0%;
     --fan-y: 0%;
@@ -397,8 +532,9 @@ textarea {
     aspect-ratio: 2 / 3;
     transform-origin: 50% 100%;
     transform: translate(-50%, -50%) translate(var(--fan-x), var(--fan-y)) rotate(var(--fan-r));
-    transition: transform 260ms var(--ease-out-expo);
+    transition: transform var(--pg-lift-motion);
     animation: pg-fan-settle 760ms var(--ease-out-expo) 140ms backwards;
+    will-change: transform;
 }
 .pg-fan-card[data-slot="0"] { --fan-x: -62%; --fan-y: 4%; --fan-r: -3deg; }
 .pg-fan-card[data-slot="1"] { z-index: 2; }
@@ -426,14 +562,14 @@ textarea {
     border-radius: 7px;
     background: oklch(99.5% 0.002 60);
     box-shadow: var(--shadow-md);
-    transition: box-shadow 260ms var(--ease-out-expo);
+    transition: box-shadow var(--pg-lift-motion);
 }
 .dark .pg-fan-link {
     border-color: oklch(27% 0.009 60);
 }
 .pg-fan-card:hover .pg-fan-link,
 .pg-fan-link:focus-visible {
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--pg-glow);
 }
 .pg-fan-link:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -485,13 +621,13 @@ textarea {
 
 ::view-transition-group(pg-scene-stage) {
     animation-duration: 340ms;
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-timing-function: var(--ease-out-quint);
 }
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
     animation-duration: 220ms;
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-timing-function: var(--ease-out-quint);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -512,11 +648,11 @@ textarea {
 /* Modal transitions */
 
 .pg-modal-enter-active {
-    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 240ms var(--ease-out-quint);
 }
 
 .pg-modal-leave-active {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 180ms var(--ease-out-quint);
 }
 
 .pg-modal-enter-from,
@@ -525,11 +661,11 @@ textarea {
 }
 
 .pg-modal-enter-active .pg-modal-dialog {
-    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 240ms var(--ease-out-quint), transform 240ms var(--ease-out-quint);
 }
 
 .pg-modal-leave-active .pg-modal-dialog {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 180ms var(--ease-out-quint), transform 180ms var(--ease-out-quint);
 }
 
 .pg-modal-enter-from .pg-modal-dialog {
@@ -546,7 +682,7 @@ textarea {
 
 .pg-screen-enter-active,
 .pg-screen-leave-active {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 150ms var(--ease-out-quint);
 }
 
 .pg-screen-enter-from,

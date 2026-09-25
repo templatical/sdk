@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
+import { freezeMotion } from "../helpers/motion";
 import { SELECTORS, themeOption } from "../helpers/selectors";
 
 const DARK = /(^|\s)dark(\s|$)/;
@@ -35,6 +36,22 @@ test.describe("Host header", () => {
       await expect(trigger).toBeFocused();
     });
   }
+
+  test("the settings menu fades in instead of popping", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    const panel = page.locator(SELECTORS.hostSettingsPanel);
+    const opacity = () => panel.evaluate((el) => getComputedStyle(el).opacity);
+
+    const resume = await freezeMotion(page);
+    await page.locator(SELECTORS.hostSettings).click();
+    await expect(panel).toHaveCount(1);
+    expect(await opacity()).toBe("0");
+    await resume();
+    await expect.poll(opacity).toBe("1");
+  });
 
   test("an outside click closes the settings menu without moving focus", async ({
     chooserPage,
