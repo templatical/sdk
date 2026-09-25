@@ -1,40 +1,5 @@
 export default {
-  chooser: {
-    title: "Templatical",
-    subtitle:
-      "Try the editor live — each pre-built example covers a real-world use case and demonstrates a different set of SDK features. Pick one to start.",
-    pills: {
-      openSource: "Free & open source",
-      clientSide: "Client-side",
-      noTelemetry: "Zero telemetry",
-    },
-    startFromScratch: "Start from Scratch",
-    emptyCanvas: "Empty canvas with default settings",
-    migration: {
-      headline:
-        "Already using Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML, or HTML?",
-      description:
-        "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
-      importFromBeefree: "Import from BeeFree",
-      importFromUnlayer: "Import from Unlayer",
-      importFromHtml: "Import from HTML",
-      importFromMjml: "Import from MJML",
-      importFromTopol: "Import from Topol",
-      importFromStripo: "Import from Stripo",
-      importFromChamaileon: "Import from Chamaileon",
-      importFromEasyEmailPro: "Import from Easy Email Pro",
-    },
-  },
-  cloudBanner: {
-    title: "Unlock the full experience with Cloud",
-    description:
-      "Real-time collaboration, AI writing assistant, version history, template scoring, media library, and more.",
-    cta: "Try Cloud Playground",
-  },
   toolbar: {
-    templates: "Templates",
-    config: "Config",
-    features: "Features",
     export: "Export",
     docs: "Docs",
     retry: "Retry",
@@ -44,16 +9,12 @@ export default {
     back: "Back",
     code: "Code",
     docs: "Docs",
-    notFound: "Scene not found",
     notFoundNamed: "No scene named {id}.",
     notFoundHint: "That id is not in the setup catalog.",
-    catalog: "Catalog",
     catalogTitle: "Playground",
     setups: "Setups",
     catalogFooter: "Playground links",
     catalogNav: "Main",
-    switchScene: "Switch scene",
-    sceneList: "Scenes",
     snippet: "init() snippet",
     minimumPaste: "init({ container })",
     brand: "Templatical",
@@ -123,44 +84,6 @@ export default {
       examples: "Finished emails",
     },
   },
-  configModal: {
-    tabs: {
-      options: "Options",
-      content: "Content",
-      theme: "Theme",
-      defaults: "Defaults",
-      callbacks: "Callbacks",
-      locale: "Locale",
-    },
-    descriptions: {
-      options: "mergeTags, displayConditions, customBlocks",
-      content: "Template block structure",
-      theme: "Colors and visual overrides (OKLch)",
-      defaults: "blockDefaults, templateDefaults",
-      callbacks: "media, mergeTags.onRequest",
-      locale: "SDK locale passed to init({ locale })",
-    },
-    localeHint:
-      'Sets the language for editor chrome (toolbars, dialogs, errors). Independent of the playground UI language above. Applies on "Apply & Reload".',
-    localeLabel: "SDK locale",
-    defaultsPresetLabel: "Preset",
-    defaultsPresets: {
-      templatical: "Templatical Default",
-      corporate: "Corporate",
-      playful: "Playful",
-      minimal: "Minimal",
-    },
-    defaultsHint:
-      'Defaults for newly created blocks and templates. Pick a preset or edit the JSON below. Changes apply on "Apply & Reload".',
-    callbacksHint:
-      'Toggle callback handlers passed to the editor. Changes apply on "Apply & Reload".',
-    onRequestMediaDesc:
-      "Backs Browse with a browser-local media library. Uncheck for URL-field-only.",
-    onRequestMergeTag:
-      "Opens a merge tag picker when the user inserts a merge tag",
-    cancel: "Cancel",
-    apply: "Apply & Reload",
-  },
   importModal: {
     title: "Import existing template",
     sources: {
@@ -226,11 +149,6 @@ export default {
       "This simulates retrieving data from your endpoint. In production, the SDK calls this URL and displays the response for the user to pick from.",
     responseReceived: "Response received \u2014 select an item",
   },
-  featureModal: {
-    title: "Features in this template",
-    subtitle: "{name} showcases these SDK capabilities",
-    dismiss: "Got it, start editing",
-  },
   exportModal: {
     title: "Export Template",
     tabs: {
@@ -270,7 +188,6 @@ export default {
   },
   common: {
     close: "Close",
-    dismiss: "Dismiss",
     or: "or",
   },
   error: {
@@ -281,120 +198,7 @@ export default {
     lastName: "Last Name",
     email: "Email",
     company: "Company",
-    accountId: "Account ID",
     planName: "Plan Name",
-    orderId: "Order ID",
-    orderTotal: "Order Total",
-    shippingMethod: "Shipping Method",
-    estimatedDelivery: "Estimated Delivery",
-    trackingUrl: "Tracking URL",
-    unsubscribeUrl: "Unsubscribe URL",
-    preferencesUrl: "Preferences URL",
-    currentDate: "Current Date",
-    groups: {
-      recipient: "Recipient",
-      account: "Account",
-      order: "Order",
-      system: "System",
-    },
-    descriptions: {
-      firstName: "Personalized greeting at the top of the email",
-      lastName: "Recipient family name",
-      email: "Primary contact address",
-      company: "Recipient organization name",
-      accountId: "Internal billing account identifier",
-      planName: "Subscription tier label",
-      orderId: "Order reference for support follow-up",
-      orderTotal: "Final amount including taxes and shipping",
-      shippingMethod: "Carrier name and service level",
-      estimatedDelivery: "Expected delivery date for the order",
-      trackingUrl: "Carrier tracking link for the recipient",
-      unsubscribeUrl: "Required by anti-spam legislation",
-      preferencesUrl: "Lets recipients update notification settings",
-      currentDate: "Send-time stamp, useful in legal footers",
-    },
-  },
-  logic: {
-    conditionsGroup: "Conditions",
-    loopsGroup: "Loops",
-    else: "Else",
-    elseDescription: "Alternate branch for the current condition",
-    break: "Break",
-    breakDescription: "Stop the loop early",
-    continue: "Continue",
-    continueDescription: "Skip to the next iteration",
-    ifVip: "If VIP",
-    ifVipDescription: "Show the wrapped content only to VIP customers",
-    loopItems: "Loop items",
-    loopItemsDescription: "Repeat the wrapped content for each order line item",
-  },
-  templates: {
-    product: {
-      name: "Product Launch",
-      description: "Announcement with hero, features, and CTA",
-    },
-    newsletter: {
-      name: "Newsletter",
-      description: "Weekly digest with featured article and links",
-    },
-    welcome: {
-      name: "Welcome Email",
-      description: "Onboarding steps for new users",
-    },
-    order: {
-      name: "Order Confirmation",
-      description: "Order summary with items and shipping",
-    },
-    event: {
-      name: "Event Invitation",
-      description: "Event details with date, time, and RSVP",
-    },
-    reset: {
-      name: "Password Reset",
-      description: "Simple transactional reset link email",
-    },
-    sale: {
-      name: "Black Friday Sale",
-      description: "Promo with product picks and discount code",
-    },
-    rtl: {
-      name: "Arabic Invitation",
-      description: "RTL invitation with merge tags and a two-column section",
-    },
-  },
-  onboarding: {
-    next: "Next",
-    skip: "Skip tour",
-    done: "Got it!",
-    stepCounter: "{current} of {total}",
-    canvas: {
-      title: "Your email canvas",
-      text: "This is where your email takes shape. Click any block to select and edit it.",
-    },
-    sidebar: {
-      title: "Block library",
-      text: "Drag blocks from here onto the canvas to add text, images, buttons, and more.",
-    },
-    rightSidebar: {
-      title: "Content & Settings",
-      text: "Select a block to edit its content here, or switch to Settings to adjust the overall template layout.",
-    },
-    config: {
-      title: "Editor configuration",
-      text: "Customize merge tags, display conditions, theme colors, and block defaults.",
-    },
-    exportBtn: {
-      title: "Export your template",
-      text: "Preview, copy, or download your template as HTML, MJML, or JSON.",
-    },
-    share: {
-      title: "Share your work",
-      text: "Generate a shareable link so others can view and remix your template.",
-    },
-    cloud: {
-      title: "Try Cloud",
-      text: "Unlock AI writing, real-time collaboration, media library, and more.",
-    },
   },
   a11y: {
     backToTemplates: "Back to templates",
