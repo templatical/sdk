@@ -134,6 +134,8 @@ const translations: typeof en = {
     ratio21: "比率 2:1",
     borderRadius: "角の丸み",
     wrapperEnable: "外枠を追加",
+    wrapperLayoutConflict:
+      "このエディタはすでにメール全体に外枠を付けています。このセクションに外枠を追加することはできないため、プレビューと出力は失敗します。",
     stackOnMobile: "モバイルでは縦に並べる",
   },
   linkDialog: {
