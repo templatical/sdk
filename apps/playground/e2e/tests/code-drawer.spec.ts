@@ -18,9 +18,15 @@ test.describe("Code drawer", () => {
     await code.click();
     await expect(drawer).toContainText("builtIns");
     await expect(code).toHaveAttribute("aria-expanded", "true");
-    const stage = (await page.locator(SELECTORS.editorStage).boundingBox())!;
-    const box = (await drawer.boundingBox())!;
-    expect(box.y).toBeGreaterThanOrEqual(stage.y + stage.height);
+    // Both boxes from one frame: the drawer is still growing out of the
+    // stage, so boxes read in two calls can come from different frames.
+    const gap = await page.evaluate(
+      ([stageSelector, drawerSelector]) =>
+        document.querySelector(drawerSelector)!.getBoundingClientRect().top -
+        document.querySelector(stageSelector)!.getBoundingClientRect().bottom,
+      [SELECTORS.editorStage, SELECTORS.codeDrawer],
+    );
+    expect(gap).toBeGreaterThanOrEqual(0);
 
     await code.click();
     await expect(drawer).toHaveCount(0);
