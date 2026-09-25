@@ -1,8 +1,11 @@
 /**
- * The home page hero's aurora, ported from templatical.com's HeroAurora and
- * made quieter. The palette lives here, outside the shader, so a unit test can
- * prove the hero's text still clears 4.5:1 over the aurora's worst pixel:
- * templatical.com's own palette takes the lede to 3.10:1 on this page.
+ * The home page hero's aurora, ported from templatical.com's HeroAurora at
+ * half its strength: colours, pointer halo, vignette, grain, drift and warp all
+ * sit halfway between templatical.com's and a near-white wash. The palette
+ * lives here, outside the shader, so a unit test can prove the hero's text
+ * clears 4.5:1 over the aurora's worst pixel. That holds with the secondary
+ * text one step darker than the rest of the page (gray-700 light, gray-300
+ * dark); templatical.com's full palette would take even gray-700 to 4.27:1.
  */
 
 /** OKLCH as [lightness 0–1, chroma, hue in degrees]. */
@@ -21,25 +24,25 @@ export interface AuroraTheme {
 export const AURORA_THEMES: Readonly<Record<"light" | "dark", AuroraTheme>> = {
   light: {
     base: [0.995, 0.002, 60],
-    accent: [0.915, 0.06, 55],
-    copper: [0.93, 0.045, 35],
-    gold: [0.955, 0.03, 80],
-    halo: 0.04,
+    accent: [0.86, 0.11, 55],
+    copper: [0.885, 0.08, 35],
+    gold: [0.94, 0.05, 80],
+    halo: 0.11,
   },
   dark: {
     base: [0.19, 0.008, 60],
-    accent: [0.255, 0.05, 55],
-    copper: [0.23, 0.035, 35],
-    gold: [0.215, 0.02, 80],
-    halo: 0.03,
+    accent: [0.28, 0.075, 55],
+    copper: [0.225, 0.06, 35],
+    gold: [0.19, 0.03, 80],
+    halo: 0.1,
   },
 };
 
 /** The darkest the vignette takes any pixel, as a factor on sRGB. */
-export const AURORA_VIGNETTE_FLOOR = 0.97;
+export const AURORA_VIGNETTE_FLOOR = 0.945;
 
 /** Film grain against banding: each pixel moves by up to this in sRGB. */
-export const AURORA_GRAIN = 0.004;
+export const AURORA_GRAIN = 0.005;
 
 /** How long the aurora keeps moving after the pointer last did. */
 export const AURORA_IDLE_MS = 6000;
@@ -121,11 +124,11 @@ void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5*uR.xy) / uR.y;
   vec2 m = (uM - 0.5) * vec2(uR.x/uR.y, 1.0);
 
-  float t = uT * 0.04;
+  float t = uT * 0.05;
   vec2 q = uv*1.2 + vec2(t, -t*0.7);
   q += 0.35*vec2(fbm(uv*1.6 + t), fbm(uv*1.6 - t));
   float dm = length(uv - m*0.6);
-  q += 0.18 * vec2(cos(t*1.3), sin(t*1.1)) * exp(-dm*1.8);
+  q += 0.22 * vec2(cos(t*1.3), sin(t*1.1)) * exp(-dm*1.8);
 
   float n = fbm(q);
   float n2 = fbm(q*1.7 + 5.0);

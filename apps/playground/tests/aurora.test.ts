@@ -11,6 +11,15 @@ import {
 } from "../src/host/aurora";
 
 const css = readFileSync(join(__dirname, "../src/style.css"), "utf8");
+const catalog = readFileSync(
+  join(__dirname, "../src/host/Catalog.vue"),
+  "utf8",
+);
+/** The header and hero: everything the aurora paints behind. */
+const hero = catalog.slice(
+  catalog.indexOf("<HeroAurora />"),
+  catalog.indexOf('aria-labelledby="catalog-setups"'),
+);
 
 /** A colour token from style.css's @theme, as OKLCH. */
 function token(name: string): Lch {
@@ -55,7 +64,12 @@ function contrast(a: readonly number[], b: readonly number[]): number {
  * the pointer halo or dimmed by the vignette, with grain on top. The worst
  * pixel for a text colour is one of those extremes.
  */
-function worstContrast(palette: AuroraTheme, text: Lch): number {
+function worstContrast(
+  palette: AuroraTheme,
+  text: Lch,
+  floor = AURORA_VIGNETTE_FLOOR,
+  grainAmount = AURORA_GRAIN,
+): number {
   const ink = toSrgb(text);
   let worst = Infinity;
   for (const colour of [
@@ -66,8 +80,8 @@ function worstContrast(palette: AuroraTheme, text: Lch): number {
   ]) {
     for (const lift of [0, palette.halo]) {
       const rgb = toSrgb([Math.min(1, colour[0] + lift), colour[1], colour[2]]);
-      for (const dim of [1, AURORA_VIGNETTE_FLOOR]) {
-        for (const grain of [-AURORA_GRAIN, AURORA_GRAIN]) {
+      for (const dim of [1, floor]) {
+        for (const grain of [-grainAmount, grainAmount]) {
           const bg = rgb.map((v) => Math.min(1, Math.max(0, v * dim + grain)));
           worst = Math.min(worst, contrast(ink, bg));
         }
@@ -80,10 +94,9 @@ function worstContrast(palette: AuroraTheme, text: Lch): number {
 describe("hero aurora", () => {
   it.each([
     ["light", "gray-900", "headline"],
-    ["light", "gray-600", "lede, nav and the Playground label"],
+    ["light", "gray-700", "lede, nav and the Playground label"],
     ["dark", "gray-100", "headline"],
-    ["dark", "gray-300", "lede and nav"],
-    ["dark", "gray-400", "the Playground label"],
+    ["dark", "gray-300", "lede, nav and the Playground label"],
   ] as const)(
     "keeps %s %s text (%s) at 4.5:1 over its worst pixel",
     (theme, name, _what) => {
@@ -93,13 +106,29 @@ describe("hero aurora", () => {
     },
   );
 
-  it("would fail the lede with templatical.com's own accent", () => {
-    // Why this copy is quieter, and proof the check can fail at all.
+  it("would fail the lede with templatical.com's full palette", () => {
+    // Why this copy runs at half strength, and proof the check can fail.
     const loud: AuroraTheme = {
       ...AURORA_THEMES.light,
       accent: [0.8, 0.16, 55],
+      copper: [0.84, 0.12, 35],
+      gold: [0.92, 0.07, 80],
+      halo: 0.18,
     };
-    expect(worstContrast(loud, token("gray-600"))).toBeLessThan(4.5);
+    // With its own vignette and grain too.
+    expect(worstContrast(loud, token("gray-700"), 0.92, 0.006)).toBeLessThan(
+      4.5,
+    );
+  });
+
+  it("checks the colours the hero's text actually uses", () => {
+    // The lede, the header's nav and the Playground label sit straight on
+    // the aurora, so the checks above hold only while they use these.
+    expect(hero).toMatch(/text-lede text-gray-700 dark:text-gray-300"/);
+    expect(hero).toMatch(
+      /\[&_a\]:text-gray-700 [^"]*dark:\[&_a\]:text-gray-300 /,
+    );
+    expect(hero).toMatch(/ml-1\.5 text-base text-gray-700 dark:text-gray-300"/);
   });
 
   it("fades into the page's own background", () => {
@@ -109,8 +138,8 @@ describe("hero aurora", () => {
 
   it("writes the tested palette into the shader", () => {
     const shader = auroraFragment();
-    expect(shader).toContain("lch(0.915, 0.060, 55.0)");
-    expect(shader).toContain("lch(0.255, 0.050, 55.0)");
+    expect(shader).toContain("lch(0.860, 0.110, 55.0)");
+    expect(shader).toContain("lch(0.280, 0.075, 55.0)");
     expect(shader).toContain(
       `mix(${AURORA_VIGNETTE_FLOOR.toFixed(3)}, 1.0, vig)`,
     );

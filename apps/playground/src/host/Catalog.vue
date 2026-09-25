@@ -134,14 +134,14 @@ onMounted(() => {
             <span class="text-base font-semibold tracking-[-0.01em]">{{
               t.host.brand
             }}</span>
-            <span class="ml-1.5 text-base text-gray-600 dark:text-gray-400">{{
+            <span class="ml-1.5 text-base text-gray-700 dark:text-gray-300">{{
               t.host.catalogTitle
             }}</span>
           </a>
           <div class="flex items-center gap-5">
             <nav
               :aria-label="t.host.catalogNav"
-              class="hidden items-center gap-5 text-sm md:flex [&_a]:text-gray-600 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 dark:[&_a]:text-gray-300 dark:[&_a:hover]:text-gray-100"
+              class="hidden items-center gap-5 text-sm md:flex [&_a]:text-gray-700 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 dark:[&_a]:text-gray-300 dark:[&_a:hover]:text-gray-100"
             >
               <a
                 href="https://docs.templatical.com"
@@ -169,7 +169,7 @@ onMounted(() => {
               {{ t.host.headline }}
             </h1>
             <p
-              class="m-0 mt-5 max-w-[34ch] text-pretty text-lede text-gray-600 dark:text-gray-300"
+              class="m-0 mt-5 max-w-[34ch] text-pretty text-lede text-gray-700 dark:text-gray-300"
             >
               {{ t.host.lede }}
             </p>
