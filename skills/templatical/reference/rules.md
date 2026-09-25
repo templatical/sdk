@@ -8,11 +8,12 @@
   `button`, `divider`, `spacer`, `social`, `video`, `menu`, `table`, `html`.
   Prefer native blocks — reach for `html` only when nothing else fits, since raw
   HTML is not visually editable afterward.
-- **Never emit `countdown` or `custom` blocks** (even though the schema allows
-  them): `countdown` needs the Templatical **Cloud** backend to render its
-  animated GIF — the open-source renderer can't, so it would break — and `custom`
-  blocks are consumer-registered runtime extensions that can't be produced from a
-  prompt. If the user asks for a countdown, say it's a Cloud feature and offer a
+- **Never emit `countdown`, `custom`, `slot`, or `wrapper` blocks** (even though
+  the schema allows them): `countdown` needs the Templatical **Cloud** backend to
+  render its animated GIF — the open-source renderer can't, so it would break —
+  and `custom` blocks are consumer-registered runtime extensions that can't be
+  produced from a prompt. `slot` and `wrapper` are layout markers, not campaign
+  blocks. If the user asks for a countdown, say it's a Cloud feature and offer a
   static stand-in instead — a `title`/`paragraph` with the date/time, or a "X days
   to go" line (optionally a `{{merge_tag}}`).
 - **Every block needs** `id` (unique, e.g. `"title_1"`), `type`, and
@@ -43,8 +44,8 @@
   Set `locale` to **the language of the copy you are writing**, not to `"en"`
   by default — it becomes `<html lang>` in the delivered email, so a German
   message labelled `"en"` is mispronounced by every screen reader that opens
-  it. The examples are English, so they all read `"en"`; a German email needs
-  `"de"`, Brazilian Portuguese `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
+  it. Match the copy: English `"en"`, German `"de"`, Brazilian Portuguese
+  `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
   and other RTL copy, also set `direction: "rtl"` (or omit it — those locales
   resolve as RTL). That value is the canvas `dir` and the exported
   `<mjml dir>`.

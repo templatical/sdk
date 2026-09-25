@@ -106,6 +106,7 @@ describe("isLocaleSupported", () => {
     expect(isLocaleSupported("pt-BR")).toBe(true);
     expect(isLocaleSupported("fr")).toBe(true);
     expect(isLocaleSupported("nl")).toBe(true);
+    expect(isLocaleSupported("ja")).toBe(true);
   });
 
   it("returns true for locale with region if base is supported", () => {
@@ -114,11 +115,12 @@ describe("isLocaleSupported", () => {
     expect(isLocaleSupported("pt-br")).toBe(true);
     expect(isLocaleSupported("fr-BE")).toBe(true);
     expect(isLocaleSupported("nl-BE")).toBe(true);
+    expect(isLocaleSupported("ja-JP")).toBe(true);
   });
 
   it("returns false for unsupported locales", () => {
     expect(isLocaleSupported("it")).toBe(false);
-    expect(isLocaleSupported("ja")).toBe(false);
+    expect(isLocaleSupported("ko")).toBe(false);
     expect(isLocaleSupported("pt")).toBe(false);
     expect(isLocaleSupported("pt-PT")).toBe(false);
   });
@@ -214,6 +216,12 @@ describe("loadTranslations", () => {
   it("loads Dutch translations", async () => {
     const t = await loadTranslations("nl");
     expect(t.history.undo).toBe("Ongedaan maken");
+  });
+
+  it("loads Japanese translations including merge tag controls", async () => {
+    const t = await loadTranslations("ja-JP");
+    expect(t.history.undo).toBe("元に戻す");
+    expect(t.mergeTag.picker.title).toBe("差し込み項目を挿入");
   });
 
   it("falls back to English for unsupported locale", async () => {

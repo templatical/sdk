@@ -85,7 +85,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
     await initFn({
       container,
       shadowDom: true,
-      content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
     expect(container.shadowRoot).not.toBeNull();
@@ -114,7 +113,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
     await initFn({
       container,
       shadowDom: false,
-      content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
     expect(container.shadowRoot).toBeNull();
@@ -128,7 +126,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
 
     await initFn({
       container,
-      content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
     expect(container.shadowRoot).not.toBeNull();
@@ -146,7 +143,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
     await initFn({
       container,
       shadowDom: true,
-      content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
     const firstShadow = container.shadowRoot!;
@@ -160,7 +156,6 @@ describe("editor shadow mount (Phase 1.5)", () => {
     await initFn({
       container,
       shadowDom: true,
-      content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
     // Same shadow root — `attachShadow` would throw on a re-attach, so the

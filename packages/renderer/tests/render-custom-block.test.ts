@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createCustomBlock,
-  createSectionBlock,
   createDefaultTemplateContent,
+  createSectionBlock,
+  createSlotBlock,
+  createWrapperBlock,
 } from "@templatical/types";
 import type {
   CustomBlock,
@@ -61,6 +63,36 @@ describe("renderToMjml — custom block resolution", () => {
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith(nested);
     expect(mjml).toContain("<p>nested-html</p>");
+  });
+
+  it("walks into a layout wrapper to render a custom block and emit its stylesheet", async () => {
+    const nested = makeCustomBlock({ title: "In card" });
+    const callback = vi
+      .fn<(block: CustomBlock) => Promise<string>>()
+      .mockResolvedValue("<p>in-card</p>");
+    const stylesheet = ".event-card-in-wrapper { color: red; }";
+    const resolver = vi.fn((customType: string) =>
+      customType === "event-card" ? stylesheet : null,
+    );
+    const layout = createDefaultTemplateContent();
+    layout.blocks = [createWrapperBlock({ children: [createSlotBlock()] })];
+    const content = makeContent([nested]);
+
+    const mjml = await renderToMjml(content, {
+      layout,
+      renderCustomBlock: callback,
+      getCustomBlockStylesheet: resolver,
+    });
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith(nested);
+    expect(resolver).toHaveBeenCalledWith("event-card");
+    const wrapperOpen = mjml.indexOf("<mj-wrapper");
+    const wrapperClose = mjml.indexOf("</mj-wrapper>");
+    expect(wrapperOpen).toBeGreaterThan(-1);
+    expect(mjml.slice(wrapperOpen, wrapperClose)).toContain("<p>in-card</p>");
+    expect(mjml.slice(0, mjml.indexOf("</mj-head>"))).toContain(stylesheet);
+    expect(content.blocks).toEqual([nested]);
   });
 
   it("resolves custom blocks in parallel", async () => {

@@ -10,10 +10,13 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { Ref } from "vue";
-import type {
-  ParagraphBlock,
-  Template,
-  TemplateContent,
+import {
+  createParagraphBlock,
+  createSlotBlock,
+  createTitleBlock,
+  type ParagraphBlock,
+  type Template,
+  type TemplateContent,
 } from "@templatical/types";
 
 const WRAPPED =
@@ -149,6 +152,42 @@ describe("init() normalizes content on the way in", () => {
     await initFn({ container: container(), mergeTags: MERGE_TAGS });
 
     expect(mountedConfig().content).toBeUndefined();
+  });
+});
+
+describe("init() normalizes and validates layout", () => {
+  it("converts a bare token in layout chrome before mount", async () => {
+    const layout: TemplateContent = {
+      blocks: [createParagraphBlock({ content: BARE }), createSlotBlock()],
+      settings: {},
+    } as TemplateContent;
+
+    await initFn({
+      container: container(),
+      layout,
+      mergeTags: MERGE_TAGS,
+    });
+
+    const mounted = (captured.props as { config: { layout: TemplateContent } })
+      .config.layout;
+    expect((mounted.blocks[0] as ParagraphBlock).content).toBe(WRAPPED);
+    expect(mounted.blocks[1]?.type).toBe("slot");
+    expect((layout.blocks[0] as ParagraphBlock).content).toBe(BARE);
+  });
+
+  it("rejects a layout with no slot before mount", async () => {
+    await expect(
+      initFn({
+        container: container(),
+        layout: {
+          blocks: [createTitleBlock({ content: "<p>Header only</p>" })],
+          settings: {},
+        } as TemplateContent,
+      }),
+    ).rejects.toThrow(
+      "[Templatical] layout: must contain exactly one slot block",
+    );
+    expect(captured.props).toBeNull();
   });
 });
 

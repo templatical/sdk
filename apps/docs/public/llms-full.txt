@@ -46,6 +46,8 @@ unmount();
 | `container`          | `string \| HTMLElement`                                           | Yes      | CSS selector or DOM element to mount the editor into. In default (shadow DOM) mode, must be an element that can host a Shadow DOM — `<div>` is recommended. See [Container element requirements](#container-element-requirements) below                                                                                                                                                                                                                                                                                        |
 | `shadowDom`          | `boolean`                                                         | No       | Mount inside a Shadow DOM for CSS isolation from the host page. Defaults to `true`. Set to `false` to mount in light DOM instead (e.g. for `document.querySelector` access to editor internals or Firefox <101 / Safari <16.4 support). See [Shadow DOM](/guide/shadow-dom) for trade-offs                                                                                                                                                                                                                                     |
 | `content`            | `TemplateContent`                                                 | No       | Initial template content. Defaults to empty template                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `layout`             | `TemplateContent`                                                 | No       | Embedder-owned shell applied at preview and `toMjml()` / `toHtml()`. Never written into `getContent()`, save, history, or the editing canvas. A `TemplateContent` with exactly one `slot`. Throws if the slot sits in a wrapper and the template emits `mj-wrapper`. See [Layout](/guide/layout)                                                                                                                                                                                                                               |
+| `sectionWrapper`     | `boolean`                                                         | No       | Whether the section toolbar offers Add wrapper. Omitted / `true` is on. `false` hides the control, including where a wrapper is legal. Already-on wrappers stay reachable. Presentation only: hiding never strips `section.wrapper`. Independent of `layout`. See [Layout](/guide/layout)                                                                                                                                                                                                                                     |
 | `onChange`           | `(content: TemplateContent) => void`                              | No       | Called when template content changes (debounced)                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `onError`            | `(error: Error) => void`                                          | No       | Called when an error occurs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `onDirtyChange`      | `(isDirty: boolean) => void`                                      | No       | Called whenever the unsaved-changes state flips. Works with or without a `templates` provider — use it to guard a client-side router, which `beforeunload` cannot cover. See [Saving & Loading](/backend/templates#unsaved-changes)                                                                                                                                                                                                                                                                                            |
@@ -57,7 +59,7 @@ unmount();
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                                                                             |
-| `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                                                                                          |
+| `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                       |
 | `resolvePreview`     | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering)                                                                                                                                                                                                                                                                                                  |
 | `displayConditions`  | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `logicTags`          | `LogicTagsConfig`                                                 | No       | Logic tag configuration — template-language control flow (conditionals, loops) inserted inline in rich text and text inputs. See [Logic Tags](/guide/logic-tags)                                                                                                                                                                                                                                                                                                                                                               |
@@ -75,7 +77,7 @@ unmount();
 | `templateSettings`   | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over the members of `TemplateSettings`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel)                                                                                                                                                                                                                                                                |
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `smallScreenNotice`  | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself                                                                                                                                                                                                                                   |
 | `lint`               | `LintOptions`                                                     | No       | Template linter configuration, from `@templatical/quality` (an optional peer). Unset, the linter loads on demand when the panel is opened. `disabled: true` skips the import entirely and hides the sidebar tab and inline badges. See [Quality options](/quality/options)                                                                                                                                                                                                                                                     |
@@ -1196,7 +1198,9 @@ type Block =
   | TableBlock
   | HtmlBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 ```
 
 ### BlockType
@@ -1205,7 +1209,8 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
+  | 'slot' | 'wrapper';
 ```
 
 ## Base Types
@@ -1242,6 +1247,35 @@ interface SpacingValue {
   bottom: number;
   left: number;
 }
+```
+
+### BorderValue
+
+A border described per side, like `SpacingValue`: each side has its own width, style and color, and a width of `0` leaves that side undrawn. Sections, images and buttons accept one.
+
+```ts
+interface BorderSideValue {
+  width: number;   // px; 0 = side not drawn
+  style: 'solid' | 'dashed' | 'dotted';
+  color: string;
+}
+
+interface BorderValue {
+  top: BorderSideValue;
+  right: BorderSideValue;
+  bottom: BorderSideValue;
+  left: BorderSideValue;
+}
+```
+
+### BorderRadiusValue
+
+A corner radius in px: one number for all corners, or one per corner. Sections, section wrappers, images and buttons accept it.
+
+```ts
+type BorderRadiusValue =
+  | number
+  | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 ```
 
 ### BlockVisibility
@@ -1293,7 +1327,9 @@ interface ImageBlock extends BaseBlock {
   height?: number;
   align: 'left' | 'center' | 'right';
   /** Corner radius in px. Omitted/0 = square corners. */
-  borderRadius?: number;
+  borderRadius?: BorderRadiusValue;
+  /** Omitted = no border. */
+  border?: BorderValue;
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
@@ -1310,7 +1346,9 @@ interface ButtonBlock extends BaseBlock {
   url: string;
   backgroundColor: string;
   textColor: string;
-  borderRadius: number;
+  borderRadius: BorderRadiusValue;
+  /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. An empty fill exports as that keyword. */
+  border?: BorderValue;
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
@@ -1328,6 +1366,7 @@ Container for multi-column layouts.
 interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
+  border?: BorderValue;     // absent: no border
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
@@ -1510,7 +1549,19 @@ interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   dataSourceFetched?: boolean;
 }
+
+interface SlotBlock extends BaseBlock {
+  type: 'slot';
+}
+
+interface WrapperBlock extends BaseBlock {
+  type: 'wrapper';
+  children: Block[];
+  borderRadius?: number;
+}
 ```
+
+`slot` and `wrapper` are layout markers. The skill never emits them. See [Layout](/guide/layout).
 
 ## Configuration Types
 
@@ -4753,6 +4804,10 @@ Custom blocks are consumer-registered runtime extensions — the skill has no wa
 
 `countdown` needs Cloud's server-side animated GIF; the OSS renderer cannot produce it. If asked for a countdown, say so and offer a static stand-in — a title or paragraph with the date, or an "X days to go" line.
 
+### Never emit `slot` or `wrapper`
+
+`slot` and `wrapper` are layout markers on `init({ layout })`, not campaign blocks. Never emit `type: "slot"` or `type: "wrapper"`. See [Layout](/guide/layout).
+
 ### Prefer native blocks
 
 Reach for `html` only as a last resort — raw HTML is not visually editable afterward.
@@ -4841,7 +4896,8 @@ Displays an image with optional link wrapping.
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
-| `borderRadius` | `number` | Corner radius in px. Omit or 0 for square corners |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the image. Width `0` leaves a side undrawn. Omit for no border |
 | `decorative` | `boolean` | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
@@ -4857,7 +4913,8 @@ A call-to-action button with customizable appearance.
 | `url` | `string` | Link URL |
 | `backgroundColor` | `string` | Button background color |
 | `textColor` | `string` | Button text color |
-| `borderRadius` | `number` | Corner radius in px |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the button (optional). For an outline button, set the background to the keyword `"transparent"` and set `textColor` too. A new button is `#333333` with white text. Clearing the fill exports `"transparent"`, because an omitted fill falls back to MJML's `#414141` |
 | `fontSize` | `number` | Font size in px |
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |
@@ -5016,8 +5073,15 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `columns` | `ColumnLayout` | Column layout preset |
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
-| `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+
+::: tip Email client note: borders and corners in Outlook
+- Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.
+- Dashed and dotted borders compile, and Outlook's rendering engine often paints them solid.
+- An image border is drawn on the `<img>`, and Outlook often drops it. Section and button borders sit on the `<td>`, which is the durable place for a border.
+:::
 
 ## Custom
 
@@ -6230,6 +6294,7 @@ const editor = await init({
 | `ca` | Catalan |
 | `fr` | French |
 | `nl` | Dutch |
+| `ja` | Japanese |
 
 ## Locale resolution
 
@@ -6556,6 +6621,209 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 - **Always set alt text** -- Many email clients (especially Outlook) block images by default. Recipients see the alt text until they choose to load images.
 - **Set explicit width** -- Email clients may render images at their native size if no width is specified, breaking your layout on small screens.
 - **Leave the height out unless you need it** -- Width alone keeps the aspect ratio. A height that doesn't match the source ratio stretches the image in every client.
+
+---
+
+# Layout
+
+Source: https://docs.templatical.com/guide/layout
+
+Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell. Save does not: `getContent()` is the authored template only.
+
+```ts
+init({ layout?: TemplateContent; sectionWrapper?: boolean })
+renderToMjml(content, { layout?: TemplateContent })
+```
+
+Build the shell with `createSlotBlock()` and, for a card, `createWrapperBlock()`. `createBlock('slot')` and `createBlock('wrapper')` throw. `sectionWrapper` is editor chrome and independent of `layout`. `renderToMjml` does not take `sectionWrapper`.
+
+## Example
+
+Grey page background, a "View in browser" line, the author's sections inside a white card, Imprint below the card. This is the wrap-around shell: preview and `toMjml()` / `toHtml()` compose it; the editing canvas and `getContent()` do not.
+
+```ts
+import {
+  init,
+  createSlotBlock,
+  createWrapperBlock,
+  createParagraphBlock,
+  createDefaultTemplateContent,
+} from '@templatical/editor';
+
+const layout = createDefaultTemplateContent();
+layout.settings.backgroundColor = '#f3f4f6';
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
+  }),
+  createWrapperBlock({
+    styles: {
+      backgroundColor: '#ffffff',
+      padding: { top: 24, right: 24, bottom: 24, left: 24 },
+    },
+    borderRadius: 12,
+    children: [createSlotBlock()],
+  }),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
+  }),
+];
+
+const editor = await init({
+  container: '#editor',
+  layout,
+  sectionWrapper: false,
+});
+```
+
+```
+mj-body                         ← grey mat (layout.settings.backgroundColor)
+  mj-section                    ← View in browser
+  mj-wrapper                    ← white card
+    [author sections…]
+  mj-section                    ← Imprint
+```
+
+`sectionWrapper: false` hides **Add wrapper** on author sections. With the slot inside a `wrapper`, that control would emit `mj-wrapper` inside `mj-wrapper`, which MJML forbids. Omit `sectionWrapper` (or pass `true`) if you want the panel; the editor still disables turning it on for this card layout.
+
+## The contract
+
+`layout` is a `TemplateContent` with exactly one `slot`.
+
+<!-- prettier-ignore -->
+| Surface | With `layout` |
+| --- | --- |
+| `getContent()` / `setContent()` / load / save / `onChange` / history | authored template only |
+| Editing canvas | authored template only |
+| Section toolbar Wrapper panel | [In the editor](#in-the-editor) |
+| `renderToMjml(content)` (no `layout` argument) | authored template only |
+| Preview canvas | composed |
+| `editor.toMjml()` / `toHtml()` | composed |
+| `RenderPayload.content` | composed |
+
+`init` runs `validateLayout` on the shell (after merge-tag normalization). `applyLayout` runs at preview and at `toMjml` / `toHtml` / `renderToMjml(content, { layout })`. It clones: authored block ids are left alone; layout block ids are new on the clone.
+
+::: tip Saved JSON
+`getContent()`, load, save, and the editing canvas never include layout blocks. Send with `toMjml()` / `toHtml()`, or call `applyLayout` on the server. Hiding Add wrapper does not strip `section.wrapper` from stored content.
+:::
+
+**`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
+
+**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
+
+Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
+
+`validateLayout` throws:
+
+```
+[Templatical] layout: must contain exactly one slot block
+[Templatical] layout: slot must be a top-level or wrapper child, not nested in a section
+[Templatical] layout: a wrapper cannot contain a wrapper
+```
+
+`setContent` / `load` / `addBlock` refuse `slot` and `wrapper` in content.
+
+MJML forbids `mj-wrapper` inside `mj-wrapper`. If the slot sits inside a wrapper, `applyLayout` walks the injected `content.blocks`. Any block that would emit `mj-wrapper` — `section.wrapper` set, or `type === 'wrapper'` — throws:
+
+```
+[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)
+```
+
+A slot in `children: [[slot]]` is `mj-section` inside `mj-column`, which MJML also forbids. Keep the slot as a body child or a wrapper child.
+
+## Header and footer
+
+No card: the slot is a sibling of the header and footer. Author `section.wrapper` is then a sibling `mj-wrapper` under `mj-body`, which is valid — leave `sectionWrapper` unset if authors should still get Add wrapper.
+
+```ts
+layout.blocks = [
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/view">View in browser</a></p>',
+  }),
+  createSlotBlock(),
+  createParagraphBlock({
+    content:
+      '<p style="text-align:center"><a href="https://example.com/imprint">Imprint</a></p>',
+  }),
+];
+```
+
+```
+mj-body                         ← grey mat
+  mj-section                    ← View in browser
+  [author sections…]            ← may include section.wrapper
+  mj-section                    ← Imprint
+```
+
+## In the editor
+
+The Wrapper panel is the section toolbar's **Add wrapper** switch plus colour / padding / radius when it is on. Card-layout disable and `sectionWrapper` are independent: setting `layout` does not hide the panel. A header / slot / footer shell still offers Add wrapper.
+
+When `layout` is set and the slot sits inside a `wrapper`, the switch cannot turn on. A muted line sits under it:
+
+> This editor already frames the email. An extra frame on this section isn't supported — preview and export will fail.
+
+If a loaded template already has `section.wrapper`, the switch stays on and enabled so it can be turned off. The note still shows.
+
+```ts
+init({ sectionWrapper?: boolean })
+```
+
+<!-- prettier-ignore -->
+| Value | Panel |
+| --- | --- |
+| omitted / `true` | shown, plus the card-layout disable above |
+| `false` | hidden, including where Add wrapper is legal (header / slot / footer, or no layout) |
+
+`sectionWrapper: false` does not strip `section.wrapper` from content, does not refuse `updateBlock`, and does not change `getContent()`. Hiding never changes a value.
+
+If `sectionWrapper === false` and the selected section already has `wrapper`, the panel still renders and the switch stays enabled so it can be turned off. Once it is off, the panel hides. The card-layout note still shows when the panel is visible.
+
+## Settings
+
+Layout `settings` is a full `TemplateSettings`. Only `backgroundColor` is read.
+
+<!-- prettier-ignore -->
+| Field | Winner |
+| --- | --- |
+| `backgroundColor` | layout → `mj-body` |
+| `width`, `fontFamily`, `textColor`, `linkColor`, `linkUnderline`, `locale`, `preheaderText`, `direction` | content |
+
+Content `settings.backgroundColor` is not mutated. Template Settings still edits it. It is not `mj-body` when a layout is applied. `direction` comes from the authored template. Layout does not set `dir`.
+
+You can copy the content settings onto the layout and override `backgroundColor`.
+
+## Headless use
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+import { applyLayout } from '@templatical/types';
+
+const mjml = await renderToMjml(content, { layout });
+const composed = applyLayout(layout, content);
+```
+
+Preview, `toMjml`, and `toHtml` compose first, then optionally `resolvePreview`:
+
+```
+base = applyLayout(layout, content)
+if (resolvePreview) base = await resolvePreview({ content: base, recipient })
+```
+
+The editing canvas never takes this path. Layout compose is synchronous.
+
+When `layout` is set, `PreviewResolveContext.content` is the composed document. Return that shape. Returning only inner `content` drops the shell.
+
+`renderToMjml(content)` with no `layout` argument does not call `applyLayout`.
+
+Test email: `payload.content` is the authored template; MJML/HTML from `toMjml` / `toHtml` includes the shell.
+
+Lint runs on editor content. The shell is not linted.
+
+A send path that re-renders from stored JSON without `layout` will drop the shell. Pass the same `layout` to `renderToMjml` (or call `applyLayout`) on the server.
 
 ---
 
@@ -8726,7 +8994,7 @@ interface PreviewResolveContext {
 }
 ```
 
-`content` is a copy — mutating it cannot affect the editor. `recipient` is present in the test-email dialog and absent in the editor's preview mode; treat its absence as *"no particular recipient"* and return something renderable anyway.
+`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `recipient` is present in the test-email dialog and absent in the editor's preview mode; treat its absence as *"no particular recipient"* and return something renderable anyway.
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 
@@ -9297,7 +9565,7 @@ card.wrapper = {
 };
 ```
 
-The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested.
+The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.
 
 ---
 
@@ -11177,7 +11445,7 @@ You're not building a customer-facing product — you need a controlled tool for
 
 **Templatical fits because:**
 - Self-hostable in full. The OSS SDK has no required cloud dependency.
-- Multilingual (English, German, Portuguese, Spanish, Catalan, French, Dutch) out of the box, with a clean path to add more locales for international teams.
+- Multilingual (English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese) out of the box, with a clean path to add more locales for international teams.
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) inside your internal portal, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) in your job runners or send pipeline.

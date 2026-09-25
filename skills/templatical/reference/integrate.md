@@ -47,6 +47,13 @@ The container must be able to host a shadow root (`div`, `section`, `article`;
 never `table`, `button`, or `input`). See [docs.md](docs.md) →
 `getting-started/installation` under CDN.
 
+Platform chrome around every email — view-in-browser, Imprint, a grey mat, a
+card — is `init({ layout })`, a JSON document with one `slot`. It is not
+blocks in the template JSON and not a `render.toMjml` splice. Preview and
+`toMjml()` / `toHtml()` compose the shell; `getContent()` does not.
+`sectionWrapper: false` hides Add wrapper on author sections (needed when the
+slot sits in a layout card). See [docs.md](docs.md) → `guide/layout`.
+
 ## Framework
 
 Same shape in any component-based framework: mount on the container ref,

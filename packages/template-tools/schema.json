@@ -65,6 +65,12 @@
         },
         {
           "$ref": "#/definitions/CustomBlock"
+        },
+        {
+          "$ref": "#/definitions/SlotBlock"
+        },
+        {
+          "$ref": "#/definitions/WrapperBlock"
         }
       ]
     },
@@ -127,8 +133,12 @@
           "description": "Whether columns stack vertically on mobile. Absent or `true` keeps MJML's default responsive behavior (columns stack below 480px). `false` renders the columns inside an `<mj-group>` so they stay side-by-side on mobile, proportionally shrunk to fit."
         },
         "borderRadius": {
-          "type": "number",
-          "description": "Corner radius in px. Omitted/0 = square corners."
+          "$ref": "#/definitions/BorderRadiusValue",
+          "description": "Corner radius in px — one number, or a radius per corner. Omitted/0 = square corners."
+        },
+        "border": {
+          "$ref": "#/definitions/BorderValue",
+          "description": "Border around the section box, per side. Omitted = no border; a side with width 0 is not drawn."
         },
         "wrapper": {
           "$ref": "#/definitions/SectionWrapper",
@@ -209,6 +219,97 @@
         "1-2"
       ]
     },
+    "BorderRadiusValue": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/definitions/CornerRadius"
+        }
+      ],
+      "description": "A corner radius in px: one number for all four corners, or a radius per corner."
+    },
+    "CornerRadius": {
+      "type": "object",
+      "properties": {
+        "topLeft": {
+          "type": "number"
+        },
+        "topRight": {
+          "type": "number"
+        },
+        "bottomRight": {
+          "type": "number"
+        },
+        "bottomLeft": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "topLeft",
+        "topRight",
+        "bottomRight",
+        "bottomLeft"
+      ],
+      "additionalProperties": false,
+      "description": "A radius per corner, in px."
+    },
+    "BorderValue": {
+      "type": "object",
+      "properties": {
+        "top": {
+          "$ref": "#/definitions/BorderSideValue"
+        },
+        "right": {
+          "$ref": "#/definitions/BorderSideValue"
+        },
+        "bottom": {
+          "$ref": "#/definitions/BorderSideValue"
+        },
+        "left": {
+          "$ref": "#/definitions/BorderSideValue"
+        }
+      },
+      "required": [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ],
+      "additionalProperties": false,
+      "description": "A border described per side, like `SpacingValue`. Only elements MJML can border natively carry one: sections, images and buttons."
+    },
+    "BorderSideValue": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "description": "Width in px. `0` means no border on this side."
+        },
+        "style": {
+          "$ref": "#/definitions/BorderStyle"
+        },
+        "color": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "width",
+        "style",
+        "color"
+      ],
+      "additionalProperties": false,
+      "description": "One side of a border. A width of `0` leaves that side undrawn."
+    },
+    "BorderStyle": {
+      "type": "string",
+      "enum": [
+        "solid",
+        "dashed",
+        "dotted"
+      ]
+    },
     "SectionWrapper": {
       "type": "object",
       "properties": {
@@ -219,8 +320,8 @@
           "$ref": "#/definitions/SpacingValue"
         },
         "borderRadius": {
-          "type": "number",
-          "description": "Corner radius in px for the outer frame. Omitted/0 = square corners."
+          "$ref": "#/definitions/BorderRadiusValue",
+          "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners."
         }
       },
       "additionalProperties": false,
@@ -439,8 +540,12 @@
           ]
         },
         "borderRadius": {
-          "type": "number",
-          "description": "Corner radius in px. Omitted/0 = square corners. A radius of at least half the rendered size rounds a square image to a circle, which is how avatar and portrait layouts are built."
+          "$ref": "#/definitions/BorderRadiusValue",
+          "description": "Corner radius in px. Omitted/0 = square corners. A radius of at least half the rendered size rounds a square image to a circle, which is how avatar and portrait layouts are built. A radius per corner is also accepted."
+        },
+        "border": {
+          "$ref": "#/definitions/BorderValue",
+          "description": "Border around the image itself, per side. Omitted = no border; a side with width 0 is not drawn."
         },
         "linkUrl": {
           "type": "string"
@@ -524,7 +629,12 @@
           "type": "string"
         },
         "borderRadius": {
-          "type": "number"
+          "$ref": "#/definitions/BorderRadiusValue",
+          "description": "Corner radius in px — one number, or a radius per corner."
+        },
+        "border": {
+          "$ref": "#/definitions/BorderValue",
+          "description": "Border around the button itself, per side. Omitted = no border; a side with width 0 is not drawn. For an outline (\"ghost\") button, set `backgroundColor` to the keyword `\"transparent\"` (the background control stores it) and set `textColor` too — a new button is `#333333` with white text. An empty fill exports as `transparent`, because MJML paints `#414141` when the attribute is omitted."
         },
         "fontSize": {
           "type": "number"
@@ -1445,6 +1555,118 @@
         "type"
       ],
       "additionalProperties": false
+    },
+    "SlotBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "slot"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Layout-only hole where authored content is spliced in. Extends BaseBlock so Block walkers stay typed (`styles` unused; spliced out before render)."
+    },
+    "WrapperBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "wrapper"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Block"
+          }
+        },
+        "borderRadius": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "children",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to the wrapper. Legal in layout only this ship."
     },
     "TemplateSettings": {
       "type": "object",

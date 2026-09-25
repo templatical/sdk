@@ -218,4 +218,139 @@ describe("buildTopLevel", () => {
       ),
     ).toBe(true);
   });
+
+  it("returns nothing for an unknown top-level type", () => {
+    expect(
+      build({
+        type: "standard-paragraph",
+        data: {},
+        attributes: {},
+        children: [{ text: "x" }],
+      }),
+    ).toEqual({ blocks: [], entries: [] });
+  });
+
+  it("skips an empty wrapper and approximates a multi-section band", () => {
+    const empty = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: {},
+      children: [
+        { type: "placeholder", data: {}, attributes: {}, children: [] },
+      ],
+    });
+    expect(empty.blocks).toEqual([]);
+    expect(empty.entries[0]).toMatchObject({
+      sourceTag: "standard-wrapper",
+      status: "skipped",
+    });
+
+    const two = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "background-color": "#eee", "border-radius": "8px" },
+      children: [
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {},
+          children: [col([para("A")])],
+        },
+        {
+          type: "standard-section",
+          data: {},
+          attributes: {},
+          children: [col([para("B")])],
+        },
+      ],
+    });
+    expect(two.blocks).toHaveLength(2);
+    expect(
+      two.entries.filter((e) => e.templaticalBlockType === "section"),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: "approximated" }),
+      ]),
+    );
+    expect((two.blocks[0] as SectionBlock).wrapper?.borderRadius).toBe(8);
+  });
+
+  it("keeps a hero without a background-url as a 1-col section", () => {
+    const { blocks, entries } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-h1",
+          data: {},
+          attributes: {},
+          children: [{ text: "Hi" }],
+        },
+      ],
+    });
+    const s = blocks[0] as SectionBlock;
+    expect(s.children[0][0].type).toBe("title");
+    expect(s.children[0].some((b) => b.type === "image")).toBe(false);
+    expect(entries.some((e) => e.sourceTag === "standard-hero")).toBe(true);
+  });
+
+  it("flattens mixed columns and groups, and copies desktop-only visibility", () => {
+    const { blocks, entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: { "border-radius": "4px" },
+      children: [
+        col([para("A")], "50%"),
+        {
+          type: "standard-group",
+          data: {},
+          attributes: {},
+          children: [col([para("B")], "50%")],
+        },
+      ],
+      visible: "desktop",
+    } as EasyEmailProNode);
+    const s = blocks[0] as SectionBlock;
+    expect(s.columns).toBe("2");
+    expect(s.visibility).toEqual({ desktop: true, mobile: false });
+    expect(s.borderRadius).toBe(4);
+    expect(
+      entries.some(
+        (e) => e.status === "approximated" && e.note?.includes("mixed columns"),
+      ),
+    ).toBe(true);
+  });
+
+  it("notes inexact same-count widths rather than a fold", () => {
+    const { blocks, entries } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [col([para("A")], "40%"), col([para("B")], "60%")],
+    });
+    expect((blocks[0] as SectionBlock).columns).toBe("1-2");
+    expect(
+      entries.some(
+        (e) =>
+          e.status === "approximated" &&
+          e.note?.includes("40%") &&
+          e.note?.includes("resolved to"),
+      ),
+    ).toBe(true);
+  });
+
+  it("drops leftover non-column children into the first slot", () => {
+    const { blocks } = build({
+      type: "standard-section",
+      data: {},
+      attributes: {},
+      children: [para("Lead"), col([para("Col")])],
+    });
+    const s = blocks[0] as SectionBlock;
+    expect(s.children[0].map((b) => b.type)).toEqual([
+      "paragraph",
+      "paragraph",
+    ]);
+  });
 });

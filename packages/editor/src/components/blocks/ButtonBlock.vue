@@ -3,7 +3,9 @@ import type {
   ButtonBlock as ButtonBlockType,
   ViewportSize,
 } from "@templatical/types";
+import { toBorderRadiusCss } from "@templatical/types";
 import { computed } from "vue";
+import { getBorderStyle } from "../../utils/blockComponentResolver";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 
 const props = defineProps<{
@@ -20,9 +22,15 @@ const buttonStyle = computed(() => {
     fontSize: `${props.block.fontSize}px`,
     fontWeight: "bold",
     textDecoration: "none",
-    borderRadius: `${props.block.borderRadius}px`,
+    // A plain number renders as-is, like the export; per-corner radii go
+    // through the renderer's formatter.
+    borderRadius:
+      typeof props.block.borderRadius === "number"
+        ? `${props.block.borderRadius}px`
+        : (toBorderRadiusCss(props.block.borderRadius) ?? "0px"),
     textAlign: "center",
   };
+  Object.assign(style, getBorderStyle(props.block.border));
   if (props.block.fontFamily) {
     style.fontFamily = props.block.fontFamily;
   }

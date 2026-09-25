@@ -1,17 +1,45 @@
+const RGB_CHANNELS =
+  /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(\d*\.?\d+)\s*)?\)$/i;
+
+function channelsToHex(r: string, g: string, b: string): string {
+  const toHex = (n: string) => Number(n).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 /**
- * Normalize a browser-serialized `rgb()/rgba()` color to `#rrggbb`. The browser
+ * Normalize an opaque `rgb()` / `rgba(..., 1)` to `#rrggbb`. The browser
  * serializes an inline `style="color:#hex"` to `rgb(...)`, so reading a stored
  * color back via `element.style.color` (e.g. a TipTap textStyle/highlight mark,
  * or a saved link color) surfaces `rgb(...)` — mismatching the hex used
- * everywhere else, and unparseable by the hex-only picker (`vanilla-colorful`)
- * and the native `<input type="color">`. Non-rgb input (already hex, a keyword,
- * or empty) is returned unchanged.
+ * everywhere else, and unparseable by the hex-only picker (`vanilla-colorful`).
+ *
+ * An `rgba()` whose alpha is anything other than 1 is returned unchanged: that
+ * alpha is the stored color, and folding it to hex would drop it on the next
+ * edit. Keywords (`transparent`), hex, and empty are returned unchanged.
  */
 export function normalizeColorToHex(value: string): string {
-  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(value.trim());
+  const m = RGB_CHANNELS.exec(value.trim());
   if (!m) return value;
-  const toHex = (n: string) => Number(n).toString(16).padStart(2, "0");
-  return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
+  if (m[4] !== undefined && Number(m[4]) !== 1) return value.trim();
+  return channelsToHex(m[1], m[2], m[3]);
+}
+
+/**
+ * The `#rrggbb` of a color's RGB channels, ignoring alpha. Used to position
+ * the hex wheel on a stored `rgba()` without writing that hex back. Returns
+ * null for keywords and empty.
+ */
+export function opaqueHex(value: string): string | null {
+  const trimmed = value.trim();
+  const short = /^#([0-9a-f]{3})$/i.exec(trimmed);
+  if (short) {
+    const [r, g, b] = short[1].split("");
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) return trimmed.toLowerCase();
+  const m = RGB_CHANNELS.exec(trimmed);
+  if (!m) return null;
+  return channelsToHex(m[1], m[2], m[3]);
 }
 
 /**

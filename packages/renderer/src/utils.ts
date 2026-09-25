@@ -13,6 +13,10 @@
  * https://documentation.mjml.io/
  */
 
+import type { BorderRadiusValue, BorderValue } from "@templatical/types";
+import { toBorderDeclarations, toBorderRadiusCss } from "@templatical/types";
+import { escapeCssValue } from "./escape";
+
 /**
  * Where the MJML element accepts a background-color attribute.
  * - `native`: the element has its own `background-color` (mj-section, mj-button).
@@ -55,4 +59,40 @@ export function heightAttr(height: number | undefined): string {
   }
 
   return ` height="${height}px"`;
+}
+
+/**
+ * Render the border attributes for the MJML elements that accept them natively
+ * (`mj-section`, `mj-image`, `mj-button`): a single `border` when it covers all
+ * four sides, otherwise one `border-<side>` per chosen side. Returns an empty
+ * string when there is nothing to draw, so templates without a border render
+ * exactly as before.
+ *
+ * MJML copies the values into an inline `style`, so they go through
+ * `escapeCssValue` — a tampered color must not smuggle in a sibling
+ * declaration.
+ */
+export function borderAttr(border: BorderValue | undefined): string {
+  return Object.entries(toBorderDeclarations(border))
+    .map(([name, value]) => ` ${name}="${escapeCssValue(value)}"`)
+    .join("");
+}
+
+/**
+ * Render the `border-radius` attribute: `"8px"` for matching corners, or the
+ * four-value shorthand (top-left, top-right, bottom-right, bottom-left) that
+ * `mj-section`, `mj-wrapper`, `mj-image` and `mj-button` all accept. Returns an
+ * empty string when every corner is square, rather than a `border-radius="0px"`
+ * every existing template would suddenly grow.
+ */
+export function borderRadiusAttr(
+  radius: BorderRadiusValue | undefined,
+): string {
+  const css = toBorderRadiusCss(radius);
+
+  if (css === null) {
+    return "";
+  }
+
+  return ` border-radius="${css}"`;
 }

@@ -65,21 +65,21 @@ describe("init() warns about an unusable locale", () => {
   // not the language code "el") — looked exactly like the editor ignoring the
   // option. Regions and whitespace are covered below as the NON-typo case.
   it("names the locale and what it fell back to", async () => {
-    const [message] = await initWithLocale("ja");
+    const [message] = await initWithLocale("it");
     expect(message).toContain("config.locale");
-    expect(message).toContain("ja");
+    expect(message).toContain("it");
     expect(message).toContain("English");
   });
 
   it("lists the locales that would have worked", async () => {
-    const [message] = await initWithLocale("ja");
-    for (const locale of ["ca", "de", "en", "es", "fr", "nl", "pt-BR"]) {
+    const [message] = await initWithLocale("it");
+    for (const locale of ["ca", "de", "en", "es", "fr", "ja", "nl", "pt-BR"]) {
       expect(message).toContain(locale);
     }
   });
 
   it("warns once, not once per lookup", async () => {
-    expect(await initWithLocale("ja")).toHaveLength(1);
+    expect(await initWithLocale("it")).toHaveLength(1);
   });
 
   it.each(["de", "en", "pt-BR"])("stays silent for %s", async (locale) => {

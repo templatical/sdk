@@ -30,7 +30,13 @@ import type {
   UiTheme,
   ResolvePreview,
 } from "@templatical/types";
-import { createDefaultTemplateContent, safeClone } from "@templatical/types";
+import {
+  assertNoSlotInContent,
+  assertNoWrapperInContent,
+  createDefaultTemplateContent,
+  safeClone,
+  validateLayout,
+} from "@templatical/types";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 
 import Editor from "./Editor.vue";
@@ -88,6 +94,33 @@ export interface TemplaticalEditorConfig {
    */
   container: string | HTMLElement;
   content?: TemplateContent;
+
+  /**
+   * Embedder-owned email shell, applied as an overlay at preview and at
+   * `toMjml()` / `toHtml()`. Never written into `getContent()`, save, history,
+   * or the editing canvas.
+   *
+   * A Templatical JSON document with exactly one `slot` — top-level (header /
+   * footer / mat) or inside a layout `wrapper` (the card around author
+   * sections). Build it with `createSlotBlock()` / `createWrapperBlock()`.
+   *
+   * See the [Layout](https://docs.templatical.com/guide/layout) guide.
+   */
+  layout?: TemplateContent;
+
+  /**
+   * Whether the section toolbar offers Add wrapper. Defaults to on
+   * (`!== false`). Set `false` to hide the control, including where a
+   * wrapper is legal (sibling-slot layout, or no layout).
+   *
+   * Presentation only: hiding never strips `section.wrapper` from content
+   * and does not refuse `updateBlock`. A section that already has a wrapper
+   * still shows the panel so it can be turned off.
+   *
+   * Independent of {@link layout}. A sibling-slot layout still wants the
+   * control; hiding is this flag, not inferred from a layout being set.
+   */
+  sectionWrapper?: boolean;
 
   /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
@@ -976,11 +1009,19 @@ async function mountEditor(
   // This is one of four places content enters. The other three:
   // `instance.setContent` and `instance.create` below, and the `templates`
   // provider's `load`, wrapped in `Editor.vue` where it reaches core.
+  // Overlay chrome is not seed content: merge tags in the shell, then refuse
+  // an illegal tree before mount.
+  if (config.layout) {
+    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
+    validateLayout(config.layout);
+  }
   if (config.content) {
     config.content = normalizeContentForConfig(
       config.content,
       config.mergeTags,
     );
+    assertNoSlotInContent(config.content);
+    assertNoWrapperInContent(config.content);
   }
 
   const app = createApp({
@@ -1120,6 +1161,7 @@ async function mountEditor(
         renderCustomBlock: (block: CustomBlock) =>
           instance.renderCustomBlock(block),
         getFonts: () => resolveRenderFonts(fontsManager),
+        getLayout: () => config.layout,
       }),
     renderLocalMjml: () =>
       toMjmlForInstance({
@@ -1130,6 +1172,7 @@ async function mountEditor(
           instance.getCustomBlockStylesheet(customType),
         getFonts: () => resolveRenderFonts(fontsManager),
         socialIconsBaseUrl: config.socialIconsBaseUrl,
+        getLayout: () => config.layout,
       }),
   });
 
@@ -1207,6 +1250,8 @@ export async function initCloud(
     {
       container: config.container,
       content: config.content,
+      layout: config.layout,
+      sectionWrapper: config.sectionWrapper,
       shadowDom: config.shadowDom,
       locale: config.locale,
       uiTheme: config.uiTheme,
@@ -1332,6 +1377,18 @@ export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
 export type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
+
+export {
+  applyLayout,
+  validateLayout,
+  createSlotBlock,
+  createWrapperBlock,
+  createParagraphBlock,
+  createDefaultTemplateContent,
+  isSlot,
+  isWrapper,
+  layoutWrapsSlot,
+} from "@templatical/types";
 
 export {
   getSupportedLocales,

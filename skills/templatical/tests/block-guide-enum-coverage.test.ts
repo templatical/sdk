@@ -31,11 +31,11 @@ type SchemaNode = {
   properties?: Record<string, SchemaNode>;
 };
 
-// `countdown` needs Cloud to render and `custom` is registered at runtime, so
-// the skill emits neither and the guide documents neither. `countdown` carries
-// an inline `separator` enum, so without this it would be looked up in a section
-// that does not exist.
-const NEVER_EMITTED = new Set(["countdown", "custom"]);
+// `countdown` needs Cloud to render, `custom` is registered at runtime, and
+// `slot`/`wrapper` are layout markers — the skill emits none of them and the
+// guide documents none. `countdown` carries an inline `separator` enum, so
+// without this it would be looked up in a section that does not exist.
+const NEVER_EMITTED = new Set(["countdown", "custom", "slot", "wrapper"]);
 
 /** Heading text -> that section's body, ending at the next heading. */
 function sections(): Map<string, string> {
@@ -198,6 +198,11 @@ describe("block-guide.md documents every enum value the schema declares", () => 
       .map((site) => site.path)
       .sort();
     expect(byPath).toEqual([
+      // `top` only: the walker visits the shared BorderSideValue definition
+      // once, through the first side that reaches it.
+      "button.border.top.style",
+      "image.border.top.style",
+      "section.border.top.style",
       "section.columns",
       "settings.direction",
       "social.iconSize",

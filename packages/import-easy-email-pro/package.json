@@ -1,13 +1,13 @@
 {
   "name": "@templatical/import-easy-email-pro",
   "description": "Convert Easy Email Pro email templates to Templatical format",
-  "version": "0.39.3",
+  "version": "0.42.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^25.9.7",
+    "@types/node": "^25.9.8",
     "typescript": "^6.0.3",
     "vitest": "^5.0.1"
   },

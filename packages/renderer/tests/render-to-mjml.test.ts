@@ -6,8 +6,62 @@ import {
   createSectionBlock,
   createImageBlock,
   createSocialIconsBlock,
+  createSlotBlock,
+  createWrapperBlock,
+  type Block,
+  type TemplateContent,
 } from "@templatical/types";
 import { renderToMjml, DEFAULT_SOCIAL_ICONS_BASE_URL } from "../src";
+
+const SLOT_IN_CONTENT = "[Templatical] slot is not a valid content block";
+const WRAPPER_IN_CONTENT = "[Templatical] wrapper is not a valid content block";
+const NESTED_MJ_WRAPPER =
+  "[Templatical] layout: a wrapper around the slot cannot contain blocks that emit mj-wrapper (section.wrapper)";
+
+function withBlocks(
+  blocks: Block[],
+  settings?: Partial<TemplateContent["settings"]>,
+): TemplateContent {
+  const content = createDefaultTemplateContent();
+  content.blocks = blocks;
+  if (settings) {
+    content.settings = { ...content.settings, ...settings };
+  }
+  return content;
+}
+
+function siblingLayout(
+  settings?: Partial<TemplateContent["settings"]>,
+): TemplateContent {
+  return withBlocks(
+    [
+      createTitleBlock({ content: "<p>View in browser</p>" }),
+      createSlotBlock(),
+      createParagraphBlock({ content: "<p>Impressum</p>" }),
+    ],
+    settings,
+  );
+}
+
+function cardLayout(
+  settings?: Partial<TemplateContent["settings"]>,
+): TemplateContent {
+  return withBlocks(
+    [
+      createTitleBlock({ content: "<p>View in browser</p>" }),
+      createWrapperBlock({
+        styles: {
+          backgroundColor: "#ffffff",
+          padding: { top: 24, right: 24, bottom: 24, left: 24 },
+        },
+        borderRadius: 12,
+        children: [createSlotBlock()],
+      }),
+      createParagraphBlock({ content: "<p>Impressum</p>" }),
+    ],
+    settings,
+  );
+}
 
 describe("renderToMjml", () => {
   it("renders empty template", async () => {
@@ -539,5 +593,104 @@ describe("content direction", () => {
     const mjml = await renderToMjml(content);
     expect(mjml).toContain("padding-right: 24px");
     expect(mjml).not.toContain("padding-left: 24px");
+  });
+});
+
+describe("renderToMjml layout option", () => {
+  it("without layout, omitted options match empty options and do not mutate backgroundColor", async () => {
+    const content = withBlocks(
+      [createParagraphBlock({ content: "<p>Hello</p>" })],
+      { backgroundColor: "#abcdef" },
+    );
+
+    const omitted = await renderToMjml(content);
+    const empty = await renderToMjml(content, {});
+
+    expect(omitted).toBe(empty);
+    expect(omitted).toContain("Hello");
+    expect(omitted).toContain(
+      '<mj-body width="600px" background-color="#abcdef">',
+    );
+    expect(omitted).not.toContain("<mj-wrapper");
+    expect(content.settings.backgroundColor).toBe("#abcdef");
+  });
+
+  it("rejects a slot in content when no layout is set", async () => {
+    const content = withBlocks([createSlotBlock()]);
+    await expect(renderToMjml(content)).rejects.toThrow(SLOT_IN_CONTENT);
+  });
+
+  it("emits sibling layout chrome around content and takes backgroundColor from layout", async () => {
+    const content = withBlocks(
+      [createParagraphBlock({ content: "<p>Author body</p>" })],
+      { backgroundColor: "#111111", width: 480 },
+    );
+    const layout = siblingLayout({ backgroundColor: "#f3f4f6" });
+    const before = JSON.stringify(content);
+
+    const mjml = await renderToMjml(content, { layout });
+
+    expect(mjml).toContain("View in browser");
+    expect(mjml).toContain("Author body");
+    expect(mjml).toContain("Impressum");
+    expect(mjml.indexOf("View in browser")).toBeLessThan(
+      mjml.indexOf("Author body"),
+    );
+    expect(mjml.indexOf("Author body")).toBeLessThan(mjml.indexOf("Impressum"));
+    expect(mjml).toContain(
+      '<mj-body width="480px" background-color="#f3f4f6">',
+    );
+    expect(content.settings.backgroundColor).toBe("#111111");
+    expect(JSON.stringify(content)).toBe(before);
+  });
+
+  it("emits a card layout wrapper around author content with Impressum after it", async () => {
+    const content = withBlocks([
+      createParagraphBlock({ content: "<p>Author body</p>" }),
+    ]);
+    const layout = cardLayout({ backgroundColor: "#f3f4f6" });
+    const before = JSON.stringify(content);
+
+    const mjml = await renderToMjml(content, { layout });
+
+    expect(mjml).toContain("<mj-wrapper");
+    expect(mjml).toContain("</mj-wrapper>");
+    const wrapperOpen = mjml.indexOf("<mj-wrapper");
+    const wrapperClose = mjml.indexOf("</mj-wrapper>");
+    const wrapper = mjml.slice(wrapperOpen, wrapperClose);
+    expect(wrapper).toContain('background-color="#ffffff"');
+    expect(wrapper).toContain('padding="24px 24px 24px 24px"');
+    expect(wrapper).toContain('border-radius="12px"');
+    expect(wrapper).toContain("Author body");
+    expect(wrapper).not.toContain("Impressum");
+    expect(mjml.indexOf("Impressum")).toBeGreaterThan(wrapperClose);
+    expect(mjml).toContain(
+      '<mj-body width="600px" background-color="#f3f4f6">',
+    );
+    expect(JSON.stringify(content)).toBe(before);
+  });
+
+  it("rejects a card layout when content emits mj-wrapper via section.wrapper", async () => {
+    const content = withBlocks([
+      createSectionBlock({
+        wrapper: { backgroundColor: "#eeeeee" },
+        children: [[createParagraphBlock({ content: "<p>Author body</p>" })]],
+      }),
+    ]);
+    const before = JSON.stringify(content);
+
+    await expect(
+      renderToMjml(content, { layout: cardLayout() }),
+    ).rejects.toThrow(NESTED_MJ_WRAPPER);
+    expect(JSON.stringify(content)).toBe(before);
+  });
+
+  it("rejects a wrapper in content when no layout is set", async () => {
+    const content = withBlocks([
+      createWrapperBlock({
+        children: [createTitleBlock({ content: "<p>Chrome</p>" })],
+      }),
+    ]);
+    await expect(renderToMjml(content)).rejects.toThrow(WRAPPER_IN_CONTENT);
   });
 });

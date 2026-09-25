@@ -7,6 +7,7 @@ import {
   createButtonBlock,
   createDividerBlock,
   createSectionBlock,
+  createSlotBlock,
   createVideoBlock,
   createSocialIconsBlock,
   createSpacerBlock,
@@ -14,6 +15,7 @@ import {
   createMenuBlock,
   createTableBlock,
   createCountdownBlock,
+  createWrapperBlock,
   createCustomBlock,
   createBlock,
   cloneBlock,
@@ -766,5 +768,45 @@ describe("factory deep merge vs shallow spread", () => {
     } as any);
     expect(block.styles.padding.top).toBe(30);
     expect(block.styles.padding.right).toBe(10);
+  });
+});
+
+describe("layout block factories", () => {
+  it("createSlotBlock returns type slot with zero padding and a uuid", () => {
+    const block = createSlotBlock();
+    expect(block.type).toBe("slot");
+    expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(block.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("createWrapperBlock returns type wrapper with empty children", () => {
+    const block = createWrapperBlock();
+    expect(block.type).toBe("wrapper");
+    expect(block.children).toEqual([]);
+    expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+  });
+
+  it("createBlock(slot) throws", () => {
+    expect(() => createBlock("slot")).toThrow(
+      "[Templatical] slot cannot be inserted into content. Use createSlotBlock() to build a layout.",
+    );
+  });
+
+  it("createBlock(wrapper) throws", () => {
+    expect(() => createBlock("wrapper")).toThrow(
+      "[Templatical] wrapper cannot be inserted into content. Use createWrapperBlock() to build a layout.",
+    );
+  });
+
+  it("cloneBlock remints a wrapper and its children", () => {
+    const child = createTitleBlock();
+    const originalChildId = child.id;
+    const cloned = cloneBlock(createWrapperBlock({ children: [child] }));
+    expect(cloned.type).toBe("wrapper");
+    expect(cloned.id).not.toBe(createWrapperBlock().id);
+    expect(cloned.children[0].id).not.toBe(originalChildId);
+    expect(cloned.children[0].type).toBe("title");
   });
 });

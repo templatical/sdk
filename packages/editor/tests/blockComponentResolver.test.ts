@@ -3,6 +3,7 @@ import {
   resolveBlockComponent,
   getBlockWrapperStyle,
   getSectionWrapperStyle,
+  getWrapperStyle,
   getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
 import type { TemplateSettings } from "@templatical/types";
@@ -13,7 +14,9 @@ import {
   createCountdownBlock,
   createDividerBlock,
   createSectionBlock,
+  createWrapperBlock,
   createDefaultTemplateContent,
+  uniformBorder,
 } from "@templatical/types";
 import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry";
 import { markRaw, type Component } from "vue";
@@ -156,9 +159,79 @@ describe("getBlockWrapperStyle", () => {
   it("never sets borderRadius for a non-section block", () => {
     expect(getBlockWrapperStyle(createTitleBlock()).borderRadius).toBeUndefined();
   });
+
+  it("includes the border for a section when set (canvas/preview match export)", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        border: uniformBorder({ width: 1, style: "dotted", color: "#cccccc" }),
+      }),
+    );
+    expect(style.border).toBe("1px dotted #cccccc");
+  });
+
+  it("draws a section border on the drawn sides only", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        border: {
+          top: { width: 2, style: "solid", color: "#000000" },
+          right: { width: 0, style: "solid", color: "#000000" },
+          bottom: { width: 2, style: "solid", color: "#000000" },
+          left: { width: 0, style: "solid", color: "#000000" },
+        },
+      }),
+    );
+    expect(style.border).toBeUndefined();
+    expect(style.borderTop).toBe("2px solid #000000");
+    expect(style.borderBottom).toBe("2px solid #000000");
+    expect(style.borderLeft).toBeUndefined();
+    expect(style.borderRight).toBeUndefined();
+  });
+
+  it("omits the border for a section when unset or zero-width", () => {
+    expect(getBlockWrapperStyle(createSectionBlock()).border).toBeUndefined();
+    expect(
+      getBlockWrapperStyle(
+        createSectionBlock({
+          border: uniformBorder({ width: 0, style: "solid", color: "#cccccc" }),
+        }),
+      ).border,
+    ).toBeUndefined();
+  });
+
+  it("does not apply padding or background on a layout wrapper", () => {
+    // The band paints through getWrapperStyle on WrapperBlock's root. Applying
+    // the content-box helper here would double the padding against that band.
+    const block = createWrapperBlock({
+      styles: {
+        backgroundColor: "#ffffff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+      },
+    });
+    expect(getBlockWrapperStyle(block)).toEqual({});
+  });
 });
 
 describe("getSectionWrapperStyle", () => {
+  it("rounds only the chosen corners of the wrapper", () => {
+    const style = getSectionWrapperStyle(
+      createSectionBlock({
+        wrapper: {
+          borderRadius: { topLeft: 0, topRight: 0, bottomRight: 16, bottomLeft: 16 },
+        },
+      }),
+    );
+    expect(style?.borderRadius).toBe("0px 0px 16px 16px");
+  });
+
+  it("rounds only the chosen corners of the section box", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        borderRadius: { topLeft: 8, topRight: 8, bottomRight: 0, bottomLeft: 0 },
+      }),
+    );
+    expect(style.borderRadius).toBe("8px 8px 0px 0px");
+  });
+
   it("returns null for a non-section block", () => {
     expect(getSectionWrapperStyle(createTitleBlock())).toBeNull();
   });
@@ -191,6 +264,39 @@ describe("getSectionWrapperStyle", () => {
     });
     const style = getSectionWrapperStyle(block);
     expect(style).toEqual({ padding: "10px 10px 10px 10px" });
+  });
+});
+
+describe("getWrapperStyle", () => {
+  it("returns null for a non-wrapper block", () => {
+    expect(getWrapperStyle(createTitleBlock())).toBeNull();
+  });
+
+  it("builds bg + padding + radius from the block itself", () => {
+    const block = createWrapperBlock({
+      styles: {
+        backgroundColor: "#ffffff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+      },
+      borderRadius: 12,
+    });
+    expect(getWrapperStyle(block)).toEqual({
+      backgroundColor: "#ffffff",
+      padding: "24px 24px 24px 24px",
+      borderRadius: "12px",
+    });
+  });
+
+  it("omits unset fields — a padding-only band has no bg or radius", () => {
+    const block = createWrapperBlock({
+      styles: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+      },
+      borderRadius: 0,
+    });
+    expect(getWrapperStyle(block)).toEqual({
+      padding: "10px 10px 10px 10px",
+    });
   });
 });
 

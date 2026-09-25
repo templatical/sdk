@@ -77,7 +77,9 @@ type Block =
   | TableBlock
   | HtmlBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 ```
 
 ### BlockType
@@ -86,7 +88,8 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
+  | 'slot' | 'wrapper';
 ```
 
 ## Basistypen
@@ -123,6 +126,35 @@ interface SpacingValue {
   bottom: number;
   left: number;
 }
+```
+
+### BorderValue
+
+Ein Rahmen pro Seite, wie `SpacingValue`: Jede Seite hat eigene Breite, eigenen Stil und eigene Farbe; Breite `0` lässt die Seite weg. Sektionen, Bilder und Schaltflächen unterstützen ihn.
+
+```ts
+interface BorderSideValue {
+  width: number;   // px; 0 = Seite nicht gezeichnet
+  style: 'solid' | 'dashed' | 'dotted';
+  color: string;
+}
+
+interface BorderValue {
+  top: BorderSideValue;
+  right: BorderSideValue;
+  bottom: BorderSideValue;
+  left: BorderSideValue;
+}
+```
+
+### BorderRadiusValue
+
+Ein Eckenradius in px: eine Zahl für alle Ecken oder einer pro Ecke. Sektionen, Sektions-Wrapper, Bilder und Schaltflächen unterstützen ihn.
+
+```ts
+type BorderRadiusValue =
+  | number
+  | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 ```
 
 ### BlockVisibility
@@ -174,7 +206,9 @@ interface ImageBlock extends BaseBlock {
   height?: number;
   align: 'left' | 'center' | 'right';
   /** Eckenradius in px. Ohne Angabe oder 0 bleiben die Ecken eckig. */
-  borderRadius?: number;
+  borderRadius?: BorderRadiusValue;
+  /** Ohne Angabe = kein Rahmen. */
+  border?: BorderValue;
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
@@ -191,7 +225,9 @@ interface ButtonBlock extends BaseBlock {
   url: string;
   backgroundColor: string;
   textColor: string;
-  borderRadius: number;
+  borderRadius: BorderRadiusValue;
+  /** Outline-Schaltfläche: backgroundColor 'transparent' (das Schlüsselwort) plus eine textColor. Ein leerer Hintergrund wird als dieses Schlüsselwort exportiert. */
+  border?: BorderValue;
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
@@ -209,6 +245,7 @@ Container für mehrspaltige Layouts.
 interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
+  border?: BorderValue;     // ohne Angabe: kein Rahmen
   children: Block[][];      // Array von Spalten, die jeweils Blöcke enthalten
   stackOnMobile?: boolean;  // fehlt/true: Spalten stapeln auf Mobilgeräten (MJML-Standard).
                             // false: als <mj-group> gerendert, bleiben nebeneinander.
@@ -391,7 +428,19 @@ interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   dataSourceFetched?: boolean;
 }
+
+interface SlotBlock extends BaseBlock {
+  type: 'slot';
+}
+
+interface WrapperBlock extends BaseBlock {
+  type: 'wrapper';
+  children: Block[];
+  borderRadius?: number;
+}
 ```
+
+`slot` und `wrapper` sind Layout-Markierungen. Der Skill gibt sie nie aus. Siehe [Layout](/de/guide/layout).
 
 ## Konfigurationstypen
 

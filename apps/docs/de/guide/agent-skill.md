@@ -105,6 +105,10 @@ Benutzerdefinierte Blöcke sind zur Laufzeit registrierte Erweiterungen des Kons
 
 `countdown` braucht das serverseitige animierte GIF von Cloud; der OSS-Renderer kann es nicht erzeugen. Bei einer Countdown-Anfrage das sagen und einen statischen Ersatz anbieten — Titel oder Absatz mit dem Datum, oder eine Zeile „Noch X Tage“.
 
+### Nie `slot` oder `wrapper` ausgeben
+
+`slot` und `wrapper` sind Layout-Markierungen auf `init({ layout })`, keine Kampagnenblöcke. Nie `type: "slot"` oder `type: "wrapper"` ausgeben. Siehe [Layout](/de/guide/layout).
+
 ### Native Blöcke bevorzugen
 
 `html` nur als letzte Option — rohes HTML lässt sich danach nicht mehr visuell bearbeiten.

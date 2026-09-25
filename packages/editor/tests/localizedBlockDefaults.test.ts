@@ -9,6 +9,7 @@ import de from "../src/i18n/locales/de";
 import en from "../src/i18n/locales/en";
 import es from "../src/i18n/locales/es";
 import fr from "../src/i18n/locales/fr";
+import ja from "../src/i18n/locales/ja";
 import nl from "../src/i18n/locales/nl";
 import ptBR from "../src/i18n/locales/pt-BR";
 import { localizedBlockDefaults } from "../src/utils/localizedBlockDefaults";
@@ -63,6 +64,7 @@ describe("localizedBlockDefaults", () => {
     ["en", en],
     ["es", es],
     ["fr", fr],
+    ["ja", ja],
     ["nl", nl],
     ["pt-BR", ptBR],
   ])("resolves a non-empty prompt for every OSS locale: %s", (_name, t) => {
@@ -78,6 +80,7 @@ describe("localizedBlockDefaults", () => {
     ["de", de],
     ["es", es],
     ["fr", fr],
+    ["ja", ja],
     ["nl", nl],
     ["pt-BR", ptBR],
   ])("translates the prompts away from English: %s", (_name, t) => {

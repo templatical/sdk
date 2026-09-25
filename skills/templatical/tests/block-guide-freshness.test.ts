@@ -12,9 +12,10 @@ const schema = JSON.parse(
   readFileSync(resolve(REFERENCE_DIR, "schema.json"), "utf8"),
 );
 
-// `countdown` needs the Cloud backend to render its animated GIF and `custom`
-// blocks are consumer-registered at runtime, so the skill never emits either.
-// Both stay valid in schema.json for Cloud and headless callers.
+// `countdown` needs the Cloud backend to render its animated GIF, `custom`
+// blocks are consumer-registered at runtime, and `slot`/`wrapper` are layout
+// markers — the skill never emits any of them. All four stay valid in
+// schema.json for Cloud, layout, and headless callers.
 const EMITTABLE = [
   "button",
   "divider",

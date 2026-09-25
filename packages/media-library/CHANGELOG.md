@@ -1,5 +1,37 @@
 # @templatical/media-library
 
+## 0.42.0
+
+### Patch Changes
+
+- Updated dependencies [5758c24]
+- Updated dependencies [cb82f7e]
+  - @templatical/types@0.42.0
+
+## 0.41.0
+
+### Minor Changes
+
+- 88fdfe4: Add Japanese editor and media library translations and localized recipient-facing content defaults.
+
+### Patch Changes
+
+- @templatical/types@0.41.0
+
+## 0.40.0
+
+### Patch Changes
+
+- Updated dependencies [b7ff7d9]
+  - @templatical/types@0.40.0
+
+## 0.39.4
+
+### Patch Changes
+
+- 14531d2: Seed the edit dialog's filename and alt when it mounts already visible, so Save no longer no-ops on first open.
+- @templatical/types@0.39.4
+
 ## 0.39.3
 
 ### Patch Changes

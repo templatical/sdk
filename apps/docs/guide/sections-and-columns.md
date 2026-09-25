@@ -155,4 +155,4 @@ card.wrapper = {
 };
 ```
 
-The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested.
+The wrapper's padding is what makes the band show around the section. In the editor, enable it from the **Wrapper** panel in the section toolbar. The wrapper is a styling layer, not a container — sections still cannot be nested. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay.

@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import {
-  inputClass,
-  inputGroupInputClass,
-  inputSuffixClass,
-  labelClass,
-} from "../../constants/styleConstants";
+import { inputClass, labelClass } from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
-import type {
-  ColumnLayout,
-  SectionBlock,
-  SectionWrapper,
-  SpacingValue,
+import BorderControl from "./BorderControl.vue";
+import RadiusControl from "./RadiusControl.vue";
+import {
+  layoutWrapsSlot,
+  type BorderRadiusValue,
+  type ColumnLayout,
+  type SectionBlock,
+  type SectionWrapper,
+  type SpacingValue,
 } from "@templatical/types";
-import { computed } from "vue";
+import { computed, inject } from "vue";
+import { LAYOUT_KEY, SECTION_WRAPPER_KEY } from "../../keys";
 import { rebalanceColumnChildren } from "../../utils/rebalanceColumnChildren";
 
 const props = defineProps<{
@@ -27,6 +27,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const layout = inject(LAYOUT_KEY, undefined);
+const sectionWrapper = inject(SECTION_WRAPPER_KEY, undefined);
+
+const wrapsSlot = layout !== undefined && layoutWrapsSlot(layout);
+
+const showWrapperPanel = computed(
+  () => sectionWrapper !== false || !!props.block.wrapper,
+);
+const disableTurnOn = computed(() => wrapsSlot && !props.block.wrapper);
+const showNote = computed(() => wrapsSlot && showWrapperPanel.value);
 
 const columnOptions = computed(() => [
   { value: "1" as ColumnLayout, label: t.section.column1 },
@@ -46,8 +57,7 @@ function handleStackOnMobileChange(checked: boolean): void {
   emit("update", { stackOnMobile: checked });
 }
 
-function handleBorderRadiusChange(event: Event): void {
-  const borderRadius = Number((event.target as HTMLInputElement).value);
+function handleBorderRadiusChange(borderRadius: BorderRadiusValue): void {
   emit("update", { borderRadius });
 }
 
@@ -67,10 +77,8 @@ function handleWrapperPadding(value: SpacingValue): void {
   updateWrapper({ padding: value });
 }
 
-function handleWrapperRadius(event: Event): void {
-  updateWrapper({
-    borderRadius: Number((event.target as HTMLInputElement).value),
-  });
+function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
+  updateWrapper({ borderRadius });
 }
 </script>
 
@@ -99,27 +107,32 @@ function handleWrapperRadius(event: Event): void {
       @update:model-value="handleStackOnMobileChange($event)"
     />
   </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.section.borderRadius }}</label>
-    <div class="tpl:flex tpl:items-stretch">
-      <input
-        type="number"
-        :class="inputGroupInputClass"
-        :value="block.borderRadius ?? 0"
-        min="0"
-        max="50"
-        @input="handleBorderRadiusChange"
-      />
-      <span :class="inputSuffixClass">px</span>
-    </div>
-  </div>
-  <div class="tpl:mb-3.5">
+  <RadiusControl
+    :model-value="block.borderRadius"
+    :label="t.section.borderRadius"
+    :max="50"
+    testid-prefix="section"
+    @update:model-value="handleBorderRadiusChange"
+  />
+  <BorderControl
+    :model-value="block.border"
+    testid-prefix="section"
+    @update:model-value="emit('update', { border: $event })"
+  />
+  <div v-if="showWrapperPanel" class="tpl:mb-3.5">
     <ToggleSwitch
       class="tpl:text-xs tpl:text-[var(--tpl-text)]"
       :model-value="!!block.wrapper"
       :label="t.section.wrapperEnable"
+      :disabled="disableTurnOn"
       @update:model-value="setWrapperEnabled($event)"
     />
+    <p
+      v-if="showNote"
+      class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+    >
+      {{ t.section.wrapperLayoutConflict }}
+    </p>
     <div
       v-if="block.wrapper"
       class="tpl:mt-3 tpl:ml-0.5 tpl:space-y-3 tpl:border-l tpl:border-[var(--tpl-border)] tpl:pl-3"
@@ -128,6 +141,7 @@ function handleWrapperRadius(event: Event): void {
         <label :class="labelClass">{{ t.blockSettings.color }}</label>
         <ColorPicker
           :model-value="block.wrapper.backgroundColor ?? ''"
+          allow-transparent
           @update:model-value="updateWrapper({ backgroundColor: $event })"
         />
       </div>
@@ -138,20 +152,13 @@ function handleWrapperRadius(event: Event): void {
         "
         @update:model-value="handleWrapperPadding"
       />
-      <div>
-        <label :class="labelClass">{{ t.section.borderRadius }}</label>
-        <div class="tpl:flex tpl:items-stretch">
-          <input
-            type="number"
-            :class="inputGroupInputClass"
-            :value="block.wrapper.borderRadius ?? 0"
-            min="0"
-            max="50"
-            @input="handleWrapperRadius"
-          />
-          <span :class="inputSuffixClass">px</span>
-        </div>
-      </div>
+      <RadiusControl
+        :model-value="block.wrapper.borderRadius"
+        :label="t.section.borderRadius"
+        :max="50"
+        testid-prefix="section-wrapper"
+        @update:model-value="handleWrapperRadius"
+      />
     </div>
   </div>
 </template>

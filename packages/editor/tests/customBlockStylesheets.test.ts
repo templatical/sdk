@@ -6,6 +6,7 @@ import {
   createDefaultTemplateContent,
   createParagraphBlock,
   createSectionBlock,
+  createWrapperBlock,
   type CustomBlockDefinition,
   type TemplateContent,
 } from "@templatical/types";
@@ -146,6 +147,28 @@ describe("useCustomBlockStylesheets", () => {
       createSectionBlock({
         columns: "2",
         children: [[createCustomBlock(def)], [createParagraphBlock()]],
+      }),
+    ];
+    const content = ref(tpl);
+
+    const sheets = useCustomBlockStylesheets(content, registry);
+    expect(sheets.value).toHaveLength(1);
+    expect(sheets.value[0]).toContain(".tplc-image-text");
+  });
+
+  it("walks into wrappers to collect nested custom-block types", () => {
+    const registry = makeRegistry();
+    const def = registerDef(registry, "image-text", STACK_CSS);
+
+    const tpl = createDefaultTemplateContent();
+    tpl.blocks = [
+      createWrapperBlock({
+        children: [
+          createSectionBlock({
+            columns: "1",
+            children: [[createCustomBlock(def)]],
+          }),
+        ],
       }),
     ];
     const content = ref(tpl);

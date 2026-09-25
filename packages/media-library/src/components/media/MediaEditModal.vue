@@ -115,6 +115,9 @@ watch(
       }
     }
   },
+  // Chrome mounts this behind `v-if="editingItem"` with `:visible="true"`, so
+  // the first open never sees a false→true transition.
+  { immediate: true },
 );
 
 function handleCropChange(result: CropperResult): void {

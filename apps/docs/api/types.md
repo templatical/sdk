@@ -77,7 +77,9 @@ type Block =
   | TableBlock
   | HtmlBlock
   | CountdownBlock
-  | CustomBlock;
+  | CustomBlock
+  | SlotBlock
+  | WrapperBlock;
 ```
 
 ### BlockType
@@ -86,7 +88,8 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
+  | 'slot' | 'wrapper';
 ```
 
 ## Base Types
@@ -123,6 +126,35 @@ interface SpacingValue {
   bottom: number;
   left: number;
 }
+```
+
+### BorderValue
+
+A border described per side, like `SpacingValue`: each side has its own width, style and color, and a width of `0` leaves that side undrawn. Sections, images and buttons accept one.
+
+```ts
+interface BorderSideValue {
+  width: number;   // px; 0 = side not drawn
+  style: 'solid' | 'dashed' | 'dotted';
+  color: string;
+}
+
+interface BorderValue {
+  top: BorderSideValue;
+  right: BorderSideValue;
+  bottom: BorderSideValue;
+  left: BorderSideValue;
+}
+```
+
+### BorderRadiusValue
+
+A corner radius in px: one number for all corners, or one per corner. Sections, section wrappers, images and buttons accept it.
+
+```ts
+type BorderRadiusValue =
+  | number
+  | { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 ```
 
 ### BlockVisibility
@@ -174,7 +206,9 @@ interface ImageBlock extends BaseBlock {
   height?: number;
   align: 'left' | 'center' | 'right';
   /** Corner radius in px. Omitted/0 = square corners. */
-  borderRadius?: number;
+  borderRadius?: BorderRadiusValue;
+  /** Omitted = no border. */
+  border?: BorderValue;
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
@@ -191,7 +225,9 @@ interface ButtonBlock extends BaseBlock {
   url: string;
   backgroundColor: string;
   textColor: string;
-  borderRadius: number;
+  borderRadius: BorderRadiusValue;
+  /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. An empty fill exports as that keyword. */
+  border?: BorderValue;
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
@@ -209,6 +245,7 @@ Container for multi-column layouts.
 interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
+  border?: BorderValue;     // absent: no border
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
@@ -391,7 +428,19 @@ interface CustomBlock extends BaseBlock {
   renderedHtml?: string;
   dataSourceFetched?: boolean;
 }
+
+interface SlotBlock extends BaseBlock {
+  type: 'slot';
+}
+
+interface WrapperBlock extends BaseBlock {
+  type: 'wrapper';
+  children: Block[];
+  borderRadius?: number;
+}
 ```
+
+`slot` and `wrapper` are layout markers. The skill never emits them. See [Layout](/guide/layout).
 
 ## Configuration Types
 

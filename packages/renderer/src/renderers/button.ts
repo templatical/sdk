@@ -2,7 +2,9 @@ import type { ButtonBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr, escapeHtml } from "../escape";
 import { toPaddingString } from "../padding";
-import { bgAttr } from "../utils";
+import type { BorderRadiusValue } from "@templatical/types";
+import { toBorderRadiusCss } from "@templatical/types";
+import { bgAttr, borderAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -24,10 +26,10 @@ export function renderButton(
   // `<a href="">` that navigates to whatever URL the email is opened from.
   const href = block.url === "" ? "" : escapeAttr(block.url);
   const hrefAttr = href === "" ? "" : ` href="${href}"`;
-  const backgroundColor = escapeAttr(block.backgroundColor);
+  const backgroundColor = buttonBackgroundAttr(block.backgroundColor);
   const textColor = escapeAttr(block.textColor);
   const fontSize = block.fontSize;
-  const borderRadius = block.borderRadius;
+  const borderRadius = renderButtonRadius(block.borderRadius);
   const text = escapeHtml(block.text);
   const targetAttr = block.openInNewTab
     ? ' target="_blank" rel="noopener"'
@@ -35,6 +37,7 @@ export function renderButton(
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const widthAttr = renderWidthAttr(block.width);
   const visibilityAttr = getCssClassAttr(block);
+  const borderAttrStr = borderAttr(block.border);
   // Templates stored before `align` existed have no value for it. Fall back to
   // MJML's own default so they keep rendering exactly as they did.
   const align = block.align ?? "center";
@@ -44,11 +47,20 @@ export function renderButton(
   color="${textColor}"
   font-size="${fontSize}px"
   font-weight="bold"
-  border-radius="${borderRadius}px"
+  border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"
   align="${align}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${visibilityAttr}
 >${text}</mj-button>`;
+}
+
+/**
+ * MJML paints `#414141` when `background-color` is omitted, and `""` is not a
+ * color it accepts. An unset button fill is the keyword `transparent`.
+ */
+function buttonBackgroundAttr(color: string): string {
+  if (color.trim() === "") return "transparent";
+  return escapeAttr(color);
 }
 
 function renderFontFamilyAttr(
@@ -62,6 +74,19 @@ function renderFontFamilyAttr(
   const resolved = context.resolveFontFamily(fontFamily);
 
   return ` font-family="${resolved}"`;
+}
+
+/**
+ * The button has always emitted its radius, `0px` included, so a plain number
+ * keeps rendering exactly as it did. Per-corner radii go through the shared
+ * formatter, with all-square corners as `0px`.
+ */
+function renderButtonRadius(radius: BorderRadiusValue): string {
+  if (typeof radius === "number") {
+    return `${radius}px`;
+  }
+
+  return toBorderRadiusCss(radius) ?? "0px";
 }
 
 function renderWidthAttr(width: number | "full" | undefined): string {

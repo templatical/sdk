@@ -7,6 +7,7 @@ import type {
   SyntaxPreset,
   TemplateContent,
   TemplatesProvider,
+  WrapperBlock,
 } from "@templatical/types";
 import {
   containsMergeTag,
@@ -238,6 +239,17 @@ function normalizeBlock(
       return next;
     });
     return changed ? ({ ...block, children } as SectionBlock) : block;
+  }
+
+  if (block.type === "wrapper") {
+    if (!Array.isArray(block.children)) return block;
+    let changed = false;
+    const children = block.children.map((child) => {
+      const normalized = normalizeBlock(child, mergeTags, syntax);
+      if (normalized !== child) changed = true;
+      return normalized;
+    });
+    return changed ? ({ ...block, children } as WrapperBlock) : block;
   }
 
   if (block.type !== "title" && block.type !== "paragraph") return block;

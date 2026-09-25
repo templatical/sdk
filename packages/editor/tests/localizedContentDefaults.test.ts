@@ -59,7 +59,7 @@ describe("localizedContentDefaults", () => {
   );
 
   it("falls back to English for a locale it has no strings for", () => {
-    expect(localizedContentDefaults("ja").countdown?.labelDays).toBe("Days");
+    expect(localizedContentDefaults("ko").countdown?.labelDays).toBe("Days");
   });
 
   it.each(["", "   ", "not a locale", "!!"])(

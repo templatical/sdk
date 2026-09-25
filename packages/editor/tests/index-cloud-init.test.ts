@@ -18,6 +18,10 @@
 // template `ref` — we then set the instance ourselves.
 
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
+import {
+  createDefaultTemplateContent,
+  createSlotBlock,
+} from "@templatical/types";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -144,8 +148,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// Cast helper — Editor.vue is mocked, so the config is just passed through as
-// a prop and never validated.
+// Omit `content`: `{}` is truthy and `assertNoSlotInContent` walks `blocks`.
 function cloudConfig(
   container: HTMLElement,
   extra: Record<string, unknown> = {},
@@ -153,7 +156,6 @@ function cloudConfig(
   return {
     container,
     shadowDom: false,
-    content: {},
     ...extra,
   } as unknown as Parameters<typeof initCloudFn>[0];
 }
@@ -513,6 +515,31 @@ describe("OSS init — instance methods", () => {
     expect(source.socialIconsBaseUrl).toBeUndefined();
   });
 
+  it("forwards config.layout into the local toMjml path", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const layout = createDefaultTemplateContent();
+    layout.blocks = [createSlotBlock()];
+    layout.settings = { ...layout.settings, backgroundColor: "#f3f4f6" };
+    const instance = await initFn({
+      container,
+      shadowDom: false,
+      content: { blocks: [] },
+      layout,
+    } as unknown as Parameters<typeof initFn>[0]);
+    (captured.props!.ref as Ref<unknown>).value = {
+      getContent: vi.fn(() => ({ blocks: [] })),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+    };
+
+    await instance.toMjml();
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+    const source = vi.mocked(toMjmlForInstance).mock.calls.at(-1)![0];
+    expect(source.getLayout?.()).toBe(layout);
+  });
+
   describe("render provider", () => {
     async function mountWithRender(render: Record<string, unknown>) {
       const container = document.createElement("div");
@@ -658,8 +685,7 @@ describe("top-level unmount()", () => {
     await initFn({
       container,
       shadowDom: false,
-      content: {},
-    } as unknown as Parameters<typeof initFn>[0]);
+    });
 
     expect(fakeApps[0].unmount).not.toHaveBeenCalled();
 

@@ -6,7 +6,11 @@ import { useI18n } from "../composables/useI18n";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
-import { canonicalizeHexColor, normalizeColorToHex } from "../utils/color";
+import {
+  canonicalizeHexColor,
+  normalizeColorToHex,
+  opaqueHex,
+} from "../utils/color";
 import { COLORS_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
 import { DEFAULT_RESOLVED_COLORS } from "../utils/resolveColorsConfig";
 import "vanilla-colorful";
@@ -45,6 +49,11 @@ const props = withDefaults(
      * picker. When omitted, the injected editor-level setting applies.
      */
     allowCustom?: boolean;
+    /**
+     * Offer the keyword `transparent` (a checker swatch). Background fills only:
+     * text, borders, and links stay opaque. Clear still writes `""`.
+     */
+    allowTransparent?: boolean;
   }>(),
   {
     placeholder: "",
@@ -55,6 +64,7 @@ const props = withDefaults(
     ariaLabel: "",
     presets: undefined,
     allowCustom: undefined,
+    allowTransparent: false,
   },
 );
 
@@ -86,15 +96,22 @@ onClickOutside(
 
 const isUnset = computed(() => !props.modelValue);
 
+const isTransparent = computed(
+  () => props.modelValue.trim().toLowerCase() === "transparent",
+);
+
 // vanilla-colorful and the hex field are hex-only, but a stored value read back
 // from the DOM (e.g. a TipTap textStyle/highlight color) can be `rgb(...)`. Show
 // and seed the wheel with the hex form; the raw value still drives unset/emit.
+// A partial-alpha `rgba()` stays in the field — the wheel is positioned on its
+// RGB channels and does not write that hex back until the user picks.
 const displayValue = computed(() => normalizeColorToHex(props.modelValue));
 
-// The color handed to the wheel: the stored value, or the seed when unset.
-const seed = computed(() =>
-  normalizeColorToHex(props.modelValue || props.seedColor),
-);
+const seed = computed(() => {
+  const fromValue = props.modelValue ? opaqueHex(props.modelValue) : null;
+  if (fromValue) return fromValue;
+  return opaqueHex(props.seedColor) ?? "#ffffff";
+});
 
 // The clear (×) sits inside whichever hex field is active — the inline field in
 // full mode, or the popover field in swatch-only mode — shown only when a value
@@ -229,6 +246,10 @@ function clear(): void {
   emit("update:modelValue", "");
 }
 
+function selectTransparent(): void {
+  emit("update:modelValue", "transparent");
+}
+
 // The popover teleports to the shared popover root so it escapes any clipping /
 // overflow-hidden ancestor (e.g. the link dialog's card, where clicking the
 // clipped wheel landed on the backdrop and closed the modal). Position is
@@ -287,8 +308,15 @@ function toggleOpen(): void {
     >
       <span
         class="tpl:block tpl:size-full tpl:rounded-[calc(var(--tpl-radius-sm)-2px)]"
-        :class="{ 'tpl-color-swatch-empty': isUnset }"
-        :style="isUnset ? undefined : { backgroundColor: displayValue }"
+        :class="{
+          'tpl-color-swatch-empty': isUnset,
+          'tpl-color-swatch-transparent': isTransparent,
+        }"
+        :style="
+          isUnset || isTransparent
+            ? undefined
+            : { backgroundColor: displayValue }
+        "
       />
     </button>
     <div v-if="!swatchOnly && showFreeform" class="tpl:relative tpl:flex-1">
@@ -333,6 +361,26 @@ function toggleOpen(): void {
             ...themeStyles,
           }"
         >
+          <button
+            v-if="allowTransparent"
+            type="button"
+            data-testid="color-picker-transparent"
+            :aria-pressed="isTransparent"
+            :aria-label="t.colorPicker.transparent"
+            :title="t.colorPicker.transparent"
+            :class="[
+              'tpl:mb-2 tpl:flex tpl:w-full tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:py-1 tpl:text-left tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)]',
+              isTransparent
+                ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
+                : 'tpl:hover:border-[var(--tpl-text-dim)]',
+            ]"
+            @click="selectTransparent"
+          >
+            <span
+              class="tpl-color-swatch-transparent tpl:size-4 tpl:shrink-0 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)]"
+            />
+            {{ t.colorPicker.transparent }}
+          </button>
           <!-- Preset color grid — an ARIA radio group: each chip is a
                `role="radio"`, arrow keys rove focus between them (roving
                tabindex), and Enter/Space activate. Supplements the wheel/hex
@@ -460,5 +508,15 @@ hex-color-picker::part(saturation) {
     var(--tpl-text-dim) calc(50% + 0.75px),
     transparent calc(50% + 0.75px)
   );
+}
+
+/* Stored keyword `transparent`: a checker, distinct from the unset slash. */
+.tpl-color-swatch-transparent {
+  background-color: var(--tpl-bg);
+  background-image: repeating-conic-gradient(
+    var(--tpl-border) 0% 25%,
+    var(--tpl-bg) 0% 50%
+  );
+  background-size: 8px 8px;
 }
 </style>
