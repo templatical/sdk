@@ -467,6 +467,7 @@ const fr: typeof en = {
     hexValue: "Valeur hexadécimale de la couleur",
     notSet: "Non définie",
     clear: "Effacer la couleur",
+    transparent: "Transparent",
     presetColors: "Couleurs prédéfinies",
   },
   mergeTag: {

@@ -524,6 +524,7 @@ export default {
     hexValue: "Hex color value",
     notSet: "Not set",
     clear: "Clear color",
+    transparent: "Transparent",
     presetColors: "Preset colors",
   },
 

@@ -226,7 +226,7 @@ interface ButtonBlock extends BaseBlock {
   backgroundColor: string;
   textColor: string;
   borderRadius: BorderRadiusValue;
-  /** Outline-Schaltfläche: backgroundColor 'transparent' (das Schlüsselwort) plus eine textColor. */
+  /** Outline-Schaltfläche: backgroundColor 'transparent' (das Schlüsselwort) plus eine textColor. Ein leerer Hintergrund wird als dieses Schlüsselwort exportiert. */
   border?: BorderValue;
   fontSize: number;
   buttonPadding: SpacingValue;

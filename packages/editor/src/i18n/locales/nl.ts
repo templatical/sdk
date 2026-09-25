@@ -468,6 +468,7 @@ const nl: typeof en = {
     hexValue: "Hexadecimale kleurwaarde",
     notSet: "Niet ingesteld",
     clear: "Kleur wissen",
+    transparent: "Transparant",
     presetColors: "Vooraf ingestelde kleuren",
   },
   mergeTag: {

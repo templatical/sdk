@@ -141,6 +141,7 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
         <label :class="labelClass">{{ t.blockSettings.color }}</label>
         <ColorPicker
           :model-value="block.wrapper.backgroundColor ?? ''"
+          allow-transparent
           @update:model-value="updateWrapper({ backgroundColor: $event })"
         />
       </div>

@@ -1347,7 +1347,7 @@ interface ButtonBlock extends BaseBlock {
   backgroundColor: string;
   textColor: string;
   borderRadius: BorderRadiusValue;
-  /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. */
+  /** Outline button: backgroundColor 'transparent' (the keyword), plus a textColor. An empty fill exports as that keyword. */
   border?: BorderValue;
   fontSize: number;
   buttonPadding: SpacingValue;
@@ -4898,7 +4898,7 @@ A call-to-action button with customizable appearance.
 | `backgroundColor` | `string` | Button background color |
 | `textColor` | `string` | Button text color |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner |
-| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the button (optional). For an outline button, set `backgroundColor` to the keyword `"transparent"` in the template JSON, and set `textColor` too: a new button is `#333333` with white text |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the button (optional). For an outline button, set the background to the keyword `"transparent"` and set `textColor` too. A new button is `#333333` with white text. Clearing the fill exports `"transparent"`, because an omitted fill falls back to MJML's `#414141` |
 | `fontSize` | `number` | Font size in px |
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |

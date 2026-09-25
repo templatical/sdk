@@ -26,7 +26,7 @@ export function renderButton(
   // `<a href="">` that navigates to whatever URL the email is opened from.
   const href = block.url === "" ? "" : escapeAttr(block.url);
   const hrefAttr = href === "" ? "" : ` href="${href}"`;
-  const backgroundColor = escapeAttr(block.backgroundColor);
+  const backgroundColor = buttonBackgroundAttr(block.backgroundColor);
   const textColor = escapeAttr(block.textColor);
   const fontSize = block.fontSize;
   const borderRadius = renderButtonRadius(block.borderRadius);
@@ -52,6 +52,15 @@ export function renderButton(
   align="${align}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${visibilityAttr}
 >${text}</mj-button>`;
+}
+
+/**
+ * MJML paints `#414141` when `background-color` is omitted, and `""` is not a
+ * color it accepts. An unset button fill is the keyword `transparent`.
+ */
+function buttonBackgroundAttr(color: string): string {
+  if (color.trim() === "") return "transparent";
+  return escapeAttr(color);
 }
 
 function renderFontFamilyAttr(

@@ -530,6 +530,7 @@ const de: typeof en = {
     hexValue: "Hex-Farbwert",
     notSet: "Nicht festgelegt",
     clear: "Farbe entfernen",
+    transparent: "Transparent",
     presetColors: "Vordefinierte Farben",
   },
 

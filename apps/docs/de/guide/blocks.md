@@ -79,7 +79,7 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `backgroundColor` | `string` | Hintergrundfarbe der Schaltfläche |
 | `textColor` | `string` | Textfarbe der Schaltfläche |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke |
-| `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Schaltfläche gezeichnet (optional). Für eine Outline-Schaltfläche `backgroundColor` im Template-JSON auf das Schlüsselwort `"transparent"` setzen und auch `textColor` setzen: Eine neue Schaltfläche ist `#333333` mit weißem Text |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Schaltfläche gezeichnet (optional). Für eine Outline-Schaltfläche den Hintergrund auf das Schlüsselwort `"transparent"` setzen und auch `textColor` setzen. Eine neue Schaltfläche ist `#333333` mit weißem Text. Ein geleerter Hintergrund wird als `"transparent"` exportiert, weil ein weggelassener Hintergrund auf MJMLs `#414141` zurückfällt |
 | `fontSize` | `number` | Schriftgröße in px |
 | `buttonPadding` | `SpacingValue` | Innerer Abstand |
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
