@@ -3,7 +3,11 @@ import { shallowRef } from "vue";
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import { SYNTAX_PRESETS, createImageBlock } from "@templatical/types";
+import {
+  SYNTAX_PRESETS,
+  createImageBlock,
+  uniformBorder,
+} from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
   IMAGE_URL_RESOLVER_KEY,
@@ -258,5 +262,113 @@ describe("ImageBlock corner radius", () => {
     expect((absent.find("img").element as HTMLElement).style.borderRadius).toBe(
       "",
     );
+  });
+});
+
+// The export puts `border` on the `<img>` (mj-image's own border), so the
+// canvas borders the img itself, not the padded block box around it.
+describe("ImageBlock border", () => {
+  function mountImage(block: ReturnType<typeof createImageBlock>) {
+    return mount(ImageBlock, {
+      props: { block, viewport: "desktop" },
+      global: { provide: baseProvide() },
+    });
+  }
+
+  it("applies a stored border to the img", () => {
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/400/400",
+        width: 240,
+        border: uniformBorder({ width: 3, style: "dashed", color: "#ff0000" }),
+      }),
+    );
+    const style = (wrapper.find("img").element as HTMLElement).style;
+    expect(style.borderWidth).toBe("3px");
+    expect(style.borderStyle).toBe("dashed");
+  });
+
+  it("rounds only the chosen corners of the img", () => {
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/400/400",
+        width: 240,
+        borderRadius: { topLeft: 12, topRight: 12, bottomRight: 0, bottomLeft: 0 },
+      }),
+    );
+    expect(
+      (wrapper.find("img").element as HTMLElement).style.borderRadius,
+    ).toBe("12px 12px 0px 0px");
+  });
+
+  // MJML narrows a full-width <img> by its left and right borders, so a
+  // bordered full-width image still fits its column in the email.
+  it("narrows a full-width img by its drawn left and right borders", () => {
+    const none = { width: 0, style: "solid" as const, color: "#000000" };
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/400/400",
+        width: "full",
+        border: {
+          top: { width: 9, style: "solid", color: "#000000" },
+          right: { width: 4, style: "solid", color: "#000000" },
+          bottom: none,
+          left: { width: 3, style: "dashed", color: "#000000" },
+        },
+      }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.width).toBe(
+      "calc(100% - 7px)",
+    );
+  });
+
+  it("keeps a full-width img at 100% with no side borders drawn", () => {
+    const none = { width: 0, style: "solid" as const, color: "#000000" };
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/400/400",
+        width: "full",
+        border: {
+          top: { width: 4, style: "solid", color: "#000000" },
+          right: none,
+          bottom: { width: 4, style: "solid", color: "#000000" },
+          left: none,
+        },
+      }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.width).toBe(
+      "100%",
+    );
+  });
+
+  it("leaves a fixed-width img at its stored width", () => {
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/400/400",
+        width: 240,
+        border: uniformBorder({ width: 4, style: "solid", color: "#000000" }),
+      }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.width).toBe(
+      "240px",
+    );
+  });
+
+  it("leaves the img border unset for no border or a 0 width", () => {
+    for (const border of [
+      undefined,
+      uniformBorder({ width: 0, style: "solid", color: "#000000" }),
+    ]) {
+      const wrapper = mountImage(
+        createImageBlock({
+          src: "https://picsum.photos/400/400",
+          width: 240,
+          border,
+        }),
+      );
+      expect((wrapper.find("img").element as HTMLElement).style.border).toBe(
+        "",
+      );
+    }
   });
 });

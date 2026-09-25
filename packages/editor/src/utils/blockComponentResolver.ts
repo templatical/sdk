@@ -1,5 +1,9 @@
-import type { Block, TemplateSettings } from "@templatical/types";
-import { RICH_TEXT_SPACING } from "@templatical/types";
+import type { Block, BorderValue, TemplateSettings } from "@templatical/types";
+import {
+  RICH_TEXT_SPACING,
+  toBorderDeclarations,
+  toBorderRadiusCss,
+} from "@templatical/types";
 import type { Component } from "vue";
 import type { UseBlockRegistryReturn } from "../composables/useBlockRegistry";
 
@@ -94,12 +98,29 @@ export function getBlockWrapperStyle(block: Block): Record<string, string> {
   // borderRadius is section-specific (it lives on SectionBlock, not `styles`).
   // Mirror it into the editor box style so the canvas/preview match the
   // exported MJML, which renders it as `border-radius` on the `mj-section`.
-  if (
-    block.type === "section" &&
-    block.borderRadius &&
-    block.borderRadius > 0
-  ) {
-    style.borderRadius = `${block.borderRadius}px`;
+  // Same for the section border, which exports as `border` (or per-side
+  // `border-<side>`) on the `mj-section`.
+  if (block.type === "section") {
+    const radius = toBorderRadiusCss(block.borderRadius);
+    if (radius !== null) {
+      style.borderRadius = radius;
+    }
+    Object.assign(style, getBorderStyle(block.border));
+  }
+  return style;
+}
+
+/**
+ * Canvas style for a block's `border` — the same declarations the renderer
+ * emits as MJML attributes (`toBorderDeclarations` backs both), camelCased
+ * for a Vue style binding. Empty when there is no border to draw.
+ */
+export function getBorderStyle(
+  border: BorderValue | undefined,
+): Record<string, string> {
+  const style: Record<string, string> = {};
+  for (const [name, value] of Object.entries(toBorderDeclarations(border))) {
+    style[name.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())] = value;
   }
   return style;
 }
@@ -120,8 +141,9 @@ export function getSectionWrapperStyle(
   if (w.padding) {
     style.padding = `${w.padding.top}px ${w.padding.right}px ${w.padding.bottom}px ${w.padding.left}px`;
   }
-  if (w.borderRadius && w.borderRadius > 0) {
-    style.borderRadius = `${w.borderRadius}px`;
+  const radius = toBorderRadiusCss(w.borderRadius);
+  if (radius !== null) {
+    style.borderRadius = radius;
   }
   return style;
 }

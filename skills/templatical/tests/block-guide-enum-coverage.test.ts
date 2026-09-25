@@ -198,6 +198,11 @@ describe("block-guide.md documents every enum value the schema declares", () => 
       .map((site) => site.path)
       .sort();
     expect(byPath).toEqual([
+      // `top` only: the walker visits the shared BorderSideValue definition
+      // once, through the first side that reaches it.
+      "button.border.top.style",
+      "image.border.top.style",
+      "section.border.top.style",
       "section.columns",
       "settings.direction",
       "social.iconSize",

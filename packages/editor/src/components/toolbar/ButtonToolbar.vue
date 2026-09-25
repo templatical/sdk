@@ -4,6 +4,8 @@ import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
+import BorderControl from "./BorderControl.vue";
+import RadiusControl from "./RadiusControl.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
@@ -125,44 +127,35 @@ function updateCustomWidth(raw: string): void {
       @update:model-value="updateField('textColor', $event)"
     />
   </div>
-  <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.button.borderRadius }}</label>
-      <div class="tpl:flex tpl:items-stretch">
-        <input
-          type="number"
-          :class="inputGroupInputClass"
-          :value="block.borderRadius"
-          min="0"
-          max="50"
-          @input="
-            updateField(
-              'borderRadius',
-              Number(($event.target as HTMLInputElement).value),
-            )
-          "
-        />
-        <span :class="inputSuffixClass">px</span>
-      </div>
-    </div>
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.button.fontSize }}</label>
-      <div class="tpl:flex tpl:items-stretch">
-        <input
-          type="number"
-          :class="inputGroupInputClass"
-          :value="block.fontSize"
-          min="10"
-          max="36"
-          @input="
-            updateField(
-              'fontSize',
-              Number(($event.target as HTMLInputElement).value),
-            )
-          "
-        />
-        <span :class="inputSuffixClass">px</span>
-      </div>
+  <BorderControl
+    :model-value="block.border"
+    testid-prefix="button"
+    @update:model-value="updateField('border', $event)"
+  />
+  <RadiusControl
+    :model-value="block.borderRadius"
+    :label="t.button.borderRadius"
+    :max="50"
+    testid-prefix="button"
+    @update:model-value="updateField('borderRadius', $event)"
+  />
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.button.fontSize }}</label>
+    <div class="tpl:flex tpl:items-stretch">
+      <input
+        type="number"
+        :class="inputGroupInputClass"
+        :value="block.fontSize"
+        min="10"
+        max="36"
+        @input="
+          updateField(
+            'fontSize',
+            Number(($event.target as HTMLInputElement).value),
+          )
+        "
+      />
+      <span :class="inputSuffixClass">px</span>
     </div>
   </div>
   <div class="tpl:mb-3.5">

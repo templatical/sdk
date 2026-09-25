@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MergeTagInput from "../MergeTagInput.vue";
-import NumberWithSuffix from "./NumberWithSuffix.vue";
+import BorderControl from "./BorderControl.vue";
+import RadiusControl from "./RadiusControl.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -10,8 +11,12 @@ import {
   inputSuffixClass,
   labelClass,
 } from "../../constants/styleConstants";
-import type { ImageBlock } from "@templatical/types";
-import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
+import type { BorderRadiusValue, ImageBlock } from "@templatical/types";
+import {
+  containsMergeTag,
+  SYNTAX_PRESETS,
+  toBorderRadiusCss,
+} from "@templatical/types";
 import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import {
@@ -94,16 +99,19 @@ function updateCustomHeight(raw: string): void {
   updateField("height", n);
 }
 
-function updateBorderRadius(value: number): void {
-  // Negatives only, where the width and height guards below also reject 0:
-  // here 0 is a real answer (square), so an emptied field clears the radius
-  // rather than keeping the old one. `NumberWithSuffix` withholds the
-  // in-progress "-" that would otherwise arrive here as a 0.
-  if (!Number.isFinite(value) || value < 0) return;
+function updateBorderRadius(value: BorderRadiusValue): void {
+  // Here 0 is a real answer (square), so an emptied field clears the radius
+  // rather than keeping the old one. `RadiusControl` ignores negatives, and
+  // `NumberWithSuffix` withholds the in-progress "-".
+  //
   // Absent, not 0: both render as square corners, but a stored 0 travels in
   // every exported template as though the author had chosen it. Matches
   // `createImageBlock`, and `updateHeightMode` above clears the same way.
-  updateField("borderRadius", value > 0 ? value : undefined);
+  // All-square corners clear the same way.
+  updateField(
+    "borderRadius",
+    toBorderRadiusCss(value) === null ? undefined : value,
+  );
 }
 
 function updateCustomWidth(raw: string): void {
@@ -311,18 +319,19 @@ const { isOver } = useImageDrop({
       <span :class="inputSuffixClass">px</span>
     </div>
   </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.image.borderRadius }}</label>
-    <!-- No `max`: a circle needs a radius of at least half the rendered size,
-         which the block cannot know at edit time. -->
-    <NumberWithSuffix
-      :model-value="block.borderRadius ?? 0"
-      :min="0"
-      suffix="px"
-      testid="image-border-radius-input"
-      @update:model-value="updateBorderRadius"
-    />
-  </div>
+  <!-- No `max`: a circle needs a radius of at least half the rendered size,
+       which the block cannot know at edit time. -->
+  <RadiusControl
+    :model-value="block.borderRadius"
+    :label="t.image.borderRadius"
+    testid-prefix="image"
+    @update:model-value="updateBorderRadius"
+  />
+  <BorderControl
+    :model-value="block.border"
+    testid-prefix="image"
+    @update:model-value="updateField('border', $event)"
+  />
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.title.align }}</label>
     <SlidingPillSelect

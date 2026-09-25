@@ -3,7 +3,11 @@ import { shallowRef } from "vue";
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import { SYNTAX_PRESETS, createButtonBlock } from "@templatical/types";
+import {
+  SYNTAX_PRESETS,
+  createButtonBlock,
+  uniformBorder,
+} from "@templatical/types";
 import type { ButtonBlock as ButtonBlockType } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
@@ -57,5 +61,54 @@ describe("ButtonBlock alignment", () => {
     );
     expect((wrapper.element as HTMLElement).style.textAlign).toBe("left");
     expect((wrapper.find("a").element as HTMLElement).style.width).toBe("100%");
+  });
+});
+
+describe("ButtonBlock border", () => {
+  it("borders the button itself, like the exported mj-button", () => {
+    const wrapper = mountButton(
+      createButtonBlock({
+        border: uniformBorder({ width: 2, style: "solid", color: "#123456" }),
+      }),
+    );
+    const style = (wrapper.find("a").element as HTMLElement).style;
+    expect(style.borderWidth).toBe("2px");
+    expect(style.borderStyle).toBe("solid");
+  });
+
+  it("gives each side its own width, style and color", () => {
+    const none = { width: 0, style: "solid" as const, color: "#000000" };
+    const wrapper = mountButton(
+      createButtonBlock({
+        border: {
+          top: none,
+          right: { width: 1, style: "dotted", color: "#654321" },
+          bottom: { width: 2, style: "solid", color: "#123456" },
+          left: none,
+        },
+      }),
+    );
+    const style = (wrapper.find("a").element as HTMLElement).style;
+    expect(style.borderBottomWidth).toBe("2px");
+    expect(style.borderBottomStyle).toBe("solid");
+    expect(style.borderRightWidth).toBe("1px");
+    expect(style.borderRightStyle).toBe("dotted");
+    expect(style.borderTopWidth).toBe("");
+  });
+
+  it("rounds only the chosen corners", () => {
+    const wrapper = mountButton(
+      createButtonBlock({
+        borderRadius: { topLeft: 0, topRight: 20, bottomRight: 20, bottomLeft: 0 },
+      }),
+    );
+    expect((wrapper.find("a").element as HTMLElement).style.borderRadius).toBe(
+      "0px 20px 20px 0px",
+    );
+  });
+
+  it("sets no border when none is stored", () => {
+    const wrapper = mountButton(createButtonBlock());
+    expect((wrapper.find("a").element as HTMLElement).style.border).toBe("");
   });
 });

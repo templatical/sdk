@@ -61,7 +61,8 @@ Displays an image with optional link wrapping.
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
-| `borderRadius` | `number` | Corner radius in px. Omit or 0 for square corners |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the image. Width `0` leaves a side undrawn. Omit for no border |
 | `decorative` | `boolean` | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
@@ -77,7 +78,8 @@ A call-to-action button with customizable appearance.
 | `url` | `string` | Link URL |
 | `backgroundColor` | `string` | Button background color |
 | `textColor` | `string` | Button text color |
-| `borderRadius` | `number` | Corner radius in px |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the button (optional). For an outline button, set `backgroundColor` to the keyword `"transparent"` in the template JSON, and set `textColor` too: a new button is `#333333` with white text |
 | `fontSize` | `number` | Font size in px |
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |
@@ -236,8 +238,15 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `columns` | `ColumnLayout` | Column layout preset |
 | `children` | `Block[][]` | Array of block arrays, one per column |
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
-| `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
+| `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
 | `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+
+::: tip Email client note: borders and corners in Outlook
+- Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.
+- Dashed and dotted borders compile, and Outlook's rendering engine often paints them solid.
+- An image border is drawn on the `<img>`, and Outlook often drops it. Section and button borders sit on the `<td>`, which is the durable place for a border.
+:::
 
 ## Custom
 

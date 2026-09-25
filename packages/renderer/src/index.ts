@@ -20,7 +20,7 @@ import type { BlockRendererMap } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
-import { bgAttr } from "./utils";
+import { bgAttr, borderRadiusAttr } from "./utils";
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
 import { toPaddingString } from "./padding";
 
@@ -255,10 +255,7 @@ function renderMjWrapper(inner: string, wrapper: SectionWrapper): string {
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
   }"`;
-  const radius =
-    wrapper.borderRadius && wrapper.borderRadius > 0
-      ? ` border-radius="${wrapper.borderRadius}px"`
-      : "";
+  const radius = borderRadiusAttr(wrapper.borderRadius);
   return `<mj-wrapper${bg}${padding}${radius}>
 ${inner}
 </mj-wrapper>`;

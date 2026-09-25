@@ -61,7 +61,8 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
-| `borderRadius` | `number` | Eckenradius in px. Ohne Angabe oder 0 bleiben die Ecken eckig |
+| `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder `{ topLeft, topRight, bottomRight, bottomLeft }` pro Ecke. Ohne Angabe oder 0 bleiben die Ecken eckig |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um das Bild gezeichnet. Breite `0` lässt eine Seite weg. Ohne Angabe kein Rahmen |
 | `decorative` | `boolean` | Blendet das Bild für Screenreader aus und sendet ein leeres `alt` |
 | `linkUrl` | `string` | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` | Verhalten des Linkziels |
@@ -77,7 +78,8 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `url` | `string` | Link-URL |
 | `backgroundColor` | `string` | Hintergrundfarbe der Schaltfläche |
 | `textColor` | `string` | Textfarbe der Schaltfläche |
-| `borderRadius` | `number` | Eckenradius in px |
+| `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Schaltfläche gezeichnet (optional). Für eine Outline-Schaltfläche `backgroundColor` im Template-JSON auf das Schlüsselwort `"transparent"` setzen und auch `textColor` setzen: Eine neue Schaltfläche ist `#333333` mit weißem Text |
 | `fontSize` | `number` | Schriftgröße in px |
 | `buttonPadding` | `SpacingValue` | Innerer Abstand |
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
@@ -236,8 +238,15 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 | `columns` | `ColumnLayout` | Preset für das Spaltenlayout |
 | `children` | `Block[][]` | Array von Block-Arrays, eines pro Spalte |
 | `stackOnMobile` | `boolean` | Weglassen oder `true`: Spalten stapeln auf Mobilgeräten (MJML-Standard). `false`: nebeneinander (`mj-group`) |
-| `borderRadius` | `number` | Eckenradius in px (optional; weglassen oder `0` für keine Abrundung) |
+| `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke (optional; weglassen oder `0` für keine Abrundung) |
+| `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Sektion gezeichnet (optional; weglassen für keinen Rahmen) |
 | `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius? }` — gerendert als `mj-wrapper`-Band um die Sektion. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay. |
+
+::: tip Hinweis zu E-Mail-Clients: Rahmen und Ecken in Outlook
+- Outlook unter Windows ignoriert `border-radius`, auch die Form mit vier Werten (pro Ecke).
+- Gestrichelte und gepunktete Rahmen werden kompiliert, die Rendering-Engine von Outlook zeichnet sie aber oft durchgezogen.
+- Ein Bildrahmen wird am `<img>` gezeichnet, und Outlook lässt ihn oft weg. Rahmen von Sektionen und Schaltflächen sitzen am `<td>`, dem beständigen Ort für einen Rahmen.
+:::
 
 ## Custom
 

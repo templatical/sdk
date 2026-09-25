@@ -58,18 +58,24 @@ Container that arranges blocks into columns.
 
 <!-- BEGIN GENERATED FIELDS: section -->
 **Required** — `columns` (ColumnLayout), `children` (Block[][]).
-**Optional** — `stackOnMobile` (bool), `borderRadius` (int), `wrapper` (SectionWrapper).
+**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
 - `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
 - `children` is an array of columns, each an array of blocks. The column count
   must match `columns` (`"1"` → one inner array; `"2"` / `"2-1"` / `"1-2"` →
   two; `"3"` → three).
-- `borderRadius` — omit or `0` for square corners.
+- `borderRadius` — a px number for all corners, or `{ topLeft, topRight,
+  bottomRight, bottomLeft }` for a radius per corner. Omit or `0` for square.
+- `border` is `{ top, right, bottom, left }`, each side `{ width, style, color }`
+  — width in px (`0` leaves that side undrawn), color a hex. It draws around the
+  section box. Omit it for no border.
+- `style` (inside each `border` side) is one of `"solid"`, `"dashed"`, `"dotted"`.
 - `stackOnMobile` — omit or `true` keeps the default responsive stacking
   (columns stack below 480px); `false` keeps them side by side.
 - `wrapper` is an outer full-width band: `{ backgroundColor?, padding?,
-borderRadius? }` (e.g. a white card on a colored band).
+borderRadius? }` (e.g. a white card on a colored band); its `borderRadius`
+  takes the same number-or-per-corner form.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.
@@ -148,7 +154,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: image -->
 **Required** — `src` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
-**Optional** — `height` (int), `borderRadius` (int), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
+**Optional** — `height` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
 <!-- END GENERATED FIELDS: image -->
 
 - `alt` — write meaningful alt text.
@@ -158,7 +164,12 @@ underline: bool, color?: hex }`.
 - `borderRadius` — omit or `0` for square. For a round avatar or portrait, use a
   square image and a radius of at least half its width (`999` is the usual
   shorthand). Outlook on Windows ignores it and shows square corners, so never
-  rely on it for legibility.
+  rely on it for legibility. `{ topLeft, topRight, bottomRight, bottomLeft }`
+  rounds each corner separately.
+- `border` — `{ top, right, bottom, left }`, each side `{ width, style, color }`
+  (`0` width leaves a side undrawn), drawn around the image itself and following
+  its `borderRadius`. Omit it for no border.
+- `style` (inside each `border` side) is one of `"solid"`, `"dashed"`, `"dotted"`.
 - `decorative` — mark purely decorative images.
 - `placeholderUrl` — design-time stand-in shown on the editor canvas when `src`
   is a merge tag. It never reaches the sent email; omit it unless `src` is a tag.
@@ -166,11 +177,19 @@ underline: bool, color?: hex }`.
 ### button
 
 <!-- BEGIN GENERATED FIELDS: button -->
-**Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (int), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
-**Optional** — `openInNewTab` (bool), `fontFamily` (string), `width` (int | "full").
+**Required** — `text` (string), `url` (string), `backgroundColor` (string), `textColor` (string), `borderRadius` (BorderRadiusValue), `fontSize` (int), `buttonPadding` (SpacingValue), `align` ("left" | "center" | "right").
+**Optional** — `openInNewTab` (bool), `border` (BorderValue), `fontFamily` (string), `width` (int | "full").
 <!-- END GENERATED FIELDS: button -->
 
 - `buttonPadding` is `{ top, right, bottom, left }`.
+- `borderRadius` — a px number, or `{ topLeft, topRight, bottomRight,
+  bottomLeft }` for a radius per corner.
+- `border` — `{ top, right, bottom, left }`, each side `{ width, style, color }`
+  (`0` width leaves a side undrawn), drawn around the button. With a
+  `backgroundColor` of `"transparent"` (the keyword; `""` and `"none"` don't
+  work) it makes an outline (ghost) button — set `textColor` too, since a new
+  button is `#333333` with white text.
+- `style` (inside each `border` side) is one of `"solid"`, `"dashed"`, `"dotted"`.
 - `align` places the button within its column; no visible effect when `width` is
   `"full"`.
 
