@@ -55,7 +55,7 @@ export class ChooserPage {
    */
   async goto() {
     await this.page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-host-tour-dismissed", "true");
+      localStorage.setItem("tpl-playground-notes-seen", "true");
     });
     const url = this.options.shadowDom ? "/?shadowDom=1" : "/?shadowDom=0";
     await this.page.goto(url);

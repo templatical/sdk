@@ -39,7 +39,6 @@ export default {
     docs: "Docs",
     retry: "Retry",
     share: "Share",
-    tour: "Tour",
   },
   host: {
     back: "Back",
@@ -81,22 +80,31 @@ export default {
       noPrevious: "No previous scene",
       noNext: "No next scene",
     },
-    tour: {
-      skip: "Skip tour",
-      next: "Next",
-      done: "Got it",
-      stepCounter: "{current} of {total}",
-      frame: {
-        title: "The editor",
-        text: "This frame is the editor you embed in your app. Everything in it is live.",
+    notes: {
+      label: "Notes",
+      toggle: "Notes",
+      hide: "hide notes",
+      items: {
+        rail: "more setups",
+        palette: "drag blocks in",
+        canvas: "your email",
+        properties: "edit what you select",
+        preview: "preview it",
+        viewport: "desktop or mobile",
+        docs: "the details",
+        share: "share a copy",
+        code: "copy this setup",
       },
-      code: {
-        title: "Code",
-        text: "Copy the init() for this setup.",
-      },
-      docs: {
-        title: "Docs",
-        text: "The contract for this setup.",
+      targets: {
+        rail: "Setups list",
+        palette: "Block palette",
+        canvas: "Canvas",
+        properties: "Properties panel",
+        preview: "Preview toggle",
+        viewport: "Viewport switch",
+        docs: "Docs link",
+        share: "Share button",
+        code: "Code button",
       },
     },
     groups: {

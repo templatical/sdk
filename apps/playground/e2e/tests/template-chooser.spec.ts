@@ -216,7 +216,7 @@ test.describe("Setup catalog", () => {
   }) => {
     await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-shadow-mode", "light");
-      localStorage.setItem("tpl-playground-host-tour-dismissed", "true");
+      localStorage.setItem("tpl-playground-notes-seen", "true");
     });
     await page.goto("/scenes/minimum");
     await page.waitForSelector(

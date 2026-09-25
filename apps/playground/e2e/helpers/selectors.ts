@@ -13,7 +13,6 @@ export const SELECTORS = {
   editorStage: '[data-testid="editor-stage"]',
   toolbarCode: '[data-testid="toolbar-code"]',
   toolbarDocs: '[data-testid="toolbar-docs"]',
-  hostTour: '[data-testid="host-tour"]',
 
   // Chooser
   templateCard: '[data-testid="template-card"]',
@@ -26,7 +25,6 @@ export const SELECTORS = {
   shareButton: '[data-testid="toolbar-share"]',
   hostSettings: '[data-testid="host-settings"]',
   hostSettingsPanel: '[data-testid="host-settings-panel"]',
-  tourButton: '[data-testid="toolbar-tour"]',
   localeSelect: '[data-testid="locale-select"]',
 
   // Canvas
@@ -236,13 +234,12 @@ export const SELECTORS = {
 
   // Feature overlay
   featureOverlay: '[data-testid="feature-overlay"]',
+  sceneNotes: '[data-testid="scene-notes"]',
+  sceneNotesClose: '[data-testid="scene-notes-close"]',
+  notesButton: '[data-testid="toolbar-notes"]',
   featureOverlayClose: '[data-testid="feature-overlay-close"]',
 
   // Onboarding
-  onboardingSpotlight: ".pg-onboarding-spotlight",
-  onboardingTooltip: ".pg-onboarding-tooltip",
-  onboardingSkip: '[data-testid="onboarding-skip"]',
-  onboardingNext: '[data-testid="onboarding-next"]',
 
   // Rich-text editable root (TipTap wrapper)
   textEditable: ".tpl-text-editable",

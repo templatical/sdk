@@ -8,7 +8,7 @@ export class ScenePage {
 
   async goto(id: string, query: Record<string, string> = {}) {
     await this.page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-host-tour-dismissed", "true");
+      localStorage.setItem("tpl-playground-notes-seen", "true");
     });
     const params = new URLSearchParams(query);
     params.set("shadowDom", this.options.shadowDom ? "1" : "0");

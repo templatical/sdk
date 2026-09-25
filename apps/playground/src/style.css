@@ -143,6 +143,10 @@ textarea {
     @apply inline-flex items-center justify-center size-8 rounded-md border border-gray-200 bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
 }
 
+.pg-toolbar-icon-btn[aria-pressed="true"] {
+    @apply border-gray-300 bg-gray-100 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100;
+}
+
 .pg-toolbar-primary {
     @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-transparent bg-gray-900 text-gray-50 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white;
 }
@@ -715,42 +719,129 @@ textarea {
     overflow: hidden;
 }
 
-/* Onboarding tour */
-
-.pg-onboarding-spotlight {
-    box-shadow: 0 0 0 2px oklch(70% 0.16 55 / 0.5),
-                0 0 20px 6px oklch(70% 0.16 55 / 0.12),
-                0 0 0 9999px rgba(0, 0, 0, 0.5);
-    transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 400ms ease;
-    will-change: transform;
+/*
+ * Scene notes: handwritten margin notes over the page, the proof sheet's red
+ * pencil. The ink is a burnt orange, not the brand amber: amber measures
+ * 2.53:1 on the header's gray-100, under even the 3:1 bar for large text,
+ * while this reads 4.69:1 there and 5.12:1 on white. Dark mode uses the light
+ * amber (7.26:1 on the dark well). A paper-coloured stroke under every glyph
+ * and arrow keeps the ink legible where it crosses the page.
+ */
+.pg-notes {
+    --pg-notes-ink: oklch(55% 0.17 45);
+    --pg-notes-paper: oklch(99.5% 0.002 60);
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    pointer-events: none;
+    transition: opacity 180ms var(--ease-out-quint);
 }
 
-@keyframes pg-onboarding-tooltip-in {
+.dark .pg-notes {
+    --pg-notes-ink: oklch(78% 0.14 55);
+    --pg-notes-paper: oklch(19% 0.008 60);
+}
+
+.pg-notes-leave-to {
+    opacity: 0;
+}
+
+.pg-notes-ink {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.pg-note-stroke,
+.pg-note-halo {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    animation: pg-note-draw 360ms var(--ease-out-quint) both;
+    animation-delay: calc(var(--pg-note-i) * 60ms);
+}
+
+.pg-note-stroke {
+    stroke: var(--pg-notes-ink);
+    stroke-width: 2;
+}
+
+.pg-note-halo {
+    stroke: var(--pg-notes-paper);
+    stroke-width: 6;
+}
+
+.pg-note-head {
+    animation-duration: 140ms;
+    animation-delay: calc(var(--pg-note-i) * 60ms + 300ms);
+}
+
+/* Kept in step with NOTE_FONT and NOTE_LINE_HEIGHT in SceneNotes.vue. */
+.pg-note {
+    position: absolute;
+    margin: 0;
+    font: 600 27px / 31px Caveat, var(--font-sans);
+    white-space: nowrap;
+    color: var(--pg-notes-ink);
+    paint-order: stroke fill;
+    -webkit-text-stroke: 6px var(--pg-notes-paper);
+    animation: pg-note-in 220ms var(--ease-out-quint) both;
+    animation-delay: calc(var(--pg-note-i) * 60ms + 160ms);
+}
+
+.pg-notes-close {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    translate: -50% 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px 5px;
+    border: 1px solid color-mix(in oklab, var(--pg-notes-ink) 35%, transparent);
+    border-radius: 999px;
+    background: var(--pg-notes-paper);
+    color: var(--pg-notes-ink);
+    font: 600 20px / 24px Caveat, var(--font-sans);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.pg-notes-close:focus-visible {
+    outline: 2px solid var(--pg-notes-ink);
+    outline-offset: 2px;
+}
+
+@keyframes pg-note-draw {
     from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.98);
+        stroke-dashoffset: 1;
     }
     to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        stroke-dashoffset: 0;
     }
 }
 
-.pg-onboarding-tooltip {
-    animation: pg-onboarding-tooltip-in 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
+@keyframes pg-note-in {
+    from {
+        opacity: 0;
+        translate: 0 3px;
+    }
 }
 
-@keyframes pg-cursor-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
+@media (prefers-reduced-motion: reduce) {
+    .pg-notes {
+        transition: none;
+    }
 
-.pg-onboarding-cursor {
-    animation: pg-cursor-blink 800ms ease-in-out infinite;
-    color: oklch(70% 0.16 55);
-    font-weight: 300;
+    .pg-note,
+    .pg-note-stroke,
+    .pg-note-halo {
+        animation: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -771,18 +862,6 @@ textarea {
     .animate-spin {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-    }
-
-    .pg-onboarding-spotlight {
-        transition-duration: 0.01ms !important;
-    }
-
-    .pg-onboarding-tooltip {
-        animation-duration: 0.01ms !important;
-    }
-
-    .pg-onboarding-cursor {
-        animation: none !important;
     }
 
     .pg-fan-card {

@@ -41,7 +41,6 @@ export default {
     docs: "Dokumentation",
     retry: "Erneut versuchen",
     share: "Teilen",
-    tour: "Tour",
   },
   host: {
     back: "Zur\u00fcck",
@@ -83,22 +82,31 @@ export default {
       noPrevious: "Keine vorherige Szene",
       noNext: "Keine n\u00e4chste Szene",
     },
-    tour: {
-      skip: "Tour \u00fcberspringen",
-      next: "Weiter",
-      done: "Verstanden",
-      stepCounter: "{current} von {total}",
-      frame: {
-        title: "Der Editor",
-        text: "Dieser Rahmen ist der Editor, den Sie in Ihre App einbetten. Alles darin ist live.",
+    notes: {
+      label: "Notizen",
+      toggle: "Notizen",
+      hide: "Notizen ausblenden",
+      items: {
+        rail: "weitere Setups",
+        palette: "Bl\u00f6cke hineinziehen",
+        canvas: "Ihre E-Mail",
+        properties: "Auswahl bearbeiten",
+        preview: "Vorschau",
+        viewport: "Desktop oder Mobil",
+        docs: "Details",
+        share: "Kopie teilen",
+        code: "Setup kopieren",
       },
-      code: {
-        title: "Code",
-        text: "Hier kopieren Sie das init() f\u00fcr dieses Setup.",
-      },
-      docs: {
-        title: "Dokumentation",
-        text: "Der Vertrag zu diesem Setup.",
+      targets: {
+        rail: "Setup-Liste",
+        palette: "Blockpalette",
+        canvas: "Arbeitsfl\u00e4che",
+        properties: "Eigenschaften",
+        preview: "Vorschau-Schalter",
+        viewport: "Ansichtsumschalter",
+        docs: "Dokumentation",
+        share: "Teilen-Schaltfl\u00e4che",
+        code: "Code-Schaltfl\u00e4che",
       },
     },
     groups: {

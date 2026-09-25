@@ -24,7 +24,7 @@ export class EditorPage {
   }
 
   /**
-   * Dismiss any visible overlays (feature showcase, onboarding, cloud banner).
+   * Dismiss any visible overlays (feature showcase, scene notes, cloud banner).
    * Idempotent — safe to call multiple times.
    */
   async dismissOverlays(): Promise<void> {
@@ -36,15 +36,10 @@ export class EditorPage {
         .waitFor({ state: "hidden" });
     }
 
-    const onboarding = this.page.locator(SELECTORS.onboardingSpotlight);
-    if (await onboarding.isVisible()) {
-      const skip = this.page.locator(SELECTORS.onboardingSkip);
-      if (await skip.isVisible()) {
-        await skip.click();
-      } else {
-        await this.page.keyboard.press("Escape");
-      }
-      await onboarding.waitFor({ state: "hidden" });
+    const notes = this.page.locator(SELECTORS.sceneNotes);
+    if (await notes.isVisible()) {
+      await this.page.locator(SELECTORS.sceneNotesClose).click();
+      await notes.waitFor({ state: "hidden" });
     }
   }
 

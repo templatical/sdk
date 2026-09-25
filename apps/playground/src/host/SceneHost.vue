@@ -8,6 +8,7 @@ import {
   Download,
   PanelLeftClose,
   PanelLeftOpen,
+  PencilLine,
   Share2,
 } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
@@ -16,8 +17,8 @@ import CatalogRail from "@/host/CatalogRail.vue";
 import CodeDrawer from "@/host/CodeDrawer.vue";
 import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
-import HostTour from "@/host/HostTour.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
+import SceneNotes from "@/host/SceneNotes.vue";
 import ShareModal from "@/host/ShareModal.vue";
 import {
   isPlainLeftClick,
@@ -47,6 +48,10 @@ const codeOpen = useLocalStorage("tpl-playground-code-open", false);
 // Remembered per browser too; hiding the rail gives the editor its width.
 const railOpen = useLocalStorage("tpl-playground-rail-open", true);
 const neighbours = computed(() => sceneNeighbours(props.sceneId));
+// The notes show by themselves once per browser, on the first scene that
+// opens; the pencil button brings them back on any scene.
+const notesSeen = useLocalStorage("tpl-playground-notes-seen", false);
+const notesOpen = ref(false);
 const codeButton = ref<HTMLButtonElement | null>(null);
 
 function closeCode(): void {
@@ -151,6 +156,12 @@ watch(
   },
   { immediate: true, flush: "post" },
 );
+
+watch(sceneReady, (ready) => {
+  if (!ready || !editor.value || notesSeen.value) return;
+  notesSeen.value = true;
+  notesOpen.value = true;
+});
 
 onUnmounted(() => {
   boot.invalidate();
@@ -342,6 +353,18 @@ onUnmounted(() => {
             <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.code }}
           </button>
+          <button
+            type="button"
+            data-testid="toolbar-notes"
+            class="pg-toolbar-icon-btn"
+            :title="t.host.notes.toggle"
+            :aria-label="t.host.notes.toggle"
+            :aria-pressed="notesOpen"
+            :disabled="!editor"
+            @click="notesOpen = !notesOpen"
+          >
+            <PencilLine :size="16" :stroke-width="1.5" aria-hidden="true" />
+          </button>
           <HostKnobs />
         </div>
       </header>
@@ -409,7 +432,10 @@ onUnmounted(() => {
         :editor="editor"
         :scene-id="scene.id"
       />
-      <HostTour :ready="sceneReady" />
+      <SceneNotes
+        :open="notesOpen && sceneReady && !!editor"
+        @dismiss="notesOpen = false"
+      />
     </div>
   </div>
 </template>
