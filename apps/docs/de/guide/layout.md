@@ -5,6 +5,8 @@ description: Übergeben Sie eine JSON-Hülle mit einem Slot. Vorschau und Export
 
 # Layout
 
+[Im Playground öffnen](https://play.templatical.com/scenes/layout)
+
 Übergeben Sie ein JSON-Dokument mit genau einem `slot`. Vorschau und Export legen die E-Mail des Autors in diese Hülle. Speichern tut das nicht: `getContent()` ist nur die verfasste Vorlage.
 
 ```ts

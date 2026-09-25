@@ -4,6 +4,7 @@ import { displayConditions } from "./author/display-conditions";
 import { fonts } from "./author/fonts";
 import { i18n } from "./author/i18n";
 import { issues } from "./author/issues";
+import { layout } from "./author/layout";
 import { logicTags } from "./author/logic-tags";
 import { mergeTags } from "./author/merge-tags";
 import { mergeTagsOnRequest } from "./author/merge-tags-on-request";
@@ -51,6 +52,7 @@ export const SCENES: readonly Scene[] = [
   fonts,
   defaults,
   theming,
+  layout,
   i18n,
   shadowDomOff,
   issues,

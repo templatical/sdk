@@ -30,6 +30,7 @@ export type SetupAffordance =
   | "font"
   | "defaults"
   | "theme"
+  | "layout"
   | "locale"
   | "light-dom"
   | "import";

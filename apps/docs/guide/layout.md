@@ -5,6 +5,8 @@ description: Pass a JSON shell with one slot. Preview and export wrap the author
 
 # Layout
 
+[Open in playground](https://play.templatical.com/scenes/layout)
+
 Pass a JSON document with exactly one `slot`. Preview and export wrap the author's email in that shell. Save does not: `getContent()` is the authored template only.
 
 ```ts

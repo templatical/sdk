@@ -13,6 +13,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Fonts](https://play.templatical.com/scenes/fonts): Limit the type menu
 - [Defaults](https://play.templatical.com/scenes/defaults): New blocks stay on-brand
 - [Theming](https://play.templatical.com/scenes/theming): Paint the chrome your colors
+- [Layout](https://play.templatical.com/scenes/layout): Wrap every email in your shell
 - [Internationalization](https://play.templatical.com/scenes/i18n): German chrome and placeholders
 - [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): Mount in the page light DOM
 - [Issues](https://play.templatical.com/scenes/issues): Lint the template as you edit

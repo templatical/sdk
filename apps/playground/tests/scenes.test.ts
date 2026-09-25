@@ -59,6 +59,7 @@ const CONFIGURE_IDS = [
   "fonts",
   "defaults",
   "theming",
+  "layout",
   "i18n",
   "shadow-dom-off",
   "issues",
@@ -98,6 +99,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   fonts: "/guide/fonts",
   defaults: "/guide/defaults",
   theming: "/guide/theming",
+  layout: "/guide/layout",
   i18n: "/guide/i18n",
   "shadow-dom-off": "/guide/shadow-dom",
 };

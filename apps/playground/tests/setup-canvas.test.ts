@@ -56,7 +56,7 @@ describe("issuesCanvas", () => {
 });
 
 describe("seeded setup scenes", () => {
-  it.each(["fonts", "defaults", "theming", "shadow-dom-off"])(
+  it.each(["fonts", "defaults", "theming", "layout", "shadow-dom-off"])(
     "%s opens on the base email",
     (id) => {
       const blocks = getScene(id)!.content(noQuery).blocks;

@@ -14,7 +14,7 @@ function segments(key: string): string[] {
 
 describe("catalog init keys", () => {
   it("every setup row names its init() key", () => {
-    expect(setups).toHaveLength(20);
+    expect(setups).toHaveLength(21);
     for (const scene of setups) {
       expect(scene.initKey, scene.id).toMatch(/^[a-zA-Z]/);
     }

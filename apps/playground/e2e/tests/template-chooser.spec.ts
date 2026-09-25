@@ -54,7 +54,19 @@ test.describe("Setup catalog", () => {
     ]) {
       await expect(page.getByTestId(`scene-link-${id}`)).toBeAttached();
     }
-    await expect(page.locator("[data-testid^='scene-link-']")).toHaveCount(37);
+    // Every registered scene, read from the generated /llms.txt (the scene
+    // registry's own index), so a new scene needs no edit here.
+    const llms = await (await page.request.get("/llms.txt")).text();
+    const registered = [
+      ...llms.matchAll(
+        /\(https:\/\/play\.templatical\.com\/scenes\/([a-z0-9-]+)\)/g,
+      ),
+    ].map((match) => `scene-link-${match[1]}`);
+    expect(registered.length).toBeGreaterThan(30);
+    const listed = await page
+      .locator("[data-testid^='scene-link-']")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-testid")));
+    expect(new Set(listed)).toEqual(new Set(registered));
   });
 
   test("the hero fans three finished emails that open their scenes", async ({
