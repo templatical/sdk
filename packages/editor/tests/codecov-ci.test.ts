@@ -22,3 +22,26 @@ describe("ci.yml fails the test job when Codecov upload errors", () => {
     expect(codecov).not.toMatch(/fail_ci_if_error:\s*false/);
   });
 });
+
+/**
+ * The playground's unit tests run under `test:coverage` so they gate CI, but
+ * its coverage stays out of Codecov. Its UI is exercised by the Playwright
+ * suite, which Codecov cannot see, so counting it fails every playground PR's
+ * patch check against the packages' target. Both halves are locked: dropping
+ * the filter silently stops the tests running in CI.
+ */
+describe("the playground gates CI without counting toward coverage", () => {
+  const ROOT = join(import.meta.dirname, "../../..");
+
+  it("codecov.yml ignores apps/playground", () => {
+    const config = readFileSync(join(ROOT, "codecov.yml"), "utf8");
+    expect(config).toMatch(/^ignore:\s*\n\s*-\s*"apps\/playground\/\*\*"/m);
+  });
+
+  it("test:coverage still runs the playground's unit tests", () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+    expect(pkg.scripts["test:coverage"]).toContain(
+      '--filter "./apps/playground"',
+    );
+  });
+});
