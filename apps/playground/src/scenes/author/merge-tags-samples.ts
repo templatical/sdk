@@ -5,6 +5,7 @@ export const mergeTagsSamples: Scene = {
   id: "merge-tags-samples",
   title: "Merge tag samples",
   job: "Preview with sample values",
+  initKey: "mergeTags.tags[].sample",
   summary:
     "init({ mergeTags }) with MergeTag.sample — preview substitutes, no resolver.",
   affordance: "sample",

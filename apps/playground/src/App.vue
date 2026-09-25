@@ -73,38 +73,45 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <SceneHost
-    v-if="sceneRoute"
-    :key="sceneRoute.id"
-    :scene-id="sceneRoute.id"
-    :search="sceneRoute.search"
-  />
-  <main
-    v-else-if="shareGate === 'loading'"
-    data-testid="share-load"
-    role="status"
-    class="flex flex-col items-center justify-center min-h-screen gap-3 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
-  >
-    <p class="m-0 text-sm text-gray-600 dark:text-gray-300">
-      {{ t.sharedTemplate.loading }}
-    </p>
-  </main>
-  <main
-    v-else-if="shareGate === 'not-found' || shareGate === 'error'"
-    data-testid="share-load-error"
-    class="flex flex-col items-center justify-center min-h-screen gap-3 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
-  >
-    <h1 class="m-0 text-base font-semibold">
-      {{
-        shareGate === "not-found"
-          ? t.sharedTemplate.notFound
-          : t.sharedTemplate.error
-      }}
-    </h1>
-    <a href="/" class="pg-toolbar-btn no-underline">{{
-      t.sharedTemplate.goToPlayground
-    }}</a>
-  </main>
-  <Catalog v-else />
-  <DataSourcePicker />
+  <!--
+    Keep one element root. main.ts wraps the page in a <Transition>, which
+    cannot animate a fragment: a second root (the picker, say) disables the
+    screen crossfade with nothing but a console warning.
+  -->
+  <div class="pg-app">
+    <SceneHost
+      v-if="sceneRoute"
+      :key="sceneRoute.id"
+      :scene-id="sceneRoute.id"
+      :search="sceneRoute.search"
+    />
+    <main
+      v-else-if="shareGate === 'loading'"
+      data-testid="share-load"
+      role="status"
+      class="flex flex-col items-center justify-center min-h-screen gap-3 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    >
+      <p class="m-0 text-sm text-gray-600 dark:text-gray-300">
+        {{ t.sharedTemplate.loading }}
+      </p>
+    </main>
+    <main
+      v-else-if="shareGate === 'not-found' || shareGate === 'error'"
+      data-testid="share-load-error"
+      class="flex flex-col items-center justify-center min-h-screen gap-3 font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    >
+      <h1 class="m-0 text-base font-semibold">
+        {{
+          shareGate === "not-found"
+            ? t.sharedTemplate.notFound
+            : t.sharedTemplate.error
+        }}
+      </h1>
+      <a href="/" class="pg-toolbar-btn no-underline">{{
+        t.sharedTemplate.goToPlayground
+      }}</a>
+    </main>
+    <Catalog v-else />
+    <DataSourcePicker />
+  </div>
 </template>

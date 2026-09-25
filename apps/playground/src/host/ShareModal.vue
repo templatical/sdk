@@ -56,7 +56,7 @@ function close(): void {
         v-if="open"
         class="pg-modal-backdrop"
         @click.self="close"
-        @keydown.escape.capture="close"
+        @keydown.escape.capture.prevent="close"
       >
         <div
           ref="dialogRef"

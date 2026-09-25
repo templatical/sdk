@@ -5,6 +5,7 @@ export const displayConditions: Scene = {
   id: "display-conditions",
   title: "Display conditions",
   job: "Hide a block per recipient",
+  initKey: "displayConditions",
   summary: "init({ displayConditions }) — show or hide a block per recipient.",
   affordance: "condition",
   catalog: "oss",

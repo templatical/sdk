@@ -8,6 +8,7 @@ export const SELECTORS = {
   sceneNotFound: '[data-testid="scene-not-found"]',
   codeDrawer: '[data-testid="code-dialog"]',
   codeDialog: '[data-testid="code-dialog"]',
+  codeDialogClose: '[data-testid="code-dialog-close"]',
   catalogScreen: '[data-testid="catalog-screen"]',
   editorStage: '[data-testid="editor-stage"]',
   toolbarCode: '[data-testid="toolbar-code"]',

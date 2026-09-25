@@ -10,6 +10,7 @@ export const comments: Scene = {
   id: "comments",
   title: "Comments",
   job: "Thread a note on a block",
+  initKey: "comments",
   summary:
     "init({ templates, comments, user }) — threaded review on the attached template.",
   affordance: "comment",

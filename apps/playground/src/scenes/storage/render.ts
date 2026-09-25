@@ -6,6 +6,7 @@ export const render: Scene = {
   id: "render",
   title: "Render",
   job: "Export MJML and HTML",
+  initKey: "render",
   summary:
     "init({ render: { compileMjml } }) — editor.toMjml() locally, toHtml() through one compiler.",
   affordance: "export",

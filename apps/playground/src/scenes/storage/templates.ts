@@ -6,6 +6,7 @@ export const templates: Scene = {
   id: "templates",
   title: "Templates",
   job: "Load and save the template",
+  initKey: "templates",
   summary: "init({ templates }) — save, load, rename, and optional autosave.",
   affordance: "save",
   catalog: "oss",

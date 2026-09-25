@@ -12,7 +12,7 @@ import ShareModal from "@/host/ShareModal.vue";
 import { navigatePlayground } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
-import { resolveInitialShadowMode } from "@/host/shadowMode";
+import { resolveShadowDom } from "@/host/shadowMode";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
 import { getScene } from "@/scenes";
@@ -29,7 +29,7 @@ const editorContainer = ref<HTMLElement | null>(null);
 const initError = ref("");
 const sceneReady = ref(false);
 const codeOpen = ref(false);
-const shadowMode = ref<"shadow" | "light">(resolveInitialShadowMode());
+const shadowDom = resolveShadowDom();
 const editor = shallowRef<TemplaticalEditor | null>(null);
 const exportOpen = ref(false);
 const shareOpen = ref(false);
@@ -54,9 +54,12 @@ function retryInit(): void {
   retryTick.value += 1;
 }
 
+/** Back lands on the scene's own section of the catalog, not its top. */
 function catalogHref(): string {
   const shadow = props.search.get("shadowDom");
-  return shadow !== null ? `/?shadowDom=${shadow}` : "/";
+  const base = shadow !== null ? `/?shadowDom=${shadow}` : "/";
+  const group = scene.value?.group;
+  return group && group !== "minimum" ? `${base}#group-${group}` : base;
 }
 
 function onBack(event: MouseEvent): void {
@@ -80,13 +83,7 @@ watch(uiTheme, (theme) => {
 const boot = createSerializedBoot();
 
 watch(
-  () =>
-    [
-      props.sceneId,
-      props.search.toString(),
-      shadowMode.value,
-      retryTick.value,
-    ] as const,
+  () => [props.sceneId, props.search.toString(), retryTick.value] as const,
   () => {
     void boot.enqueue(async (isCurrent) => {
       const current = scene.value;
@@ -103,7 +100,7 @@ watch(
         current,
         container,
         { search: props.search },
-        shadowMode.value === "shadow",
+        shadowDom,
       );
       if (!isCurrent()) {
         result.editor?.unmount();
@@ -159,9 +156,9 @@ onUnmounted(() => {
     <CatalogRail :current-id="scene.id" />
     <div class="flex min-w-0 flex-1 flex-col">
       <header
-        class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
+        class="flex items-center justify-between h-14 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-3"
       >
-        <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-3 min-w-0">
           <a
             :href="catalogHref()"
             data-testid="toolbar-back"
@@ -173,11 +170,20 @@ onUnmounted(() => {
             <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
             <span class="pg-toolbar-label">{{ t.host.back }}</span>
           </a>
-          <h1
-            class="m-0 truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
-          >
-            {{ scene.title }}
-          </h1>
+          <div class="min-w-0">
+            <h1
+              class="m-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"
+            >
+              {{ scene.title }}
+            </h1>
+            <p
+              data-testid="scene-summary"
+              class="m-0 mt-0.5 truncate text-xs text-gray-600 dark:text-gray-400"
+              :title="scene.summary"
+            >
+              {{ scene.summary }}
+            </p>
+          </div>
         </div>
         <div class="flex items-center gap-1 shrink-0 overflow-x-auto">
           <button
@@ -223,7 +229,7 @@ onUnmounted(() => {
           >
             {{ t.host.code }}
           </button>
-          <HostKnobs v-model:shadow-mode="shadowMode" />
+          <HostKnobs />
         </div>
       </header>
       <!--
@@ -237,7 +243,7 @@ onUnmounted(() => {
       >
         <div
           data-testid="editor-stage"
-          class="relative flex-1 min-w-0 min-h-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
+          class="pg-scene-stage relative flex-1 min-w-0 min-h-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
         >
           <div
             v-if="initError"

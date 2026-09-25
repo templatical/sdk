@@ -5,6 +5,50 @@
 @theme {
     --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
     --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+    /*
+     * The host wears the editor's own neutrals (DESIGN.md Warm-Neutral Rule:
+     * every neutral tints toward hue 60, no #fff or #000). Re-pointing
+     * Tailwind's gray ramp, white and black here warms every host utility at
+     * once; the stock ramp sits at hue ~264, colder than the editor it frames.
+     */
+    --color-white: oklch(99.5% 0.002 60);
+    --color-black: oklch(14% 0.006 60);
+    --color-gray-50: oklch(98% 0.004 60);
+    --color-gray-100: oklch(96.5% 0.005 60);
+    --color-gray-200: oklch(92% 0.006 60);
+    --color-gray-300: oklch(86% 0.01 60);
+    --color-gray-400: oklch(68% 0.012 60);
+    --color-gray-500: oklch(55% 0.014 60);
+    --color-gray-600: oklch(45% 0.015 60);
+    --color-gray-700: oklch(37% 0.013 60);
+    --color-gray-800: oklch(27% 0.009 60);
+    --color-gray-900: oklch(19% 0.008 60);
+    --color-gray-950: oklch(14% 0.006 60);
+
+    /* DESIGN.md's five-step shadow vocabulary, mapped onto Tailwind's names. */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /*
+     * Four roles on the catalog: display, lede/heading (20px, split by
+     * weight), title (text-sm) and metadata (text-xs). Display scales with
+     * the viewport so the headline never wraps into a column of fragments.
+     */
+    --text-display: clamp(2.25rem, 1.35rem + 3.2vw, 3.25rem);
+    --text-display--line-height: 1.04;
+    --text-display--letter-spacing: -0.035em;
+    --text-lede: 1.25rem;
+    --text-lede--line-height: 1.5;
+    --text-heading: 1.25rem;
+    --text-heading--line-height: 1.3;
+    --text-heading--letter-spacing: -0.01em;
+
     --color-primary: oklch(70% 0.16 55);
     --color-primary-hover: oklch(63% 0.17 55);
     --color-primary-dark: oklch(78% 0.14 55);
@@ -16,34 +60,66 @@
     --color-mark-examples: oklch(62% 0.1 55);
     --color-mark-minimum: oklch(50% 0.02 60);
     --shadow-primary-ring: 0 0 0 3px oklch(70% 0.16 55 / 0.15);
-    --shadow-primary-glow: 0 4px 12px oklch(70% 0.16 55 / 0.25);
     --shadow-primary-ring-subtle: 0 0 0 3px oklch(70% 0.16 55 / 0.12);
-    --shadow-btn: 0 1px 2px var(--pg-shadow-color, rgba(0,0,0,0.08));
     --shadow-card: 0 4px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.06));
-    --shadow-float: 0 8px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.12));
     --shadow-modal-sm: 0 16px 48px var(--pg-shadow-color-xl, rgba(0,0,0,0.15));
     --shadow-modal: 0 24px 64px var(--pg-shadow-color-xl, rgba(0,0,0,0.2));
+}
+
+/*
+ * `inline` so utilities read these through var() at the element: `.dark`
+ * redefines the source variable, and a non-inline theme variable would be
+ * substituted once on :root and never see the dark value.
+ */
+@theme inline {
+    --color-on-primary: var(--pg-on-primary);
+    --color-table: var(--pg-table);
 }
 
 #app {
     height: 100%;
 }
 
+body {
+    background-color: oklch(99.5% 0.002 60);
+}
+
 html.dark body {
-    background-color: oklch(27.39% 0.015 261.09); /* gray-800 */
+    background-color: oklch(19% 0.008 60);
 }
 
 /* Dark mode surface variables */
 :root {
-    --pg-shadow-color: rgba(0,0,0,0.08);
     --pg-shadow-color-lg: rgba(0,0,0,0.06);
     --pg-shadow-color-xl: rgba(0,0,0,0.15);
+    /*
+     * DESIGN.md On-Amber Rule: labels on an amber fill take the paper colour,
+     * near-white in light (the accepted 2.80:1 Amber Contrast Exception) and
+     * near-black in dark, where amber is the lighter surface.
+     */
+    --pg-on-primary: oklch(99.5% 0.002 60);
+    /* The editor's canvas tone: one step below paper so an email floats on it. */
+    --pg-table: oklch(97.5% 0.003 60);
+    color-scheme: light;
+    scrollbar-color: oklch(86% 0.01 60) transparent;
 }
 
 .dark {
-    --pg-shadow-color: rgba(0,0,0,0.4);
     --pg-shadow-color-lg: rgba(0,0,0,0.35);
     --pg-shadow-color-xl: rgba(0,0,0,0.5);
+    --pg-on-primary: oklch(19% 0.008 60);
+    --pg-table: oklch(14.5% 0.005 60);
+    color-scheme: dark;
+    scrollbar-color: oklch(37% 0.013 60) transparent;
+}
+
+::selection {
+    background-color: color-mix(in oklab, oklch(70% 0.16 55) 24%, transparent);
+}
+
+input,
+textarea {
+    caret-color: oklch(70% 0.16 55);
 }
 
 /* Shared playground patterns */
@@ -71,12 +147,12 @@ html.dark body {
 
 .pg-locale-select {
     @apply h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-no-repeat transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2378706a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
     background-position: right 6px center;
 }
 
 .dark .pg-locale-select {
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239e9791%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
 }
 
 /* Hide toolbar labels on narrow screens, show icon-only */
@@ -88,12 +164,12 @@ html.dark body {
 
 .pg-select {
     @apply w-full py-2 px-3 pr-8 text-[13px] font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 cursor-pointer appearance-none bg-no-repeat focus:border-primary focus:shadow-primary-ring dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2378706a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
     background-position: right 10px center;
 }
 
 .dark .pg-select {
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239e9791%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
 }
 
 .pg-form-label {
@@ -121,28 +197,33 @@ html.dark body {
 }
 
 .pg-cta {
-    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
+    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
 }
 
 .pg-catalog-nav {
     view-transition-name: pg-catalog-nav;
 }
 
+/*
+ * Mix in oklab, never oklch: oklch takes the short way round the hue wheel
+ * toward the ground's hue, so a dark ground at any cool hue turns the amber
+ * marks purple. oklab interpolates straight through neutral and keeps hue.
+ */
 .pg-group-mark {
     color: var(--pg-mark, var(--color-primary));
-    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 14%, white);
+    background: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 14%, oklch(99.5% 0.002 60));
 }
 .dark .pg-group-mark {
-    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.015 261));
+    background: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.009 60));
 }
 .pg-group-mark .pg-mark-fill {
     fill: var(--pg-mark, var(--color-primary));
 }
 .pg-group-mark .pg-mark-fill-2 {
-    fill: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 45%, white);
+    fill: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 45%, oklch(99.5% 0.002 60));
 }
 .dark .pg-group-mark .pg-mark-fill-2 {
-    fill: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 55%, oklch(27% 0.015 261));
+    fill: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 55%, oklch(27% 0.009 60));
 }
 .pg-group-mark .pg-mark-stroke {
     color: var(--pg-mark, var(--color-primary));
@@ -154,18 +235,121 @@ html.dark body {
 .pg-group-mark[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
 .pg-group-mark[data-group="minimum"] { --pg-mark: var(--color-mark-minimum); }
 
-.pg-card-panel[data-group="configure"] { --pg-mark: var(--color-mark-configure); }
-.pg-card-panel[data-group="personalization"] { --pg-mark: var(--color-mark-personalization); }
-.pg-card-panel[data-group="backend"] { --pg-mark: var(--color-mark-backend); }
-.pg-card-panel[data-group="import"] { --pg-mark: var(--color-mark-import); }
-.pg-card-panel[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
-
-.pg-card-icon {
-    color: var(--pg-mark, var(--color-primary));
-    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 14%, white);
+/* Catalog hero: the minimal setup as code. */
+.pg-copy-btn {
+    @apply flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-gray-500 transition-colors duration-150 hover:bg-gray-200 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100;
 }
-.dark .pg-card-icon {
-    background: color-mix(in oklch, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.015 261));
+
+/*
+ * Catalog hero: three email proofs fanned like the logo's three cards. Each
+ * card's resting transform is its fanned position; the entrance animates
+ * *from* a straight stack to it (fill-mode backwards), so the cards are
+ * visible from the first frame and hover can still take over the transform.
+ */
+.pg-proof-table {
+    aspect-ratio: 5 / 4;
+}
+
+.pg-fan-card {
+    --fan-x: 0%;
+    --fan-y: 0%;
+    --fan-r: 0deg;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40%;
+    aspect-ratio: 2 / 3;
+    transform-origin: 50% 100%;
+    transform: translate(-50%, -50%) translate(var(--fan-x), var(--fan-y)) rotate(var(--fan-r));
+    transition: transform 260ms var(--ease-out-expo);
+    animation: pg-fan-settle 760ms var(--ease-out-expo) 140ms backwards;
+}
+.pg-fan-card[data-slot="0"] { --fan-x: -62%; --fan-y: 4%; --fan-r: -3deg; }
+.pg-fan-card[data-slot="1"] { z-index: 2; }
+.pg-fan-card[data-slot="2"] { --fan-x: 62%; --fan-y: 4%; --fan-r: 2deg; }
+
+.pg-fan-card:hover,
+.pg-fan-card:focus-within {
+    z-index: 3;
+    transform: translate(-50%, -50%) translate(var(--fan-x), calc(var(--fan-y) - 3%)) rotate(0deg);
+}
+
+@keyframes pg-fan-settle {
+    from {
+        transform: translate(-50%, -50%) translate(0%, 2%) rotate(0deg);
+    }
+}
+
+.pg-fan-link {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid oklch(92% 0.006 60);
+    border-radius: 7px;
+    background: oklch(99.5% 0.002 60);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 260ms var(--ease-out-expo);
+}
+.dark .pg-fan-link {
+    border-color: oklch(27% 0.009 60);
+}
+.pg-fan-card:hover .pg-fan-link,
+.pg-fan-link:focus-visible {
+    box-shadow: var(--shadow-xl);
+}
+.pg-fan-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+.pg-fan-caption {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: oklch(99.5% 0.002 60 / 0.95);
+    color: oklch(18% 0.01 60);
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 180ms var(--ease-out-expo), transform 180ms var(--ease-out-expo);
+}
+.pg-fan-card:hover .pg-fan-caption,
+.pg-fan-link:focus-visible .pg-fan-caption {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/*
+ * The scene host's editor stage, named only while a proof navigation runs
+ * (`navigatePlayground` sets `.pg-morphing` on <html> and clears it when the
+ * transition ends). A view-transition-name makes its element a stacking
+ * context: left on permanently, it traps the editor's popover root and the
+ * playground header paints over every dialog. Both snapshots crop to the
+ * group box so the portrait proof never stretches into a landscape stage.
+ */
+.pg-morphing .pg-scene-stage {
+    view-transition-name: pg-scene-stage;
+}
+
+::view-transition-old(pg-scene-stage),
+::view-transition-new(pg-scene-stage) {
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+}
+
+::view-transition-group(pg-scene-stage) {
+    animation-duration: 340ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 ::view-transition-old(root),
@@ -232,23 +416,6 @@ html.dark body {
 .pg-screen-enter-from,
 .pg-screen-leave-to {
     opacity: 0;
-}
-
-/* Card stagger entrance */
-
-@keyframes pg-card-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.pg-card-stagger {
-    animation: pg-card-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Collapsible */
@@ -324,10 +491,6 @@ html.dark body {
         transition-duration: 0.01ms !important;
     }
 
-    .pg-card-stagger {
-        animation-duration: 0.01ms !important;
-    }
-
     .pg-collapsible-enter-active,
     .pg-collapsible-leave-active {
         transition-duration: 0.01ms !important;
@@ -348,5 +511,9 @@ html.dark body {
 
     .pg-onboarding-cursor {
         animation: none !important;
+    }
+
+    .pg-fan-card {
+        animation: none;
     }
 }

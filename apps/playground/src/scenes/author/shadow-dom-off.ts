@@ -1,17 +1,18 @@
 import type { Scene } from "../types";
-import { emptyCanvas } from "./shared";
+import { setupBaseCanvas } from "./shared";
 
 export const shadowDomOff: Scene = {
   id: "shadow-dom-off",
   title: "Shadow DOM off",
   job: "Mount in the page light DOM",
+  initKey: "shadowDom: false",
   summary:
     "init({ shadowDom: false }) — light-DOM mount. Live e2e still uses ?shadowDom=.",
   affordance: "light-dom",
   catalog: "oss",
   group: "configure",
   docs: "/guide/shadow-dom",
-  content: () => emptyCanvas(),
+  content: () => setupBaseCanvas(),
   config: () => ({
     shadowDom: false,
   }),

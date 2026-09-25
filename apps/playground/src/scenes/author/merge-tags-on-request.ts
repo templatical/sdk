@@ -9,6 +9,7 @@ export const mergeTagsOnRequest: Scene = {
   id: "merge-tags-on-request",
   title: "Merge tags on request",
   job: "Pick fields from your app",
+  initKey: "mergeTags.onRequest",
   summary:
     "init({ mergeTags: { onRequest } }) — consumer-owned picker takes precedence.",
   affordance: "picker",

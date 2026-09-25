@@ -5,6 +5,7 @@ export const mergeTags: Scene = {
   id: "merge-tags",
   title: "Merge tags",
   job: "Insert a field from the list",
+  initKey: "mergeTags",
   summary: "init({ mergeTags }) — static tags, built-in picker, no onRequest.",
   affordance: "tag",
   catalog: "oss",

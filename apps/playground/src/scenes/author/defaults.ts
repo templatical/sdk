@@ -1,17 +1,18 @@
 import type { Scene } from "../types";
-import { emptyCanvas } from "./shared";
+import { setupBaseCanvas } from "./shared";
 
 export const defaults: Scene = {
   id: "defaults",
   title: "Defaults",
   job: "New blocks stay on-brand",
+  initKey: "blockDefaults",
   summary:
     "init({ blockDefaults, templateDefaults }) — brand-new blocks start on-brand.",
   affordance: "defaults",
   catalog: "oss",
   group: "configure",
   docs: "/guide/defaults",
-  content: () => emptyCanvas(),
+  content: () => setupBaseCanvas(),
   config: () => ({
     blockDefaults: {
       button: { backgroundColor: "#0f766e" },

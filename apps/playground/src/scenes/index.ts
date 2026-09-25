@@ -39,7 +39,6 @@ import type { Scene, SceneGroup } from "./types";
 
 export type {
   SetupAffordance,
-  SceneSketch,
   Scene,
   SceneCatalog,
   SceneContext,
@@ -69,14 +68,15 @@ export const SCENES: readonly Scene[] = [
   media,
   testEmail,
   render,
+  // Importers follow the docs sidebar (tests/scenes.test.ts reads it).
   importUnlayer,
   importBeefree,
-  importHtml,
-  importMjml,
-  importTopol,
   importStripo,
+  importTopol,
   importChamaileon,
   importEasyEmailPro,
+  importMjml,
+  importHtml,
   exampleLaunchpadLaunch,
   exampleLaunchpadReset,
   exampleFlowworkWelcome,

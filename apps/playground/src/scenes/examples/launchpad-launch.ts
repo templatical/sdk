@@ -30,7 +30,6 @@ export const exampleLaunchpadLaunch: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#launchpad-launch",
-  preview: "product",
   content: () => createProductLaunchTemplate(),
   config: () => {
     seedLaunchpadSavedBlocks();

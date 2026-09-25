@@ -1,17 +1,20 @@
 import type { Scene } from "../types";
-import { emptyCanvas } from "./shared";
+import { emptyCanvas, issuesCanvas } from "./shared";
 
 export const issues: Scene = {
   id: "issues",
   title: "Issues",
   job: "Lint the template as you edit",
+  initKey: "lint",
   summary:
     "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
   affordance: "lint",
   catalog: "oss",
   group: "configure",
   docs: "/quality/",
-  content: () => emptyCanvas(),
+  content: (ctx) =>
+    ctx.search.get("canvas") === "blank" ? emptyCanvas() : issuesCanvas(),
+  variants: [{ name: "Blank canvas", query: { canvas: "blank" } }],
   config: () => ({
     lint: {},
   }),

@@ -11,7 +11,6 @@ export const exampleLaunchpadReset: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#launchpad-reset",
-  preview: "reset",
   content: () => createPasswordResetTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

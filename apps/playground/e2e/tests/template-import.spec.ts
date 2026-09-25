@@ -42,12 +42,12 @@ const easyEmailProSource = readFileSync(
 const IMPORT_SCENE_IDS = [
   "import-unlayer",
   "import-beefree",
-  "import-html",
-  "import-mjml",
-  "import-topol",
   "import-stripo",
+  "import-topol",
   "import-chamaileon",
   "import-easy-email-pro",
+  "import-mjml",
+  "import-html",
 ] as const;
 
 type ImportSource =
@@ -110,7 +110,6 @@ test.describe("Template import", () => {
     page,
   }) => {
     await chooserPage.goto();
-    await page.locator('[data-testid="catalog-tab-import"]').click();
     const links = page.locator("[data-testid^='scene-link-import-']");
     await expect(links).toHaveCount(8);
     const ids = await links.evaluateAll((els) =>
@@ -160,31 +159,51 @@ test.describe("Template import", () => {
     page,
   }) => {
     await openImportScene(scenePage, page, "unlayer");
-    await expect(page.locator(SELECTORS.codeDrawer)).toBeVisible();
-    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
-      "convertUnlayerTemplate",
-    );
-    await expect(page.locator(SELECTORS.backButton)).toBeVisible();
+    const dialog = page.locator(SELECTORS.codeDialog);
+    await page.locator(SELECTORS.toolbarCode).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("convertUnlayerTemplate");
+    await page.locator(SELECTORS.codeDialogClose).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
     await page.locator(SELECTORS.backButton).click();
     await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
   });
 
   test("cancel dismisses the paste panel without converting", async ({
     scenePage,
+    editorPage,
     page,
   }) => {
+    // A valid template in the field, so converting would add blocks.
     await openImportScene(scenePage, page, "unlayer");
+    await page.locator(TEXTAREA_BY_SOURCE.unlayer).fill(unlayerJson);
     await page.locator(SELECTORS.importCancel).click();
     await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
-    await expect(page.locator(SELECTORS.codeDrawer)).toContainText(
-      "convertUnlayerTemplate",
-    );
+    await expect(page.locator(SELECTORS.canvasEmpty)).toBeVisible();
+    await expect(editorPage.getBlocks()).toHaveCount(0);
   });
 
   test("Escape dismisses the paste panel", async ({ scenePage, page }) => {
     await openImportScene(scenePage, page, "unlayer");
     await page.keyboard.press("Escape");
     await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+  });
+
+  test("Escape closing a dialog over the paste panel keeps the panel and its text", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    const textarea = page.locator(TEXTAREA_BY_SOURCE.unlayer);
+    await textarea.fill(unlayerJson);
+    const dialog = page.locator(SELECTORS.codeDialog);
+    await page.locator(SELECTORS.toolbarCode).click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await expect(textarea).toHaveValue(unlayerJson);
   });
 
   test("Unlayer scene shows only the Unlayer textarea", async ({

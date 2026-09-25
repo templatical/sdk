@@ -41,12 +41,12 @@ Each scene is also raw markdown: /scenes/<id>.md
 
 - [Unlayer](https://play.templatical.com/scenes/import-unlayer): Paste Unlayer JSON
 - [BeeFree](https://play.templatical.com/scenes/import-beefree): Paste BeeFree JSON
-- [HTML](https://play.templatical.com/scenes/import-html): Paste table-based HTML
-- [MJML](https://play.templatical.com/scenes/import-mjml): Paste MJML source
-- [Topol](https://play.templatical.com/scenes/import-topol): Paste Topol JSON
 - [Stripo](https://play.templatical.com/scenes/import-stripo): Paste Stripo HTML
+- [Topol](https://play.templatical.com/scenes/import-topol): Paste Topol JSON
 - [Chamaileon](https://play.templatical.com/scenes/import-chamaileon): Paste Chamaileon JSON
 - [Easy Email Pro](https://play.templatical.com/scenes/import-easy-email-pro): Paste Easy Email Pro JSON
+- [MJML](https://play.templatical.com/scenes/import-mjml): Paste MJML source
+- [HTML](https://play.templatical.com/scenes/import-html): Paste table-based HTML
 
 ## Examples
 

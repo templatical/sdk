@@ -12,6 +12,7 @@ import {
   createParagraphBlock,
   createTitleBlock,
 } from "@templatical/types";
+import { createProductLaunchTemplate } from "../../templates";
 
 /** Quiet merge-tag list: grouped, partly sampled, first-tag description is load-bearing for e2e. */
 export const AUTHOR_MERGE_TAGS: MergeTag[] = [
@@ -135,6 +136,46 @@ export const AUTHOR_TESTIMONIAL: CustomBlockDefinition = {
 
 export function emptyCanvas(locale = "en"): TemplateContent {
   return createDefaultTemplateContent(undefined, { locale });
+}
+
+const MERGE_TAG_SPAN = /<span data-merge-tag="[^"]*">[^<]*<\/span>/g;
+
+/**
+ * The Launchpad email reduced to plain blocks, for setup scenes that act on a
+ * finished template but register none of its features. The testimonial
+ * custom block and the display-conditioned rows are dropped (a scene that
+ * does not register them renders them broken) and the greeting's merge tag
+ * becomes plain text.
+ */
+export function setupBaseCanvas(): TemplateContent {
+  const content = createProductLaunchTemplate();
+  content.blocks = content.blocks
+    .filter((block) => block.type !== "custom" && !block.displayCondition)
+    .map((block) =>
+      block.type === "paragraph"
+        ? { ...block, content: block.content.replace(MERGE_TAG_SPAN, "there") }
+        : block,
+    );
+  return content;
+}
+
+/**
+ * The base email with two real findings planted so the Issues tab opens with
+ * work in it: the hero image loses its alt text (error) and the first button
+ * says "Click here" (warning).
+ */
+export function issuesCanvas(): TemplateContent {
+  const content = setupBaseCanvas();
+  let plantedLabel = false;
+  content.blocks = content.blocks.map((block) => {
+    if (block.type === "image") return { ...block, alt: "" };
+    if (block.type === "button" && !plantedLabel) {
+      plantedLabel = true;
+      return { ...block, text: "Click here" };
+    }
+    return block;
+  });
+  return content;
 }
 
 export function paragraphCanvas(html = "<p>Hello.</p>"): TemplateContent {

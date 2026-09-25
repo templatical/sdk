@@ -6,6 +6,7 @@ export const media: Scene = {
   id: "media",
   title: "Media",
   job: "Upload and pick an image",
+  initKey: "media",
   summary:
     "init({ media }) — Browse, drop-upload, and a seeded localStorage gallery.",
   affordance: "media",

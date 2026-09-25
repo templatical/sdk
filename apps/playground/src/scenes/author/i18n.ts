@@ -5,6 +5,7 @@ export const i18n: Scene = {
   id: "i18n",
   title: "Internationalization",
   job: "German chrome and placeholders",
+  initKey: "locale",
   summary: 'init({ locale: "de" }) — German editor chrome and block defaults.',
   affordance: "locale",
   catalog: "oss",

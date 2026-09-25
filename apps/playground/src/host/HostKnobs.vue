@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { Layers, Square, Monitor, Sun, Moon } from "@lucide/vue";
+import { Monitor, Sun, Moon } from "@lucide/vue";
 import {
   usePlaygroundI18n,
   usePlaygroundTheme,
   supportedLocales,
 } from "@/i18n";
-import { SHADOW_STORAGE_KEY } from "@/host/shadowMode";
-
-const shadowMode = defineModel<"shadow" | "light">("shadowMode", {
-  required: true,
-});
 
 const { locale, t } = usePlaygroundI18n();
 const { theme: uiTheme } = usePlaygroundTheme();
@@ -18,28 +13,10 @@ function cycleTheme(): void {
   const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
   uiTheme.value = cycle[uiTheme.value];
 }
-
-function cycleShadow(): void {
-  const next = shadowMode.value === "shadow" ? "light" : "shadow";
-  window.localStorage.setItem(SHADOW_STORAGE_KEY, next);
-  shadowMode.value = next;
-}
 </script>
 
 <template>
   <div class="flex items-center gap-1.5">
-    <button
-      type="button"
-      class="pg-toolbar-btn"
-      :title="t.a11y.toggleShadowDom"
-      :aria-label="t.a11y.toggleShadowDom"
-      data-testid="toolbar-shadow-toggle"
-      @click="cycleShadow"
-    >
-      <Layers v-if="shadowMode === 'shadow'" :size="14" aria-hidden="true" />
-      <Square v-else :size="14" aria-hidden="true" />
-      <span class="pg-toolbar-label">{{ t.shadowMode[shadowMode] }}</span>
-    </button>
     <button
       type="button"
       class="pg-theme-btn"

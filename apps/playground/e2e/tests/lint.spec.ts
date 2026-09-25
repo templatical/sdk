@@ -1,17 +1,36 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
+/**
+ * The Issues scene opens on a finished email with planted findings. These
+ * specs count issues from a known-empty start, so they use its blank-canvas
+ * variant; the default is covered by its own test below.
+ */
 async function openIssuesScene(
   scenePage: import("../pages/scene.page").ScenePage,
   editorPage: import("../pages/editor.page").EditorPage,
+  query: Record<string, string> = { canvas: "blank" },
 ): Promise<void> {
-  await scenePage.goto("issues");
+  await scenePage.goto("issues", query);
   await editorPage.waitForReady();
   await editorPage.dismissOverlays();
   await editorPage.closeCodeDrawer();
 }
 
 test.describe("Template lint (a11y + structure)", () => {
+  test("the Issues scene opens with its planted findings", async ({
+    scenePage,
+    editorPage,
+  }) => {
+    await openIssuesScene(scenePage, editorPage, {});
+    expect(await editorPage.getBlocks().count()).toBeGreaterThan(5);
+    await editorPage.openIssuesTab();
+    await expect(editorPage.getIssueRow("a11y.img-missing-alt")).toBeVisible();
+    await expect(
+      editorPage.getIssueRow("a11y.button-vague-label"),
+    ).toBeVisible();
+  });
+
   test("empty section: warning shows, Fix button is visible and amber, click removes", async ({
     scenePage,
     editorPage,

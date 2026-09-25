@@ -34,16 +34,6 @@ export type SetupAffordance =
   | "light-dom"
   | "import";
 
-export type SceneSketch =
-  | "product"
-  | "newsletter"
-  | "welcome"
-  | "order"
-  | "event"
-  | "sale"
-  | "reset"
-  | "rtl";
-
 export interface SceneContext {
   search: URLSearchParams;
 }
@@ -58,12 +48,17 @@ export interface Scene {
   title: string;
   /** One clause for the catalog card and llms.txt. Four to eight words. */
   job: string;
+  /**
+   * The exact init() key path the setup exercises (`mergeTags.onRequest`,
+   * `shadowDom: false`), shown on its catalog row. Every Configure,
+   * Personalization and Your backend scene carries one, and its snippet must
+   * contain it; tests/init-keys.test.ts holds both.
+   */
+  initKey?: string;
   summary: string;
   catalog: SceneCatalog;
   group: SceneGroup;
   docs: string;
-  /** Catalog wireframe for Examples. Same sketches as the old chooser. */
-  preview?: SceneSketch;
   /** Mini editor chrome for setup cards. */
   affordance?: SetupAffordance;
   content: (ctx: SceneContext) => TemplateContent;

@@ -55,7 +55,7 @@ function cancel(): void {
         v-if="open && request"
         class="pg-modal-backdrop"
         @click.self="cancel"
-        @keydown.escape.capture="cancel"
+        @keydown.escape.capture.prevent="cancel"
       >
         <div
           ref="dialogRef"

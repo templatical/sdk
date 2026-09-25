@@ -16,8 +16,12 @@ import type { Page } from "@playwright/test";
  * computes inside a real dialog.
  */
 
-/** Unmistakably not a stock token — the defaults are all `oklch(…)`. */
-const THEMED_ELEVATED = "rgb(255, 0, 0)";
+/**
+ * The theming scene's `bgElevated`. Unmistakably not a stock token: the
+ * defaults are all `oklch(…)`, while this is the `rgb()` form Chrome reports
+ * for a computed background.
+ */
+const THEMED_ELEVATED = "rgb(251, 244, 245)";
 
 async function bootThemedEditor(
   scenePage: import("../pages/scene.page").ScenePage,

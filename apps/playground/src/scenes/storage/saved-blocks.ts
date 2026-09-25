@@ -7,6 +7,7 @@ export const savedBlocks: Scene = {
   id: "saved-blocks",
   title: "Saved blocks",
   job: "Bookmark a reusable group",
+  initKey: "savedBlocks",
   summary:
     "init({ savedBlocks }) — localStorage library, pick-session save, insert, rename, delete.",
   affordance: "bookmark",

@@ -125,6 +125,10 @@ function dismiss(): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  // A host dialog opened over the panel (Code, Export, Share) closes on the
+  // same Escape and marks it handled; that press must not also dismiss the
+  // panel and discard what was pasted.
+  if (event.defaultPrevented) return;
   if (event.key === "Escape" && open.value) {
     event.preventDefault();
     dismiss();

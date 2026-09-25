@@ -1,17 +1,18 @@
 import type { Scene } from "../types";
-import { emptyCanvas } from "./shared";
+import { setupBaseCanvas } from "./shared";
 
 export const fonts: Scene = {
   id: "fonts",
   title: "Fonts",
   job: "Limit the type menu",
+  initKey: "fonts",
   summary:
     "init({ fonts: { builtIns } }) — restrict the picker to an on-brand allowlist.",
   affordance: "font",
   catalog: "oss",
   group: "configure",
   docs: "/guide/fonts",
-  content: () => emptyCanvas(),
+  content: () => setupBaseCanvas(),
   config: () => ({
     fonts: {
       builtIns: ["Georgia", "Times New Roman", "Arial"],

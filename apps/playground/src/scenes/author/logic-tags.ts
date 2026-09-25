@@ -5,6 +5,7 @@ export const logicTags: Scene = {
   id: "logic-tags",
   title: "Logic tags",
   job: "Branch copy with IF / ENDIF",
+  initKey: "logicTags",
   summary:
     "init({ logicTags }) — insert control-flow tokens from a dedicated picker.",
   affordance: "logic",

@@ -9,6 +9,7 @@ export const versionHistory: Scene = {
   id: "version-history",
   title: "Version history",
   job: "Restore an earlier snapshot",
+  initKey: "versionHistory",
   summary:
     "init({ templates, versionHistory }) — browse, preview, and restore past saves.",
   affordance: "history",

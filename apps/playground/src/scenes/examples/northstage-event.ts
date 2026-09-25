@@ -21,7 +21,6 @@ export const exampleNorthstageEvent: Scene = {
   catalog: "oss",
   group: "examples",
   docs: "/guide/examples#northstage-event",
-  preview: "event",
   content: () => createEventInvitationTemplate(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: EXAMPLE_MERGE_TAGS },

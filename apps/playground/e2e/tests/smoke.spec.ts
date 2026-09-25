@@ -17,7 +17,6 @@ test.describe("Playground smoke tests", () => {
     page,
   }) => {
     await chooserPage.goto();
-    await page.locator('[data-testid="catalog-tab-examples"]').click();
     await page
       .locator('[data-testid="scene-link-example-launchpad-launch"]')
       .click();
@@ -109,7 +108,6 @@ test.describe("Playground smoke tests", () => {
 
   test("theme toggle works", async ({ chooserPage, editorPage, page }) => {
     await chooserPage.goto();
-    await page.locator('[data-testid="catalog-tab-examples"]').click();
     await page
       .locator('[data-testid="scene-link-example-launchpad-launch"]')
       .click();

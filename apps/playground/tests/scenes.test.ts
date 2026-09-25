@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -105,12 +105,12 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
 const IMPORT_IDS = [
   "import-unlayer",
   "import-beefree",
-  "import-html",
-  "import-mjml",
-  "import-topol",
   "import-stripo",
+  "import-topol",
   "import-chamaileon",
   "import-easy-email-pro",
+  "import-mjml",
+  "import-html",
 ] as const;
 
 const IMPORT_DOCS: Record<(typeof IMPORT_IDS)[number], string> = {
@@ -264,25 +264,24 @@ describe("catalog copy", () => {
   });
 });
 
-describe("example previews", () => {
-  it("every Example scene has a catalog thumbnail", () => {
-    const examples = SCENES.filter((s) => s.group === "examples");
-    expect(examples.length).toBeGreaterThan(0);
-    for (const scene of examples) {
-      expect(
-        [
-          "product",
-          "newsletter",
-          "welcome",
-          "order",
-          "event",
-          "sale",
-          "reset",
-          "rtl",
-        ],
-        scene.id,
-      ).toContain(scene.preview);
-    }
+describe("importer order", () => {
+  it("follows the docs sidebar's migration guides", () => {
+    const config = readFileSync(
+      join(import.meta.dirname, "../../docs/.vitepress/config.ts"),
+      "utf8",
+    );
+    const docsOrder = [
+      ...new Set(
+        [...config.matchAll(/"\/guide\/migration-from-([a-z-]+)"/g)].map(
+          (match) => `import-${match[1]}`,
+        ),
+      ),
+    ];
+    const playgroundOrder = SCENES.filter((s) => s.group === "import").map(
+      (s) => s.id,
+    );
+    expect(docsOrder).toHaveLength(8);
+    expect(playgroundOrder).toEqual(docsOrder);
   });
 });
 
