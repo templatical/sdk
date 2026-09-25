@@ -4,11 +4,19 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import TestEmailModal from "../src/components/TestEmailModal.vue";
 import { mountEditor } from "./helpers/mount";
 import {
+  EDITOR_KEY,
+  LAYOUT_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   POPOVER_ROOT_KEY,
 } from "../src/keys";
-import type { MergeTag } from "@templatical/types";
+import type { MergeTag, TemplateContent } from "@templatical/types";
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+  createSlotBlock,
+  createWrapperBlock,
+} from "@templatical/types";
 import { shallowRef, nextTick, ref } from "vue";
 import type { TestEmailError } from "../src/composables/useTestEmailFeature";
 
@@ -69,6 +77,8 @@ function mountModal(
     error?: TestEmailError | null;
     mergeTags?: MergeTag[];
     sampleMode?: boolean;
+    editorContent?: TemplateContent;
+    layout?: TemplateContent;
   } = {},
 ) {
   return mountEditor(TestEmailModal, {
@@ -90,6 +100,10 @@ function mountModal(
       ...(props.sampleMode !== undefined
         ? { [MERGE_TAG_SAMPLE_MODE_KEY]: ref(props.sampleMode) }
         : {}),
+      ...(props.editorContent
+        ? { [EDITOR_KEY]: { content: ref(props.editorContent), state: {} } }
+        : {}),
+      ...(props.layout ? { [LAYOUT_KEY]: props.layout } : {}),
     },
   } as never);
 }
@@ -301,8 +315,9 @@ describe("TestEmailModal preview", () => {
     const region = get(REGION);
     expect(region.className).toContain("min-h-0");
     expect(region.className).toContain("overflow-y-auto");
-    expect(get('[data-testid="test-email-send"]').closest("div")?.className)
-      .toContain("shrink-0");
+    expect(
+      get('[data-testid="test-email-send"]').closest("div")?.className,
+    ).toContain("shrink-0");
   });
 
   it("offers the editor's viewport switch, desktop selected first", () => {
@@ -330,7 +345,9 @@ describe("TestEmailModal preview", () => {
    * substring check passes even when the wrong hint is rendered.
    */
   function hintText(): string {
-    return get('[data-testid="test-email-preview-hint"]').textContent?.trim() ?? "";
+    return (
+      get('[data-testid="test-email-preview-hint"]').textContent?.trim() ?? ""
+    );
   }
 
   it("states that merge tags are unresolved when no sample is configured", () => {
@@ -352,6 +369,27 @@ describe("TestEmailModal preview", () => {
     mountModal({ mergeTags: SAMPLED_TAGS, sampleMode: false });
 
     expect(hintText()).toBe("testEmail.previewHint");
+  });
+
+  it("paints the preview mat with layout backgroundColor, not author settings", () => {
+    const editorContent = createDefaultTemplateContent();
+    editorContent.settings = {
+      ...editorContent.settings,
+      backgroundColor: "#111111",
+    };
+    editorContent.blocks = [createParagraphBlock({ content: "<p>author</p>" })];
+
+    const layout = createDefaultTemplateContent();
+    layout.settings = { ...layout.settings, backgroundColor: "#f3f4f6" };
+    layout.blocks = [createWrapperBlock({ children: [createSlotBlock()] })];
+
+    mountModal({ editorContent, layout });
+
+    const style =
+      get('[data-testid="block-preview-stage"]').getAttribute("style") ?? "";
+    expect(style).toContain("background-color: #f3f4f6");
+    expect(style).not.toContain("#111111");
+    expect(editorContent.settings.backgroundColor).toBe("#111111");
   });
 });
 

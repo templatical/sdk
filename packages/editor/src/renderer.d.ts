@@ -7,6 +7,7 @@ declare module "@templatical/renderer" {
     allowHtmlBlocks?: boolean;
     renderCustomBlock?: (block: CustomBlock) => Promise<string>;
     socialIconsBaseUrl?: string;
+    layout?: TemplateContent;
   }
 
   export function renderToMjml(

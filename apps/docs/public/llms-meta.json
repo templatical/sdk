@@ -1,6 +1,6 @@
 {
-  "sdkVersion": "0.39.4",
-  "pageCount": 60,
+  "sdkVersion": "0.40.0",
+  "pageCount": 61,
   "index": "/llms.txt",
   "full": "/llms-full.txt"
 }

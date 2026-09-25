@@ -164,6 +164,8 @@ export default {
     ratio21: "2:1 Ratio",
     borderRadius: "Border Radius",
     wrapperEnable: "Add wrapper",
+    wrapperLayoutConflict:
+      "This editor already frames the email. An extra frame on this section isn't supported — preview and export will fail.",
     stackOnMobile: "Stack on mobile",
   },
 

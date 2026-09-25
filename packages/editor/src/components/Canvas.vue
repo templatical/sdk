@@ -48,6 +48,7 @@ import MenuBlock from "./blocks/MenuBlock.vue";
 import TableBlock from "./blocks/TableBlock.vue";
 import CustomBlock from "./blocks/CustomBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
+import WrapperBlock from "./blocks/WrapperBlock.vue";
 
 // `countdown` is deliberately absent: it resolves from the block registry, which
 // `useEditorCore` populates with a lazy `defineAsyncComponent` so OSS bundles
@@ -70,6 +71,7 @@ const blockComponentMap: Record<string, Component> = {
   table: TableBlock,
   video: VideoBlock,
   custom: CustomBlock,
+  wrapper: WrapperBlock,
 };
 
 const props = defineProps<{
@@ -489,7 +491,14 @@ function handleFetchData(
                   {{ getBlockLock(block.id)!.name }}
                 </span>
               </div>
+              <component
+                v-if="block.type === 'wrapper'"
+                :is="getBlockComponent(block)"
+                :block="block"
+                :viewport="viewport"
+              />
               <BlockWrapper
+                v-else
                 :block="block"
                 :is-selected="
                   !previewMode &&

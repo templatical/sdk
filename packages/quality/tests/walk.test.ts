@@ -4,15 +4,17 @@ import {
   createParagraphBlock,
   createSectionBlock,
   createImageBlock,
+  createTitleBlock,
+  createWrapperBlock,
 } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import { walkBlocks } from "../src/walk";
 import type { WalkContext } from "../src/types";
 
 function visited(content: ReturnType<typeof createDefaultTemplateContent>) {
-  const calls: { id: string; ctx: WalkContext }[] = [];
+  const calls: { id: string; type: string; ctx: WalkContext }[] = [];
   walkBlocks(content, (block: Block, ctx) => {
-    calls.push({ id: block.id, ctx });
+    calls.push({ id: block.id, type: block.type, ctx });
   });
   return calls;
 }
@@ -46,6 +48,25 @@ describe("walkBlocks", () => {
     expect(calls[1].ctx.columnIndex).toBe(0);
     expect(calls[1].ctx.depth).toBe(1);
     expect(calls[2].ctx.columnIndex).toBe(1);
+  });
+
+  it("descends into wrapper children and visits the wrapper and title", () => {
+    const content = createDefaultTemplateContent();
+    const title = createTitleBlock({ id: "t" });
+    const wrapper = createWrapperBlock({ id: "w", children: [title] });
+    content.blocks = [wrapper];
+
+    const calls = visited(content);
+    expect(calls.map((c) => c.type)).toEqual(["wrapper", "title"]);
+    expect(calls.map((c) => c.id)).toEqual(["w", "t"]);
+    expect(calls[0].ctx.parent).toBeNull();
+    expect(calls[0].ctx.section).toBeNull();
+    expect(calls[0].ctx.columnIndex).toBeNull();
+    expect(calls[0].ctx.depth).toBe(0);
+    expect(calls[1].ctx.parent?.id).toBe("w");
+    expect(calls[1].ctx.section).toBeNull();
+    expect(calls[1].ctx.columnIndex).toBeNull();
+    expect(calls[1].ctx.depth).toBe(1);
   });
 
   it("propagates section background to children when opaque", () => {

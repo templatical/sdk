@@ -93,7 +93,7 @@ interface PreviewResolveContext {
 }
 ```
 
-`content` is a copy — mutating it cannot affect the editor. `recipient` is present in the test-email dialog and absent in the editor's preview mode; treat its absence as *"no particular recipient"* and return something renderable anyway.
+`content` is a copy — mutating it cannot affect the editor. When `layout` is set, `content` is the composed document. See [Layout](/guide/layout). `recipient` is present in the test-email dialog and absent in the editor's preview mode; treat its absence as *"no particular recipient"* and return something renderable anyway.
 
 Return a `TemplateContent`. Anything else is treated as a failure (see below).
 

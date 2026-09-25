@@ -1,4 +1,4 @@
-import { RICH_TEXT_SPACING, isSection } from "@templatical/types";
+import { RICH_TEXT_SPACING, isSection, isWrapper } from "@templatical/types";
 import type { Block, ContentDirection } from "@templatical/types";
 
 /**
@@ -98,10 +98,11 @@ export function resolveParagraphGap(spacing: number | undefined): number {
 /**
  * Every paragraph gap the document uses, so the head can carry a rule for each.
  *
- * Walks sections' children too — a paragraph inside a column needs its rule as
- * much as a top-level one. Titles always use the default gap: their content is
- * normally a single paragraph the renderer unwraps, and the multi-paragraph
- * case is an edge worth spacing consistently rather than configuring.
+ * Walks section columns and wrapper children too — a paragraph inside a column
+ * or a layout card needs its rule as much as a top-level one. Titles always
+ * use the default gap: their content is normally a single paragraph the
+ * renderer unwraps, and the multi-paragraph case is an edge worth spacing
+ * consistently rather than configuring.
  */
 export function collectParagraphGaps(blocks: Block[]): number[] {
   const gaps: number[] = [RICH_TEXT_SPACING.paragraphGap];
@@ -115,6 +116,10 @@ export function collectParagraphGaps(blocks: Block[]): number[] {
         for (const child of column) {
           visit(child);
         }
+      }
+    } else if (isWrapper(block)) {
+      for (const child of block.children) {
+        visit(child);
       }
     }
   };

@@ -8,6 +8,7 @@ import {
   createSectionBlock,
   createHtmlBlock,
   createDefaultTemplateContent,
+  createWrapperBlock,
   SYNTAX_PRESETS,
   type MergeTag,
   type TemplateContent,
@@ -113,9 +114,7 @@ describe("normalizeMergeTagsInHtml", () => {
   // its value, so the span's inner text is itself a token. Pruning the subtree
   // makes the text unreachable regardless of what it says.
   it("is idempotent when a tag's label equals its value", () => {
-    const selfLabelled: MergeTag[] = [
-      { label: "{{x}}", value: "{{x}}" },
-    ];
+    const selfLabelled: MergeTag[] = [{ label: "{{x}}", value: "{{x}}" }];
     const once = normalizeMergeTagsInHtml("<p>{{x}}</p>", selfLabelled, LIQUID);
 
     expect(once).toBe('<p><span data-merge-tag="{{x}}">{{x}}</span></p>');
@@ -123,7 +122,8 @@ describe("normalizeMergeTagsInHtml", () => {
   });
 
   it("does not re-wrap inside an existing logic-tag span whose text is a token", () => {
-    const input = '<p><span data-logic-merge-tag="{% if vip %}">{% if vip %}</span></p>';
+    const input =
+      '<p><span data-logic-merge-tag="{% if vip %}">{% if vip %}</span></p>';
 
     expect(normalizeMergeTagsInHtml(input, TAGS, LIQUID)).toBe(input);
   });
@@ -249,6 +249,35 @@ describe("normalizeMergeTagMarkup", () => {
     );
   });
 
+  it("normalizes a paragraph that is a direct wrapper child", () => {
+    const nested = createParagraphBlock({ content: "<p>{{last_name}}</p>" });
+    const wrapper = createWrapperBlock({ children: [nested] });
+    const content = contentWith([wrapper]);
+
+    const result = normalizeMergeTagMarkup(content, TAGS, LIQUID);
+
+    const child = (result.blocks[0] as typeof wrapper).children[0];
+    expect((child as { content: string }).content).toBe(
+      '<p><span data-merge-tag="{{last_name}}">Last Name</span></p>',
+    );
+  });
+
+  it("normalizes a paragraph nested in a section that is a wrapper child", () => {
+    const nested = createParagraphBlock({ content: "<p>{{last_name}}</p>" });
+    const section = createSectionBlock({ columns: 1 });
+    section.children = [[nested]];
+    const wrapper = createWrapperBlock({ children: [section] });
+    const content = contentWith([wrapper]);
+
+    const result = normalizeMergeTagMarkup(content, TAGS, LIQUID);
+
+    const wrappedSection = (result.blocks[0] as typeof wrapper).children[0];
+    const child = (wrappedSection as typeof section).children[0][0];
+    expect((child as { content: string }).content).toBe(
+      '<p><span data-merge-tag="{{last_name}}">Last Name</span></p>',
+    );
+  });
+
   // F3 — plain-string fields are rendered as text, so injecting markup into
   // them would put a literal `<span …>` on the canvas and in the MJML.
   it("leaves ButtonBlock.text and ButtonBlock.url byte-identical", () => {
@@ -277,9 +306,9 @@ describe("normalizeMergeTagMarkup", () => {
 
     const result = normalizeMergeTagMarkup(content, TAGS, LIQUID);
 
-    expect(
-      (result.blocks[0] as CustomBlock).fieldValues.quote,
-    ).toBe("Thanks {{first_name}}");
+    expect((result.blocks[0] as CustomBlock).fieldValues.quote).toBe(
+      "Thanks {{first_name}}",
+    );
   });
 
   it("leaves HtmlBlock.content byte-identical", () => {
@@ -314,9 +343,9 @@ describe("normalizeMergeTagMarkup", () => {
 
     const result = normalizeMergeTagMarkup(content, TAGS, LIQUID);
 
-    expect(
-      (result.blocks[0] as typeof table).rows[0].cells[0].content,
-    ).toBe("Hi {{first_name}}");
+    expect((result.blocks[0] as typeof table).rows[0].cells[0].content).toBe(
+      "Hi {{first_name}}",
+    );
   });
 
   it("returns the same content reference when nothing changed", () => {

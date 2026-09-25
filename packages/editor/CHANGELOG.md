@@ -1,5 +1,17 @@
 # @templatical/editor
 
+## 0.40.0
+
+### Minor Changes
+
+- b7ff7d9: Add an embedder `layout` overlay: a Templatical JSON shell with one `slot` (top-level or inside a layout `wrapper` card), applied at preview and `toMjml` / `toHtml`, never written into `getContent()`.
+
+### Patch Changes
+
+- Updated dependencies [b7ff7d9]
+  - @templatical/renderer@0.40.0
+  - @templatical/quality@0.40.0
+
 ## 0.39.4
 
 ### Patch Changes

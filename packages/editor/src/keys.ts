@@ -21,6 +21,7 @@ import type {
   MergeTagRequestContext,
   ResolvePreview,
   SyntaxPreset,
+  TemplateContent,
 } from "@templatical/types";
 import type { Translations, CloudTranslations } from "./i18n";
 import type {
@@ -120,6 +121,23 @@ export const PALETTE_BLOCKS_KEY: InjectionKey<string[] | undefined> =
  */
 export const HTML_BLOCK_PREVIEW_KEY: InjectionKey<boolean> =
   Symbol("htmlBlockPreview");
+
+/**
+ * Embedder layout overlay (`config.layout`). Provided by `useEditorCore`.
+ * `undefined` when the host configured none. Consumed by preview surfaces
+ * and the section toolbar; never written into editor content.
+ */
+export const LAYOUT_KEY: InjectionKey<TemplateContent | undefined> =
+  Symbol("layout");
+
+/**
+ * Whether the section toolbar offers Add wrapper (`config.sectionWrapper`).
+ * Provided by `useEditorCore`. `undefined` when the host configured none,
+ * which is on (`!== false`). Consumed by `SectionToolbar`. Own key — not
+ * folded into `LAYOUT_KEY`.
+ */
+export const SECTION_WRAPPER_KEY: InjectionKey<boolean | undefined> =
+  Symbol("sectionWrapper");
 
 /**
  * Consumer-supplied color-picker palette (`config.colors`), normalized to

@@ -2,7 +2,7 @@
 
 > Drag-and-drop email editor for modern apps — source-available, MIT after two years.
 
-Documentation for SDK version 0.39.4. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
+Documentation for SDK version 0.40.0. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
 
 ## Overview
 
@@ -32,6 +32,7 @@ Documentation for SDK version 0.39.4. Every page below is also available as raw 
 - [Custom Fonts](https://docs.templatical.com/guide/fonts): Configure custom fonts for the email editor's font picker.
 - [Internationalization](https://docs.templatical.com/guide/i18n): Configure the editor's UI language with built-in or custom locale support.
 - [Images](https://docs.templatical.com/guide/images): Handle image input, integrate custom media pickers, and configure image block properties.
+- [Layout](https://docs.templatical.com/guide/layout): Pass a JSON shell with one slot. Preview and export wrap the author's email in it. Save does not.
 - [Logic Tags](https://docs.templatical.com/guide/logic-tags): Insert and highlight control-flow logic tags in Templatical email templates.
 - [Merge Tags](https://docs.templatical.com/guide/merge-tags): Dynamic content via merge tags in Templatical email templates.
 - [Migration from BeeFree](https://docs.templatical.com/guide/migration-from-beefree): Convert BeeFree email templates to Templatical format using @templatical/import-beefree.

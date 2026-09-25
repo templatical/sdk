@@ -9,13 +9,15 @@ import {
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
-import type {
-  ColumnLayout,
-  SectionBlock,
-  SectionWrapper,
-  SpacingValue,
+import {
+  layoutWrapsSlot,
+  type ColumnLayout,
+  type SectionBlock,
+  type SectionWrapper,
+  type SpacingValue,
 } from "@templatical/types";
-import { computed } from "vue";
+import { computed, inject } from "vue";
+import { LAYOUT_KEY, SECTION_WRAPPER_KEY } from "../../keys";
 import { rebalanceColumnChildren } from "../../utils/rebalanceColumnChildren";
 
 const props = defineProps<{
@@ -27,6 +29,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const layout = inject(LAYOUT_KEY, undefined);
+const sectionWrapper = inject(SECTION_WRAPPER_KEY, undefined);
+
+const wrapsSlot = layout !== undefined && layoutWrapsSlot(layout);
+
+const showWrapperPanel = computed(
+  () => sectionWrapper !== false || !!props.block.wrapper,
+);
+const disableTurnOn = computed(() => wrapsSlot && !props.block.wrapper);
+const showNote = computed(() => wrapsSlot && showWrapperPanel.value);
 
 const columnOptions = computed(() => [
   { value: "1" as ColumnLayout, label: t.section.column1 },
@@ -113,13 +126,20 @@ function handleWrapperRadius(event: Event): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </div>
-  <div class="tpl:mb-3.5">
+  <div v-if="showWrapperPanel" class="tpl:mb-3.5">
     <ToggleSwitch
       class="tpl:text-xs tpl:text-[var(--tpl-text)]"
       :model-value="!!block.wrapper"
       :label="t.section.wrapperEnable"
+      :disabled="disableTurnOn"
       @update:model-value="setWrapperEnabled($event)"
     />
+    <p
+      v-if="showNote"
+      class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+    >
+      {{ t.section.wrapperLayoutConflict }}
+    </p>
     <div
       v-if="block.wrapper"
       class="tpl:mt-3 tpl:ml-0.5 tpl:space-y-3 tpl:border-l tpl:border-[var(--tpl-border)] tpl:pl-3"

@@ -2,14 +2,22 @@
  * Just enough of a stored template to walk its ids — deliberately structural
  * rather than `Template`, because the caller reads `editor.state`, which is
  * `DeepReadonly` and so not assignable to the mutable contract type.
+ *
+ * `children` is a union: a section stores columns (`Block[][]`); a layout
+ * `wrapper` stores a flat `Block[]`. Both appear on the `Block` union, so a
+ * shape that only named the section form is not assignable from
+ * `DeepReadonly<Template>`.
  */
+interface SavedBlockIdNode {
+  readonly id: string;
+  readonly type: string;
+  readonly children?:
+    readonly SavedBlockIdNode[] | readonly (readonly SavedBlockIdNode[])[];
+}
+
 interface SavedBlockIdSource {
   content?: {
-    blocks?: readonly {
-      id: string;
-      type: string;
-      children?: readonly (readonly { id: string }[])[];
-    }[];
+    blocks?: readonly SavedBlockIdNode[];
   };
 }
 
@@ -31,18 +39,26 @@ export function collectSavedBlockIds(
   template: SavedBlockIdSource | null | undefined,
 ): Set<string> {
   const ids = new Set<string>();
-  const blocks = template?.content?.blocks;
-  if (!blocks) return ids;
+  collectFromBlocks(template?.content?.blocks, ids);
+  return ids;
+}
 
+function collectFromBlocks(
+  blocks: readonly SavedBlockIdNode[] | undefined,
+  ids: Set<string>,
+): void {
+  if (!blocks) return;
   for (const block of blocks) {
     ids.add(block.id);
-    if (block.type === "section" && block.children) {
-      for (const column of block.children) {
-        for (const child of column) {
-          ids.add(child.id);
-        }
+    if (!block.children) continue;
+    if (block.type === "section") {
+      for (const column of block.children as readonly (readonly SavedBlockIdNode[])[]) {
+        collectFromBlocks(column, ids);
       }
+      continue;
+    }
+    if (block.type === "wrapper") {
+      collectFromBlocks(block.children as readonly SavedBlockIdNode[], ids);
     }
   }
-  return ids;
 }

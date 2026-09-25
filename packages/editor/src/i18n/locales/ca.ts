@@ -167,6 +167,8 @@ const ca: typeof en = {
     ratio21: "Proporció 2:1",
     borderRadius: "Radi de la vora",
     wrapperEnable: "Afegeix un contenidor",
+    wrapperLayoutConflict:
+      "Aquest editor ja emmarca el correu. Un marc extra en aquesta secció no és compatible — la vista prèvia i l'exportació fallaran.",
     stackOnMobile: "Apila en mòbil",
   },
 

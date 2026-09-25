@@ -33,6 +33,12 @@ export interface ToMjmlSource {
    * jsDelivr default, so output matches today’s `toMjml()` for the same template.
    */
   socialIconsBaseUrl?: string;
+  /**
+   * Optional. Embedder shell forwarded to the renderer's `layout` option only
+   * when defined, so `toMjml()` composes and a source that omits it produces
+   * today's unshelled MJML. Never written into `getContent()`.
+   */
+  getLayout?: () => TemplateContent | undefined;
 }
 
 /**
@@ -83,6 +89,7 @@ export async function toMjmlForInstance(
   }
   const stylesheetResolver = instance.getCustomBlockStylesheet;
   const fonts = instance.getFonts?.();
+  const layout = instance.getLayout?.();
   return renderer.renderToMjml(instance.getContent(), {
     renderCustomBlock: instance.renderCustomBlock,
     // Only pass through when the source actually provides a resolver, so a
@@ -103,5 +110,6 @@ export async function toMjmlForInstance(
     ...(instance.socialIconsBaseUrl
       ? { socialIconsBaseUrl: instance.socialIconsBaseUrl }
       : {}),
+    ...(layout ? { layout } : {}),
   });
 }

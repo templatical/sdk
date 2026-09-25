@@ -169,6 +169,8 @@ const de: typeof en = {
     ratio21: "2:1 Verhältnis",
     borderRadius: "Eckenradius",
     wrapperEnable: "Wrapper hinzufügen",
+    wrapperLayoutConflict:
+      "Dieser Editor rahmt die E-Mail bereits ein. Ein zusätzlicher Rahmen für diesen Abschnitt wird nicht unterstützt — Vorschau und Export schlagen fehl.",
     stackOnMobile: "Auf Mobilgeräten stapeln",
   },
 

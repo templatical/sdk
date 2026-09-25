@@ -1,5 +1,5 @@
 import type { Block, TemplateContent } from "@templatical/types";
-import { isSection } from "@templatical/types";
+import { isSection, isWrapper } from "@templatical/types";
 import type { WalkContext } from "./types";
 import { isOpaqueHex } from "./contrast";
 
@@ -14,8 +14,9 @@ const DEFAULT_TEXT = "#1a1a1a";
  * background color (nearest opaque ancestor) and structural refs.
  *
  * Sections cannot nest (renderer enforces this), so the walker doesn't
- * descend into a section that lives inside a column. Custom blocks are
- * visited but not descended into.
+ * descend into a section that lives inside a column. Wrappers are descended
+ * so composed layout trees are fully visited. Custom blocks are visited but
+ * not descended into.
  */
 export function walkBlocks(content: TemplateContent, visit: Visitor): void {
   const rootBg = isOpaqueHex(content.settings.backgroundColor)
@@ -42,6 +43,20 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
         : { ...ctx, resolvedBackgroundColor: effectiveBg };
 
     visit(block, blockCtx);
+
+    if (isWrapper(block)) {
+      for (const child of block.children) {
+        walk(child, {
+          parent: block,
+          section: ctx.section,
+          columnIndex: null,
+          depth: ctx.depth + 1,
+          resolvedBackgroundColor: effectiveBg,
+          resolvedTextColor: ctx.resolvedTextColor,
+        });
+      }
+      return;
+    }
 
     if (!isSection(block)) {
       return;

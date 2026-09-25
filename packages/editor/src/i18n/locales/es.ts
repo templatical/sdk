@@ -167,6 +167,8 @@ const es: typeof en = {
     ratio21: "Proporción 2:1",
     borderRadius: "Radio del borde",
     wrapperEnable: "Añadir contenedor",
+    wrapperLayoutConflict:
+      "Este editor ya enmarca el correo. Un marco extra en esta sección no es compatible — la vista previa y la exportación fallarán.",
     stackOnMobile: "Apilar en móvil",
   },
 

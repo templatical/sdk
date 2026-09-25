@@ -68,6 +68,11 @@ export function resolveBlockComponent(
  * Computes inline styles for a block wrapper from its styles config.
  */
 export function getBlockWrapperStyle(block: Block): Record<string, string> {
+  // Layout wrapper bands paint through getWrapperStyle on WrapperBlock's root.
+  // Padding/background here would double-apply against that band.
+  if (block.type === "wrapper") {
+    return {};
+  }
   const { padding, backgroundColor } = block.styles;
   const style: Record<string, string> = {
     padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
@@ -117,6 +122,28 @@ export function getSectionWrapperStyle(
   }
   if (w.borderRadius && w.borderRadius > 0) {
     style.borderRadius = `${w.borderRadius}px`;
+  }
+  return style;
+}
+
+/**
+ * Band style for a layout `wrapper` block — the same shape as
+ * {@link getSectionWrapperStyle} (background + padding + radius), but the
+ * block *is* the band: values come from `styles` / `borderRadius`, not
+ * `section.wrapper`.
+ */
+export function getWrapperStyle(block: Block): Record<string, string> | null {
+  if (block.type !== "wrapper") return null;
+  const style: Record<string, string> = {};
+  if (block.styles.backgroundColor) {
+    style.backgroundColor = block.styles.backgroundColor;
+  }
+  if (block.styles.padding) {
+    const p = block.styles.padding;
+    style.padding = `${p.top}px ${p.right}px ${p.bottom}px ${p.left}px`;
+  }
+  if (block.borderRadius && block.borderRadius > 0) {
+    style.borderRadius = `${block.borderRadius}px`;
   }
   return style;
 }
