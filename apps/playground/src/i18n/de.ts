@@ -75,6 +75,14 @@ export default {
       theme: "Darstellung",
       language: "Sprache",
     },
+    hideRail: "Setups ausblenden",
+    showRail: "Setups einblenden",
+    pager: {
+      previous: "Vorherige: {name}",
+      next: "N\u00e4chste: {name}",
+      noPrevious: "Keine vorherige Szene",
+      noNext: "Keine n\u00e4chste Szene",
+    },
     tour: {
       skip: "Tour \u00fcberspringen",
       next: "Weiter",

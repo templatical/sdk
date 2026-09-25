@@ -73,6 +73,14 @@ export default {
       theme: "Theme",
       language: "Language",
     },
+    hideRail: "Hide setups",
+    showRail: "Show setups",
+    pager: {
+      previous: "Previous: {name}",
+      next: "Next: {name}",
+      noPrevious: "No previous scene",
+      noNext: "No next scene",
+    },
     tour: {
       skip: "Skip tour",
       next: "Next",

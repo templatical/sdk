@@ -3,8 +3,11 @@ import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 import {
   ArrowUpRight,
   ChevronLeft,
+  ChevronRight,
   CodeXml,
   Download,
+  PanelLeftClose,
+  PanelLeftOpen,
   Share2,
 } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
@@ -16,13 +19,17 @@ import HostKnobs from "@/host/HostKnobs.vue";
 import HostTour from "@/host/HostTour.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
 import ShareModal from "@/host/ShareModal.vue";
-import { navigatePlayground } from "@/host/sceneHref";
+import {
+  isPlainLeftClick,
+  navigatePlayground,
+  sceneHref,
+} from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { resolveShadowDom } from "@/host/shadowMode";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
-import { getScene } from "@/scenes";
+import { getScene, sceneNeighbours, type Scene } from "@/scenes";
 
 const props = defineProps<{
   sceneId: string;
@@ -37,6 +44,9 @@ const initError = ref("");
 const sceneReady = ref(false);
 // Remembered per browser: once opened, the snippet stays open across scenes.
 const codeOpen = useLocalStorage("tpl-playground-code-open", false);
+// Remembered per browser too; hiding the rail gives the editor its width.
+const railOpen = useLocalStorage("tpl-playground-rail-open", true);
+const neighbours = computed(() => sceneNeighbours(props.sceneId));
 const codeButton = ref<HTMLButtonElement | null>(null);
 
 function closeCode(): void {
@@ -77,17 +87,19 @@ function catalogHref(): string {
 }
 
 function onBack(event: MouseEvent): void {
-  if (
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey ||
-    event.button !== 0
-  ) {
-    return;
-  }
+  if (!isPlainLeftClick(event)) return;
   event.preventDefault();
   navigatePlayground(catalogHref());
+}
+
+function pagerHref(target: Scene): string {
+  return sceneHref(target.id, props.search);
+}
+
+function onPager(event: MouseEvent, target: Scene): void {
+  if (!isPlainLeftClick(event)) return;
+  event.preventDefault();
+  navigatePlayground(pagerHref(target));
 }
 
 watch(uiTheme, (theme) => {
@@ -167,13 +179,36 @@ onUnmounted(() => {
     :data-scene-ready="sceneReady ? 'true' : undefined"
     class="flex h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
-    <CatalogRail :current-id="scene.id" />
+    <CatalogRail v-show="railOpen" id="catalog-rail" :current-id="scene.id" />
     <div class="flex min-w-0 flex-1 flex-col">
       <header
         data-testid="scene-header"
         class="flex items-center justify-between h-14 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-3"
       >
         <div class="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            data-testid="toolbar-rail"
+            class="pg-toolbar-icon-btn"
+            :title="railOpen ? t.host.hideRail : t.host.showRail"
+            :aria-label="t.host.setups"
+            :aria-expanded="railOpen"
+            aria-controls="catalog-rail"
+            @click="railOpen = !railOpen"
+          >
+            <PanelLeftClose
+              v-if="railOpen"
+              :size="16"
+              :stroke-width="1.5"
+              aria-hidden="true"
+            />
+            <PanelLeftOpen
+              v-else
+              :size="16"
+              :stroke-width="1.5"
+              aria-hidden="true"
+            />
+          </button>
           <a
             :href="catalogHref()"
             data-testid="toolbar-back"
@@ -185,6 +220,65 @@ onUnmounted(() => {
             <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
             <span class="pg-toolbar-label">{{ t.host.back }}</span>
           </a>
+          <!-- Before the title, not after it: a title's width changes from
+               scene to scene, and arrows placed after it would move out
+               from under a pointer clicking through the scenes. -->
+          <div class="pg-pager" data-testid="scene-pager">
+            <a
+              v-if="neighbours.previous"
+              :href="pagerHref(neighbours.previous)"
+              data-testid="scene-previous"
+              class="pg-pager-btn"
+              :title="
+                format(t.host.pager.previous, {
+                  name: neighbours.previous.title,
+                })
+              "
+              :aria-label="
+                format(t.host.pager.previous, {
+                  name: neighbours.previous.title,
+                })
+              "
+              @click="onPager($event, neighbours.previous)"
+            >
+              <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </a>
+            <a
+              v-else
+              role="link"
+              aria-disabled="true"
+              data-testid="scene-previous"
+              class="pg-pager-btn"
+              :aria-label="t.host.pager.noPrevious"
+            >
+              <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </a>
+            <a
+              v-if="neighbours.next"
+              :href="pagerHref(neighbours.next)"
+              data-testid="scene-next"
+              class="pg-pager-btn"
+              :title="
+                format(t.host.pager.next, { name: neighbours.next.title })
+              "
+              :aria-label="
+                format(t.host.pager.next, { name: neighbours.next.title })
+              "
+              @click="onPager($event, neighbours.next)"
+            >
+              <ChevronRight :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </a>
+            <a
+              v-else
+              role="link"
+              aria-disabled="true"
+              data-testid="scene-next"
+              class="pg-pager-btn"
+              :aria-label="t.host.pager.noNext"
+            >
+              <ChevronRight :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </a>
+          </div>
           <div class="min-w-0">
             <h1
               class="m-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"

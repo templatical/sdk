@@ -144,6 +144,24 @@ textarea {
     @apply inline-flex items-center gap-1 h-8 px-2 rounded-md text-[13px] font-medium font-sans text-gray-600 no-underline underline-offset-4 transition-colors duration-150 hover:text-gray-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:text-gray-100;
 }
 
+/* Previous/next scene: one bordered pair, so it reads as a pager rather than
+   two more buttons beside Back. */
+.pg-pager {
+    @apply inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800;
+}
+
+.pg-pager-btn {
+    @apply inline-flex h-full w-8 items-center justify-center text-gray-500 no-underline transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100;
+}
+
+.pg-pager-btn + .pg-pager-btn {
+    @apply border-l border-gray-200 dark:border-gray-700;
+}
+
+.pg-pager-btn[aria-disabled="true"] {
+    @apply cursor-default text-gray-300 hover:bg-transparent hover:text-gray-300 dark:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-600;
+}
+
 .pg-code-drawer {
     @apply flex shrink-0 flex-col h-[36vh] min-h-[200px] max-h-[420px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700;
 }
@@ -169,13 +187,15 @@ textarea {
     .pg-toolbar-icon-btn,
     .pg-toolbar-primary,
     .pg-toolbar-link,
+    .pg-pager,
     .pg-cta,
     select {
         min-height: 44px;
     }
 
     .pg-toolbar-btn,
-    .pg-toolbar-icon-btn {
+    .pg-toolbar-icon-btn,
+    .pg-pager-btn {
         min-width: 44px;
         justify-content: center;
     }
@@ -242,6 +262,78 @@ textarea {
 
 .pg-catalog-nav {
     view-transition-name: pg-catalog-nav;
+    --pg-rail-motion: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * The rail is flat: headings are labels, not cards, and amber marks only the
+ * scene that is open. The code line is gray-600, not 500: 500 drops under
+ * 4.5:1 on the hover and current-row tints.
+ */
+.pg-rail-heading {
+    @apply flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-sans text-[13px] font-semibold text-gray-700 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary aria-expanded:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:aria-expanded:text-gray-100;
+}
+
+.pg-rail-heading-chevron {
+    @apply shrink-0 text-gray-400 dark:text-gray-500;
+    transition: rotate var(--pg-rail-motion), color 150ms;
+}
+
+/*
+ * Open and close by animating the grid row between 0fr and 1fr: height: auto
+ * cannot be transitioned in Safari or Firefox. Closing holds visibility until
+ * the row has shrunk, then hides the rows, so they leave the tab order only
+ * once they are out of sight; opening shows them at once.
+ */
+.pg-rail-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition:
+        grid-template-rows var(--pg-rail-motion),
+        visibility 0s linear 240ms;
+}
+
+.pg-rail-panel[data-open="true"] {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition:
+        grid-template-rows var(--pg-rail-motion),
+        visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-rail-panel,
+    .pg-rail-panel[data-open="true"],
+    .pg-rail-heading-chevron {
+        transition: none;
+    }
+}
+
+.pg-rail-heading[aria-expanded="true"] .pg-rail-heading-chevron {
+    @apply rotate-90 text-gray-600 dark:text-gray-300;
+}
+
+/* ring-inset: a panel clips its overflow while it animates, and an outset
+   ring on a full-width row would be cut off at the panel's edges. */
+.pg-rail-row {
+    @apply flex items-start gap-2 rounded-md px-2 py-1.5 text-[13px] leading-5 text-gray-700 no-underline transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100;
+}
+
+.pg-rail-row[aria-current="page"] {
+    @apply bg-primary/10 font-medium text-gray-900 dark:bg-primary/15 dark:text-gray-100;
+}
+
+.pg-rail-row-icon {
+    @apply flex size-5 shrink-0 items-center justify-center text-gray-500 dark:text-gray-400;
+}
+
+.pg-rail-row[aria-current="page"] .pg-rail-row-icon {
+    @apply text-primary dark:text-primary-dark;
+}
+
+.pg-rail-row-code {
+    @apply block truncate font-mono text-[11px] font-normal leading-4 text-gray-600 dark:text-gray-400;
 }
 
 /*
@@ -274,6 +366,10 @@ textarea {
 .pg-group-mark[data-group="import"] { --pg-mark: var(--color-mark-import); }
 .pg-group-mark[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
 .pg-group-mark[data-group="minimum"] { --pg-mark: var(--color-mark-minimum); }
+.pg-group-mark[data-size="sm"] svg {
+    width: 12px;
+    height: 12px;
+}
 
 /* Catalog hero: the minimal setup as code. */
 .pg-copy-btn {

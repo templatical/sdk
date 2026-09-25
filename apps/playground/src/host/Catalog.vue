@@ -8,7 +8,11 @@ import CatalogProofs from "@/host/CatalogProofs.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import type { CodeTheme, HighlightedToken } from "@/host/codeHighlight";
 import { proofFor } from "@/host/proofs";
-import { navigatePlayground, sceneHref } from "@/host/sceneHref";
+import {
+  isPlainLeftClick,
+  navigatePlayground,
+  sceneHref,
+} from "@/host/sceneHref";
 import { format, usePlaygroundI18n } from "@/i18n";
 import { getScene, scenesByGroup, type Scene, type SceneGroup } from "@/scenes";
 
@@ -81,15 +85,7 @@ function openScene(
   scene: Scene,
   morph?: HTMLElement | null,
 ): void {
-  if (
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey ||
-    event.button !== 0
-  ) {
-    return;
-  }
+  if (!isPlainLeftClick(event)) return;
   event.preventDefault();
   navigatePlayground(hrefFor(scene), { morphFrom: morph ?? null });
 }

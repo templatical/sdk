@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MORPHING_CLASS,
   SCENE_STAGE_TRANSITION,
+  isPlainLeftClick,
   navigatePlayground,
   sceneHref,
 } from "../src/host/sceneHref";
@@ -138,5 +139,32 @@ describe("navigatePlayground", () => {
     });
     navigatePlayground("/scenes/fonts");
     expect([...rootClasses]).toEqual([]);
+  });
+});
+
+describe("isPlainLeftClick", () => {
+  const click = (init: Partial<MouseEvent> = {}): MouseEvent =>
+    ({
+      button: 0,
+      metaKey: false,
+      ctrlKey: false,
+      shiftKey: false,
+      altKey: false,
+      ...init,
+    }) as MouseEvent;
+
+  it("is true for an unmodified left click", () => {
+    expect(isPlainLeftClick(click())).toBe(true);
+  });
+
+  it.each(["metaKey", "ctrlKey", "shiftKey", "altKey"] as const)(
+    "is false with %s held, so the browser opens the link its own way",
+    (modifier) => {
+      expect(isPlainLeftClick(click({ [modifier]: true }))).toBe(false);
+    },
+  );
+
+  it("is false for the middle button", () => {
+    expect(isPlainLeftClick(click({ button: 1 }))).toBe(false);
   });
 });

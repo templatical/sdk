@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import type { SceneGroup } from "@/scenes";
 
-defineProps<{
-  group: SceneGroup;
-}>();
+withDefaults(
+  defineProps<{
+    group: SceneGroup;
+    /** `sm` is the rail's heading size; the glyph scales with it (style.css). */
+    size?: "sm" | "md";
+  }>(),
+  { size: "md" },
+);
 </script>
 
 <template>
   <span
     aria-hidden="true"
-    class="pg-group-mark flex size-8 shrink-0 items-center justify-center rounded-md"
+    class="pg-group-mark flex shrink-0 items-center justify-center"
+    :class="size === 'sm' ? 'size-5 rounded' : 'size-8 rounded-md'"
     :data-group="group"
+    :data-size="size"
   >
     <!-- Configure: swatches -->
     <svg

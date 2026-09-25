@@ -12,6 +12,20 @@ export function sceneHref(
 }
 
 /**
+ * A plain left click. Anything else (a modifier, the middle button) keeps the
+ * browser's own link behaviour: new tab, new window, download.
+ */
+export function isPlainLeftClick(event: MouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+/**
  * View-transition name the scene host's editor stage carries during a morph.
  * A catalog element given the same name for one navigation grows into it.
  */

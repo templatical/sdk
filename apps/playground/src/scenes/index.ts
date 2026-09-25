@@ -101,6 +101,21 @@ export function getScene(id: string): Scene | undefined {
   return SCENES.find((scene) => scene.id === id);
 }
 
+/**
+ * The scenes either side of `id` in registry order, which is also the order
+ * the rail lists them in (tests/scenes.test.ts holds the two together). The
+ * first scene has no previous one and the last no next one: the header's
+ * arrows stop at the ends rather than wrapping.
+ */
+export function sceneNeighbours(id: string): {
+  previous?: Scene;
+  next?: Scene;
+} {
+  const index = SCENES.findIndex((scene) => scene.id === id);
+  if (index === -1) return {};
+  return { previous: SCENES[index - 1], next: SCENES[index + 1] };
+}
+
 export function scenesByGroup(): Map<SceneGroup, Scene[]> {
   const groups = new Map<SceneGroup, Scene[]>();
   for (const scene of SCENES) {

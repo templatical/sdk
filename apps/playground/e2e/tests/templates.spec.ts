@@ -224,7 +224,6 @@ test.describe("templates provider", () => {
     await openTemplatesScene(page, shadowDom, editorPage, { readonly: "1" });
     await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
 
-    await page.getByTestId("catalog-tab-minimum").click();
     await page.getByTestId("rail-scene-minimum").click();
     await page
       .locator('[data-testid="scene-host"][data-scene-ready="true"]')

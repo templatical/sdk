@@ -6,8 +6,10 @@ import {
   SCENE_GROUP_ORDER,
   getScene,
   parsePlaygroundRoute,
+  sceneNeighbours,
   scenesByGroup,
 } from "../src/scenes/index";
+import { RAIL_NAV_GROUPS } from "../src/host/catalogNav";
 import { SCENE_ICONS } from "../src/host/catalogIcons";
 import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
@@ -247,6 +249,34 @@ describe("registry", () => {
       expect(existsSync(docsFileFor(docs)), docs).toBe(true);
     },
   );
+});
+
+describe("sceneNeighbours", () => {
+  it("walks the same order the rail lists scenes in", () => {
+    const railOrder = RAIL_NAV_GROUPS.flatMap(
+      (group) => scenesByGroup().get(group) ?? [],
+    ).map((scene) => scene.id);
+    expect(SCENES.map((scene) => scene.id)).toEqual(railOrder);
+  });
+
+  it("crosses from the last scene of one group to the first of the next", () => {
+    const { previous, next } = sceneNeighbours("custom-blocks");
+    expect(previous?.id).toBe("issues");
+    expect(next?.id).toBe("merge-tags");
+    expect(next?.group).toBe("personalization");
+  });
+
+  it("stops at both ends instead of wrapping", () => {
+    expect(sceneNeighbours("minimum").previous).toBeUndefined();
+    expect(sceneNeighbours("minimum").next?.id).toBe("fonts");
+    const last = SCENES.at(-1)!;
+    expect(sceneNeighbours(last.id).next).toBeUndefined();
+    expect(sceneNeighbours(last.id).previous?.id).toBe(SCENES.at(-2)!.id);
+  });
+
+  it("has no neighbours for an unknown id", () => {
+    expect(sceneNeighbours("nope")).toEqual({});
+  });
 });
 
 describe("catalog copy", () => {
