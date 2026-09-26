@@ -8,7 +8,9 @@ nothing — see [validate.md](validate.md) for reading the failure
 **Then:** `live reload` if [live.md](live.md) is running
 
 Prefer this over re-emitting the document for any scoped change. An operation
-composes with a hand-edit; a whole-document write discards it.
+composes with a hand-edit; a whole-document write discards it. A shell around
+the email (view-in-browser, imprint, a card) is not an edit of the template —
+[rules.md](rules.md) says what to hand back instead.
 
 For a **scoped change** to a template that's already valid — recolor a button,
 swap a headline, delete a block, reorder two sections — apply an operation
