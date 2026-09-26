@@ -9,7 +9,7 @@ Merge-Tags sind Tokens für dynamische Inhalte -- zum Beispiel den Namen eines E
 
 Templatical bietet integrierte Syntax-Presets für beliebte Plattformen und unterstützt benutzerdefinierte Syntaxdefinitionen.
 
-## Konfiguration
+## Konfiguration {#configuration}
 
 Übergeben Sie ein `tags`-Array, um Ihre Merge-Tags beim Editor zu registrieren. Wenn der Editor einen Merge-Tag-Wert im Inhalt erkennt (z. B. <code v-pre>{{first_name}}</code>), ersetzt er ihn visuell durch das menschenlesbare `label` ("First Name") — was das Template viel einfacher lesbar und bearbeitbar macht. Der Rohwert bleibt in der Ausgabe erhalten.
 
@@ -36,6 +36,8 @@ const editor = await init({
 });
 ```
 
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags)
+
 ## MergeTag-Typ
 
 Jedes Tag wird mit einem Label (in der Editor-Oberfläche angezeigt) und einem Wert (der vollständige Merge-Tag-String einschließlich Trennzeichen) definiert. Zwei optionale Felder — `group` und `description` — werden vom integrierten Picker zur Gruppierung und Erklärung verwendet:
@@ -56,7 +58,7 @@ Der `value` muss die Syntax-Trennzeichen enthalten. Zum Beispiel mit Liquid-Synt
 
 Die Felder `group` und `description` sind ausschließlich für den Picker — sie erscheinen weder im Editor-Canvas, noch in der Autovervollständigung, noch in der gerenderten MJML-Ausgabe. Sie werden ignoriert, wenn Sie nur `onRequest` für die Tag-Auswahl verwenden.
 
-## Beispielwerte
+## Beispielwerte {#sample-values}
 
 Ein Tag kann ein `sample` tragen — einen Beispielwert, den **Vorschauflächen** an seiner Stelle anzeigen, sodass eine Vorschau wie eine zugestellte E-Mail liest statt wie eine Liste von Feldnamen:
 
@@ -68,6 +70,8 @@ mergeTags: {
   ],
 }
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-samples)
 
 `sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter. Der Wert verlässt die Vorschau nie: er wird nicht in die Vorlage geschrieben, nicht von `getContent()` zurückgegeben, nicht versendet und erscheint nicht in der MJML-Ausgabe. Er wird außerdem im integrierten Picker angezeigt, sodass Autoren vor dem Einfügen sehen, was ein Tag darstellen wird.
 
@@ -97,7 +101,7 @@ mergeTags: {
 }
 ```
 
-## Hervorhebung von Logik-Tags
+## Hervorhebung von Logik-Tags {#logic-tag-highlighting}
 
 Neben Daten-Tags erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Schleifen und andere Kontrollflusssyntax, die von Ihrer E-Mail-Plattform verwendet wird. Diese werden automatisch mit dem `logic`-Regex-Muster aus dem ausgewählten Syntax-Preset erkannt.
 
@@ -145,6 +149,8 @@ Beispiele für Logik-Tags nach Preset:
 %%[ENDIF]%%
 ```
 :::
+
+[Im Playground öffnen](https://play.templatical.com/scenes/logic-tags)
 
 ## Benutzerdefinierte Syntax
 
@@ -252,7 +258,7 @@ const editor = await init({
 });
 ```
 
-## Dynamisches Tag-Laden
+## Dynamisches Tag-Laden {#dynamic-tag-loading}
 
 Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Merge-Tags von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.
 
@@ -267,6 +273,8 @@ const editor = await init({
   },
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-on-request)
 
 ::: tip Vorrangregel
 Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche **Merge-Tag** ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.

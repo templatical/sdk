@@ -5,55 +5,269 @@
 @theme {
     --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
     --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+    /*
+     * The host wears the editor's own neutrals (DESIGN.md Warm-Neutral Rule:
+     * every neutral tints toward hue 60, no #fff or #000). Re-pointing
+     * Tailwind's gray ramp, white and black here warms every host utility at
+     * once; the stock ramp sits at hue ~264, colder than the editor it frames.
+     */
+    --color-white: oklch(99.5% 0.002 60);
+    --color-black: oklch(14% 0.006 60);
+    --color-gray-50: oklch(98% 0.004 60);
+    --color-gray-100: oklch(96.5% 0.005 60);
+    --color-gray-200: oklch(92% 0.006 60);
+    --color-gray-300: oklch(86% 0.01 60);
+    --color-gray-400: oklch(68% 0.012 60);
+    --color-gray-500: oklch(55% 0.014 60);
+    --color-gray-600: oklch(45% 0.015 60);
+    --color-gray-700: oklch(37% 0.013 60);
+    --color-gray-800: oklch(27% 0.009 60);
+    --color-gray-900: oklch(19% 0.008 60);
+    --color-gray-950: oklch(14% 0.006 60);
+
+    /* DESIGN.md's five-step shadow vocabulary, mapped onto Tailwind's names. */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    /*
+     * The host's one easing for anything that opens, closes or lifts: the
+     * rail, its groups, the Code drawer, the settings menu, dialogs and the
+     * home page's proofs. Expo front-loads so hard that short moves read as
+     * a snap; quint glides.
+     */
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /*
+     * Four roles on the catalog: display, lede/heading (20px, split by
+     * weight), title (text-sm) and metadata (text-xs). Display scales with
+     * the viewport so the headline never wraps into a column of fragments.
+     */
+    --text-display: clamp(2.25rem, 1.35rem + 3.2vw, 3.25rem);
+    --text-display--line-height: 1.04;
+    --text-display--letter-spacing: -0.035em;
+    --text-lede: 1.25rem;
+    --text-lede--line-height: 1.5;
+    --text-heading: 1.25rem;
+    --text-heading--line-height: 1.3;
+    --text-heading--letter-spacing: -0.01em;
+
     --color-primary: oklch(70% 0.16 55);
     --color-primary-hover: oklch(63% 0.17 55);
     --color-primary-dark: oklch(78% 0.14 55);
     --color-primary-dark-hover: oklch(70% 0.16 55);
+    --color-mark-configure: oklch(70% 0.16 55);
+    --color-mark-personalization: oklch(60% 0.118 184.71);
+    --color-mark-backend: oklch(48% 0.04 250);
+    --color-mark-import: oklch(50% 0.05 280);
+    --color-mark-examples: oklch(62% 0.1 55);
+    --color-mark-minimum: oklch(50% 0.02 60);
     --shadow-primary-ring: 0 0 0 3px oklch(70% 0.16 55 / 0.15);
-    --shadow-primary-glow: 0 4px 12px oklch(70% 0.16 55 / 0.25);
     --shadow-primary-ring-subtle: 0 0 0 3px oklch(70% 0.16 55 / 0.12);
-    --shadow-btn: 0 1px 2px var(--pg-shadow-color, rgba(0,0,0,0.08));
     --shadow-card: 0 4px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.06));
-    --shadow-float: 0 8px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.12));
     --shadow-modal-sm: 0 16px 48px var(--pg-shadow-color-xl, rgba(0,0,0,0.15));
     --shadow-modal: 0 24px 64px var(--pg-shadow-color-xl, rgba(0,0,0,0.2));
+}
+
+/*
+ * `inline` so utilities read these through var() at the element: `.dark`
+ * redefines the source variable, and a non-inline theme variable would be
+ * substituted once on :root and never see the dark value.
+ */
+@theme inline {
+    --color-on-primary: var(--pg-on-primary);
+    --color-table: var(--pg-table);
 }
 
 #app {
     height: 100%;
 }
 
+body {
+    background-color: oklch(99.5% 0.002 60);
+}
+
 html.dark body {
-    background-color: oklch(27.39% 0.015 261.09); /* gray-800 */
+    background-color: oklch(19% 0.008 60);
 }
 
 /* Dark mode surface variables */
 :root {
-    --pg-shadow-color: rgba(0,0,0,0.08);
     --pg-shadow-color-lg: rgba(0,0,0,0.06);
     --pg-shadow-color-xl: rgba(0,0,0,0.15);
+    /*
+     * DESIGN.md On-Amber Rule: labels on an amber fill take the paper colour,
+     * near-white in light (the accepted 2.80:1 Amber Contrast Exception) and
+     * near-black in dark, where amber is the lighter surface.
+     */
+    --pg-on-primary: oklch(99.5% 0.002 60);
+    /* The editor's canvas tone: one step below paper so an email floats on it. */
+    --pg-table: oklch(97.5% 0.003 60);
+    color-scheme: light;
+    scrollbar-color: oklch(86% 0.01 60) transparent;
 }
 
 .dark {
-    --pg-shadow-color: rgba(0,0,0,0.4);
     --pg-shadow-color-lg: rgba(0,0,0,0.35);
     --pg-shadow-color-xl: rgba(0,0,0,0.5);
+    --pg-on-primary: oklch(19% 0.008 60);
+    --pg-table: oklch(14.5% 0.005 60);
+    color-scheme: dark;
+    scrollbar-color: oklch(37% 0.013 60) transparent;
+}
+
+::selection {
+    background-color: color-mix(in oklab, oklch(70% 0.16 55) 24%, transparent);
+}
+
+input,
+textarea {
+    caret-color: oklch(70% 0.16 55);
 }
 
 /* Shared playground patterns */
 
 .pg-toolbar-btn {
-    @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700;
+    @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
+}
+
+/* Host header: one primary action (Code), icon buttons for the secondary
+   ones, a text link for Docs. The primary is a neutral fill rather than
+   amber, because the editor toolbar right below uses amber for its active
+   states. */
+.pg-toolbar-icon-btn {
+    @apply inline-flex items-center justify-center size-8 rounded-md border border-gray-200 bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
+}
+
+.pg-toolbar-primary {
+    @apply inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-transparent bg-gray-900 text-gray-50 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white;
+}
+
+.pg-toolbar-link {
+    @apply inline-flex items-center gap-1 h-8 px-2 rounded-md text-[13px] font-medium font-sans text-gray-600 no-underline underline-offset-4 transition-colors duration-150 hover:text-gray-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:text-gray-100;
+}
+
+/* Previous/next scene: one bordered pair, so it reads as a pager rather than
+   two more buttons beside Back. */
+.pg-pager {
+    @apply inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800;
+}
+
+.pg-pager-btn {
+    @apply inline-flex h-full w-8 items-center justify-center text-gray-500 no-underline transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100;
+}
+
+.pg-pager-btn + .pg-pager-btn {
+    @apply border-l border-gray-200 dark:border-gray-700;
+}
+
+.pg-pager-btn[aria-disabled="true"] {
+    @apply cursor-default text-gray-300 hover:bg-transparent hover:text-gray-300 dark:text-gray-600 dark:hover:bg-transparent dark:hover:text-gray-600;
+}
+
+.pg-code-drawer {
+    @apply flex shrink-0 flex-col h-[36vh] min-h-[200px] max-h-[420px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700;
+}
+
+/*
+ * The drawer grows out of the stage's bottom edge instead of popping in: its
+ * row animates 0fr to 1fr, so the stage above shrinks in step rather than
+ * jumping by the drawer's height. The transition sits on the slot, not on
+ * Vue's -active classes, so a phase Vue ends on its fallback timeout can't
+ * cut it short.
+ */
+.pg-code-drawer-slot {
+    display: grid;
+    grid-template-rows: 1fr;
+    margin-top: 15px;
+    transition:
+        grid-template-rows 280ms var(--ease-out-quint),
+        margin-top 280ms var(--ease-out-quint),
+        opacity 200ms ease-out;
+}
+
+.pg-drawer-enter-from,
+.pg-drawer-leave-to {
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    opacity: 0;
+}
+
+/* Clipped only while it animates: at rest the drawer's shadow must show. */
+.pg-code-drawer-clip {
+    min-height: 0;
+}
+
+.pg-drawer-enter-active > .pg-code-drawer-clip,
+.pg-drawer-leave-active > .pg-code-drawer-clip {
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-code-drawer-slot {
+        transition: none;
+    }
+}
+
+.pg-settings-panel {
+    @apply absolute right-0 top-full z-[120] mt-2 w-60 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:bg-gray-800 dark:border-gray-700;
+    transform-origin: top right;
+    transition:
+        opacity 160ms var(--ease-out-quint),
+        transform 160ms var(--ease-out-quint);
+}
+
+/* On the panel's own class, not Vue's -active ones, like the Code drawer. */
+.pg-pop-enter-from,
+.pg-pop-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-settings-panel {
+        transition: none;
+    }
+}
+
+.pg-settings-label {
+    @apply mb-1.5 block p-0 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400;
+}
+
+.pg-settings-divider {
+    @apply mt-3 border-t border-gray-200 pt-2 dark:border-gray-700;
+}
+
+.pg-settings-action {
+    @apply flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-sans text-[13px] text-gray-700 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100;
+}
+
+.pg-theme-options {
+    @apply grid grid-cols-3 gap-1 rounded-md bg-gray-100 p-1 dark:bg-gray-900;
+}
+
+.pg-theme-option {
+    @apply flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded text-[12px] font-medium text-gray-600 transition-colors duration-150 hover:text-gray-900 has-[:checked]:bg-white has-[:checked]:text-gray-900 has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary dark:text-gray-400 dark:hover:text-gray-100 dark:has-[:checked]:bg-gray-700 dark:has-[:checked]:text-gray-100;
 }
 
 @media (pointer: coarse) {
     .pg-toolbar-btn,
+    .pg-toolbar-icon-btn,
+    .pg-toolbar-primary,
+    .pg-toolbar-link,
+    .pg-pager,
     .pg-cta,
     select {
         min-height: 44px;
     }
 
-    .pg-toolbar-btn {
+    .pg-toolbar-btn,
+    .pg-toolbar-icon-btn,
+    .pg-pager-btn {
         min-width: 44px;
         justify-content: center;
     }
@@ -65,12 +279,12 @@ html.dark body {
 
 .pg-locale-select {
     @apply h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-no-repeat transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2378706a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
     background-position: right 6px center;
 }
 
 .dark .pg-locale-select {
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239e9791%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
 }
 
 /* Hide toolbar labels on narrow screens, show icon-only */
@@ -82,12 +296,12 @@ html.dark body {
 
 .pg-select {
     @apply w-full py-2 px-3 pr-8 text-[13px] font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 cursor-pointer appearance-none bg-no-repeat focus:border-primary focus:shadow-primary-ring dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2378706a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
     background-position: right 10px center;
 }
 
 .dark .pg-select {
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239e9791%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
 }
 
 .pg-form-label {
@@ -115,7 +329,358 @@ html.dark body {
 }
 
 .pg-cta {
-    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
+    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
+}
+
+/*
+ * Hiding the rail animates its slot's width, so the editor widens in step
+ * instead of jumping 224px. Like a closed group, a closed slot holds
+ * visibility until it has shrunk, then hides the rail, which is what takes
+ * its links out of the tab order.
+ */
+.pg-rail-slot {
+    display: flex;
+    flex-shrink: 0;
+    width: 14rem;
+    overflow: hidden;
+    transition:
+        width 260ms var(--ease-out-quint),
+        visibility 0s;
+}
+
+.pg-rail-slot[data-open="false"] {
+    width: 0;
+    visibility: hidden;
+    transition:
+        width 260ms var(--ease-out-quint),
+        visibility 0s linear 260ms;
+}
+
+/* A hidden rail has nothing to carry across a scene change. */
+.pg-rail-slot[data-open="false"] .pg-catalog-nav {
+    view-transition-name: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-rail-slot,
+    .pg-rail-slot[data-open="false"] {
+        transition: none;
+    }
+}
+
+.pg-catalog-nav {
+    view-transition-name: pg-catalog-nav;
+    --pg-rail-motion: 240ms var(--ease-out-quint);
+}
+
+/*
+ * The rail is flat: headings are labels, not cards, and amber marks only the
+ * scene that is open. The code line is gray-600, not 500: 500 drops under
+ * 4.5:1 on the hover and current-row tints.
+ */
+.pg-rail-heading {
+    @apply flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-sans text-[13px] font-semibold text-gray-700 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary aria-expanded:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:aria-expanded:text-gray-100;
+}
+
+.pg-rail-heading-chevron {
+    @apply shrink-0 text-gray-400 dark:text-gray-500;
+    transition: rotate var(--pg-rail-motion), color 150ms;
+}
+
+/*
+ * Open and close by animating the grid row between 0fr and 1fr: height: auto
+ * cannot be transitioned in Safari or Firefox. Closing holds visibility until
+ * the row has shrunk, then hides the rows, so they leave the tab order only
+ * once they are out of sight; opening shows them at once.
+ */
+.pg-rail-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition:
+        grid-template-rows var(--pg-rail-motion),
+        visibility 0s linear 240ms;
+}
+
+.pg-rail-panel[data-open="true"] {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition:
+        grid-template-rows var(--pg-rail-motion),
+        visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-rail-panel,
+    .pg-rail-panel[data-open="true"],
+    .pg-rail-heading-chevron {
+        transition: none;
+    }
+}
+
+.pg-rail-heading[aria-expanded="true"] .pg-rail-heading-chevron {
+    @apply rotate-90 text-gray-600 dark:text-gray-300;
+}
+
+/* ring-inset: a panel clips its overflow while it animates, and an outset
+   ring on a full-width row would be cut off at the panel's edges. */
+.pg-rail-row {
+    @apply flex items-start gap-2 rounded-md px-2 py-1.5 text-[13px] leading-5 text-gray-700 no-underline transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100;
+}
+
+.pg-rail-row[aria-current="page"] {
+    @apply bg-primary/10 font-medium text-gray-900 dark:bg-primary/15 dark:text-gray-100;
+}
+
+.pg-rail-row-icon {
+    @apply flex size-5 shrink-0 items-center justify-center text-gray-500 dark:text-gray-400;
+}
+
+.pg-rail-row[aria-current="page"] .pg-rail-row-icon {
+    @apply text-primary dark:text-primary-dark;
+}
+
+.pg-rail-row-code {
+    @apply block truncate font-mono text-[11px] font-normal leading-4 text-gray-600 dark:text-gray-400;
+}
+
+/*
+ * Mix in oklab, never oklch: oklch takes the short way round the hue wheel
+ * toward the ground's hue, so a dark ground at any cool hue turns the amber
+ * marks purple. oklab interpolates straight through neutral and keeps hue.
+ */
+.pg-group-mark {
+    color: var(--pg-mark, var(--color-primary));
+    background: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 14%, oklch(99.5% 0.002 60));
+}
+.dark .pg-group-mark {
+    background: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 22%, oklch(27% 0.009 60));
+}
+.pg-group-mark .pg-mark-fill {
+    fill: var(--pg-mark, var(--color-primary));
+}
+.pg-group-mark .pg-mark-fill-2 {
+    fill: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 45%, oklch(99.5% 0.002 60));
+}
+.dark .pg-group-mark .pg-mark-fill-2 {
+    fill: color-mix(in oklab, var(--pg-mark, var(--color-primary)) 55%, oklch(27% 0.009 60));
+}
+.pg-group-mark .pg-mark-stroke {
+    color: var(--pg-mark, var(--color-primary));
+}
+.pg-group-mark[data-group="configure"] { --pg-mark: var(--color-mark-configure); }
+.pg-group-mark[data-group="personalization"] { --pg-mark: var(--color-mark-personalization); }
+.pg-group-mark[data-group="backend"] { --pg-mark: var(--color-mark-backend); }
+.pg-group-mark[data-group="import"] { --pg-mark: var(--color-mark-import); }
+.pg-group-mark[data-group="examples"] { --pg-mark: var(--color-mark-examples); }
+.pg-group-mark[data-group="minimum"] { --pg-mark: var(--color-mark-minimum); }
+.pg-group-mark[data-size="sm"] svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Catalog hero: the minimal setup as code. */
+.pg-copy-btn {
+    @apply flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-gray-500 transition-colors duration-150 hover:bg-gray-200 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100;
+}
+
+/*
+ * Catalog hero: three email proofs fanned like the logo's three cards. Each
+ * card's resting transform is its fanned position; the entrance animates
+ * *from* a straight stack to it (fill-mode backwards), so the cards are
+ * visible from the first frame and hover can still take over the transform.
+ */
+.pg-proof-table {
+    aspect-ratio: 5 / 4;
+}
+
+/*
+ * The home hero's aurora (HeroAurora.vue, palette in aurora.ts): behind the
+ * header and hero only, at z -1 inside an isolated wrapper so it paints over
+ * the page's paper and under the hero's text, then fades into that paper
+ * before the setup list. The fallback paints the same palette without WebGL2.
+ */
+.pg-hero-aurora {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.pg-hero-aurora-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 55%, var(--color-white));
+}
+
+.dark .pg-hero-aurora-fade {
+    background: linear-gradient(to bottom, transparent 55%, var(--color-gray-900));
+}
+
+.pg-hero-aurora-fallback {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(60% 50% at 30% 20%, oklch(91.5% 0.06 55 / 0.6), transparent 70%),
+        radial-gradient(55% 45% at 75% 35%, oklch(95.5% 0.03 80 / 0.5), transparent 70%);
+}
+
+.dark .pg-hero-aurora-fallback {
+    background:
+        radial-gradient(60% 50% at 30% 20%, oklch(25.5% 0.05 55 / 0.8), transparent 70%),
+        radial-gradient(55% 45% at 75% 35%, oklch(21.5% 0.02 80 / 0.7), transparent 70%);
+}
+
+/*
+ * One lift for every email proof on the home page, the hero's fan and the
+ * examples band alike. A quint curve over 320ms glides where the old 200ms
+ * expo snapped. will-change keeps each proof on its own layer: without it
+ * the layer is dropped when the transition ends and the image re-rasters a
+ * subpixel off, which reads as a jolt. The glow is an offset, blurred amber
+ * shadow (lit from above), not a zero-offset halo.
+ */
+:root {
+    --pg-lift-motion: 320ms var(--ease-out-quint);
+    --pg-glow: 0 18px 36px -14px color-mix(in oklab, var(--color-primary) 60%, transparent), 0 6px 14px -8px oklch(0% 0 0 / 0.12);
+}
+.dark {
+    --pg-glow: 0 18px 40px -12px color-mix(in oklab, var(--color-primary-dark) 45%, transparent), 0 6px 14px -8px oklch(0% 0 0 / 0.5);
+}
+
+.pg-proof-tile {
+    box-shadow: var(--shadow-xs);
+    transition:
+        transform var(--pg-lift-motion),
+        box-shadow var(--pg-lift-motion);
+    will-change: transform;
+}
+.pg-proof-link:hover .pg-proof-tile,
+.pg-proof-link:focus-visible .pg-proof-tile {
+    transform: translateY(-6px);
+    box-shadow: var(--pg-glow);
+}
+@media (prefers-reduced-motion: reduce) {
+    .pg-proof-link:hover .pg-proof-tile,
+    .pg-proof-link:focus-visible .pg-proof-tile {
+        transform: none;
+    }
+}
+
+.pg-fan-card {
+    --fan-x: 0%;
+    --fan-y: 0%;
+    --fan-r: 0deg;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40%;
+    aspect-ratio: 2 / 3;
+    transform-origin: 50% 100%;
+    transform: translate(-50%, -50%) translate(var(--fan-x), var(--fan-y)) rotate(var(--fan-r));
+    transition: transform var(--pg-lift-motion);
+    animation: pg-fan-settle 760ms var(--ease-out-expo) 140ms backwards;
+    will-change: transform;
+}
+.pg-fan-card[data-slot="0"] { --fan-x: -62%; --fan-y: 4%; --fan-r: -3deg; }
+.pg-fan-card[data-slot="1"] { z-index: 2; }
+.pg-fan-card[data-slot="2"] { --fan-x: 62%; --fan-y: 4%; --fan-r: 2deg; }
+
+.pg-fan-card:hover,
+.pg-fan-card:focus-within {
+    z-index: 3;
+    transform: translate(-50%, -50%) translate(var(--fan-x), calc(var(--fan-y) - 3%)) rotate(0deg);
+}
+
+@keyframes pg-fan-settle {
+    from {
+        transform: translate(-50%, -50%) translate(0%, 2%) rotate(0deg);
+    }
+}
+
+.pg-fan-link {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid oklch(92% 0.006 60);
+    border-radius: 7px;
+    background: oklch(99.5% 0.002 60);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--pg-lift-motion);
+}
+.dark .pg-fan-link {
+    border-color: oklch(27% 0.009 60);
+}
+.pg-fan-card:hover .pg-fan-link,
+.pg-fan-link:focus-visible {
+    box-shadow: var(--pg-glow);
+}
+.pg-fan-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+.pg-fan-caption {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: oklch(99.5% 0.002 60 / 0.95);
+    color: oklch(18% 0.01 60);
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 180ms var(--ease-out-expo), transform 180ms var(--ease-out-expo);
+}
+.pg-fan-card:hover .pg-fan-caption,
+.pg-fan-link:focus-visible .pg-fan-caption {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/*
+ * The scene host's editor stage, named only while a proof navigation runs
+ * (`navigatePlayground` sets `.pg-morphing` on <html> and clears it when the
+ * transition ends). A view-transition-name makes its element a stacking
+ * context: left on permanently, it traps the editor's popover root and the
+ * playground header paints over every dialog. Both snapshots crop to the
+ * group box so the portrait proof never stretches into a landscape stage.
+ */
+.pg-morphing .pg-scene-stage {
+    view-transition-name: pg-scene-stage;
+}
+
+::view-transition-old(pg-scene-stage),
+::view-transition-new(pg-scene-stage) {
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+}
+
+::view-transition-group(pg-scene-stage) {
+    animation-duration: 340ms;
+    animation-timing-function: var(--ease-out-quint);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: var(--ease-out-quint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
 }
 
 .pg-modal-backdrop {
@@ -129,11 +694,11 @@ html.dark body {
 /* Modal transitions */
 
 .pg-modal-enter-active {
-    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 240ms var(--ease-out-quint);
 }
 
 .pg-modal-leave-active {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 180ms var(--ease-out-quint);
 }
 
 .pg-modal-enter-from,
@@ -142,11 +707,11 @@ html.dark body {
 }
 
 .pg-modal-enter-active .pg-modal-dialog {
-    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 240ms var(--ease-out-quint), transform 240ms var(--ease-out-quint);
 }
 
 .pg-modal-leave-active .pg-modal-dialog {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 180ms var(--ease-out-quint), transform 180ms var(--ease-out-quint);
 }
 
 .pg-modal-enter-from .pg-modal-dialog {
@@ -163,29 +728,12 @@ html.dark body {
 
 .pg-screen-enter-active,
 .pg-screen-leave-active {
-    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 150ms var(--ease-out-quint);
 }
 
 .pg-screen-enter-from,
 .pg-screen-leave-to {
     opacity: 0;
-}
-
-/* Card stagger entrance */
-
-@keyframes pg-card-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.pg-card-stagger {
-    animation: pg-card-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Collapsible */
@@ -213,42 +761,129 @@ html.dark body {
     overflow: hidden;
 }
 
-/* Onboarding tour */
-
-.pg-onboarding-spotlight {
-    box-shadow: 0 0 0 2px oklch(70% 0.16 55 / 0.5),
-                0 0 20px 6px oklch(70% 0.16 55 / 0.12),
-                0 0 0 9999px rgba(0, 0, 0, 0.5);
-    transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 400ms ease;
-    will-change: transform;
+/*
+ * Scene notes: handwritten margin notes over the page, the proof sheet's red
+ * pencil. The ink is a burnt orange, not the brand amber: amber measures
+ * 2.53:1 on the header's gray-100, under even the 3:1 bar for large text,
+ * while this reads 4.69:1 there and 5.12:1 on white. Dark mode uses the light
+ * amber (7.26:1 on the dark well). A paper-coloured stroke under every glyph
+ * and arrow keeps the ink legible where it crosses the page.
+ */
+.pg-notes {
+    --pg-notes-ink: oklch(55% 0.17 45);
+    --pg-notes-paper: oklch(99.5% 0.002 60);
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    pointer-events: none;
+    transition: opacity 180ms var(--ease-out-quint);
 }
 
-@keyframes pg-onboarding-tooltip-in {
+.dark .pg-notes {
+    --pg-notes-ink: oklch(78% 0.14 55);
+    --pg-notes-paper: oklch(19% 0.008 60);
+}
+
+.pg-notes-leave-to {
+    opacity: 0;
+}
+
+.pg-notes-ink {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.pg-note-stroke,
+.pg-note-halo {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    animation: pg-note-draw 360ms var(--ease-out-quint) both;
+    animation-delay: calc(var(--pg-note-i) * 60ms);
+}
+
+.pg-note-stroke {
+    stroke: var(--pg-notes-ink);
+    stroke-width: 2;
+}
+
+.pg-note-halo {
+    stroke: var(--pg-notes-paper);
+    stroke-width: 6;
+}
+
+.pg-note-head {
+    animation-duration: 140ms;
+    animation-delay: calc(var(--pg-note-i) * 60ms + 300ms);
+}
+
+/* SceneNotes.vue sizes each note by measuring a hidden .pg-note. */
+.pg-note {
+    position: absolute;
+    margin: 0;
+    font: 600 27px / 31px Caveat, var(--font-sans);
+    white-space: nowrap;
+    color: var(--pg-notes-ink);
+    paint-order: stroke fill;
+    -webkit-text-stroke: 6px var(--pg-notes-paper);
+    animation: pg-note-in 220ms var(--ease-out-quint) both;
+    animation-delay: calc(var(--pg-note-i) * 60ms + 160ms);
+}
+
+.pg-notes-close {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    translate: -50% 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px 5px;
+    border: 1px solid color-mix(in oklab, var(--pg-notes-ink) 35%, transparent);
+    border-radius: 999px;
+    background: var(--pg-notes-paper);
+    color: var(--pg-notes-ink);
+    font: 600 20px / 24px Caveat, var(--font-sans);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.pg-notes-close:focus-visible {
+    outline: 2px solid var(--pg-notes-ink);
+    outline-offset: 2px;
+}
+
+@keyframes pg-note-draw {
     from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.98);
+        stroke-dashoffset: 1;
     }
     to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        stroke-dashoffset: 0;
     }
 }
 
-.pg-onboarding-tooltip {
-    animation: pg-onboarding-tooltip-in 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
+@keyframes pg-note-in {
+    from {
+        opacity: 0;
+        translate: 0 3px;
+    }
 }
 
-@keyframes pg-cursor-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
+@media (prefers-reduced-motion: reduce) {
+    .pg-notes {
+        transition: none;
+    }
 
-.pg-onboarding-cursor {
-    animation: pg-cursor-blink 800ms ease-in-out infinite;
-    color: oklch(70% 0.16 55);
-    font-weight: 300;
+    .pg-note,
+    .pg-note-stroke,
+    .pg-note-halo {
+        animation: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -261,10 +896,6 @@ html.dark body {
         transition-duration: 0.01ms !important;
     }
 
-    .pg-card-stagger {
-        animation-duration: 0.01ms !important;
-    }
-
     .pg-collapsible-enter-active,
     .pg-collapsible-leave-active {
         transition-duration: 0.01ms !important;
@@ -275,15 +906,7 @@ html.dark body {
         animation-iteration-count: 1 !important;
     }
 
-    .pg-onboarding-spotlight {
-        transition-duration: 0.01ms !important;
-    }
-
-    .pg-onboarding-tooltip {
-        animation-duration: 0.01ms !important;
-    }
-
-    .pg-onboarding-cursor {
-        animation: none !important;
+    .pg-fan-card {
+        animation: none;
     }
 }

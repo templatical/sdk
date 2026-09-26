@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * Proves the distinction `TemplatesOptions.onSaved` exists for: a header-button
@@ -8,7 +9,7 @@ import { SELECTORS } from "../helpers/selectors";
  * "autosave" — never the other way round.
  *
  * Reads `window.__tplPlaygroundSaveTriggers`, an array the playground's demo
- * templates provider (`templatesProviderFor` in `apps/playground/src/App.vue`)
+ * templates provider (`templatesProviderFor` in `apps/playground/src/host/providers.ts`)
  * appends to from its `onSaved` hook. Recorded on `window` rather than
  * rendered, since a visible trigger log would be test-only UI in front of
  * every visitor.
@@ -20,64 +21,41 @@ const read = (page: Page) =>
         .__tplPlaygroundSaveTriggers ?? [],
   );
 
-/**
- * Storage flags are set through `addInitScript` because the templates
- * provider reads them while the editor mounts — writing them after `goto()`
- * races the initial load. Mirrors `templates.spec.ts`'s `openEditor` helper.
- */
-async function openEditor(
+async function openTemplatesScene(
   page: Page,
-  fixtures: {
-    chooserPage: {
-      goto: () => Promise<void>;
-      selectFirstTemplate: () => Promise<void>;
-    };
-    editorPage: {
-      waitForReady: () => Promise<void>;
-      dismissOverlays: () => Promise<void>;
-    };
+  shadowDom: boolean,
+  editorPage: {
+    waitForReady: () => Promise<void>;
+    dismissOverlays: () => Promise<void>;
   },
-  flags: Record<string, string> = {},
+  query: Record<string, string> = {},
 ): Promise<void> {
-  await page.addInitScript((entries) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-    for (const [key, value] of entries as [string, string][]) {
-      localStorage.setItem(key, value);
-    }
-  }, Object.entries(flags));
-  await fixtures.chooserPage.goto();
-  await fixtures.chooserPage.selectFirstTemplate();
-  await fixtures.editorPage.waitForReady();
-  await fixtures.editorPage.dismissOverlays();
+  await new ScenePage(page, { shadowDom }).goto("templates", query);
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
 }
 
 test.describe("save triggers", () => {
-  // The demo templates provider is writable by default (the read-only flag
-  // is opt-in), so `editorReady` alone is enough to reach a save — no
-  // `addInitScript` needed here.
-  test("the header button reports manual", async ({ page, editorReady }) => {
-    await page.locator(SELECTORS.templateSave).click();
+  test.describe("manual save via templates scene", () => {
+    test("the header button reports manual", async ({
+      page,
+      shadowDom,
+      editorPage,
+    }) => {
+      await openTemplatesScene(page, shadowDom, editorPage);
+      await page.locator(SELECTORS.templateSave).click();
 
-    await expect.poll(() => read(page)).toContain("manual");
-    expect(await read(page)).not.toContain("autosave");
+      await expect.poll(() => read(page)).toContain("manual");
+      expect(await read(page)).not.toContain("autosave");
+    });
   });
 
   test("an autosave tick reports autosave", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
-    // Autosave defaults off in the playground (a demo that saves by itself
-    // would hide what the Save button does) — opt in via its storage flag,
-    // set before navigation so `initEditor()` reads it on first mount.
-    await openEditor(
-      page,
-      { chooserPage, editorPage },
-      {
-        "tpl-playground-templates-autosave": "true",
-      },
-    );
+    await openTemplatesScene(page, shadowDom, editorPage, { autosave: "1" });
 
     await editorPage.doubleClickBlock("paragraph");
     const editable = editorPage.getEditableFor("paragraph");

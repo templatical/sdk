@@ -42,7 +42,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertChamaileonTemplate } from '@templatical/import-chamaileon';
@@ -58,6 +58,8 @@ const editor = await init({
 
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-chamaileon)
 
 `convertChamaileonTemplate` is synchronous and returns an `ImportResult` with:
 

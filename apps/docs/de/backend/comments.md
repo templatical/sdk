@@ -262,3 +262,8 @@ useCommentListener({
 });
 ```
 
+## Im Playground
+
+Das Setup **Comments** ergänzt einen `comments`-Provider und einen `user`, sodass Blöcke Review-Threads tragen.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/comments)

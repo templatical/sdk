@@ -1,76 +1,15 @@
 import { test, expect } from "../fixtures/editor.fixture";
-import { SELECTORS, configTab, configPanel } from "../helpers/selectors";
+import { SELECTORS } from "../helpers/selectors";
 
-test.describe("Playground config & export", () => {
-  test("config modal opens with 5 tabs", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible();
-    const tabs = ["options", "content", "theme", "defaults", "callbacks"];
-    for (const tab of tabs) {
-      await expect(page.locator(configTab(tab))).toBeVisible();
-    }
-  });
-
-  test("each tab switches panel", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    const tabs = ["options", "content", "theme", "defaults", "callbacks"];
-    for (const tab of tabs) {
-      await page.locator(configTab(tab)).click();
-      await expect(page.locator(configTab(tab))).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-      await expect(page.locator(configPanel(tab))).toBeVisible();
-    }
-  });
-
-  test("arrow keys navigate tabs", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    // Focus first tab
-    await page.locator(configTab("options")).focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.locator(configTab("content"))).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  });
-
-  test("defaults tab shows preset selector", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    await page.locator(configTab("defaults")).click();
-    const panel = page.locator(configPanel("defaults"));
-    // Should have a select element for presets
-    const select = panel.locator("select");
-    await expect(select.first()).toBeVisible();
-  });
-
-  test("cancel closes config without applying", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    const dialog = page.locator('[aria-label="Editor Configuration"]');
-    await expect(dialog).toBeVisible();
-    // Click cancel button within the config dialog
-    await dialog.getByRole("button", { name: /cancel/i }).click();
-    await expect(dialog).not.toBeVisible();
+test.describe("Playground export", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("example-launchpad-launch");
+    await editorPage.waitForReady();
+    await editorPage.closeCodeDrawer();
   });
 
   test("export modal opens with MJML as default tab", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -81,20 +20,14 @@ test.describe("Playground config & export", () => {
     );
   });
 
-  test("export modal closes on Escape", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("export modal closes on Escape", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator(SELECTORS.exportModal)).toHaveCount(0);
   });
 
-  test("MJML tab shows compiled MJML source", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("MJML tab shows compiled MJML source", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     const content = await page.locator(".cm-content").first().textContent();
@@ -102,31 +35,31 @@ test.describe("Playground config & export", () => {
   });
 
   test("HTML tab compiles to email-ready HTML", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabHtml).click();
     await expect(page.locator(SELECTORS.exportHtmlError)).toHaveCount(0);
     await expect
-      .poll(async () =>
-        page.locator(".cm-content").first().textContent(),
-      )
+      .poll(async () => page.locator(".cm-content").first().textContent())
       .toMatch(/<!doctype html|<html/i);
   });
 
-  test("JSON tab shows template block JSON", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("JSON tab shows template block JSON", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
-    const content = await page.locator(".cm-content").first().textContent();
-    expect(content).toContain('"blocks"');
+    await expect(page.locator(SELECTORS.exportTabJson)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect
+      .poll(async () => page.locator(".cm-content").first().textContent())
+      .toContain('"blocks"');
   });
 
   test("MJML download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -141,11 +74,15 @@ test.describe("Playground config & export", () => {
   });
 
   test("JSON download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
+    await expect(page.locator(SELECTORS.exportTabJson)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.locator(SELECTORS.exportDownloadBtn).click(),
@@ -158,7 +95,7 @@ test.describe("Playground config & export", () => {
   });
 
   test("HTML download triggers with valid content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();

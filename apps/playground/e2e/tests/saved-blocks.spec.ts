@@ -11,9 +11,7 @@ import type { Page } from "@playwright/test";
  * localStorage after `goto()` would race the initial load.
  */
 
-// Per template: `selectFirstTemplate()` opens Product Launch, so that's the
-// library these tests read and write.
-const STORE_KEY = "templatical:saved-blocks:product-launch";
+const STORE_KEY = "templatical:saved-blocks:saved-blocks";
 
 /** Padding matches what the block factories emit, so the canvas renders it. */
 const PAD = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
@@ -93,16 +91,11 @@ test.describe("saved blocks", () => {
    */
   test("shows the browser rail with an empty library, opening to the empty state", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -113,23 +106,18 @@ test.describe("saved blocks", () => {
     await rail.click();
     await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(0);
-    await expect(
-      page.locator(SELECTORS.savedBlocksBrowser),
-    ).toContainText("No saved blocks yet");
+    await expect(page.locator(SELECTORS.savedBlocksBrowser)).toContainText(
+      "No saved blocks yet",
+    );
   });
 
   test("carries no count badge on the rail entry", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -142,16 +130,11 @@ test.describe("saved blocks", () => {
 
   test("lists saved blocks and inserts one with fresh block ids", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -184,9 +167,7 @@ test.describe("saved blocks", () => {
       .click();
 
     // Modal closes and the two stored blocks land on the canvas.
-    await expect(
-      page.locator(SELECTORS.savedBlocksBrowserTitle),
-    ).toBeHidden();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeHidden();
     await expect
       .poll(() => editorPage.getTopLevelBlockIds().then((ids) => ids.length))
       .toBe(countBefore + 2);
@@ -218,16 +199,11 @@ test.describe("saved blocks", () => {
 
   test("renames a saved block through the provider", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -266,16 +242,11 @@ test.describe("saved blocks", () => {
 
   test("deletes a saved block after confirmation", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -321,10 +292,15 @@ test.describe("saved blocks", () => {
 test.describe("saved blocks — pick session", () => {
   async function bootEmptyStore(page: Page): Promise<void> {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
+  }
+
+  /** An open code drawer shortens the canvas; pick-session clicks need room. */
+  async function closeCodeDrawer(page: Page): Promise<void> {
+    const drawer = page.locator(SELECTORS.codeDrawer);
+    if (await drawer.isVisible()) {
+      await page.getByRole("button", { name: "Code" }).click();
+      await expect(drawer).toBeHidden();
+    }
   }
 
   /** Select the first block and start a session from its bookmark action. */
@@ -339,14 +315,14 @@ test.describe("saved blocks — pick session", () => {
 
   test("picks multiple blocks on the canvas and saves them", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootEmptyStore(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await closeCodeDrawer(page);
 
     // The rail entry is present from the start now, empty library or not — it's
     // gated on availability, not on how many entries happen to be loaded.
@@ -392,9 +368,7 @@ test.describe("saved blocks — pick session", () => {
     // The checklist is gone for good.
     await expect(dialog.locator('button[role="switch"]')).toHaveCount(0);
 
-    await dialog
-      .locator(SELECTORS.savedBlocksNameInput)
-      .fill("Header group");
+    await dialog.locator(SELECTORS.savedBlocksNameInput).fill("Header group");
     await dialog
       .getByRole("button", { name: "Save Block", exact: true })
       .click();
@@ -419,19 +393,22 @@ test.describe("saved blocks — pick session", () => {
 
   test("Cancel leaves the store and the canvas untouched", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootEmptyStore(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await closeCodeDrawer(page);
 
     const idsBefore = await editorPage.getTopLevelBlockIds();
 
     await startSession(page, editorPage);
-    await editorPage.getTopLevelBlocks().nth(1).click({ position: { x: 5, y: 5 } });
+    await editorPage
+      .getTopLevelBlocks()
+      .nth(1)
+      .click({ position: { x: 5, y: 5 } });
     await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
       "2",
     );
@@ -452,14 +429,14 @@ test.describe("saved blocks — pick session", () => {
 
   test("Escape cancels the session", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootEmptyStore(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await closeCodeDrawer(page);
 
     await startSession(page, editorPage);
     await page.keyboard.press("Escape");
@@ -477,14 +454,14 @@ test.describe("saved blocks — pick session", () => {
    */
   test("previews picks in pick order and saves the dragged order", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootEmptyStore(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await closeCodeDrawer(page);
 
     const canvasIds = await editorPage.getTopLevelBlockIds();
     expect(canvasIds.length).toBeGreaterThanOrEqual(3);
@@ -551,9 +528,7 @@ test.describe("saved blocks — pick session", () => {
     const draggedOrder = [canvasIds[2], canvasIds[0], canvasIds[1]];
     await expect.poll(rowIds, { timeout: 5000 }).toEqual(draggedOrder);
 
-    await dialog
-      .locator(SELECTORS.savedBlocksNameInput)
-      .fill("Dragged group");
+    await dialog.locator(SELECTORS.savedBlocksNameInput).fill("Dragged group");
     await dialog
       .getByRole("button", { name: "Save Block", exact: true })
       .click();
@@ -576,14 +551,14 @@ test.describe("saved blocks — pick session", () => {
 
   test("clicking inside a section picks the whole section, not the child", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootEmptyStore(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await closeCodeDrawer(page);
 
     await startSession(page, editorPage);
 
@@ -659,15 +634,15 @@ test.describe("saved blocks — categories", () => {
 
   async function openBrowser(
     page: Page,
-    chooserPage: { goto(): Promise<void>; selectFirstTemplate(): Promise<void> },
-    editorPage: { waitForReady(): Promise<void>; dismissOverlays(): Promise<void> },
+    scenePage: {
+      goto(id: string, query?: Record<string, string>): Promise<void>;
+    },
+    editorPage: {
+      waitForReady(): Promise<void>;
+      dismissOverlays(): Promise<void>;
+    },
   ): Promise<void> {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
@@ -676,11 +651,11 @@ test.describe("saved blocks — categories", () => {
 
   test("filters the browser by category and composes with search", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, CATEGORISED);
-    await openBrowser(page, chooserPage, editorPage);
+    await openBrowser(page, scenePage, editorPage);
 
     const cards = page.locator(SELECTORS.savedBlocksCard);
     await expect(cards).toHaveCount(3);
@@ -714,16 +689,11 @@ test.describe("saved blocks — categories", () => {
 
   test("saves a new block with a category and filters by it", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -763,16 +733,11 @@ test.describe("saved blocks — categories", () => {
 
   test("saves without a category when the field is left empty", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await clearSavedBlocks(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -801,18 +766,18 @@ test.describe("saved blocks — categories", () => {
     // With nothing categorised, the filter isn't rendered at all.
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
     await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
-    await expect(
-      page.locator(SELECTORS.savedBlocksCategoryFilter),
-    ).toHaveCount(0);
+    await expect(page.locator(SELECTORS.savedBlocksCategoryFilter)).toHaveCount(
+      0,
+    );
   });
 
   test("recategorises an existing block inline", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, CATEGORISED);
-    await openBrowser(page, chooserPage, editorPage);
+    await openBrowser(page, scenePage, editorPage);
 
     await page
       .locator(SELECTORS.savedBlocksBrowser)
@@ -852,21 +817,15 @@ test.describe("saved blocks — categories", () => {
 test.describe("saved blocks — read-only library", () => {
   async function bootReadOnly(page: Page): Promise<void> {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem("tpl-playground-saved-blocks-readonly", "true");
-    });
   }
 
   test("hides the save action so no pick session can start", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootReadOnly(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks", { readonly: "1" });
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -881,12 +840,11 @@ test.describe("saved blocks — read-only library", () => {
 
   test("browses and inserts, with no rename or delete controls", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootReadOnly(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks", { readonly: "1" });
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -898,18 +856,16 @@ test.describe("saved blocks — read-only library", () => {
 
     const browser = page.locator(SELECTORS.savedBlocksBrowser);
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
-    await expect(
-      browser.locator(SELECTORS.savedBlocksRenameBtn),
-    ).toHaveCount(0);
-    await expect(
-      browser.locator(SELECTORS.savedBlocksDeleteBtn),
-    ).toHaveCount(0);
+    await expect(browser.locator(SELECTORS.savedBlocksRenameBtn)).toHaveCount(
+      0,
+    );
+    await expect(browser.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(
+      0,
+    );
 
     // Insertion is unaffected: it never calls the provider.
     await page.locator(SELECTORS.savedBlocksCard).first().click();
-    await browser
-      .getByRole("button", { name: "Insert", exact: true })
-      .click();
+    await browser.getByRole("button", { name: "Insert", exact: true }).click();
 
     await expect
       .poll(() => editorPage.getTopLevelBlockIds().then((ids) => ids.length))
@@ -935,20 +891,11 @@ test.describe("saved blocks — slow list()", () => {
 
   test("rail is immediate; the browser shows a skeleton, never a false empty state", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem(
-        "tpl-playground-saved-blocks-delay",
-        String(delay as number),
-      );
-    }, DELAY_MS);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks", { delay: String(DELAY_MS) });
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -964,9 +911,7 @@ test.describe("saved blocks — slow list()", () => {
     // be false for two seconds.
     await expect(skeleton).toBeVisible();
     await expect(browser).not.toContainText("No saved blocks yet");
-    await expect(
-      browser.locator('input[type="text"]'),
-    ).toBeDisabled();
+    await expect(browser.locator('input[type="text"]')).toBeDisabled();
 
     // Then the entries land and the skeleton goes.
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
@@ -976,20 +921,11 @@ test.describe("saved blocks — slow list()", () => {
 
   test("a reopen shows the previous entries instead of the skeleton", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem(
-        "tpl-playground-saved-blocks-delay",
-        String(delay as number),
-      );
-    }, DELAY_MS);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks", { delay: String(DELAY_MS) });
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -1015,16 +951,11 @@ test.describe("saved blocks — slow list()", () => {
 test.describe("saved blocks — browser modal width", () => {
   test("does not resize when a block is selected", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -1035,7 +966,8 @@ test.describe("saved blocks — browser modal width", () => {
     // `offsetWidth`, not `boundingBox()`: the dialog animates in with
     // `tpl-scale-in`, and a transformed bounding rect reports the mid-animation
     // visual size (0.97 scale reads as 970px). Layout width is what's pinned.
-    const widthOf = () => modal.evaluate((el) => (el as HTMLElement).offsetWidth);
+    const widthOf = () =>
+      modal.evaluate((el) => (el as HTMLElement).offsetWidth);
 
     const emptyWidth = await widthOf();
 
@@ -1069,21 +1001,12 @@ test.describe("saved blocks — playground demo defaults", () => {
    * it, which is precisely what the persistence assertion below needs to rule
    * out.
    */
-  async function bootFresh(page: Page): Promise<void> {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-  }
-
   test("seeds a library on first open, with the locked entry among them", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootFresh(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -1102,12 +1025,10 @@ test.describe("saved blocks — playground demo defaults", () => {
 
   test("locked entry has no rename or delete; siblings have both", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootFresh(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
@@ -1115,8 +1036,12 @@ test.describe("saved blocks — playground demo defaults", () => {
     const browser = page.locator(SELECTORS.savedBlocksBrowser);
     // Three entries, one of them locked → two pencils and two trashes.
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(3);
-    await expect(browser.locator(SELECTORS.savedBlocksRenameBtn)).toHaveCount(2);
-    await expect(browser.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(2);
+    await expect(browser.locator(SELECTORS.savedBlocksRenameBtn)).toHaveCount(
+      2,
+    );
+    await expect(browser.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(
+      2,
+    );
 
     // And it's specifically the locked one that has neither.
     const locked = page.locator(SELECTORS.savedBlocksCard, {
@@ -1128,12 +1053,10 @@ test.describe("saved blocks — playground demo defaults", () => {
 
   test("an editable default can be deleted, and the deletion sticks", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootFresh(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
@@ -1147,10 +1070,11 @@ test.describe("saved blocks — playground demo defaults", () => {
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
 
     // Persisted, and NOT re-seeded on the next visit — re-seeding would make
-    // delete look broken in the demo built to show it working. A reload lands
-    // back on the chooser, so the template has to be reopened.
+    // delete look broken in the demo built to show it working.
     await page.reload();
-    await chooserPage.selectFirstTemplate();
+    await page.waitForSelector(
+      '[data-testid="scene-host"][data-scene-ready="true"]',
+    );
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
@@ -1169,12 +1093,10 @@ test.describe("saved blocks — playground demo defaults", () => {
    */
   test("every seeded entry renders a preview", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootFresh(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
@@ -1191,37 +1113,37 @@ test.describe("saved blocks — playground demo defaults", () => {
       await expect(canvas).toBeVisible();
       // Non-empty: a fixture that renders no components would still mount the
       // frame, so assert the frame actually has painted content in it.
-      const height = await canvas.evaluate((el) => (el as HTMLElement).offsetHeight);
+      const height = await canvas.evaluate(
+        (el) => (el as HTMLElement).offsetHeight,
+      );
       expect(height).toBeGreaterThan(10);
     }
   });
 
-  test("each template gets its own library", async ({
+  test("each scene gets its own library", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    // Newsletter is the second card and carries a different fixture set.
-    await page.locator(SELECTORS.templateCard).nth(1).click();
+    await scenePage.goto("saved-blocks");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
     await expect(page.locator(SELECTORS.savedBlocksCard).first()).toContainText(
-      "Issue masthead",
+      "Launch hero",
     );
 
-    // Stored under the Newsletter's own key, leaving Product Launch's untouched.
+    await scenePage.goto("example-launchpad-launch");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
     const keys = await page.evaluate(() =>
       Object.keys(localStorage).filter((k) =>
         k.startsWith("templatical:saved-blocks"),
       ),
     );
-    expect(keys).toContain("templatical:saved-blocks:newsletter");
+    expect(keys).toContain("templatical:saved-blocks:saved-blocks");
+    expect(keys).toContain("templatical:saved-blocks:launchpad-launch");
   });
 });

@@ -2,10 +2,13 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Playground modals", () => {
-  test("export modal shows MJML on open", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("example-launchpad-launch");
+    await editorPage.waitForReady();
+    await editorPage.closeCodeDrawer();
+  });
+
+  test("export modal shows MJML on open", async ({ editorPage, page }) => {
     await editorPage.openExport();
     const modal = page.locator(SELECTORS.exportModal);
     await expect(modal).toBeVisible();
@@ -16,10 +19,7 @@ test.describe("Playground modals", () => {
     expect(text).toContain("<mjml");
   });
 
-  test("export copy button works", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("export copy button works", async ({ editorPage, page }) => {
     await editorPage.openExport();
     const copyBtn = page.locator(SELECTORS.exportCopyBtn);
     await expect(copyBtn).toBeVisible();
@@ -27,10 +27,7 @@ test.describe("Playground modals", () => {
     await expect(copyBtn).toBeVisible();
   });
 
-  test("export modal closes on Escape", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
+  test("export modal closes on Escape", async ({ editorPage, page }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.locator(SELECTORS.modalBackdrop).focus();
@@ -39,7 +36,7 @@ test.describe("Playground modals", () => {
   });
 
   test("export modal closes on backdrop click", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     await editorPage.openExport();
@@ -51,7 +48,7 @@ test.describe("Playground modals", () => {
   });
 
   test("export JSON tab reflects template content", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     const canvasBlockCount = await editorPage.getBlockCount();
@@ -59,44 +56,23 @@ test.describe("Playground modals", () => {
 
     await editorPage.openExport();
     await page.locator(SELECTORS.exportTabJson).click();
+    await expect(page.locator(SELECTORS.exportTabJson)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect
+      .poll(async () =>
+        page.locator(SELECTORS.exportModal).locator(".cm-editor").innerText(),
+      )
+      .toContain("blocks");
     const text = await page
       .locator(SELECTORS.exportModal)
       .locator(".cm-editor")
       .innerText();
-    expect(text).toContain("blocks");
     expect(text).toContain("type");
   });
 
-  test("config modal closes on Escape", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openConfig();
-    const dialog = page.locator('[role="dialog"]').last();
-    await expect(dialog).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
-  });
-
-  test("feature overlay shows and dismisses", async ({
-    chooserPage,
-    editorPage,
-    page,
-  }) => {
-    // Feature overlay opens the first time a template is loaded. Clear the
-    // dismissed flag BEFORE navigation so App.vue sees a virgin user.
-    await page.addInitScript(() => {
-      localStorage.removeItem("tpl-playground-features-dismissed");
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
-    await editorPage.waitForReady();
-
-    const overlay = page.locator(SELECTORS.featureOverlay);
-    await expect(overlay).toBeVisible();
-
-    await page.locator(SELECTORS.featureOverlayClose).click();
-    await expect(overlay).toHaveCount(0);
+  test("feature overlay does not render", async ({ page }) => {
+    await expect(page.locator(SELECTORS.featureOverlay)).toHaveCount(0);
   });
 });

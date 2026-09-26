@@ -4,6 +4,7 @@ import {
   blockByType,
   issueRowByRule,
   paletteByType,
+  themeOption,
 } from "../helpers/selectors";
 
 export class EditorPage {
@@ -23,15 +24,10 @@ export class EditorPage {
   }
 
   /**
-   * Dismiss any visible overlays (feature showcase, onboarding, cloud banner).
+   * Dismiss any visible overlays (feature showcase, scene notes, cloud banner).
    * Idempotent — safe to call multiple times.
    */
   async dismissOverlays(): Promise<void> {
-    await this.page.evaluate(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-
     const featureClose = this.page.locator(SELECTORS.featureOverlayClose);
     if (await featureClose.isVisible()) {
       await featureClose.click();
@@ -40,15 +36,19 @@ export class EditorPage {
         .waitFor({ state: "hidden" });
     }
 
-    const onboarding = this.page.locator(SELECTORS.onboardingSpotlight);
-    if (await onboarding.isVisible()) {
-      const skip = this.page.locator(SELECTORS.onboardingSkip);
-      if (await skip.isVisible()) {
-        await skip.click();
-      } else {
-        await this.page.keyboard.press("Escape");
-      }
-      await onboarding.waitFor({ state: "hidden" });
+    const notes = this.page.locator(SELECTORS.sceneNotes);
+    if (await notes.isVisible()) {
+      await this.page.locator(SELECTORS.sceneNotesClose).click();
+      await notes.waitFor({ state: "hidden" });
+    }
+  }
+
+  /** Close the snippet drawer if it is open. No-op when it is already closed. */
+  async closeCodeDrawer(): Promise<void> {
+    const drawer = this.page.locator(SELECTORS.codeDrawer);
+    if (await drawer.isVisible()) {
+      await this.page.locator(SELECTORS.codeDrawerClose).click();
+      await expect(drawer).toHaveCount(0);
     }
   }
 
@@ -194,9 +194,7 @@ export class EditorPage {
   async getCanvasLinkHrefs(): Promise<string[]> {
     return this.page
       .locator(`${SELECTORS.canvas} a`)
-      .evaluateAll((els) =>
-        els.map((el) => el.getAttribute("href") ?? ""),
-      );
+      .evaluateAll((els) => els.map((el) => el.getAttribute("href") ?? ""));
   }
 
   /**
@@ -409,8 +407,7 @@ export class EditorPage {
     // to push an item into the dead zone. Staging the approach so the final
     // segment is always a descent gives direction=1 (insert after) every time,
     // whatever the item's position.
-    const approachY =
-      approachFrom === "above" ? target.y - 30 : target.y + 30;
+    const approachY = approachFrom === "above" ? target.y - 30 : target.y + 30;
     await this.page.mouse.move(target.x, approachY, { steps: 20 });
     await this.page.mouse.move(target.x, target.y, { steps: 10 });
     // Settle frames so Sortable's 50ms `_emulateDragOver` interval has a
@@ -523,9 +520,7 @@ export class EditorPage {
     colIndex: number = 0,
   ): Promise<void> {
     await this.hoverSidebar();
-    const section = this.page
-      .locator(blockByType("section"))
-      .nth(sectionIndex);
+    const section = this.page.locator(blockByType("section")).nth(sectionIndex);
     const target = this.getSectionColumn(sectionIndex, colIndex);
     const countBefore = await section.locator(SELECTORS.block).count();
 
@@ -601,10 +596,7 @@ export class EditorPage {
     const startY = handleBox.y + handleBox.height / 2;
     const endX = toBox.x + toBox.width / 2;
     // Aim past the target's center so Sortable swaps in the intended direction.
-    const endY =
-      toIndex > fromIndex
-        ? toBox.y + toBox.height - 4
-        : toBox.y + 4;
+    const endY = toIndex > fromIndex ? toBox.y + toBox.height - 4 : toBox.y + 4;
 
     await this.page.mouse.move(startX, startY);
     await this.page.mouse.down();
@@ -619,10 +611,9 @@ export class EditorPage {
     await this.page.mouse.up();
 
     await expect
-      .poll(
-        async () => (await this.getBlockIds()).indexOf(fromId),
-        { timeout: 5000 },
-      )
+      .poll(async () => (await this.getBlockIds()).indexOf(fromId), {
+        timeout: 5000,
+      })
       .toBe(toIndex);
   }
 
@@ -795,7 +786,9 @@ export class EditorPage {
     const toBox = await toBlock.boundingBox();
     if (!toBox) {
       await this.page.mouse.up();
-      throw new Error("Section reorder target bounds unavailable after drag start");
+      throw new Error(
+        "Section reorder target bounds unavailable after drag start",
+      );
     }
     const endX = toBox.x + toBox.width / 2;
     const endY =
@@ -865,9 +858,9 @@ export class EditorPage {
     await expect
       .poll(
         async () =>
-          (await this.getSectionColumnBlockIds(sectionIndex, colIndex)).includes(
-            blockId,
-          ),
+          (
+            await this.getSectionColumnBlockIds(sectionIndex, colIndex)
+          ).includes(blockId),
         { timeout: 5000 },
       )
       .toBe(true);
@@ -954,9 +947,9 @@ export class EditorPage {
     await expect
       .poll(
         async () =>
-          (await this.getSectionColumnBlockIds(sectionIndex, toColIndex)).includes(
-            blockId,
-          ),
+          (
+            await this.getSectionColumnBlockIds(sectionIndex, toColIndex)
+          ).includes(blockId),
         { timeout: 5000 },
       )
       .toBe(true);
@@ -999,9 +992,9 @@ export class EditorPage {
     await expect
       .poll(
         async () =>
-          (await this.getSectionColumnBlockIds(toSectionIndex, toColIndex)).includes(
-            blockId,
-          ),
+          (
+            await this.getSectionColumnBlockIds(toSectionIndex, toColIndex)
+          ).includes(blockId),
         { timeout: 5000 },
       )
       .toBe(true);
@@ -1031,9 +1024,7 @@ export class EditorPage {
 
   async switchViewport(name: "Desktop" | "Mobile"): Promise<void> {
     const selector =
-      name === "Desktop"
-        ? SELECTORS.viewportDesktop
-        : SELECTORS.viewportMobile;
+      name === "Desktop" ? SELECTORS.viewportDesktop : SELECTORS.viewportMobile;
     // Arm a transitionend listener before the click so we catch the exact
     // settled frame. Canvas.vue animates `width` with a 300ms spring-bounce
     // curve — polling for "width changed" fires mid-flight and returns an
@@ -1052,8 +1043,7 @@ export class EditorPage {
           // the wrapper. Avoids hard-coding the editor container's
           // testid in this helper.
           const hosts = Array.from(document.querySelectorAll("*")).filter(
-            (n): n is HTMLElement =>
-              n instanceof HTMLElement && !!n.shadowRoot,
+            (n): n is HTMLElement => n instanceof HTMLElement && !!n.shadowRoot,
           );
           for (const host of hosts) {
             const inside = host.shadowRoot!.querySelector(
@@ -1101,8 +1091,12 @@ export class EditorPage {
     await this.page.locator(SELECTORS.backButton).click();
   }
 
-  async clickThemeToggle(): Promise<void> {
-    await this.page.locator(SELECTORS.themeButton).click();
+  /** Pick a playground theme through the header's settings menu. */
+  async chooseTheme(theme: "auto" | "light" | "dark"): Promise<void> {
+    await this.page.locator(SELECTORS.hostSettings).click();
+    await this.page.locator(themeOption(theme)).click();
+    await this.page.keyboard.press("Escape");
+    await expect(this.page.locator(SELECTORS.hostSettingsPanel)).toHaveCount(0);
   }
 
   async openConfig(): Promise<void> {

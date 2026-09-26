@@ -42,7 +42,7 @@ Sie können es auch von einem CDN laden:
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertEasyEmailProTemplate } from '@templatical/import-easy-email-pro';
@@ -56,6 +56,8 @@ const editor = await init({
 
 console.log(report);
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-easy-email-pro)
 
 `convertEasyEmailProTemplate` arbeitet synchron und gibt ein `ImportResult` zurück mit:
 

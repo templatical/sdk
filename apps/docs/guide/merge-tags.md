@@ -9,7 +9,7 @@ Merge tags are tokens for dynamic content -- things like a recipient's name, a p
 
 Templatical provides built-in syntax presets for popular platforms and supports custom syntax definitions.
 
-## Configuration
+## Configuration {#configuration}
 
 Pass a `tags` array to register your merge tags with the editor. When the editor detects a merge tag value in the content (e.g. <code v-pre>{{first_name}}</code>), it replaces it visually with the human-readable `label` ("First Name") — making the template much easier to read and edit. The raw value is preserved in the output.
 
@@ -36,6 +36,8 @@ const editor = await init({
 });
 ```
 
+[Open in playground](https://play.templatical.com/scenes/merge-tags)
+
 ## MergeTag type
 
 Each tag is defined with a label (shown in the editor UI) and a value (the full merge tag string including delimiters). Two optional fields — `group` and `description` — are used by the built-in picker to organize and explain tags:
@@ -56,7 +58,7 @@ The `value` must include the syntax delimiters. For example, with Liquid syntax:
 
 The `group` and `description` fields are picker-only — they do not appear in the editor canvas, in autocomplete, or in the rendered MJML output. They are ignored if you only use `onRequest` for tag selection.
 
-## Sample values
+## Sample values {#sample-values}
 
 A tag can carry a `sample` — an example value that **preview surfaces** render in its place, so a preview reads like a delivered email instead of a list of field names:
 
@@ -68,6 +70,8 @@ mergeTags: {
   ],
 }
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples)
 
 Setting `sample` is the whole opt-in — there is no flag to enable alongside it. The value never leaves the preview: it is not written to the template, not returned by `getContent()`, not sent, and not present in MJML output. It also shows in the built-in picker, so an author can see what a tag will render before inserting it.
 
@@ -97,7 +101,7 @@ mergeTags: {
 }
 ```
 
-## Logic tag highlighting
+## Logic tag highlighting {#logic-tag-highlighting}
 
 Beyond data tags, the editor also recognizes logic tags -- conditional statements, loops, and other control flow syntax used by your email platform. These are detected automatically using the `logic` regex pattern from the selected syntax preset.
 
@@ -145,6 +149,8 @@ Examples of logic tags by preset:
 %%[ENDIF]%%
 ```
 :::
+
+[Open in playground](https://play.templatical.com/scenes/logic-tags)
 
 ## Custom syntax
 
@@ -252,7 +258,7 @@ const editor = await init({
 });
 ```
 
-## Dynamic tag loading
+## Dynamic tag loading {#dynamic-tag-loading}
 
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available merge tags from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
 
@@ -267,6 +273,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-on-request)
 
 ::: tip Precedence
 If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.

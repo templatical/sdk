@@ -23,16 +23,11 @@ async function openButtonColorPicker(editorPage: EditorPage, page: Page) {
   return popover;
 }
 
-test.describe("Color presets — Event Invitation brand-locked palette", () => {
-  // The Event Invitation template passes `colors: { presets, allowCustom: false }`
+test.describe("Color presets — Northstage brand-locked palette", () => {
+  // The Northstage event scene passes `colors: { presets, allowCustom: false }`
   // to init(), so every picker in it is a preset-only grid.
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Event Invitation");
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("example-northstage-event");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
   });

@@ -1,25 +1,19 @@
 import { expect } from "@playwright/test";
 import { test } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
-import type { ChooserPage } from "../pages/chooser.page";
 import type { EditorPage } from "../pages/editor.page";
+import type { ScenePage } from "../pages/scene.page";
 
 /**
  * Issue #673 — a new Button read "Click Here" and a new Paragraph "Enter your
  * text here" in a German editor. (The reporter missed Title, which had it too.)
  *
- * Three things about this setup are load-bearing:
+ * Two things about this setup are load-bearing:
  *
  *  - **A blank canvas.** The showcase templates ship their own copy, so a block
  *    inserted into one proves nothing about what the *factory* produced.
- *  - **`tpl-playground-sdk-locale`, not the header switcher.** The playground
- *    keeps two independent locales: `tpl-playground-locale` drives its own
- *    chrome, and only this one reaches `init({ locale })`. Driving the header
- *    select turns the playground German and leaves the editor English, so the
- *    assertions below would fail while the SDK was working correctly.
- *  - **Seeded before navigation.** The app reads it at mount, so setting it
- *    afterwards races the read — hence the hand-rolled navigation instead of the
- *    `blankEditorReady` fixture, which navigates before a test can add to it.
+ *  - **`/scenes/i18n`**, whose snippet is `locale: "de"`. `?locale=en` is the
+ *    live override (host SDK-locale knob later); the snippet stays `de`.
  *
  * One insert per test: a second consecutive palette click does not land once a
  * block is selected, and batching them would make a locale failure
@@ -27,19 +21,14 @@ import type { EditorPage } from "../pages/editor.page";
  */
 test.describe("localized block defaults", () => {
   async function openBlankEditor(
-    chooserPage: ChooserPage,
+    scenePage: ScenePage,
     editorPage: EditorPage,
     sdkLocale: string,
   ): Promise<void> {
-    await editorPage.page.addInitScript((locale) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem("tpl-playground-sdk-locale", locale);
-    }, sdkLocale);
-    await chooserPage.goto();
-    await chooserPage.selectBlankTemplate();
+    await scenePage.goto("i18n", sdkLocale === "en" ? { locale: "en" } : {});
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await editorPage.closeCodeDrawer();
   }
 
   async function canvasText(editorPage: EditorPage): Promise<string> {
@@ -62,10 +51,10 @@ test.describe("localized block defaults", () => {
 
   for (const { type, german, english } of CASES) {
     test(`a German editor inserts German ${type} text`, async ({
-      chooserPage,
+      scenePage,
       editorPage,
     }) => {
-      await openBlankEditor(chooserPage, editorPage, "de");
+      await openBlankEditor(scenePage, editorPage, "de");
       await editorPage.clickPaletteItem(type);
 
       const text = await canvasText(editorPage);
@@ -75,10 +64,10 @@ test.describe("localized block defaults", () => {
     });
 
     test(`an English editor still inserts English ${type} text`, async ({
-      chooserPage,
+      scenePage,
       editorPage,
     }) => {
-      await openBlankEditor(chooserPage, editorPage, "en");
+      await openBlankEditor(scenePage, editorPage, "en");
       await editorPage.clickPaletteItem(type);
 
       const text = await canvasText(editorPage);
@@ -97,10 +86,10 @@ test.describe("localized block defaults", () => {
   // so what this covers is the two halves agreeing. `resolveTemplateDefaults`
   // covers the seeding itself, on the path where no content is given.
   test("a fresh template declares the editor's language as its content language", async ({
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openBlankEditor(chooserPage, editorPage, "de");
+    await openBlankEditor(scenePage, editorPage, "de");
 
     await expect(editorPage.page.locator(SELECTORS.canvas)).toHaveAttribute(
       "lang",
@@ -111,10 +100,10 @@ test.describe("localized block defaults", () => {
   // The drag path builds the block through the same `:clone` handler as the
   // click path, so this covers the gesture the issue was actually reported for.
   test("dragging from the palette lands German text too", async ({
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openBlankEditor(chooserPage, editorPage, "de");
+    await openBlankEditor(scenePage, editorPage, "de");
     await editorPage.dragBlockFromSidebar("button");
 
     const text = await canvasText(editorPage);

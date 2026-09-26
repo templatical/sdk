@@ -56,6 +56,12 @@ export default {
         );
       }
 
+      const sceneId =
+        typeof body.sceneId === "string" &&
+        /^[a-z0-9-]{1,64}$/.test(body.sceneId)
+          ? body.sceneId
+          : undefined;
+
       const createdAt = new Date().toISOString();
 
       let id = "";
@@ -73,7 +79,7 @@ export default {
 
       await env.SHARES_KV.put(
         `share:${id}`,
-        JSON.stringify({ content, createdAt }),
+        JSON.stringify({ content, sceneId, createdAt }),
         { expirationTtl: TTL_SECONDS }
       );
 
@@ -102,11 +108,15 @@ export default {
       return Response.json({
         id,
         content: data.content,
+        sceneId: data.sceneId,
         createdAt: data.createdAt,
       });
     }
 
-    // Everything else — serve static assets
+    // Everything else — static assets. With no top-level 404.html, Pages
+    // serves index.html for any path without a file, which is the SPA
+    // fallback for /scenes/:id. Never rewrite to /index.html here: Pages
+    // answers that path with a 308 to /, and the browser redirects forever.
     return env.ASSETS.fetch(request);
   },
 };

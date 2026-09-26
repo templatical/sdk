@@ -1,86 +1,86 @@
 import type { Translations } from "./index";
 
 export default {
-  chooser: {
-    title: "Templatical",
-    subtitle:
-      "Probieren Sie den Editor live aus \u2014 jedes vorgefertigte Beispiel deckt einen realen Anwendungsfall ab und zeigt verschiedene SDK-Funktionen. W\u00e4hlen Sie eines zum Starten aus.",
-    pills: {
-      openSource: "Kostenlos & Open Source",
-      clientSide: "Clientseitig",
-      noTelemetry: "Keine Telemetrie",
-    },
-    startFromScratch: "Neu beginnen",
-    emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
-    migration: {
-      headline:
-        "Nutzen Sie bereits Unlayer, BeeFree, Stripo, Topol, Chamaileon, Easy Email Pro, MJML oder HTML?",
-      description:
-        "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
-      importFromBeefree: "Aus BeeFree importieren",
-      importFromUnlayer: "Aus Unlayer importieren",
-      importFromHtml: "Aus HTML importieren",
-      importFromMjml: "Aus MJML importieren",
-      importFromTopol: "Aus Topol importieren",
-      importFromStripo: "Aus Stripo importieren",
-      importFromChamaileon: "Aus Chamaileon importieren",
-      importFromEasyEmailPro: "Aus Easy Email Pro importieren",
-    },
-  },
-  cloudBanner: {
-    title: "Das volle Erlebnis mit Cloud freischalten",
-    description:
-      "Echtzeit-Zusammenarbeit, KI-Schreibassistent, Versionsverlauf, Vorlagenbewertung, Medienbibliothek und mehr.",
-    cta: "Cloud Playground testen",
-  },
   toolbar: {
-    templates: "Vorlagen",
-    config: "Konfiguration",
-    features: "Funktionen",
     export: "Exportieren",
     docs: "Dokumentation",
-    tryCloud: "Cloud testen",
     retry: "Erneut versuchen",
     share: "Teilen",
-    tour: "Tour",
   },
-  configModal: {
-    tabs: {
-      options: "Optionen",
-      content: "Inhalt",
-      theme: "Design",
-      defaults: "Standards",
-      callbacks: "Callbacks",
-      locale: "Sprache",
+  host: {
+    back: "Zur\u00fcck",
+    code: "Code",
+    docs: "Dokumentation",
+    notFoundNamed: "Keine Szene namens {id}.",
+    notFoundHint: "Diese ID steht nicht im Setup-Katalog.",
+    catalogTitle: "Playground",
+    setups: "Setups",
+    catalogFooter: "Playground-Links",
+    catalogNav: "Hauptnavigation",
+    snippet: "init()-Snippet",
+    minimumPaste: "init({ container })",
+    brand: "Templatical",
+    headline: "Der E-Mail-Editor, den Sie in Ihre App einbauen.",
+    lede: "Öffnen Sie ein Setup, um es live zu nutzen, und kopieren Sie dann das init(), das es aufbaut.",
+    installCommand: "npm i @templatical/editor",
+    copyInstall: "Installationsbefehl kopieren",
+    copied: "Kopiert",
+    runTheseLines: "Diese Zeilen ausführen",
+    copySnippet: "Setup-Code kopieren",
+    snippetLabel: "Minimales Setup",
+    proofsLabel: "Fertige Beispiele",
+    openProof: "{name} öffnen",
+    settings: {
+      label: "Einstellungen",
+      theme: "Darstellung",
+      language: "Sprache",
+      showNotes: "Notizen anzeigen",
     },
-    descriptions: {
-      options: "mergeTags, displayConditions, customBlocks",
-      content: "Vorlagen-Blockstruktur",
-      theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
-      defaults: "blockDefaults, templateDefaults",
-      callbacks: "media, mergeTags.onRequest",
-      locale: "SDK-Sprache, die an init({ locale }) \u00fcbergeben wird",
+    hideRail: "Setups ausblenden",
+    showRail: "Setups einblenden",
+    pager: {
+      previous: "Vorherige: {name}",
+      next: "N\u00e4chste: {name}",
+      noPrevious: "Keine vorherige Szene",
+      noNext: "Keine n\u00e4chste Szene",
     },
-    localeHint:
-      'Legt die Sprache der Editor-Oberfl\u00e4che fest (Werkzeugleisten, Dialoge, Fehler). Unabh\u00e4ngig von der Playground-Sprache oben. Wird bei "\u00dcbernehmen & Neu laden" wirksam.',
-    localeLabel: "SDK-Sprache",
-    defaultsPresetLabel: "Vorlage",
-    defaultsPresets: {
-      templatical: "Templatical Standard",
-      corporate: "Gesch\u00e4ftlich",
-      playful: "Verspielt",
-      minimal: "Minimalistisch",
+    notes: {
+      label: "Notizen",
+      hide: "Notizen ausblenden",
+      items: {
+        rail: "weitere Setups",
+        palette: "Bl\u00f6cke hineinziehen",
+        properties: "Auswahl bearbeiten",
+        issues: "Probleme beheben",
+        preview: "Vorschau",
+        share: "Kopie teilen",
+        code: "Setup kopieren",
+      },
+      targets: {
+        rail: "Setup-Liste",
+        palette: "Blockpalette",
+        properties: "Eigenschaften",
+        issues: "Probleme-Tab",
+        preview: "Vorschau-Schalter",
+        share: "Teilen-Schaltfl\u00e4che",
+        code: "Code-Schaltfl\u00e4che",
+      },
     },
-    defaultsHint:
-      'Standardwerte f\u00fcr neu erstellte Bl\u00f6cke und Vorlagen. W\u00e4hlen Sie eine Vorlage oder bearbeiten Sie das JSON. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
-    callbacksHint:
-      'Callback-Handler f\u00fcr den Editor umschalten. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
-    onRequestMediaDesc:
-      'Stellt "Durchsuchen" \u00fcber eine lokale Medienbibliothek bereit. Deaktivieren f\u00fcr nur-URL-Feld.',
-    onRequestMergeTag:
-      "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer ein Merge-Tag einf\u00fcgt",
-    cancel: "Abbrechen",
-    apply: "\u00dcbernehmen & Neu laden",
+    groups: {
+      minimum: "Minimum",
+      configure: "Konfiguration",
+      personalization: "Personalisierung",
+      backend: "Ihr Backend",
+      import: "Import",
+      examples: "Beispiele",
+    },
+    groupJobs: {
+      configure: "Chrome, Schriften, Locale",
+      personalization: "Tags, Logik, Sichtbarkeit",
+      backend: "Laden, speichern, senden",
+      import: "Bestehende Vorlage konvertieren",
+      examples: "Fertige E-Mails",
+    },
   },
   importModal: {
     title: "Bestehende Vorlage importieren",
@@ -156,11 +156,6 @@ export default {
       "Dies simuliert das Abrufen von Daten von Ihrem Endpunkt. In der Produktion ruft das SDK diese URL auf und zeigt die Antwort an, aus der der Benutzer w\u00e4hlen kann.",
     responseReceived: "Antwort erhalten \u2014 Element ausw\u00e4hlen",
   },
-  featureModal: {
-    title: "Funktionen in dieser Vorlage",
-    subtitle: "{name} zeigt diese SDK-F\u00e4higkeiten",
-    dismiss: "Verstanden, mit Bearbeitung beginnen",
-  },
   exportModal: {
     title: "Vorlage exportieren",
     tabs: {
@@ -201,139 +196,23 @@ export default {
   },
   common: {
     close: "Schlie\u00dfen",
-    dismiss: "Ausblenden",
     or: "oder",
   },
   error: {
     initFailed: "Editor konnte nicht initialisiert werden: {message}",
-  },
-  templates: {
-    product: {
-      name: "Produkteinf\u00fchrung",
-      description: "Ank\u00fcndigung mit Hero-Bereich, Funktionen und CTA",
-    },
-    newsletter: {
-      name: "Newsletter",
-      description:
-        "W\u00f6chentlicher \u00dcberblick mit Hauptartikel und Links",
-    },
-    welcome: {
-      name: "Willkommens-E-Mail",
-      description: "Onboarding-Schritte f\u00fcr neue Benutzer",
-    },
-    order: {
-      name: "Bestellbest\u00e4tigung",
-      description: "Bestell\u00fcbersicht mit Artikeln und Versand",
-    },
-    event: {
-      name: "Veranstaltungseinladung",
-      description: "Veranstaltungsdetails mit Datum, Uhrzeit und RSVP",
-    },
-    reset: {
-      name: "Passwort zur\u00fccksetzen",
-      description: "Einfache transaktionale E-Mail mit Reset-Link",
-    },
-    sale: {
-      name: "Black Friday Sale",
-      description: "Aktion mit Produktauswahl und Rabattcode",
-    },
-    rtl: {
-      name: "Arabische Einladung",
-      description:
-        "RTL-Einladung mit Merge-Tags und einem zweispaltigen Abschnitt",
-    },
-  },
-  onboarding: {
-    next: "Weiter",
-    skip: "Tour überspringen",
-    done: "Verstanden!",
-    stepCounter: "{current} von {total}",
-    canvas: {
-      title: "Ihre E-Mail-Leinwand",
-      text: "Hier nimmt Ihre E-Mail Gestalt an. Klicken Sie auf einen Block, um ihn auszuwählen und zu bearbeiten.",
-    },
-    sidebar: {
-      title: "Block-Bibliothek",
-      text: "Ziehen Sie Blöcke von hier auf die Leinwand, um Text, Bilder, Buttons und mehr hinzuzufügen.",
-    },
-    rightSidebar: {
-      title: "Inhalt & Einstellungen",
-      text: "Wählen Sie einen Block aus, um seinen Inhalt hier zu bearbeiten, oder wechseln Sie zu Einstellungen, um das gesamte Vorlagenlayout anzupassen.",
-    },
-    config: {
-      title: "Editor-Konfiguration",
-      text: "Passen Sie Merge-Tags, Anzeigebedingungen, Designfarben und Block-Standards an.",
-    },
-    exportBtn: {
-      title: "Vorlage exportieren",
-      text: "Vorschau, Kopieren oder Herunterladen als HTML, MJML oder JSON.",
-    },
-    share: {
-      title: "Arbeit teilen",
-      text: "Erstellen Sie einen Link, damit andere Ihre Vorlage ansehen und bearbeiten können.",
-    },
-    cloud: {
-      title: "Cloud testen",
-      text: "Schalten Sie KI-Schreiben, Echtzeit-Zusammenarbeit, Medienbibliothek und mehr frei.",
-    },
   },
   mergeTags: {
     firstName: "Vorname",
     lastName: "Nachname",
     email: "E-Mail",
     company: "Unternehmen",
-    accountId: "Konto-ID",
     planName: "Tarifname",
-    orderId: "Bestell-ID",
-    orderTotal: "Bestellsumme",
-    shippingMethod: "Versandart",
-    estimatedDelivery: "Voraussichtliche Lieferung",
-    trackingUrl: "Tracking-URL",
-    unsubscribeUrl: "Abmelde-URL",
-    preferencesUrl: "Einstellungen-URL",
-    currentDate: "Aktuelles Datum",
-    groups: {
-      recipient: "Empfänger",
-      account: "Konto",
-      order: "Bestellung",
-      system: "System",
-    },
-    descriptions: {
-      firstName: "Persönliche Anrede am Anfang der E-Mail",
-      lastName: "Nachname des Empfängers",
-      email: "Primäre Kontaktadresse",
-      company: "Name der Empfängerorganisation",
-      accountId: "Interne Abrechnungs-Konto-Kennung",
-      planName: "Bezeichnung der Abo-Stufe",
-      orderId: "Bestellreferenz für den Support",
-      orderTotal: "Endbetrag inkl. Steuern und Versand",
-      shippingMethod: "Versanddienstleister und Servicestufe",
-      estimatedDelivery: "Voraussichtliches Lieferdatum",
-      trackingUrl: "Tracking-Link des Versanddienstleisters",
-      unsubscribeUrl: "Gesetzlich vorgeschrieben (Anti-Spam)",
-      preferencesUrl: "Empfänger kann Einstellungen aktualisieren",
-      currentDate: "Zeitstempel beim Versand, z. B. im Footer",
-    },
-  },
-  logic: {
-    conditionsGroup: "Bedingungen",
-    loopsGroup: "Schleifen",
-    else: "Sonst",
-    elseDescription: "Alternativer Zweig für die aktuelle Bedingung",
-    break: "Abbrechen",
-    breakDescription: "Bricht die Schleife vorzeitig ab",
-    continue: "Überspringen",
-    continueDescription: "Springt zur nächsten Iteration",
-    ifVip: "Wenn VIP",
-    ifVipDescription: "Zeigt den umschlossenen Inhalt nur VIP-Kunden",
-    loopItems: "Positionen durchlaufen",
-    loopItemsDescription:
-      "Wiederholt den umschlossenen Inhalt für jede Bestellposition",
   },
   a11y: {
     backToTemplates: "Zur\u00fcck zu Vorlagen",
+    backToCatalog: "Zur\u00fcck zum Katalog",
+    openScene: "Szene {name} öffnen",
     startFromScratch: "Neu beginnen mit leerer Leinwand",
-    chooseTemplate: "Vorlage {name} w\u00e4hlen",
     githubRepo: "GitHub-Repository",
     authMethod: "Authentifizierungsmethode",
     realtimeMode: "Echtzeitmodus",
@@ -358,8 +237,8 @@ export default {
     dark: "Dunkel",
   },
   shadowMode: {
-    shadow: "Shadow",
-    light: "Light",
+    shadow: "Shadow DOM",
+    light: "Light DOM",
   },
   cloud: {
     title: "Templatical Cloud",

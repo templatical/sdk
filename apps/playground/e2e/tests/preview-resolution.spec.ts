@@ -18,7 +18,7 @@ import { SELECTORS } from "../helpers/selectors";
  * 3. A resolved value reaches the screen but **never the MJML export**.
  */
 
-const TEMPLATE = "Welcome Email";
+const SCENE = "merge-tags-resolve-preview";
 
 /**
  * The demo resolver's `{{first_name}}` for the default recipient.
@@ -43,15 +43,11 @@ const KEPT_BRANCH = "Pro tip";
 const DROPPED_BRANCH = "Want more features";
 
 test.describe("Preview resolution", () => {
-  test.beforeEach(async ({ page, chooserPage, editorPage }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName(TEMPLATE);
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto(SCENE);
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
+    await editorPage.closeCodeDrawer();
   });
 
   test("the editing canvas is never resolved", async ({ editorPage }) => {
@@ -168,7 +164,9 @@ test.describe("Preview resolution", () => {
     await expect(page.locator(SELECTORS.canvasBody)).toContainText(RESOLVED);
   });
 
-  test("resolved content carries no merge tag chips", async ({ editorPage }) => {
+  test("resolved content carries no merge tag chips", async ({
+    editorPage,
+  }) => {
     const page = editorPage.page;
     const canvas = page.locator(SELECTORS.canvasBody);
 
@@ -225,8 +223,12 @@ test.describe("Preview resolution", () => {
   });
 
   test("the test-email preview resolves for the selected recipient", async ({
+    scenePage,
     editorPage,
   }) => {
+    await scenePage.goto("example-flowwork-welcome");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();

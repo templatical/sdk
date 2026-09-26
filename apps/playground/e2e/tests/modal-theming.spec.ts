@@ -16,18 +16,21 @@ import type { Page } from "@playwright/test";
  * computes inside a real dialog.
  */
 
-/** Unmistakably not a stock token — the defaults are all `oklch(…)`. */
-const THEMED_ELEVATED = "rgb(255, 0, 0)";
+/**
+ * The theming scene's `bgElevated`. Unmistakably not a stock token: the
+ * defaults are all `oklch(…)`, while this is the `rgb()` form Chrome reports
+ * for a computed background.
+ */
+const THEMED_ELEVATED = "rgb(251, 244, 245)";
 
-async function bootThemedEditor(page: Page): Promise<void> {
-  await page.addInitScript((elevated) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-    localStorage.setItem(
-      "tpl-playground-theme-override",
-      JSON.stringify({ bgElevated: elevated }),
-    );
-  }, THEMED_ELEVATED);
+async function bootThemedEditor(
+  scenePage: import("../pages/scene.page").ScenePage,
+  editorPage: import("../pages/editor.page").EditorPage,
+): Promise<void> {
+  await scenePage.goto("theming", { modals: "1" });
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
+  await editorPage.closeCodeDrawer();
 }
 
 interface Probe {
@@ -74,14 +77,10 @@ async function probeDialog(
 test.describe("modal theming", () => {
   test("the saved-blocks browser paints the configured theme", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootThemedEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
-    await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
+    await bootThemedEditor(scenePage, editorPage);
 
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
     await expect(page.locator(SELECTORS.savedBlocksBrowser)).toBeVisible();
@@ -97,14 +96,10 @@ test.describe("modal theming", () => {
 
   test("the test-email dialog paints the configured theme", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootThemedEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
-    await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
+    await bootThemedEditor(scenePage, editorPage);
 
     await page.locator(SELECTORS.testEmailTrigger).click();
     await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
@@ -117,14 +112,10 @@ test.describe("modal theming", () => {
 
   test("the modal backdrop re-establishes the tokens rather than inheriting them", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await bootThemedEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
-    await editorPage.waitForReady();
-    await editorPage.dismissOverlays();
+    await bootThemedEditor(scenePage, editorPage);
 
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
     await expect(page.locator(SELECTORS.savedBlocksBrowser)).toBeVisible();

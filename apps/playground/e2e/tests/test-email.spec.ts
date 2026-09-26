@@ -31,18 +31,21 @@ type CapturedPayload = {
 };
 
 test.describe("Test email", () => {
-  test("the trigger renders in the editor header", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("test-email");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+  });
 
+  test("the trigger renders in the editor header", async ({ editorPage }) => {
     await expect(
       editorPage.page.locator(SELECTORS.testEmailTrigger),
     ).toBeVisible();
   });
 
   test("opens a dialog offering exactly the allowed recipients", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -55,31 +58,24 @@ test.describe("Test email", () => {
     await expect(field).toHaveValue(ALLOWED[0]);
   });
 
-  test("shows the preview without any interaction", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("shows the preview without any interaction", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
 
     // No disclosure to open — the preview is part of the dialog.
     await expect(page.locator(SELECTORS.testEmailPreview)).toBeVisible();
-    await expect(
-      page.locator(SELECTORS.blockPreviewCanvas),
-    ).toBeVisible();
+    await expect(page.locator(SELECTORS.blockPreviewCanvas)).toBeVisible();
   });
 
   test("the preview renders the template's actual blocks", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     // Take a distinctive string off the canvas first, so the assertion is about
     // this template rather than any non-empty render.
-    const canvasText = await editorPage
-      .getBlocks()
-      .first()
-      .innerText();
+    const canvasText = await editorPage.getBlocks().first().innerText();
     const needle = canvasText.trim().split("\n")[0].slice(0, 24);
     expect(needle.length).toBeGreaterThan(3);
 
@@ -91,9 +87,8 @@ test.describe("Test email", () => {
   });
 
   test("switching the preview viewport narrows the frame", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -119,9 +114,8 @@ test.describe("Test email", () => {
   });
 
   test("sends to the selected recipient and confirms, then closes itself", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -138,15 +132,12 @@ test.describe("Test email", () => {
   });
 
   test("hands the provider the recipient, the content and the MJML", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
-    await page
-      .locator(SELECTORS.testEmailRecipient)
-      .selectOption(ALLOWED[1]);
+    await page.locator(SELECTORS.testEmailRecipient).selectOption(ALLOWED[1]);
     await page.locator(SELECTORS.testEmailSend).click();
     await expect(page.locator(SELECTORS.testEmailSuccess)).toBeVisible({
       timeout: FAKE_LATENCY_MS + 4000,
@@ -170,8 +161,7 @@ test.describe("Test email", () => {
     expect(payload?.allowedRecipients).toEqual(ALLOWED);
   });
 
-  test("Cancel closes without sending", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("Cancel closes without sending", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.evaluate(() => {
@@ -193,14 +183,15 @@ test.describe("Test email", () => {
     expect(payload).toBeUndefined();
   });
 
-  test("Escape closes the dialog", async ({ editorReady }) => {
-    const { editorPage } = editorReady;
+  test("Escape closes the dialog", async ({ editorPage }) => {
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
+    const dialog = page.locator(SELECTORS.testEmailDialog);
+    await expect(dialog).toBeVisible();
     await expect(page.locator(SELECTORS.testEmailRecipient)).toBeVisible();
 
-    await page.keyboard.press("Escape");
+    await dialog.press("Escape");
 
     await expect(page.locator(SELECTORS.testEmailRecipient)).toBeHidden();
   });
@@ -210,19 +201,16 @@ test.describe("Test email", () => {
    * background-color` when sent, and the band the canvas draws beside its
    * content column.
    *
-   * Showcase templates now pass `init({ layout })`. The editing canvas stays
-   * the authored template (settings "background" still paints `.tpl-canvas-bg`).
-   * Test-email preview composes the shell, so the stage is the layout mat, not
-   * the author's colour. That split is the overlay contract.
+   * Every showcase template ships `#ffffff`, so this drives the settings panel
+   * rather than picking a template: that is also the exact path in the report
+   * (#598), where the preview painted the editor's neutral surface no matter
+   * what the template said.
    */
   test("the preview renders the template's background colour", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
-    const AUTHOR_BACKGROUND = "rgb(28, 37, 255)";
-    // CARD_LAYOUT mat in templates.ts (`#f3f4f6`).
-    const LAYOUT_MAT = "rgb(243, 244, 246)";
+    const BACKGROUND = "rgb(28, 37, 255)";
 
     await editorPage.openSettingsTab();
     const hex = page
@@ -231,13 +219,14 @@ test.describe("Test email", () => {
     await hex.fill("#1c25ff");
     await hex.press("Enter");
 
+    // The canvas is the reference: whatever it paints, the dialog must match.
     await expect
       .poll(async () =>
         page
           .locator(".tpl-canvas-bg")
           .evaluate((el) => getComputedStyle(el).backgroundColor),
       )
-      .toBe(AUTHOR_BACKGROUND);
+      .toBe(BACKGROUND);
 
     await page.locator(SELECTORS.testEmailTrigger).click();
 
@@ -247,7 +236,7 @@ test.describe("Test email", () => {
       .poll(async () =>
         stage.evaluate((el) => getComputedStyle(el).backgroundColor),
       )
-      .toBe(LAYOUT_MAT);
+      .toBe(BACKGROUND);
 
     // The column stays transparent, which is what lets a block with no fill of
     // its own reveal the body colour rather than covering it.
@@ -265,9 +254,8 @@ test.describe("Test email", () => {
    * width — which is every showcase template.
    */
   test("leaves room for the background band beside the email", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();
@@ -288,9 +276,8 @@ test.describe("Test email", () => {
   });
 
   test("reopening starts clean rather than showing the last result", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.locator(SELECTORS.testEmailTrigger).click();

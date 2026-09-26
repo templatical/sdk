@@ -54,7 +54,7 @@ const editor = await init({
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
 
-## Restricting the built-in fonts
+## Restricting the built-in fonts {#restricting-the-built-in-fonts}
 
 By default the picker offers all seven built-in web-safe fonts (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) alongside your `customFonts`. Use `builtIns` to narrow that list — useful when you embed the editor as a white-label / brand-kit tool and want authors to stay on approved typefaces.
 
@@ -69,6 +69,8 @@ const fonts: FontsConfig = {
   ],
 };
 ```
+
+[Open in playground](https://play.templatical.com/scenes/fonts)
 
 - `true` or omitted — all seven built-ins are offered (the default).
 - `false` — no built-ins; the picker lists only your `customFonts`.

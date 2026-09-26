@@ -163,3 +163,8 @@ Even fully resolved it is not a byte-for-byte preview of the delivered email: th
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
 
+## In the playground
+
+The **Test email** setup adds the header's Test button, with a recipient picker and a simulated send.
+
+[Open in playground](https://play.templatical.com/scenes/test-email)

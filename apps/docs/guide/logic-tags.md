@@ -131,3 +131,9 @@ For example, make button text conditional:
 `{% if guest.status == 'vip' %}VIP access{% else %}Sign up{% endif %}`
 
 In a plain field a tag inserts at the cursor and a pair wraps the selected text (string-wise), the same as in rich text.
+
+## In the playground
+
+The **Logic tags** setup passes `logicTags`, so a dedicated picker inserts control-flow tokens such as IF / ENDIF.
+
+[Open in playground](https://play.templatical.com/scenes/logic-tags)

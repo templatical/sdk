@@ -1,10 +1,15 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
-const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
+const fixturesDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "fixtures",
+);
 const beefreeJson = readFileSync(
   join(fixturesDir, "beefree-template.json"),
   "utf8",
@@ -34,650 +39,507 @@ const easyEmailProSource = readFileSync(
   "utf8",
 );
 
-test.describe("Template import", () => {
-  test.beforeEach(async ({ page }) => {
-    // Suppress overlays so the editor screen reaches a stable state after import.
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-  });
+const IMPORT_SCENE_IDS = [
+  "import-unlayer",
+  "import-beefree",
+  "import-stripo",
+  "import-topol",
+  "import-chamaileon",
+  "import-easy-email-pro",
+  "import-mjml",
+  "import-html",
+] as const;
 
-  test("imports a BeeFree template and renders converted blocks", async ({
+type ImportSource =
+  | "unlayer"
+  | "beefree"
+  | "html"
+  | "mjml"
+  | "topol"
+  | "stripo"
+  | "chamaileon"
+  | "easyEmailPro";
+
+const SCENE_BY_SOURCE: Record<ImportSource, string> = {
+  unlayer: "import-unlayer",
+  beefree: "import-beefree",
+  html: "import-html",
+  mjml: "import-mjml",
+  topol: "import-topol",
+  stripo: "import-stripo",
+  chamaileon: "import-chamaileon",
+  easyEmailPro: "import-easy-email-pro",
+};
+
+const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
+  unlayer: SELECTORS.importTextareaUnlayer,
+  beefree: SELECTORS.importTextareaBeefree,
+  html: SELECTORS.importTextareaHtml,
+  mjml: SELECTORS.importTextareaMjml,
+  topol: SELECTORS.importTextareaTopol,
+  stripo: SELECTORS.importTextareaStripo,
+  chamaileon: SELECTORS.importTextareaChamaileon,
+  easyEmailPro: SELECTORS.importTextareaEasyEmailPro,
+};
+
+async function openImportScene(
+  scenePage: ScenePage,
+  page: import("@playwright/test").Page,
+  source: ImportSource,
+) {
+  await scenePage.goto(SCENE_BY_SOURCE[source]);
+  await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+  await expect(page.locator(TEXTAREA_BY_SOURCE[source])).toBeVisible();
+  await expect(page.locator(SELECTORS.importConfirm)).toBeEnabled();
+}
+
+async function importOnScene(
+  scenePage: ScenePage,
+  page: import("@playwright/test").Page,
+  source: ImportSource,
+  content: string,
+) {
+  await openImportScene(scenePage, page, source);
+  await page.locator(TEXTAREA_BY_SOURCE[source]).fill(content);
+  await page.locator(SELECTORS.importConfirm).click();
+}
+
+test.describe("Template import", () => {
+  test("catalog lists one scene per importer", async ({
     chooserPage,
-    editorPage,
     page,
   }) => {
     await chooserPage.goto();
-    await chooserPage.importTemplate("beefree", beefreeJson);
+    const links = page.locator("[data-testid^='scene-link-import-']");
+    await expect(links).toHaveCount(8);
+    const ids = await links.evaluateAll((els) =>
+      els.map((el) => el.getAttribute("data-testid")),
+    );
+    expect(ids).toEqual(IMPORT_SCENE_IDS.map((id) => `scene-link-${id}`));
+  });
 
-    // Modal closes
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
-    // Editor mounts with imported content
+  test("imports a BeeFree template and renders converted blocks", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    await importOnScene(scenePage, page, "beefree", beefreeJson);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from BeeFree");
-
-    const paragraphBlock = page.locator(blockByType("paragraph")).first();
-    await expect(paragraphBlock).toContainText("BeeFree e2e fixture");
-
+    await expect(page.locator(blockByType("paragraph")).first()).toContainText(
+      "BeeFree e2e fixture",
+    );
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
   test("imports an Unlayer template and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("unlayer", unlayerJson);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "unlayer", unlayerJson);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from Unlayer");
-
-    const paragraphBlock = page.locator(blockByType("paragraph")).first();
-    await expect(paragraphBlock).toContainText("Unlayer e2e fixture");
-
+    await expect(page.locator(blockByType("paragraph")).first()).toContainText(
+      "Unlayer e2e fixture",
+    );
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("migration band advertises importer sources on the chooser", async ({
-    chooserPage,
-  }) => {
-    await chooserPage.goto();
-
-    const band = chooserPage.getMigrationBand();
-    await expect(band).toBeVisible();
-    const tiles = band.locator("button[data-testid^='chooser-import-']");
-    await expect(tiles).toHaveCount(8);
-    const ids = await tiles.evaluateAll((els) =>
-      els.map((el) => el.getAttribute("data-testid")),
-    );
-    expect(ids).toEqual([
-      "chooser-import-unlayer",
-      "chooser-import-beefree",
-      "chooser-import-stripo",
-      "chooser-import-topol",
-      "chooser-import-chamaileon",
-      "chooser-import-easy-email-pro",
-      "chooser-import-mjml",
-      "chooser-import-html",
-    ]);
-  });
-
-  test("BeeFree CTA opens modal with BeeFree tab selected", async ({
-    chooserPage,
+  test("paste panel leaves host chrome and the snippet reachable", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("beefree");
+    await openImportScene(scenePage, page, "unlayer");
+    const drawer = page.locator(SELECTORS.codeDrawer);
+    await page.locator(SELECTORS.toolbarCode).click();
+    await expect(drawer).toContainText("convertUnlayerTemplate");
+    // The drawer sits under the editor, so the paste panel stays in view.
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await page.locator(SELECTORS.codeDrawerClose).click();
+    await expect(drawer).toHaveCount(0);
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await page.locator(SELECTORS.backButton).click();
+    await expect(page.locator(SELECTORS.catalogScreen)).toBeVisible();
+  });
 
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "true",
+  test("cancel dismisses the paste panel without converting", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    // A valid template in the field, so converting would add blocks.
+    await openImportScene(scenePage, page, "unlayer");
+    await page.locator(TEXTAREA_BY_SOURCE.unlayer).fill(unlayerJson);
+    await page.locator(SELECTORS.importCancel).click();
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.canvasEmpty)).toBeVisible();
+    await expect(editorPage.getBlocks()).toHaveCount(0);
+  });
+
+  test("the paste panel leaves through the dialog transition", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    // Vue applies its leave classes synchronously, so recording them is
+    // exact where sampling the fade would be a race.
+    await page.locator(SELECTORS.importPanel).evaluate((panel) => {
+      const root = panel.parentElement!;
+      const seen: string[] = [];
+      (window as unknown as { __leaveClasses: string[] }).__leaveClasses = seen;
+      new MutationObserver(() => seen.push(root.className)).observe(root, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    });
+    await page.locator(SELECTORS.importCancel).click();
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+    const classes = await page.evaluate(
+      () => (window as unknown as { __leaveClasses: string[] }).__leaveClasses,
     );
-    await expect(page.locator(SELECTORS.importTabUnlayer)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    expect(classes.some((c) => c.includes("pg-modal-leave-active"))).toBe(true);
+  });
+
+  test("Escape dismisses the paste panel", async ({ scenePage, page }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+  });
+
+  test("Escape closing a dialog over the paste panel keeps the panel and its text", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    const textarea = page.locator(TEXTAREA_BY_SOURCE.unlayer);
+    await textarea.fill(unlayerJson);
+    const dialog = page.locator(SELECTORS.exportModal);
+    await page.locator(SELECTORS.exportButton).click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await expect(textarea).toHaveValue(unlayerJson);
+  });
+
+  test("Unlayer scene shows only the Unlayer textarea", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "unlayer");
+    await expect(page.locator(SELECTORS.importTextareaUnlayer)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("BeeFree scene shows only the BeeFree textarea", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "beefree");
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaUnlayer)).toHaveCount(0);
   });
 
-  test("Unlayer CTA opens modal with Unlayer tab selected", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("unlayer");
-
-    await expect(page.locator(SELECTORS.importTabUnlayer)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-    await expect(page.locator(SELECTORS.importTextareaUnlayer)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
-  });
-
-  test("switching to Unlayer tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-
-    await chooserPage.selectImportSource("unlayer");
-    await expect(page.locator(SELECTORS.importTextareaUnlayer)).toBeVisible();
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-    await expect(page.locator(SELECTORS.importTextareaUnlayer)).toHaveValue("");
-
-    // Flip back — BeeFree input should still be there.
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
   test("shows an error when the BeeFree JSON is invalid", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-    await chooserPage.selectImportSource("beefree");
-    await chooserPage.pasteImportJson("beefree", "{ not json");
-    await chooserPage.confirmImport();
-
-    const error = chooserPage.getImportError();
+    await openImportScene(scenePage, page, "beefree");
+    await page.locator(SELECTORS.importTextareaBeefree).fill("{ not json");
+    await page.locator(SELECTORS.importConfirm).click();
+    const error = page.locator(SELECTORS.importError);
     await expect(error).toBeVisible();
-    const errorText = await error.innerText();
-    expect(errorText.length).toBeGreaterThan(0);
-    // Modal stays open
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    expect((await error.innerText()).length).toBeGreaterThan(0);
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the Unlayer JSON is invalid", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-    await chooserPage.selectImportSource("unlayer");
-    await chooserPage.pasteImportJson("unlayer", '{"body":{}}');
-    await chooserPage.confirmImport();
-
-    const error = chooserPage.getImportError();
+    await openImportScene(scenePage, page, "unlayer");
+    await page.locator(SELECTORS.importTextareaUnlayer).fill('{"body":{}}');
+    await page.locator(SELECTORS.importConfirm).click();
+    const error = page.locator(SELECTORS.importError);
     await expect(error).toBeVisible();
     await expect(error).toContainText(/body|rows/i);
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
-  test("shows an empty-input error and stays on the chooser when nothing is pasted", async ({
-    chooserPage,
+  test("shows an empty-input error and keeps the paste panel open", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "unlayer");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await expect(page.locator(blockByType("title"))).toHaveCount(0);
   });
 
   test("imports an HTML email and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("html", htmlSource);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "html", htmlSource);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Welcome aboard");
-
-    const paragraphBlock = page.locator(blockByType("paragraph")).first();
-    await expect(paragraphBlock).toContainText("Thanks for signing up");
-
+    await expect(page.locator(blockByType("paragraph")).first()).toContainText(
+      "Thanks for signing up",
+    );
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("HTML CTA opens modal with HTML tab selected", async ({
-    chooserPage,
+  test("HTML scene shows only the HTML textarea", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("html");
-
-    await expect(page.locator(SELECTORS.importTabHtml)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    await openImportScene(scenePage, page, "html");
     await expect(page.locator(SELECTORS.importTextareaHtml)).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
-    await expect(page.locator(SELECTORS.importTextareaUnlayer)).toHaveCount(0);
   });
 
-  test("switching to HTML tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
+  test("shows an empty-input error on the HTML scene", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-
-    await chooserPage.selectImportSource("html");
-    await expect(page.locator(SELECTORS.importTextareaHtml)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaHtml)).toHaveValue("");
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
-  test("shows an empty-input error on HTML tab when nothing is pasted", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("html");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "html");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the HTML input is whitespace only", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("html");
-    await chooserPage.pasteImportJson("html", "    ");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await openImportScene(scenePage, page, "html");
+    await page.locator(SELECTORS.importTextareaHtml).fill("    ");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("imports an MJML template and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("mjml", mjmlSource);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "mjml", mjmlSource);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from MJML");
-
-    const paragraphBlock = page.locator(blockByType("paragraph")).first();
-    await expect(paragraphBlock).toContainText("MJML e2e fixture");
-
+    await expect(page.locator(blockByType("paragraph")).first()).toContainText(
+      "MJML e2e fixture",
+    );
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("MJML CTA opens modal with MJML tab selected", async ({
-    chooserPage,
+  test("MJML scene shows only the MJML textarea", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("mjml");
-
-    await expect(page.locator(SELECTORS.importTabMjml)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    await openImportScene(scenePage, page, "mjml");
     await expect(page.locator(SELECTORS.importTextareaMjml)).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
   });
 
-  test("switching to MJML tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
+  test("shows an empty-input error on the MJML scene", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-
-    await chooserPage.selectImportSource("mjml");
-    await expect(page.locator(SELECTORS.importTextareaMjml)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaMjml)).toHaveValue("");
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
-  test("shows an empty-input error on MJML tab when nothing is pasted", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("mjml");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "mjml");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the MJML input is whitespace only", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("mjml");
-    await chooserPage.pasteImportJson("mjml", "    ");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await openImportScene(scenePage, page, "mjml");
+    await page.locator(SELECTORS.importTextareaMjml).fill("    ");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("imports a Topol design and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("topol", topolSource);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "topol", topolSource);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from Topol");
-
-    const paragraphBlock = page.locator(blockByType("paragraph")).first();
-    await expect(paragraphBlock).toContainText("Topol e2e fixture");
-
+    await expect(page.locator(blockByType("paragraph")).first()).toContainText(
+      "Topol e2e fixture",
+    );
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("Topol CTA opens modal with Topol tab selected", async ({
-    chooserPage,
+  test("Topol scene shows only the Topol textarea", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("topol");
-
-    await expect(page.locator(SELECTORS.importTabTopol)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    await openImportScene(scenePage, page, "topol");
     await expect(page.locator(SELECTORS.importTextareaTopol)).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
   });
 
-  test("switching to Topol tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
+  test("shows an empty-input error on the Topol scene", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-
-    await chooserPage.selectImportSource("topol");
-    await expect(page.locator(SELECTORS.importTextareaTopol)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaTopol)).toHaveValue("");
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
-  test("shows an empty-input error on Topol tab when nothing is pasted", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("topol");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "topol");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the Topol input is whitespace only", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("topol");
-    await chooserPage.pasteImportJson("topol", "    ");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await openImportScene(scenePage, page, "topol");
+    await page.locator(SELECTORS.importTextareaTopol).fill("    ");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("imports a Chamaileon document and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("chamaileon", chamaileonSource);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "chamaileon", chamaileonSource);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from Chamaileon");
-
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("Chamaileon CTA opens modal with Chamaileon tab selected", async ({
-    chooserPage,
+  test("Chamaileon scene shows only the Chamaileon textarea", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("chamaileon");
-
-    await expect(page.locator(SELECTORS.importTabChamaileon)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toBeVisible();
+    await openImportScene(scenePage, page, "chamaileon");
+    await expect(
+      page.locator(SELECTORS.importTextareaChamaileon),
+    ).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
   });
 
-  test("switching to Chamaileon tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
+  test("shows an empty-input error on the Chamaileon scene", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-
-    await chooserPage.selectImportSource("chamaileon");
-    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaChamaileon)).toHaveValue(
-      "",
-    );
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
-  test("shows an empty-input error on Chamaileon tab when nothing is pasted", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("chamaileon");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "chamaileon");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the Chamaileon input is whitespace only", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("chamaileon");
-    await chooserPage.pasteImportJson("chamaileon", "    ");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await openImportScene(scenePage, page, "chamaileon");
+    await page.locator(SELECTORS.importTextareaChamaileon).fill("    ");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("imports an Easy Email Pro page and renders converted blocks", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.importTemplate("easyEmailPro", easyEmailProSource);
-
-    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
-
+    await importOnScene(scenePage, page, "easyEmailPro", easyEmailProSource);
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
     await editorPage.waitForReady();
-    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
 
     const titleBlock = page.locator(blockByType("title")).first();
     await expect(titleBlock).toBeVisible();
     await expect(titleBlock).toContainText("Hello from Easy Email Pro");
-
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("Easy Email Pro CTA opens modal with Easy Email Pro tab selected", async ({
-    chooserPage,
+  test("Easy Email Pro scene shows only the Easy Email Pro textarea", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("easyEmailPro");
-
-    await expect(page.locator(SELECTORS.importTabEasyEmailPro)).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toBeVisible();
+    await openImportScene(scenePage, page, "easyEmailPro");
+    await expect(
+      page.locator(SELECTORS.importTextareaEasyEmailPro),
+    ).toBeVisible();
     await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
   });
 
-  test("switching to Easy Email Pro tab swaps the textarea and preserves BeeFree input", async ({
-    chooserPage,
+  test("shows an empty-input error on the Easy Email Pro scene", async ({
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal();
-
-    const beefreeText = '{"page":{"rows":[]}}';
-    await chooserPage.pasteImportJson("beefree", beefreeText);
-
-    await chooserPage.selectImportSource("easyEmailPro");
-    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toBeVisible();
-    await expect(page.locator(SELECTORS.importTextareaEasyEmailPro)).toHaveValue(
-      "",
-    );
-    await expect(
-      page.locator(SELECTORS.importTextareaBeefree),
-    ).toHaveCount(0);
-
-    await chooserPage.selectImportSource("beefree");
-    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
-      beefreeText,
-    );
-  });
-
-  test("shows an empty-input error on Easy Email Pro tab when nothing is pasted", async ({
-    chooserPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("easyEmailPro");
-    await chooserPage.confirmImport();
-
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+    await openImportScene(scenePage, page, "easyEmailPro");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
   test("shows an error when the Easy Email Pro input is whitespace only", async ({
-    chooserPage,
+    scenePage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.openImportModal("easyEmailPro");
-    await chooserPage.pasteImportJson("easyEmailPro", "    ");
-    await chooserPage.confirmImport();
+    await openImportScene(scenePage, page, "easyEmailPro");
+    await page.locator(SELECTORS.importTextareaEasyEmailPro).fill("    ");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+  });
 
-    await expect(chooserPage.getImportError()).toBeVisible();
-    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+  test("Stripo scene shows only the Stripo textarea", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "stripo");
+    await expect(page.locator(SELECTORS.importTextareaStripo)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("shows an empty-input error on the Stripo scene", async ({
+    scenePage,
+    page,
+  }) => {
+    await openImportScene(scenePage, page, "stripo");
+    await page.locator(SELECTORS.importConfirm).click();
+    await expect(page.locator(SELECTORS.importError)).toBeVisible();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 });

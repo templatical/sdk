@@ -1,0 +1,50 @@
+{
+  "example-launchpad-launch": {
+    "src": "/examples/proofs/example-launchpad-launch.webp",
+    "width": 600,
+    "height": 1400,
+    "contentHash": "607a424ba853f1a9"
+  },
+  "example-launchpad-reset": {
+    "src": "/examples/proofs/example-launchpad-reset.webp",
+    "width": 600,
+    "height": 693,
+    "contentHash": "5e74228c182e5a58"
+  },
+  "example-flowwork-welcome": {
+    "src": "/examples/proofs/example-flowwork-welcome.webp",
+    "width": 600,
+    "height": 759,
+    "contentHash": "724ced53a05506c8"
+  },
+  "example-flowwork-newsletter": {
+    "src": "/examples/proofs/example-flowwork-newsletter.webp",
+    "width": 600,
+    "height": 890,
+    "contentHash": "99bc06ca311f0641"
+  },
+  "example-sable-order": {
+    "src": "/examples/proofs/example-sable-order.webp",
+    "width": 600,
+    "height": 1131,
+    "contentHash": "487def3d9de5add0"
+  },
+  "example-sable-friday": {
+    "src": "/examples/proofs/example-sable-friday.webp",
+    "width": 600,
+    "height": 1046,
+    "contentHash": "3013303167c43bd1"
+  },
+  "example-northstage-event": {
+    "src": "/examples/proofs/example-northstage-event.webp",
+    "width": 600,
+    "height": 1235,
+    "contentHash": "381dc7d8987e1c80"
+  },
+  "example-northstage-ar": {
+    "src": "/examples/proofs/example-northstage-ar.webp",
+    "width": 600,
+    "height": 505,
+    "contentHash": "47f16fa14c0e7789"
+  }
+}

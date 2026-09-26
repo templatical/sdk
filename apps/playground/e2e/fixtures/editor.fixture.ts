@@ -1,6 +1,7 @@
 import { test as base } from "@playwright/test";
 import { ChooserPage } from "../pages/chooser.page";
 import { EditorPage } from "../pages/editor.page";
+import { ScenePage } from "../pages/scene.page";
 
 type EditorFixtures = {
   /**
@@ -11,6 +12,7 @@ type EditorFixtures = {
   shadowDom: boolean;
   chooserPage: ChooserPage;
   editorPage: EditorPage;
+  scenePage: ScenePage;
   editorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
   blankEditorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
 };
@@ -25,16 +27,13 @@ export const test = base.extend<EditorFixtures>({
   editorPage: async ({ page }, use) => {
     await use(new EditorPage(page));
   },
+  scenePage: async ({ page, shadowDom }, use) => {
+    await use(new ScenePage(page, { shadowDom }));
+  },
   editorReady: async ({ page, shadowDom }, use) => {
     const chooserPage = new ChooserPage(page, { shadowDom });
     const editorPage = new EditorPage(page);
-    // Set localStorage BEFORE any page JS runs to prevent overlays
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await new ScenePage(page, { shadowDom }).goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await use({ chooserPage, editorPage });
@@ -42,12 +41,7 @@ export const test = base.extend<EditorFixtures>({
   blankEditorReady: async ({ page, shadowDom }, use) => {
     const chooserPage = new ChooserPage(page, { shadowDom });
     const editorPage = new EditorPage(page);
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-    });
-    await chooserPage.goto();
-    await chooserPage.selectBlankTemplate();
+    await new ScenePage(page, { shadowDom }).goto("minimum");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await use({ chooserPage, editorPage });

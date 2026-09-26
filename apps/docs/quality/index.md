@@ -90,7 +90,7 @@ The package is an **optional peer** of `@templatical/editor`. Install it to turn
 If you load Templatical via CDN, there's nothing to install. The editor's CDN bundle ships `@templatical/quality` as a separate code-split chunk that lazy-loads automatically when linting is enabled.
 :::
 
-## Wire into the editor
+## Wire into the editor {#wire-into-the-editor}
 
 Pass `lint` to `init()` or `initCloud()`:
 
@@ -118,6 +118,8 @@ const editor = init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/issues)
 
 The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
 

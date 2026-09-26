@@ -1,10 +1,11 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * The BYO comments provider in the OSS editor, backed by the playground's
- * localStorage store (`commentsProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (`commentsProviderFor` in `apps/playground/src/host/providers.ts`).
  *
  * What the playground can express bounds this spec. Its provider has **no
  * `subscribe`** — one browser tab with no backend has nothing to push — which is
@@ -15,8 +16,7 @@ import { SELECTORS } from "../helpers/selectors";
  * visitors.
  */
 
-// `selectFirstTemplate()` opens Product Launch, so that's the conversation.
-const COMMENTS_KEY = "templatical:comments:product-launch";
+const COMMENTS_KEY = "templatical:comments:comments";
 
 type StoredComment = {
   id: string;
@@ -33,43 +33,36 @@ async function readComments(page: Page): Promise<StoredComment[]> {
 }
 
 /**
- * Storage flags go through `addInitScript` because the provider is built during
- * the editor's mount — writing them after `goto()` races the initial load.
+ * Seeds go through `addInitScript` because the provider is built during the
+ * editor's mount — writing them after `goto()` races the initial load.
  *
- * `comments` is seeded the same way, so a read-only run has something to read.
+ * `?readonly=1` is a scene query, not a storage flag.
  */
 async function openEditor(options: {
   page: Page;
-  chooserPage: {
-    goto: () => Promise<void>;
-    selectFirstTemplate: () => Promise<void>;
-  };
+  shadowDom: boolean;
   editorPage: {
     waitForReady: () => Promise<void>;
     dismissOverlays: () => Promise<void>;
   };
-  flags?: Record<string, string>;
+  readonly?: boolean;
   seed?: StoredComment[];
 }): Promise<void> {
-  const { page, chooserPage, editorPage } = options;
+  const { page, editorPage } = options;
   await page.addInitScript(
-    ({ entries, key, seed }) => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    ({ key, seed }) => {
       localStorage.removeItem(key as string);
-      for (const [flag, value] of entries as [string, string][]) {
-        localStorage.setItem(flag, value);
-      }
       if (seed) localStorage.setItem(key as string, JSON.stringify(seed));
     },
     {
-      entries: Object.entries(options.flags ?? {}),
       key: COMMENTS_KEY,
       seed: options.seed ?? null,
     },
   );
-  await chooserPage.goto();
-  await chooserPage.selectFirstTemplate();
+  await new ScenePage(page, { shadowDom: options.shadowDom }).goto(
+    "comments",
+    options.readonly ? { readonly: "1" } : {},
+  );
   await editorPage.waitForReady();
   await editorPage.dismissOverlays();
 }
@@ -94,10 +87,10 @@ function seededComment(
 test.describe("comments provider", () => {
   test("the trigger renders once a template is attached", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
-    await openEditor({ page, chooserPage, editorPage });
+    await openEditor({ page, shadowDom, editorPage });
 
     // The playground stores the chosen template on mount, so a template exists by
     // the time the editor is ready.
@@ -106,10 +99,10 @@ test.describe("comments provider", () => {
 
   test("opens the panel, writes a comment and persists it", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
-    await openEditor({ page, chooserPage, editorPage });
+    await openEditor({ page, shadowDom, editorPage });
 
     await page.locator(SELECTORS.commentsTrigger).click();
     await expect(page.locator(SELECTORS.commentsSidebar)).toBeVisible();
@@ -126,14 +119,14 @@ test.describe("comments provider", () => {
 
   test("shifts the properties panel out from under itself", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
     // Both sit at `right-0`. Without the shift the comments panel covers the
     // properties panel and swallows every click meant for it — which is how this
     // was found: the composer's Send button was "visible, enabled and stable" and
     // un-clickable, because `RightSidebar` intercepted the pointer.
-    await openEditor({ page, chooserPage, editorPage });
+    await openEditor({ page, shadowDom, editorPage });
 
     const properties = page.locator(".tpl-right-sidebar");
     const rightEdge = async () => {
@@ -155,12 +148,12 @@ test.describe("comments provider", () => {
 
   test("the unresolved count reaches the trigger", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
     await openEditor({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
       seed: [seededComment("c-1"), seededComment("c-2")],
     });
@@ -187,12 +180,12 @@ test.describe("comments provider", () => {
 
   test("resolving a thread persists and drops it from the default filter", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
     await openEditor({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
       seed: [seededComment("c-1")],
     });
@@ -214,12 +207,12 @@ test.describe("comments provider", () => {
 
   test("deleting a thread removes it from the store", async ({
     page,
-    chooserPage,
+    shadowDom,
     editorPage,
   }) => {
     await openEditor({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
       seed: [seededComment("c-1"), seededComment("c-2")],
     });
@@ -246,18 +239,18 @@ test.describe("comments provider", () => {
   });
 
   test.describe("read-only review", () => {
-    // `tpl-playground-comments-readonly` makes the demo provider withhold all four
-    // mutations by passing `false` — the read-only tier of the contract.
+    // `?readonly=1` makes the demo provider withhold all four mutations by
+    // passing `false` — the read-only tier of the contract.
     test("renders the threads with no way to change them", async ({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
     }) => {
       await openEditor({
         page,
-        chooserPage,
+        shadowDom,
         editorPage,
-        flags: { "tpl-playground-comments-readonly": "true" },
+        readonly: true,
         seed: [seededComment("c-1", { body: "read me" })],
       });
 
@@ -281,14 +274,14 @@ test.describe("comments provider", () => {
 
     test("still offers the filters, so the review is navigable", async ({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
     }) => {
       await openEditor({
         page,
-        chooserPage,
+        shadowDom,
         editorPage,
-        flags: { "tpl-playground-comments-readonly": "true" },
+        readonly: true,
         seed: [
           seededComment("c-1", { body: "open one" }),
           seededComment("c-2", {

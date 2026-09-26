@@ -92,7 +92,7 @@ Setzen Sie die Variablen auf dem Container, den Sie an `init()` übergeben (oder
 
 Siehe den [Theming-Leitfaden](./theming) für die vollständige Token-Liste und die Dark-Mode-Behandlung.
 
-## Opt-out: `shadowDom: false`
+## Opt-out: `shadowDom: false` {#opt-out-shadowdom-false}
 
 Wann Sie sich abmelden würden:
 
@@ -106,6 +106,8 @@ const editor = await init({
   shadowDom: false,
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/shadow-dom-off)
 
 Was Sie verlieren:
 

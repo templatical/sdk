@@ -40,7 +40,7 @@ Sie können es auch von einem CDN laden:
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertMjmlTemplate } from '@templatical/import-mjml';
@@ -61,6 +61,8 @@ const editor = await init({
 // Konvertierungsbericht auf Auffälligkeiten prüfen
 console.log(report);
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-mjml)
 
 `convertMjmlTemplate` arbeitet synchron und gibt ein `ImportResult` zurück mit:
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor

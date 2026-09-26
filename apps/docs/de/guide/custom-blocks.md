@@ -598,3 +598,9 @@ dataSource: {
   },
 },
 ```
+
+## Im Playground
+
+Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integrierten Blöcken in der Palette erscheint.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/custom-blocks)

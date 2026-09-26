@@ -2,10 +2,6 @@ import type {
   TemplateContent,
   CustomBlockDefinition,
   SavedBlock,
-  ColorsConfig,
-  FontsConfig,
-  BlockDefaults,
-  TemplateDefaults,
 } from "@templatical/types";
 import {
   createTitleBlock,
@@ -20,9 +16,6 @@ import {
   createSpacerBlock,
   createTableBlock,
   createHtmlBlock,
-  createDefaultTemplateContent,
-  createSlotBlock,
-  createWrapperBlock,
   generateId,
 } from "@templatical/types";
 
@@ -100,7 +93,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       type: "text",
       key: "eventName",
       label: "Event Name",
-      default: "My Event",
+      default: "Northstage Summit",
       required: true,
     },
     {
@@ -123,7 +116,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       type: "text",
       key: "location",
       label: "Location",
-      default: "The Moscone Center, San Francisco",
+      default: "Harbor Hall, Portland",
     },
     { type: "text", key: "mapUrl", label: "Map Link (optional)", default: "" },
     {
@@ -401,13 +394,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-1",
             label: "Why Most Design Systems Fail",
             description: "By Elena Martinez \u00b7 8 min read",
-            thumbnail: "https://placehold.co/80x60/fef2f2/dc2626?text=DS",
+            thumbnail: "/examples/flowwork/article-design-systems.png",
             data: {
               title: "Why Most Design Systems Fail (And How to Fix Yours)",
               excerpt:
                 "The problem is not the tokens or the components \u2014 it is adoption. After working with 50+ teams, here are the three patterns that separate the design systems people actually use from the ones that collect dust.",
-              imageUrl:
-                "https://placehold.co/560x280/fef2f2/dc2626?text=Design+Systems",
+              imageUrl: "/examples/flowwork/article-design-systems.png",
               author: "Elena Martinez",
               readTime: "8 min read",
               url: "https://example.com/blog/design-systems",
@@ -417,13 +409,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-2",
             label: "Ship Fast, Fix Later",
             description: "By James Park \u00b7 5 min read",
-            thumbnail: "https://placehold.co/80x60/eff6ff/2563eb?text=SF",
+            thumbnail: "/examples/flowwork/article-ship-fast.png",
             data: {
               title: "Ship Fast, Fix Later: When Speed Beats Quality",
               excerpt:
                 'Every startup says "move fast and break things" but few actually know when to slow down. Here is a practical framework for deciding when shipping speed matters more than polish.',
-              imageUrl:
-                "https://placehold.co/560x280/eff6ff/2563eb?text=Ship+Fast",
+              imageUrl: "/examples/flowwork/article-ship-fast.png",
               author: "James Park",
               readTime: "5 min read",
               url: "https://example.com/blog/ship-fast",
@@ -433,13 +424,12 @@ export const featuredArticleBlock: CustomBlockDefinition = {
             id: "article-3",
             label: "Accessible Color Palettes",
             description: "By Priya Sharma \u00b7 12 min read",
-            thumbnail: "https://placehold.co/80x60/ecfdf5/059669?text=A11y",
+            thumbnail: "/examples/flowwork/article-color-a11y.png",
             data: {
               title: "A Practical Guide to Accessible Color Palettes",
               excerpt:
                 "WCAG AA compliance is not optional \u2014 it is a baseline. This guide walks through OKLch-based palette generation that guarantees contrast ratios while keeping your brand colors intact.",
-              imageUrl:
-                "https://placehold.co/560x280/ecfdf5/059669?text=Color+A11y",
+              imageUrl: "/examples/flowwork/article-color-a11y.png",
               author: "Priya Sharma",
               readTime: "12 min read",
               url: "https://example.com/blog/accessible-colors",
@@ -539,30 +529,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-bestsellers",
             label: "Best Sellers",
             description: "3 items \u00b7 Electronics",
-            thumbnail: "https://placehold.co/80x60/f3f4f6/6b7280?text=Best",
+            thumbnail: "/examples/sable/headphones.png",
             data: {
               products: [
                 {
                   name: "Wireless Pro Max",
                   price: "$99",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Headphones",
+                  image: "/examples/sable/headphones.png",
                   badge: "-50%",
                   url: "https://example.com/headphones",
                 },
                 {
                   name: "Boom Speaker",
                   price: "$59",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Speaker",
+                  image: "/examples/sable/speaker.png",
                   badge: "-34%",
                   url: "https://example.com/speaker",
                 },
                 {
                   name: "Chrono Smart",
                   price: "$249",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Watch",
+                  image: "/examples/sable/watch.png",
                   badge: "NEW",
                   url: "https://example.com/watch",
                 },
@@ -573,29 +560,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-new-arrivals",
             label: "New Arrivals",
             description: "3 items \u00b7 Fresh drops",
-            thumbnail: "https://placehold.co/80x60/eff6ff/2563eb?text=New",
+            thumbnail: "/examples/sable/earbuds.png",
             data: {
               products: [
                 {
-                  name: "AirPods Ultra",
+                  name: "Ceramic Buds",
                   price: "$179",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=AirPods",
+                  image: "/examples/sable/earbuds.png",
                   badge: "NEW",
                   url: "https://example.com/airpods",
                 },
                 {
                   name: "Smart Ring",
                   price: "$299",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Ring",
+                  image: "/examples/sable/ring.png",
                   badge: "NEW",
                   url: "https://example.com/ring",
                 },
                 {
                   name: "Nano Charger",
                   price: "$39",
-                  image:
-                    "https://placehold.co/200x160/f3f4f6/6b7280?text=Charger",
+                  image: "/examples/sable/charger.png",
                   badge: "",
                   url: "https://example.com/charger",
                 },
@@ -606,27 +591,27 @@ export const productShowcaseBlock: CustomBlockDefinition = {
             id: "collection-clearance",
             label: "Clearance Sale",
             description: "3 items \u00b7 Up to 60% off",
-            thumbnail: "https://placehold.co/80x60/fef2f2/dc2626?text=Sale",
+            thumbnail: "/examples/sable/buds.png",
             data: {
               products: [
                 {
                   name: "Classic Buds",
                   price: "$29",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Buds",
+                  image: "/examples/sable/buds.png",
                   badge: "-60%",
                   url: "https://example.com/buds",
                 },
                 {
                   name: "Travel Case",
                   price: "$15",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Case",
+                  image: "/examples/sable/case.png",
                   badge: "-40%",
                   url: "https://example.com/case",
                 },
                 {
                   name: "USB Hub Pro",
                   price: "$19",
-                  image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Hub",
+                  image: "/examples/sable/hub.png",
                   badge: "-55%",
                   url: "https://example.com/hub",
                 },
@@ -809,7 +794,7 @@ export function createProductLaunchTemplate(): TemplateContent {
         styles: white(15, 15, 15, 15),
       }),
       createImageBlock({
-        src: "https://placehold.co/560x300/f0fdfa/0d9488?text=Dashboard+Preview",
+        src: "/examples/launchpad/dashboard.png",
         alt: "Launchpad v2.0 dashboard",
         width: "full",
         align: "center",
@@ -873,7 +858,7 @@ export function createProductLaunchTemplate(): TemplateContent {
             "Launchpad v2 is the upgrade we didn\u2019t know we needed. Our team onboarded in minutes.",
           authorName: "Maria Santos",
           authorTitle: "VP of Engineering, NovaTech",
-          avatarUrl: "https://placehold.co/96x96/0d9488/ffffff?text=MS",
+          avatarUrl: "/examples/launchpad/avatar-maria.png",
         },
         styles: white(16, 24, 16, 24),
       },
@@ -992,11 +977,18 @@ export function createNewsletterTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
+        content: "<p>\u2726 flowwork</p>",
+        level: 3,
+        color: "#2563eb",
+        textAlign: "center",
+        styles: white(32, 20, 4, 20),
+      }),
+      createTitleBlock({
         content: "<p>The Weekly Brief</p>",
         level: 3,
         color: "#111827",
         textAlign: "center",
-        styles: white(32, 20, 4, 20),
+        styles: white(8, 20, 4, 20),
       }),
       createParagraphBlock({
         content:
@@ -1019,8 +1011,7 @@ export function createNewsletterTemplate(): TemplateContent {
           title: "Why Most Design Systems Fail (And How to Fix Yours)",
           excerpt:
             "The problem is not the tokens or the components \u2014 it is adoption. After working with 50+ teams, here are the three patterns that separate the design systems people actually use from the ones that collect dust.",
-          imageUrl:
-            "https://placehold.co/560x280/fef2f2/dc2626?text=Design+Systems",
+          imageUrl: "/examples/flowwork/article-design-systems.png",
           author: "Elena Martinez",
           readTime: "8 min read",
           url: "https://example.com/blog/design-systems",
@@ -1060,7 +1051,7 @@ export function createNewsletterTemplate(): TemplateContent {
       // Footer
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Flowwork Inc. \u00b7 You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></span></p>',
         styles: white(20, 24, 32, 24),
       }),
     ],
@@ -1235,9 +1226,9 @@ export function createOrderConfirmationTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25cf shopfront</p>",
+        content: "<p>SABLE</p>",
         level: 3,
-        color: "#047857",
+        color: "#9a3412",
         textAlign: "center",
         styles: white(28, 20, 16, 20),
       }),
@@ -1258,8 +1249,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Logic Merge Tag: shipping method message ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 14px; color: #059669"><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#ecfdf5" },
+          '<p style="text-align: center"><span style="font-size: 14px; color: #9a3412"><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
       }),
 
       createDividerBlock({
@@ -1291,7 +1282,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "Wireless Headphones" },
+              { id: generateId(), content: "Wireless Pro Max" },
               { id: generateId(), content: "1" },
               { id: generateId(), content: "$89.00" },
             ],
@@ -1299,7 +1290,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "USB-C Cable (2m)" },
+              { id: generateId(), content: "Ceramic Buds" },
               { id: generateId(), content: "2" },
               { id: generateId(), content: "$24.00" },
             ],
@@ -1307,7 +1298,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           {
             id: generateId(),
             cells: [
-              { id: generateId(), content: "Phone Case" },
+              { id: generateId(), content: "Travel Case" },
               { id: generateId(), content: "1" },
               { id: generateId(), content: "$19.00" },
             ],
@@ -1330,7 +1321,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<p><span style="font-size: 13px; color: #4b5563"><strong>Shipping Address</strong></span></p><p><span style="font-size: 13px; color: #4b5563"><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>123 Main St, Apt 4B<br/>San Francisco, CA 94105</span></p>',
+                '<p><span style="font-size: 13px; color: #4b5563"><strong>Shipping Address</strong></span></p><p><span style="font-size: 13px; color: #4b5563"><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>210 Stone Row, Apt 4B<br/>Portland, OR 97209</span></p>',
               styles: pad(16, 8, 16, 0),
             }),
           ],
@@ -1379,8 +1370,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Logic Merge Tag: free shipping unlocked ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #059669"><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f0fdf4" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9a3412"><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
       }),
 
       createDividerBlock({
@@ -1400,7 +1391,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           trackingNumber: "7489 2034 8561",
           estimatedDelivery: "{{estimated_delivery}}",
           trackingUrl: "{{tracking_url}}",
-          accentColor: "#059669",
+          accentColor: "#9a3412",
         },
         styles: white(16, 24, 24, 24),
       },
@@ -1408,8 +1399,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Display Condition: VIP loyalty offer ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #7c3aed">\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f5f3ff" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9a3412">\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#faf8f5" },
         displayCondition: {
           label: "VIP Partners",
           before: "{% if vip_partner %}",
@@ -1427,7 +1418,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Shopfront \u00b7 456 Commerce Ave, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Sable \u00b7 210 Stone Row, Portland, OR 97209<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(16, 20, 32, 20),
       }),
     ],
@@ -1445,12 +1436,13 @@ export function createEventInvitationTemplate(): TemplateContent {
       textColor: "#1a1a1a",
       linkUnderline: true,
       fontFamily: "Arial",
-      preheaderText: "You are invited — join us for Config 2026 on April 15.",
+      preheaderText:
+        "You are invited \u2014 join us for Northstage Summit on April 15.",
       locale: "en",
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25c6 config 2026</p>",
+        content: "<p>NORTHSTAGE</p>",
         level: 3,
         color: "#7c3aed",
         textAlign: "center",
@@ -1470,8 +1462,8 @@ export function createEventInvitationTemplate(): TemplateContent {
       }),
 
       createImageBlock({
-        src: "https://placehold.co/560x260/f5f3ff/7c3aed?text=Config+2026",
-        alt: "Config 2026 event banner",
+        src: "/examples/northstage/banner.png",
+        alt: "Northstage Summit event banner",
         width: "full",
         align: "center",
         styles: white(0, 0, 0, 0),
@@ -1483,11 +1475,11 @@ export function createEventInvitationTemplate(): TemplateContent {
       {
         ...createCustomBlock(eventDetailsBlock),
         fieldValues: {
-          eventName: "Config 2026",
+          eventName: "Northstage Summit",
           date: "April 15, 2026",
           time: "9:00 AM \u2013 6:00 PM PT",
-          location: "The Moscone Center, San Francisco",
-          mapUrl: "https://maps.google.com/?q=Moscone+Center",
+          location: "Harbor Hall, Portland",
+          mapUrl: "https://maps.google.com/?q=Harbor+Hall+Portland",
           accentColor: "#7c3aed",
         },
         styles: white(0, 24, 8, 24),
@@ -1585,17 +1577,17 @@ export function createEventInvitationTemplate(): TemplateContent {
           {
             id: generateId(),
             platform: "twitter",
-            url: "https://twitter.com/config",
+            url: "https://twitter.com/northstage",
           },
           {
             id: generateId(),
             platform: "linkedin",
-            url: "https://linkedin.com/company/config",
+            url: "https://linkedin.com/company/northstage",
           },
           {
             id: generateId(),
             platform: "instagram",
-            url: "https://instagram.com/config",
+            url: "https://instagram.com/northstage",
           },
         ],
         iconStyle: "solid",
@@ -1607,7 +1599,7 @@ export function createEventInvitationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Config Events \u00b7 San Francisco, CA<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Northstage Events \u00b7 Portland, OR<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1630,9 +1622,9 @@ export function createPasswordResetTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u25a0 vaultkey</p>",
+        content: "<p>\u25b2 launchpad</p>",
         level: 3,
-        color: "#111827",
+        color: "#0f766e",
         textAlign: "center",
         styles: white(32, 20, 24, 20),
       }),
@@ -1653,7 +1645,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       createButtonBlock({
         text: "Reset Password",
         url: "https://example.com/reset?token=abc123",
-        backgroundColor: "#111827",
+        backgroundColor: "#0f766e",
         textColor: "#ffffff",
         borderRadius: 6,
         fontSize: 16,
@@ -1678,7 +1670,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       // ── Responsive: Desktop-only detailed security tips ──
       createParagraphBlock({
         content:
-          '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://vaultkey.com before entering credentials</span></p>',
+          '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://launchpad.example.com before entering credentials</span></p>',
         styles: white(16, 40, 16, 40),
         visibility: { desktop: true, mobile: false },
       }),
@@ -1699,7 +1691,7 @@ export function createPasswordResetTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">VaultKey Security \u00b7 <a href="https://example.com/support">Help Center</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Launchpad Inc. \u00b7 <a href="https://example.com/support">Help Center</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1713,8 +1705,8 @@ export function createBlackFridayTemplate(): TemplateContent {
   return {
     settings: {
       width: 600,
-      backgroundColor: "#111827",
-      textColor: "#f9fafb",
+      backgroundColor: "#1c1917",
+      textColor: "#faf8f5",
       linkUnderline: true,
       fontFamily: "Arial",
       preheaderText: "Up to 50% off everything \u2014 Black Friday starts now.",
@@ -1722,41 +1714,41 @@ export function createBlackFridayTemplate(): TemplateContent {
     },
     blocks: [
       createTitleBlock({
-        content: "<p>\u26a1 NEONSHOP</p>",
+        content: "<p>SABLE</p>",
         level: 3,
-        color: "#fbbf24",
+        color: "#e7e5e4",
         textAlign: "center",
-        styles: { ...pad(28, 20, 12, 20), backgroundColor: "#111827" },
+        styles: { ...pad(28, 20, 12, 20), backgroundColor: "#1c1917" },
       }),
       createTitleBlock({
-        content: "<p>BLACK FRIDAY</p>",
+        content: "<p>Black Friday</p>",
         level: 1,
-        color: "#ffffff",
+        color: "#faf8f5",
         textAlign: "center",
-        styles: { ...pad(0, 20, 0, 20), backgroundColor: "#111827" },
+        styles: { ...pad(0, 20, 0, 20), backgroundColor: "#1c1917" },
       }),
       createTitleBlock({
         content: "<p>Up to 50% off everything</p>",
         level: 2,
-        color: "#fbbf24",
+        color: "#c2410c",
         textAlign: "center",
-        styles: { ...pad(4, 20, 8, 20), backgroundColor: "#111827" },
+        styles: { ...pad(4, 20, 8, 20), backgroundColor: "#1c1917" },
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 15px; color: #d1d5db">Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</span></p>',
-        styles: { ...pad(0, 40, 12, 40), backgroundColor: "#111827" },
+          '<p style="text-align: center"><span style="font-size: 15px; color: #d6d3d1">Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</span></p>',
+        styles: { ...pad(0, 40, 12, 40), backgroundColor: "#1c1917" },
       }),
 
       createButtonBlock({
         text: "Shop the Sale",
         url: "https://example.com/sale",
-        backgroundColor: "#fbbf24",
-        textColor: "#111827",
+        backgroundColor: "#faf8f5",
+        textColor: "#1c1917",
         borderRadius: 6,
         fontSize: 16,
         buttonPadding: { top: 14, right: 36, bottom: 14, left: 36 },
-        styles: { ...pad(8, 20, 28, 20), backgroundColor: "#111827" },
+        styles: { ...pad(8, 20, 28, 20), backgroundColor: "#1c1917" },
       }),
 
       // ── Custom HTML block — raw markup rendered live on the canvas ──
@@ -1765,23 +1757,23 @@ export function createBlackFridayTemplate(): TemplateContent {
       // sandboxed iframe on the canvas instead of the static placeholder card.
       // A gradient "countdown" banner the built-in blocks can't express.
       createHtmlBlock({
-        content: `<div style="background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);border-radius:12px;padding:20px;text-align:center;font-family:Arial,Helvetica,sans-serif">
-  <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#7c2d12">HURRY &mdash; SALE ENDS SOON</div>
+        content: `<div style="background:linear-gradient(135deg,#c2410c 0%,#9a3412 100%);border-radius:12px;padding:20px;text-align:center;font-family:Arial,Helvetica,sans-serif">
+  <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#faf8f5">HURRY &mdash; SALE ENDS SOON</div>
   <div style="margin-top:10px">
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">02</span>
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">14</span>
-    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">37</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">02</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">14</span>
+    <span style="display:inline-block;background:#1c1917;color:#faf8f5;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">37</span>
   </div>
-  <div style="font-size:11px;color:#7c2d12;margin-top:8px;letter-spacing:2px">DAYS &nbsp;&middot;&nbsp; HOURS &nbsp;&middot;&nbsp; MINS</div>
+  <div style="font-size:11px;color:#faf8f5;margin-top:8px;letter-spacing:2px">DAYS &nbsp;&middot;&nbsp; HOURS &nbsp;&middot;&nbsp; MINS</div>
 </div>`,
-        styles: { ...pad(4, 20, 24, 20), backgroundColor: "#111827" },
+        styles: { ...pad(4, 20, 24, 20), backgroundColor: "#1c1917" },
       }),
 
       // ── Display Condition: Enterprise special ──
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 13px; color: #d1d5db"><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #fbbf24;">Contact sales</a></span></p>',
-        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#1f2937" },
+          '<p style="text-align: center"><span style="font-size: 13px; color: #e7e5e4"><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #faf8f5;">Contact sales</a></span></p>',
+        styles: { ...pad(12, 32, 12, 32), backgroundColor: "#292524" },
         displayCondition: {
           label: "Enterprise",
           before: '{% if plan == "enterprise" %}',
@@ -1798,27 +1790,26 @@ export function createBlackFridayTemplate(): TemplateContent {
         fieldValues: {
           heading: "Top Picks for You",
           productCategory: "electronics",
-          accentColor: "#dc2626",
+          accentColor: "#9a3412",
           products: [
             {
               name: "Wireless Pro Max",
               price: "$99",
-              image:
-                "https://placehold.co/200x160/f3f4f6/6b7280?text=Headphones",
+              image: "/examples/sable/headphones.png",
               badge: "-50%",
               url: "https://example.com/headphones",
             },
             {
               name: "Boom Speaker",
               price: "$59",
-              image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Speaker",
+              image: "/examples/sable/speaker.png",
               badge: "-34%",
               url: "https://example.com/speaker",
             },
             {
               name: "Chrono Smart",
               price: "$249",
-              image: "https://placehold.co/200x160/f3f4f6/6b7280?text=Watch",
+              image: "/examples/sable/watch.png",
               badge: "NEW",
               url: "https://example.com/watch",
             },
@@ -1830,8 +1821,8 @@ export function createBlackFridayTemplate(): TemplateContent {
       createButtonBlock({
         text: "View All Deals \u2192",
         url: "https://example.com/sale",
-        backgroundColor: "#111827",
-        textColor: "#ffffff",
+        backgroundColor: "#1c1917",
+        textColor: "#faf8f5",
         borderRadius: 6,
         fontSize: 15,
         buttonPadding: { top: 12, right: 28, bottom: 12, left: 28 },
@@ -1857,17 +1848,17 @@ export function createBlackFridayTemplate(): TemplateContent {
           {
             id: generateId(),
             platform: "twitter",
-            url: "https://twitter.com/neonshop",
+            url: "https://twitter.com/sable",
           },
           {
             id: generateId(),
             platform: "instagram",
-            url: "https://instagram.com/neonshop",
+            url: "https://instagram.com/sable",
           },
           {
             id: generateId(),
             platform: "tiktok",
-            url: "https://tiktok.com/@neonshop",
+            url: "https://tiktok.com/@sable",
           },
         ],
         iconStyle: "solid",
@@ -1879,7 +1870,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">NeonShop \u00b7 789 Retail Blvd, Los Angeles, CA 90012<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></span></p>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Sable \u00b7 210 Stone Row, Portland, OR 97209<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1906,7 +1897,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 // fixed ids keep e2e assertions readable. Block ids inside `content` are
 // regenerated on insert (`cloneBlock`), so reusing them across entries is safe.
 
-const productLaunchSavedBlocks: SavedBlock[] = [
+export const productLaunchSavedBlocks: SavedBlock[] = [
   {
     id: "demo-launch-hero",
     name: "Launch hero",
@@ -1966,7 +1957,7 @@ const productLaunchSavedBlocks: SavedBlock[] = [
   },
 ];
 
-const newsletterSavedBlocks: SavedBlock[] = [
+export const newsletterSavedBlocks: SavedBlock[] = [
   {
     id: "demo-news-masthead",
     name: "Issue masthead",
@@ -2020,93 +2011,6 @@ const newsletterSavedBlocks: SavedBlock[] = [
   },
 ];
 
-export type FeatureIcon =
-  | "merge-tag"
-  | "display-condition"
-  | "data-source"
-  | "custom-block"
-  | "responsive"
-  | "html";
-
-export interface TemplateFeature {
-  label: string;
-  description: string;
-  icon?: FeatureIcon;
-}
-
-export interface TemplateOption {
-  name: string;
-  description: string;
-  create: () => TemplateContent;
-  preview: string;
-  customBlocks?: CustomBlockDefinition[];
-  /** Features showcased by this template, displayed in the overlay */
-  features?: TemplateFeature[];
-  /**
-   * Saved blocks seeded into this template's store on first open, so the
-   * feature always has something to browse. Per template, like `customBlocks` —
-   * each template gets its own library under its own storage key.
-   */
-  savedBlocks?: SavedBlock[];
-  /**
-   * When set, this template intentionally omits `mergeTags.onRequest` so the
-   * SDK's built-in picker handles "Insert merge tag" clicks. The playground
-   * normally wires its own `onRequest` modal (it's a richer consumer-owned
-   * demo); this flag opts a specific template out so reviewers can see the
-   * built-in path without flipping a config toggle.
-   */
-  useBuiltInMergeTagPicker?: boolean;
-  /**
-   * Wire the SDK's `resolvePreview` hook for this template only.
-   *
-   * Deliberately **not** global. A configured resolver supersedes
-   * `MergeTag.sample` — the Sample/Label switch stops rendering — so a
-   * playground-wide resolver would make it impossible to demo sample values at
-   * all. One template shows resolution; the others show samples.
-   */
-  resolvePreview?: boolean;
-  /**
-   * Enable the SDK's `htmlBlockPreview` option — live rendering of HTML blocks
-   * in the canvas — for this template only. The playground reads it per
-   * template in `chooseTemplate` and passes it to `init()`, so every other
-   * template keeps the default static placeholder. Preview-only; the MJML/HTML
-   * export renders HTML blocks regardless of this flag.
-   */
-  htmlBlockPreview?: boolean;
-  /**
-   * `fonts` config for this template only — e.g. a `builtIns` allowlist that
-   * narrows the font picker. Read per template in `chooseTemplate` and passed
-   * to `init()`, so every other template keeps the full font list.
-   */
-  fonts?: FontsConfig;
-  /**
-   * Editor-wide `colors` config for this template only — a preset palette
-   * (optionally with `allowCustom: false` to lock authors to it). Read per
-   * template in `chooseTemplate` and passed to `init()`, so every other
-   * template keeps the default free-form pickers.
-   */
-  colors?: ColorsConfig;
-  /**
-   * Per-template `blockDefaults` / `templateDefaults`. When set, they fully
-   * replace the app-level DefaultsPreset selection for this template (read in
-   * `chooseTemplate`, passed to `init()`) — the same override idiom as `colors`
-   * / `htmlBlockPreview`. Event Invitation uses them to keep new blocks inside
-   * its brand-locked palette.
-   */
-  blockDefaults?: BlockDefaults;
-  templateDefaults?: TemplateDefaults;
-  /**
-   * Embedder-owned shell for this template only. Passed to `init({ layout })`.
-   * Preview and export wrap the authored content; `getContent()` does not.
-   */
-  layout?: TemplateContent;
-  /**
-   * Passed to `init({ sectionWrapper })`. `false` hides Add wrapper, including
-   * where a wrapper is legal. Reset on each template open.
-   */
-  sectionWrapper?: boolean;
-}
-
 // ─── Arabic Invitation ───────────────────────────────────────
 // Showcases: content direction (RTL canvas + export)
 
@@ -2118,27 +2022,27 @@ export function createArabicInvitationTemplate(): TemplateContent {
       textColor: "#1a1a1a",
       linkUnderline: true,
       fontFamily: "Arial",
-      preheaderText: "دعوة لحضور الحدث — أكّد حضورك اليوم.",
+      preheaderText: "دعوة لحضور قمة نورثستيج — أكّد حضورك اليوم.",
       locale: "ar",
       direction: "rtl",
     },
     blocks: [
       createTitleBlock({
-        content: "<p>دعوة الحدث</p>",
+        content: "<p>قمة نورثستيج</p>",
         level: 2,
-        color: "#111827",
+        color: "#7c3aed",
         textAlign: "right",
         styles: white(32, 24, 8, 24),
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: right"><span style="font-size: 15px; color: #4b5563">مرحبًا <span data-merge-tag="{{first_name}}">الاسم الأول</span>، نتشرف بدعوتك لحضور الحدث. أكّد حضورك بالزر أدناه.</span></p>',
+          '<p style="text-align: right"><span style="font-size: 15px; color: #4b5563">مرحبًا <span data-merge-tag="{{first_name}}">الاسم الأول</span>، نتشرف بدعوتك لحضور قمة نورثستيج. أكّد حضورك بالزر أدناه.</span></p>',
         styles: white(0, 24, 16, 24),
       }),
       createButtonBlock({
         text: "تأكيد الحضور",
         url: "https://example.com/rsvp",
-        backgroundColor: "#1d4ed8",
+        backgroundColor: "#7c3aed",
         textColor: "#ffffff",
         borderRadius: 6,
         fontSize: 16,
@@ -2152,13 +2056,13 @@ export function createArabicInvitationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<p style="text-align: right"><span style="font-size: 14px; color: #111827"><strong>عمود البداية</strong></span></p><p style="text-align: right"><span style="font-size: 14px; color: #4b5563">التاريخ والمكان يظهران هنا.</span></p>',
+                '<p style="text-align: right"><span style="font-size: 14px; color: #111827"><strong>عمود البداية</strong></span></p><p style="text-align: right"><span style="font-size: 14px; color: #4b5563">15 أبريل 2026 — هاربر هول، بورتلاند.</span></p>',
               styles: pad(8, 8, 8, 8),
             }),
           ],
           [
             createImageBlock({
-              src: "https://placehold.co/260x160/eff6ff/1d4ed8?text=Event",
+              src: "/examples/northstage/venue.png",
               alt: "صورة توضيحية للحدث",
               width: "full",
               align: "center",
@@ -2170,375 +2074,9 @@ export function createArabicInvitationTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af"><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
+          '<p style="text-align: right"><span style="font-size: 12px; color: #9ca3af">Northstage Events · Portland, OR<br/><a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></span></p>',
         styles: white(0, 24, 32, 24),
       }),
     ],
   };
 }
-
-function playgroundLayout(
-  variant: "card" | "siblings",
-  opts: {
-    mat?: string;
-    viewLabel?: string;
-    imprintLabel?: string;
-    textAlign?: "center" | "right";
-  } = {},
-): TemplateContent {
-  const align = opts.textAlign ?? "center";
-  const view = opts.viewLabel ?? "View in browser";
-  const imprint = opts.imprintLabel ?? "Imprint";
-  const header = createParagraphBlock({
-    content: `<p style="text-align:${align}"><a href="https://example.com/view">${view}</a></p>`,
-    styles: pad(16, 24, 8, 24),
-  });
-  const footer = createParagraphBlock({
-    content: `<p style="text-align:${align}"><a href="https://example.com/imprint">${imprint}</a></p>`,
-    styles: pad(8, 24, 24, 24),
-  });
-  const slot = createSlotBlock();
-  const layout = createDefaultTemplateContent();
-  layout.settings.backgroundColor = opts.mat ?? "#f3f4f6";
-  layout.blocks =
-    variant === "card"
-      ? [
-          header,
-          createWrapperBlock({
-            styles: {
-              backgroundColor: "#ffffff",
-              padding: { top: 24, right: 24, bottom: 24, left: 24 },
-            },
-            borderRadius: 12,
-            children: [slot],
-          }),
-          footer,
-        ]
-      : [header, slot, footer];
-  return layout;
-}
-
-const CARD_LAYOUT = playgroundLayout("card");
-const SALE_LAYOUT = playgroundLayout("siblings", { mat: "#111827" });
-const RTL_LAYOUT = playgroundLayout("card", {
-  textAlign: "right",
-  viewLabel: "عرض في المتصفح",
-  imprintLabel: "بيان الناشر",
-});
-
-export const templates: TemplateOption[] = [
-  {
-    name: "Product Launch",
-    description: "Announcement with hero, features, and CTA",
-    create: createProductLaunchTemplate,
-    preview: "product",
-    customBlocks: [testimonialBlock],
-    savedBlocks: productLaunchSavedBlocks,
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    features: [
-      {
-        label: "Saved Blocks",
-        icon: "custom-block",
-        description:
-          'The left rail has a Saved Blocks entry with three reusable groups pre-seeded in it. Select one to preview it at full width, pick where to insert it, and it lands on the canvas with fresh block IDs \u2014 so inserting the same entry twice never collides.\nTo try it: select any block on the canvas and click the bookmark icon in its action bar. Every block you then click is added to the selection; the bar at the bottom confirms. The dialog that follows asks for a name and an optional category, and lets you drag the picked blocks into the order they should be stored in.\n"Launch hero" has no rename or delete button, while the others do. That is the store\u2019s decision, not the editor\u2019s: it returned canUpdate: false and canDelete: false on that one entry. Everything else is fully editable \u2014 rename, recategorise and delete all persist, and the locked entry is what keeps this library from being emptied.',
-      },
-      {
-        label: "Display Conditions",
-        icon: "display-condition",
-        description:
-          'This template has 3 blocks that target different audience segments: VIP Partners, Free Users, and Beta Testers. Each one is wrapped in a condition like {% if vip_partner %}.\nTo try it: select any colored block near the bottom and open the Settings tab. Look for "Display Condition" \u2014 you\u2019ll see which audience it targets.\nYou can also add conditions to any other block, or write your own custom conditions using the "Custom condition" option in the dropdown.',
-      },
-      {
-        label: "Merge Tags",
-        icon: "merge-tag",
-        description:
-          'The greeting says "Hi {{first_name}}" \u2014 this gets replaced with the recipient\u2019s actual name at send time. The footer uses {{unsubscribe_url}} and {{preferences_url}} for dynamic links.\nTo try it: click inside any text block, then look for the merge tag button ({ }) in the text toolbar. You can also type {{ to trigger autocomplete with all available tags.',
-      },
-      {
-        label: "Custom Block",
-        icon: "custom-block",
-        description:
-          "The Testimonial near the bottom is a custom block with its own fields: quote, author name, title, and an optional avatar.\nTo try it: click the testimonial and check the right sidebar \u2014 you\u2019ll see custom field editors instead of the usual text toolbar. Edit any field and watch the block update instantly.\nThe Quote and Author Name fields are marked as required \u2014 they show a red asterisk and cannot be left empty. The avatar is optional and uses {% if avatarUrl %} in the Liquid template to conditionally render.\nCustom blocks use Liquid templates, so developers can add conditional logic directly in the markup.",
-      },
-      {
-        label: "Responsive Stylesheet",
-        icon: "responsive",
-        description:
-          "The testimonial uses CustomBlockDefinition.stylesheet to ship its own responsive CSS \u2014 a hover state on the card, plus a @media (max-width: 480px) rule that stacks the avatar above the byline on mobile (single centered column instead of side-by-side).\nMJML's automatic responsive behavior (column stacking, fluid images) only applies to the outer mj-section / mj-column layout, not to the HTML inside a custom block \u2014 so per-definition stylesheets are how you make a custom block's internals responsive.\nTo try it: hover the testimonial card in the canvas to see the shadow lift. The full stacked layout appears in the exported MJML when the recipient opens the email on a phone \u2014 open Export to see the .tplc-testimonial-* rules emitted inside <mj-head><mj-style>\u2026</mj-style></mj-head>.",
-      },
-    ],
-  },
-  {
-    name: "Newsletter",
-    description: "Weekly digest with featured article and links",
-    create: createNewsletterTemplate,
-    preview: "newsletter",
-    customBlocks: [featuredArticleBlock],
-    savedBlocks: newsletterSavedBlocks,
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    // Curated font list: only these built-ins appear in the font picker (the
-    // other four built-ins are hidden). Showcases `fonts.builtIns`.
-    fonts: {
-      builtIns: ["Georgia", "Times New Roman", "Arial"],
-    },
-    features: [
-      {
-        label: "Saved Blocks",
-        icon: "custom-block",
-        description:
-          'The left rail has a Saved Blocks entry with three reusable groups pre-seeded in it \u2014 a masthead, a quick-links section and a sign-off. Select one to preview it at full width, choose where to insert it, and it lands on the canvas with fresh block IDs.\nNote the library is per template: what you see here is seeded for the Newsletter and is a different set from the one in Product Launch, under its own storage key. Anything you save is stored the same way.\n"Issue masthead" has no rename or delete button, while the other two do \u2014 the store returned canUpdate: false and canDelete: false for that entry. The rest are fully editable, and that one locked entry is what keeps the library from being emptied.',
-      },
-      {
-        label: "Curated Font List",
-        description:
-          "This template passes a `fonts` config to init() with `builtIns: ['Georgia', 'Times New Roman', 'Arial']`. The font picker — in template settings and the rich-text toolbar — offers only those three built-ins instead of the default seven, keeping the newsletter on a small, on-brand set.\nTo try it: open the template settings (or select text and open the font control) and note the shortened font list. Content already using another font still renders with its proper fallback — filtering only affects the picker.",
-      },
-      {
-        label: "Custom Block with Data Source",
-        icon: "data-source",
-        description:
-          "The Featured Article block is pre-populated with content loaded from a simulated CMS API. The article title, excerpt, author, and other metadata were all fetched automatically.\nTo try it: click the article block and look at the right sidebar. Most fields are read-only (grayed out) because they came from the data source \u2014 but the Cover Image is editable, letting marketers override the image while keeping the rest locked.\nThis shows how developers can mix read-only and editable fields on the same block, giving marketers flexibility where it matters while protecting data integrity on API-sourced content.",
-      },
-      {
-        label: "Data Source: Change Content",
-        icon: "data-source",
-        description:
-          'Want to swap the article? Click the Featured Article block, then press "Change article" in the sidebar.\nA modal opens with a 3-second loading animation showing the simulated API endpoint. After loading, you\u2019ll see 3 different articles to choose from. Pick one and all fields update instantly.\nThis demonstrates how marketers can pull content from your CMS without manually editing each field.',
-      },
-      {
-        label: "Merge Tags",
-        icon: "merge-tag",
-        description:
-          "The footer uses {{unsubscribe_url}} and {{preferences_url}} merge tags that get replaced with real URLs when sent through your ESP.\nTo explore: open the Config panel (top toolbar) to see all available merge tags and how they\u2019re defined with label/value pairs.",
-      },
-    ],
-  },
-  {
-    name: "Welcome Email",
-    description: "Onboarding steps for new users",
-    create: createWelcomeTemplate,
-    preview: "welcome",
-    customBlocks: [],
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    useBuiltInMergeTagPicker: true,
-    // The one template that wires `resolvePreview`. It has both value tags and
-    // `{% if plan_name == … %}` branches, so a resolved preview visibly differs
-    // from the authored template — and because a resolver supersedes
-    // `MergeTag.sample`, every other template is left to demo Sample/Label.
-    resolvePreview: true,
-    features: [
-      {
-        label: "Layout overlay (card)",
-        description:
-          "Every playground template except Black Friday passes init({ layout }) with a white card around the slot. Preview and Export wrap the email in a grey mat, View in browser, the card, and Imprint. The editing canvas and getContent() do not.\nTo try it: look at the canvas (no shell), then click Preview. Add wrapper is hidden — a section wrapper inside the card would nest mj-wrapper, which MJML forbids.",
-      },
-      {
-        label: "Resolved Preview (resolvePreview)",
-        icon: "merge-tag",
-        description:
-          "This is the only template wired to the SDK\u2019s `resolvePreview` hook \u2014 a callback where your own backend resolves the template for preview. The playground fakes one: it waits ~400ms, then substitutes values and evaluates the {% if %} branches.\nTo try it: click the eye icon (Preview) in the top toolbar. The greeting becomes a real name, and the conditional block below the onboarding steps collapses to just the branch that applies \u2014 the IF/ENDIF badges disappear entirely.\nWhy a callback: sample values can substitute a value client-side, but they cannot take a branch, and Mailchimp/AMPscript logic is a server-side dialect no browser can evaluate. Only your backend can.\nNote the Sample/Label switch is absent here: real resolved data supersedes example data, so the editor hides the choice. Open Order Confirmation to see that switch instead.\nIt is display-only \u2014 export the template and the raw {{tokens}} are still there.",
-      },
-      {
-        label: "Built-in Merge Tag Picker",
-        icon: "merge-tag",
-        description:
-          "This template intentionally does NOT wire a custom `mergeTags.onRequest` callback. Because only `mergeTags.tags` is configured, the editor falls back to its built-in picker \u2014 a searchable modal grouped by the optional `group` field, with helper text from `description`.\nTo try it: click inside any paragraph or title block, then click the merge tag button ({ }) in the rich text toolbar. The built-in modal opens listing every configured tag, with grouping by Recipient / Account / Order / System and a description under each row. Type to filter; press \u2191/\u2193 then Enter to insert.\nEvery other playground template wires `onRequest` to show the consumer-owned modal demo. This template showcases the zero-config path: just provide `tags` (optionally with `group` and `description`) and the SDK handles the rest.",
-      },
-      {
-        label: "Logic Merge Tags (If/Else)",
-        icon: "merge-tag",
-        description:
-          'Scroll down to the blue highlighted block below the onboarding steps. It contains conditional logic that adapts based on the subscriber\u2019s plan.\nPro users see: "You have access to advanced integrations" with a setup link.\nFree users see: "Want more features? Upgrade to Pro" with an upgrade CTA.\nTo try it: click the block to see {% if plan_name == "pro" %} and {% if plan_name == "free" %} tags rendered inline. This lets you build one template that works for multiple audience segments.\nYou can also add your own: click into any text block and press the "Insert logic" button ({}) in the toolbar. Standalone tags like {% else %} drop at the cursor; "Blocks" like If VIP wrap your current selection in {% if %} … {% endif %}.',
-      },
-      {
-        label: "Merge Tags Throughout",
-        icon: "merge-tag",
-        description:
-          "This template uses merge tags heavily for personalization. The heading greets the user with {{first_name}}, and the intro shows their plan via {{plan_name}}.\nTo try it: click any text with a colored chip to see the merge tag. These are configured in the mergeTags option passed to init().\nOpen the Config panel to see how tags are defined with label/value pairs and the Liquid syntax preset.",
-      },
-    ],
-  },
-  {
-    name: "Order Confirmation",
-    description: "Order summary with items and shipping",
-    create: createOrderConfirmationTemplate,
-    preview: "order",
-    customBlocks: [shippingTrackerBlock],
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    features: [
-      {
-        label: "Sample vs Label Preview",
-        icon: "merge-tag",
-        description:
-          "This template deliberately does NOT wire `resolvePreview`, so it showcases `MergeTag.sample` instead \u2014 example values the preview renders in place of a tag.\nTo try it: click Preview in the top toolbar, then use the Sample / Label switch that floats at the top of the canvas. Sample view shows realistic values as ordinary text; Label view shows the field names with their usual highlight.\nLook at the shipping address: {{first_name}} has a sample (\u201cAda\u201d) and renders as plain text, while {{last_name}} has none and keeps its highlighted label. The highlight follows the individual tag, not the view \u2014 so the remaining highlights are a list of tags still missing a sample.\nSamples are display-only: they never reach getContent(), a test send, or the MJML export.",
-      },
-      {
-        label: "Merge Tag Normalization",
-        icon: "merge-tag",
-        description:
-          "The “Delivery contact” line is stored as raw text — {{first_name}} {{last_name}} — not as editor markup. That is what a template migrated from another ESP, or one saved before merge tags existed, actually contains: tokens that would otherwise render as literal text, ignore their sample, and be deletable one character at a time.\nThe editor converts them into real tags while the template loads, so on the canvas they are indistinguishable from the tags above.\nTo try it: click the Delivery contact line. Every tag there is selectable as a single unit, and Preview → Sample substitutes {{first_name}} exactly as it does elsewhere. {{customer_tier}} is not in the configured tag list, so it shows its own raw token as its label — honest rather than invented, and still atomic.\nNote the “Manage notifications” link: its href is also a raw token, and it is deliberately left alone. Wrapping a token in attribute position would inject markup into the URL, so normalization only ever touches text.",
-      },
-      {
-        label: "Custom Block with Read-Only Fields",
-        icon: "custom-block",
-        description:
-          "The Shipping Tracker card shows carrier info, tracking number, estimated delivery, and a progress bar that adapts to the shipping status.\nTo try it: click the tracker and check the sidebar. The carrier, tracking number, estimated delivery, and tracking URL are all read-only \u2014 grayed out and non-editable because the backend populates them at send time. But the Status dropdown and Accent Color are editable, showing how developers can mix locked and editable fields on the same block.\nTry changing the Status dropdown to see the progress bar and status badge update instantly.",
-      },
-      {
-        label: "Logic Merge Tags (If/Else)",
-        icon: "merge-tag",
-        description:
-          'This template has two blocks with conditional logic.\nThe green banner uses {% if shipping_method == "express" %} to show "arrives tomorrow" for express, or "3\u20135 business days" for standard shipping.\nFurther down, {% if order_total > 100 %} reveals a "free shipping unlocked" message.\nTo try it: click either block to see the if/else logic inline in the editor. These conditions are evaluated by your backend at send time.',
-      },
-      {
-        label: "Merge Tags (Transactional)",
-        icon: "merge-tag",
-        description:
-          "A fully dynamic transactional email with multiple merge tags: {{order_id}} in the header, {{first_name}} and {{last_name}} in the shipping address, and {{order_total}} for the amount.\nTo try it: click any text with a colored chip to see the merge tag. These are configured in the mergeTags option passed to init().",
-      },
-      {
-        label: "Display Condition",
-        icon: "display-condition",
-        description:
-          "Near the bottom, the purple VIP loyalty block is only visible to VIP partner accounts.\nTo try it: select the block and open Settings \u2192 Display Condition to see {% if vip_partner %} applied. Non-VIP recipients never see this block in the final email.",
-      },
-    ],
-  },
-  {
-    name: "Event Invitation",
-    description: "Event details with date, time, and RSVP",
-    create: createEventInvitationTemplate,
-    preview: "event",
-    customBlocks: [eventDetailsBlock],
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    // Brand-locked palette: fixed swatches + `allowCustom: false`, so every
-    // color picker in this template offers only these presets (no wheel / hex).
-    colors: {
-      presets: [
-        "#7c3aed",
-        "#ec4899",
-        "#f59e0b",
-        "#10b981",
-        "#111827",
-        "#ffffff",
-      ],
-      allowCustom: false,
-    },
-    // On-brand block/template defaults so newly-added blocks start INSIDE the
-    // locked palette above. These override exactly the seven factory default
-    // colors that would otherwise fall outside it (the SDK warns about those
-    // when custom colors are locked); the remaining factory color defaults are
-    // already `#ffffff`, which is a preset.
-    blockDefaults: {
-      button: { backgroundColor: "#7c3aed" },
-      divider: { color: "#111827" },
-      menu: { separatorColor: "#111827" },
-      table: { borderColor: "#111827" },
-      countdown: { digitColor: "#111827", labelColor: "#7c3aed" },
-    },
-    templateDefaults: { textColor: "#111827" },
-    features: [
-      {
-        label: "Brand Color Palette",
-        description:
-          "This template passes a `colors` config to init(): a fixed set of brand swatches plus `allowCustom: false`. Every color picker in the editor — the RSVP button colors, the Event Details accent color, template settings — shows only those presets as a clickable grid, with no wheel or hex input.\nTo try it: select the RSVP button (or the Event Details card) and open a color control in the sidebar. You can only pick from the approved palette. This is the white-label / brand-kit path: keep non-designers on-brand by removing free-form color entry.\nThe Event Details card goes one step further: its Accent Color field carries its own `presets`, so it offers just the two colors that role allows out of the six. A field can narrow the editor-wide palette like this, but never widen it.\nThe template also sets on-brand `blockDefaults` and `templateDefaults`, so blocks you add start on palette colors instead of the factory defaults that would land outside it.",
-      },
-      {
-        label: "Display Conditions (Multiple Groups)",
-        icon: "display-condition",
-        description:
-          'This template uses display conditions organized into different groups.\nThe amber "Early Bird" block uses {% if early_bird %} in the "Registration" group. The purple "Speaker" block uses {% if is_speaker %} in the "Role" group.\nTo try it: select either block, open Settings, and check the Display Condition dropdown. Groups keep conditions organized when you have many. Try removing a condition and re-adding it to see all available options.',
-      },
-      {
-        label: "Custom Block",
-        icon: "custom-block",
-        description:
-          'The Event Details card is a custom block with 6 editable fields: event name, date, time, location, map link, and accent color.\nTo try it: click the card and edit fields in the sidebar \u2014 changes render instantly. Try clearing the map link to see the "View on Map" link disappear (it uses {% if mapUrl %} in the Liquid template).\nNotice that Event Name, Date, and Time are marked as required fields \u2014 they show a red asterisk and cannot be left empty. This shows how developers can enforce data integrity on custom blocks using the required option.\nThis shows how custom blocks combine structured data entry with conditional rendering logic.',
-      },
-    ],
-  },
-  {
-    name: "Password Reset",
-    description: "Simple transactional reset link email",
-    create: createPasswordResetTemplate,
-    preview: "reset",
-    customBlocks: [],
-    layout: CARD_LAYOUT,
-    sectionWrapper: false,
-    features: [
-      {
-        label: "Responsive Visibility",
-        icon: "responsive",
-        description:
-          "This template has two versions of security tips that swap based on device size.\nDesktop: a detailed list with 4 bullet points. Mobile: a condensed single-line note.\nTo try it: select either block and open Settings \u2192 Display to see the visibility toggles for desktop and mobile.\nThen switch the viewport preview in the top toolbar between Desktop and Mobile to watch the blocks swap live on the canvas.",
-      },
-      {
-        label: "Merge Tags",
-        icon: "merge-tag",
-        description:
-          "The greeting uses {{first_name}} and the body shows {{email}} so the recipient can verify which account the reset is for \u2014 an important trust signal.\nTo try it: click the text to see merge tag chips highlighted inline. Both tags are inserted as visual chips in the editor, making them easy to spot and edit.",
-      },
-    ],
-  },
-  {
-    name: "Black Friday Sale",
-    description: "Promo with product picks and discount code",
-    create: createBlackFridayTemplate,
-    preview: "sale",
-    customBlocks: [productShowcaseBlock],
-    htmlBlockPreview: true,
-    layout: SALE_LAYOUT,
-    features: [
-      {
-        label: "Layout overlay (siblings)",
-        description:
-          "This template uses a sibling layout — View in browser, slot, Imprint — with no card around the slot. Dark full-bleed sections stay legal mj-wrappers under mj-body. Preview to see the chrome on the dark mat. Add wrapper stays available because a section wrapper here is a sibling, not nested.",
-      },
-      {
-        label: "Custom HTML Block (Live Preview)",
-        icon: "html",
-        description:
-          'The amber "countdown" banner under the CTA is a raw HTML block — an inline-styled markup snippet the built-in blocks can’t produce.\nThis template opts into `htmlBlockPreview`, so the block renders live on the canvas inside a sandboxed <iframe> (no script execution, and its styles can’t leak into the editor) instead of the default placeholder card.\nTo try it: the banner you see on the canvas IS the HTML rendering. Select it and edit the markup in the right sidebar to watch the preview update. Every other template leaves `htmlBlockPreview` off, so an HTML block there shows a static placeholder instead — either way, the MJML/HTML export renders the block.',
-      },
-      {
-        label: "Custom Block with Repeatable Fields + Data Source",
-        icon: "data-source",
-        description:
-          'The "Top Picks for You" section is a Product Showcase custom block that combines two powerful features: repeatable fields and a data source.\nThe "products" field is a repeatable array \u2014 each item has name, price, image, badge, and URL. The data was loaded from a simulated product catalog API.\nTo try it: click the block and scroll through the sidebar. You\u2019ll see each product as an expandable row. Try reordering, adding, or removing products manually.',
-      },
-      {
-        label: "Data Source: Swap Product Collection",
-        icon: "data-source",
-        description:
-          'Click the Product Showcase block, then press "Change collection" in the sidebar.\nA picker modal opens with a 3-second loading animation showing the simulated API endpoint. After loading, choose from 3 collections: Best Sellers, New Arrivals, or Clearance Sale.\nSelecting one replaces all product items at once. This is how e-commerce platforms let marketers swap curated product sets without touching individual fields.',
-      },
-      {
-        label: "Display Condition",
-        icon: "display-condition",
-        description:
-          'The dark-themed banner after the sale countdown has an Enterprise-only block offering 15% off bulk orders.\nTo try it: select the block and check Settings \u2192 Display Condition \u2014 it uses {% if plan == "enterprise" %}. Only enterprise customers see this in the final email.',
-      },
-    ],
-  },
-  {
-    name: "Arabic Invitation",
-    description: "RTL invitation with merge tags and a two-column section",
-    create: createArabicInvitationTemplate,
-    preview: "rtl",
-    customBlocks: [],
-    layout: RTL_LAYOUT,
-    sectionWrapper: false,
-    features: [
-      {
-        label: "Content direction (RTL)",
-        description:
-          'This template sets settings.locale to ar and settings.direction to rtl. The canvas, previews, and exported MJML follow that value: text starts at the right, two-column sections put column 0 on the right on desktop, and <mjml dir="rtl"> is what mail clients read.\nTo try it: open Template Settings — the Right-to-left toggle is on. Turn it off and the canvas flips to LTR without rewriting the copy. The editor chrome stays LTR; only the email is inverted.',
-      },
-    ],
-  },
-];

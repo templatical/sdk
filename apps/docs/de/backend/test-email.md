@@ -163,3 +163,8 @@ Selbst vollständig aufgelöst ist sie keine Byte-für-Byte-Vorschau der zugeste
 
 Die Vorschau liegt im ohnehin verzögert geladenen Chunk des Dialogs — wer `testEmail` nicht konfiguriert, lädt davon nichts.
 
+## Im Playground
+
+Das Setup **Test email** ergänzt den Test-Button im Header, mit Empfängerauswahl und einem simulierten Versand.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/test-email)

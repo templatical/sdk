@@ -27,7 +27,7 @@ bun add @templatical/editor @templatical/renderer
 
 :::
 
-## 2. Mount the editor
+## 2. Mount the editor {#mount-the-editor}
 
 Paste this into an HTML file and open it. No bundler. Framework and package-manager mounts live on [Installation](/getting-started/installation). Pin a version for production — [CDN](/getting-started/installation#cdn).
 
@@ -62,6 +62,8 @@ Paste this into an HTML file and open it. No bundler. Framework and package-mana
 </body>
 </html>
 ```
+
+[Open in playground](https://play.templatical.com/scenes/minimum)
 
 Store `json` so users can edit later. Compile `mjml` on the server — `toMjml()` does not produce HTML.
 

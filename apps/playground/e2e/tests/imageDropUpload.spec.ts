@@ -6,9 +6,13 @@ import { blockByType } from "../helpers/selectors";
 // shadow boundary.
 test.describe("Image drag-and-drop upload (#229)", () => {
   test("dropping an image file onto an image block sets its src via the media provider", async ({
-    blankEditorReady: { editorPage },
+    scenePage,
+    editorPage,
     page,
   }) => {
+    await scenePage.goto("media");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
     await editorPage.dragBlockFromSidebar("image");
 
     const imageBlock = page.locator(blockByType("image")).first();
@@ -23,9 +27,13 @@ test.describe("Image drag-and-drop upload (#229)", () => {
     await dropZone.evaluate((el) => {
       const dt = new DataTransfer();
       dt.items.add(
-        new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], "e2e.png", {
-          type: "image/png",
-        }),
+        new File(
+          [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+          "e2e.png",
+          {
+            type: "image/png",
+          },
+        ),
       );
       for (const type of ["dragenter", "dragover", "drop"]) {
         el.dispatchEvent(

@@ -362,3 +362,9 @@ await init({ container: '#editor', media });
 ```
 
 A CMS gallery that lists and uploads, and nothing else, is the same shape as the permissions example above. Shared and per-template galleries merge inside `list({ templateId })`.
+
+## In the playground
+
+The **Media** setup passes a `media` provider with a seeded gallery in this browser's storage: browse, drop a file to upload, pick an image.
+
+[Open in playground](https://play.templatical.com/scenes/media)

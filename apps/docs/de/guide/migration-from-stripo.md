@@ -47,7 +47,7 @@ bun add @templatical/import-stripo
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertStripoTemplate } from '@templatical/import-stripo';
@@ -65,6 +65,8 @@ const editor = await init({
   content: compiled.content,
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-stripo)
 
 `convertStripoTemplate` ist synchron und gibt ein `ImportResult` zurück mit:
 

@@ -92,7 +92,7 @@ Set the variables on the container that you pass to `init()` (or any ancestor) a
 
 See the [theming guide](./theming) for the full token list and dark-mode handling.
 
-## Opt-out: `shadowDom: false`
+## Opt-out: `shadowDom: false` {#opt-out-shadowdom-false}
 
 When you'd opt out:
 
@@ -106,6 +106,8 @@ const editor = await init({
   shadowDom: false,
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/shadow-dom-off)
 
 What you lose:
 

@@ -262,3 +262,8 @@ useCommentListener({
 });
 ```
 
+## In the playground
+
+The **Comments** setup adds a `comments` provider and a `user`, so blocks carry threaded review notes.
+
+[Open in playground](https://play.templatical.com/scenes/comments)

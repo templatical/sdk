@@ -1,0 +1,156 @@
+import { customBlocks } from "./author/custom-blocks";
+import { defaults } from "./author/defaults";
+import { displayConditions } from "./author/display-conditions";
+import { fonts } from "./author/fonts";
+import { i18n } from "./author/i18n";
+import { issues } from "./author/issues";
+import { layout } from "./author/layout";
+import { logicTags } from "./author/logic-tags";
+import { mergeTags } from "./author/merge-tags";
+import { mergeTagsOnRequest } from "./author/merge-tags-on-request";
+import { mergeTagsResolvePreview } from "./author/merge-tags-resolve-preview";
+import { mergeTagsSamples } from "./author/merge-tags-samples";
+import { shadowDomOff } from "./author/shadow-dom-off";
+import { theming } from "./author/theming";
+import { exampleFlowworkNewsletter } from "./examples/flowwork-newsletter";
+import { exampleFlowworkWelcome } from "./examples/flowwork-welcome";
+import { exampleLaunchpadLaunch } from "./examples/launchpad-launch";
+import { exampleLaunchpadReset } from "./examples/launchpad-reset";
+import { exampleNorthstageAr } from "./examples/northstage-ar";
+import { exampleNorthstageEvent } from "./examples/northstage-event";
+import { exampleSableFriday } from "./examples/sable-friday";
+import { exampleSableOrder } from "./examples/sable-order";
+import { importBeefree } from "./import/import-beefree";
+import { importChamaileon } from "./import/import-chamaileon";
+import { importEasyEmailPro } from "./import/import-easy-email-pro";
+import { importHtml } from "./import/import-html";
+import { importMjml } from "./import/import-mjml";
+import { importStripo } from "./import/import-stripo";
+import { importTopol } from "./import/import-topol";
+import { importUnlayer } from "./import/import-unlayer";
+import { minimum } from "./minimum";
+import { comments } from "./storage/comments";
+import { media } from "./storage/media";
+import { render } from "./storage/render";
+import { savedBlocks } from "./storage/saved-blocks";
+import { templates } from "./storage/templates";
+import { testEmail } from "./storage/test-email";
+import { versionHistory } from "./storage/version-history";
+import type { Scene, SceneGroup } from "./types";
+
+export type {
+  Scene,
+  SceneCatalog,
+  SceneContext,
+  SceneGroup,
+  SceneVariant,
+} from "./types";
+
+export const SCENES: readonly Scene[] = [
+  minimum,
+  fonts,
+  defaults,
+  theming,
+  layout,
+  i18n,
+  shadowDomOff,
+  issues,
+  customBlocks,
+  mergeTags,
+  mergeTagsOnRequest,
+  mergeTagsSamples,
+  mergeTagsResolvePreview,
+  logicTags,
+  displayConditions,
+  templates,
+  versionHistory,
+  comments,
+  savedBlocks,
+  media,
+  testEmail,
+  render,
+  // Importers follow the docs sidebar (tests/scenes.test.ts reads it).
+  importUnlayer,
+  importBeefree,
+  importStripo,
+  importTopol,
+  importChamaileon,
+  importEasyEmailPro,
+  importMjml,
+  importHtml,
+  exampleLaunchpadLaunch,
+  exampleLaunchpadReset,
+  exampleFlowworkWelcome,
+  exampleFlowworkNewsletter,
+  exampleSableOrder,
+  exampleSableFriday,
+  exampleNorthstageEvent,
+  exampleNorthstageAr,
+];
+
+export const SCENE_GROUP_ORDER: readonly SceneGroup[] = [
+  "minimum",
+  "configure",
+  "personalization",
+  "backend",
+  "import",
+  "examples",
+];
+
+export function getScene(id: string): Scene | undefined {
+  return SCENES.find((scene) => scene.id === id);
+}
+
+/**
+ * The scenes either side of `id` in registry order, which is also the order
+ * the rail lists them in (tests/scenes.test.ts holds the two together). The
+ * first scene has no previous one and the last no next one: the header's
+ * arrows stop at the ends rather than wrapping.
+ */
+export function sceneNeighbours(id: string): {
+  previous?: Scene;
+  next?: Scene;
+} {
+  const index = SCENES.findIndex((scene) => scene.id === id);
+  if (index === -1) return {};
+  return { previous: SCENES[index - 1], next: SCENES[index + 1] };
+}
+
+export function scenesByGroup(): Map<SceneGroup, Scene[]> {
+  const groups = new Map<SceneGroup, Scene[]>();
+  for (const scene of SCENES) {
+    const list = groups.get(scene.group);
+    if (list) {
+      list.push(scene);
+    } else {
+      groups.set(scene.group, [scene]);
+    }
+  }
+  return groups;
+}
+
+export type PlaygroundRoute =
+  | { kind: "catalog" }
+  | { kind: "scene"; id: string; search: URLSearchParams }
+  | { kind: "unknown"; pathname: string };
+
+export function parsePlaygroundRoute(
+  pathname: string,
+  search?: string,
+): PlaygroundRoute {
+  if (pathname === "/" || pathname === "") {
+    return { kind: "catalog" };
+  }
+
+  const match = /^\/scenes\/([^/]+)$/.exec(pathname);
+  const id = match?.[1];
+  if (id && !id.includes(".")) {
+    return {
+      kind: "scene",
+      id,
+      search: new URLSearchParams(search ?? ""),
+    };
+  }
+
+  return { kind: "unknown", pathname };
+}

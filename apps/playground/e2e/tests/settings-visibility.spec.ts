@@ -1,43 +1,28 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 import type { Page } from "@playwright/test";
-import { ChooserPage } from "../pages/chooser.page";
 import { EditorPage } from "../pages/editor.page";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * `templateSettings.fields` — the allowlist that decides which template
  * settings the Settings panel exposes (issue #674).
  *
- * Driven by the playground's `tpl-playground-settings-fields` storage flag: a
- * comma-separated allowlist, or `none` for `fields: false`. Set through
- * `addInitScript` because the config is read once, before the first `init()` —
- * writing it after `goto()` races the app's mount-time read.
- *
- * This is the layer that proves the config survives the whole trip from
- * `init()` to the DOM in a real browser. The unit suite
- * (`packages/editor/tests/templateSettingsVisibility.test.ts`) owns the
- * resolver's own cases and the ones no playground flag can express.
+ * Driven by the e2e-only `?settingsFields=` query overlay. Absent means the
+ * key is omitted entirely (SDK default: every setting editable). `none` is
+ * `fields: false`. Must not appear in scene snippets.
  */
 async function openEditorWith(
   page: Page,
   shadowDom: boolean,
-  flag: string | null,
+  settingsFields: string | null,
 ) {
-  const chooserPage = new ChooserPage(page, { shadowDom });
+  const scenePage = new ScenePage(page, { shadowDom });
   const editorPage = new EditorPage(page);
-  await page.addInitScript((value) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-    if (value === null) {
-      localStorage.removeItem("tpl-playground-settings-fields");
-    } else {
-      localStorage.setItem("tpl-playground-settings-fields", value);
-    }
-  }, flag);
-  await chooserPage.goto();
-  await chooserPage.selectFirstTemplate();
+  const query = settingsFields === null ? {} : { settingsFields };
+  await scenePage.goto("example-launchpad-launch", query);
   await editorPage.waitForReady();
-  await editorPage.dismissOverlays();
+  await editorPage.closeCodeDrawer();
   return editorPage;
 }
 
@@ -74,9 +59,6 @@ test.describe("templateSettings.fields", () => {
     page,
     shadowDom,
   }) => {
-    // The exact case from #674: locale comes from the host's business logic and
-    // the preheader from a field next to the subject line, so neither belongs
-    // in the editor.
     await openEditorWith(
       page,
       shadowDom,
@@ -90,7 +72,6 @@ test.describe("templateSettings.fields", () => {
     await expect(
       panel.locator(SELECTORS.templateSettingsCard("preheader")),
     ).toHaveCount(0);
-    // What remains is untouched.
     await expect(
       panel.locator(SELECTORS.templateSettingsCard("layout")),
     ).toBeVisible();
@@ -124,7 +105,6 @@ test.describe("templateSettings.fields", () => {
     await expect(
       panel.locator(SELECTORS.templateSettingsFontFamily),
     ).toHaveCount(0);
-    // Layout's only field is excluded, so its card goes with it.
     await expect(
       panel.locator(SELECTORS.templateSettingsCard("layout")),
     ).toHaveCount(0);
@@ -134,10 +114,6 @@ test.describe("templateSettings.fields", () => {
     page,
     shadowDom,
   }) => {
-    // Cards space their contents with a flex gap rather than a bottom margin on
-    // every child but the last, because which field is last depends on the
-    // consumer's allowlist. Measured as the distance from the last control's
-    // bottom edge to the card's padding box.
     await openEditorWith(page, shadowDom, "backgroundColor,textColor");
     const panel = await openSettingsTab(page);
     const card = panel.locator(SELECTORS.templateSettingsCard("appearance"));
@@ -154,7 +130,6 @@ test.describe("templateSettings.fields", () => {
       );
     }, SELECTORS.templateSettingsTextColor);
 
-    // Sub-pixel tolerance only: a reintroduced `mb-3.5` would read ~14px here.
     expect(Math.abs(gap)).toBeLessThan(1.5);
     await expect(last).toBeVisible();
   });
@@ -167,8 +142,6 @@ test.describe("templateSettings.fields", () => {
 
     await expect(page.locator(SELECTORS.rightTabSettings)).toHaveCount(0);
     await expect(page.locator(SELECTORS.rightPanelSettings)).toHaveCount(0);
-    // The Content tab is the one that must survive — losing it would leave the
-    // sidebar with no way to edit a block.
     await expect(page.locator(SELECTORS.rightTabContent)).toBeVisible();
     await expect(page.locator(SELECTORS.rightPanelContent)).toBeVisible();
   });
@@ -177,12 +150,8 @@ test.describe("templateSettings.fields", () => {
     page,
     shadowDom,
   }) => {
-    // Presentation only: hiding a setting must not clear it. The template's own
-    // locale and preheader have to survive into the export with the panel gone.
     await openEditorWith(page, shadowDom, "width");
     const panel = await openSettingsTab(page);
-    // Both cards really are gone, so the export assertions below can't be
-    // satisfied by a config that never took effect.
     await expect(
       panel.locator(SELECTORS.templateSettingsCard("language")),
     ).toHaveCount(0);

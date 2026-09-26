@@ -44,7 +44,7 @@ Sie können es auch von einem CDN laden:
 </script>
 ```
 
-## Verwendung
+## Verwendung {#usage}
 
 ```ts
 import { convertUnlayerTemplate } from '@templatical/import-unlayer';
@@ -65,6 +65,8 @@ const editor = await init({
 // Den Konvertierungsbericht auf Probleme prüfen
 console.log(report);
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/import-unlayer)
 
 Die Funktion gibt ein `ImportResult` zurück mit:
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor

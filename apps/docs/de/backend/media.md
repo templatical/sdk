@@ -362,3 +362,9 @@ await init({ container: '#editor', media });
 ```
 
 Eine CMS-Galerie, die listet und hochlädt und sonst nichts, hat dieselbe Form wie das Berechtigungsbeispiel oben. Geteilte und vorlagenspezifische Galerien führen Sie in `list({ templateId })` zusammen.
+
+## Im Playground
+
+Das Setup **Media** übergibt einen `media`-Provider mit einer vorbefüllten Galerie im Speicher dieses Browsers: durchsuchen, per Drag-and-drop hochladen, ein Bild auswählen.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/media)

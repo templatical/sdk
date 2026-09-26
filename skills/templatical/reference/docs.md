@@ -7,7 +7,7 @@ The SDK reference is **not bundled with this skill**. It is fetched, so it is
 always current — a packed copy would be frozen at install time, and these docs
 change faster than anyone reinstalls a skill.
 
-## The two fetches
+## The three fetches
 
 1. **The index.** `https://docs.templatical.com/llms.txt` — every page, grouped,
    one line each with its title, URL and a one-sentence description. Read it and
@@ -20,9 +20,16 @@ change faster than anyone reinstalls a skill.
    ending in `/` is a 404, and the index carries several of those. Fetch the
    rendered HTML only if the markdown route fails; HTML mangles this product's
    own merge-tag and logic-tag syntax in every example.
+3. **The playground scene.** Docs remain the contract; playground scenes are
+   the runnable `init()`. `https://play.templatical.com/llms.txt` lists live
+   setups, one line each. Pick the scene that matches the `init()` shape, then
+   fetch `https://play.templatical.com/scenes/<id>.md` for the snippet. Scene
+   twins are always `/scenes/<id>.md` — there is no directory form. Skip this
+   third fetch when the question is not about a live setup.
 
-Fetch one page, not several. If the index offers no page that fits, say so
-rather than fetching a near-match and answering from it.
+Fetch one docs page, not several. If the index offers no page that fits, say so
+rather than fetching a near-match and answering from it. The playground index
+is extra, after that page, when you need the pasteable snippet.
 
 ## If you have no web-fetch tool
 
@@ -30,6 +37,7 @@ Use the shell, which this skill already requires for every command:
 
 ```
 curl -s https://docs.templatical.com/llms.txt
+curl -s https://play.templatical.com/llms.txt
 ```
 
 If neither is available, give the user the URL and say what to look for. Do not

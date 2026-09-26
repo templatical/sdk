@@ -131,7 +131,7 @@ This affects the **editor chrome** only. The email content on the canvas uses th
 
 The same `--tpl-user-base-size` knob applies to the standalone `@templatical/media-library` SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
 
-## ThemeOverrides config
+## ThemeOverrides config {#themeoverrides-config}
 
 Use the `theme` field of `init()` when you need to apply theme overrides programmatically (multi-tenant branding, user preference toggles, etc.):
 
@@ -149,6 +149,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/theming)
 
 `ThemeOverrides` is applied as inline styles on the editor's `.tpl` root, so it wins over the class-bound defaults and over any `--tpl-user-*` variables you've set on the container.
 

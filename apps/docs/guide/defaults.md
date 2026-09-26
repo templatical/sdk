@@ -7,7 +7,7 @@ description: Customize default properties for newly created blocks and template 
 
 Block properties (colors, font sizes, padding, placeholder text, etc.) are hardcoded in factory functions. `blockDefaults` and `templateDefaults` let you override these so every new block and template matches your brand out of the box.
 
-## Block Defaults
+## Block Defaults {#block-defaults}
 
 Pass a `blockDefaults` object to `init()`. Each key maps to a block type and accepts a partial override of that block's properties:
 
@@ -29,6 +29,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/defaults)
 
 Defaults apply when:
 - Dragging a block from the sidebar

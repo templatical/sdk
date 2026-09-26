@@ -17,8 +17,6 @@ import type { Page } from "@playwright/test";
 
 async function bootDarkEditor(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
     // Raw string, not JSON — VueUse's useLocalStorage uses the string serializer.
     localStorage.setItem("tpl-playground-theme", "dark");
   });
@@ -45,12 +43,11 @@ async function readActionBar(
 test.describe("nested block chrome theming (dark UI)", () => {
   test("a section child's action bar matches a top-level block's", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootDarkEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -90,12 +87,11 @@ test.describe("nested block chrome theming (dark UI)", () => {
 
   test("nested chrome does not inherit the email content's light background", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
     await bootDarkEditor(page);
-    await chooserPage.goto();
-    await chooserPage.selectFirstTemplate();
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 

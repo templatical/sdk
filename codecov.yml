@@ -1,0 +1,6 @@
+# The playground is a demo app. Its unit tests run under `test:coverage` and
+# gate CI through the test job, and its UI is exercised by the Playwright
+# suite, which Codecov cannot see. Counting its unit coverage would pull the
+# packages' number down and fail every playground PR's patch check.
+ignore:
+  - "apps/playground/**"

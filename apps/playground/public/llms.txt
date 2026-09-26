@@ -1,0 +1,61 @@
+# Templatical Playground
+
+> Live init() setups for the Templatical email editor SDK.
+
+Each scene is also raw markdown: /scenes/<id>.md
+
+## Minimum
+
+- [Minimum setup](https://play.templatical.com/scenes/minimum): Empty canvas, nothing wired
+
+## Configure
+
+- [Fonts](https://play.templatical.com/scenes/fonts): Limit the type menu
+- [Defaults](https://play.templatical.com/scenes/defaults): New blocks stay on-brand
+- [Theming](https://play.templatical.com/scenes/theming): Paint the chrome your colors
+- [Layout](https://play.templatical.com/scenes/layout): Wrap every email in your shell
+- [Internationalization](https://play.templatical.com/scenes/i18n): German chrome and placeholders
+- [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): Mount in the page light DOM
+- [Issues](https://play.templatical.com/scenes/issues): Lint the template as you edit
+- [Custom blocks](https://play.templatical.com/scenes/custom-blocks): Register your own block type
+
+## Personalization
+
+- [Merge tags](https://play.templatical.com/scenes/merge-tags): Insert a field from the list
+- [Merge tags on request](https://play.templatical.com/scenes/merge-tags-on-request): Pick fields from your app
+- [Merge tag samples](https://play.templatical.com/scenes/merge-tags-samples): Preview with sample values
+- [Resolve preview](https://play.templatical.com/scenes/merge-tags-resolve-preview): Preview with real recipient data
+- [Logic tags](https://play.templatical.com/scenes/logic-tags): Branch copy with IF / ENDIF
+- [Display conditions](https://play.templatical.com/scenes/display-conditions): Hide a block per recipient
+
+## Your backend
+
+- [Templates](https://play.templatical.com/scenes/templates): Load and save the template
+- [Version history](https://play.templatical.com/scenes/version-history): Restore an earlier snapshot
+- [Comments](https://play.templatical.com/scenes/comments): Thread a note on a block
+- [Saved blocks](https://play.templatical.com/scenes/saved-blocks): Bookmark a reusable group
+- [Media](https://play.templatical.com/scenes/media): Upload and pick an image
+- [Test email](https://play.templatical.com/scenes/test-email): Send this to an inbox
+- [Render](https://play.templatical.com/scenes/render): Export MJML and HTML
+
+## Import
+
+- [Unlayer](https://play.templatical.com/scenes/import-unlayer): Paste Unlayer JSON
+- [BeeFree](https://play.templatical.com/scenes/import-beefree): Paste BeeFree JSON
+- [Stripo](https://play.templatical.com/scenes/import-stripo): Paste Stripo HTML
+- [Topol](https://play.templatical.com/scenes/import-topol): Paste Topol JSON
+- [Chamaileon](https://play.templatical.com/scenes/import-chamaileon): Paste Chamaileon JSON
+- [Easy Email Pro](https://play.templatical.com/scenes/import-easy-email-pro): Paste Easy Email Pro JSON
+- [MJML](https://play.templatical.com/scenes/import-mjml): Paste MJML source
+- [HTML](https://play.templatical.com/scenes/import-html): Paste table-based HTML
+
+## Examples
+
+- [Launchpad launch](https://play.templatical.com/scenes/example-launchpad-launch): SaaS product launch email
+- [Launchpad reset](https://play.templatical.com/scenes/example-launchpad-reset): Password reset, same brand
+- [Flowwork welcome](https://play.templatical.com/scenes/example-flowwork-welcome): Onboarding with resolved tags
+- [Flowwork newsletter](https://play.templatical.com/scenes/example-flowwork-newsletter): Weekly digest with curated fonts
+- [Sable order](https://play.templatical.com/scenes/example-sable-order): Order receipt with sample values
+- [Sable Friday](https://play.templatical.com/scenes/example-sable-friday): Sale with live HTML preview
+- [Northstage event](https://play.templatical.com/scenes/example-northstage-event): Event invite, locked colors
+- [Northstage Arabic](https://play.templatical.com/scenes/example-northstage-ar): Same invite, Arabic RTL

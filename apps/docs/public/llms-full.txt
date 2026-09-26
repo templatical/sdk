@@ -2051,6 +2051,12 @@ useCommentListener({
 });
 ```
 
+## In the playground
+
+The **Comments** setup adds a `comments` provider and a `user`, so blocks carry threaded review notes.
+
+[Open in playground](https://play.templatical.com/scenes/comments)
+
 ---
 
 # Connect your backend
@@ -2496,6 +2502,12 @@ await init({ container: '#editor', media });
 
 A CMS gallery that lists and uploads, and nothing else, is the same shape as the permissions example above. Shared and per-template galleries merge inside `list({ templateId })`.
 
+## In the playground
+
+The **Media** setup passes a `media` provider with a seeded gallery in this browser's storage: browse, drop a file to upload, pick an image.
+
+[Open in playground](https://play.templatical.com/scenes/media)
+
 ---
 
 # Rendering & Export
@@ -2779,6 +2791,12 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 `UNRENDERABLE_MARKER_PREFIX` is the marker's stable leading text — scan for it before shipping. `renderUnrenderableBlock(block)` emits one and logs the warning, so a `blockRenderers` override can degrade the same way for a variant it cannot handle, instead of returning `""` and reintroducing a silent drop.
 
+## In the playground
+
+The **Render** setup runs `editor.toMjml()` in the browser and `toHtml()` through one `compileMjml` function.
+
+[Open in playground](https://play.templatical.com/scenes/render)
+
 ## Reference
 
 - [`@templatical/renderer` API](/api/renderer-typescript)
@@ -3045,6 +3063,12 @@ const {
 It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and re-throws after reporting to `onError`.
 
 Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a withheld mutation — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.
+
+## In the playground
+
+The **Saved blocks** setup keeps a library in this browser's storage: save a group of blocks, then insert, rename or delete it.
+
+[Open in playground](https://play.templatical.com/scenes/saved-blocks)
 
 ---
 
@@ -3315,6 +3339,12 @@ await init({
 
 `Cmd`/`Ctrl`+`S` flushes that debounce immediately, so the keystroke still reaches you. You then own the save button, the status and the dirty prompt as well. Use `onChange` when the editor's chrome isn't what you want; use the provider when it is.
 
+## In the playground
+
+The **Templates** setup wires a `templates` provider: save, load, rename, and optional autosave.
+
+[Open in playground](https://play.templatical.com/scenes/templates)
+
 ## Reference
 
 - [`init()` options](/api/editor)
@@ -3485,6 +3515,12 @@ What it shows for merge tags depends on how much you configured — labels by de
 Even fully resolved it is not a byte-for-byte preview of the delivered email: the real message is compiled HTML rendered by a mail client. Treat it as "is this the right template, with the right data?", not "is this exactly what lands in the inbox?".
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
+
+## In the playground
+
+The **Test email** setup adds the header's Test button, with a recipient picker and a simulated send.
+
+[Open in playground](https://play.templatical.com/scenes/test-email)
 
 ---
 
@@ -3684,6 +3720,12 @@ await history.resolveContent(v);             // the hint, or get(), cached
 await history.restore(v.id);
 ```
 
+## In the playground
+
+The **Version history** setup adds a `versionHistory` provider next to `templates`, so past saves can be browsed, previewed and restored.
+
+[Open in playground](https://play.templatical.com/scenes/version-history)
+
 ---
 
 # Author features
@@ -3696,15 +3738,15 @@ Provider methods run in the browser. Hide a control with `false`; enforce the sa
 
 ## Storage and send
 
-| Feature | What authors do | `init()` key | Docs |
-|---|---|---|---|
-| Save and load | Name the template, save, autosave, unsaved-changes guard | `templates` | [Saving and loading](/backend/templates) |
-| Version history | Step through past versions, preview, restore | `versionHistory` | [Version history](/backend/version-history) |
-| Comments | Thread on a block, reply, resolve | `comments` | [Comments](/backend/comments) |
-| Saved blocks | Bookmark a group, browse, insert | `savedBlocks` | [Saved blocks](/backend/saved-blocks) |
-| Media library | Browse, upload, crop, folders | `media` | [Media](/backend/media) |
-| Test email | Send this template to an inbox | `testEmail` | [Test emails](/backend/test-email) |
-| MJML / HTML export | `toMjml()` / `toHtml()` on the instance | `render` (optional; local renderer also works) | [Rendering](/backend/render) |
+| Feature | What authors do | `init()` key | Docs | Playground |
+|---|---|---|---|---|
+| Save and load | Name the template, save, autosave, unsaved-changes guard | `templates` | [Saving and loading](/backend/templates) | [templates](https://play.templatical.com/scenes/templates) |
+| Version history | Step through past versions, preview, restore | `versionHistory` | [Version history](/backend/version-history) | [version-history](https://play.templatical.com/scenes/version-history) |
+| Comments | Thread on a block, reply, resolve | `comments` | [Comments](/backend/comments) | [comments](https://play.templatical.com/scenes/comments) |
+| Saved blocks | Bookmark a group, browse, insert | `savedBlocks` | [Saved blocks](/backend/saved-blocks) | [saved-blocks](https://play.templatical.com/scenes/saved-blocks) |
+| Media library | Browse, upload, crop, folders | `media` | [Media](/backend/media) | [media](https://play.templatical.com/scenes/media) |
+| Test email | Send this template to an inbox | `testEmail` | [Test emails](/backend/test-email) | [test-email](https://play.templatical.com/scenes/test-email) |
+| MJML / HTML export | `toMjml()` / `toHtml()` on the instance | `render` (optional; local renderer also works) | [Rendering](/backend/render) | [render](https://play.templatical.com/scenes/render) |
 
 A bundled browser-local adapter exists for saved blocks and media if you want the UI with no server of your own yet.
 
@@ -3712,12 +3754,12 @@ A bundled browser-local adapter exists for saved blocks and media if you want th
 
 No provider. Configure on `init()` or in template settings.
 
-| Feature | What authors do | Docs |
-|---|---|---|
-| Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) |
-| Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) |
-| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` |
-| Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) |
+| Feature | What authors do | Docs | Playground |
+|---|---|---|---|
+| Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) | [merge-tags](https://play.templatical.com/scenes/merge-tags) |
+| Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) | [display-conditions](https://play.templatical.com/scenes/display-conditions) |
+| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` | [issues](https://play.templatical.com/scenes/issues) |
+| Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) | [custom-blocks](https://play.templatical.com/scenes/custom-blocks) |
 
 Issues is an optional peer: skip the package and the tab never downloads.
 
@@ -4466,7 +4508,7 @@ bun add @templatical/editor @templatical/renderer
 
 :::
 
-## 2. Mount the editor
+## 2. Mount the editor {#mount-the-editor}
 
 Paste this into an HTML file and open it. No bundler. Framework and package-manager mounts live on [Installation](/getting-started/installation). Pin a version for production — [CDN](/getting-started/installation#cdn).
 
@@ -4501,6 +4543,8 @@ Paste this into an HTML file and open it. No bundler. Framework and package-mana
 </body>
 </html>
 ```
+
+[Open in playground](https://play.templatical.com/scenes/minimum)
 
 Store `json` so users can edit later. Compile `mjml` on the server — `toMjml()` does not produce HTML.
 
@@ -5678,6 +5722,12 @@ dataSource: {
 },
 ```
 
+## In the playground
+
+The **Custom blocks** setup registers one block type, which appears on the palette next to the built-in ones.
+
+[Open in playground](https://play.templatical.com/scenes/custom-blocks)
+
 ---
 
 # Block & Template Defaults
@@ -5686,7 +5736,7 @@ Source: https://docs.templatical.com/guide/defaults
 
 Block properties (colors, font sizes, padding, placeholder text, etc.) are hardcoded in factory functions. `blockDefaults` and `templateDefaults` let you override these so every new block and template matches your brand out of the box.
 
-## Block Defaults
+## Block Defaults {#block-defaults}
 
 Pass a `blockDefaults` object to `init()`. Each key maps to a block type and accepts a partial override of that block's properties:
 
@@ -5708,6 +5758,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/defaults)
 
 Defaults apply when:
 - Dragging a block from the sidebar
@@ -6088,6 +6140,70 @@ Two ways, and they answer different questions:
 - **[Test emails](/backend/test-email)** — send to different recipient profiles and confirm each renders in a real inbox. Slower, but it exercises your platform's own evaluation and the mail client, which no preview can.
   :::
 
+## In the playground
+
+The **Display conditions** setup passes `displayConditions`, so any block can be shown or hidden per recipient.
+
+[Open in playground](https://play.templatical.com/scenes/display-conditions)
+
+---
+
+# Examples
+
+Source: https://docs.templatical.com/guide/examples
+
+Campaign emails with a brand kit and a composed `init()`. Feature scenes on the rest of this site isolate one key; these pages are the emails.
+
+The catalog at [play.templatical.com](https://play.templatical.com) lists every setup, including quiet feature scenes.
+
+## Launchpad product launch {#launchpad-launch}
+
+SaaS product announcement. Merge tags, logic tags, display conditions, a testimonial custom block, and saved blocks.
+
+[Open in playground](https://play.templatical.com/scenes/example-launchpad-launch)
+
+## Launchpad password reset {#launchpad-reset}
+
+Transactional credential reset on the same Launchpad kit.
+
+[Open in playground](https://play.templatical.com/scenes/example-launchpad-reset)
+
+## Flowwork welcome {#flowwork-welcome}
+
+Onboarding mail. Preview uses `resolvePreview`.
+
+[Open in playground](https://play.templatical.com/scenes/example-flowwork-welcome)
+
+## Flowwork newsletter {#flowwork-newsletter}
+
+Periodic update. Curated fonts on the Flowwork kit.
+
+[Open in playground](https://play.templatical.com/scenes/example-flowwork-newsletter)
+
+## Sable order confirmation {#sable-order}
+
+Shop receipt. Product photography in the Sable kit.
+
+[Open in playground](https://play.templatical.com/scenes/example-sable-order)
+
+## Sable Black Friday {#sable-friday}
+
+Sale campaign. `htmlBlockPreview` as composed.
+
+[Open in playground](https://play.templatical.com/scenes/example-sable-friday)
+
+## Northstage event invitation {#northstage-event}
+
+Conference invitation. Brand-locked colors as composed.
+
+[Open in playground](https://play.templatical.com/scenes/example-northstage-event)
+
+## Northstage Arabic invitation {#northstage-ar}
+
+Same Northstage event, `ar` locale.
+
+[Open in playground](https://play.templatical.com/scenes/example-northstage-ar)
+
 ---
 
 # Custom Fonts
@@ -6143,7 +6259,7 @@ const editor = await init({
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
 
-## Restricting the built-in fonts
+## Restricting the built-in fonts {#restricting-the-built-in-fonts}
 
 By default the picker offers all seven built-in web-safe fonts (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) alongside your `customFonts`. Use `builtIns` to narrow that list — useful when you embed the editor as a white-label / brand-kit tool and want authors to stay on approved typefaces.
 
@@ -6158,6 +6274,8 @@ const fonts: FontsConfig = {
   ],
 };
 ```
+
+[Open in playground](https://play.templatical.com/scenes/fonts)
 
 - `true` or omitted — all seven built-ins are offered (the default).
 - `false` — no built-ins; the picker lists only your `customFonts`.
@@ -6186,7 +6304,7 @@ Two languages are in play, and they are not the same thing. `init({ locale })` s
 
 Writing direction is a third, independent setting. `settings.direction` (`"ltr"` or `"rtl"`) is the canvas `dir` and the rendered `<mjml dir>`. When unset, it follows the content language (`ar`, `he`, `fa`, `ur`, … → RTL). It does not follow `init({ locale })` or the host page. The "Right-to-left" toggle in Template Settings writes an explicit value; after that, locale no longer drives it.
 
-## Setting the locale
+## Setting the locale {#setting-the-locale}
 
 Pass the `locale` option to `init()`:
 
@@ -6198,6 +6316,8 @@ const editor = await init({
   locale: 'de',
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/i18n)
 
 ## Built-in locales
 
@@ -6741,6 +6861,12 @@ Lint runs on editor content. The shell is not linted.
 
 A send path that re-renders from stored JSON without `layout` will drop the shell. Pass the same `layout` to `renderToMjml` (or call `applyLayout`) on the server.
 
+## In the playground
+
+The **Layout** setup wraps the email in a card shell, which shows in preview and in the MJML export and never in the saved JSON.
+
+[Open in playground](https://play.templatical.com/scenes/layout)
+
 ---
 
 # Logic Tags
@@ -6874,6 +7000,12 @@ For example, make button text conditional:
 
 In a plain field a tag inserts at the cursor and a pair wraps the selected text (string-wise), the same as in rich text.
 
+## In the playground
+
+The **Logic tags** setup passes `logicTags`, so a dedicated picker inserts control-flow tokens such as IF / ENDIF.
+
+[Open in playground](https://play.templatical.com/scenes/logic-tags)
+
 ---
 
 # Merge Tags
@@ -6884,7 +7016,7 @@ Merge tags are tokens for dynamic content -- things like a recipient's name, a p
 
 Templatical provides built-in syntax presets for popular platforms and supports custom syntax definitions.
 
-## Configuration
+## Configuration {#configuration}
 
 Pass a `tags` array to register your merge tags with the editor. When the editor detects a merge tag value in the content (e.g. <code v-pre>{{first_name}}</code>), it replaces it visually with the human-readable `label` ("First Name") — making the template much easier to read and edit. The raw value is preserved in the output.
 
@@ -6911,6 +7043,8 @@ const editor = await init({
 });
 ```
 
+[Open in playground](https://play.templatical.com/scenes/merge-tags)
+
 ## MergeTag type
 
 Each tag is defined with a label (shown in the editor UI) and a value (the full merge tag string including delimiters). Two optional fields — `group` and `description` — are used by the built-in picker to organize and explain tags:
@@ -6931,7 +7065,7 @@ The `value` must include the syntax delimiters. For example, with Liquid syntax:
 
 The `group` and `description` fields are picker-only — they do not appear in the editor canvas, in autocomplete, or in the rendered MJML output. They are ignored if you only use `onRequest` for tag selection.
 
-## Sample values
+## Sample values {#sample-values}
 
 A tag can carry a `sample` — an example value that **preview surfaces** render in its place, so a preview reads like a delivered email instead of a list of field names:
 
@@ -6943,6 +7077,8 @@ mergeTags: {
   ],
 }
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples)
 
 Setting `sample` is the whole opt-in — there is no flag to enable alongside it. The value never leaves the preview: it is not written to the template, not returned by `getContent()`, not sent, and not present in MJML output. It also shows in the built-in picker, so an author can see what a tag will render before inserting it.
 
@@ -6972,7 +7108,7 @@ mergeTags: {
 }
 ```
 
-## Logic tag highlighting
+## Logic tag highlighting {#logic-tag-highlighting}
 
 Beyond data tags, the editor also recognizes logic tags -- conditional statements, loops, and other control flow syntax used by your email platform. These are detected automatically using the `logic` regex pattern from the selected syntax preset.
 
@@ -7020,6 +7156,8 @@ Examples of logic tags by preset:
 %%[ENDIF]%%
 ```
 :::
+
+[Open in playground](https://play.templatical.com/scenes/logic-tags)
 
 ## Custom syntax
 
@@ -7127,7 +7265,7 @@ const editor = await init({
 });
 ```
 
-## Dynamic tag loading
+## Dynamic tag loading {#dynamic-tag-loading}
 
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available merge tags from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
 
@@ -7142,6 +7280,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-on-request)
 
 ::: tip Precedence
 If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
@@ -7396,7 +7536,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertBeeFreeTemplate } from '@templatical/import-beefree';
@@ -7417,6 +7557,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-beefree)
 
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
@@ -7535,7 +7677,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertChamaileonTemplate } from '@templatical/import-chamaileon';
@@ -7551,6 +7693,8 @@ const editor = await init({
 
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-chamaileon)
 
 `convertChamaileonTemplate` is synchronous and returns an `ImportResult` with:
 
@@ -7736,7 +7880,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertEasyEmailProTemplate } from '@templatical/import-easy-email-pro';
@@ -7750,6 +7894,8 @@ const editor = await init({
 
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-easy-email-pro)
 
 `convertEasyEmailProTemplate` is synchronous and returns an `ImportResult` with:
 
@@ -7954,7 +8100,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertHtmlTemplate } from '@templatical/import-html';
@@ -7975,6 +8121,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-html)
 
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
@@ -8183,7 +8331,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertMjmlTemplate } from '@templatical/import-mjml';
@@ -8204,6 +8352,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-mjml)
 
 `convertMjmlTemplate` is synchronous and returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
@@ -8357,7 +8507,7 @@ bun add @templatical/import-stripo
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertStripoTemplate } from '@templatical/import-stripo';
@@ -8375,6 +8525,8 @@ const editor = await init({
   content: compiled.content,
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-stripo)
 
 `convertStripoTemplate` is synchronous and returns an `ImportResult` with:
 
@@ -8510,7 +8662,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertTopolTemplate } from '@templatical/import-topol';
@@ -8533,6 +8685,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-topol)
 
 `convertTopolTemplate` is synchronous and returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor
@@ -8695,7 +8849,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertUnlayerTemplate } from '@templatical/import-unlayer';
@@ -8716,6 +8870,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-unlayer)
 
 Each `report.entries` item is one source module:
 
@@ -8818,7 +8974,7 @@ With `mergeTags.tags` configured, a tag renders as its human-readable `label` wi
 
 This answers *"which field goes here?"*. It doesn't tell you what the email will look like.
 
-## Sample values
+## Sample values {#sample-values}
 
 Give a tag a `sample` and previews render that instead of its label:
 
@@ -8830,6 +8986,8 @@ mergeTags: {
   ],
 }
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-samples)
 
 Setting `sample` is the whole opt-in — there is no flag alongside it. See [Merge Tags](/guide/merge-tags#sample-values) for the field itself.
 
@@ -8850,7 +9008,7 @@ So a partly-configured template reads naturally where you've supplied data and s
 
 **Samples can't evaluate logic.** Substituting a value is not the same as taking a branch, so `{% if %}` … `{% endif %}` blocks stay visible as badges no matter how many samples you set. That ceiling is what the next layer exists for.
 
-## Resolved data with `resolvePreview`
+## Resolved data with `resolvePreview` {#resolved-data-with-resolvepreview}
 
 Pass a callback and your own backend resolves the template:
 
@@ -8870,6 +9028,8 @@ await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/merge-tags-resolve-preview)
 
 ### Why a callback rather than a built-in engine
 
@@ -8985,12 +9145,6 @@ None of it can double up. Resolved content reaches preview surfaces only, so wha
 ### Pull in live data
 
 Prices, stock levels, a personalised product grid. Anything the template references but doesn't store can be fetched at preview time, so the preview reflects reality rather than whatever was authored.
-
-## Playground
-
-The [playground](https://play.templatical.com) wires a fake resolver on the **Welcome Email** template only — it substitutes values and evaluates that template's `{% if plan_name == … %}` branches after a short delay, so you can watch the skeleton and see the conditional collapse to just the branch that applies.
-
-Every other template leaves it off, so they demonstrate the Sample / Label switch instead. Both templates describe which feature they're showing in their "what's on this template" panel.
 
 ## See also
 
@@ -9554,7 +9708,7 @@ Set the variables on the container that you pass to `init()` (or any ancestor) a
 
 See the [theming guide](./theming) for the full token list and dark-mode handling.
 
-## Opt-out: `shadowDom: false`
+## Opt-out: `shadowDom: false` {#opt-out-shadowdom-false}
 
 When you'd opt out:
 
@@ -9568,6 +9722,8 @@ const editor = await init({
   shadowDom: false,
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/shadow-dom-off)
 
 What you lose:
 
@@ -9930,7 +10086,7 @@ This affects the **editor chrome** only. The email content on the canvas uses th
 
 The same `--tpl-user-base-size` knob applies to the standalone `@templatical/media-library` SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
 
-## ThemeOverrides config
+## ThemeOverrides config {#themeoverrides-config}
 
 Use the `theme` field of `init()` when you need to apply theme overrides programmatically (multi-tenant branding, user preference toggles, etc.):
 
@@ -9948,6 +10104,8 @@ const editor = await init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/theming)
 
 `ThemeOverrides` is applied as inline styles on the editor's `.tpl` root, so it wins over the class-bound defaults and over any `--tpl-user-*` variables you've set on the container.
 
@@ -10723,7 +10881,7 @@ The package is an **optional peer** of `@templatical/editor`. Install it to turn
 If you load Templatical via CDN, there's nothing to install. The editor's CDN bundle ships `@templatical/quality` as a separate code-split chunk that lazy-loads automatically when linting is enabled.
 :::
 
-## Wire into the editor
+## Wire into the editor {#wire-into-the-editor}
 
 Pass `lint` to `init()` or `initCloud()`:
 
@@ -10751,6 +10909,8 @@ const editor = init({
   },
 });
 ```
+
+[Open in playground](https://play.templatical.com/scenes/issues)
 
 The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
 

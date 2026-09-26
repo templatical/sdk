@@ -6,6 +6,7 @@ const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/quick-start" },
   { text: "API", link: "/api/editor" },
   { text: "Quality", link: "/quality/" },
+  { text: "Examples", link: "/guide/examples" },
   { text: "Changelog", link: "/changelog" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -82,6 +83,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Display Conditions", link: "/guide/display-conditions" },
         { text: "Custom Blocks", link: "/guide/custom-blocks" },
         { text: "Images", link: "/guide/images" },
+        { text: "Examples", link: "/guide/examples" },
       ],
     },
     {
@@ -170,6 +172,7 @@ const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/quick-start" },
   { text: "API", link: "/de/api/editor" },
   { text: "Qualität", link: "/de/quality/" },
+  { text: "Beispiele", link: "/de/guide/examples" },
   { text: "Changelog", link: "/de/changelog" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -261,6 +264,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Anzeigebedingungen", link: "/de/guide/display-conditions" },
         { text: "Benutzerdefinierte Blöcke", link: "/de/guide/custom-blocks" },
         { text: "Bilder", link: "/de/guide/images" },
+        { text: "Beispiele", link: "/de/guide/examples" },
       ],
     },
     {

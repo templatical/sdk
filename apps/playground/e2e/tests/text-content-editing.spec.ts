@@ -62,7 +62,7 @@ test.describe("Text content editing", () => {
       .toMatch(/<(strong|b)[^>]*>/);
   });
 
-  test("typed content persists in JSON export", async ({
+  test("typed content persists in MJML export", async ({
     editorReady: { editorPage },
     page,
   }) => {
@@ -80,14 +80,16 @@ test.describe("Text content editing", () => {
       page.locator(blockByType("paragraph")).first(),
     ).toContainText(testText);
 
-    await editorPage.openExport();
-    await page.locator(SELECTORS.exportTabJson).click();
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      page.locator(SELECTORS.exportDownloadBtn).click(),
-    ]);
-    const content = await (await download.createReadStream()).toArray();
-    const json = Buffer.concat(content).toString("utf-8");
-    expect(json).toContain(testText);
+    await page.waitForFunction(
+      () =>
+        typeof (window as { __tplPlaygroundGetMjml?: () => Promise<string> })
+          .__tplPlaygroundGetMjml === "function",
+    );
+    const mjml = await page.evaluate(() =>
+      (
+        window as { __tplPlaygroundGetMjml?: () => Promise<string> }
+      ).__tplPlaygroundGetMjml!(),
+    );
+    expect(mjml).toContain(testText);
   });
 });

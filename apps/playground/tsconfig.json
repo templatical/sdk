@@ -23,5 +23,5 @@
       "@templatical/import-easy-email-pro": ["../../packages/import-easy-email-pro/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "src/env.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "src/env.d.ts", "tests/**/*.ts"]
 }

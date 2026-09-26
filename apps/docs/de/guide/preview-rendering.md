@@ -19,11 +19,11 @@ Spätere Ebenen gewinnen. Setzen Sie ein `sample`, verwenden Vorschauen es anste
 
 ## Bezeichnungen (Standard)
 
-Mit konfigurierten `mergeTags.tags` erscheint ein Tag als menschenlesbares `label` mit Hervorhebung, sodass die Vorlage wie Prosa statt wie Tokens liest. Logik-Tags erscheinen als Schlüsselwort-Badges — **IF**, **ENDIF**, **FOR**. Siehe [Merge-Tags](/de/guide/merge-tags) und [Hervorhebung von Logik-Tags](/de/guide/merge-tags#hervorhebung-von-logik-tags).
+Mit konfigurierten `mergeTags.tags` erscheint ein Tag als menschenlesbares `label` mit Hervorhebung, sodass die Vorlage wie Prosa statt wie Tokens liest. Logik-Tags erscheinen als Schlüsselwort-Badges — **IF**, **ENDIF**, **FOR**. Siehe [Merge-Tags](/de/guide/merge-tags) und [Hervorhebung von Logik-Tags](/de/guide/merge-tags#logic-tag-highlighting).
 
 Das beantwortet die Frage *„welches Feld steht hier?"*. Es sagt nichts darüber, wie die E-Mail aussehen wird.
 
-## Beispielwerte
+## Beispielwerte {#sample-values}
 
 Geben Sie einem Tag ein `sample`, und Vorschauen zeigen es anstelle der Bezeichnung:
 
@@ -36,7 +36,9 @@ mergeTags: {
 }
 ```
 
-`sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter. Zum Feld selbst siehe [Merge-Tags](/de/guide/merge-tags#beispielwerte).
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-samples)
+
+`sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter. Zum Feld selbst siehe [Merge-Tags](/de/guide/merge-tags#sample-values).
 
 ### Der Umschalter Beispiel / Bezeichnung
 
@@ -55,7 +57,7 @@ Eine teilweise konfigurierte Vorlage liest sich damit natürlich, wo Sie Daten h
 
 **Beispielwerte können keine Logik auswerten.** Einen Wert zu ersetzen ist nicht dasselbe wie eine Verzweigung auszuwerten, daher bleiben `{% if %}` … `{% endif %}`-Blöcke als Badges sichtbar, egal wie viele Beispielwerte Sie setzen. Genau für diese Grenze existiert die nächste Ebene.
 
-## Aufgelöste Daten mit `resolvePreview`
+## Aufgelöste Daten mit `resolvePreview` {#resolved-data-with-resolvepreview}
 
 Übergeben Sie einen Callback, und Ihr eigenes Backend löst die Vorlage auf:
 
@@ -75,6 +77,8 @@ await init({
   },
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/merge-tags-resolve-preview)
 
 ### Warum ein Callback und keine integrierte Engine
 
@@ -191,12 +195,6 @@ Doppelt anhängen können Sie dabei nicht. Aufgelöste Inhalte erreichen ausschl
 ### Live-Daten einbeziehen
 
 Preise, Lagerbestände, ein personalisiertes Produktraster. Alles, worauf die Vorlage verweist, ohne es zu speichern, kann zum Vorschauzeitpunkt geladen werden — so spiegelt die Vorschau die Realität und nicht den Stand bei der Erstellung.
-
-## Playground
-
-Der [Playground](https://play.templatical.com) verdrahtet einen simulierten Resolver **nur** in der Vorlage **Welcome Email** — er ersetzt Werte und wertet die `{% if plan_name == … %}`-Verzweigungen dieser Vorlage nach kurzer Verzögerung aus, sodass Sie den Platzhalter sehen und beobachten können, wie der Bedingungsblock auf den zutreffenden Zweig zusammenfällt.
-
-Alle anderen Vorlagen lassen ihn aus und demonstrieren stattdessen den Umschalter Beispiel / Bezeichnung. Beide Vorlagen beschreiben in ihrem Panel „Was diese Vorlage zeigt", welche Funktion sie darstellen.
 
 ## Siehe auch
 

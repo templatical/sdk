@@ -2,9 +2,12 @@
 withDefaults(
   defineProps<{
     size?: number;
+    /** Set when live text beside the mark already names the brand. */
+    decorative?: boolean;
   }>(),
   {
     size: 32,
+    decorative: false,
   },
 );
 </script>
@@ -14,6 +17,6 @@ withDefaults(
     :width="size"
     :height="size"
     src="https://templatical.com/logo.svg"
-    alt="Templatical"
+    :alt="decorative ? '' : 'Templatical'"
   />
 </template>

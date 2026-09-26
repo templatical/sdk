@@ -1,17 +1,18 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
 import type { Locator, Page } from "@playwright/test";
-import { ChooserPage } from "../pages/chooser.page";
 import { EditorPage } from "../pages/editor.page";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * BYO media library in the OSS editor, backed by the playground's
  * `createLocalStorageMediaProvider({ key: "templatical:media" })`.
  *
- * Media is on unless `tpl-playground-media` is `"false"`. The first open of
- * an absent store seeds three Unsplash HTTPS assets; this spec reads that
- * seed rather than writing its own. Drop uses the same synthetic DataTransfer
- * as `imageDropUpload.spec.ts` — Playwright's `dragTo` cannot carry a File.
+ * Media is on for `/scenes/media` and off on `/scenes/minimum`. The first
+ * open of an absent store seeds three first-party `/examples/...` assets;
+ * this spec reads that seed rather than writing its own. Drop uses the same
+ * synthetic DataTransfer as `imageDropUpload.spec.ts` — Playwright's `dragTo`
+ * cannot carry a File.
  *
  * Both Playwright projects pick this spec up; do not `forEach` DOM modes.
  *
@@ -19,8 +20,7 @@ import { EditorPage } from "../pages/editor.page";
  * cover that branch.
  */
 
-const FIRST_SEED_URL =
-  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80";
+const FIRST_SEED_URL = "/examples/sable/headphones.png";
 
 /**
  * Tiny PNG header. Enough for `image/png` MIME filtering and a FileReader
@@ -47,74 +47,73 @@ function dropPngOn(dropZone: Locator) {
 }
 
 /**
- * Media-off must be set before navigation — `blankEditorReady` goes to the
- * chooser first, and the flag is read once at `init()`. Same shape as
- * `settings-visibility.spec.ts`.
+ * Media-off is the minimum scene: no `media` key, so image fields stay URL-only.
  */
 async function openBlankEditorMediaOff(page: Page, shadowDom: boolean) {
-  const chooserPage = new ChooserPage(page, { shadowDom });
   const editorPage = new EditorPage(page);
-  await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-    localStorage.setItem("tpl-playground-media", "false");
-  });
-  await chooserPage.goto();
-  await chooserPage.selectBlankTemplate();
+  await new ScenePage(page, { shadowDom }).goto("minimum");
   await editorPage.waitForReady();
   await editorPage.dismissOverlays();
   return editorPage;
 }
 
 test.describe("Media library", () => {
-  test("Browse picks the first seeded asset onto the image block", async ({
-    blankEditorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.clickPaletteItem("image");
+  test.describe("with media provider", () => {
+    test.beforeEach(async ({ scenePage, editorPage }) => {
+      await scenePage.goto("media");
+      await editorPage.waitForReady();
+      await editorPage.dismissOverlays();
+    });
 
-    const imageBlock = page.locator(blockByType("image")).first();
-    await expect(imageBlock).toBeVisible();
-    await imageBlock.locator(SELECTORS.imageBrowseMedia).click();
+    test("Browse picks the first seeded asset onto the image block", async ({
+      editorPage,
+      page,
+    }) => {
+      await editorPage.clickPaletteItem("image");
 
-    const modal = page.locator(SELECTORS.mediaLibraryModal);
-    await expect(modal).toBeVisible();
+      const imageBlock = page.locator(blockByType("image")).first();
+      await expect(imageBlock).toBeVisible();
+      await imageBlock.locator(SELECTORS.imageBrowseMedia).click();
 
-    const firstItem = modal.locator(SELECTORS.mediaLibraryItem).first();
-    await expect(firstItem).toBeVisible();
-    await expect(firstItem).toHaveAttribute(
-      "data-media-id",
-      "seed-product-shot",
-    );
-    await firstItem.click();
+      const modal = page.locator(SELECTORS.mediaLibraryModal);
+      await expect(modal).toBeVisible();
 
-    const confirm = page.locator(SELECTORS.mediaConfirm);
-    await expect(confirm).toBeEnabled();
-    await confirm.click();
-    await expect(modal).toBeHidden();
+      const firstItem = modal.locator(SELECTORS.mediaLibraryItem).first();
+      await expect(firstItem).toBeVisible();
+      await expect(firstItem).toHaveAttribute(
+        "data-media-id",
+        "seed-product-shot",
+      );
+      await firstItem.click();
 
-    await expect(imageBlock.locator("img")).toHaveAttribute(
-      "src",
-      FIRST_SEED_URL,
-    );
-  });
+      const confirm = page.locator(SELECTORS.mediaConfirm);
+      await expect(confirm).toBeEnabled();
+      await confirm.click();
+      await expect(modal).toBeHidden();
 
-  test("dropping a PNG onto an image block sets a data URL src", async ({
-    blankEditorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.clickPaletteItem("image");
+      await expect(imageBlock.locator("img")).toHaveAttribute(
+        "src",
+        FIRST_SEED_URL,
+      );
+    });
 
-    const imageBlock = page.locator(blockByType("image")).first();
-    const dropZone = imageBlock.locator(SELECTORS.imageDropZone);
-    await expect(dropZone).toBeVisible();
+    test("dropping a PNG onto an image block sets a data URL src", async ({
+      editorPage,
+      page,
+    }) => {
+      await editorPage.clickPaletteItem("image");
 
-    await dropPngOn(dropZone);
+      const imageBlock = page.locator(blockByType("image")).first();
+      const dropZone = imageBlock.locator(SELECTORS.imageDropZone);
+      await expect(dropZone).toBeVisible();
 
-    await expect(imageBlock.locator("img")).toHaveAttribute(
-      "src",
-      /^data:image\/png/,
-    );
+      await dropPngOn(dropZone);
+
+      await expect(imageBlock.locator("img")).toHaveAttribute(
+        "src",
+        /^data:image\/png/,
+      );
+    });
   });
 
   test("media disabled: no Browse, drop ignored, URL field still there", async ({

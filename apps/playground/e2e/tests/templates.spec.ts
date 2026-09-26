@@ -1,10 +1,11 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { ScenePage } from "../pages/scene.page";
 
 /**
  * The BYO templates provider in the OSS editor, backed by the playground's
- * localStorage store (`templatesProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (`templatesProviderFor` in `apps/playground/src/host/providers.ts`).
  *
  * The playground attaches a template right after `init()` — `create()` on a
  * fresh chooser open — so the header's name field, status indicator and Save
@@ -14,8 +15,7 @@ import { SELECTORS } from "../helpers/selectors";
  * in `useTemplatesFeature.test.ts` / `editor-templates.test.ts`.
  */
 
-// `selectFirstTemplate()` opens Product Launch, so that's the record under test.
-const STORE_KEY = "templatical:template:product-launch";
+const STORE_KEY = "templatical:template:templates";
 
 type StoredTemplate = {
   id: string;
@@ -30,163 +30,149 @@ async function readStored(page: Page): Promise<StoredTemplate | null> {
   }, STORE_KEY);
 }
 
-/**
- * Storage flags are set through `addInitScript` because the provider is built
- * during the editor's mount — writing them after `goto()` races the initial load.
- */
-async function openEditor(
+async function openTemplatesScene(
   page: Page,
-  fixtures: {
-    chooserPage: { goto: () => Promise<void>; selectFirstTemplate: () => Promise<void> };
-    editorPage: { waitForReady: () => Promise<void>; dismissOverlays: () => Promise<void> };
+  shadowDom: boolean,
+  editorPage: {
+    waitForReady: () => Promise<void>;
+    dismissOverlays: () => Promise<void>;
   },
-  flags: Record<string, string> = {},
+  query: Record<string, string> = {},
 ): Promise<void> {
-  await page.addInitScript((entries) => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-    for (const [key, value] of entries as [string, string][]) {
-      localStorage.setItem(key, value);
-    }
-  }, Object.entries(flags));
-  await fixtures.chooserPage.goto();
-  await fixtures.chooserPage.selectFirstTemplate();
-  await fixtures.editorPage.waitForReady();
-  await fixtures.editorPage.dismissOverlays();
+  await new ScenePage(page, { shadowDom }).goto("templates", query);
+  await editorPage.waitForReady();
+  await editorPage.dismissOverlays();
 }
 
 test.describe("templates provider", () => {
-  test("the header shows the attached template's name and a save button", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
+  test.describe("templates scene", () => {
+    test.beforeEach(async ({ page, shadowDom, editorPage }) => {
+      await openTemplatesScene(page, shadowDom, editorPage);
+    });
 
-    await expect(page.locator(SELECTORS.templateName)).toHaveText(
-      "Product Launch",
-    );
-    await expect(page.locator(SELECTORS.templateSave)).toBeVisible();
-    await expect(page.locator(SELECTORS.templateSave)).toBeEnabled();
-  });
-
-  test("create() stored the chosen template on first open", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-
-    const stored = await readStored(editorPage.page);
-    expect(stored?.id).toBe("product-launch");
-    expect(stored?.name).toBe("Product Launch");
-    expect(stored?.content.blocks.length).toBeGreaterThan(0);
-  });
-
-  test("no status badge is shown while nothing is unsaved", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
-
-    await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
-    await expect(page.locator(SELECTORS.saveStatusError)).toHaveCount(0);
-  });
-
-  test("an edit shows Unsaved, and Save persists it and confirms", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
-
-    const before = await readStored(page);
-    const blocksBefore = before!.content.blocks.length;
-
-    await editorPage.selectBlock(0);
-    await editorPage.duplicateSelectedBlock();
-    await expect(page.locator(SELECTORS.saveStatusUnsaved)).toBeVisible();
-
-    await page.locator(SELECTORS.templateSave).click();
-
-    await expect(page.locator(SELECTORS.saveStatusSaved)).toBeVisible();
-    await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
-    await expect
-      .poll(async () => (await readStored(page))!.content.blocks.length)
-      .toBe(blocksBefore + 1);
-  });
-
-  test("Cmd+S persists without touching the button", async ({
-    editorReady,
-  }) => {
-    const { editorPage } = editorReady;
-    const page = editorPage.page;
-
-    const blocksBefore = (await readStored(page))!.content.blocks.length;
-
-    await editorPage.selectBlock(0);
-    await editorPage.duplicateSelectedBlock();
-    await expect(page.locator(SELECTORS.saveStatusUnsaved)).toBeVisible();
-
-    await page.keyboard.press("ControlOrMeta+s");
-
-    await expect(page.locator(SELECTORS.saveStatusSaved)).toBeVisible();
-    await expect
-      .poll(async () => (await readStored(page))!.content.blocks.length)
-      .toBe(blocksBefore + 1);
-  });
-
-  test.describe("inline rename", () => {
-    test("commits on Enter and persists through the save patch", async ({
-      editorReady,
+    test("the header shows the attached template's name and a save button", async ({
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
-      await page.locator(SELECTORS.templateName).click();
-      const input = page.locator(SELECTORS.templateNameInput);
-      await expect(input).toBeVisible();
-      await expect(input).toHaveValue("Product Launch");
-
-      await input.fill("Spring Campaign");
-      await input.press("Enter");
-
       await expect(page.locator(SELECTORS.templateName)).toHaveText(
-        "Spring Campaign",
+        "Templates",
       );
+      await expect(page.locator(SELECTORS.templateSave)).toBeVisible();
+      await expect(page.locator(SELECTORS.templateSave)).toBeEnabled();
+    });
+
+    test("create() stored the chosen template on first open", async ({
+      editorPage,
+    }) => {
+      const stored = await readStored(editorPage.page);
+      expect(stored?.id).toBe("templates");
+      expect(stored?.name).toBe("Templates");
+      expect(stored?.content.blocks.length).toBeGreaterThan(0);
+    });
+
+    test("no status badge is shown while nothing is unsaved", async ({
+      editorPage,
+    }) => {
+      const page = editorPage.page;
+
+      await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
+      await expect(page.locator(SELECTORS.saveStatusError)).toHaveCount(0);
+    });
+
+    test("an edit shows Unsaved, and Save persists it and confirms", async ({
+      editorPage,
+    }) => {
+      const page = editorPage.page;
+
+      const before = await readStored(page);
+      const blocksBefore = before!.content.blocks.length;
+
+      await editorPage.selectBlock(0);
+      await editorPage.duplicateSelectedBlock();
+      await expect(page.locator(SELECTORS.saveStatusUnsaved)).toBeVisible();
+
+      await page.locator(SELECTORS.templateSave).click();
+
+      await expect(page.locator(SELECTORS.saveStatusSaved)).toBeVisible();
+      await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
       await expect
-        .poll(async () => (await readStored(page))!.name)
-        .toBe("Spring Campaign");
+        .poll(async () => (await readStored(page))!.content.blocks.length)
+        .toBe(blocksBefore + 1);
     });
 
-    test("Escape discards the draft and stores nothing", async ({
-      editorReady,
+    test("Cmd+S persists without touching the button", async ({
+      editorPage,
     }) => {
-      const { editorPage } = editorReady;
       const page = editorPage.page;
 
-      await page.locator(SELECTORS.templateName).click();
-      const input = page.locator(SELECTORS.templateNameInput);
-      await input.fill("Discarded");
-      await input.press("Escape");
+      const blocksBefore = (await readStored(page))!.content.blocks.length;
 
-      await expect(page.locator(SELECTORS.templateName)).toHaveText(
-        "Product Launch",
-      );
-      expect((await readStored(page))!.name).toBe("Product Launch");
+      await editorPage.selectBlock(0);
+      await editorPage.duplicateSelectedBlock();
+      await expect(page.locator(SELECTORS.saveStatusUnsaved)).toBeVisible();
+
+      await page.keyboard.press("ControlOrMeta+s");
+
+      await expect(page.locator(SELECTORS.saveStatusSaved)).toBeVisible();
+      await expect
+        .poll(async () => (await readStored(page))!.content.blocks.length)
+        .toBe(blocksBefore + 1);
     });
 
-    test("an emptied name reverts instead of clearing the title", async ({
-      editorReady,
-    }) => {
-      const { editorPage } = editorReady;
-      const page = editorPage.page;
+    test.describe("inline rename", () => {
+      test("commits on Enter and persists through the save patch", async ({
+        editorPage,
+      }) => {
+        const page = editorPage.page;
 
-      await page.locator(SELECTORS.templateName).click();
-      const input = page.locator(SELECTORS.templateNameInput);
-      await input.fill("");
-      await input.press("Enter");
+        await page.locator(SELECTORS.templateName).click();
+        const input = page.locator(SELECTORS.templateNameInput);
+        await expect(input).toBeVisible();
+        await expect(input).toHaveValue("Templates");
 
-      await expect(page.locator(SELECTORS.templateName)).toHaveText(
-        "Product Launch",
-      );
-      expect((await readStored(page))!.name).toBe("Product Launch");
+        await input.fill("Spring Campaign");
+        await input.press("Enter");
+
+        await expect(page.locator(SELECTORS.templateName)).toHaveText(
+          "Spring Campaign",
+        );
+        await expect
+          .poll(async () => (await readStored(page))!.name)
+          .toBe("Spring Campaign");
+      });
+
+      test("Escape discards the draft and stores nothing", async ({
+        editorPage,
+      }) => {
+        const page = editorPage.page;
+
+        await page.locator(SELECTORS.templateName).click();
+        const input = page.locator(SELECTORS.templateNameInput);
+        await input.fill("Discarded");
+        await input.press("Escape");
+
+        await expect(page.locator(SELECTORS.templateName)).toHaveText(
+          "Templates",
+        );
+        expect((await readStored(page))!.name).toBe("Templates");
+      });
+
+      test("an emptied name reverts instead of clearing the title", async ({
+        editorPage,
+      }) => {
+        const page = editorPage.page;
+
+        await page.locator(SELECTORS.templateName).click();
+        const input = page.locator(SELECTORS.templateNameInput);
+        await input.fill("");
+        await input.press("Enter");
+
+        await expect(page.locator(SELECTORS.templateName)).toHaveText(
+          "Templates",
+        );
+        expect((await readStored(page))!.name).toBe("Templates");
+      });
     });
   });
 
@@ -199,11 +185,11 @@ test.describe("templates provider", () => {
      */
     test("hides the save button and the status indicator", async ({
       page,
-      chooserPage,
+      shadowDom,
       editorPage,
     }) => {
-      await openEditor(page, { chooserPage, editorPage }, {
-        "tpl-playground-templates-readonly": "true",
+      await openTemplatesScene(page, shadowDom, editorPage, {
+        readonly: "1",
       });
 
       await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
@@ -217,13 +203,9 @@ test.describe("templates provider", () => {
       await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
     });
 
-    test("keeps editing working", async ({
-      page,
-      chooserPage,
-      editorPage,
-    }) => {
-      await openEditor(page, { chooserPage, editorPage }, {
-        "tpl-playground-templates-readonly": "true",
+    test("keeps editing working", async ({ page, shadowDom, editorPage }) => {
+      await openTemplatesScene(page, shadowDom, editorPage, {
+        readonly: "1",
       });
 
       const before = await editorPage.getBlockCount();
@@ -232,5 +214,28 @@ test.describe("templates provider", () => {
 
       await expect.poll(() => editorPage.getBlockCount()).toBe(before + 1);
     });
+  });
+
+  test("pushState back to Templates after readonly does not pin the readonly store", async ({
+    page,
+    shadowDom,
+    editorPage,
+  }) => {
+    await openTemplatesScene(page, shadowDom, editorPage, { readonly: "1" });
+    await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
+
+    await page.getByTestId("rail-scene-minimum").click();
+    await page
+      .locator('[data-testid="scene-host"][data-scene-ready="true"]')
+      .waitFor();
+
+    await page.getByTestId("catalog-tab-backend").click();
+    await page.getByTestId("rail-scene-templates").click();
+    await page
+      .locator('[data-testid="scene-host"][data-scene-ready="true"]')
+      .waitFor();
+    await editorPage.waitForReady();
+
+    await expect(page.locator(SELECTORS.templateSave)).toBeVisible();
   });
 });

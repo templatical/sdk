@@ -8,25 +8,16 @@ import { SELECTORS } from "../helpers/selectors";
  * page. Arabic Invitation is the fixture that actually sets `dir="rtl"`.
  */
 
-const TEMPLATE = "Arabic Invitation";
+const SCENE = "example-northstage-ar";
 
 async function openArabicInvitation(
-  page: import("@playwright/test").Page,
-  chooserPage: {
-    goto(): Promise<void>;
-    selectTemplateByName(name: string): Promise<void>;
-  },
+  scenePage: import("../pages/scene.page").ScenePage,
   editorPage: {
     waitForReady(): Promise<void>;
     dismissOverlays(): Promise<void>;
   },
 ) {
-  await page.addInitScript(() => {
-    localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-    localStorage.setItem("tpl-playground-features-dismissed", "true");
-  });
-  await chooserPage.goto();
-  await chooserPage.selectTemplateByName(TEMPLATE);
+  await scenePage.goto(SCENE);
   await editorPage.waitForReady();
   await editorPage.dismissOverlays();
 }
@@ -46,19 +37,19 @@ async function getMjml(page: import("@playwright/test").Page): Promise<string> {
 test.describe("content direction", () => {
   test("the Arabic template paints the canvas rtl", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openArabicInvitation(page, chooserPage, editorPage);
+    await openArabicInvitation(scenePage, editorPage);
     await expect(page.locator(SELECTORS.canvas)).toHaveAttribute("dir", "rtl");
   });
 
   test("column 0 sits on the right of a two-column section", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openArabicInvitation(page, chooserPage, editorPage);
+    await openArabicInvitation(scenePage, editorPage);
     const startCol = page.getByText("عمود البداية", { exact: false }).first();
     const image = page.locator('img[alt="صورة توضيحية للحدث"]');
     await expect(startCol).toBeVisible();
@@ -72,10 +63,10 @@ test.describe("content direction", () => {
 
   test("exported MJML carries dir=rtl", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openArabicInvitation(page, chooserPage, editorPage);
+    await openArabicInvitation(scenePage, editorPage);
     const mjml = await getMjml(page);
     expect(mjml).toContain('<mjml lang="ar" dir="rtl">');
     expect(mjml).toContain('direction="rtl"');
@@ -83,10 +74,10 @@ test.describe("content direction", () => {
 
   test("the settings toggle writes ltr and the canvas follows", async ({
     page,
-    chooserPage,
+    scenePage,
     editorPage,
   }) => {
-    await openArabicInvitation(page, chooserPage, editorPage);
+    await openArabicInvitation(scenePage, editorPage);
     await expect(page.locator(SELECTORS.canvas)).toHaveAttribute("dir", "rtl");
 
     await editorPage.openSettingsTab();

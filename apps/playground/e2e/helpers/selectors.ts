@@ -4,6 +4,15 @@ export const SELECTORS = {
   // Screens
   chooserScreen: '[data-testid="chooser-screen"]',
   editorScreen: '[data-testid="editor-screen"]',
+  sceneHost: '[data-testid="scene-host"]',
+  sceneNotFound: '[data-testid="scene-not-found"]',
+  codeDrawer: '[data-testid="code-drawer"]',
+  codeDrawerClose: '[data-testid="code-drawer-close"]',
+  codeDrawerCopy: '[data-testid="code-drawer-copy"]',
+  catalogScreen: '[data-testid="catalog-screen"]',
+  editorStage: '[data-testid="editor-stage"]',
+  toolbarCode: '[data-testid="toolbar-code"]',
+  toolbarDocs: '[data-testid="toolbar-docs"]',
 
   // Chooser
   templateCard: '[data-testid="template-card"]',
@@ -14,8 +23,8 @@ export const SELECTORS = {
   configButton: '[data-testid="toolbar-config"]',
   exportButton: '[data-testid="toolbar-export"]',
   shareButton: '[data-testid="toolbar-share"]',
-  themeButton: '[data-testid="toolbar-theme"]',
-  tourButton: '[data-testid="toolbar-tour"]',
+  hostSettings: '[data-testid="host-settings"]',
+  hostSettingsPanel: '[data-testid="host-settings-panel"]',
   localeSelect: '[data-testid="locale-select"]',
 
   // Canvas
@@ -225,13 +234,12 @@ export const SELECTORS = {
 
   // Feature overlay
   featureOverlay: '[data-testid="feature-overlay"]',
+  sceneNotes: '[data-testid="scene-notes"]',
+  sceneNotesClose: '[data-testid="scene-notes-close"]',
+  settingsShowNotes: '[data-testid="settings-show-notes"]',
   featureOverlayClose: '[data-testid="feature-overlay-close"]',
 
   // Onboarding
-  onboardingSpotlight: ".pg-onboarding-spotlight",
-  onboardingTooltip: ".pg-onboarding-tooltip",
-  onboardingSkip: '[data-testid="onboarding-skip"]',
-  onboardingNext: '[data-testid="onboarding-next"]',
 
   // Rich-text editable root (TipTap wrapper)
   textEditable: ".tpl-text-editable",
@@ -300,9 +308,16 @@ export const SELECTORS = {
   importTextareaEasyEmailPro: '[data-testid="import-textarea-easy-email-pro"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
+  importPanel: '[data-testid="import-panel"]',
+  importCancel: '[data-testid="import-cancel"]',
+  importClose: '[data-testid="import-close"]',
 } as const;
 
 /** Dynamic selector for block by type */
+export function themeOption(theme: "auto" | "light" | "dark") {
+  return `[data-testid="theme-option-${theme}"]`;
+}
+
 export function blockByType(type: string) {
   return `[data-block-type="${type}"]`;
 }

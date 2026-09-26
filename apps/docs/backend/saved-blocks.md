@@ -260,3 +260,8 @@ It keeps the list in sync after each successful call — prepending on create, r
 
 Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a withheld mutation — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.
 
+## In the playground
+
+The **Saved blocks** setup keeps a library in this browser's storage: save a group of blocks, then insert, rename or delete it.
+
+[Open in playground](https://play.templatical.com/scenes/saved-blocks)

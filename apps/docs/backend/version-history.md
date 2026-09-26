@@ -197,3 +197,8 @@ await history.resolveContent(v);             // the hint, or get(), cached
 await history.restore(v.id);
 ```
 
+## In the playground
+
+The **Version history** setup adds a `versionHistory` provider next to `templates`, so past saves can be browsed, previewed and restored.
+
+[Open in playground](https://play.templatical.com/scenes/version-history)

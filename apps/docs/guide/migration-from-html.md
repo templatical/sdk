@@ -44,7 +44,7 @@ You can also load it from a CDN:
 </script>
 ```
 
-## Usage
+## Usage {#usage}
 
 ```ts
 import { convertHtmlTemplate } from '@templatical/import-html';
@@ -65,6 +65,8 @@ const editor = await init({
 // Check the conversion report for any issues
 console.log(report);
 ```
+
+[Open in playground](https://play.templatical.com/scenes/import-html)
 
 The function returns an `ImportResult` with:
 - `content` — the converted `TemplateContent` ready for the editor

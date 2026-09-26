@@ -54,8 +54,6 @@ useEventListener(window, "hashchange", () => {
   currentPage.value = pages[window.location.hash] ?? App;
 });
 
-const shareId = new URLSearchParams(window.location.search).get("s");
-
 const app = createApp({
   setup() {
     return () =>
@@ -67,5 +65,4 @@ const app = createApp({
   },
 });
 
-app.provide("shareId", shareId);
 app.mount("#app");

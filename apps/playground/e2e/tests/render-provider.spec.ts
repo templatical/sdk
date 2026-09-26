@@ -1,5 +1,4 @@
 import { test, expect } from "../fixtures/editor.fixture";
-import { SELECTORS } from "../helpers/selectors";
 
 /**
  * Browser-level coverage for the render provider's **`compileMjml` tier**.
@@ -29,9 +28,8 @@ async function getMjml(page: import("@playwright/test").Page): Promise<string> {
         .__tplPlaygroundGetMjml === "function",
   );
   return page.evaluate(() =>
-    (
-      window as { __tplPlaygroundGetMjml?: () => Promise<string> }
-    ).__tplPlaygroundGetMjml!(),
+    (window as { __tplPlaygroundGetMjml?: () => Promise<string> })
+      .__tplPlaygroundGetMjml!(),
   );
 }
 
@@ -43,15 +41,20 @@ async function getHtml(page: import("@playwright/test").Page): Promise<string> {
         .__tplPlaygroundGetHtml === "function",
   );
   return page.evaluate(() =>
-    (
-      window as { __tplPlaygroundGetHtml?: () => Promise<string> }
-    ).__tplPlaygroundGetHtml!(),
+    (window as { __tplPlaygroundGetHtml?: () => Promise<string> })
+      .__tplPlaygroundGetHtml!(),
   );
 }
 
 test.describe("render provider — compileMjml tier", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("render");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+  });
+
   test("toHtml() resolves through the provider to compiled HTML", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     expect(await editorPage.getBlockCount()).toBeGreaterThan(0);
@@ -67,7 +70,7 @@ test.describe("render provider — compileMjml tier", () => {
   });
 
   test("the MJML it compiles is the SDK's own, not the provider's", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
     expect(await editorPage.getBlockCount()).toBeGreaterThan(0);
@@ -88,44 +91,20 @@ test.describe("render provider — compileMjml tier", () => {
     expect(html).toContain(heading![1]);
   });
 
-  test("the export modal's HTML tab renders the compiled output", async ({
-    editorReady: { editorPage },
+  test("toHtml() is compiled email HTML, not MJML source", async ({
+    editorPage,
     page,
   }) => {
-    await editorPage.openExport();
-    await page.locator(SELECTORS.exportTabHtml).click();
-
-    const editorText = page
-      .locator(SELECTORS.exportModal)
-      .locator(".cm-editor");
-    // The tab compiles on demand; wait for real content rather than a spinner.
-    await expect(editorText).toBeVisible();
-    await expect
-      .poll(async () => (await editorText.innerText()).includes("<!doctype html"))
-      .toBe(true);
-
-    const text = await editorText.innerText();
-    expect(text).not.toContain("<mj-section");
-    // The error branch renders its own testid instead of the code editor.
-    await expect(page.locator(SELECTORS.exportHtmlError)).toHaveCount(0);
+    expect(await editorPage.getBlockCount()).toBeGreaterThan(0);
+    const html = await getHtml(page);
+    expect(html).toContain("<!doctype html");
+    expect(html).not.toContain("<mj-section");
   });
 
-  test("the MJML tab still shows locally-rendered source", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openExport();
-    await page.locator(SELECTORS.exportTabMjml).click();
-
-    const text = await page
-      .locator(SELECTORS.exportModal)
-      .locator(".cm-editor")
-      .innerText();
-
-    // CodeMirror only renders the visible viewport, so assert on what is at the
-    // very top of each form: `<mjml` for source, `<!doctype html` for compiled.
-    // A deeper marker like `<mj-body` sits below the fold and reads as absent.
-    expect(text).toContain("<mjml");
-    expect(text).not.toContain("<!doctype html");
+  test("toMjml() is locally-rendered source", async ({ editorPage, page }) => {
+    expect(await editorPage.getBlockCount()).toBeGreaterThan(0);
+    const mjml = await getMjml(page);
+    expect(mjml).toContain("<mjml");
+    expect(mjml).not.toContain("<!doctype html");
   });
 });

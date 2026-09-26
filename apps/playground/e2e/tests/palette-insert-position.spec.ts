@@ -7,9 +7,10 @@ import { SELECTORS } from "../helpers/selectors";
  * template. On anything long the new block landed far below the fold and the
  * canvas never moved, so the click read as a no-op.
  *
- * Product Launch is the fixture on purpose: `selectFirstTemplate()` opens it,
- * it is several screens tall, and it contains a section with column children,
- * which is what exercises the nested branches.
+ * Product Launch is the fixture on purpose: `editorReady` opens
+ * `/scenes/example-launchpad-launch`, it is several screens tall, and it
+ * contains a section with column children, which is what exercises the nested
+ * branches.
  */
 test.describe("palette insert position", () => {
   test("inserts directly below the selected top-level block", async ({

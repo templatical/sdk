@@ -268,10 +268,15 @@ await init({
 
 `Cmd`/`Strg`+`S` löst diesen Debounce sofort aus, sodass der Tastendruck bei Ihnen ankommt. Dann liegen auch die Speichern-Schaltfläche, der Status und die Rückfrage bei ungespeicherten Änderungen bei Ihnen. Der Provider existiert, damit Sie das nicht bauen müssen; `onChange` existiert für die Fälle, in denen die Oberfläche des Editors nicht das ist, was Sie wollen.
 
+## Im Playground
+
+Das Setup **Templates** bindet einen `templates`-Provider an: Speichern, Laden, Umbenennen und optionales Autosave.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/templates)
+
 ## Referenz
 
 - [`init()`-Optionen](/de/api/editor)
 - [Rendering & Export](/de/backend/render) — Bring-your-own-Rendering für MJML/HTML
 - [Gespeicherte Blöcke](/de/backend/saved-blocks) — dieselbe Bring-your-own-Storage-Form, für wiederverwendbare Blockgruppen
 - [Test-E-Mails](/de/backend/test-email) — Bring-your-own-Versand
-

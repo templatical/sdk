@@ -27,7 +27,7 @@ bun add @templatical/editor @templatical/renderer
 
 :::
 
-## 2. Editor einbinden
+## 2. Editor einbinden {#mount-the-editor}
 
 Diese Datei in den Browser legen. Kein Bundler. Framework- und Paketmanager-Mounts stehen unter [Installation](/de/getting-started/installation). Für Produktion eine Version pinnen — [CDN](/de/getting-started/installation#cdn).
 
@@ -62,6 +62,8 @@ Diese Datei in den Browser legen. Kein Bundler. Framework- und Paketmanager-Moun
 </body>
 </html>
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/minimum)
 
 `json` speichern, damit Nutzer das Template später weiter bearbeiten können. `mjml` auf dem Server kompilieren — `toMjml()` erzeugt kein HTML.
 

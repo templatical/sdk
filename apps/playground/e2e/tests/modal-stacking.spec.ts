@@ -84,7 +84,11 @@ async function paintedAtPanelTopEdge(page: Page): Promise<{
     // to the dialog, not the host.
     const hits: string[] = [];
     const xs = [0.2, 0.5, 0.8].map((f) => Math.round(p.left + p.width * f));
-    for (let y = Math.round(p.top) + 2; y < Math.min(h.bottom, p.bottom); y += 4) {
+    for (
+      let y = Math.round(p.top) + 2;
+      y < Math.min(h.bottom, p.bottom);
+      y += 4
+    ) {
       for (const x of xs) {
         const el = document.elementFromPoint(x, y) as HTMLElement | null;
         if (el && (header === el || header.contains(el))) {
@@ -103,10 +107,15 @@ async function paintedAtPanelTopEdge(page: Page): Promise<{
 }
 
 test.describe("modal stacking", () => {
+  test.beforeEach(async ({ scenePage, editorPage }) => {
+    await scenePage.goto("test-email");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+  });
+
   test("the host header does not paint over the dialog", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     await page.setViewportSize(OVERLAP_VIEWPORT);
@@ -126,9 +135,8 @@ test.describe("modal stacking", () => {
   });
 
   test("the editor container establishes no stacking context", async ({
-    editorReady,
+    editorPage,
   }) => {
-    const { editorPage } = editorReady;
     const page = editorPage.page;
 
     // The structural cause, asserted directly so a reintroduced `isolate` (or a

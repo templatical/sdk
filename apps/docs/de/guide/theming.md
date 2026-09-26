@@ -131,7 +131,7 @@ Dies betrifft nur die **Editor-Oberfläche**. Der E-Mail-Inhalt auf dem Canvas v
 
 Derselbe `--tpl-user-base-size`-Schalter gilt für das eigenständige `@templatical/media-library`-SDK. Wie jede `--tpl-user-*`-Variable funktioniert er in Shadow-DOM- und Light-DOM-Modus identisch.
 
-## ThemeOverrides-Konfiguration
+## ThemeOverrides-Konfiguration {#themeoverrides-config}
 
 Verwenden Sie das `theme`-Feld von `init()`, wenn Sie Theme-Überschreibungen programmatisch anwenden müssen (Multi-Tenant-Branding, Benutzerpräferenz-Umschalter usw.):
 
@@ -149,6 +149,8 @@ const editor = await init({
   },
 });
 ```
+
+[Im Playground öffnen](https://play.templatical.com/scenes/theming)
 
 `ThemeOverrides` wird als Inline-Stil auf dem `.tpl`-Root des Editors angewendet, gewinnt also gegen die klassengebundenen Standardwerte und gegen alle `--tpl-user-*`-Variablen, die Sie auf dem Container gesetzt haben.
 

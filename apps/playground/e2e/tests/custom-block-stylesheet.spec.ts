@@ -85,9 +85,6 @@ test.describe("Custom block stylesheet (#155)", () => {
     // here gives us the exact string the user would have copied without
     // any OS-clipboard involvement.
     await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
-      localStorage.setItem("tpl-playground-features-dismissed", "true");
-
       // VueUse's `useClipboard` checks `clipboard-write` permission first.
       // In headless Chromium without `grantPermissions`, that permission is
       // denied → useClipboard falls back to its `legacyCopy` path:
@@ -122,12 +119,11 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("emits a <style data-tpl-custom-block-stylesheet> with the definition's CSS in the editor root", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -147,12 +143,11 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("base rule is applied by the browser's CSS engine (transition on .tplc-testimonial-card)", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -170,12 +165,11 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test(":hover applies the stylesheet's box-shadow", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -219,7 +213,7 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("layout stacks on mobile viewport (@media (max-width: 480px) fires)", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
@@ -230,8 +224,7 @@ test.describe("Custom block stylesheet (#155)", () => {
     // fine — we only care about the testimonial's computed style.
     await page.setViewportSize({ width: 400, height: 800 });
 
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -258,12 +251,11 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("desktop viewport keeps the 2-column layout (no @media match)", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -281,7 +273,7 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("editor.toMjml() output contains the stylesheet inside <mj-head><mj-style>", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
@@ -292,8 +284,7 @@ test.describe("Custom block stylesheet (#155)", () => {
     // CodeMirror virtualization, or DOM inspection of the rendered MJML.
     // Deterministic in headless Chromium CI where clipboard APIs are
     // unreliable.
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
@@ -349,12 +340,11 @@ test.describe("Custom block stylesheet (#155)", () => {
   });
 
   test("removing the last instance clears the <style> element", async ({
-    chooserPage,
+    scenePage,
     editorPage,
     page,
   }) => {
-    await chooserPage.goto();
-    await chooserPage.selectTemplateByName("Product Launch");
+    await scenePage.goto("example-launchpad-launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
