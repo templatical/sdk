@@ -2,6 +2,7 @@ import { init, unmount as unmountEditor } from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
 import { overlayTemplateSettings } from "./hostOverlays";
 import { compileMjmlDemo } from "./providers";
+import { resolveShadowDom } from "./shadowMode";
 import {
   fetchShare,
   SHARE_LOAD_FAILED,
@@ -14,7 +15,6 @@ export async function mountScene(
   scene: Scene,
   container: HTMLElement,
   ctx: SceneContext,
-  shadowDom: boolean,
 ): Promise<TemplaticalEditor> {
   const config = scene.config(ctx);
   const shareId = ctx.search.get("s");
@@ -37,8 +37,9 @@ export async function mountScene(
     render: { compileMjml: compileMjmlDemo },
     ...config,
     ...overlayTemplateSettings(ctx.search),
-    // Host `?shadowDom=` wins over a scene's snippet value (`shadow-dom-off`).
-    shadowDom,
+    // Resolved here rather than left to `...config`: an explicit
+    // `?shadowDom=` must still win over a scene's own value.
+    shadowDom: resolveShadowDom(config.shadowDom),
   });
   if (typeof config.templates?.create === "function") {
     try {
@@ -62,14 +63,13 @@ export async function useSceneInit(
   scene: Scene,
   container: HTMLElement,
   ctx: SceneContext,
-  shadowDom: boolean,
 ): Promise<{
   editor: TemplaticalEditor | null;
   initError: string;
   unmount: typeof unmountEditor;
 }> {
   try {
-    const editor = await mountScene(scene, container, ctx, shadowDom);
+    const editor = await mountScene(scene, container, ctx);
     return { editor, initError: "", unmount: unmountEditor };
   } catch (err) {
     return {

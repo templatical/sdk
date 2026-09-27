@@ -51,6 +51,27 @@ test.describe("Playground smoke tests", () => {
     );
   });
 
+  test("shadow-dom-off mounts in light DOM unless the URL pins a mode", async ({
+    page,
+  }) => {
+    // Straight to the URL, not the page object: it always pins ?shadowDom=,
+    // which is exactly the case that hid the scene mounting in shadow DOM.
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-notes-seen", "true");
+    });
+    const mountsShadow = async (id: string) => {
+      await page.goto(`/scenes/${id}`);
+      await page.waitForSelector(
+        '[data-testid="scene-host"][data-scene-ready="true"]',
+      );
+      return page
+        .locator(SELECTORS.editorContainer)
+        .evaluate((el) => el.shadowRoot !== null);
+    };
+    expect(await mountsShadow("shadow-dom-off")).toBe(false);
+    expect(await mountsShadow("fonts")).toBe(true);
+  });
+
   test("blank template shows empty canvas", async ({
     blankEditorReady,
     page,

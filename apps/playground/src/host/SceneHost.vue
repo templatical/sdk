@@ -26,7 +26,6 @@ import {
 } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
-import { resolveShadowDom } from "@/host/shadowMode";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
 import { getScene, sceneNeighbours, type Scene } from "@/scenes";
@@ -57,7 +56,6 @@ function closeCode(): void {
   codeOpen.value = false;
   void nextTick(() => codeButton.value?.focus());
 }
-const shadowDom = resolveShadowDom();
 const editor = shallowRef<TemplaticalEditor | null>(null);
 const exportOpen = ref(false);
 const shareOpen = ref(false);
@@ -126,12 +124,9 @@ watch(
       if (!isCurrent()) return;
       const container = editorContainer.value;
       if (!container) return;
-      const result = await useSceneInit(
-        current,
-        container,
-        { search: props.search },
-        shadowDom,
-      );
+      const result = await useSceneInit(current, container, {
+        search: props.search,
+      });
       if (!isCurrent()) {
         result.editor?.unmount();
         return;

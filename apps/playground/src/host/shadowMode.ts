@@ -1,7 +1,8 @@
 /**
  * Shadow DOM mount mode for host pages: the `?shadowDom=0/1/false/true` URL
- * param (each e2e project pins its mode with it), else the SDK default,
- * shadow. Light DOM has its own scene (Shadow DOM off).
+ * param (each e2e project pins its mode with it), else the scene's own
+ * `shadowDom` (Shadow DOM off asks for light DOM), else the SDK default,
+ * shadow.
  *
  * Deliberately not persisted. A stored preference with no control left to
  * change it would strand a visitor in light DOM on every scene.
@@ -14,6 +15,6 @@ export function readShadowDomFlag(): boolean | undefined {
   return undefined;
 }
 
-export function resolveShadowDom(): boolean {
-  return readShadowDomFlag() ?? true;
+export function resolveShadowDom(sceneValue?: boolean): boolean {
+  return readShadowDomFlag() ?? sceneValue ?? true;
 }

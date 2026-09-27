@@ -28,6 +28,21 @@ describe("resolveShadowDom", () => {
     expect(resolveShadowDom()).toBe(expected);
   });
 
+  it.each([
+    ["", false, false],
+    ["", undefined, true],
+    ["?shadowDom=1", false, true],
+    ["?shadowDom=0", true, false],
+  ])(
+    "URL %j with a scene asking for %j mounts shadow: %j",
+    (search, sceneValue, expected) => {
+      // A scene's own shadowDom (Shadow DOM off) applies unless the URL pins
+      // a mode, which is how each e2e project runs every scene in both.
+      stubLocation(search);
+      expect(resolveShadowDom(sceneValue)).toBe(expected);
+    },
+  );
+
   it("ignores a stored light-DOM choice from the removed header toggle", () => {
     // With no control left to change it, honouring the stored value would
     // strand the visitor in light DOM on every scene.
