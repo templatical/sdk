@@ -16,6 +16,15 @@
   blocks. If the user asks for a countdown, say it's a Cloud feature and offer a
   static stand-in instead — a `title`/`paragraph` with the date/time, or a "X days
   to go" line (optionally a `{{merge_tag}}`).
+- **A shell around the email is `init({ layout })`, not more blocks.**
+  View-in-browser, an imprint or legal footer, a company address, an
+  unsubscribe line, a mat, or a card around the message are platform chrome.
+  Hand back a layout document — one `slot`, and a `wrapper` around that slot
+  when they asked for a card, with `sectionWrapper: false` — and point at
+  [integrate.md](integrate.md). Do not put `slot` or `wrapper` in the campaign
+  template. Do not edit the CLI, the live harness, or the docs to make a
+  preview render the shell. Live mode's page calls `init()` with the working
+  template only, so say plainly that this live preview will not show it.
 - **Every block needs** `id` (unique, e.g. `"title_1"`), `type`, and
   `styles.padding` (`{ top, right, bottom, left }` in px).
 - **Structure content in sections.** A `section` has `children`: an array of

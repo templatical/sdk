@@ -88,3 +88,16 @@ npx -y @templatical/template-tools@0.42.0 live stop --json
 - The CDN editor the live harness loads is pinned to a version whose block
   model matches `reference/schema.json` — kept in sync automatically at
   release time, so the live editor and this skill's schema never drift apart.
+
+## A shell around the email
+
+View-in-browser, an imprint or legal footer, a company address, an unsubscribe
+line, a mat, or a card around the message are not blocks in the working
+template. They are `init({ layout })`: one `slot`, and a `wrapper` around that
+slot when the email sits on a card. `sectionWrapper: false` goes with the card,
+so an author section does not nest `mj-wrapper`.
+
+This page calls `init()` with the working template only, and `live reload`
+only pushes that file. The open editor will not show the shell. Say that, hand
+back the layout document, and point at [integrate.md](integrate.md). Do not
+edit the CLI, the live harness, or the docs to make this preview render it.

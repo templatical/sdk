@@ -22,7 +22,9 @@ scoped — a whole-document rewrite discards work the user did by hand.
    - `reference/examples/*.json` — complete, valid templates to model your
      output on.
 3. **Generate the JSON** — a complete `{ "blocks": [...], "settings": {...} }`
-   document, following the schema exactly (see Rules).
+   document, following the schema exactly (see Rules). A shell around the
+   email (view-in-browser, imprint, legal footer, card) is not part of this
+   document — see the shell rule in [rules.md](rules.md).
 4. **Validate before returning** — write the JSON to the session's working file
    `.templatical/<name>.json` (see [Working files](working-files.md) — generate a
    fresh three-word name for a new template; create the folder if needed) and run:
