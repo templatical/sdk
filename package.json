@@ -29,7 +29,7 @@
     "@vitest/coverage-v8": "^5.0.1",
     "@vue/reactivity": "^3.5.43",
     "eslint": "^10.11.0",
-    "eslint-plugin-vue": "^10.11.0",
+    "eslint-plugin-vue": "^10.11.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.1",
     "prettier": "^3.9.9",
