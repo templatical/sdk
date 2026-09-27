@@ -56,6 +56,13 @@ describe("sceneHref", () => {
     );
     expect(sceneHref("theming", "?locale=de")).toBe("/scenes/theming");
   });
+
+  it("sets the parameters it is given, after the pin", () => {
+    expect(sceneHref("i18n", "?shadowDom=0&locale=de", { locale: "fr" })).toBe(
+      "/scenes/i18n?shadowDom=0&locale=fr",
+    );
+    expect(sceneHref("i18n", "?locale=fr", {})).toBe("/scenes/i18n");
+  });
 });
 
 describe("navigatePlayground", () => {

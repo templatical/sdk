@@ -11,7 +11,12 @@ import {
 } from "../src/scenes/index";
 import de from "../src/i18n/de";
 import en from "../src/i18n/en";
-import { RAIL_NAV_GROUPS, codeSpans, plainText } from "../src/host/catalogNav";
+import {
+  RAIL_NAV_GROUPS,
+  codeSpans,
+  localeLabel,
+  plainText,
+} from "../src/host/catalogNav";
 import { NOTE_IDS } from "../src/host/sceneNotes";
 import { SCENE_ICONS } from "../src/host/catalogIcons";
 import { sceneHref } from "../src/host/sceneHref";
@@ -457,5 +462,44 @@ describe("see-it copy", () => {
       ],
     );
     expect(plainText("from `toMjml()`")).toBe("from toMjml()");
+  });
+});
+
+const pickerScenes = SCENES.filter((scene) => scene.valuePicker);
+
+describe("value pickers", () => {
+  it("the i18n scene picks its locale", () => {
+    expect(pickerScenes.map((scene) => scene.id)).toEqual(["i18n"]);
+    expect(getScene("i18n")!.valuePicker).toEqual({
+      param: "locale",
+      fallback: "de",
+      values: "editor-locales",
+    });
+  });
+
+  it.each(pickerScenes.map((scene) => [scene.id, scene] as const))(
+    "%s shows its canonical snippet at the default value",
+    (_id, scene) => {
+      const none = { search: new URLSearchParams() };
+      expect(scene.snippetFor?.(none)).toBe(scene.snippet);
+    },
+  );
+
+  it.each(pickerScenes.map((scene) => [scene.id, scene] as const))(
+    "%s sets the picked value in its snippet, config and content",
+    (_id, scene) => {
+      const { param, fallback } = scene.valuePicker!;
+      const ctx = { search: new URLSearchParams({ [param]: "fr" }) };
+      expect(scene.snippetFor!(ctx)).toContain(`${param}: "fr"`);
+      expect(scene.snippetFor!(ctx)).not.toContain(`${param}: "${fallback}"`);
+      expect(scene.config(ctx)).toMatchObject({ [param]: "fr" });
+      expect(scene.content?.(ctx).settings.locale).toBe("fr");
+    },
+  );
+
+  it("labels a locale by its code and its own name", () => {
+    expect(localeLabel("fr")).toBe("fr · Français");
+    expect(localeLabel("ja")).toBe("ja · 日本語");
+    expect(localeLabel("pt-BR")).toBe("pt-BR · Português (Brasil)");
   });
 });

@@ -19,6 +19,7 @@ export default {
     catalogNav: "Hauptnavigation",
     snippet: "init()-Snippet",
     minimumPaste: "init({ container })",
+    pickValue: "{key} wählen",
     brand: "Templatical",
     headline: "Der E-Mail-Editor, den Sie in Ihre App einbauen.",
     lede: "Öffnen Sie ein Setup, um es live zu nutzen, und kopieren Sie dann das init(), das es aufbaut.",
@@ -110,7 +111,8 @@ export default {
     },
     i18n: {
       seeIt:
-        "Die Oberfläche ist deutsch, und hineingezogene Blöcke bringen deutsche Platzhalter mit; `?locale=` wählt eine andere Sprache.",
+        "Wählen Sie über `locale` eine Sprache: Die Oberfläche des Editors und hineingezogene Blöcke folgen ihr.",
+      note: "Sprache wählen",
     },
     "shadow-dom-off": {
       seeIt:

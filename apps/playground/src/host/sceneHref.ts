@@ -1,12 +1,17 @@
-/** Scene URLs keep the host `?shadowDom=` pin and drop scene-specific variants. */
+/**
+ * Scene URLs keep the host `?shadowDom=` pin and drop scene-specific
+ * variants; `params` sets the ones the new URL should carry.
+ */
 export function sceneHref(
   id: string,
   search: URLSearchParams | string = "",
+  params: Record<string, string> = {},
 ): string {
   const src = typeof search === "string" ? new URLSearchParams(search) : search;
   const q = new URLSearchParams();
   const shadow = src.get("shadowDom");
   if (shadow !== null) q.set("shadowDom", shadow);
+  for (const [key, value] of Object.entries(params)) q.set(key, value);
   const qs = q.toString();
   return qs ? `/scenes/${id}?${qs}` : `/scenes/${id}`;
 }

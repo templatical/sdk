@@ -46,3 +46,13 @@ export function codeSpans(text: string): TextPart[] {
 export function plainText(text: string): string {
   return text.replaceAll("`", "");
 }
+
+/**
+ * `fr · Français`: a locale's code, then its name in its own language, as
+ * the browser spells it, so no list of names can drift from the editor's.
+ */
+export function localeLabel(code: string): string {
+  const name = new Intl.DisplayNames([code], { type: "language" }).of(code);
+  if (!name) return code;
+  return `${code} · ${name.charAt(0).toLocaleUpperCase(code)}${name.slice(1)}`;
+}

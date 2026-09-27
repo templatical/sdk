@@ -44,6 +44,7 @@ export type {
   SceneContext,
   SceneGroup,
   ScenePointer,
+  SceneValuePicker,
   SceneVariant,
 } from "./types";
 

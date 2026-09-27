@@ -2,6 +2,7 @@
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 import {
   ArrowUpRight,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CodeXml,
@@ -25,11 +26,21 @@ import {
   sceneHref,
 } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
-import { codeSpans, plainText, sceneInitCode } from "@/host/catalogNav";
+import {
+  codeSpans,
+  localeLabel,
+  plainText,
+  sceneInitCode,
+} from "@/host/catalogNav";
 import type { NotesMode } from "@/host/sceneNotes";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { useSceneInit } from "@/host/useSceneInit";
-import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
+import {
+  format,
+  ossSdkLocales,
+  usePlaygroundI18n,
+  usePlaygroundTheme,
+} from "@/i18n";
 import { getScene, sceneNeighbours, type Scene } from "@/scenes";
 
 const props = defineProps<{
@@ -77,6 +88,38 @@ const initCode = computed(() =>
     ? sceneInitCode(scene.value, t.value.host.minimumPaste)
     : undefined,
 );
+const picker = computed(() => scene.value?.valuePicker);
+const pickedValue = computed(() => {
+  const p = picker.value;
+  return p ? (props.search.get(p.param) ?? p.fallback) : undefined;
+});
+// The editor's own list, so a locale a contributor adds shows up here
+// without a playground edit (locale-switching.spec.ts holds it to the files).
+const pickerOptions = computed(() =>
+  picker.value?.values === "editor-locales"
+    ? ossSdkLocales.map((code) => ({ value: code, label: localeLabel(code) }))
+    : [],
+);
+const sceneSnippet = computed(() =>
+  scene.value
+    ? (scene.value.snippetFor?.({ search: props.search }) ??
+      scene.value.snippet)
+    : "",
+);
+
+function onPick(event: Event): void {
+  const p = picker.value;
+  if (!p) return;
+  const value = (event.target as HTMLSelectElement).value;
+  navigatePlayground(
+    sceneHref(
+      props.sceneId,
+      props.search,
+      value === p.fallback ? {} : { [p.param]: value },
+    ),
+  );
+}
+
 const sceneNote = computed(() => {
   const pointer = scene.value?.pointer;
   const note = sceneCopy.value?.note;
@@ -353,8 +396,35 @@ onUnmounted(() => {
               >
                 {{ scene.title }}
               </h1>
+              <!-- A transparent native select over the chip: the menu, the
+                   keyboard and screen readers are the platform's own. -->
+              <label
+                v-if="initCode && picker"
+                data-testid="scene-init-key"
+                class="pg-init-picker"
+              >
+                <code class="font-mono"
+                  >{{ initCode }}: "{{ pickedValue }}"</code
+                >
+                <ChevronDown :size="12" :stroke-width="2" aria-hidden="true" />
+                <select
+                  data-testid="scene-value-picker"
+                  class="pg-init-picker-select"
+                  :value="pickedValue"
+                  :aria-label="format(t.host.pickValue, { key: initCode })"
+                  @change="onPick"
+                >
+                  <option
+                    v-for="option in pickerOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+              </label>
               <code
-                v-if="initCode"
+                v-else-if="initCode"
                 data-testid="scene-init-key"
                 class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-400"
                 >{{ initCode }}</code
@@ -474,7 +544,7 @@ onUnmounted(() => {
         <Transition name="pg-drawer">
           <div v-if="codeOpen" class="pg-code-drawer-slot">
             <div class="pg-code-drawer-clip">
-              <CodeDrawer :snippet="scene.snippet" @close="closeCode" />
+              <CodeDrawer :snippet="sceneSnippet" @close="closeCode" />
             </div>
           </div>
         </Transition>

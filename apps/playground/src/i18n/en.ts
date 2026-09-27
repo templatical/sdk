@@ -17,6 +17,7 @@ export default {
     catalogNav: "Main",
     snippet: "init() snippet",
     minimumPaste: "init({ container })",
+    pickValue: "Choose {key}",
     brand: "Templatical",
     headline: "The email editor you drop into your app.",
     lede: "Open a setup to use it live, then copy the init() that builds it.",
@@ -112,7 +113,8 @@ export default {
     },
     i18n: {
       seeIt:
-        "The chrome is German, and blocks you drag in bring German placeholders; `?locale=` picks another language.",
+        "Pick a language from `locale`: the editor's chrome and the blocks you drag in follow it.",
+      note: "pick a language",
     },
     "shadow-dom-off": {
       seeIt:

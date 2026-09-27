@@ -62,11 +62,22 @@ test.describe("Setup see-it", () => {
       await expect(page.getByTestId("scene-see-it")).toHaveText(
         seeIt.replaceAll("`", ""),
       );
-      // The header's key is the rail row's, whichever of them names it.
-      const railCode = page.getByTestId(`rail-scene-${id}`).locator("code");
-      await expect(page.getByTestId("scene-init-key")).toHaveText(
-        (await railCode.textContent()) ?? "",
-      );
+      // The header's key is the rail row's, whichever of them names it; a
+      // chip that picks the key's value shows the value too.
+      const railCode =
+        (await page
+          .getByTestId(`rail-scene-${id}`)
+          .locator("code")
+          .textContent()) ?? "";
+      const chip = page.getByTestId("scene-init-key");
+      if ((await chip.locator("select").count()) > 0) {
+        const key = railCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        await expect(chip.locator("code")).toHaveText(
+          new RegExp(`^${key}: "[^"]+"$`),
+        );
+      } else {
+        await expect(chip).toHaveText(railCode);
+      }
 
       const host = page.getByTestId("scene-host");
       if (!note) {

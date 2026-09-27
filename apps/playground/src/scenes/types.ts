@@ -41,6 +41,22 @@ export interface ScenePointer {
   replaces?: GeneralNoteId;
 }
 
+/**
+ * Makes the header's init-key chip pick that key's value from a list. The
+ * value lives in one query parameter, which the scene's `config`, `content`
+ * and `snippetFor` read, so a choice survives a reload and can be shared.
+ */
+export interface SceneValuePicker {
+  param: string;
+  /** The value when the URL carries none; picking it drops the parameter. */
+  fallback: string;
+  /**
+   * Where the offered values come from, read by the host at runtime: a scene
+   * module cannot import the editor, which the unit tests cannot load.
+   */
+  values: "editor-locales";
+}
+
 export interface Scene {
   id: string;
   title: string;
@@ -75,6 +91,13 @@ export interface Scene {
    * (Minimum, i18n, Shadow DOM off).
    */
   pointer?: ScenePointer;
+  valuePicker?: SceneValuePicker;
+  /**
+   * The canonical snippet, as the docs and agents read it. A scene with a
+   * `valuePicker` also gives `snippetFor`, which the Code drawer shows, so
+   * the snippet names the value on screen.
+   */
   snippet: string;
+  snippetFor?: (ctx: SceneContext) => string;
   variants?: SceneVariant[];
 }
