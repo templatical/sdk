@@ -12,6 +12,11 @@ export const render: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/render",
+  pointer: {
+    selector: '[data-testid="toolbar-export"]',
+    root: "page",
+    side: "below",
+  },
   content: () => storageCanvas(),
   config: () => ({
     render: { compileMjml: compileMjmlDemo },

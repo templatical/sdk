@@ -69,7 +69,7 @@ describe("example proofs", () => {
     (id) => {
       const scene = examples.find((candidate) => candidate.id === id)!;
       const hash = proofContentHash(
-        scene.content({ search: new URLSearchParams() }),
+        scene.content!({ search: new URLSearchParams() }),
       );
       expect(hash, `Stale proof. Run: ${RECAPTURE} ${id}`).toBe(
         entries[id]!.contentHash,
@@ -80,15 +80,15 @@ describe("example proofs", () => {
   it("ignores the block ids minted on every content() call", () => {
     const scene = examples[0]!;
     const ctx = { search: new URLSearchParams() };
-    const first = scene.content(ctx);
-    const second = scene.content(ctx);
+    const first = scene.content!(ctx);
+    const second = scene.content!(ctx);
     expect(first.blocks[0]?.id).not.toBe(second.blocks[0]?.id);
     expect(proofContentHash(first)).toBe(proofContentHash(second));
   });
 
   it("changes when the template's visible content changes", () => {
     const scene = examples[0]!;
-    const content = scene.content({ search: new URLSearchParams() });
+    const content = scene.content!({ search: new URLSearchParams() });
     const before = proofContentHash(content);
     content.settings.backgroundColor = "#000000";
     expect(proofContentHash(content)).not.toBe(before);

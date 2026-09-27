@@ -15,6 +15,11 @@ export const versionHistory: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/version-history",
+  pointer: {
+    selector: '[data-testid="version-history-toggle"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => storageCanvas(),
   config(ctx) {
     const readonly = ctx.search.get("readonly") === "1";

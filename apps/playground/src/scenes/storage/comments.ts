@@ -16,6 +16,11 @@ export const comments: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/comments",
+  pointer: {
+    selector: '[data-testid="comments-trigger"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => storageCanvas(),
   config(ctx) {
     const readonly = ctx.search.get("readonly") === "1";

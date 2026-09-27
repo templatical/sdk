@@ -2,30 +2,11 @@ import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { freezeMotion } from "../helpers/motion";
 import { SELECTORS } from "../helpers/selectors";
+import { showNotes, stubNoteFont } from "../pages/scene.page";
 
 const READY = '[data-testid="scene-host"][data-scene-ready="true"]';
 // NOTE_IDS order, which is what data-targets lists.
 const EVERY_TARGET = "code share properties issues preview palette rail";
-
-/**
- * Serves the note font as an empty stylesheet, so the notes render in their
- * fallback face without reaching the network. Returns the requests seen.
- */
-async function stubNoteFont(page: Page): Promise<string[]> {
-  const requests: string[] = [];
-  await page.route(/fonts\.bunny\.net\/css\?family=caveat/, (route) => {
-    requests.push(route.request().url());
-    return route.fulfill({ contentType: "text/css", body: "" });
-  });
-  return requests;
-}
-
-/** Opens the notes from the header's settings menu, where they live. */
-async function showNotes(page: Page) {
-  await page.locator(SELECTORS.hostSettings).click();
-  await page.locator(SELECTORS.settingsShowNotes).click();
-  await expect(page.locator(SELECTORS.sceneNotes)).toBeVisible();
-}
 
 /**
  * The notes' open state, from the scene host. A dismissed layer stays

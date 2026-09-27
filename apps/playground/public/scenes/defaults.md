@@ -19,7 +19,7 @@ const editor = await init({
     button: { backgroundColor: "#0f766e" },
   },
   templateDefaults: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#e3f1ee",
   },
 });
 ```

@@ -43,6 +43,11 @@ export const theming: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/guide/theming#themeoverrides-config",
+  pointer: {
+    selector: '[role="radiogroup"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => setupBaseCanvas(),
   config(ctx) {
     const theme = { ...BRAND_THEME };

@@ -11,6 +11,11 @@ export const logicTags: Scene = {
   catalog: "oss",
   group: "personalization",
   docs: "/guide/logic-tags",
+  pointer: {
+    selector: "[data-logic-merge-tag]",
+    root: "editor",
+    side: "below",
+  },
   content: () => logicCanvas(),
   config: () => ({
     logicTags: AUTHOR_LOGIC_TAGS,

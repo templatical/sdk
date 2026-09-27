@@ -12,6 +12,12 @@ export const media: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/media",
+  pointer: {
+    selector: '[data-palette-type="image"]',
+    root: "editor",
+    side: "right",
+    replaces: "palette",
+  },
   content: () => createDefaultTemplateContent(),
   config: () => ({
     media: mediaProviderFor(),

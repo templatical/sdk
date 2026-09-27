@@ -9,7 +9,10 @@ import {
   sceneNeighbours,
   scenesByGroup,
 } from "../src/scenes/index";
-import { RAIL_NAV_GROUPS } from "../src/host/catalogNav";
+import de from "../src/i18n/de";
+import en from "../src/i18n/en";
+import { RAIL_NAV_GROUPS, codeSpans, plainText } from "../src/host/catalogNav";
+import { NOTE_IDS } from "../src/host/sceneNotes";
 import { SCENE_ICONS } from "../src/host/catalogIcons";
 import { sceneHref } from "../src/host/sceneHref";
 import { configKeys, snippetContainsKeys } from "../src/host/snippet-keys";
@@ -371,4 +374,88 @@ describe("snippet honesty", () => {
       expect(scene.snippet).not.toContain("__tplPlayground");
     },
   );
+});
+
+const SEE_IT_GROUPS = new Set([
+  "minimum",
+  "configure",
+  "personalization",
+  "backend",
+]);
+const setupScenes = SCENES.filter((scene) => SEE_IT_GROUPS.has(scene.group));
+type SceneCopies = Record<string, { seeIt: string; note?: string } | undefined>;
+const COPIES = [
+  ["en", en.scenes as SceneCopies],
+  ["de", de.scenes as SceneCopies],
+] as const;
+
+describe("see-it copy", () => {
+  it.each(COPIES)(
+    "%s says what every setup changes, and only setups",
+    (_locale, copies) => {
+      // Importers and examples keep their summary: what they show is the email.
+      expect(Object.keys(copies).sort()).toEqual(
+        setupScenes.map((scene) => scene.id).sort(),
+      );
+      for (const scene of setupScenes) {
+        expect(copies[scene.id]?.seeIt, scene.id).toMatch(/\S/);
+      }
+    },
+  );
+
+  it.each(COPIES)(
+    "%s gives a setup its own note exactly when it points somewhere",
+    (_locale, copies) => {
+      for (const scene of setupScenes) {
+        expect(copies[scene.id]?.note !== undefined, scene.id).toBe(
+          scene.pointer !== undefined,
+        );
+      }
+    },
+  );
+
+  it.each(COPIES)("%s keeps each note to a glance", (_locale, copies) => {
+    for (const [id, copy] of Object.entries(copies)) {
+      if (!copy?.note) continue;
+      expect(copy.note.split(/\s+/).length, id).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it.each(COPIES)("%s pairs every backtick", (_locale, copies) => {
+    // An odd one would set the rest of the line in the code face.
+    for (const [id, copy] of Object.entries(copies)) {
+      expect(copy!.seeIt.split("`").length % 2, id).toBe(1);
+    }
+  });
+
+  it("points from setups only", () => {
+    for (const scene of SCENES.filter((s) => !SEE_IT_GROUPS.has(s.group))) {
+      expect(scene.pointer, scene.id).toBeUndefined();
+    }
+  });
+
+  it.each(
+    setupScenes
+      .filter((scene) => scene.pointer)
+      .map((scene) => [scene.id, scene.pointer!] as const),
+  )("%s points by a stable hook and replaces a real note", (_id, pointer) => {
+    expect(pointer.selector).not.toMatch(/\.tpl[-:]/);
+    if (pointer.replaces) {
+      expect(NOTE_IDS).toContain(pointer.replaces);
+      expect(pointer.replaces).not.toBe("scene");
+    }
+  });
+
+  it("sets backticked spans in the code face", () => {
+    expect(codeSpans("MJML from `toMjml()`, HTML from `compileMjml`.")).toEqual(
+      [
+        { text: "MJML from ", code: false },
+        { text: "toMjml()", code: true },
+        { text: ", HTML from ", code: false },
+        { text: "compileMjml", code: true },
+        { text: ".", code: false },
+      ],
+    );
+    expect(plainText("from `toMjml()`")).toBe("from toMjml()");
+  });
 });

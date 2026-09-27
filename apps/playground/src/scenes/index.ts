@@ -43,6 +43,7 @@ export type {
   SceneCatalog,
   SceneContext,
   SceneGroup,
+  ScenePointer,
   SceneVariant,
 } from "./types";
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sceneInitCode } from "../src/host/catalogNav";
 import { SCENES } from "../src/scenes/index";
 
 const SETUP_GROUPS = new Set(["configure", "personalization", "backend"]);
@@ -46,5 +47,20 @@ describe("catalog init keys", () => {
     for (const scene of SCENES.filter((s) => !SETUP_GROUPS.has(s.group))) {
       expect(scene.initKey, scene.id).toBeUndefined();
     }
+  });
+});
+
+describe("sceneInitCode", () => {
+  const byId = (id: string) => SCENES.find((scene) => scene.id === id)!;
+
+  it("gives the rail row and the scene header the same code", () => {
+    // Minimum has no key of its own, so both show its whole call.
+    expect(sceneInitCode(byId("minimum"), "init({ container })")).toBe(
+      "init({ container })",
+    );
+    expect(sceneInitCode(byId("fonts"), "init({ container })")).toBe("fonts");
+    expect(
+      sceneInitCode(byId("import-unlayer"), "init({ container })"),
+    ).toBeUndefined();
   });
 });

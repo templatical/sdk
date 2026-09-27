@@ -11,6 +11,11 @@ export const templates: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/templates",
+  pointer: {
+    selector: '[data-testid="template-save"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => storageCanvas(),
   config(ctx) {
     const readonly = ctx.search.get("readonly") === "1";

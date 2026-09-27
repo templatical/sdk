@@ -13,6 +13,14 @@ export const savedBlocks: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/saved-blocks",
+  // The editor's own label, which is English here whatever the playground's
+  // language: this scene sets no locale.
+  pointer: {
+    selector: 'button[aria-label="Browse saved blocks"]',
+    root: "editor",
+    side: "right",
+    replaces: "palette",
+  },
   content: () => storageCanvas(),
   config(ctx) {
     const readonly = ctx.search.get("readonly") === "1";

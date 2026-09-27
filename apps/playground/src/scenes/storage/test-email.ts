@@ -12,6 +12,11 @@ export const testEmail: Scene = {
   catalog: "oss",
   group: "backend",
   docs: "/backend/test-email",
+  pointer: {
+    selector: '[data-testid="test-email-trigger"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => storageCanvas(),
   config: () => ({
     testEmail: testEmailProvider,

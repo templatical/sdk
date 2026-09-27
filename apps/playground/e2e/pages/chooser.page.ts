@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "../helpers/selectors";
+import { skipNotes } from "./scene.page";
 
 type ImportSource =
   | "beefree"
@@ -54,9 +55,7 @@ export class ChooserPage {
    * that here.
    */
   async goto() {
-    await this.page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-notes-seen", "true");
-    });
+    await skipNotes(this.page);
     const url = this.options.shadowDom ? "/?shadowDom=1" : "/?shadowDom=0";
     await this.page.goto(url);
     await this.page.waitForSelector(SELECTORS.catalogScreen);

@@ -4,6 +4,7 @@ import en from "../src/i18n/en";
 import {
   NOTE_IDS,
   arrowBetween,
+  notesFor,
   placeNotes,
   type Box,
   type NoteTargets,
@@ -18,6 +19,8 @@ const CODE: Box = { left: 1308, top: 12, width: 80, height: 32 };
 function box(left: number, top: number, right: number, bottom: number): Box {
   return { left, top, width: right - left, height: bottom - top };
 }
+
+const GENERAL_IDS = NOTE_IDS.filter((id) => id !== "scene");
 
 /** The Minimum scene's parts at 1440x900, as the page measures them. */
 const WIDE: NoteTargets = {
@@ -58,7 +61,7 @@ function length(arrow: { from: Point; to: Point }): number {
 describe("placeNotes", () => {
   it("writes every note at its one spot beside its target", () => {
     const placed = placeNotes(WIDE, options());
-    expect(placed.map((note) => note.id)).toEqual([...NOTE_IDS]);
+    expect(placed.map((note) => note.id)).toEqual(GENERAL_IDS);
     const code = placed.find((note) => note.id === "code")!;
     expect(code.box).toEqual({ left: 1304, top: 78, ...SIZE });
     expect(code.arrow.to).toEqual({ x: 1342, y: 50 });
@@ -156,6 +159,39 @@ describe("placeNotes", () => {
     expect(wide.map((note) => note.id)).toEqual(["properties", "preview"]);
   });
 
+  it("hangs a setup's note under its control, a little right of its middle", () => {
+    const control = box(400, 86, 440, 114);
+    const [note] = placeNotes(
+      { scene: { box: control, side: "below" } },
+      options(),
+    );
+    expect(note.box).toEqual({ left: 416, top: 158, ...SIZE });
+    expect(note.arrow.from).toEqual({ x: 432, y: 154 });
+    expect(note.arrow.to).toEqual({ x: 420, y: 120 });
+  });
+
+  it("puts a setup's note beside a palette item, pointing back at it", () => {
+    const item = box(244, 300, 284, 340);
+    const [note] = placeNotes(
+      { scene: { box: item, side: "right" } },
+      options(),
+    );
+    expect(note.box).toEqual({ left: 318, top: 356, ...SIZE });
+    expect(note.arrow.to).toEqual({ x: 290, y: 320 });
+    expect(note.arrow.to.x).toBeLessThan(note.arrow.from.x);
+    expect(note.arrow.to.y).toBeLessThan(note.arrow.from.y);
+  });
+
+  it("places a setup's own note first, so it stays when two collide", () => {
+    expect(NOTE_IDS[0]).toBe("scene");
+    // Aimed at Code itself, its spot lands on Code's note.
+    const placed = placeNotes(
+      { code: CODE, scene: { box: CODE, side: "below" } },
+      options(),
+    );
+    expect(placed.map((note) => note.id)).toEqual(["scene"]);
+  });
+
   it("leaves out a note whose target was not measured", () => {
     expect(placeNotes({}, options())).toEqual([]);
   });
@@ -194,11 +230,35 @@ describe("note copy", () => {
     ["en", en],
     ["de", de],
   ])("%s has text and a target name for every note", (_locale, strings) => {
+    // A setup's own note takes its text from `scenes`, so only its target
+    // name lives here.
     expect(Object.keys(strings.host.notes.items).sort()).toEqual(
-      [...NOTE_IDS].sort(),
+      [...GENERAL_IDS].sort(),
     );
     expect(Object.keys(strings.host.notes.targets).sort()).toEqual(
       [...NOTE_IDS].sort(),
     );
+  });
+});
+
+describe("notesFor", () => {
+  const scene = { box: box(244, 300, 284, 340), side: "right" as const };
+
+  it("offers only the setup's own note on its first visit", () => {
+    expect(notesFor({ ...WIDE, scene }, "scene", "palette")).toEqual({
+      scene,
+    });
+    expect(notesFor(WIDE, "scene")).toEqual({});
+  });
+
+  it("offers every note with Show notes, less the one the setup's replaces", () => {
+    const offered = notesFor({ ...WIDE, scene }, "all", "palette");
+    expect(Object.keys(offered).sort()).toEqual(
+      [...NOTE_IDS.filter((id) => id !== "palette")].sort(),
+    );
+  });
+
+  it("keeps the replaced note while the setup's own note has no target", () => {
+    expect(notesFor(WIDE, "all", "palette").palette).toEqual(WIDE.palette);
   });
 });

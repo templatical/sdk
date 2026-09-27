@@ -5,6 +5,7 @@ import {
   createWrapperBlock,
   type TemplateContent,
 } from "@templatical/types";
+import { PREVIEW_TOGGLE } from "../../host/sceneNotes";
 import type { Scene } from "../types";
 import { setupBaseCanvas } from "./shared";
 
@@ -46,6 +47,12 @@ export const layout: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/guide/layout",
+  pointer: {
+    selector: PREVIEW_TOGGLE,
+    root: "editor",
+    side: "below",
+    replaces: "preview",
+  },
   content: () => setupBaseCanvas(),
   // The slot sits inside a wrapper, so Add wrapper would nest mj-wrapper in
   // mj-wrapper, which MJML forbids.

@@ -11,15 +11,36 @@
  * inside turns its own arrow back through it.
  */
 
-export type NoteId =
+/** The notes every scene can show, each aimed at a part of the page. */
+export type GeneralNoteId =
   "rail" | "palette" | "properties" | "issues" | "preview" | "share" | "code";
 
+/** `scene` is a setup's own note, aimed at what that setup changes. */
+export type NoteId = "scene" | GeneralNoteId;
+
+/** Which side of its target a setup's own note hangs on. */
+export type SceneNoteSide = "below" | "right";
+
 /**
- * Placement order, which decides the note that stays when two collide. That
- * happens only in narrow windows, where the preview toggle sits above the
- * properties panel, so the panel's notes go first.
+ * Which notes show: every note, or only the setup's own one, which is how a
+ * setup's first visit shows it once the general notes have been seen.
+ */
+export type NotesMode = "all" | "scene";
+
+/**
+ * The editor header's Preview toggle: its centre track is exactly viewport,
+ * dark mode, preview, and the viewport toggle is the only radiogroup in it.
+ */
+export const PREVIEW_TOGGLE = '[role="radiogroup"] ~ :last-child';
+
+/**
+ * Placement order, which decides the note that stays when two collide. A
+ * setup's own note goes first: on its scene it is the one that matters.
+ * Otherwise collisions happen only in narrow windows, where the preview
+ * toggle sits above the properties panel, so the panel's notes go first.
  */
 export const NOTE_IDS: readonly NoteId[] = [
+  "scene",
   "code",
   "share",
   "properties",
@@ -56,6 +77,8 @@ export interface PlacedNote {
 
 /** What the page measured for each note: where it points, and extra context. */
 export interface NoteTargets {
+  /** What the setup's own note points at, and the side it hangs on. */
+  scene?: { box: Box; side: SceneNoteSide };
   code?: Box;
   share?: Box;
   /** The preview toggle itself. */
@@ -103,6 +126,31 @@ function centerX(b: Box): number {
 
 const SPOTS: Record<NoteId, (targets: NoteTargets, size: Size) => Spot | null> =
   {
+    // Beside a palette item the note sits on the canvas and points back, like
+    // the palette's own note. Below anything else it hangs a little right of
+    // the target's middle, so its arrow curves up into it.
+    scene(targets, size) {
+      const s = targets.scene;
+      if (!s) return null;
+      const t = s.box;
+      if (s.side === "right") {
+        const edge = t.left + t.width;
+        const middle = t.top + t.height / 2;
+        return {
+          box: box(edge + 34, middle + 36, size),
+          from: (b) => ({ x: b.left + 10, y: b.top - 4 }),
+          to: { x: edge + 6, y: middle },
+          bend: 14,
+        };
+      }
+      const bottom = t.top + t.height;
+      return {
+        box: box(centerX(t) - 4, bottom + 44, size),
+        from: (b) => ({ x: b.left + 16, y: b.top - 4 }),
+        to: { x: centerX(t), y: bottom + 6 },
+        bend: -8,
+      };
+    },
     // Code and Share sit a few px apart, so Code's note starts under its left
     // edge and Share's hangs left of its button.
     code(targets, size) {
@@ -281,6 +329,23 @@ function crosses(arrow: Arrow, boxes: readonly Box[]): boolean {
     if (hit) return true;
   }
   return false;
+}
+
+/**
+ * The targets a mode offers for placement. `scene` mode keeps only the
+ * setup's own note. A general note the setup's note replaces is left out
+ * while that note has a target, so no control gets two arrows, and comes
+ * back when it has none.
+ */
+export function notesFor(
+  targets: NoteTargets,
+  mode: NotesMode,
+  replaces?: GeneralNoteId,
+): NoteTargets {
+  if (mode === "scene") return targets.scene ? { scene: targets.scene } : {};
+  const offered = { ...targets };
+  if (replaces && offered.scene) delete offered[replaces];
+  return offered;
 }
 
 export function placeNotes(

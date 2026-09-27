@@ -3,7 +3,7 @@ import { computed, ref, watch, type Component } from "vue";
 import { ChevronRight } from "@lucide/vue";
 import CatalogGroupMark from "@/host/CatalogGroupMark.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
-import { RAIL_NAV_GROUPS } from "@/host/catalogNav";
+import { RAIL_NAV_GROUPS, sceneInitCode } from "@/host/catalogNav";
 import {
   isPlainLeftClick,
   navigatePlayground,
@@ -49,9 +49,8 @@ function iconFor(scene: Scene): Component | undefined {
   return SCENE_ICONS[scene.id];
 }
 
-/** The code a row stands for: its init() key, or the whole call for Minimum. */
 function codeFor(scene: Scene): string | undefined {
-  return scene.group === "minimum" ? t.value.host.minimumPaste : scene.initKey;
+  return sceneInitCode(scene, t.value.host.minimumPaste);
 }
 
 function hrefFor(scene: Scene): string {

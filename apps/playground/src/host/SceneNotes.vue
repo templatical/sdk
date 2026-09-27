@@ -4,26 +4,37 @@ import { X } from "@lucide/vue";
 import { usePlaygroundI18n } from "@/i18n";
 import {
   NOTE_IDS,
+  PREVIEW_TOGGLE,
+  notesFor,
   placeNotes,
   type Box,
   type NoteId,
+  type NotesMode,
   type NoteTargets,
   type PlacedNote,
 } from "@/host/sceneNotes";
+import type { ScenePointer } from "@/scenes";
 
-const props = defineProps<{ open: boolean }>();
+const props = defineProps<{
+  open: boolean;
+  mode: NotesMode;
+  /** The setup's own note, when it has one. */
+  scene?: { pointer: ScenePointer; note: string };
+}>();
 const emit = defineEmits<{ dismiss: [] }>();
 
 const { t } = usePlaygroundI18n();
 const placed = ref<PlacedNote[]>([]);
-// Which parts were found to point at, whether or not their note fit. The
-// e2e suite reads it to catch an editor markup change orphaning a note.
+// Which of this mode's parts were found to point at, whether or not their
+// note fit. The e2e suite reads it to catch an editor markup change
+// orphaning a note.
 const measured = ref<NoteId[]>([]);
 
 const FONT_URL = "https://fonts.bunny.net/css?family=caveat:600&display=swap";
 const FONT_TIMEOUT_MS = 2000;
+const POINTER_WAIT_MS = 1500;
 
-let fontReady: Promise<void> | null = null;
+let linkReady: Promise<void> | null = null;
 
 /** A hidden `.pg-note` holding `text`, for reading what a note resolves to. */
 function noteProbe(text: string): HTMLElement {
@@ -40,14 +51,17 @@ function noteProbe(text: string): HTMLElement {
  * visits never open them again.
  */
 function loadNoteFont(): Promise<void> {
-  fontReady ??= new Promise<void>((resolve) => {
+  linkReady ??= new Promise<void>((resolve) => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = FONT_URL;
     link.onload = () => resolve();
     link.onerror = () => resolve();
     document.head.appendChild(link);
-  }).then(() => {
+  });
+  // Every open, not once: a setup's own note can need glyphs, such as
+  // umlauts, that no earlier note did.
+  const faces = linkReady.then(() => {
     // Every face `.pg-note` lists, not only Caveat: when Caveat never loads
     // the notes render in the sans fallback, and sizing them while that is
     // still on its way measures a third face.
@@ -55,16 +69,22 @@ function loadNoteFont(): Promise<void> {
     const style = getComputedStyle(probe);
     const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     probe.remove();
-    const text = Object.values(t.value.host.notes.items).join("");
+    const text = NOTE_IDS.map(noteText).join("");
     return document.fonts.load(font, text).then(
       () => undefined,
       () => undefined,
     );
   });
   return Promise.race([
-    fontReady,
+    faces,
     new Promise<void>((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS)),
   ]);
+}
+
+function noteText(id: NoteId): string {
+  return id === "scene"
+    ? (props.scene?.note ?? "")
+    : t.value.host.notes.items[id];
 }
 
 function toBox(rect: DOMRect): Box {
@@ -91,8 +111,81 @@ function editorRoot(): ParentNode | null {
   return container?.shadowRoot ?? container;
 }
 
+/** The next box out from `node`, stepping from a shadow root to its host. */
+function parentOf(node: Element): Element | null {
+  return node.parentElement ?? (node.getRootNode() as ShadowRoot).host ?? null;
+}
+
+/**
+ * Whether the middle of `el` is on screen: inside the viewport and every box
+ * that clips it, so a palette item scrolled out of sight gets no arrow.
+ */
+function onScreen(el: Element): boolean {
+  const rect = el.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+    return false;
+  }
+  for (let node = parentOf(el); node; node = parentOf(node)) {
+    const { overflowX, overflowY } = getComputedStyle(node);
+    if (overflowX === "visible" && overflowY === "visible") continue;
+    const clip = node.getBoundingClientRect();
+    if (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function importPanelOpen(): boolean {
+  return document.querySelector('[data-testid="import-panel"]') !== null;
+}
+
+function measurePointer(pointer: ScenePointer): Box | undefined {
+  // The editor's own parts wait while the import paste panel covers them.
+  if (pointer.root === "editor" && importPanelOpen()) return undefined;
+  const root = pointer.root === "page" ? document : editorRoot();
+  const el = root?.querySelector(pointer.selector);
+  if (!shown(el) || !onScreen(el)) return undefined;
+  return toBox(el.getBoundingClientRect());
+}
+
+/**
+ * Resolves once the setup's control is on screen, or after a cap. Some
+ * render a beat after the scene reports ready (the version history toggle
+ * waits for its template), and a note placed before that never shows.
+ */
+function waitForPointer(current: number): Promise<void> {
+  const pointer = props.scene?.pointer;
+  if (!pointer) return Promise.resolve();
+  const until = performance.now() + POINTER_WAIT_MS;
+  return new Promise((resolve) => {
+    const check = () => {
+      if (
+        current !== generation ||
+        measurePointer(pointer) ||
+        performance.now() > until
+      ) {
+        resolve();
+      } else {
+        requestAnimationFrame(check);
+      }
+    };
+    check();
+  });
+}
+
 function measureTargets(): NoteTargets {
   const targets: NoteTargets = {};
+  const own = props.scene;
+  const box = own ? measurePointer(own.pointer) : undefined;
+  if (own && box) targets.scene = { box, side: own.pointer.side };
+  if (props.mode === "all") measureGeneral(targets);
+  return notesFor(targets, props.mode, own?.pointer.replaces);
+}
+
+function measureGeneral(targets: NoteTargets): void {
   const code = document.querySelector('[data-testid="toolbar-code"]');
   if (shown(code)) targets.code = toBox(code.getBoundingClientRect());
   const share = document.querySelector('[data-testid="toolbar-share"]');
@@ -109,12 +202,8 @@ function measureTargets(): NoteTargets {
 
   // The editor's own parts wait while the import paste panel covers them.
   const editor = editorRoot();
-  if (!editor || document.querySelector('[data-testid="import-panel"]')) {
-    return targets;
-  }
-  // The header's centre track is exactly viewport, dark mode, preview.
-  const preview = editor.querySelector('[role="radiogroup"]')?.parentElement
-    ?.lastElementChild;
+  if (!editor || importPanelOpen()) return;
+  const preview = editor.querySelector(PREVIEW_TOGGLE);
   if (shown(preview)) targets.preview = toBox(preview.getBoundingClientRect());
   const panel = editor.querySelector(".tpl-right-sidebar");
   const tabs = panel?.querySelector('[role="tablist"]');
@@ -136,7 +225,6 @@ function measureTargets(): NoteTargets {
   if (shown(column) && column.querySelector("[data-palette-type]")) {
     targets.palette = toBox(column.getBoundingClientRect());
   }
-  return targets;
 }
 
 /**
@@ -146,7 +234,7 @@ function measureTargets(): NoteTargets {
  * which is up to a fifth narrower and lets notes overrun what they avoid.
  */
 function measureNote(id: NoteId): { width: number; height: number } {
-  const probe = noteProbe(t.value.host.notes.items[id]);
+  const probe = noteProbe(noteText(id));
   const rect = probe.getBoundingClientRect();
   probe.remove();
   return { width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
@@ -213,6 +301,7 @@ watch(
     await loadNoteFont();
     await nextTick();
     await new Promise((resolve) => requestAnimationFrame(resolve));
+    await waitForPointer(current);
     if (current !== generation || !props.open) return;
     place();
     listen(true);
@@ -281,7 +370,7 @@ function head(note: PlacedNote): string {
           }"
         >
           <span class="sr-only">{{ t.host.notes.targets[note.id] }}: </span
-          >{{ t.host.notes.items[note.id] }}
+          >{{ noteText(note.id) }}
         </li>
       </ul>
       <button

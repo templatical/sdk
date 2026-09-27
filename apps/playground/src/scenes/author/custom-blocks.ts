@@ -10,6 +10,12 @@ export const customBlocks: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/guide/custom-blocks",
+  pointer: {
+    selector: '[data-palette-type="custom:testimonial"]',
+    root: "editor",
+    side: "right",
+    replaces: "palette",
+  },
   content: () => customBlockCanvas(),
   config: () => ({
     customBlocks: [AUTHOR_TESTIMONIAL],

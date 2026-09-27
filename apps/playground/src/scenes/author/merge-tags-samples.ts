@@ -1,3 +1,4 @@
+import { PREVIEW_TOGGLE } from "../../host/sceneNotes";
 import type { Scene } from "../types";
 import { AUTHOR_MERGE_TAGS, samplesCanvas } from "./shared";
 
@@ -11,6 +12,12 @@ export const mergeTagsSamples: Scene = {
   catalog: "oss",
   group: "personalization",
   docs: "/guide/preview-rendering#sample-values",
+  pointer: {
+    selector: PREVIEW_TOGGLE,
+    root: "editor",
+    side: "below",
+    replaces: "preview",
+  },
   content: () => samplesCanvas(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: AUTHOR_MERGE_TAGS },

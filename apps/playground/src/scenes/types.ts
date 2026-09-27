@@ -1,5 +1,6 @@
 import type { TemplaticalEditorConfig } from "@templatical/editor";
 import type { TemplateContent } from "@templatical/types";
+import type { GeneralNoteId, SceneNoteSide } from "../host/sceneNotes";
 
 export type SceneGroup =
   | "minimum"
@@ -18,6 +19,26 @@ export interface SceneContext {
 export interface SceneVariant {
   name: string;
   query: Record<string, string>;
+}
+
+/** What a setup's own note points at: the control where its effect shows. */
+export interface ScenePointer {
+  /**
+   * A test id, an id, a data attribute or an ARIA hook, never a `tpl-*`
+   * class: the editor restyles those freely.
+   */
+  selector: string;
+  /**
+   * The editor's root (its shadow root, or its container in light DOM) or
+   * the host page.
+   */
+  root: "editor" | "page";
+  side: SceneNoteSide;
+  /**
+   * A general note aimed at the same control, left out on this scene so no
+   * control gets two arrows.
+   */
+  replaces?: GeneralNoteId;
 }
 
 export interface Scene {
@@ -42,8 +63,18 @@ export interface Scene {
    * links back. apps/docs/tests/playground-links.test.ts holds both ends.
    */
   docs: string;
-  content: (ctx: SceneContext) => TemplateContent;
+  /**
+   * The email the setup opens on. Absent leaves init() to build a blank
+   * template, which is the only template `templateDefaults` ever seeds.
+   */
+  content?: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;
+  /**
+   * Where the setup's own note points; its text is `scenes.<id>.note` in the
+   * playground strings. Absent when no one control shows the effect
+   * (Minimum, i18n, Shadow DOM off).
+   */
+  pointer?: ScenePointer;
   snippet: string;
   variants?: SceneVariant[];
 }

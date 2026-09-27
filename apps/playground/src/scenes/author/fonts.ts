@@ -11,6 +11,11 @@ export const fonts: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/guide/fonts#restricting-the-built-in-fonts",
+  pointer: {
+    selector: "#tpl-tab-settings",
+    root: "editor",
+    side: "below",
+  },
   content: () => setupBaseCanvas(),
   config: () => ({
     fonts: {

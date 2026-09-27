@@ -6,6 +6,8 @@ import { issuesCanvas, setupBaseCanvas } from "../src/scenes/author/shared";
 import { storageCanvas } from "../src/scenes/storage/canvas";
 
 const noQuery = { search: new URLSearchParams() };
+/** A page colour visibly off-white, so the blank Defaults email reads as tinted. */
+const DEFAULTS_PAGE_COLOR = "#e3f1ee";
 
 function actionableRuleIds(content: TemplateContent): string[] {
   return lintTemplate(content)
@@ -47,8 +49,8 @@ describe("issuesCanvas", () => {
 
   it("is what the Issues scene opens on, with a blank canvas on request", () => {
     const scene = getScene("issues")!;
-    expect(actionableRuleIds(scene.content(noQuery))).toHaveLength(2);
-    const blank = scene.content({
+    expect(actionableRuleIds(scene.content!(noQuery))).toHaveLength(2);
+    const blank = scene.content!({
       search: new URLSearchParams("canvas=blank"),
     });
     expect(blank.blocks).toEqual([]);
@@ -56,10 +58,10 @@ describe("issuesCanvas", () => {
 });
 
 describe("seeded setup scenes", () => {
-  it.each(["fonts", "defaults", "theming", "layout", "shadow-dom-off"])(
+  it.each(["fonts", "theming", "layout", "shadow-dom-off"])(
     "%s opens on the base email",
     (id) => {
-      const blocks = getScene(id)!.content(noQuery).blocks;
+      const blocks = getScene(id)!.content!(noQuery).blocks;
       expect(blocks.map((block) => block.type)).toEqual(
         setupBaseCanvas().blocks.map((block) => block.type),
       );
@@ -69,7 +71,20 @@ describe("seeded setup scenes", () => {
   // Minimum is the blank editor by definition; i18n demonstrates localized
   // placeholders on insert; media's specs drop images onto an empty canvas.
   it.each(["minimum", "i18n", "media"])("%s still opens empty", (id) => {
-    expect(getScene(id)!.content(noQuery).blocks).toEqual([]);
+    expect(getScene(id)!.content!(noQuery).blocks).toEqual([]);
+  });
+
+  it("defaults passes no content, so init() builds the page from templateDefaults", () => {
+    // templateDefaults seeds only a blank template: with content supplied it
+    // does nothing, and half of what this setup shows would be invisible.
+    const scene = getScene("defaults")!;
+    expect(scene.content).toBeUndefined();
+    const { templateDefaults, blockDefaults } = scene.config(noQuery);
+    expect(templateDefaults?.backgroundColor).toBe(DEFAULTS_PAGE_COLOR);
+    expect(blockDefaults?.button?.backgroundColor).toBe("#0f766e");
+    expect(scene.snippet).toContain(
+      `backgroundColor: "${DEFAULTS_PAGE_COLOR}"`,
+    );
   });
 });
 

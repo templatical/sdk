@@ -11,6 +11,12 @@ export const issues: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/quality/#wire-into-the-editor",
+  pointer: {
+    selector: "#tpl-tab-issues",
+    root: "editor",
+    side: "below",
+    replaces: "issues",
+  },
   content: (ctx) =>
     ctx.search.get("canvas") === "blank" ? emptyCanvas() : issuesCanvas(),
   variants: [{ name: "Blank canvas", query: { canvas: "blank" } }],

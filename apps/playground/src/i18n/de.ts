@@ -57,6 +57,7 @@ export default {
         code: "Setup kopieren",
       },
       targets: {
+        scene: "Dieses Setup",
         rail: "Setup-Liste",
         palette: "Blockpalette",
         properties: "Eigenschaften",
@@ -80,6 +81,114 @@ export default {
       backend: "Laden, speichern, senden",
       import: "Bestehende Vorlage konvertieren",
       examples: "Fertige E-Mails",
+    },
+  },
+  scenes: {
+    minimum: {
+      seeIt:
+        "Ziehen Sie einen beliebigen Block auf die Arbeitsfläche: Dieser eine Aufruf ist die ganze Integration.",
+    },
+    fonts: {
+      seeIt:
+        "Öffnen Sie „Settings“ und wählen Sie eine Schrift: Angeboten werden nur Georgia, Times New Roman und Arial.",
+      note: "nur 3 Schriften",
+    },
+    defaults: {
+      seeIt:
+        "Die leere Seite startet getönt, und ein hineingezogener „Button“ kommt in Petrol an.",
+      note: "Button hineinziehen",
+    },
+    theming: {
+      seeIt:
+        "Die Oberfläche des Editors trägt das Karminrot der Marke, von den Schaltern bis zur Fläche hinter der E-Mail.",
+      note: "Markenfarben",
+    },
+    layout: {
+      seeIt:
+        "Wechseln Sie in die Vorschau: Die E-Mail sitzt in Ihrer Kartenhülle, die im gespeicherten JSON nie vorkommt.",
+      note: "zur Vorschau",
+    },
+    i18n: {
+      seeIt:
+        "Die Oberfläche ist deutsch, und hineingezogene Blöcke bringen deutsche Platzhalter mit; `?locale=` wählt eine andere Sprache.",
+    },
+    "shadow-dom-off": {
+      seeIt:
+        "Sieht gleich aus: Der Editor wird direkt in die Seite eingehängt, ohne Shadow Root.",
+    },
+    issues: {
+      seeIt:
+        "Der Tab „Issues“ meldet einen fehlenden Alt-Text und eine vage Button-Beschriftung: Springen Sie jeweils zum Block und beheben Sie das Problem.",
+      note: "2 Probleme",
+    },
+    "custom-blocks": {
+      seeIt:
+        "Ihr Block „Testimonial“ steht in der Palette und auf der Arbeitsfläche: Wählen Sie ihn aus, um seine Felder zu bearbeiten.",
+      note: "Ihr Block",
+    },
+    "merge-tags": {
+      seeIt:
+        "Bearbeiten Sie den Absatz und fügen Sie ein Merge-Tag ein: Der Picker listet Ihre Tags mit ihrer Beschriftung.",
+      note: "Tag einfügen",
+    },
+    "merge-tags-on-request": {
+      seeIt:
+        "Bearbeiten Sie den Absatz und fügen Sie ein Merge-Tag ein: Statt der Liste öffnet sich Ihre eigene Auswahl.",
+      note: "Tag einfügen",
+    },
+    "merge-tags-samples": {
+      seeIt: "Wechseln Sie in die Vorschau: Tags zeigen ihre Beispielwerte.",
+      note: "zur Vorschau",
+    },
+    "merge-tags-resolve-preview": {
+      seeIt:
+        "Wechseln Sie in die Vorschau: Ihr Resolver füllt die Tags und entscheidet die IF-Zweige.",
+      note: "zur Vorschau",
+    },
+    "logic-tags": {
+      seeIt:
+        "Die Badges IF und ENDIF sind Logik-Tags: Bearbeiten Sie den Absatz, um über „Logic“ weitere einzufügen.",
+      note: "Logik-Tags",
+    },
+    "display-conditions": {
+      seeIt:
+        "Wählen Sie einen Block und dann unter „Display Condition“ eine Bedingung wie „VIP Partners“.",
+      note: "Block auswählen",
+    },
+    templates: {
+      seeIt:
+        "Benennen Sie die Vorlage um oder bearbeiten Sie sie und speichern Sie dann: Der Header zeigt „Saved“ und „Updated just now“.",
+      note: "speichern",
+    },
+    "version-history": {
+      seeIt:
+        "Speichern Sie, dann öffnen Sie „Version history“, um eine Version anzusehen und wiederherzustellen.",
+      note: "Versionen",
+    },
+    comments: {
+      seeIt:
+        "Öffnen Sie „Comments“, kommentieren Sie einen Block und antworten Sie darauf.",
+      note: "Kommentare",
+    },
+    "saved-blocks": {
+      seeIt:
+        "Öffnen Sie „Saved Blocks“, um einen einzufügen, oder speichern Sie einen eigenen über das Lesezeichen eines Blocks.",
+      note: "gespeicherte Blöcke",
+    },
+    media: {
+      seeIt:
+        "Ziehen Sie ein „Image“ hinein und klicken Sie auf „Browse Media“: Wählen Sie aus der Galerie oder legen Sie eine Datei ab.",
+      note: "Bild hineinziehen",
+    },
+    "test-email": {
+      seeIt:
+        "Klicken Sie auf „Test“, wählen Sie einen Empfänger und senden Sie. Nichts verlässt den Browser.",
+      note: "Test senden",
+    },
+    render: {
+      seeIt:
+        "Öffnen Sie „Exportieren“: MJML kommt aus `toMjml()`, HTML aus Ihrem `compileMjml`.",
+      note: "exportieren",
     },
   },
   importModal: {

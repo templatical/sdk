@@ -25,6 +25,8 @@ import {
   sceneHref,
 } from "@/host/sceneHref";
 import { createSerializedBoot } from "@/host/bootQueue";
+import { codeSpans, plainText, sceneInitCode } from "@/host/catalogNav";
+import type { NotesMode } from "@/host/sceneNotes";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { useSceneInit } from "@/host/useSceneInit";
 import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
@@ -49,7 +51,56 @@ const neighbours = computed(() => sceneNeighbours(props.sceneId));
 // The notes show by themselves once per browser, on the first scene that
 // opens; the settings menu's "Show notes" brings them back on any scene.
 const notesSeen = useLocalStorage("tpl-playground-notes-seen", false);
+// A setup's own note shows once more, alone, on that setup's first visit.
+const sceneNotesSeen = useLocalStorage<string[]>(
+  "tpl-playground-scene-notes-seen",
+  [],
+);
 const notesOpen = ref(false);
+const notesMode = ref<NotesMode>("all");
+
+interface SceneCopy {
+  seeIt: string;
+  note?: string;
+}
+
+const sceneCopy = computed<SceneCopy | undefined>(() => {
+  const copies: Record<string, SceneCopy | undefined> = t.value.scenes;
+  return copies[props.sceneId];
+});
+// Importers and examples keep their summary: what they show is the email.
+const seeIt = computed(
+  () => sceneCopy.value?.seeIt ?? scene.value?.summary ?? "",
+);
+const initCode = computed(() =>
+  scene.value
+    ? sceneInitCode(scene.value, t.value.host.minimumPaste)
+    : undefined,
+);
+const sceneNote = computed(() => {
+  const pointer = scene.value?.pointer;
+  const note = sceneCopy.value?.note;
+  return pointer && note ? { pointer, note } : undefined;
+});
+
+/** The stored list, or none when storage holds something else. */
+function seenScenes(): string[] {
+  const seen: unknown = sceneNotesSeen.value;
+  return Array.isArray(seen) ? seen : [];
+}
+
+function sceneNoteSeen(id: string): boolean {
+  return seenScenes().includes(id);
+}
+
+function openNotes(mode: NotesMode): void {
+  notesMode.value = mode;
+  notesOpen.value = true;
+  const id = props.sceneId;
+  if (sceneNote.value && !sceneNoteSeen(id)) {
+    sceneNotesSeen.value = [...seenScenes(), id];
+  }
+}
 const codeButton = ref<HTMLButtonElement | null>(null);
 
 function closeCode(): void {
@@ -115,6 +166,8 @@ watch(
   () => {
     void boot.enqueue(async (isCurrent) => {
       const current = scene.value;
+      // Notes belong to the scene they opened on.
+      notesOpen.value = false;
       sceneReady.value = false;
       initError.value = "";
       editor.value?.unmount();
@@ -152,9 +205,13 @@ watch(
 );
 
 watch(sceneReady, (ready) => {
-  if (!ready || !editor.value || notesSeen.value) return;
-  notesSeen.value = true;
-  notesOpen.value = true;
+  if (!ready || !editor.value) return;
+  if (!notesSeen.value) {
+    notesSeen.value = true;
+    openNotes("all");
+  } else if (sceneNote.value && !sceneNoteSeen(props.sceneId)) {
+    openNotes("scene");
+  }
 });
 
 onUnmounted(() => {
@@ -193,11 +250,13 @@ onUnmounted(() => {
         data-testid="scene-header"
         class="flex items-center justify-between h-14 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-3"
       >
+        <!-- Only the title block shrinks: a long see-it line would otherwise
+             squeeze the controls before it and nudge the arrows. -->
         <div class="flex items-center gap-3 min-w-0">
           <button
             type="button"
             data-testid="toolbar-rail"
-            class="pg-toolbar-icon-btn"
+            class="pg-toolbar-icon-btn shrink-0"
             :title="railOpen ? t.host.hideRail : t.host.showRail"
             :aria-label="t.host.setups"
             :aria-expanded="railOpen"
@@ -220,7 +279,7 @@ onUnmounted(() => {
           <a
             :href="catalogHref()"
             data-testid="toolbar-back"
-            class="pg-toolbar-btn no-underline"
+            class="pg-toolbar-btn shrink-0 no-underline"
             :title="t.a11y.backToCatalog"
             :aria-label="t.a11y.backToCatalog"
             @click="onBack"
@@ -288,17 +347,28 @@ onUnmounted(() => {
             </a>
           </div>
           <div class="min-w-0">
-            <h1
-              class="m-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"
-            >
-              {{ scene.title }}
-            </h1>
+            <div class="flex min-w-0 items-baseline gap-2">
+              <h1
+                class="m-0 min-w-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"
+              >
+                {{ scene.title }}
+              </h1>
+              <code
+                v-if="initCode"
+                data-testid="scene-init-key"
+                class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-400"
+                >{{ initCode }}</code
+              >
+            </div>
             <p
-              data-testid="scene-summary"
+              data-testid="scene-see-it"
               class="m-0 mt-0.5 truncate text-xs text-gray-600 dark:text-gray-400"
-              :title="scene.summary"
+              :title="plainText(seeIt)"
             >
-              {{ scene.summary }}
+              <template v-for="(part, i) in codeSpans(seeIt)" :key="i"
+                ><code v-if="part.code" class="font-mono">{{ part.text }}</code
+                ><template v-else>{{ part.text }}</template></template
+              >
             </p>
           </div>
         </div>
@@ -348,7 +418,7 @@ onUnmounted(() => {
             <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.code }}
           </button>
-          <HostKnobs notes @show-notes="notesOpen = true" />
+          <HostKnobs notes @show-notes="openNotes('all')" />
         </div>
       </header>
       <!--
@@ -417,6 +487,8 @@ onUnmounted(() => {
       />
       <SceneNotes
         :open="notesOpen && sceneReady && !!editor"
+        :mode="notesMode"
+        :scene="sceneNote"
         @dismiss="notesOpen = false"
       />
     </div>

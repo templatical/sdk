@@ -10,6 +10,11 @@ export const mergeTags: Scene = {
   catalog: "oss",
   group: "personalization",
   docs: "/guide/merge-tags#configuration",
+  pointer: {
+    selector: '[data-block-type="paragraph"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => paragraphCanvas(),
   config: () => ({
     mergeTags: { syntax: "liquid" as const, tags: AUTHOR_MERGE_TAGS },

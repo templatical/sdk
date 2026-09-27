@@ -1,5 +1,4 @@
 import type { Scene } from "../types";
-import { setupBaseCanvas } from "./shared";
 
 export const defaults: Scene = {
   id: "defaults",
@@ -11,13 +10,19 @@ export const defaults: Scene = {
   catalog: "oss",
   group: "configure",
   docs: "/guide/defaults#block-defaults",
-  content: () => setupBaseCanvas(),
+  pointer: {
+    selector: '[data-palette-type="button"]',
+    root: "editor",
+    side: "right",
+    replaces: "palette",
+  },
+  // No content: templateDefaults seeds only the blank template init() builds.
   config: () => ({
     blockDefaults: {
       button: { backgroundColor: "#0f766e" },
     },
     templateDefaults: {
-      backgroundColor: "#f8fafc",
+      backgroundColor: "#e3f1ee",
     },
   }),
   snippet: `import { init } from "@templatical/editor";
@@ -29,7 +34,7 @@ const editor = await init({
     button: { backgroundColor: "#0f766e" },
   },
   templateDefaults: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#e3f1ee",
   },
 });`,
 };

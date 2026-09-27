@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
-import { ScenePage } from "../pages/scene.page";
+import { ScenePage, skipNotes } from "../pages/scene.page";
 
 test.describe("Playground smoke tests", () => {
   test("playground loads and shows catalog", async ({ chooserPage, page }) => {
@@ -56,9 +56,7 @@ test.describe("Playground smoke tests", () => {
   }) => {
     // Straight to the URL, not the page object: it always pins ?shadowDom=,
     // which is exactly the case that hid the scene mounting in shadow DOM.
-    await page.addInitScript(() => {
-      localStorage.setItem("tpl-playground-notes-seen", "true");
-    });
+    await skipNotes(page);
     const mountsShadow = async (id: string) => {
       await page.goto(`/scenes/${id}`);
       await page.waitForSelector(

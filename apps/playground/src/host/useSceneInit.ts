@@ -18,7 +18,7 @@ export async function mountScene(
 ): Promise<TemplaticalEditor> {
   const config = scene.config(ctx);
   const shareId = ctx.search.get("s");
-  let content = scene.content(ctx);
+  let content = scene.content?.(ctx);
   if (shareId) {
     try {
       content = (await fetchShare(shareId)).content;
@@ -31,7 +31,7 @@ export async function mountScene(
   }
   const editor = await init({
     container,
-    content,
+    ...(content ? { content } : {}),
     // Host overlay for Export HTML. Scenes may replace `render`; snippets
     // stay honest because this is not in `scene.config()`.
     render: { compileMjml: compileMjmlDemo },

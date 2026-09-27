@@ -10,6 +10,11 @@ export const displayConditions: Scene = {
   catalog: "oss",
   group: "personalization",
   docs: "/guide/display-conditions",
+  pointer: {
+    selector: '[data-block-type="paragraph"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => displayConditionCanvas(),
   config: () => ({
     displayConditions: AUTHOR_DISPLAY_CONDITIONS,

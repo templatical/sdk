@@ -15,6 +15,11 @@ export const mergeTagsOnRequest: Scene = {
   catalog: "oss",
   group: "personalization",
   docs: "/guide/merge-tags#dynamic-tag-loading",
+  pointer: {
+    selector: '[data-block-type="paragraph"]',
+    root: "editor",
+    side: "below",
+  },
   content: () => paragraphCanvas(),
   config: () => ({
     mergeTags: {

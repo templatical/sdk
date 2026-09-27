@@ -55,6 +55,7 @@ export default {
         code: "copy this setup",
       },
       targets: {
+        scene: "This setup",
         rail: "Setups list",
         palette: "Block palette",
         properties: "Properties panel",
@@ -78,6 +79,117 @@ export default {
       backend: "Load, save, send",
       import: "Convert an existing template",
       examples: "Finished emails",
+    },
+  },
+  // What each setup changes and where to look, keyed by scene id. The header
+  // shows `seeIt`; `note` is the setup's own note, present exactly when the
+  // scene has a pointer (tests/scenes.test.ts). Editor labels are quoted
+  // as the editor shows them, which is English unless the scene sets a locale.
+  scenes: {
+    minimum: {
+      seeIt:
+        "Drag any block onto the canvas: that one call is the whole integration.",
+    },
+    fonts: {
+      seeIt:
+        "Open Settings and pick a font: only Georgia, Times New Roman and Arial are offered.",
+      note: "only 3 fonts",
+    },
+    defaults: {
+      seeIt:
+        "The blank page starts tinted, and a Button you drag in arrives teal.",
+      note: "drag a Button",
+    },
+    theming: {
+      seeIt:
+        "The editor's chrome wears the brand's crimson, from its toggles to the canvas behind the email.",
+      note: "brand colors",
+    },
+    layout: {
+      seeIt:
+        "Switch to preview: the email sits inside your card shell, which the saved JSON never contains.",
+      note: "switch to preview",
+    },
+    i18n: {
+      seeIt:
+        "The chrome is German, and blocks you drag in bring German placeholders; `?locale=` picks another language.",
+    },
+    "shadow-dom-off": {
+      seeIt:
+        "It looks the same: the editor mounts straight into the page, with no shadow root.",
+    },
+    issues: {
+      seeIt:
+        "The Issues tab flags a missing alt text and a vague button label: jump to each block to fix it.",
+      note: "2 issues",
+    },
+    "custom-blocks": {
+      seeIt:
+        "Your Testimonial block sits on the palette and the canvas: select it to edit its fields.",
+      note: "your block",
+    },
+    "merge-tags": {
+      seeIt:
+        "Edit the paragraph and insert a merge tag: the picker lists your tags by label.",
+      note: "insert a tag",
+    },
+    "merge-tags-on-request": {
+      seeIt:
+        "Edit the paragraph and insert a merge tag: your own chooser opens instead of the list.",
+      note: "insert a tag",
+    },
+    "merge-tags-samples": {
+      seeIt: "Switch to preview: tags read as their sample values.",
+      note: "switch to preview",
+    },
+    "merge-tags-resolve-preview": {
+      seeIt:
+        "Switch to preview: your resolver fills in the tags and settles the IF branches.",
+      note: "switch to preview",
+    },
+    "logic-tags": {
+      seeIt:
+        "The IF and ENDIF badges are logic tags: edit the paragraph to add more from Logic.",
+      note: "logic tags",
+    },
+    "display-conditions": {
+      seeIt:
+        "Select a block, then pick a condition such as VIP Partners under Display Condition.",
+      note: "select a block",
+    },
+    templates: {
+      seeIt:
+        "Rename the template or edit it, then save: the header shows Saved and Updated just now.",
+      note: "save",
+    },
+    "version-history": {
+      seeIt:
+        "Save, then open Version history to preview and restore a version.",
+      note: "versions",
+    },
+    comments: {
+      seeIt: "Open Comments, comment on a block and reply.",
+      note: "comments",
+    },
+    "saved-blocks": {
+      seeIt:
+        "Open Saved Blocks to insert one, or save your own with a block's bookmark.",
+      note: "saved blocks",
+    },
+    media: {
+      seeIt:
+        "Drag an Image in and click Browse Media: pick from the gallery or drop a file.",
+      note: "drag an Image",
+    },
+    "test-email": {
+      seeIt:
+        "Click Test, pick a recipient and send. Nothing leaves the browser.",
+      note: "send a test",
+    },
+    render: {
+      seeIt:
+        "Open Export: MJML comes from `toMjml()`, HTML from your `compileMjml`.",
+      note: "export",
     },
   },
   importModal: {
