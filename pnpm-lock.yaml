@@ -321,7 +321,7 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4
       '@lezer/javascript':
-        specifier: ^1.5.4
+        specifier: ^1.5.5
         version: 1.5.5
       '@lucide/vue':
         specifier: ^1.48.0
