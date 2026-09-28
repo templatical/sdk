@@ -486,11 +486,10 @@
       }
 
       /* ---- Note panel ------------------------------------------------- */
-      /* Alt-click a block to open this — see the capture script below for
-         why the target id comes from data-block-id rather than an editor
-         API. z-index is well above --z-modal (10000, the editor's own
-         popover/dialog layer) so a note stays reachable over any editor
-         dialog. */
+      /* Opened from the Annotate toggle. The target id comes from
+         data-block-id on the click path. z-index is well above the editor's
+         popover layer (literal 10000) so a note stays reachable over any
+         editor dialog. */
       #note-panel {
         position: fixed;
         right: 16px;
@@ -532,6 +531,54 @@
         display: flex;
         gap: 8px;
         justify-content: flex-end;
+      }
+      #note-list {
+        list-style: none;
+        margin: 0 0 8px;
+        padding: 0;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      #note-list li {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 6px;
+        align-items: start;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      #note-list button.note-row {
+        display: contents;
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        text-align: left;
+        cursor: pointer;
+      }
+      #note-footer {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      #note-badges {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+      }
+      .note-badge {
+        position: fixed;
+        height: 18px;
+        min-width: 18px;
+        padding: 0 5px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--primary);
+        color: var(--n-900);
+        font: 600 11px/18px Geist, ui-sans-serif, system-ui, sans-serif;
+        pointer-events: auto;
+        cursor: pointer;
       }
 
       @media (max-width: 720px) {
@@ -582,6 +629,16 @@
           <span class="dot"></span><span id="status-text">Connecting…</span>
         </span>
         <span class="divider"></span>
+        <button
+          id="annotate-toggle"
+          type="button"
+          class="btn"
+          aria-pressed="false"
+          title="Leave notes for your agent"
+        >
+          <span class="label">Annotate</span>
+          <span id="annotate-count" hidden></span>
+        </button>
         <button id="btn-export" class="btn" title="Export the template">
           <svg
             viewBox="0 0 24 24"
@@ -609,6 +666,7 @@
 
     <div class="stage">
       <div id="editor"></div>
+      <div id="note-badges"></div>
       <div id="loading" class="loading">
         <img src="https://templatical.com/logo.svg" alt="Templatical" />
         <div class="spinner" aria-hidden="true"></div>
@@ -617,6 +675,7 @@
     </div>
 
     <div id="note-panel" hidden>
+      <ol id="note-list"></ol>
       <div class="note-target">
         Note on <strong id="note-target-label">the template</strong>
       </div>
@@ -632,6 +691,7 @@
         </button>
       </div>
       <p id="note-status" role="status"></p>
+      <p id="note-footer">Ask your agent to apply these.</p>
     </div>
 
     <dialog id="export">
@@ -780,6 +840,7 @@
         await new Promise((r) => setTimeout(r, 0)); // let Vue flush setContent
         await postContent(true);
         applyingRemote = false;
+        schedulePlace();
         toast("Updated from agent");
       }
 
@@ -878,6 +939,7 @@
 
         document.body.classList.add("ready");
         await postContent(true); // seed the baseline with the normalized view
+        await refreshNotes();
         setStatus("live", "Live");
 
         const es = new EventSource("/events");
@@ -901,49 +963,337 @@
       });
 
       // ---- Notes ----
-      // Notes are attached by clicking a block. The editor exposes no
-      // selection accessor, so the id comes from data-block-id on the
-      // click's composedPath - an attribute the editor's own e2e suite
-      // locks, and documented in-repo as a hook for consumers. composedPath
-      // (not event.target) is required because the editor mounts in shadow
-      // DOM and clicks retarget at the boundary.
+      // Annotate mode takes canvas clicks. BlockWrapper.handleClick calls
+      // stopPropagation() on bubble, so the listeners stay on the capture phase.
+      // mousedown is stopped too: that is the event that focuses contenteditable.
+      // The editor's header, sidebars, and properties panel are outside .tpl-canvas
+      // and still receive clicks. composedPath (not event.target) is required
+      // because the editor mounts in shadow DOM and clicks retarget at the boundary.
       const notePanel = $("note-panel");
       const noteText = $("note-text");
       const noteLabel = $("note-target-label");
       const noteStatus = $("note-status");
-      let noteBlockId = null;
+      const annotateToggle = $("annotate-toggle");
+      let annotating = false;
+      let draftTarget = null;
+      let notes = [];
+      let editingId = null;
 
-      function blockIdFromEvent(event) {
-        for (const el of event.composedPath()) {
-          const id = el instanceof HTMLElement ? el.dataset?.blockId : undefined;
-          if (id) return id;
-        }
-        return null;
+      function canvasRoot() {
+        const host = document.querySelector("#editor");
+        return host && host.shadowRoot;
       }
 
-      // Capture phase, not bubble: the editor's own BlockWrapper.handleClick
-      // calls stopPropagation() (so a click inside a section picks the
-      // section, not a stray column child) - a bubble listener on document
-      // never sees a click on a block. Capture runs root-to-target, before
-      // that stopPropagation is reached, so it is unaffected.
-      document.addEventListener(
-        "click",
-        (event) => {
-          if (notePanel.contains(event.target)) return;
-          // Alt-click opens the note panel; a plain click is the editor's own.
-          if (!event.altKey) return;
-          noteBlockId = blockIdFromEvent(event);
-          noteLabel.textContent = noteBlockId ? noteBlockId : "the template";
-          noteStatus.textContent = "";
+      function blockEl(id) {
+        const root = canvasRoot();
+        if (!root || !id) return null;
+        return root.querySelector(
+          ".tpl-canvas [data-block-id='" + CSS.escape(id) + "']",
+        );
+      }
+
+      function labelFromElement(el) {
+        return (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80);
+      }
+
+      function blockFromPath(event) {
+        let blockId = null;
+        let parentBlockId = null;
+        let blockType = null;
+        let label = "";
+        for (const el of event.composedPath()) {
+          if (!(el instanceof HTMLElement)) continue;
+          if (!el.closest(".tpl-canvas")) continue;
+          const id = el.dataset.blockId;
+          if (!id) continue;
+          if (!blockId) {
+            blockId = id;
+            blockType = el.dataset.blockType || null;
+            label = labelFromElement(el);
+          } else if (!parentBlockId) {
+            parentBlockId = id;
+            break;
+          }
+        }
+        if (!blockId) return null;
+        return { blockId, parentBlockId, blockType, label };
+      }
+
+      function pathHitsCanvas(event) {
+        return event.composedPath().some(
+          (el) => el instanceof Element && el.closest(".tpl-canvas"),
+        );
+      }
+
+      function syncChrome() {
+        annotateToggle.setAttribute("aria-pressed", String(annotating));
+        const count = $("annotate-count");
+        count.hidden = notes.length === 0;
+        count.textContent = String(notes.length);
+        notePanel.hidden = !annotating && notes.length === 0;
+      }
+
+      function setAnnotating(next) {
+        annotating = next;
+        if (!next) {
+          editingId = null;
+          draftTarget = null;
           noteText.value = "";
-          notePanel.hidden = false;
-          noteText.focus();
-        },
+          noteStatus.textContent = "";
+          $("note-save").textContent = "Leave note";
+        }
+        syncChrome();
+      }
+
+      annotateToggle.onclick = () => setAnnotating(!annotating);
+
+      function showComposer(target, id) {
+        editingId = id;
+        const note = id ? notes.find((item) => item.id === id) : null;
+        if (note) {
+          noteLabel.textContent = note.blockId
+            ? (note.blockType || "Block") + (note.label ? " · " + note.label : "")
+            : "the template";
+          noteText.value = note.text;
+        } else if (target) {
+          noteLabel.textContent =
+            (target.blockType || "Block") + (target.label ? " · " + target.label : "");
+          noteText.value = "";
+        } else {
+          noteLabel.textContent = "the template";
+          noteText.value = "";
+        }
+        $("note-save").textContent = id ? "Save" : "Leave note";
+        noteStatus.textContent = "";
+        notePanel.hidden = false;
+        noteText.focus();
+      }
+
+      function renderNotes() {
+        const list = $("note-list");
+        list.replaceChildren();
+        notes.forEach((note, index) => {
+          const li = document.createElement("li");
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "note-row";
+          const num = document.createElement("span");
+          num.textContent = String(index + 1);
+          const body = document.createElement("span");
+          const title = note.blockId
+            ? (note.blockType || "Block") + (note.label ? " · " + note.label : "")
+            : "Whole template";
+          const gone =
+            note.blockId && !blockEl(note.blockId)
+              ? " This block is no longer on the canvas."
+              : "";
+          body.textContent = title + " — " + note.text + gone;
+          row.append(num, body);
+          row.onclick = () => showComposer(null, note.id);
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "btn";
+          remove.textContent = "Delete";
+          remove.onclick = async () => {
+            const res = await fetch(
+              "/annotations/" + encodeURIComponent(note.id),
+              { method: "DELETE" },
+            );
+            if (res.status === 204) {
+              if (editingId === note.id) editingId = null;
+              await refreshNotes();
+            } else {
+              noteStatus.textContent = "Could not delete that note.";
+            }
+          };
+          li.append(row, remove);
+          list.appendChild(li);
+        });
+        syncChrome();
+      }
+
+      function syncOutlines() {
+        const host = document.querySelector("#editor");
+        if (!host || !host.shadowRoot) return;
+        let style = host.shadowRoot.querySelector("#note-outlines");
+        if (!style) {
+          style = document.createElement("style");
+          style.id = "note-outlines";
+          host.shadowRoot.appendChild(style);
+        }
+        const ids = [
+          ...new Set(notes.map((note) => note.blockId).filter((id) => id)),
+        ];
+        style.textContent = ids
+          .map(
+            (id) =>
+              `.tpl-canvas [data-block-id="${CSS.escape(id)}"] { outline: 2px solid var(--tpl-primary); outline-offset: 2px; }`,
+          )
+          .join("\n");
+      }
+
+      const NUDGE_GAP = 18;
+      const NUDGE_DROP = 22;
+      let badgeFrame = 0;
+      let badgeScroller = null;
+      let badgeObserver = null;
+
+      function schedulePlace() {
+        if (notes.length === 0) return;
+        if (badgeFrame) return;
+        badgeFrame = requestAnimationFrame(() => {
+          badgeFrame = 0;
+          placeBadges();
+        });
+      }
+
+      function bindBadgeTracking() {
+        if (notes.length === 0) {
+          if (badgeScroller) {
+            badgeScroller.removeEventListener("scroll", schedulePlace);
+          }
+          badgeScroller = null;
+          if (badgeObserver) badgeObserver.disconnect();
+          badgeObserver = null;
+          return;
+        }
+        const root = canvasRoot();
+        const scroller = root && root.querySelector(".tpl-body");
+        if (scroller && scroller !== badgeScroller) {
+          if (badgeScroller) {
+            badgeScroller.removeEventListener("scroll", schedulePlace);
+          }
+          badgeScroller = scroller;
+          badgeScroller.addEventListener("scroll", schedulePlace, {
+            passive: true,
+          });
+        }
+        const host = document.querySelector("#editor");
+        if (host && !badgeObserver) {
+          badgeObserver = new ResizeObserver(() => schedulePlace());
+          badgeObserver.observe(host);
+        }
+      }
+
+      function placeBadges() {
+        const layer = $("note-badges");
+        layer.replaceChildren();
+        if (notes.length === 0) return;
+        const host = document.querySelector("#editor");
+        if (!host) return;
+        const hostBox = host.getBoundingClientRect();
+        const root = canvasRoot();
+        const canvas = root && root.querySelector(".tpl-canvas");
+        const rtl = !!(canvas && canvas.getAttribute("dir") === "rtl");
+        const groups = new Map();
+        notes.forEach((note, index) => {
+          if (!note.blockId) return;
+          const existing = groups.get(note.blockId);
+          if (existing) existing.extra += 1;
+          else groups.set(note.blockId, { note, number: index + 1, extra: 0 });
+        });
+        // Nudge against anchors already placed, so a section noted before its
+        // child is the anchor that wins the shared corner.
+        const placed = [];
+        for (const group of groups.values()) {
+          const el = blockEl(group.note.blockId);
+          if (!el) continue;
+          const rect = el.getBoundingClientRect();
+          const visible =
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.bottom > hostBox.top &&
+            rect.top < hostBox.bottom &&
+            rect.right > hostBox.left &&
+            rect.left < hostBox.right;
+          if (!visible) continue;
+          let x = rtl ? rect.left : rect.right;
+          let y = rect.top;
+          for (const other of placed) {
+            if (Math.hypot(other.x - x, other.y - y) < NUDGE_GAP) y += NUDGE_DROP;
+          }
+          placed.push({ x, y });
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "note-badge";
+          btn.textContent = group.extra
+            ? group.number + "+" + group.extra
+            : String(group.number);
+          btn.setAttribute(
+            "aria-label",
+            group.extra
+              ? group.extra +
+                  1 +
+                  " notes on " +
+                  (group.note.label || group.note.blockType || "block")
+              : "Note " +
+                  group.number +
+                  " on " +
+                  (group.note.label || group.note.blockType || "block"),
+          );
+          btn.style.left = x + "px";
+          btn.style.top = y + "px";
+          btn.style.transform = rtl
+            ? "translate(calc(-100% - 2px), -100%)"
+            : "translate(2px, -100%)";
+          btn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            showComposer(null, group.note.id);
+          });
+          layer.appendChild(btn);
+        }
+      }
+
+      async function refreshNotes() {
+        const res = await fetch("/content");
+        if (!res.ok) return;
+        const body = await res.json();
+        notes = Array.isArray(body.annotations) ? body.annotations : [];
+        renderNotes();
+        syncOutlines();
+        bindBadgeTracking();
+        placeBadges();
+      }
+
+      function onAnnotatePointer(event) {
+        if (!annotating) return;
+        if (event.target instanceof Element && event.target.closest("#note-badges")) {
+          return;
+        }
+        if (notePanel.contains(event.target)) return;
+        if (!pathHitsCanvas(event)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.type !== "click") return;
+        draftTarget = blockFromPath(event);
+        showComposer(draftTarget, null);
+      }
+
+      document.addEventListener(
+        "mousedown",
+        onAnnotatePointer,
         true,
       );
 
+      document.addEventListener(
+        "click",
+        onAnnotatePointer,
+        true,
+      );
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !annotating) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setAnnotating(false);
+      });
+
       $("note-cancel").onclick = () => {
-        notePanel.hidden = true;
+        editingId = null;
+        draftTarget = null;
+        noteText.value = "";
+        noteStatus.textContent = "";
+        $("note-save").textContent = "Leave note";
       };
 
       $("note-save").onclick = async () => {
@@ -953,26 +1303,40 @@
           return;
         }
         try {
-          const res = await fetch("/annotations", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ blockId: noteBlockId, text }),
-          });
-          if (res.ok) {
-            notePanel.hidden = true;
-            // Say plainly when it will be acted on: nothing can wake the
-            // agent from this page, so the note is picked up on its next
-            // turn. Reuses the existing toast() rather than a second
-            // notification affordance.
-            noteStatus.textContent = "";
-            toast("Note saved — your agent will see it on its next change.");
-          } else {
-            noteStatus.textContent = "Could not save that note.";
+          const res = editingId
+            ? await fetch("/annotations/" + encodeURIComponent(editingId), {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ text }),
+              })
+            : await fetch("/annotations", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  text,
+                  blockId: (draftTarget && draftTarget.blockId) || null,
+                  parentBlockId: (draftTarget && draftTarget.parentBlockId) || null,
+                  blockType: (draftTarget && draftTarget.blockType) || null,
+                  label: (draftTarget && draftTarget.label) || "",
+                }),
+              });
+          if (!res.ok) {
+            noteStatus.textContent =
+              (await res.text()) || "Could not save that note.";
+            return;
           }
+          editingId = null;
+          draftTarget = null;
+          noteText.value = "";
+          $("note-save").textContent = "Leave note";
+          noteStatus.textContent = "";
+          toast("Saved. Ask your agent to apply your notes.");
+          await refreshNotes();
         } catch {
           noteStatus.textContent = "Could not reach the bridge.";
         }
       };
+
     </script>
   </body>
 </html>

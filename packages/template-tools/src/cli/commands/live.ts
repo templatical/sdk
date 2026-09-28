@@ -65,10 +65,15 @@ export function runList(args: ParsedArgs): number {
   return EXIT.ok;
 }
 
-async function postTo(port: number, path: string): Promise<Response> {
+async function postTo(
+  port: number,
+  path: string,
+  body?: unknown,
+): Promise<Response> {
   return fetch(`http://localhost:${port}${path}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
 
@@ -84,10 +89,22 @@ export async function runLive(args: ParsedArgs): Promise<number> {
       );
     }
     if (sub === "reload") {
-      const res = await postTo(info.port, "/reload");
-      const body = (await res.json().catch(() => ({}))) as { clients?: number };
+      const consumeAnnotations = args.flags["consume-annotations"] === true;
+      const res = await postTo(
+        info.port,
+        "/reload",
+        consumeAnnotations ? { consumeAnnotations: true } : undefined,
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        clients?: number;
+        consumed?: boolean;
+      };
       emit(
-        { reloaded: true, clients: body.clients ?? 0 },
+        {
+          reloaded: true,
+          clients: body.clients ?? 0,
+          consumed: body.consumed === true,
+        },
         () =>
           `Pushed the working file to ${body.clients ?? 0} connected page(s).`,
       );

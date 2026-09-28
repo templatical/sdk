@@ -82,7 +82,7 @@ Run `import --list-formats` (optionally with `--json`) to see which converter pa
 
 ### `live` · `live reload` · `live stop`
 
-Starts a local server that opens the real Templatical editor (loaded from the CDN) in your browser and keeps one working template file in `.templatical/` synced to it over Server-Sent Events. `live reload` pushes your latest edit to the open page; `live stop` shuts the server down. `[--file <f>]` picks the working file, `[--port <n>]` picks the port (default `4747`, falling back to a random free one if it's busy), `[--cwd <d>]` resolves both against a directory other than the current one, and `--no-open` skips launching a browser automatically. This is the protocol the [Agent Skill](/guide/agent-skill)'s live mode is built on — see that page for how an agent drives it turn by turn; the CLI command here only starts and stops the server.
+Starts a local server that opens the real Templatical editor (loaded from the CDN) in your browser and keeps one working template file in `.templatical/` synced to it over Server-Sent Events. `live reload` pushes your latest edit to the open page and leaves notes on blocks in place. `live reload --consume-annotations` clears those notes after the reload has read the working file. `live stop` shuts the server down. `[--file <f>]` picks the working file, `[--port <n>]` picks the port (default `4747`, falling back to a random free one if it's busy), `[--cwd <d>]` resolves both against a directory other than the current one, and `--no-open` skips launching a browser automatically. This is the protocol the [Agent Skill](/guide/agent-skill)'s live mode is built on — see that page for how an agent drives it turn by turn; the CLI command here only starts and stops the server.
 
 ### `list`
 

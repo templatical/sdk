@@ -77,11 +77,46 @@ describe("live already-running / reload / stop", () => {
     ).toBe(0);
     expect(fetch).toHaveBeenCalledWith(
       "http://localhost:5151/reload",
-      expect.objectContaining({ method: "POST" }),
+      expect.objectContaining({ method: "POST", body: undefined }),
     );
     expect(JSON.parse(stdout.join(""))).toEqual({
       reloaded: true,
       clients: 2,
+      consumed: false,
+    });
+  });
+
+  it("posts consumeAnnotations when the flag is set", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({ ok: true, clients: 1, consumed: true }),
+      })),
+    );
+    setJsonMode(true);
+    expect(
+      await runLive(
+        parseArgs([
+          "live",
+          "reload",
+          "--consume-annotations",
+          "--cwd",
+          dir,
+          "--json",
+        ]),
+      ),
+    ).toBe(0);
+    expect(fetch).toHaveBeenCalledWith("http://localhost:5151/reload", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ consumeAnnotations: true }),
+    });
+    expect(JSON.parse(stdout.join(""))).toEqual({
+      reloaded: true,
+      clients: 1,
+      consumed: true,
     });
   });
 

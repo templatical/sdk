@@ -236,7 +236,7 @@ describe("in-process reload (the path a future MCP server would call directly)",
     );
 
     const result = h.reload();
-    expect(result).toEqual({ ok: true, clients: 0 });
+    expect(result).toEqual({ ok: true, clients: 0, consumed: false });
     expect(h.getEditorState()).toEqual({
       divergent: false,
       content: null,
