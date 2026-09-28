@@ -88,7 +88,7 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
 | `<a>` (Text-Link) | geht im umgebenden `paragraph` auf | Konvertiert |
 | `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
-| `<hr>` | `divider` | Konvertiert |
+| `<hr>` | `divider` | Konvertiert (angenähert, wenn die Breite begrenzt oder nicht lesbar ist oder ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
 | Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
 | `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
 | `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
@@ -100,6 +100,26 @@ Alles, was sich nicht zuordnen lässt, wird wortgetreu in einem HTML-Block erhal
 Eine Zelle, die Text und einen Link mischt, wird ein einzelner `paragraph`, der beides enthält — das `<a>` samt `href` inline. Eine Zelle gilt als Button, wenn ihr gesamter Inhalt ein gestyltes Text-`<a>` ist.
 
 Ein `<div>`, `<center>` oder `<main>`, das eine Tabelle umschließt, erzeugt keinen eigenen Block: Der Importer steigt hinein, unabhängig von der Verschachtelungstiefe, und ordnet die gefundenen Tabellen zu. Ein Wrapper, der nur Text enthält, behält seine `paragraph`-Zuordnung; ein Wrapper, dessen gesamter Inhalt eine Überschrift ist, wird entfernt, sodass die Überschrift selbst zugeordnet wird.
+
+Das `text-align` eines Wrappers, der nur Text enthält, gilt für jedes `<p>` darin, das kein eigenes `text-align` angibt. Ein `<p>`, das eines angibt, behält es.
+
+### Divider-Breite
+
+Die Breite stammt aus dem `width`-Style des `<hr>`, danach aus seinem `width`-Attribut.
+
+| `<hr>`-Breite | `DividerBlock.width` | Status |
+|---|---|---|
+| fehlt, `auto` oder `100%` | `"full"` | Konvertiert |
+| ein Prozentwert unter `100%`, etwa `50%` | derselbe Prozentwert auf zwei Nachkommastellen, `"50%"` | Konvertiert |
+| unter `0%` oder über `100%` | begrenzt auf `"0%"` bzw. `"full"` | Angenähert |
+| px, schmaler als der Platz der Linie | die px-Zahl | Konvertiert |
+| px, so breit wie der Platz der Linie oder breiter | `"full"` | Konvertiert |
+| eine negative px-Breite | `0` | Angenähert |
+| jeder andere Wert, etwa `20em` | `"full"` | Angenähert |
+
+Der Platz der Linie ist der Anteil der Spalte an `settings.width` gemäß dem Spaltenlayout der Section, abzüglich des Paddings der Section, jeder Zelle und jedes Wrappers um das `<hr>` und des `<hr>` selbst.
+
+Templatical zentriert jeden Divider. Ein `<hr>` mit Teilbreite, das sein `align`-Attribut oder seine Margins links oder rechts platzieren, ist angenähert; seine `note` nennt die Ausrichtung.
 
 ## Inline-Formatierung
 
@@ -135,7 +155,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper-Zeilen
 
-Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Tabellen. Eine Zeile mit einer einzigen Zelle, deren Inhalt ausschließlich aus Tabellen besteht, wird durchlaufen, statt eine Section zu werden — die Spaltenzahl wird so an der Zeile gelesen, die sie deklariert. Das gilt nur, wenn diese Zelle neben ihren Tabellen keinen Inhalt trägt und die Zeile keine Hintergrundfarbe und kein Padding hat. Eine Zeile, die eine dieser Bedingungen nicht erfüllt, wird eine eigene Section, denn die Section trägt Hintergrund und Padding der Zeile.
+Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Tabellen. Eine Zeile mit einer einzigen Zelle, deren Inhalt ausschließlich aus Tabellen besteht, wird durchlaufen, statt eine Section zu werden — die Spaltenzahl wird so an der Zeile gelesen, die sie deklariert. Das gilt nur, wenn diese Zelle neben ihren Tabellen keinen Inhalt trägt und der `style` der Zeile weder eine Hintergrundfarbe noch ein Padding setzt. Eine Zeile, die eine dieser Bedingungen nicht erfüllt, wird eine eigene Section, denn die Section trägt Hintergrund und Padding der Zeile.
+
+Eine Füllfarbe, die der Abstieg passiert, aus dem `bgcolor` der Zeile, der Zelle oder der Tabelle, geht an die Sections darunter über.
 
 ### Gutter-Zeilen
 
@@ -154,6 +176,24 @@ Jeder Container muss nebeneinander liegen, keiner darf leer sein, und daneben da
 ### Verschachtelung
 
 Templatical-Sections können nicht verschachtelt werden. Tabellen, die in einem `<td>` verschachtelt sind, werden flachgelegt — ihre Blöcke wandern in die übergeordnete Zelle. Eine verschachtelte Zeile mit mehr als einer Zelle verliert dabei ihre Spalten; `report.entries` hält das als `approximated` mit einer Notiz fest.
+
+### Section-Hintergründe
+
+Eine Section übernimmt die nächstgelegene Füllfarbe, gelesen aus einem `background-color`-Style, einer `background`-Farbe oder einem `bgcolor`-Attribut:
+
+1. Das `<tr>`.
+2. Die Zellen der Zeile, wenn sie alle dieselbe Füllfarbe haben. Gutter-Zellen zählen nicht, und eine Zelle, deren gesamter Inhalt ein gestyltes Text-`<a>` ist, behält ihre Farbe am `button`.
+3. Die `<table>`, die die Zeile enthält, danach die Tabellen und Wrapper-Zellen um sie herum.
+
+Eine Section hat eine einzige Hintergrundfarbe. Eine Zeile, deren Zellen auf verschiedenen Füllfarben liegen, ist daher angenähert, und ihre `note` nennt die Füllfarbe jeder Zelle.
+
+### Zellen-Padding {#cell-padding}
+
+Das Padding einer Zelle wird zum Padding jedes Blocks addiert, den die Zelle enthält: links und rechts bei jedem Block, oben beim ersten und unten beim letzten. Das `cellpadding` einer Tabelle gilt für jede ihrer Zellen; eine Seite, die das eigene `padding` der Zelle angibt, überschreibt es.
+
+Das Padding verschachtelter Zellen und der `<div>`-, `<center>`- und `<main>`-Wrapper in einer Zelle summiert sich. Eine Zelle mit einem Spalten-Container pro Spalte gibt ihr Padding an die Ränder der Zeile: oben und unten an den ersten und letzten Block jeder Spalte, links an die erste Spalte und rechts an die letzte.
+
+Ein Spacer wird in seiner Höhe gerendert, daher nimmt ein Spacer am Rand einer Zelle das Padding dieser Seite als zusätzliche Höhe auf. Eine Zelle, deren gesamter Inhalt ein gestyltes Text-`<a>` ist, behält ihr Padding als das eigene Padding des `button`.
 
 ## CSS-Behandlung
 
@@ -175,6 +215,7 @@ Globale Template-Einstellungen werden aus dem Dokument gelesen:
 - **Breite** — `width`-Attribut bzw. `style="width:…"` der äußersten `<table>`. Standard: `600`.
 - **Hintergrundfarbe** — `background-color` des `<body>`. Standard: `#ffffff`.
 - **Schriftart** — `font-family` des `<body>`. Standard: `Arial`.
+- **Link-Unterstreichung** — `text-decoration` in einer `<style>`-Regel für jeden Link, `a { … }`. Standard: `true`, der Browser-Standard. Eine Regel für nur einige Links, ein `:hover`-Zustand oder eine `@media`-Query setzt sie nicht.
 - **Preheader** — erstes `<div style="display:none">` oben im Body (Konvention).
 
 ## Bekannte Einschränkungen
@@ -195,7 +236,7 @@ Prüfen Sie das Ergebnis nach der Konvertierung im Editor auf:
 1. **Element-Klassifikation** — `report.entries` auf Einträge mit `status: 'approximated'` oder `status: 'html-fallback'` durchsehen.
 2. **Bild-URLs** — relative Pfade und CID-Referenzen funktionieren in der Vorschau nicht; durch absolute URLs ersetzen.
 3. **Spaltenverhältnisse** — das automatische Mapping wählt das nächstgelegene Standard-Layout; im Section-Settings-Panel verfeinern.
-4. **Abstände und Padding** — `padding`-Shorthand wird treu geparst, leere Zell-Margins können Nachschärfung brauchen.
+4. **Abstände und Padding** — Zellen-Padding wird auf die enthaltenen Blöcke übertragen, wie unter [Zellen-Padding](#cell-padding) beschrieben. Margins werden nicht importiert und können Nachschärfung brauchen.
 5. **HTML-Fallback-Blöcke** — Inhalt im HTML-Block lässt sich inline editieren oder durch erstklassige Blöcke ersetzen.
 
 ## Den Bericht lesen
@@ -224,7 +265,7 @@ for (const warning of report.warnings) {
 
 `report.entries` weist neben den Blattblöcken auch die Sections aus, sodass sich die Einträge gegen `content.blocks` abgleichen lassen:
 
-- Ein Eintrag pro Section, mit `sourceTag: 'tr'` und `templaticalBlockType: 'section'`. Der Status ist `converted`, wenn jede Zelle ihre eigene Spalte behalten hat, und `approximated` mit einer Notiz, wenn Zellen zusammengefasst wurden oder das Verhältnis keine Entsprechung hatte.
+- Ein Eintrag pro Section, mit `sourceTag: 'tr'` und `templaticalBlockType: 'section'`. Der Status ist `converted`, wenn jede Zelle ihre eigene Spalte und ihre Füllfarbe behalten hat, und `approximated` mit einer Notiz, wenn Zellen zusammengefasst wurden, das Verhältnis keine Entsprechung hatte oder die Zellen auf verschiedenen Füllfarben lagen.
 - Ein Eintrag mit `sourceTag: 'body'` und einer Notiz, wenn freistehender Inhalt der obersten Ebene in einer synthetischen einspaltigen Section gruppiert wird.
 - Ein Eintrag mit `templaticalBlockType: null` und einer Notiz für eine verschachtelte Zeile, deren Spalten entfallen sind.
 

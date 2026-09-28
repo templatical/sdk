@@ -117,6 +117,32 @@ export function parseStyleSheet(css: string): CssRule[] {
 }
 
 /**
+ * Whether the document underlines its links, from a `<style>` rule whose
+ * selector is a bare `a`, or `undefined` when no such rule sets
+ * `text-decoration`.
+ *
+ * Only a rule that reaches every link states the document's default: a
+ * pseudo-class, a scoped selector and an `@media` rule each cover some links
+ * some of the time. A later rule wins, as in the cascade. Read it before
+ * `resolveCssStyles`, which removes the `<style>` tags.
+ */
+export function readLinkUnderline($: CheerioAPI): boolean | undefined {
+  let underline: boolean | undefined;
+  $("style").each((_, el) => {
+    for (const rule of parseStyleSheet($(el).text())) {
+      if (!rule.selectors.some((selector) => selector.toLowerCase() === "a"))
+        continue;
+      const decoration =
+        rule.declarations["text-decoration"] ??
+        rule.declarations["text-decoration-line"];
+      if (decoration === undefined) continue;
+      underline = /\bunderline\b/i.test(decoration);
+    }
+  });
+  return underline;
+}
+
+/**
  * Reads all `<style>` tags from the document, parses them into rules,
  * applies each rule's declarations to matching elements (merging with
  * existing inline `style=""` attributes — inline always wins), and removes

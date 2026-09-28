@@ -9,7 +9,12 @@ import {
   createDividerBlock,
   createHtmlBlock,
 } from "@templatical/types";
-import type { Block, HeadingLevel, SpacingValue } from "@templatical/types";
+import type {
+  Block,
+  DividerBlock,
+  HeadingLevel,
+  SpacingValue,
+} from "@templatical/types";
 import type { ImportReportEntry } from "./types";
 import {
   parseAlignment,
@@ -381,16 +386,28 @@ function convertHeading(
 }
 
 /**
- * Apply a container-level `text-align` to every `<p>` opening tag in `html`,
- * merging into an existing `style="…"` attribute when present. Tolerant of
- * any other attributes on the `<p>` (class/id/dir/…) — the previous narrow
- * `<p style="…">` + bare-`<p>` matchers silently dropped the alignment when
- * the inner `<p>` carried a non-style attribute.
+ * Whether a `style` attribute states an alignment of its own. `inherit` does
+ * not: it takes the container's.
+ */
+function statesOwnAlignment(style: string): boolean {
+  const own = parseStyleAttribute(style)["text-align"];
+  return own !== undefined && own.trim().toLowerCase() !== "inherit";
+}
+
+/**
+ * Apply a container-level `text-align` to every `<p>` opening tag in `html`
+ * that states no alignment of its own, merging into an existing `style="…"`
+ * attribute when present. Any other attribute on the `<p>` (class/id/dir/…)
+ * is kept, and does not stop the alignment from applying.
+ *
+ * A `<p>`'s own `text-align` wins, as it does in a browser, where the
+ * container's value only reaches a paragraph by inheritance.
  */
 function applyTextAlignToParagraphs(html: string, textAlign: string): string {
-  return html.replace(/<p\b([^>]*)>/gi, (_match, attrs: string) => {
+  return html.replace(/<p\b([^>]*)>/gi, (match, attrs: string) => {
     const styleMatch = /\sstyle\s*=\s*"([^"]*)"/i.exec(attrs);
     if (styleMatch) {
+      if (statesOwnAlignment(styleMatch[1])) return match;
       const existing = styleMatch[1].trim().replace(/;\s*$/, "");
       const merged = existing
         ? `${existing}; text-align: ${textAlign}`
@@ -408,10 +425,15 @@ function applyTextAlignToParagraphs(html: string, textAlign: string): string {
 /**
  * Builds a Paragraph block from a fragment of inline markup, styled by the
  * element that supplied `styles`.
+ *
+ * `padding` defaults to that element's own. A caller building from a host's
+ * styles passes none: a host insets every block it holds, and the cell walk
+ * applies that inset once, to all of them.
  */
 function buildParagraph(
   innerHtml: string,
   styles: Record<string, string>,
+  padding: SpacingValue = readPaddingFromStyles(styles),
 ): Block {
   const wrapped = ensureParagraphWrapped(innerHtml);
 
@@ -442,7 +464,7 @@ function buildParagraph(
   return createParagraphBlock({
     content: result,
     styles: {
-      padding: readPaddingFromStyles(styles),
+      padding,
     },
   });
 }
@@ -470,7 +492,8 @@ export function isInlineContent(node: AnyNode): boolean {
  *
  * `$cell` supplies the styling: a bare run has no element of its own to read
  * a colour, size or alignment from, and table-based email puts all three on
- * the cell.
+ * the cell. Its padding stays out: the cell walk insets every block the cell
+ * holds by it, so reading it here too would count it twice.
  *
  * Returns `null` for a run carrying no text — a cell holding nothing but
  * `&nbsp;` and `<br>` has no content, the same reading `convertElement`
@@ -487,7 +510,7 @@ export function convertInlineRun(
   const html = nodes.map((node) => $.html(node)).join("");
 
   return {
-    block: buildParagraph(html, getStyles($cell)),
+    block: buildParagraph(html, getStyles($cell), emptyPadding()),
     entry: {
       sourceTag: tagOf($cell[0]),
       templaticalBlockType: "paragraph",
@@ -596,7 +619,11 @@ function splitMixedImageAnchor(
   if (($clone.text() ?? "").trim() === "") return results;
 
   results.push({
-    block: buildParagraph($.html($clone) ?? "", getStyles($host)),
+    block: buildParagraph(
+      $.html($clone) ?? "",
+      getStyles($host),
+      emptyPadding(),
+    ),
     entry: {
       sourceTag: tagOf($host[0]),
       templaticalBlockType: "paragraph",
@@ -789,10 +816,95 @@ function convertButton($el: Cheerio<Element>): Block {
   });
 }
 
+/** A width as a number and an optional unit; a unitless value is px. */
+const DIVIDER_WIDTH = /^(-?\d+(?:\.\d+)?)\s*(%|px)?$/i;
+
 /**
- * <hr> → Divider block.
+ * The width an `<hr>` spans, from its `width` style, then its `width`
+ * attribute, with a note in `notes` for whatever the result does not keep.
+ *
+ * No width, `auto` and `100%` are the whole column, which is how a
+ * block-level `<hr>` renders. Any other percentage stays a share of the
+ * column, clamped to 0–100% and rounded to two decimals, which keeps it inside
+ * `DividerPercentWidth`'s pattern. A px width stays px until it reaches
+ * `room` less the divider's own side padding, which is the width `mj-divider`
+ * draws 100% across; past that it is the whole column, and it keeps narrowing
+ * with the column on a phone. An unknown `room` keeps every px width.
  */
-function convertDivider($el: Cheerio<Element>): Block {
+function readDividerWidth(
+  $el: Cheerio<Element>,
+  room: number | undefined,
+  notes: string[],
+): DividerBlock["width"] {
+  const styles = getStyles($el);
+  const raw = (styles.width ?? $el.attr("width") ?? "").trim();
+  if (raw === "" || raw.toLowerCase() === "auto") return "full";
+
+  const match = raw.match(DIVIDER_WIDTH);
+  if (!match) {
+    notes.push(
+      `Divider width "${raw}" could not be read; imported as full width.`,
+    );
+    return "full";
+  }
+
+  const value = parseFloat(match[1]);
+  if (match[2] === "%") {
+    const percent = Math.min(100, Math.max(0, value));
+    if (percent !== value) {
+      notes.push(`Divider width ${raw} was clamped to ${percent}%.`);
+    }
+    const share = Math.round(percent * 100) / 100;
+    return share === 100 ? "full" : `${share}%`;
+  }
+
+  const px = Math.max(0, Math.round(value));
+  if (value < 0) notes.push(`Divider width ${raw} was clamped to 0px.`);
+  if (room === undefined) return px;
+
+  const own = readPaddingFromStyles(styles);
+  return px >= room - own.left - own.right ? "full" : px;
+}
+
+/**
+ * Where an `<hr>` sits in its column. Each side margin starts at the
+ * browser's `auto`, the legacy `align` attribute sets them next, and CSS
+ * margins override both, side by side. Auto on both sides centres the line;
+ * auto on the left alone pushes it right; anything else leaves it at the
+ * start of the column.
+ */
+function dividerAlign($el: Cheerio<Element>): "left" | "center" | "right" {
+  let left = "auto";
+  let right = "auto";
+
+  const align = ($el.attr("align") ?? "").trim().toLowerCase();
+  if (align === "left") left = "0";
+  if (align === "right") right = "0";
+
+  const styles = getStyles($el);
+  const margin = (styles.margin ?? "").trim().split(/\s+/).filter(Boolean);
+  if (margin.length > 0) {
+    right = margin[1] ?? margin[0];
+    left = margin.length === 4 ? margin[3] : right;
+  }
+  left = styles["margin-left"] ?? left;
+  right = styles["margin-right"] ?? right;
+
+  const isAuto = (value: string) => value.trim().toLowerCase() === "auto";
+  if (isAuto(left) && isAuto(right)) return "center";
+  return isAuto(left) ? "right" : "left";
+}
+
+/**
+ * <hr> → Divider block, with a note for each thing the block does not keep.
+ *
+ * Templatical centres every divider, so a partial one the source places at
+ * either side is reported. A full-width line has no placement to lose.
+ */
+function convertDivider(
+  $el: Cheerio<Element>,
+  room: number | undefined,
+): { block: Block; notes: string[] } {
   const styles = getStyles($el);
   const border = parseBorderShorthand(styles["border-top"] ?? styles.border);
   const lineStyle =
@@ -800,15 +912,27 @@ function convertDivider($el: Cheerio<Element>): Block {
       ? border.style
       : "solid";
 
-  return createDividerBlock({
-    lineStyle: lineStyle as "solid" | "dashed" | "dotted",
-    color: border.color || "#e5e7eb",
-    thickness: border.width || 1,
-    width: 100,
-    styles: {
-      padding: readPaddingFromStyles(styles),
-    },
-  });
+  const notes: string[] = [];
+  const width = readDividerWidth($el, room, notes);
+  const align = dividerAlign($el);
+  if (width !== "full" && align !== "center") {
+    notes.push(
+      `The source aligns this divider ${align}; Templatical centres every divider.`,
+    );
+  }
+
+  return {
+    block: createDividerBlock({
+      lineStyle: lineStyle as "solid" | "dashed" | "dotted",
+      color: border.color || "#e5e7eb",
+      thickness: border.width || 1,
+      width,
+      styles: {
+        padding: readPaddingFromStyles(styles),
+      },
+    }),
+    notes,
+  };
 }
 
 /**
@@ -945,12 +1069,17 @@ export function isButtonCell(
  * for every other branch the resolved element is the one handed in, so its own
  * styles are what `styles` already holds.
  *
+ * `room` is the width, in px, that a line in the element's column can span
+ * before the element's own padding, when the caller knows it. Only a divider
+ * reads it.
+ *
  * Returns `null` for elements that do not contain any meaningful content
  * (the caller should skip them).
  */
 export function convertElement(
   $el: Cheerio<Element>,
   $: CheerioAPI,
+  room?: number,
 ): { block: Block; entry: ImportReportEntry } | null {
   const { $el: $target, styles } = resolveWrappedBlock($el, $);
   const tag = tagOf($target[0]);
@@ -1011,12 +1140,14 @@ export function convertElement(
   }
 
   if (tag === "hr") {
+    const { block, notes } = convertDivider($target, room);
     return {
-      block: convertDivider($target),
+      block,
       entry: {
         sourceTag: tag,
         templaticalBlockType: "divider",
-        status: "converted",
+        status: notes.length > 0 ? "approximated" : "converted",
+        ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
       },
     };
   }

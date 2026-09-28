@@ -176,6 +176,167 @@ describe("convertHtmlTemplate — spacer and divider", () => {
     expect(divider!.thickness).toBe(2);
     expect(divider!.color).toBe("#cccccc");
   });
+
+  it("spans the column with a divider that states no width", () => {
+    const divider = findBlock(result.content.blocks, "divider");
+    expect(divider!.width).toBe("full");
+  });
+});
+
+describe("convertHtmlTemplate — a px divider that reaches its column spans it", () => {
+  function dividerOf(body: string) {
+    const { content, report } = convertHtmlTemplate(
+      `<!doctype html><html><body>${body}</body></html>`,
+    );
+    const divider = findBlock(content.blocks, "divider");
+    if (!divider) throw new Error("expected a divider block");
+    const entry = report.entries.find(
+      (e) => e.templaticalBlockType === "divider",
+    );
+    return { width: divider.width, entry };
+  }
+
+  it("measures the column from the template width, less the cell's padding", () => {
+    const row = (hr: string) =>
+      `<table width="600"><tr><td style="padding:0 24px">${hr}</td></tr></table>`;
+
+    expect(dividerOf(row('<hr width="552">')).width).toBe("full");
+    expect(dividerOf(row('<hr width="551">')).width).toBe(551);
+  });
+
+  it("measures a column of a multi-column row by its share", () => {
+    const row = (hr: string) =>
+      '<table width="600"><tr>' +
+      `<td width="300" style="padding:0 20px">${hr}</td>` +
+      '<td width="300"><p>Beside</p></td>' +
+      "</tr></table>";
+
+    // Half of 600, less 20px either side.
+    expect(dividerOf(row('<hr width="260">')).width).toBe("full");
+    expect(dividerOf(row('<hr width="259">')).width).toBe(259);
+  });
+
+  it("counts cellpadding and the section's own padding", () => {
+    expect(
+      dividerOf(
+        '<table width="600" cellpadding="10"><tr><td><hr width="580"></td></tr></table>',
+      ).width,
+    ).toBe("full");
+    expect(
+      dividerOf(
+        '<table width="600" cellpadding="10"><tr><td><hr width="579"></td></tr></table>',
+      ).width,
+    ).toBe(579);
+    expect(
+      dividerOf(
+        '<table width="600"><tr style="padding:0 50px"><td><hr width="500"></td></tr></table>',
+      ).width,
+    ).toBe("full");
+  });
+
+  it("counts the padding of a column set's cell at the row's edges", () => {
+    const row = (hr: string) =>
+      '<table width="600"><tr><td style="padding:0 30px">' +
+      '<div style="display:inline-block;width:50%">' +
+      `<table role="presentation"><tr><td>${hr}</td></tr></table></div>` +
+      '<div style="display:inline-block;width:50%">' +
+      '<table role="presentation"><tr><td><p>Beside</p></td></tr></table></div>' +
+      "</td></tr></table>";
+
+    // Half of 600, less the 30px the cell pads the row's left edge by.
+    expect(dividerOf(row('<hr width="270">')).width).toBe("full");
+    expect(dividerOf(row('<hr width="269">')).width).toBe(269);
+  });
+
+  it("counts a wrapper cell's padding in a flattened table", () => {
+    const row = (hr: string) =>
+      '<table width="600"><tr><td><h2>Heading</h2>' +
+      '<table role="presentation"><tr><td style="padding:0 20px">' +
+      `<table role="presentation"><tr><td>${hr}</td></tr></table>` +
+      "</td></tr></table>" +
+      "</td></tr></table>";
+
+    expect(dividerOf(row('<hr width="560">')).width).toBe("full");
+    expect(dividerOf(row('<hr width="559">')).width).toBe(559);
+  });
+
+  it("reads the template width off the outermost table", () => {
+    expect(
+      dividerOf('<table width="500"><tr><td><hr width="500"></td></tr></table>')
+        .width,
+    ).toBe("full");
+    // With no width stated, the template is 600px wide.
+    expect(dividerOf('<hr width="600">').width).toBe("full");
+    expect(dividerOf('<hr width="599">').width).toBe(599);
+  });
+
+  it("reports the alignment of a divider that stays partial, not of one that spans", () => {
+    const row = (hr: string) =>
+      `<table width="600"><tr><td>${hr}</td></tr></table>`;
+
+    expect(dividerOf(row('<hr width="600" style="margin:0">')).entry).toEqual({
+      sourceTag: "hr",
+      templaticalBlockType: "divider",
+      status: "converted",
+    });
+    expect(dividerOf(row('<hr width="300" style="margin:0">')).entry).toEqual({
+      sourceTag: "hr",
+      templaticalBlockType: "divider",
+      status: "approximated",
+      note: "The source aligns this divider left; Templatical centres every divider.",
+    });
+  });
+});
+
+describe("convertHtmlTemplate — link underline", () => {
+  function linkUnderlineOf(head: string): boolean {
+    return convertHtmlTemplate(
+      `<!doctype html><html><head>${head}</head><body>` +
+        '<table role="presentation"><tr><td><p>Read the <a href="https://x.test">notes</a>.</p></td></tr></table>' +
+        "</body></html>",
+    ).content.settings.linkUnderline;
+  }
+
+  it("underlines links when the source states nothing about them", () => {
+    // The browser default, and the SDK's.
+    expect(linkUnderlineOf("")).toBe(true);
+  });
+
+  it("reads a document-level a { text-decoration: none } rule", () => {
+    expect(linkUnderlineOf("<style>a { text-decoration: none; }</style>")).toBe(
+      false,
+    );
+    expect(
+      linkUnderlineOf(
+        "<style>A { color: #0000ff; text-decoration: none !important }</style>",
+      ),
+    ).toBe(false);
+  });
+
+  it("reads a document-level a { text-decoration: underline } rule", () => {
+    expect(
+      linkUnderlineOf(
+        "<style>a { text-decoration: none; } a { text-decoration: underline; }</style>",
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores rules that do not style every link", () => {
+    // A hover state, a scoped selector and a media query each cover only
+    // some links, some of the time.
+    expect(
+      linkUnderlineOf(
+        "<style>a:hover { text-decoration: none; } .footer a { text-decoration: none; }" +
+          " @media (max-width: 600px) { a { text-decoration: none; } }</style>",
+      ),
+    ).toBe(true);
+  });
+
+  it("reads a rule that also names other selectors", () => {
+    expect(
+      linkUnderlineOf("<style>a, .link { text-decoration: none; }</style>"),
+    ).toBe(false);
+  });
 });
 
 describe("convertHtmlTemplate — non-table HTML", () => {

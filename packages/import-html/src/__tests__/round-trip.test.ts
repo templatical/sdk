@@ -325,3 +325,93 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     expect(report.entries.filter((entry) => "note" in entry)).toEqual([]);
   });
 });
+
+/** One distinct fill per ground-truth section, none of them a default. */
+const SECTION_FILLS = ["#f0e0d0", "#e0f0d0", "#d0e0f0", "#f0d0e0", "#e0d0f0"];
+
+describe("round trip: section styling and document settings", () => {
+  it("keeps every section's background colour", async () => {
+    const original = buildGroundTruth();
+    original.blocks.forEach((block, index) => {
+      block.styles.backgroundColor = SECTION_FILLS[index];
+    });
+    const { content, report } = await roundTrip(original);
+    const sections = content.blocks.filter(isSection);
+
+    // Desired. mjml@5 paints a section's colour on the table that holds its
+    // row, and nowhere the row itself can be read — so reading the `<tr>`
+    // alone imported every section of this template uncoloured.
+    expect(sections.map((section) => section.styles.backgroundColor)).toEqual(
+      SECTION_FILLS,
+    );
+    expect(report.summary.approximated).toBe(0);
+  });
+
+  it("leaves a section with no background without one", async () => {
+    const { content } = await roundTrip(buildGroundTruth());
+
+    expect(
+      content.blocks
+        .filter(isSection)
+        .map((section) => "backgroundColor" in section.styles),
+    ).toEqual([false, false, false, false, false]);
+  });
+
+  it("keeps where every block sits: its own padding plus the section's at the column edges", async () => {
+    const original = buildGroundTruth();
+    const { content } = await roundTrip(original);
+    const sourceSections = original.blocks.filter(isSection);
+    const importedSections = content.blocks.filter(isSection);
+
+    // Desired. mjml@5 puts a section's padding on the cell its columns sit in
+    // and a block's on the cell the block sits in, so the imported blocks
+    // carry both: a block's own padding, plus the section's on whichever
+    // edges of the section the block touches. That places every block where
+    // the source rendered it.
+    const expected = sourceSections.map((section) =>
+      section.children.map((column, columnIndex) =>
+        column.map((block, blockIndex) => {
+          const own = block.styles.padding;
+          const around = section.styles.padding;
+          return {
+            top: own.top + (blockIndex === 0 ? around.top : 0),
+            right:
+              own.right +
+              (columnIndex === section.children.length - 1 ? around.right : 0),
+            bottom:
+              own.bottom +
+              (blockIndex === column.length - 1 ? around.bottom : 0),
+            left: own.left + (columnIndex === 0 ? around.left : 0),
+          };
+        }),
+      ),
+    );
+
+    expect(
+      importedSections.map((section) =>
+        section.children.map((column) =>
+          column.map((block) => block.styles.padding),
+        ),
+      ),
+    ).toEqual(expected);
+    // Carried by the blocks, so the sections hold none of it themselves.
+    expect(importedSections.map((section) => section.styles.padding)).toEqual(
+      importedSections.map(() => ({ top: 0, right: 0, bottom: 0, left: 0 })),
+    );
+    // The source's values, so the expectation above cannot pass on zeros.
+    expect(sourceSections[0].styles.padding.top).toBe(20);
+    expect(sourceSections[0].children[0][0].styles.padding.top).toBe(10);
+  });
+
+  it("keeps whether links are underlined", async () => {
+    for (const linkUnderline of [true, false]) {
+      const original = buildGroundTruth();
+      original.settings.linkUnderline = linkUnderline;
+      const { content } = await roundTrip(original);
+
+      // Desired. The renderer states the setting as a document-level
+      // `a { text-decoration }` rule, which mjml@5 keeps in a <style> block.
+      expect(content.settings.linkUnderline).toBe(linkUnderline);
+    }
+  });
+});

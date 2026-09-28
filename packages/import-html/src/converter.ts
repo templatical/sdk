@@ -6,7 +6,7 @@ import {
   createSectionBlock,
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
-import { resolveCssStyles } from "./css-resolver";
+import { readLinkUnderline, resolveCssStyles } from "./css-resolver";
 import {
   convertElement,
   isTableContainer,
@@ -40,7 +40,15 @@ function readPreheader($: CheerioAPI): string | undefined {
   return text || undefined;
 }
 
-function extractSettings($: CheerioAPI): TemplateContent["settings"] {
+/**
+ * `linkUnderline` is what the source's stylesheet states for every link, as
+ * `readLinkUnderline` reads it. A source stating nothing underlines its links,
+ * which is the browser's default.
+ */
+function extractSettings(
+  $: CheerioAPI,
+  linkUnderline: boolean | undefined,
+): TemplateContent["settings"] {
   const $body = $("body");
   const bodyStyles = parseStyleAttribute($body.attr("style"));
   const fontFamily = parseFontFamily(bodyStyles["font-family"]) || "Arial";
@@ -63,7 +71,7 @@ function extractSettings($: CheerioAPI): TemplateContent["settings"] {
     width,
     backgroundColor,
     textColor: "#1a1a1a",
-    linkUnderline: false,
+    linkUnderline: linkUnderline ?? true,
     fontFamily,
     locale: "en",
     ...(preheaderText ? { preheaderText } : {}),
@@ -105,11 +113,15 @@ function wrapInSection(blocks: Block[], entries: ImportReportEntry[]): Block {
  * level and inside a layout container reach a rich-text block. A walk over
  * `children()` visits neither, which drops copy the source email displays —
  * `Lead<h2>H</h2>Trailing` imported as the heading alone.
+ *
+ * `bodyWidth` is the room a line has across a top-level section, which is
+ * what a divider's px width is measured against.
  */
 function processBody(
   $: CheerioAPI,
   entries: ImportReportEntry[],
   warnings: string[],
+  bodyWidth: number,
 ): Block[] {
   const blocks: Block[] = [];
   const $body = $("body");
@@ -158,7 +170,9 @@ function processBody(
         // table is appended immediately while leading siblings are flushed
         // only after the walk — reordering the document.
         flushLoose();
-        blocks.push(...processTable($inner, $, entries, warnings, false));
+        blocks.push(
+          ...processTable($inner, $, entries, warnings, false, "", bodyWidth),
+        );
         return;
       }
 
@@ -167,7 +181,7 @@ function processBody(
         return;
       }
 
-      const r = convertElement($inner, $);
+      const r = convertElement($inner, $, bodyWidth);
       if (r) {
         entries.push(r.entry);
         pendingLoose.push(r.block);
@@ -178,7 +192,9 @@ function processBody(
   walkContentNodes($body, $, collectLoose, ($child, tag) => {
     if (tag === "table") {
       flushLoose();
-      blocks.push(...processTable($child, $, entries, warnings, false));
+      blocks.push(
+        ...processTable($child, $, entries, warnings, false, "", bodyWidth),
+      );
       return;
     }
 
@@ -194,7 +210,7 @@ function processBody(
       return;
     }
 
-    const r = convertElement($child, $);
+    const r = convertElement($child, $, bodyWidth);
     if (r) {
       entries.push(r.entry);
       pendingLoose.push(r.block);
@@ -241,6 +257,7 @@ export function convertHtmlTemplate(html: string): ImportResult {
   }
 
   const $ = load(html);
+  const linkUnderline = readLinkUnderline($);
   resolveCssStyles($);
 
   // Drop tags that are never useful in the editor canvas.
@@ -249,7 +266,8 @@ export function convertHtmlTemplate(html: string): ImportResult {
   const entries: ImportReportEntry[] = [];
   const warnings: string[] = [];
 
-  const blocks = processBody($, entries, warnings);
+  const settings = extractSettings($, linkUnderline);
+  const blocks = processBody($, entries, warnings, settings.width);
 
   if (blocks.length === 0) {
     warnings.push(
@@ -260,7 +278,7 @@ export function convertHtmlTemplate(html: string): ImportResult {
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
-    settings: extractSettings($),
+    settings,
   };
 
   const summary = {

@@ -136,6 +136,54 @@ describe("convertElement — paragraphs", () => {
   });
 });
 
+describe("convertElement — a paragraph's own alignment wins over its container's", () => {
+  function contentOf(html: string): string {
+    const { $, $el } = firstEl(html, "div");
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    return r.block.content;
+  }
+
+  it("keeps a <p>'s own text-align", () => {
+    expect(
+      contentOf(
+        '<div style="text-align:center"><p style="text-align:right">Own</p></div>',
+      ),
+    ).toBe('<p style="text-align:right">Own</p>');
+  });
+
+  it("keeps an own left, which is not the absence of an alignment", () => {
+    expect(
+      contentOf(
+        '<div style="text-align:center"><p style="color:#123456;text-align:left">Own</p></div>',
+      ),
+    ).toBe('<p style="color:#123456;text-align:left">Own</p>');
+  });
+
+  it("aligns only the <p>s that state no alignment of their own", () => {
+    expect(
+      contentOf(
+        '<div style="text-align:center">' +
+          '<p style="text-align:right">A</p><p>B</p>' +
+          "</div>",
+      ),
+    ).toBe(
+      '<p style="text-align:right">A</p><p style="text-align: center">B</p>',
+    );
+  });
+
+  it("reads text-align: inherit as stating nothing", () => {
+    // `inherit` takes the container's value, so the container's alignment is
+    // what the paragraph renders with.
+    expect(
+      contentOf(
+        '<div style="text-align:center"><p style="text-align:inherit">A</p></div>',
+      ),
+    ).toBe('<p style="text-align:inherit; text-align: center">A</p>');
+  });
+});
+
 describe("convertElement — images", () => {
   it("converts img with src/alt/width", () => {
     const { $, $el } = firstEl(
@@ -477,6 +525,143 @@ describe("convertElement — divider", () => {
     expect(r.block.thickness).toBe(1);
     expect(r.block.lineStyle).toBe("solid");
     expect(r.block.color).toBe("#000000");
+  });
+});
+
+describe("convertElement — divider width", () => {
+  function dividerFrom(html: string, room?: number) {
+    const { $, $el } = firstEl(html, "hr");
+    const r = convertElement($el, $, room)!;
+    if (r.block.type !== "divider") throw new Error("expected divider block");
+    return { block: r.block, entry: r.entry };
+  }
+
+  function widthOf(html: string, room?: number) {
+    return dividerFrom(html, room).block.width;
+  }
+
+  const CONVERTED = {
+    sourceTag: "hr",
+    templaticalBlockType: "divider",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return { ...CONVERTED, status: "approximated", note };
+  }
+
+  it("spans the column when the <hr> states no width", () => {
+    const { block, entry } = dividerFrom("<hr />");
+    expect(block.width).toBe("full");
+    expect(entry).toEqual(CONVERTED);
+  });
+
+  it("spans the column at 100% or auto, stated as an attribute or a style", () => {
+    expect(widthOf('<hr width="100%" />')).toBe("full");
+    expect(widthOf('<hr style="width:100%" />')).toBe("full");
+    // `auto` is how a block-level <hr> renders when nothing sets a width.
+    expect(dividerFrom('<hr style="width:auto" />')).toEqual({
+      block: expect.objectContaining({ width: "full" }),
+      entry: CONVERTED,
+    });
+  });
+
+  it("keeps any other percentage as a share of the column, to two decimals", () => {
+    expect(widthOf('<hr width="50%" />')).toBe("50%");
+    expect(widthOf('<hr style="width: 33.5%" />')).toBe("33.5%");
+    expect(widthOf('<hr style="width:33.3333%" />')).toBe("33.33%");
+    expect(widthOf('<hr width="0%" />')).toBe("0%");
+    expect(dividerFrom('<hr width="50%" />').entry).toEqual(CONVERTED);
+  });
+
+  it("clamps a percentage to 0–100 and reports the clamp", () => {
+    expect(dividerFrom('<hr width="150%" />')).toEqual({
+      block: expect.objectContaining({ width: "full" }),
+      entry: approximated("Divider width 150% was clamped to 100%."),
+    });
+    expect(dividerFrom('<hr style="width:-10%" />')).toEqual({
+      block: expect.objectContaining({ width: "0%" }),
+      entry: approximated("Divider width -10% was clamped to 0%."),
+    });
+  });
+
+  it("imports an unreadable width as the full column and reports it", () => {
+    expect(dividerFrom('<hr style="width:20em" />')).toEqual({
+      block: expect.objectContaining({ width: "full" }),
+      entry: approximated(
+        'Divider width "20em" could not be read; imported as full width.',
+      ),
+    });
+  });
+
+  it("keeps a pixel width in pixels", () => {
+    expect(widthOf('<hr width="200" />')).toBe(200);
+    expect(widthOf('<hr style="width:120px" />')).toBe(120);
+    expect(dividerFrom('<hr width="200" />').entry).toEqual(CONVERTED);
+  });
+
+  it("clamps a negative pixel width to 0 and reports it", () => {
+    expect(dividerFrom('<hr style="width:-20px" />')).toEqual({
+      block: expect.objectContaining({ width: 0 }),
+      entry: approximated("Divider width -20px was clamped to 0px."),
+    });
+  });
+
+  it("reads the style before the attribute", () => {
+    // CSS beats a presentational attribute in every browser.
+    expect(widthOf('<hr width="50%" style="width:200px" />')).toBe(200);
+  });
+
+  it("spans the column when a pixel width reaches the room the line has", () => {
+    expect(widthOf('<hr width="300" />', 300)).toBe("full");
+    expect(widthOf('<hr style="width:400px" />', 300)).toBe("full");
+    expect(widthOf('<hr width="299" />', 300)).toBe(299);
+  });
+
+  it("takes the divider's own side padding out of the room", () => {
+    // mj-divider draws 100% across its column less its own padding.
+    expect(widthOf('<hr width="280" style="padding:0 10px" />', 300)).toBe(
+      "full",
+    );
+    expect(widthOf('<hr width="279" style="padding:0 10px" />', 300)).toBe(279);
+  });
+
+  it("keeps a pixel width when the room is unknown", () => {
+    expect(widthOf('<hr width="900" />')).toBe(900);
+  });
+
+  it("reports a partial divider the source aligns left or right", () => {
+    const left = approximated(
+      "The source aligns this divider left; Templatical centres every divider.",
+    );
+    expect(dividerFrom('<hr width="50%" align="left" />').entry).toEqual(left);
+    // Margins that are not auto leave the line at the start of the column.
+    expect(dividerFrom('<hr style="width:50%;margin:0" />').entry).toEqual(
+      left,
+    );
+    expect(
+      dividerFrom('<hr style="width:200px;margin:0 0 0 auto" />').entry,
+    ).toEqual(
+      approximated(
+        "The source aligns this divider right; Templatical centres every divider.",
+      ),
+    );
+  });
+
+  it("does not report a centred or a full-width divider's alignment", () => {
+    expect(dividerFrom('<hr width="50%" />').entry).toEqual(CONVERTED);
+    expect(dividerFrom('<hr style="width:50%;margin:0 auto" />').entry).toEqual(
+      CONVERTED,
+    );
+    // CSS margins beat the presentational attribute.
+    expect(
+      dividerFrom('<hr width="50%" align="left" style="margin:8px auto" />')
+        .entry,
+    ).toEqual(CONVERTED);
+    expect(dividerFrom('<hr style="margin:0" />').entry).toEqual(CONVERTED);
+    expect(
+      dividerFrom('<hr width="300" style="margin:0" />', 300).entry,
+    ).toEqual(CONVERTED);
   });
 });
 
@@ -934,11 +1119,14 @@ describe("convertInlineRun", () => {
         "Lead <strong>copy</strong>" +
         "</span></p>",
     );
+    // The cell's padding is not the run's own. The cell walk insets every
+    // block the cell holds by it, so reading it here as well would count it
+    // twice for bare text and not at all for the blocks beside it.
     expect(r!.block.styles.padding).toEqual({
-      top: 8,
-      right: 12,
-      bottom: 8,
-      left: 12,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
     });
   });
 

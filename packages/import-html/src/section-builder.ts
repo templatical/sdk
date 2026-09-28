@@ -6,7 +6,7 @@ import {
   createButtonBlock,
   createSpacerBlock,
 } from "@templatical/types";
-import type { Block, ColumnLayout } from "@templatical/types";
+import type { Block, ColumnLayout, SpacingValue } from "@templatical/types";
 import {
   columnDivsOf,
   convertElement,
@@ -18,10 +18,15 @@ import {
   isTableContainer,
   walkContentNodes,
 } from "./block-mapper";
-import { readColumnWidth, resolveColumnRatio } from "./column-ratio";
+import {
+  LAYOUT_SHARES,
+  readColumnWidth,
+  resolveColumnRatio,
+} from "./column-ratio";
 import type { ColumnWidth } from "./column-ratio";
 import {
   parseColor,
+  parseLegacyColor,
   parsePxValue,
   parseStyleAttribute,
   readPaddingFromStyles,
@@ -34,6 +39,108 @@ function emptyPadding() {
 
 function getStyles($el: Cheerio<Element>): Record<string, string> {
   return parseStyleAttribute($el.attr("style"));
+}
+
+/**
+ * The padding an element insets its content by.
+ *
+ * A table cell falls back to its table's `cellpadding`, side by side: the
+ * attribute pads every cell of the table, and a side the cell's own CSS
+ * declares overrides it, as in a browser.
+ */
+function readHostPadding($el: Cheerio<Element>): SpacingValue {
+  const styles = getStyles($el);
+  const own = readPaddingFromStyles(styles);
+  if (!$el.is("td, th")) return own;
+
+  const cellpadding = parsePxValue($el.closest("table").attr("cellpadding"));
+  if (!(cellpadding > 0)) return own;
+
+  const declares = (side: keyof SpacingValue) =>
+    styles.padding !== undefined || styles[`padding-${side}`] !== undefined;
+  return {
+    top: declares("top") ? own.top : cellpadding,
+    right: declares("right") ? own.right : cellpadding,
+    bottom: declares("bottom") ? own.bottom : cellpadding,
+    left: declares("left") ? own.left : cellpadding,
+  };
+}
+
+/**
+ * The colour an element paints behind its content: its CSS background, then
+ * its legacy `bgcolor` attribute, which CSS overrides.
+ */
+function fillOf($el: Cheerio<Element>): string {
+  const styles = getStyles($el);
+  return (
+    parseColor(styles["background-color"]) ||
+    parseColor(styles.background) ||
+    parseLegacyColor($el.attr("bgcolor"))
+  );
+}
+
+/**
+ * Insets columns by the padding of the element that holds them, where that
+ * padding places them: the top on each column's first block, the bottom on
+ * each column's last, the left on the first column and the right on the
+ * last. A single column takes all four sides.
+ *
+ * Blocks are the carrier because nothing else is: a column has no padding of
+ * its own, and a cell's blocks flatten into whichever column the cell lands
+ * in.
+ */
+function insetColumns(columns: Block[][], padding: SpacingValue): void {
+  if (!padding.top && !padding.right && !padding.bottom && !padding.left)
+    return;
+
+  columns.forEach((column, columnIndex) => {
+    const left = columnIndex === 0 ? padding.left : 0;
+    const right = columnIndex === columns.length - 1 ? padding.right : 0;
+    column.forEach((block, blockIndex) => {
+      insetBlock(block, {
+        top: blockIndex === 0 ? padding.top : 0,
+        right,
+        bottom: blockIndex === column.length - 1 ? padding.bottom : 0,
+        left,
+      });
+    });
+  });
+}
+
+/**
+ * `room` less the side padding of something inside it, or `undefined` while
+ * the room is unknown.
+ */
+function narrow(
+  room: number | undefined,
+  padding: SpacingValue,
+): number | undefined {
+  return room === undefined ? undefined : room - padding.left - padding.right;
+}
+
+/**
+ * Adds `by` to a block's own padding.
+ *
+ * A spacer renders at its height and ignores its padding, in the canvas and
+ * the export alike, so the top and bottom it is inset by are added to its
+ * height instead. Held as padding, the space a spacer at a cell's edge
+ * carries would vanish on export.
+ */
+function insetBlock(block: Block, by: SpacingValue): void {
+  if (block.type === "spacer") {
+    block.height += by.top + by.bottom;
+    return;
+  }
+  const own = block.styles.padding;
+  block.styles = {
+    ...block.styles,
+    padding: {
+      top: own.top + by.top,
+      right: own.right + by.right,
+      bottom: own.bottom + by.bottom,
+      left: own.left + by.left,
+    },
+  };
 }
 
 function buildCellButton(
@@ -52,9 +159,12 @@ function buildCellButton(
     text,
     url,
     openInNewTab: target === "_blank" || undefined,
+    // The cell's `bgcolor` is the button's colour, not the section's, which
+    // is why a section's background skips a button cell.
     backgroundColor:
       parseColor(merged["background-color"]) ||
       parseColor(merged.background) ||
+      parseLegacyColor($cell.attr("bgcolor")) ||
       "#4f46e5",
     textColor: parseColor(merged.color) || "#ffffff",
     borderRadius: parsePxValue(merged["border-radius"]),
@@ -297,9 +407,14 @@ function packagingTablesOf(
  *
  * - The cell's meaningful content must *be* the tables. Descending discards
  *   the row, so a heading or an image beside the table would be dropped.
- * - The row must carry no background and no padding. The section it emits is
- *   the only carrier for those, so descending past a styled row would drop
- *   the band it paints.
+ * - The row's style must set no background and no padding. The section it
+ *   emits is the carrier for those, so descending past a styled row would
+ *   drop the band it paints.
+ *
+ * A fill the descent does pass — the row's `bgcolor`, its cell's, its
+ * table's — is not lost: `processTable` hands it to the tables below, whose
+ * sections take it when nothing nearer paints them. Section counts depend on
+ * this gate, so a fill is carried down rather than made a reason to stop.
  */
 function packagingRowTables(
   $row: Cheerio<Element>,
@@ -341,32 +456,82 @@ function packagingRowTables(
  * column `<div>`s a single cell holds — not every cell the row has: a
  * centring row's gutters were never columns, so counting them would report a
  * three-into-one merge for a row that always stated one column.
+ *
+ * A background the section could not keep adds its own note after the
+ * layout's, so one entry names every loss the row had.
  */
 function sectionEntry(
   columnCount: number,
   slotCount: number,
   ratioNote: string | undefined,
+  fillNote: string | undefined,
 ): ImportReportEntry {
+  const notes: string[] = [];
   if (slotCount !== columnCount) {
-    return {
-      sourceTag: "tr",
-      templaticalBlockType: "section",
-      status: "approximated",
-      note: `Row of ${columnCount} columns was merged into a single column. Templatical sections hold at most 3 columns.`,
-    };
+    notes.push(
+      `Row of ${columnCount} columns was merged into a single column. Templatical sections hold at most 3 columns.`,
+    );
+  } else if (ratioNote) {
+    notes.push(ratioNote);
   }
-  if (ratioNote) {
+  if (fillNote) notes.push(fillNote);
+
+  if (notes.length === 0) {
     return {
       sourceTag: "tr",
       templaticalBlockType: "section",
-      status: "approximated",
-      note: ratioNote,
+      status: "converted",
     };
   }
   return {
     sourceTag: "tr",
     templaticalBlockType: "section",
-    status: "converted",
+    status: "approximated",
+    note: notes.join(" "),
+  };
+}
+
+/**
+ * The background a row's section takes, with a note when a cell renders on
+ * a colour the section does not keep.
+ *
+ * Nearest first: the `<tr>`, then its layout cells, then the tables around
+ * it (`tableFill`, which a descended wrapper hands down). The cells count
+ * when they share one fill, which covers the row's only cell as well as a
+ * row painted alike across its columns. Cells that differ leave the section
+ * to the table's fill, and the note names what each cell rendered on.
+ *
+ * A button cell is left out: its colour is the button's own, which
+ * `buildCellButton` carries, and read as the section's it would band the
+ * whole row in the button's colour.
+ */
+function sectionFill(
+  $row: Cheerio<Element>,
+  layoutCells: Cheerio<Element>[],
+  tableFill: string,
+  $: CheerioAPI,
+): { color: string; note?: string } {
+  const rowFill = fillOf($row);
+  const cellFills = layoutCells
+    .filter(($cell) => !isButtonCell($cell, $).match)
+    .map(fillOf);
+  const shared =
+    cellFills.length > 0 && cellFills.every((fill) => fill === cellFills[0])
+      ? cellFills[0]
+      : "";
+  const color = rowFill || shared || tableFill;
+
+  // What each cell renders on: its own fill, or what shows through it.
+  const rendered = cellFills.map((fill) => fill || rowFill || tableFill);
+  if (rendered.every((fill) => fill === color)) return { color };
+
+  const cells = rendered.map((fill) => fill || "none").join(" / ");
+  const section = color
+    ? `the section background ${color}`
+    : "the section, which has no background";
+  return {
+    color,
+    note: `Cell backgrounds ${cells} differ from ${section}. A Templatical section has one background colour.`,
   };
 }
 
@@ -450,10 +615,11 @@ function extractHostBlocks(
   $: CheerioAPI,
   entries: ImportReportEntry[],
   warnings: string[],
+  room: number | undefined,
 ): Block[] {
   return host.kind === "cell"
-    ? extractCellBlocks(host.$el, $, entries, warnings)
-    : extractContentBlocks(host.$el, $, entries, warnings);
+    ? extractCellBlocks(host.$el, $, entries, warnings, room)
+    : extractContentBlocks(host.$el, $, entries, warnings, room);
 }
 
 /** The width an element declares, from the strongest signal it carries. */
@@ -466,6 +632,7 @@ function extractCellBlocks(
   $: CheerioAPI,
   entries: ImportReportEntry[],
   warnings: string[],
+  room: number | undefined,
 ): Block[] {
   if (isSpacerCell($cell)) {
     entries.push({
@@ -491,7 +658,7 @@ function extractCellBlocks(
   // rich-text block styled from the cell. Handing the `<td>` to
   // `convertElement` instead matches no mapping there and comes back as an
   // html block, so an early return for this case intercepts the good path.
-  return extractContentBlocks($cell, $, entries, warnings);
+  return extractContentBlocks($cell, $, entries, warnings, room);
 }
 
 /**
@@ -505,14 +672,20 @@ function extractCellBlocks(
  * `converter.ts`. What is left here is the half that differs: inside a cell a
  * nested table flattens into the surrounding column, where at body level it
  * becomes a section of its own.
+ *
+ * `room` is the width a line has across the host's column, before the host's
+ * own padding narrows it for everything inside.
  */
 function extractContentBlocks(
   $host: Cheerio<Element>,
   $: CheerioAPI,
   entries: ImportReportEntry[],
   warnings: string[],
+  room: number | undefined,
 ): Block[] {
   const blocks: Block[] = [];
+  const padding = readHostPadding($host);
+  const inner = narrow(room, padding);
 
   walkContentNodes(
     $host,
@@ -523,8 +696,9 @@ function extractContentBlocks(
     },
     ($child, tag) => {
       if (tag === "table") {
-        const inner = processTable($child, $, entries, warnings, true);
-        blocks.push(...inner);
+        blocks.push(
+          ...processTable($child, $, entries, warnings, true, "", inner),
+        );
         return;
       }
 
@@ -540,11 +714,13 @@ function extractContentBlocks(
       // deep the table sits. Bounded by DOM depth — a container is descended
       // only when it holds a table, and each step moves to a child.
       if (isTableContainer($child, tag)) {
-        blocks.push(...extractContentBlocks($child, $, entries, warnings));
+        blocks.push(
+          ...extractContentBlocks($child, $, entries, warnings, inner),
+        );
         return;
       }
 
-      const r = convertElement($child, $);
+      const r = convertElement($child, $, inner);
       if (r) {
         entries.push(r.entry);
         blocks.push(r.block);
@@ -552,7 +728,37 @@ function extractContentBlocks(
     },
   );
 
+  // The host's padding insets everything it holds, bare text and blocks
+  // alike. Nested hosts have inset their own blocks already, so the padding
+  // of every cell and container around a block adds up.
+  insetColumns([blocks], padding);
   return blocks;
+}
+
+/**
+ * The room each of a row's hosts has, from the room across the row.
+ *
+ * `layout` is the one the hosts land in, `"1"` when they stack, and each
+ * host takes its column's share of the row. A column set's cell pads the
+ * row's edges, so its left side narrows the first column and its right the
+ * last; stacked, every host sits between both.
+ */
+function hostRooms(
+  rowRoom: number | undefined,
+  layout: ColumnLayout,
+  hostCount: number,
+  setPadding: SpacingValue | undefined,
+): (number | undefined)[] {
+  const shares = LAYOUT_SHARES[layout];
+  const edges = setPadding ?? emptyPadding();
+  return Array.from({ length: hostCount }, (_, index) => {
+    if (rowRoom === undefined) return undefined;
+    if (layout === "1") return rowRoom - edges.left - edges.right;
+    const share = (rowRoom * shares[index]) / 100;
+    const left = index === 0 ? edges.left : 0;
+    const right = index === hostCount - 1 ? edges.right : 0;
+    return share - left - right;
+  });
 }
 
 /**
@@ -561,6 +767,13 @@ function extractContentBlocks(
  * @param flattenInline - When true (used for nested tables), drop the section
  *   wrapper and return the flat block list. Templatical sections cannot nest,
  *   so nested layout-tables are merged into their parent cell.
+ * @param enclosingFill - The fill of the wrapper rows, cells and tables this
+ *   table was reached through, which its sections take when nothing nearer
+ *   paints them.
+ * @param room - The width, in px, a line can span where the table's blocks
+ *   land: the template body's width for a table whose rows become sections,
+ *   the surrounding column's for a flattened one. Unknown, a divider keeps a
+ *   px width as stated.
  */
 export function processTable(
   $table: Cheerio<Element>,
@@ -568,6 +781,8 @@ export function processTable(
   entries: ImportReportEntry[],
   warnings: string[],
   flattenInline = false,
+  enclosingFill = "",
+  room?: number,
 ): Block[] {
   if (!isLayoutTable($table, $)) {
     entries.push({
@@ -582,6 +797,7 @@ export function processTable(
   const rows = getDirectRows($table, $);
   if (rows.length === 0) return [];
 
+  const tableFill = fillOf($table) || enclosingFill;
   const sections: Block[] = [];
 
   for (const $row of rows) {
@@ -593,13 +809,33 @@ export function processTable(
     // inside this row. `flattenInline` is carried through unchanged, because
     // Templatical forbids a section inside a column — a wrapper reached from
     // a parent cell must keep flattening.
+    //
+    // The wrapper's fill goes down with the descent, so the sections below
+    // take it when nothing nearer paints them.
     const packaging = packagingRowTables($row, cells, $);
     if (packaging) {
+      const carried = fillOf($row) || fillOf(cells[0]) || tableFill;
+      // Flattened, the descended blocks land in the parent column, so the
+      // wrapper cell's padding insets them as it would have had the walk
+      // stopped at the cell, and narrows their room with it.
+      const wrapperPadding = readHostPadding(cells[0]);
+      const innerRoom = flattenInline ? narrow(room, wrapperPadding) : room;
+      const descended: Block[] = [];
       for (const $inner of packaging) {
-        sections.push(
-          ...processTable($inner, $, entries, warnings, flattenInline),
+        descended.push(
+          ...processTable(
+            $inner,
+            $,
+            entries,
+            warnings,
+            flattenInline,
+            carried,
+            innerRoom,
+          ),
         );
       }
+      if (flattenInline) insetColumns([descended], wrapperPadding);
+      sections.push(...descended);
       continue;
     }
 
@@ -612,16 +848,56 @@ export function processTable(
     const hosts = columnHostsOf(layoutCells, $);
     const countedLayout = resolveColumnLayout(hosts.length, warnings);
 
+    // The count is settled; the declared widths only choose which layout of
+    // that count. `"1"` is skipped because a single column holds the whole
+    // row by definition, so there is no ratio to choose and none to report —
+    // and because that is also the layout a merged row lands on, whose own
+    // note is the loss worth naming. A flattened row has no section to lay
+    // out.
+    const ratio =
+      countedLayout === "1" || flattenInline
+        ? { layout: countedLayout, note: undefined }
+        : resolveColumnRatio(
+            hosts.map((host) => readDeclaredWidth(host.$el)),
+            countedLayout,
+          );
+
+    const padding = readPaddingFromStyles(getStyles($row));
+    // A column set's cell pads the row around its columns, and none of the
+    // hosts is that cell, so this row applies its padding: to the hosts'
+    // room here and to their blocks below. Merged or flattened, the columns
+    // stack into one.
+    const setPadding =
+      hosts[0]?.kind === "container"
+        ? readHostPadding(layoutCells[0])
+        : undefined;
+    const stacked = countedLayout === "1" || flattenInline;
+    const rooms = hostRooms(
+      flattenInline ? room : narrow(room, padding),
+      stacked ? "1" : ratio.layout,
+      hosts.length,
+      setPadding,
+    );
+
     let columnsBlocks: Block[][];
     if (countedLayout === "1") {
       const merged: Block[] = [];
-      for (const host of hosts) {
-        merged.push(...extractHostBlocks(host, $, entries, warnings));
-      }
+      hosts.forEach((host, index) => {
+        merged.push(
+          ...extractHostBlocks(host, $, entries, warnings, rooms[index]),
+        );
+      });
       columnsBlocks = [merged];
     } else {
-      columnsBlocks = hosts.map((host) =>
-        extractHostBlocks(host, $, entries, warnings),
+      columnsBlocks = hosts.map((host, index) =>
+        extractHostBlocks(host, $, entries, warnings, rooms[index]),
+      );
+    }
+
+    if (setPadding) {
+      insetColumns(
+        flattenInline ? [columnsBlocks.flat()] : columnsBlocks,
+        setPadding,
       );
     }
 
@@ -632,33 +908,18 @@ export function processTable(
       continue;
     }
 
-    // The count is settled; the declared widths only choose which layout of
-    // that count. `"1"` is skipped because a single column holds the whole
-    // row by definition, so there is no ratio to choose and none to report —
-    // and because that is also the layout a merged row lands on, whose own
-    // note is the loss worth naming.
-    const ratio =
-      countedLayout === "1"
-        ? { layout: countedLayout, note: undefined }
-        : resolveColumnRatio(
-            hosts.map((host) => readDeclaredWidth(host.$el)),
-            countedLayout,
-          );
+    const fill = sectionFill($row, layoutCells, tableFill, $);
 
-    const rowStyles = getStyles($row);
-    const bgColor =
-      parseColor(rowStyles["background-color"]) ||
-      parseColor(rowStyles.background);
-    const padding = readPaddingFromStyles(rowStyles);
-
-    entries.push(sectionEntry(hosts.length, columnsBlocks.length, ratio.note));
+    entries.push(
+      sectionEntry(hosts.length, columnsBlocks.length, ratio.note, fill.note),
+    );
     sections.push(
       createSectionBlock({
         columns: ratio.layout,
         children: columnsBlocks,
         styles: {
           padding,
-          ...(bgColor ? { backgroundColor: bgColor } : {}),
+          ...(fill.color ? { backgroundColor: fill.color } : {}),
         },
       }),
     );

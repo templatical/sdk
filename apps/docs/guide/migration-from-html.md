@@ -88,7 +88,7 @@ HTML elements map to Templatical equivalents:
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
-| `<hr>` | `divider` | Converted |
+| `<hr>` | `divider` | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
 | `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
@@ -100,6 +100,26 @@ Anything that can't be mapped is preserved verbatim inside an HTML block, so no 
 A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell whose entire content is one styled text `<a>` reads as a button.
 
 A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
+
+A text-only wrapper's `text-align` applies to each `<p>` inside it that states no `text-align` of its own. A `<p>` that states one keeps it.
+
+### Divider width
+
+The width comes from the `<hr>`'s `width` style, then its `width` attribute.
+
+| `<hr>` width | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, `auto` or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than the line's room | the px number | Converted |
+| px, as wide as the line's room or wider | `"full"` | Converted |
+| a negative px width | `0` | Approximated |
+| any other value, such as `20em` | `"full"` | Approximated |
+
+The line's room is the column's share of `settings.width`, by the section's column layout, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
+
+Templatical centres every divider. A partial-width `<hr>` that its `align` attribute or its margins place at the left or the right is approximated, and its `note` names the alignment.
 
 ## Inline Formatting
 
@@ -135,7 +155,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper rows
 
-Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row carries no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+
+A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it.
 
 ### Gutter rows
 
@@ -154,6 +176,24 @@ Every container must be laid out side by side, none may be empty, and no text of
 ### Nesting
 
 Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell. A nested row with more than one cell loses its columns that way, and `report.entries` records it as `approximated` with a note.
+
+### Section backgrounds
+
+A section takes the nearest fill, read from a `background-color` style, a `background` colour or a `bgcolor` attribute:
+
+1. The `<tr>`.
+2. The row's cells, when they all share one fill. Gutter cells do not count, and a cell whose entire content is one styled text `<a>` keeps its colour on the `button`.
+3. The `<table>` holding the row, then the tables and wrapper cells around it.
+
+A section has one background colour, so a row whose cells render on different fills is approximated, and its `note` names each cell's fill.
+
+### Cell padding {#cell-padding}
+
+A cell's padding is added to the padding of every block the cell holds: the left and right to every block, the top to the first and the bottom to the last. A table's `cellpadding` pads each of its cells, and a side the cell's own `padding` states overrides it.
+
+The padding of nested cells, and of the `<div>`, `<center>` and `<main>` wrappers inside a cell, adds up. A cell holding one column container per column pads the row: the top and bottom go to each column's first and last block, the left to the first column and the right to the last.
+
+A spacer renders at its height, so a spacer at a cell's edge takes that side's padding as extra height. A cell whose entire content is one styled text `<a>` keeps its padding as the `button`'s own.
 
 ## CSS Handling
 
@@ -175,6 +215,7 @@ Global template settings are extracted from the document:
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
 - **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
 - **Font family** — `<body>` `font-family` style. Defaults to `Arial`.
+- **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.
 
 ## Known Limitations
@@ -195,7 +236,7 @@ After conversion, review the output in the editor to check for:
 1. **Element classification** — review `report.entries` for entries with `status: 'approximated'` or `status: 'html-fallback'`.
 2. **Image URLs** — relative paths and CID references won't resolve in the preview; replace with absolute URLs.
 3. **Column proportions** — automatic mapping picks the closest standard layout; fine-tune in the section settings panel.
-4. **Spacing and padding** — `padding` shorthand is parsed faithfully, but margin/spacing on bare cells may need touch-up.
+4. **Spacing and padding** — cell padding is carried onto the blocks it holds, as described in [Cell padding](#cell-padding). Margins are not imported and may need touch-up.
 5. **HTML-fallback blocks** — anything that landed in an HTML block can be edited inline or replaced with first-class blocks.
 
 ## Reading the Report
@@ -224,7 +265,7 @@ for (const warning of report.warnings) {
 
 `report.entries` accounts for the sections alongside the leaf blocks, so the entries reconcile against `content.blocks`:
 
-- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged or when the ratio had no equivalent.
+- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column and its fill, and `approximated` with a note when cells were merged, when the ratio had no equivalent, or when its cells rendered on different fills.
 - One entry with `sourceTag: 'body'` and a note when loose top-level content is grouped into a synthetic single-column section.
 - One entry with `templaticalBlockType: null` and a note for a nested row whose columns were dropped.
 

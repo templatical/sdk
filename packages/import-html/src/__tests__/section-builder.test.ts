@@ -2488,3 +2488,468 @@ describe("processTable — sibling column divs in one cell are a column set", ()
     );
   });
 });
+
+describe("processTable — a section's background is the nearest fill", () => {
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  function sectionEntryOf(entries: ImportReportEntry[]): ImportReportEntry {
+    const found = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(found).toHaveLength(1);
+    return found[0];
+  }
+
+  it("reads a row's bgcolor attribute", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr bgcolor="#123456"><td><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#123456");
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "converted",
+    });
+  });
+
+  it("reads the row's only cell, from a style or a bgcolor", () => {
+    const fromStyle = runTable(
+      '<table role="presentation"><tr><td style="background-color:#abcdef"><p>Copy</p></td></tr></table>',
+    );
+    const fromAttribute = runTable(
+      '<table role="presentation"><tr><td bgcolor="#fedcba"><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(fromStyle.blocks).styles.backgroundColor).toBe(
+      "#abcdef",
+    );
+    expect(onlySection(fromAttribute.blocks).styles.backgroundColor).toBe(
+      "#fedcba",
+    );
+  });
+
+  it("reads a bare hex bgcolor, as a browser does", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td bgcolor="fedcba"><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#fedcba");
+  });
+
+  it("reads the enclosing table, from a style or a bgcolor", () => {
+    const fromStyle = runTable(
+      '<table role="presentation" style="background-color:#111111"><tr><td><p>Copy</p></td></tr></table>',
+    );
+    const fromAttribute = runTable(
+      '<table role="presentation" bgcolor="#222222"><tr><td><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(fromStyle.blocks).styles.backgroundColor).toBe(
+      "#111111",
+    );
+    expect(onlySection(fromAttribute.blocks).styles.backgroundColor).toBe(
+      "#222222",
+    );
+  });
+
+  it("prefers the cell's fill to the table's", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" bgcolor="#111111"><tr><td bgcolor="#333333"><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#333333");
+    expect(sectionEntryOf(entries).status).toBe("converted");
+  });
+
+  it("prefers the row's fill to its cell's, and reports the cell's as lost", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" bgcolor="#111111"><tr bgcolor="#222222">' +
+        '<td bgcolor="#333333"><p>Copy</p></td></tr></table>',
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#222222");
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "Cell backgrounds #333333 differ from the section background #222222. A Templatical section has one background colour.",
+    });
+  });
+
+  it("carries a descended wrapper cell's fill down to the sections below it", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td bgcolor="#f4f4f4">' +
+        '<table role="presentation"><tr>' +
+        "<td><h2>Left</h2></td><td><p>Right</p></td>" +
+        "</tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The descent still happens, so the layout row is what becomes the
+    // section and its two columns survive.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.styles.backgroundColor).toBe("#f4f4f4");
+    expect(sectionEntryOf(entries).status).toBe("converted");
+  });
+
+  it("carries a descended wrapper table's fill down through its row", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" style="background-color:#f3f4f6"><tr><td>' +
+        '<table role="presentation"><tr><td><p>Copy</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#f3f4f6");
+  });
+
+  it("carries a descended wrapper row's bgcolor down", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr bgcolor="#eeeeee"><td>' +
+        '<table role="presentation"><tr><td><h2>Left</h2></td><td><p>Right</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.styles.backgroundColor).toBe("#eeeeee");
+  });
+
+  it("lets the inner table's own fill win over the one carried down", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" width="100%" style="background-color:#f3f4f6"><tr><td>' +
+        '<table role="presentation" width="600" style="background-color:#ffffff">' +
+        "<tr><td><h2>First</h2></td></tr>" +
+        "<tr><td><p>Second</p></td></tr>" +
+        "</table>" +
+        "</td></tr></table>",
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual(["section", "section"]);
+    expect(
+      (blocks as SectionBlock[]).map(
+        (section) => section.styles.backgroundColor,
+      ),
+    ).toEqual(["#ffffff", "#ffffff"]);
+  });
+
+  it("gives cells that share one fill that fill", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td bgcolor="#ffeedd"><h2>Left</h2></td>' +
+        '<td style="background-color:#ffeedd"><p>Right</p></td>' +
+        "</tr></table>",
+    );
+
+    expect(onlySection(blocks).styles.backgroundColor).toBe("#ffeedd");
+    expect(sectionEntryOf(entries).status).toBe("converted");
+  });
+
+  it("reports cells of one row with different fills as approximated", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" bgcolor="#ffffff"><tr>' +
+        '<td bgcolor="#ff0000"><h2>Left</h2></td>' +
+        "<td><p>Right</p></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Neither cell is the row's only one, so the table's fill is what the
+    // section takes — which the right cell renders on already.
+    expect(section.columns).toBe("2");
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "Cell backgrounds #ff0000 / #ffffff differ from the section background #ffffff. A Templatical section has one background colour.",
+    });
+  });
+
+  it("names a section with no background in the note", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td bgcolor="#ff0000"><h2>Left</h2></td>' +
+        '<td bgcolor="#00ff00"><p>Right</p></td>' +
+        "</tr></table>",
+    );
+
+    expect("backgroundColor" in onlySection(blocks).styles).toBe(false);
+    expect(sectionEntryOf(entries).note).toBe(
+      "Cell backgrounds #ff0000 / #00ff00 differ from the section, which has no background. A Templatical section has one background colour.",
+    );
+  });
+
+  it("adds the fill note to a merged row's note", () => {
+    const { entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td bgcolor="#ff0000"><p>A</p></td><td><p>B</p></td>' +
+        "<td><p>C</p></td><td><p>D</p></td>" +
+        "</tr></table>",
+    );
+
+    expect(sectionEntryOf(entries)).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note:
+        "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns. " +
+        "Cell backgrounds #ff0000 / none / none / none differ from the section, which has no background. A Templatical section has one background colour.",
+    });
+  });
+
+  it("leaves a button cell's fill on the button rather than the section", () => {
+    // The shape of every bulletproof button: the cell carries the colour the
+    // button is painted with. Read as the section's, it would band the whole
+    // row in the button's colour.
+    const { blocks, entries } = runTable(
+      '<table role="presentation" style="background-color:#ffffff"><tr><td>' +
+        '<table role="presentation"><tr>' +
+        '<td bgcolor="#0f766e"><a href="https://x.test/go" style="padding:14px 32px;color:#ffffff">Go</a></td>' +
+        "</tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    const button = section.children[0][0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.backgroundColor).toBe("#0f766e");
+    expect(sectionEntryOf(entries).status).toBe("converted");
+  });
+
+  it("leaves a section with no fill anywhere without a background", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td><p>Copy</p></td></tr></table>',
+    );
+
+    expect("backgroundColor" in onlySection(blocks).styles).toBe(false);
+  });
+});
+
+describe("extractCellBlocks — the cell's padding insets the blocks it holds", () => {
+  function paddingsOf(blocks: Block[]) {
+    return blocks.map((block) => block.styles.padding);
+  }
+
+  it("puts the sides on every block, the top on the first and the bottom on the last", () => {
+    const { blocks } = runCell(
+      "<h2>Heading</h2><p>Copy</p>" +
+        '<img src="https://x.test/a.png" alt="A" width="100">' +
+        '<hr style="border-top:1px solid #cccccc">' +
+        '<a href="https://x.test/go" style="background:#ff0000;padding:8px 16px">Go</a>',
+      'style="padding:20px 16px 24px 12px"',
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual([
+      "title",
+      "paragraph",
+      "image",
+      "divider",
+      "button",
+    ]);
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 20, right: 16, bottom: 0, left: 12 },
+      { top: 0, right: 16, bottom: 0, left: 12 },
+      { top: 0, right: 16, bottom: 0, left: 12 },
+      { top: 0, right: 16, bottom: 0, left: 12 },
+      { top: 0, right: 16, bottom: 24, left: 12 },
+    ]);
+  });
+
+  it("adds the cell's padding to a block's own", () => {
+    const { blocks } = runCell(
+      '<p style="padding:5px 6px">Copy</p>',
+      'style="padding:10px"',
+    );
+
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 15, right: 16, bottom: 15, left: 16 },
+    ]);
+  });
+
+  it("counts a bare run's cell padding once", () => {
+    // The <strong> is what makes this a layout table: a table whose cells
+    // hold only text is kept whole as a data table.
+    const { blocks } = runCell(
+      "Just <strong>text</strong>",
+      'style="padding:14px"',
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual(["paragraph"]);
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 14, right: 14, bottom: 14, left: 14 },
+    ]);
+  });
+
+  it("treats a bare run beside a block like any other block", () => {
+    const { blocks } = runCell(
+      "Lead copy<h2>Heading</h2>",
+      'style="padding:10px"',
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual(["paragraph", "title"]);
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 10, right: 10, bottom: 0, left: 10 },
+      { top: 0, right: 10, bottom: 10, left: 10 },
+    ]);
+  });
+
+  it("honours the table's cellpadding, on a <td> and a <th> alike", () => {
+    for (const cell of ["td", "th"]) {
+      const { blocks } = runTable(
+        `<table role="presentation" cellpadding="12"><tr><${cell}><h2>Heading</h2></${cell}></tr></table>`,
+      );
+
+      expect(paddingsOf(leaves(blocks))).toEqual([
+        { top: 12, right: 12, bottom: 12, left: 12 },
+      ]);
+    }
+  });
+
+  it("lets the cell's own padding override cellpadding side by side", () => {
+    const { blocks } = runTable(
+      '<table role="presentation" cellpadding="12"><tr>' +
+        '<td style="padding-top:0;padding-left:30px"><h2>Heading</h2></td>' +
+        "</tr></table>",
+    );
+
+    expect(paddingsOf(leaves(blocks))).toEqual([
+      { top: 0, right: 12, bottom: 12, left: 30 },
+    ]);
+  });
+
+  it("accumulates the padding of nested cells", () => {
+    const { blocks } = runCell(
+      "<h2>Heading</h2>" +
+        '<table role="presentation"><tr><td style="padding:10px"><p>Inner</p></td></tr></table>',
+      'style="padding:20px"',
+    );
+
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 20, right: 20, bottom: 0, left: 20 },
+      { top: 10, right: 30, bottom: 30, left: 30 },
+    ]);
+  });
+
+  it("insets a container's blocks by the container's padding", () => {
+    const { blocks } = runCell(
+      '<div style="padding:8px">' +
+        '<table role="presentation"><tr><td><p>Inner</p></td></tr></table>' +
+        "</div>" +
+        "<p>After</p>",
+    );
+
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 8, right: 8, bottom: 8, left: 8 },
+      { top: 0, right: 0, bottom: 0, left: 0 },
+    ]);
+  });
+
+  it("keeps a wrapper cell's padding on the blocks its tables hold", () => {
+    // The shape compiled MJML gives an image or a button: a padded cell whose
+    // only content is the table the element sits in.
+    const { blocks } = runCell(
+      "<h2>Heading</h2>" +
+        '<table role="presentation"><tr><td style="padding:10px 25px">' +
+        '<table role="presentation"><tr><td><img src="https://x.test/a.png" alt="A" width="100"></td></tr></table>' +
+        "</td></tr></table>",
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual(["title", "image"]);
+    expect(paddingsOf(blocks)[1]).toEqual({
+      top: 10,
+      right: 25,
+      bottom: 10,
+      left: 25,
+    });
+  });
+
+  it("adds the top and bottom a spacer lands on to its height", () => {
+    // A spacer renders at its height and ignores padding, so an inset held
+    // as padding would vanish on export.
+    const { blocks } = runCell(
+      '<table role="presentation">' +
+        '<tr><td height="10">&nbsp;</td></tr>' +
+        "<tr><td><p>Copy</p></td></tr>" +
+        "</table>" +
+        // Prose beside the tables keeps the cell from being a wrapper the
+        // walk descends past.
+        "<p>Between</p>" +
+        '<table role="presentation">' +
+        "<tr><td><p>Tail</p></td></tr>" +
+        '<tr><td height="6">&nbsp;</td></tr>' +
+        "</table>",
+      'style="padding:20px"',
+    );
+
+    expect(blocks.map((block) => block.type)).toEqual([
+      "spacer",
+      "paragraph",
+      "paragraph",
+      "paragraph",
+      "spacer",
+    ]);
+    const [first, , , , last] = blocks;
+    if (first.type !== "spacer" || last.type !== "spacer")
+      throw new Error("expected spacer blocks");
+    expect([first.height, last.height]).toEqual([30, 26]);
+    expect(paddingsOf(blocks)).toEqual([
+      { top: 0, right: 0, bottom: 0, left: 0 },
+      { top: 0, right: 20, bottom: 0, left: 20 },
+      { top: 0, right: 20, bottom: 0, left: 20 },
+      { top: 0, right: 20, bottom: 0, left: 20 },
+      { top: 0, right: 0, bottom: 0, left: 0 },
+    ]);
+  });
+
+  it("leaves a button cell's padding on the button", () => {
+    const { blocks } = runCell(
+      '<a href="https://x.test/go">Go</a>',
+      'style="background:#0b7285;padding:14px"',
+    );
+
+    const button = blocks[0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.buttonPadding).toEqual({
+      top: 14,
+      right: 14,
+      bottom: 14,
+      left: 14,
+    });
+    expect(button.styles.padding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+  });
+
+  it("insets a column set per column: the sides at the row's edges only", () => {
+    const column = (label: string) =>
+      '<div style="display:inline-block;width:50%">' +
+      `<table role="presentation"><tr><td><p>${label}</p></td></tr></table>` +
+      "</div>";
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td style="padding:20px 10px 24px 12px">' +
+        column("Left") +
+        column("Right") +
+        "</td></tr></table>",
+    );
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+
+    expect(section.columns).toBe("2");
+    expect(section.children.map((slot) => paddingsOf(slot))).toEqual([
+      [{ top: 20, right: 0, bottom: 24, left: 12 }],
+      [{ top: 20, right: 10, bottom: 24, left: 0 }],
+    ]);
+  });
+});

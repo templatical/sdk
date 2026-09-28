@@ -161,6 +161,20 @@ export function parseColor(value: string | undefined): string {
 }
 
 /**
+ * Normalizes a legacy `bgcolor` attribute value the way `parseColor` does a
+ * CSS one, also accepting hex without its `#` (`bgcolor="f4f4f4"`), which
+ * browsers render and CSS rejects.
+ */
+export function parseLegacyColor(value: string | undefined): string {
+  const color = parseColor(value);
+  if (color) return color;
+  const bare = (value ?? "").trim();
+  return /^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(bare)
+    ? parseColor(`#${bare}`)
+    : "";
+}
+
+/**
  * Parses a CSS `padding` shorthand (1-4 values) into a SpacingValue.
  */
 export function parsePaddingShorthand(value: string | undefined): SpacingValue {
