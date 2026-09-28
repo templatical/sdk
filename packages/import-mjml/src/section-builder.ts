@@ -253,9 +253,8 @@ export function buildSection(
   const attrs = resolveAttributes($el, ctx.cascade);
   const { columns, grouped } = readColumns($el, ctx);
 
-  const rawWidths = columns.map(
-    ($c) => resolveAttributes($c, ctx.cascade).width,
-  );
+  const columnAttrs = columns.map(($c) => resolveAttributes($c, ctx.cascade));
+  const rawWidths = columnAttrs.map((column) => column.width);
   const percents = rawWidths.map((width) =>
     columnWidthPercent(width, ctx.containerWidth),
   );
@@ -292,9 +291,11 @@ export function buildSection(
     // A 4th+ column folds into the last slot rather than becoming an html
     // block: its content converts perfectly and only the geometry is lost.
     const slot = Math.min(index, slots - 1);
+    const { left, right } = parsePaddingShorthand(columnAttrs[index].padding);
     const columnCtx: ConvertContext = {
       ...ctx,
       containerWidth: Math.round(pixels[slot] ?? ctx.containerWidth),
+      columnPadding: left + right,
     };
     children[slot].push(...convertColumnChildren($column, columnCtx, entries));
   });

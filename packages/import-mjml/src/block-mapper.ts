@@ -7,7 +7,7 @@ import {
   createImageBlock,
   createSpacerBlock,
 } from "@templatical/types";
-import type { Block } from "@templatical/types";
+import type { Block, DividerBlock } from "@templatical/types";
 import {
   parseAlignment,
   parseBorderStyle,
@@ -114,16 +114,92 @@ function convertButton($el: Cheerio<Element>, attrs: Attrs): Block | null {
   });
 }
 
-function convertDivider(attrs: Attrs): Block {
+/**
+ * `mj-divider`'s `width` as `DividerBlock.width`. A percentage is a share of
+ * the column and stays one, to two decimals within 0–100%. `100%`, and a px
+ * width that reaches `lineWidth`, span the line's whole box, which is
+ * `"full"`. A clamped or unreadable value pushes a note.
+ *
+ * It reads a sign, which `parsePercent` does not, so a negative value is
+ * clamped to 0 and reported instead of being dropped.
+ */
+function readDividerWidth(
+  value: string | undefined,
+  lineWidth: number,
+  notes: string[],
+): DividerBlock["width"] {
+  const raw = (value ?? "").trim();
+  if (!raw) return "full";
+
+  const match = /^(-?\d+(?:\.\d+)?)\s*(px|%)?$/i.exec(raw);
+  if (!match) {
+    notes.push(
+      `Divider width "${raw}" could not be read; imported as full width.`,
+    );
+    return "full";
+  }
+  const parsed = parseFloat(match[1]);
+
+  if (match[2] === "%") {
+    const percent = Math.min(100, Math.max(0, parsed));
+    if (percent !== parsed) {
+      notes.push(`Divider width ${raw} was clamped to ${percent}%.`);
+    }
+    // Two decimals keep the value inside `DividerPercentWidth`'s pattern,
+    // which a float printed in exponent form would leave.
+    const share = Math.round(percent * 100) / 100;
+    return share === 100 ? "full" : `${share}%`;
+  }
+
+  const px = Math.max(0, Math.round(parsed));
+  if (px !== Math.round(parsed)) {
+    notes.push(`Divider width ${raw} was clamped to 0px.`);
+  }
+  return px >= lineWidth ? "full" : px;
+}
+
+/**
+ * `mj-divider` draws `100%` across its column less the column's side padding
+ * and its own, so that is the width a px value is measured against. It places
+ * a partial-width line by `align`, centred by default; Templatical centres
+ * every divider, so a left- or right-aligned partial one comes back with a
+ * note.
+ */
+function convertDivider(attrs: Attrs, ctx: ConvertContext): Converted {
   const color = parseColor(attrs["border-color"]);
   const thickness = parsePxValue(attrs["border-width"]);
+  const base = baseFields(attrs);
+  const { left, right } = base.styles.padding;
 
-  return createDividerBlock({
-    lineStyle: parseBorderStyle(attrs["border-style"]),
-    ...(color ? { color } : {}),
-    ...(attrs["border-width"] !== undefined ? { thickness } : {}),
-    ...baseFields(attrs),
-  });
+  const notes: string[] = [];
+  const width = readDividerWidth(
+    attrs.width,
+    ctx.containerWidth - ctx.columnPadding - left - right,
+    notes,
+  );
+
+  const align = (attrs.align ?? "").trim().toLowerCase();
+  if (width !== "full" && (align === "left" || align === "right")) {
+    notes.push(
+      `MJML aligns this divider ${align}; Templatical centres every divider.`,
+    );
+  }
+
+  return {
+    block: createDividerBlock({
+      lineStyle: parseBorderStyle(attrs["border-style"]),
+      width,
+      ...(color ? { color } : {}),
+      ...(attrs["border-width"] !== undefined ? { thickness } : {}),
+      ...base,
+    }),
+    entry: {
+      sourceTag: "mj-divider",
+      templaticalBlockType: "divider",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+    },
+  };
 }
 
 function convertSpacer(attrs: Attrs): Block {
@@ -208,14 +284,7 @@ export function convertElement(
   }
 
   if (tag === "mj-divider") {
-    return {
-      block: convertDivider(attrs),
-      entry: {
-        sourceTag: tag,
-        templaticalBlockType: "divider",
-        status: "converted",
-      },
-    };
+    return convertDivider(attrs, ctx);
   }
 
   if (tag === "mj-spacer") {

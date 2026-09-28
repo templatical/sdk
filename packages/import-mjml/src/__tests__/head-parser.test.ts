@@ -131,6 +131,45 @@ describe("extractSettings", () => {
     expect(settings.locale).toBe("de");
   });
 
+  it("reads an RTL direction the locale does not imply", () => {
+    const { settings } = settingsOf(
+      '<mjml lang="en" dir="rtl"><mj-body /></mjml>',
+    );
+
+    expect(settings.direction).toBe("rtl");
+  });
+
+  it("reads an LTR direction on an RTL locale", () => {
+    const { settings } = settingsOf(
+      '<mjml lang="ar" dir="ltr"><mj-body /></mjml>',
+    );
+
+    expect(settings.locale).toBe("ar");
+    expect(settings.direction).toBe("ltr");
+  });
+
+  it("reads the direction case-insensitively", () => {
+    const { settings } = settingsOf('<mjml dir="RTL"><mj-body /></mjml>');
+
+    expect(settings.direction).toBe("rtl");
+  });
+
+  it("omits a direction the locale already implies", () => {
+    const rtl = settingsOf('<mjml lang="ar" dir="rtl"><mj-body /></mjml>');
+    const ltr = settingsOf('<mjml lang="en" dir="ltr"><mj-body /></mjml>');
+
+    expect("direction" in rtl.settings).toBe(false);
+    expect("direction" in ltr.settings).toBe(false);
+  });
+
+  it("omits direction for dir=auto and for no dir at all", () => {
+    const auto = settingsOf('<mjml dir="auto"><mj-body /></mjml>');
+    const none = settingsOf("<mjml><mj-body /></mjml>");
+
+    expect("direction" in auto.settings).toBe(false);
+    expect("direction" in none.settings).toBe(false);
+  });
+
   it("warns about mj-title, which has no settings home", () => {
     const { warnings } = settingsOf(
       "<mjml><mj-head><mj-title>Spring Sale</mj-title></mj-head><mj-body /></mjml>",

@@ -17,6 +17,7 @@ import type {
   Block,
   ParagraphBlock,
   TemplateContent,
+  TemplateSettings,
 } from "@templatical/types";
 import { convertMjmlTemplate } from "../converter";
 
@@ -93,6 +94,10 @@ function buildFixtureTemplate(): TemplateContent {
               lineStyle: "dashed",
               color: "#cccccc",
             }),
+            createDividerBlock({ width: "50%" }),
+            // Under the 160px its line can span (a 200px column less 20px of
+            // padding each side), so it stays px.
+            createDividerBlock({ width: 150 }),
           ]),
           col([
             createSocialIconsBlock({
@@ -302,5 +307,79 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const withBreak = paragraphs.find((p) => p.content.includes("Line one"));
 
     expect(withBreak?.content).toBe("<p>Line one<br>Line two</p>");
+  });
+});
+
+/**
+ * An RTL template, where the renderer puts `align="right"` on every paragraph
+ * (`renderers/paragraph.ts`). Right is the start edge there, so the importer
+ * must leave each paragraph's markup as it was, and keep the alignment a
+ * paragraph states in its own markup.
+ */
+function buildRtlTemplate(
+  direction: Pick<TemplateSettings, "locale" | "direction">,
+): TemplateContent {
+  return {
+    blocks: [
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [
+            createTitleBlock({
+              content: "Hello",
+              level: 2,
+              textAlign: "right",
+            }),
+            createParagraphBlock({ content: "<p>At the start edge</p>" }),
+            createParagraphBlock({
+              content: '<p style="text-align: center;">In the middle</p>',
+            }),
+          ],
+          [
+            createParagraphBlock({
+              content:
+                '<p style="text-align: left;"><span style="color: #ff0000;">left</span></p>',
+            }),
+          ],
+        ],
+      }),
+    ],
+    settings: {
+      width: 600,
+      backgroundColor: "#ffffff",
+      textColor: "#222222",
+      linkUnderline: true,
+      fontFamily: "Arial",
+      ...direction,
+    },
+  };
+}
+
+describe.each([
+  { name: "an RTL locale", direction: { locale: "ar" } },
+  {
+    name: "an explicit direction",
+    direction: { locale: "en", direction: "rtl" as const },
+  },
+])("round trip: an RTL template from $name", ({ direction }) => {
+  it("reproduces the template structurally", async () => {
+    const original = buildRtlTemplate(direction);
+    const mjml = await renderToMjml(original);
+
+    // The title and all three paragraphs carry align="right", so this case
+    // cannot pass because the renderer stopped emitting it.
+    expect(mjml.match(/<mj-text[^>]*align="right"/g)).toHaveLength(4);
+
+    const { content } = convertMjmlTemplate(mjml);
+    expect(normalize(content)).toEqual(normalize(original));
+  });
+
+  it("converts every element with no approximations at all", async () => {
+    const mjml = await renderToMjml(buildRtlTemplate(direction));
+    const { report } = convertMjmlTemplate(mjml);
+
+    expect(report.summary.total).toBe(5);
+    expect(report.summary.converted).toBe(5);
+    expect(report.warnings).toEqual([]);
   });
 });

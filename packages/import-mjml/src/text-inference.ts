@@ -1,7 +1,7 @@
 import { load } from "cheerio";
-import type { Cheerio } from "cheerio";
+import type { Cheerio, CheerioAPI } from "cheerio";
 import { isTag, isText } from "domhandler";
-import type { Element } from "domhandler";
+import type { AnyNode, Element } from "domhandler";
 import {
   createMenuBlock,
   createParagraphBlock,
@@ -39,8 +39,8 @@ import { baseFields, type ConvertContext, type Converted } from "./block-base";
  * queryable document scoped to just this block's own markup — so
  * `$inner("tr")` can only match rows that belong to this table, and
  * `$inner("body")` has a real root to enumerate top-level nodes from. A
- * paragraph's markup needs none of that structure-probing, so it is passed
- * through verbatim and never reparsed.
+ * paragraph's markup is reparsed only when an attribute has to be carried
+ * into it (`styleParagraphs`); otherwise it passes through verbatim.
  */
 function parseInner(html: string) {
   return load(`<body>${html}</body>`);
@@ -266,22 +266,154 @@ function ensureParagraphWrapped(html: string): string {
   return `<p>${trimmed}</p>`;
 }
 
-function convertParagraph(html: string, attrs: Attrs): Converted {
+/**
+ * The size the renderer gives every `mj-text` (`<mj-text font-size="14px">` in
+ * `packages/renderer/src/index.ts`), so a paragraph at this size needs no span
+ * to carry it.
+ */
+const RENDERER_TEXT_SIZE = 14;
+
+const PARAGRAPH_ALIGNMENTS = new Set(["left", "center", "right", "justify"]);
+
+/** `<li>` children that end a run of the item's text instead of joining it. */
+const LIST_ITEM_BLOCK_TAGS = new Set([
+  "p",
+  "div",
+  "ul",
+  "ol",
+  "blockquote",
+  "table",
+  "pre",
+  "hr",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+]);
+
+/**
+ * What an `mj-text` states about its paragraphs' alignment, colour and size.
+ * `ParagraphBlock` has a field for none of them, so they travel in the markup.
+ * An empty string states nothing.
+ */
+interface ParagraphStyle {
+  textAlign: string;
+  color: string;
+  fontSize: string;
+}
+
+function readParagraphStyle(attrs: Attrs, ctx: ConvertContext): ParagraphStyle {
+  // The start edge is where a paragraph sits with no alignment of its own, and
+  // the renderer states it on every RTL paragraph (`renderers/paragraph.ts`).
+  const align = (attrs.align ?? "").trim().toLowerCase();
+  const startEdge = ctx.direction === "rtl" ? "right" : "left";
+
+  // The resolved size, not ownAttr: a size set document-wide has no setting to
+  // land in, so dropping it as ambient would lose it.
+  const size = parsePxValue(attrs["font-size"]);
+
+  return {
+    textAlign:
+      PARAGRAPH_ALIGNMENTS.has(align) && align !== startEdge ? align : "",
+    // A colour set document-wide is `settings.textColor` already.
+    color: parseColor(ownAttr(attrs, "color", "mj-text", ctx.cascade)),
+    fontSize: size > 0 && size !== RENDERER_TEXT_SIZE ? `${size}px` : "",
+  };
+}
+
+/**
+ * Put each run of an `<li>`'s inline content in a `<p>`, so that the
+ * alignment has a paragraph to sit on.
+ */
+function wrapListItemText($inner: CheerioAPI, li: Element): void {
+  let run: AnyNode[] = [];
+  const flush = () => {
+    // wrapAll, not before() and append(): before() skips a text node, which
+    // is what a run usually starts with, and the text would be lost.
+    if (run.some((node) => isTag(node) || (isText(node) && node.data.trim()))) {
+      $inner(run).wrapAll("<p></p>");
+    }
+    run = [];
+  };
+
+  for (const child of [...li.children]) {
+    if (isTag(child) && LIST_ITEM_BLOCK_TAGS.has(child.tagName.toLowerCase())) {
+      flush();
+    } else {
+      run.push(child);
+    }
+  }
+  flush();
+}
+
+/**
+ * Align one `<p>` and wrap its content in a span carrying colour and size.
+ * The `<p>`'s own `text-align` stays, and its own colour and size move into
+ * the span, where they win over the attributes as they did on the `<p>`.
+ */
+function styleParagraph(
+  $inner: CheerioAPI,
+  $p: Cheerio<Element>,
+  style: ParagraphStyle,
+): void {
+  if (style.textAlign && !$p.css("text-align")) {
+    $p.css("text-align", style.textAlign);
+  }
+
+  const color = $p.css("color") || style.color;
+  const fontSize = $p.css("font-size") || style.fontSize;
+  if ((color || fontSize) && $p.contents().length > 0) {
+    $p.css({ color: "", "font-size": "" });
+    const $span = $inner("<span></span>").css({
+      ...(color ? { color } : {}),
+      ...(fontSize ? { "font-size": fontSize } : {}),
+    });
+    $p.wrapInner($span);
+  }
+
+  if ($p.attr("style") === "") $p.removeAttr("style");
+}
+
+/**
+ * Carry an `mj-text`'s alignment, colour and size into its paragraphs'
+ * markup: `text-align` on each `<p>`, colour and size on one span inside it.
+ * That is the shape the paragraph editor keeps through an edit
+ * (`packages/editor/src/components/blocks/ParagraphEditor.vue` aligns
+ * paragraphs and styles spans); a wrapper element around the paragraphs would
+ * be dropped on the first edit.
+ *
+ * Markup with nothing to apply is returned as it came, unparsed.
+ */
+function styleParagraphs(html: string, style: ParagraphStyle): string {
+  if (!style.textAlign && !style.color && !style.fontSize) return html;
+
+  const $inner = parseInner(html);
+  $inner("li").each((_, li) => wrapListItemText($inner, li));
+  $inner("p").each((_, p) => styleParagraph($inner, $inner(p), style));
+  return $inner("body").html() ?? html;
+}
+
+function convertParagraph(
+  html: string,
+  attrs: Attrs,
+  ctx: ConvertContext,
+): Converted {
   // A custom gap round-trips through `css-class` as `tpl-rich-text-<gap>`
   // (`richTextGapClass` in `packages/renderer/src/rich-text.ts`); the default
   // gap round-trips the same way, so it must be excluded here rather than
   // just relying on absence — otherwise every imported paragraph would carry
   // an explicit (if harmless) `paragraphSpacing` equal to the default.
-  //
-  // Paragraph text colour is document-level (`settings.textColor`) —
-  // `ParagraphBlock` has no per-block colour field, so `attrs.color` is not
-  // read here.
   const gap = readParagraphGap(attrs);
   const paragraphSpacing =
     gap !== null && gap !== RICH_TEXT_SPACING.paragraphGap ? gap : undefined;
 
   const block = createParagraphBlock({
-    content: ensureParagraphWrapped(html),
+    content: styleParagraphs(
+      ensureParagraphWrapped(html),
+      readParagraphStyle(attrs, ctx),
+    ),
     ...(paragraphSpacing !== undefined ? { paragraphSpacing } : {}),
     ...baseFields(attrs),
   });
@@ -328,5 +460,5 @@ export function convertTextElement(
     return convertMenu(html, attrs, ctx.cascade);
   }
 
-  return convertParagraph(html, attrs);
+  return convertParagraph(html, attrs, ctx);
 }

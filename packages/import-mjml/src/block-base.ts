@@ -1,7 +1,12 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import { createHtmlBlock } from "@templatical/types";
-import type { Block, BlockStyles, BlockVisibility } from "@templatical/types";
+import type {
+  Block,
+  BlockStyles,
+  BlockVisibility,
+  ContentDirection,
+} from "@templatical/types";
 import { parseColor, parsePaddingShorthand } from "./attribute-parser";
 import {
   readForeignCssClasses,
@@ -16,12 +21,25 @@ import type { ImportReportEntry } from "./types";
  *
  * `containerWidth` is the width the element renders at — a section's column
  * width, or `settings.width` at top level. It is what lets an `mj-image` whose
- * px width equals its container restore `width: "full"` (§8.3b).
+ * px width equals its container restore `width: "full"` (§8.3b), and what an
+ * `mj-divider`'s px width is measured against, less `columnPadding` and the
+ * divider's own side padding.
+ *
+ * `columnPadding` is the side padding (left plus right, px) of the
+ * `mj-column` holding the element, 0 at top level. A Templatical column has no
+ * padding of its own, so this is read only where it changes what a value
+ * means: the width an `mj-divider` line can span.
+ *
+ * `direction` is the writing direction the imported template resolves to. Its
+ * start edge is where a paragraph sits when its markup states no alignment,
+ * so an `mj-text` aligned to that edge needs none.
  */
 export interface ConvertContext {
   $: CheerioAPI;
   cascade: AttributeCascade;
   containerWidth: number;
+  columnPadding: number;
+  direction: ContentDirection;
   warnings: string[];
 }
 

@@ -139,6 +139,44 @@ describe("convertMjmlTemplate end to end", () => {
     expect(report.entries[0].note).toContain("./h.mjml");
   });
 
+  it("styles paragraphs against the start edge of the direction the template resolves to", () => {
+    const paragraphsOf = (mjml: string) => {
+      const { content } = convertMjmlTemplate(mjml);
+      const section = content.blocks[0] as SectionBlock;
+      return {
+        settings: content.settings,
+        contents: section.children[0].map((b) =>
+          b.type === "paragraph" ? b.content : b.type,
+        ),
+      };
+    };
+    const body = `<mj-body><mj-section><mj-column>
+        <mj-text align="left"><p>l</p></mj-text>
+        <mj-text align="right"><p>r</p></mj-text>
+      </mj-column></mj-section></mj-body>`;
+
+    const byDir = paragraphsOf(`<mjml lang="en" dir="rtl">${body}</mjml>`);
+    expect(byDir.settings.direction).toBe("rtl");
+    expect(byDir.contents).toEqual([
+      '<p style="text-align: left;">l</p>',
+      "<p>r</p>",
+    ]);
+
+    const byLocale = paragraphsOf(`<mjml lang="ar">${body}</mjml>`);
+    expect("direction" in byLocale.settings).toBe(false);
+    expect(byLocale.contents).toEqual([
+      '<p style="text-align: left;">l</p>',
+      "<p>r</p>",
+    ]);
+
+    const overridden = paragraphsOf(`<mjml lang="ar" dir="ltr">${body}</mjml>`);
+    expect(overridden.settings.direction).toBe("ltr");
+    expect(overridden.contents).toEqual([
+      "<p>l</p>",
+      '<p style="text-align: right;">r</p>',
+    ]);
+  });
+
   it("warns when the document has no mj-body at all", () => {
     const { content, report } = convertMjmlTemplate("<mjml><mj-head /></mjml>");
 

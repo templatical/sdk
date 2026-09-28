@@ -3,6 +3,7 @@ import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
 import { describe, expect, it } from "vitest";
 import type {
+  ContentDirection,
   MenuBlock,
   ParagraphBlock,
   TableBlock,
@@ -15,12 +16,21 @@ import {
 import { convertTextElement } from "../text-inference";
 import type { ConvertContext } from "../block-base";
 
-function convert(inner: string, attrsMarkup = "") {
-  return convertWithHead("", inner, attrsMarkup);
+function convert(
+  inner: string,
+  attrsMarkup = "",
+  direction: ContentDirection = "ltr",
+) {
+  return convertWithHead("", inner, attrsMarkup, direction);
 }
 
 /** Same as {@link convert}, with an `<mj-head>` block to seed the attribute cascade. */
-function convertWithHead(head: string, inner: string, attrsMarkup = "") {
+function convertWithHead(
+  head: string,
+  inner: string,
+  attrsMarkup = "",
+  direction: ContentDirection = "ltr",
+) {
   const $: CheerioAPI = load(
     `<mjml><mj-head>${head}</mj-head><mj-body><mj-text ${attrsMarkup}>${inner}</mj-text></mj-body></mjml>`,
     { xml: { xmlMode: false, recognizeSelfClosing: true } },
@@ -29,6 +39,8 @@ function convertWithHead(head: string, inner: string, attrsMarkup = "") {
     $,
     cascade: buildAttributeCascade($),
     containerWidth: 600,
+    columnPadding: 0,
+    direction,
     warnings: [],
   };
   // Scoped to mj-body: a head carrying its own <mj-attributes><mj-text .../>
@@ -282,12 +294,219 @@ describe("paragraph fallback", () => {
     expect(block.content).not.toContain("</br>");
   });
 
-  it("never sets colour on a paragraph — colour is document-level", () => {
-    // ParagraphBlock has no `color` field: paragraph text colour comes from
-    // the document's `settings.textColor`, so an `mj-text` colour attribute
-    // is not recovered into the block.
+  it("carries an mj-text colour in the markup, since ParagraphBlock has no color field", () => {
     const { result } = convert("<p>x</p>", 'color="#445566"');
-    expect("color" in result.block!).toBe(false);
+    const block = result.block as ParagraphBlock;
+
+    expect("color" in block).toBe(false);
+    expect(block.content).toBe('<p><span style="color: #445566;">x</span></p>');
+  });
+});
+
+describe("paragraph alignment, colour and size", () => {
+  it("puts the alignment on the <p> and the colour and size in a span inside it", () => {
+    const { result } = convert(
+      "<p>Hello <strong>world</strong></p>",
+      'align="center" color="#4b5563" font-size="15px"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: center;"><span style="color: #4b5563; font-size: 15px;">Hello <strong>world</strong></span></p>',
+    );
+    expect(result.entry).toEqual({
+      sourceTag: "mj-text",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+  });
+
+  it("wraps bare text in a <p> before styling it", () => {
+    const { result } = convert("Just words", 'align="center"');
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: center;">Just words</p>',
+    );
+  });
+
+  it("styles every paragraph, keeping an empty one free of a span", () => {
+    const { result } = convert(
+      "<p>One</p><p></p><p>Two</p>",
+      'align="right" color="#4b5563"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: right;"><span style="color: #4b5563;">One</span></p>' +
+        '<p style="text-align: right;"></p>' +
+        '<p style="text-align: right;"><span style="color: #4b5563;">Two</span></p>',
+    );
+  });
+
+  it("skips left, the start edge, in an LTR document", () => {
+    const { result } = convert("<p>x</p>", 'align="left"', "ltr");
+    expect((result.block as ParagraphBlock).content).toBe("<p>x</p>");
+  });
+
+  it("applies right in an LTR document", () => {
+    const { result } = convert("<p>x</p>", 'align="right"', "ltr");
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: right;">x</p>',
+    );
+  });
+
+  it("skips right, the start edge, in an RTL document", () => {
+    const { result } = convert("<p>x</p>", 'align="right"', "rtl");
+    expect((result.block as ParagraphBlock).content).toBe("<p>x</p>");
+  });
+
+  it("applies left in an RTL document", () => {
+    const { result } = convert("<p>x</p>", 'align="left"', "rtl");
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: left;">x</p>',
+    );
+  });
+
+  it("keeps justify, which the paragraph editor supports", () => {
+    const { result } = convert("<p>x</p>", 'align="justify"');
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: justify;">x</p>',
+    );
+  });
+
+  it("reads alignment, colour and size that arrive through mj-class", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-class name="lead" align="center" color="#4b5563" font-size="18px" /></mj-attributes>',
+      "<p>x</p>",
+      'mj-class="lead"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: center;"><span style="color: #4b5563; font-size: 18px;">x</span></p>',
+    );
+  });
+
+  it("applies a document-wide font size, which has no setting to land in", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-text font-size="16px" /></mj-attributes>',
+      "<p>x</p>",
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p><span style="font-size: 16px;">x</span></p>',
+    );
+  });
+
+  it("does not repeat the document-wide colour, which is settings.textColor", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-text color="#123456" /></mj-attributes>',
+      "<p>x</p>",
+      'align="center"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: center;">x</p>',
+    );
+  });
+
+  it("skips 14px, the renderer's own mj-text size", () => {
+    const { result } = convert("<p>x</p>", 'font-size="14px"');
+    expect((result.block as ParagraphBlock).content).toBe("<p>x</p>");
+  });
+
+  it("lets the <p>'s own colour, size and alignment win over the attributes", () => {
+    const { result } = convert(
+      '<p style="margin: 0; color: #ff0000; text-align: right; font-size: 20px;">x</p>',
+      'align="center" color="#4b5563" font-size="15px"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="margin: 0; text-align: right;"><span style="color: #ff0000; font-size: 20px;">x</span></p>',
+    );
+  });
+
+  it("moves the <p>'s own colour into the span when only alignment applies", () => {
+    const { result } = convert(
+      '<p style="color: #ff0000;">x</p>',
+      'align="center"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p style="text-align: center;"><span style="color: #ff0000;">x</span></p>',
+    );
+  });
+
+  it("leaves a span already inside the paragraph with its own values", () => {
+    const { result } = convert(
+      '<p>a <span style="color: #ff0000; font-size: 20px;">b</span></p>',
+      'color="#4b5563" font-size="15px"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p><span style="color: #4b5563; font-size: 15px;">a <span style="color: #ff0000; font-size: 20px;">b</span></span></p>',
+    );
+  });
+
+  it("keeps merge tags and a hard break inside the span", () => {
+    const { result } = convert(
+      "<p>Hi {{first_name}},<br>welcome</p>",
+      'color="#4b5563"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      '<p><span style="color: #4b5563;">Hi {{first_name}},<br>welcome</span></p>',
+    );
+  });
+
+  it("wraps bare list-item text in a <p> first", () => {
+    const { result } = convert(
+      "<ul><li>One</li><li><p>Two</p></li></ul>",
+      'align="center" color="#4b5563"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      "<ul>" +
+        '<li><p style="text-align: center;"><span style="color: #4b5563;">One</span></p></li>' +
+        '<li><p style="text-align: center;"><span style="color: #4b5563;">Two</span></p></li>' +
+        "</ul>",
+    );
+  });
+
+  it("wraps a list item's text but not the nested list after it", () => {
+    const { result } = convert(
+      "<ol><li><strong>One</strong> first<ul><li>Sub</li></ul></li></ol>",
+      'align="center"',
+    );
+
+    expect((result.block as ParagraphBlock).content).toBe(
+      "<ol><li>" +
+        '<p style="text-align: center;"><strong>One</strong> first</p>' +
+        '<ul><li><p style="text-align: center;">Sub</p></li></ul>' +
+        "</li></ol>",
+    );
+  });
+
+  it("leaves the markup byte-for-byte untouched when nothing applies", () => {
+    const inner = '<p style="margin:0">a&nbsp;b<br>c</p><ul><li>d</li></ul>';
+    const { result: plain } = convert(inner);
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-text color="#123456" /></mj-attributes>',
+      inner,
+      'align="left" font-size="14px" color="#123456"',
+    );
+
+    expect((plain.block as ParagraphBlock).content).toBe(
+      '<p style="margin:0">a&#xa0;b<br>c</p><ul><li>d</li></ul>',
+    );
+    expect((result.block as ParagraphBlock).content).toBe(
+      (plain.block as ParagraphBlock).content,
+    );
+  });
+
+  it("ignores values it cannot read", () => {
+    const { result } = convert(
+      "<p>x</p>",
+      'align="middle" color="not-a-colour" font-size="1.2em"',
+    );
+    expect((result.block as ParagraphBlock).content).toBe("<p>x</p>");
   });
 });
 

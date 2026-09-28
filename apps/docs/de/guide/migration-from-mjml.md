@@ -135,10 +135,10 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Mehrspaltige Layouts funktionieren gleich; Spaltenbreiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. |
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
-| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding. |
-| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, Padding. |
+| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
 | `mj-navbar` (mit `mj-navbar-link`) | `MenuBlock` | Jeder Link → `MenuItemData`. |
@@ -146,7 +146,24 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-raw` | `HtmlBlock` | Inneres Markup bleibt wortgetreu erhalten. |
 | `mj-wrapper` | `SectionBlock.wrapper` | Das äußere Band der Section, **keine eigene Section**. Eine einzelne Section darin fließt in deren `wrapper`; mehrere teilen sich dasselbe Band und werden als `approximated` markiert. |
 | `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Wird in einen HTML-Block mit erhaltenem Original-Markup konvertiert. |
+| `mjml` | Template-`settings` | `lang` → `locale`; `dir` → `direction`, nur wenn es von der Schreibrichtung abweicht, die die Sprache vorgibt. |
 | `mj-head`-Inhalte | Template-`settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` setzen Schriftart, Textfarbe und Link-Farbe/-Unterstreichung des Dokuments. `mj-title` hat keine Entsprechung in den Settings und wird mit einer Warnung verworfen. |
+
+### Divider-Breite
+
+| `width` am `mj-divider` | `DividerBlock.width` | Status |
+|---|---|---|
+| fehlt, oder `100%` | `"full"` | `converted` |
+| ein Prozentwert unter `100%`, etwa `50%` | derselbe Prozentwert auf zwei Nachkommastellen, `"50%"` | `converted` |
+| unter `0%` oder über `100%` | begrenzt auf `"0%"` bzw. `"full"` | `approximated` |
+| px, schmaler als die Linie reichen kann | die px-Zahl | `converted` |
+| px, so breit wie die Linie reichen kann oder breiter | `"full"` | `converted` |
+| px, unter `0` | begrenzt auf `0` | `approximated` |
+| jeder andere Wert | `"full"` | `approximated` |
+
+Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte und ihres eigenen; so zeichnet `mj-divider` `100%`. Die Breite einer Spalte ist ihr Anteil an der `width` von `mj-body`, gemäß dem Spaltenlayout der Section.
+
+Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links oder rechts ausrichtet (`align`), ist `approximated`; seine `note` nennt die Ausrichtung.
 
 ## Wo das Mapping verlustbehaftet ist
 
@@ -155,6 +172,7 @@ MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer oh
 - **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML erlaubt beliebig viele Spalten in beliebigem Verhältnis, daher wird ein Verhältnis außerhalb dieser fünf auf das nächstliegende Layout aufgelöst, und der Inhalt einer vierten oder weiteren Spalte fließt in die letzte Spalte.
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
 - **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
+- **Divider-Breite und -Ausrichtung** — eine `width` an einem `mj-divider` außerhalb von 0–100 % oder unter 0px wird in den gültigen Bereich begrenzt, eine nicht lesbare wird zu `"full"`, und ein links oder rechts ausgerichteter Divider mit Teilbreite wird zentriert. Siehe [Divider-Breite](#divider-breite).
 - **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.
 - **HTML-Blöcke** — aus demselben Grund rendert der Inhalt eines `HtmlBlock` als reines `mj-text`-Markup ohne jede Kennzeichnung als HTML. Beim Import daraus entsteht ein `ParagraphBlock` mit demselben Markup.
 - **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Durchlauf durch Export und Re-Import.

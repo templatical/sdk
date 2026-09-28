@@ -4,6 +4,7 @@ import type { Element } from "domhandler";
 import {
   createDefaultTemplateContent,
   createSectionBlock,
+  resolveContentDirection,
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import {
@@ -156,6 +157,8 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
     $,
     cascade,
     containerWidth: settings.width,
+    columnPadding: 0,
+    direction: resolveContentDirection(settings),
     warnings,
   };
 

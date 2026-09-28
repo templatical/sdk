@@ -22,6 +22,8 @@ function convert(markup: string, selector: string) {
     $,
     cascade: buildAttributeCascade($),
     containerWidth: 600,
+    columnPadding: 0,
+    direction: "ltr",
     warnings: [],
   };
   const $el = $(selector).first() as unknown as Cheerio<Element>;
@@ -46,6 +48,8 @@ function convertWithHead(head: string, markup: string, selector: string) {
     $,
     cascade: buildAttributeCascade($),
     containerWidth: 600,
+    columnPadding: 0,
+    direction: "ltr",
     warnings: [],
   };
   const $el = $(`mj-body ${selector}`).first() as unknown as Cheerio<Element>;
@@ -197,6 +201,8 @@ describe("mj-social", () => {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      columnPadding: 0,
+      direction: "ltr",
       warnings: [],
     };
     const $el = $("mj-social").first() as unknown as Cheerio<Element>;
@@ -286,6 +292,8 @@ describe("mj-navbar", () => {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      columnPadding: 0,
+      direction: "ltr",
       warnings: [],
     };
     const $el = $("mj-navbar").first() as unknown as Cheerio<Element>;
@@ -387,6 +395,8 @@ describe("mj-table", () => {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      columnPadding: 0,
+      direction: "ltr",
       warnings: [],
     };
     const $el = $("mj-table").first() as unknown as Cheerio<Element>;

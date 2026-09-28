@@ -1,6 +1,13 @@
 import type { CheerioAPI } from "cheerio";
-import { DEFAULT_TEMPLATE_DEFAULTS } from "@templatical/types";
-import type { TemplateContent, TemplateSettings } from "@templatical/types";
+import {
+  DEFAULT_TEMPLATE_DEFAULTS,
+  resolveContentDirection,
+} from "@templatical/types";
+import type {
+  ContentDirection,
+  TemplateContent,
+  TemplateSettings,
+} from "@templatical/types";
 import { parseColor, parseFontFamily, parsePxValue } from "./attribute-parser";
 import {
   childElements,
@@ -79,12 +86,28 @@ function readAnchorRule(css: string): AnchorRule {
 }
 
 /**
- * Build `TemplateSettings` from `mj-body`'s attributes, the attribute cascade
- * and the remaining `mj-head` children.
+ * `<mjml dir>` as `settings.direction`, kept only when it disagrees with the
+ * direction the locale implies. The renderer always writes `dir`, resolved
+ * from the locale when a template states no direction, so keeping a value that
+ * agrees would add a key the source template never set. `auto`, MJML's
+ * default, states no direction.
+ */
+function readDirection(
+  value: string | undefined,
+  locale: string,
+): ContentDirection | undefined {
+  const dir = (value ?? "").trim().toLowerCase();
+  if (dir !== "ltr" && dir !== "rtl") return undefined;
+  return dir === resolveContentDirection({ locale }) ? undefined : dir;
+}
+
+/**
+ * Build `TemplateSettings` from the `mjml` and `mj-body` attributes, the
+ * attribute cascade and the remaining `mj-head` children.
  *
- * Optional keys (`preheaderText`, `linkColor`) are **omitted** rather than set
- * to `undefined`: an absent key is what the block model means by unset, and a
- * present-but-undefined key serialises into exported JSON.
+ * Optional keys (`preheaderText`, `linkColor`, `direction`) are **omitted**
+ * rather than set to `undefined`: an absent key is what the block model means
+ * by unset, and a present-but-undefined key serialises into exported JSON.
  */
 export function extractSettings(
   $: CheerioAPI,
@@ -129,6 +152,7 @@ export function extractSettings(
 
   const locale =
     ($root.attr("lang") ?? "").trim() || REQUIRED_TEMPLATE_DEFAULTS.locale;
+  const direction = readDirection($root.attr("dir"), locale);
 
   const title = findByTag($, "mj-title").first().text().trim();
   if (title) {
@@ -154,6 +178,7 @@ export function extractSettings(
     linkUnderline: anchor.underline ?? REQUIRED_TEMPLATE_DEFAULTS.linkUnderline,
     fontFamily,
     locale,
+    ...(direction ? { direction } : {}),
     ...(anchor.color ? { linkColor: anchor.color } : {}),
     ...(previewText ? { preheaderText: previewText } : {}),
   };

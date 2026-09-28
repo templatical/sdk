@@ -20,6 +20,8 @@ function build(markup: string, which: "section" | "wrapper" = "section") {
     $,
     cascade: buildAttributeCascade($),
     containerWidth: 600,
+    columnPadding: 0,
+    direction: "ltr",
     warnings: [],
   };
   const entries: ImportReportEntry[] = [];
@@ -359,6 +361,31 @@ describe("buildSection", () => {
     });
   });
 
+  it("passes the column width down as the container width for dividers", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column><mj-divider width="300px" /><mj-divider width="250px" /></mj-column><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(
+      section.children[0].map((b) => (b.type === "divider" ? b.width : null)),
+    ).toEqual(["full", 250]);
+    expect(
+      entries.filter((e) => e.sourceTag === "mj-divider").map((e) => e.status),
+    ).toEqual(["converted", "converted"]);
+  });
+
+  it("measures a divider against its column less the column's side padding", () => {
+    const { blocks } = build(
+      '<mj-section><mj-column padding="0 30px"><mj-divider width="240px" /><mj-divider width="239px" /></mj-column><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(
+      section.children[0].map((b) => (b.type === "divider" ? b.width : null)),
+    ).toEqual(["full", 239]);
+  });
+
   it("keeps document order across sections sharing one report array", () => {
     // `entries` is the document-wide report the whole walk shares, not a
     // per-section list — a document walker (Task 10) calls `buildSection`
@@ -378,6 +405,8 @@ describe("buildSection", () => {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      columnPadding: 0,
+      direction: "ltr",
       warnings: [],
     };
     const entries: ImportReportEntry[] = [];

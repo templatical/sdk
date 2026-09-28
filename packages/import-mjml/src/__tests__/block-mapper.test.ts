@@ -20,6 +20,8 @@ function ctxFor(mjml: string): { ctx: ConvertContext; $: CheerioAPI } {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      columnPadding: 0,
+      direction: "ltr",
       warnings: [],
     },
   };
@@ -240,6 +242,154 @@ describe("mj-divider", () => {
   it("honours an explicit zero border-width rather than falling back", () => {
     const { result } = convert('<mj-divider border-width="0" />', "mj-divider");
     expect((result!.block as DividerBlock).thickness).toBe(0);
+  });
+});
+
+describe("mj-divider width", () => {
+  function dividerWith(width: string | null, extra = "") {
+    const markup =
+      width === null
+        ? `<mj-divider ${extra} />`
+        : `<mj-divider width="${width}" ${extra} />`;
+    const { result } = convert(markup, "mj-divider");
+    return {
+      width: (result!.block as DividerBlock).width,
+      entry: result!.entry,
+    };
+  }
+
+  const converted = {
+    sourceTag: "mj-divider",
+    templaticalBlockType: "divider",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return {
+      sourceTag: "mj-divider",
+      templaticalBlockType: "divider",
+      status: "approximated",
+      note,
+    };
+  }
+
+  it('reads a missing width as "full"', () => {
+    expect(dividerWith(null)).toEqual({ width: "full", entry: converted });
+  });
+
+  it('reads 100% as "full"', () => {
+    expect(dividerWith("100%")).toEqual({ width: "full", entry: converted });
+    expect(dividerWith("100.0%").width).toBe("full");
+  });
+
+  it("keeps any other percentage as a share of the column", () => {
+    expect(dividerWith("50%")).toEqual({ width: "50%", entry: converted });
+    expect(dividerWith("37.5%").width).toBe("37.5%");
+    expect(dividerWith("0%").width).toBe("0%");
+  });
+
+  it("keeps a percentage to two decimals, which never prints in exponent form", () => {
+    expect(dividerWith("33.333%").width).toBe("33.33%");
+    expect(dividerWith("0.0000001%").width).toBe("0%");
+  });
+
+  it('clamps a percentage above 100 to "full" and reports it approximated', () => {
+    expect(dividerWith("150%")).toEqual({
+      width: "full",
+      entry: {
+        sourceTag: "mj-divider",
+        templaticalBlockType: "divider",
+        status: "approximated",
+        note: "Divider width 150% was clamped to 100%.",
+      },
+    });
+  });
+
+  it("clamps a negative percentage to 0% and reports it approximated", () => {
+    expect(dividerWith("-10%")).toEqual({
+      width: "0%",
+      entry: {
+        sourceTag: "mj-divider",
+        templaticalBlockType: "divider",
+        status: "approximated",
+        note: "Divider width -10% was clamped to 0%.",
+      },
+    });
+  });
+
+  it("keeps a px width narrower than the column as px", () => {
+    expect(dividerWith("200px")).toEqual({ width: 200, entry: converted });
+    expect(dividerWith("200").width).toBe(200);
+    expect(dividerWith("0px").width).toBe(0);
+  });
+
+  it('reads a px width that reaches the column as "full"', () => {
+    expect(dividerWith("600px")).toEqual({ width: "full", entry: converted });
+    expect(dividerWith("700px")).toEqual({ width: "full", entry: converted });
+  });
+
+  it("measures a px width against the column less the divider's side padding", () => {
+    expect(dividerWith("560px", 'padding="10px 20px"')).toEqual({
+      width: "full",
+      entry: converted,
+    });
+    expect(dividerWith("559px", 'padding="10px 20px"').width).toBe(559);
+  });
+
+  it("clamps a negative px width to 0 and reports it approximated", () => {
+    expect(dividerWith("-10px")).toEqual({
+      width: 0,
+      entry: {
+        sourceTag: "mj-divider",
+        templaticalBlockType: "divider",
+        status: "approximated",
+        note: "Divider width -10px was clamped to 0px.",
+      },
+    });
+  });
+
+  it('reads a width it cannot read as "full" and reports it approximated', () => {
+    expect(dividerWith("auto")).toEqual({
+      width: "full",
+      entry: approximated(
+        'Divider width "auto" could not be read; imported as full width.',
+      ),
+    });
+    expect(dividerWith("2em").entry).toEqual(
+      approximated(
+        'Divider width "2em" could not be read; imported as full width.',
+      ),
+    );
+  });
+
+  it("reports a partial-width divider aligned left or right as approximated", () => {
+    expect(dividerWith("50%", 'align="left"')).toEqual({
+      width: "50%",
+      entry: approximated(
+        "MJML aligns this divider left; Templatical centres every divider.",
+      ),
+    });
+    expect(dividerWith("200px", 'align="RIGHT"')).toEqual({
+      width: 200,
+      entry: approximated(
+        "MJML aligns this divider right; Templatical centres every divider.",
+      ),
+    });
+  });
+
+  it("keeps a centred or full-width divider converted whatever its align", () => {
+    expect(dividerWith("50%", 'align="center"').entry).toEqual(converted);
+    expect(dividerWith("100%", 'align="left"').entry).toEqual(converted);
+    expect(dividerWith(null, 'align="right"').entry).toEqual(converted);
+  });
+
+  it("joins a clamp note and an alignment note", () => {
+    expect(dividerWith("-10%", 'align="right"')).toEqual({
+      width: "0%",
+      entry: approximated(
+        "Divider width -10% was clamped to 0%. MJML aligns this divider right; Templatical centres every divider.",
+      ),
+    });
   });
 });
 
