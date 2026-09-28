@@ -53,8 +53,20 @@ function resolved(
   );
 }
 
+/**
+ * The `styles` every leaf block shares.
+ *
+ * The block background is the row behind the element, which MJML reads from
+ * `container-background-color` on every leaf and which the renderer writes
+ * `styles.backgroundColor` back out as. A leaf's `background-color` must not
+ * feed it: on `mj-button` it is the button face (`backgroundColor`, read in
+ * `convertButton`), on `mj-text` MJML never paints it, and on image, spacer,
+ * divider and social it is invalid and dropped. Reading it here paints a
+ * button's whole row in its fill colour. `buildSection` reads
+ * `background-color` itself, since on `mj-section` it is the section's fill.
+ */
 export function baseStyles(node: TopolNode): { styles: BlockStyles } {
-  const backgroundColor = parseColor(attr(node, "background-color"));
+  const backgroundColor = parseColor(attr(node, "container-background-color"));
   return {
     styles: {
       padding: parsePadding(node),

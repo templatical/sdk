@@ -215,6 +215,38 @@ describe("mj-button", () => {
     expect(block.textColor).toBe("#ffffff");
   });
 
+  it("paints only the face, never the row behind it, from the button's own fill", () => {
+    const r = convertLeaf(
+      node(
+        "mj-button",
+        { href: "https://x.test", "background-color": "#ff6600" },
+        "<p>Go</p>",
+      ),
+      ctx(),
+    )!;
+    const block = r.block as ButtonBlock;
+    expect(block.backgroundColor).toBe("#ff6600");
+    expect("backgroundColor" in block.styles).toBe(false);
+  });
+
+  it("takes the row behind the button from container-background-color, keeping the fill as the face", () => {
+    const r = convertLeaf(
+      node(
+        "mj-button",
+        {
+          href: "https://x.test",
+          "background-color": "#ff6600",
+          "container-background-color": "#f4f4f4",
+        },
+        "<p>Go</p>",
+      ),
+      ctx(),
+    )!;
+    const block = r.block as ButtonBlock;
+    expect(block.styles.backgroundColor).toBe("#f4f4f4");
+    expect(block.backgroundColor).toBe("#ff6600");
+  });
+
   it("returns null for a button with no label", () => {
     expect(
       convertLeaf(node("mj-button", { href: "https://x.test" }, "  "), ctx()),
@@ -368,9 +400,12 @@ describe("mj-spacer and mj-divider", () => {
 });
 
 describe("shared block chrome (styles.backgroundColor)", () => {
-  it("sets the block's own background colour from the node's attribute", () => {
+  it("sets the block's background colour from the node's container-background-color", () => {
     const r = convertLeaf(
-      node("mj-spacer", { height: "10px", "background-color": "#f0f0f0" }),
+      node("mj-spacer", {
+        height: "10px",
+        "container-background-color": "#f0f0f0",
+      }),
       ctx(),
     )!;
     expect(r.block!.styles.backgroundColor).toBe("#f0f0f0");
