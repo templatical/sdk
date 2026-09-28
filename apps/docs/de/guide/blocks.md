@@ -96,7 +96,7 @@ Ein horizontaler Linientrenner.
 | `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | Linienstil |
 | `color` | `string` | Linienfarbe |
 | `thickness` | `number` | Liniendicke in px |
-| `width` | `number \| 'full'` | Linienbreite in px oder `'full'` für 100% |
+| `width` | `number \| 'full' \| '<n>%'` | Linienbreite: Pixel, `'full'` für die ganze Spalte oder ein Prozentsatz der Spalte (`'50%'`) |
 
 ## Spacer
 

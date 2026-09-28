@@ -745,8 +745,12 @@
             {
               "type": "string",
               "const": "full"
+            },
+            {
+              "$ref": "#/definitions/DividerPercentWidth"
             }
-          ]
+          ],
+          "description": "`\"full\"` spans the column and a number is pixels. A percentage is a share of the column: MJML renders it natively, and it shrinks with the column on a phone where a pixel width would overflow."
         }
       },
       "required": [
@@ -759,6 +763,11 @@
         "width"
       ],
       "additionalProperties": false
+    },
+    "DividerPercentWidth": {
+      "type": "string",
+      "description": "A share of the column, from `\"0%\"` to `\"100%\"`.",
+      "pattern": "^(?:100(?:\\.0+)?|\\d{1,2}(?:\\.\\d+)?)%$"
     },
     "VideoBlock": {
       "type": "object",

@@ -84,6 +84,25 @@ describe("validateTemplate — happy path", () => {
   });
 });
 
+describe("validateTemplate — divider width", () => {
+  const divider = (width: unknown) =>
+    validateTemplate(template([{ ...createDividerBlock(), width }]));
+
+  it("accepts full, a pixel number and a percentage of the column", () => {
+    expect(divider("full").valid).toBe(true);
+    expect(divider(240).valid).toBe(true);
+    expect(divider("50%").valid).toBe(true);
+    expect(divider("37.5%").valid).toBe(true);
+    expect(divider("100%").valid).toBe(true);
+  });
+
+  it("rejects a string that is not a percentage from 0 to 100", () => {
+    for (const width of ["abc", "50", "150%", "-5%", "50px"]) {
+      expect(divider(width).valid, width).toBe(false);
+    }
+  });
+});
+
 describe("validateTemplate — unhappy path", () => {
   it("rejects a non-object root", () => {
     expect(validateTemplate(null)).toEqual({

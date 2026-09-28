@@ -96,7 +96,7 @@ A horizontal line separator.
 | `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | Line style |
 | `color` | `string` | Line color |
 | `thickness` | `number` | Line thickness in px |
-| `width` | `number \| 'full'` | Line width in px, or `'full'` for 100% |
+| `width` | `number \| 'full' \| '<n>%'` | Line width: pixels, `'full'` for the whole column, or a percentage of the column (`'50%'`) |
 
 ## Spacer
 

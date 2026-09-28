@@ -17,6 +17,7 @@ export type {
   CountdownBlock,
   CustomBlock,
   DividerBlock,
+  DividerPercentWidth,
   HtmlBlock,
   ImageBlock,
   MenuBlock,

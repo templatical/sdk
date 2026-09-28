@@ -89,8 +89,12 @@ renderer drops it on export.
 ### divider
 
 <!-- BEGIN GENERATED FIELDS: divider -->
-**Required** — `lineStyle` ("solid" | "dashed" | "dotted"), `color` (string), `thickness` (int), `width` (int | "full").
+**Required** — `lineStyle` ("solid" | "dashed" | "dotted"), `color` (string), `thickness` (int), `width` (int | "full" | DividerPercentWidth).
 <!-- END GENERATED FIELDS: divider -->
+
+`width` is `"full"` (the column), a pixel number, or a percentage of the column
+from `"0%"` to `"100%"`, such as `"50%"`. Prefer `"full"` or a percentage: a
+pixel width does not shrink on a phone.
 
 ## Text
 

@@ -335,12 +335,23 @@ export interface ButtonBlock extends BaseBlock {
   align: "left" | "center" | "right";
 }
 
+/**
+ * A share of the column, from `"0%"` to `"100%"`.
+ * @pattern ^(?:100(?:\.0+)?|\d{1,2}(?:\.\d+)?)%$
+ */
+export type DividerPercentWidth = `${number}%`;
+
 export interface DividerBlock extends BaseBlock {
   type: "divider";
   lineStyle: "solid" | "dashed" | "dotted";
   color: string;
   thickness: number;
-  width: number | "full";
+  /**
+   * `"full"` spans the column and a number is pixels. A percentage is a share
+   * of the column: MJML renders it natively, and it shrinks with the column on
+   * a phone where a pixel width would overflow.
+   */
+  width: number | "full" | DividerPercentWidth;
 }
 
 export interface VideoBlock extends BaseBlock {

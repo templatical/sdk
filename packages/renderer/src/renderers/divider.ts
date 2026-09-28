@@ -19,7 +19,13 @@ export function renderDivider(
   const bgColor = block.styles.backgroundColor
     ? ` container-background-color="${escapeAttr(block.styles.backgroundColor)}"`
     : "";
-  const width = block.width === "full" ? "100%" : block.width + "px";
+  // A percentage passes through as is: MJML takes it natively.
+  const width =
+    block.width === "full"
+      ? "100%"
+      : typeof block.width === "number"
+        ? `${block.width}px`
+        : block.width;
   const thickness = block.thickness;
   const lineStyle = block.lineStyle;
   const color = escapeAttr(block.color);

@@ -257,12 +257,15 @@ type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
 ### DividerBlock
 
 ```ts
+/** "0%" to "100%" */
+type DividerPercentWidth = `${number}%`;
+
 interface DividerBlock extends BaseBlock {
   type: 'divider';
   lineStyle: 'solid' | 'dashed' | 'dotted';
   color: string;
   thickness: number;
-  width: number | 'full';
+  width: number | 'full' | DividerPercentWidth;
 }
 ```
 

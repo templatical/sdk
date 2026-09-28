@@ -12,7 +12,13 @@ const props = defineProps<{
 
 const dividerStyle = computed(() => ({
   borderTop: `${props.block.thickness}px ${props.block.lineStyle} ${props.block.color}`,
-  width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
+  // A percentage is already a CSS width, a share of the column as in the export.
+  width:
+    props.block.width === "full"
+      ? "100%"
+      : typeof props.block.width === "number"
+        ? `${props.block.width}px`
+        : props.block.width,
   margin: props.block.width === "full" ? "0" : "0 auto",
 }));
 </script>
