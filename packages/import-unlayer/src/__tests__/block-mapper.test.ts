@@ -53,6 +53,39 @@ describe("convertContent", () => {
       }
     });
 
+    // A span only restates a colour when it differs from the one the
+    // paragraph inherits, the template's `textColor`.
+    it("keeps a colour span that differs from the template text colour", () => {
+      const { block } = convertContent(
+        makeContent("text", { text: "<p>Hi</p>", color: "#1a1a1a" }),
+        [],
+        { textColor: "#333333" },
+      );
+      if (block.type !== "paragraph") throw new Error("expected a paragraph");
+      expect(block.content).toBe(
+        '<p><span style="color: #1a1a1a">Hi</span></p>',
+      );
+    });
+
+    it("drops a colour span that matches the template text colour", () => {
+      const { block } = convertContent(
+        makeContent("text", { text: "<p>Hi</p>", color: "#333333" }),
+        [],
+        { textColor: "#333333" },
+      );
+      if (block.type !== "paragraph") throw new Error("expected a paragraph");
+      expect(block.content).toBe("<p>Hi</p>");
+    });
+
+    it("compares against the fallback text colour when no context is passed", () => {
+      const { block } = convertContent(
+        makeContent("text", { text: "<p>Hi</p>", color: "#1a1a1a" }),
+        [],
+      );
+      if (block.type !== "paragraph") throw new Error("expected a paragraph");
+      expect(block.content).toBe("<p>Hi</p>");
+    });
+
     it("wraps bare text in <p> tags", () => {
       const { block } = convertContent(
         makeContent("text", { text: "Bare" }),
@@ -108,6 +141,17 @@ describe("convertContent", () => {
         expect(block.content).toContain("Big Title");
       }
       expect(entry.status).toBe("converted");
+    });
+
+    // `TitleBlock.color` unset inherits the template's `textColor`.
+    it("leaves a heading with no colour of its own to inherit", () => {
+      const { block } = convertContent(
+        makeContent("heading", { text: "x" }),
+        [],
+      );
+      if (block.type !== "title") throw new Error("expected a title");
+      expect(block.color).toBeUndefined();
+      expect("color" in block).toBe(false);
     });
 
     it("falls back to level 2 for missing/invalid headingType", () => {
@@ -355,27 +399,173 @@ describe("convertContent", () => {
   });
 
   describe("divider", () => {
-    it("maps border object and width", () => {
+    function dividerWith(
+      values: Partial<UnlayerContentValues>,
+      columnWidth?: number,
+    ) {
       const { block, entry } = convertContent(
-        makeContent("divider", {
-          border: {
-            borderTopWidth: "2px",
-            borderTopStyle: "dashed",
-            borderTopColor: "#cccccc",
-          },
-          width: "80%",
-        }),
+        makeContent("divider", values),
         [],
+        { columnWidth },
+      );
+      if (block.type !== "divider") throw new Error("expected a divider block");
+      return { block, entry };
+    }
+
+    // A percentage is a share of the column, which `DividerBlock.width` holds
+    // as a percentage string. A bare number there would mean pixels.
+    it("maps the border object and keeps a percentage width as a percentage", () => {
+      const { block, entry } = dividerWith({
+        border: {
+          borderTopWidth: "2px",
+          borderTopStyle: "dashed",
+          borderTopColor: "#cccccc",
+        },
+        width: "80%",
+      });
+
+      expect(block.thickness).toBe(2);
+      expect(block.lineStyle).toBe("dashed");
+      expect(block.color).toBe("#cccccc");
+      expect(block.width).toBe("80%");
+      expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    it("imports a missing width and 100% as full", () => {
+      expect(dividerWith({}).block.width).toBe("full");
+      expect(dividerWith({ width: "" }).block.width).toBe("full");
+      expect(dividerWith({ width: "100%" }).block.width).toBe("full");
+      expect(dividerWith({ width: "100.0%" }).block.width).toBe("full");
+      expect(dividerWith({ width: "100%" }).entry.status).toBe("converted");
+    });
+
+    it("keeps a fractional or spaced percentage", () => {
+      expect(dividerWith({ width: "33.5%" }).block.width).toBe("33.5%");
+      expect(dividerWith({ width: " 50 % " }).block.width).toBe("50%");
+      expect(dividerWith({ width: "0%" }).block.width).toBe("0%");
+    });
+
+    // `DividerPercentWidth` is patterned; a tiny float would print as
+    // `1e-7%`, which the schema rejects.
+    it("rounds a percentage to two decimals", () => {
+      expect(dividerWith({ width: "33.3333%" }).block.width).toBe("33.33%");
+      expect(dividerWith({ width: "0.0000001%" }).block.width).toBe("0%");
+      expect(dividerWith({ width: "99.999%" }).block.width).toBe("full");
+    });
+
+    it("clamps a percentage outside 0–100% and reports the clamp", () => {
+      const over = dividerWith({ width: "150%" });
+      expect(over.block.width).toBe("full");
+      expect(over.entry.status).toBe("approximated");
+      expect(over.entry.note).toBe("Divider width 150% was clamped to 100%.");
+
+      const under = dividerWith({ width: "-10%" });
+      expect(under.block.width).toBe("0%");
+      expect(under.entry.status).toBe("approximated");
+      expect(under.entry.note).toBe("Divider width -10% was clamped to 0%.");
+    });
+
+    it("keeps a px width narrower than its column", () => {
+      const { block, entry } = dividerWith({ width: "300px" }, 600);
+      expect(block.width).toBe(300);
+      expect(entry.status).toBe("converted");
+    });
+
+    it("imports a px width that reaches its column as full", () => {
+      expect(dividerWith({ width: "600px" }, 600).block.width).toBe("full");
+      expect(dividerWith({ width: "640px" }, 600).block.width).toBe("full");
+      expect(dividerWith({ width: "599px" }, 600).block.width).toBe(599);
+    });
+
+    // `mj-divider` draws 100% across the column less the divider's own side
+    // padding, so that span is what a px width has to reach.
+    it("measures a px width against the column less the divider's side padding", () => {
+      const even = { containerPadding: "10px 20px" };
+      expect(dividerWith({ ...even, width: "560px" }, 600).block.width).toBe(
+        "full",
+      );
+      expect(dividerWith({ ...even, width: "559px" }, 600).block.width).toBe(
+        559,
       );
 
-      expect(block.type).toBe("divider");
-      if (block.type === "divider") {
-        expect(block.thickness).toBe(2);
-        expect(block.lineStyle).toBe("dashed");
-        expect(block.color).toBe("#cccccc");
-        expect(block.width).toBe(80);
-      }
-      expect(entry.status).toBe("converted");
+      const uneven = { containerPadding: "0px 30px 0px 10px" };
+      expect(dividerWith({ ...uneven, width: "560px" }, 600).block.width).toBe(
+        "full",
+      );
+      expect(dividerWith({ ...uneven, width: "559px" }, 600).block.width).toBe(
+        559,
+      );
+    });
+
+    it("measures against a 600px body when no column width is passed", () => {
+      expect(dividerWith({ width: "600px" }).block.width).toBe("full");
+      expect(dividerWith({ width: "599px" }).block.width).toBe(599);
+    });
+
+    it("reads a unitless width as px", () => {
+      expect(dividerWith({ width: "250" }, 600).block.width).toBe(250);
+      expect(
+        dividerWith({ width: 250 as unknown as string }, 600).block.width,
+      ).toBe(250);
+    });
+
+    it("clamps a negative px width to 0 and reports the clamp", () => {
+      const { block, entry } = dividerWith({ width: "-5px" }, 600);
+      expect(block.width).toBe(0);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("Divider width -5px was clamped to 0px.");
+    });
+
+    it("imports an unreadable width as full and reports it", () => {
+      const { block, entry } = dividerWith({ width: "auto" });
+      expect(block.width).toBe("full");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        'Divider width "auto" could not be read; imported as full width.',
+      );
+    });
+
+    // Unlayer aligns a partial divider with `textAlign`; Templatical centres
+    // every divider.
+    it("reports a left- or right-aligned partial divider as approximated", () => {
+      const left = dividerWith({ width: "50%", textAlign: "left" });
+      expect(left.block.width).toBe("50%");
+      expect(left.entry.status).toBe("approximated");
+      expect(left.entry.note).toBe(
+        "Unlayer aligns this divider left; Templatical centres every divider.",
+      );
+
+      const right = dividerWith({ width: "200px", textAlign: "right" }, 600);
+      expect(right.block.width).toBe(200);
+      expect(right.entry.status).toBe("approximated");
+      expect(right.entry.note).toBe(
+        "Unlayer aligns this divider right; Templatical centres every divider.",
+      );
+    });
+
+    it("converts a centred partial divider and an aligned full-width one", () => {
+      expect(
+        dividerWith({ width: "50%", textAlign: "center" }).entry.status,
+      ).toBe("converted");
+      expect(
+        dividerWith({ width: "100%", textAlign: "left" }).entry.status,
+      ).toBe("converted");
+      expect(
+        dividerWith({ width: "600px", textAlign: "right" }, 600).entry.status,
+      ).toBe("converted");
+    });
+
+    it("reports a clamp and an alignment together", () => {
+      const { block, entry } = dividerWith({
+        width: "-10%",
+        textAlign: "left",
+      });
+      expect(block.width).toBe("0%");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "Divider width -10% was clamped to 0%. Unlayer aligns this divider left; Templatical centres every divider.",
+      );
     });
   });
 
@@ -431,6 +621,24 @@ describe("convertContent", () => {
       }
       expect(entry.status).toBe("approximated");
       expect(entry.note).toContain("approximately");
+    });
+
+    // `MenuBlock.color` unset inherits the template's `textColor`.
+    it("leaves a menu with no colour of its own to inherit, and keeps a stated one", () => {
+      const bare = convertContent(
+        makeContent("menu", { menu: { items: [] } }),
+        [],
+      ).block;
+      if (bare.type !== "menu") throw new Error("expected a menu");
+      expect(bare.color).toBeUndefined();
+      expect("color" in bare).toBe(false);
+
+      const coloured = convertContent(
+        makeContent("menu", { menu: { items: [] }, color: "#222222" }),
+        [],
+      ).block;
+      if (coloured.type !== "menu") throw new Error("expected a menu");
+      expect(coloured.color).toBe("#222222");
     });
   });
 

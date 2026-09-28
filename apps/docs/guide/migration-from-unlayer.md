@@ -93,7 +93,7 @@ Unlayer content types map to Templatical equivalents:
 | Heading | `title` | Converted |
 | Image | `image` | Converted |
 | Button | `button` | Converted |
-| Divider | `divider` | Converted |
+| Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
@@ -104,13 +104,32 @@ Unlayer content types map to Templatical equivalents:
 
 Unknown content types are converted to HTML blocks as a fallback.
 
+### Divider width
+
+| Unlayer `width` | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than the line's span | the px number | Converted |
+| px, as wide as that span or wider | `"full"` | Converted |
+| any other value | `"full"` | Approximated |
+
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, and `settings.width` is a px `contentWidth`, else `600`.
+
+::: tip
+`mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.
+:::
+
+Templatical centres every divider. A partial-width divider that Unlayer aligns left or right (`textAlign`) is approximated, and its `note` names the alignment.
+
 ## Column Layout Conversion
 
 Unlayer organizes content into rows with columns whose widths come from a `cells` weight array. These map to Templatical's `SectionBlock` with the appropriate `ColumnLayout`:
 
 | Unlayer cells | Templatical Layout |
 |---|---|
-| `[1]` (single column) | flattened — no section wrapper |
+| `[1]` (single column) | `'1'` |
 | `[1, 1]` (equal halves) | `'2'` |
 | `[1, 1, 1]` (equal thirds) | `'3'` |
 | `[1, 2]` | `'1-2'` |
@@ -119,12 +138,28 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 
 Cell ratios that don't match a standard layout are mapped to the closest available one.
 
+### Section background
+
+| Unlayer row values | `section.styles.backgroundColor` |
+|---|---|
+| `columnsBackgroundColor` set | `columnsBackgroundColor` |
+| only `backgroundColor` set | `backgroundColor` |
+
+When a row sets both to different colours, the section takes `columnsBackgroundColor` and `report.warnings` names the dropped `backgroundColor`.
+
+::: tip
+`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
+:::
+
 ## Template Settings
 
 Global template settings are converted where possible:
 
 - **Width** — Unlayer `body.values.contentWidth` maps to `settings.width`
-- **Background color** — `body.values.backgroundColor` is preserved; row-level backgrounds carry over to the corresponding `SectionBlock`
+- **Background color** — `body.values.backgroundColor` maps to `settings.backgroundColor`
+- **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
+- **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
+- **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty
 - **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`
 
 ## Known Limitations
@@ -134,6 +169,7 @@ Global template settings are converted where possible:
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
 - **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
+- **Link hover styles and per-block link styles** — `linkStyle.linkHoverColor` and `linkHoverUnderline` have no Templatical field and are dropped. A text block's own `linkStyle` is not read, so its links take the document's link settings.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates

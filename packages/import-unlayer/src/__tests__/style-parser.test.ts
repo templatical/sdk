@@ -4,7 +4,7 @@ import {
   parseColor,
   parsePaddingShorthand,
   parseBorderObject,
-  parseWidthPercent,
+  parseDividerWidth,
   parseFontFamily,
 } from "../style-parser";
 
@@ -129,12 +129,38 @@ describe("parseBorderObject", () => {
   });
 });
 
-describe("parseWidthPercent", () => {
-  it("extracts integer percent", () => {
-    expect(parseWidthPercent("75%")).toBe(75);
+describe("parseDividerWidth", () => {
+  it("reads a percentage, fractional or spaced", () => {
+    expect(parseDividerWidth("75%")).toEqual({ unit: "%", value: 75 });
+    expect(parseDividerWidth(" 33.5 % ")).toEqual({ unit: "%", value: 33.5 });
   });
-  it("returns 100 default", () => {
-    expect(parseWidthPercent(undefined)).toBe(100);
+
+  it("reads px, a unitless string and a number as px", () => {
+    expect(parseDividerWidth("300px")).toEqual({ unit: "px", value: 300 });
+    expect(parseDividerWidth("300")).toEqual({ unit: "px", value: 300 });
+    expect(parseDividerWidth(300)).toEqual({ unit: "px", value: 300 });
+  });
+
+  // Out-of-range values are the caller's to clamp, so the sign survives.
+  it("keeps a negative value", () => {
+    expect(parseDividerWidth("-10%")).toEqual({ unit: "%", value: -10 });
+    expect(parseDividerWidth("-5px")).toEqual({ unit: "px", value: -5 });
+  });
+
+  it("returns undefined for any other unit or text", () => {
+    expect(parseDividerWidth("auto")).toBeUndefined();
+    expect(parseDividerWidth("50em")).toBeUndefined();
+    expect(parseDividerWidth("")).toBeUndefined();
+    expect(parseDividerWidth(Number.NaN)).toBeUndefined();
+  });
+
+  it("rejects digit-then-long-whitespace input in linear time (ReDoS guard)", () => {
+    const adversarial = "9" + " ".repeat(50_000) + "x";
+    const start = Date.now();
+    const result = parseDividerWidth(adversarial);
+    const elapsed = Date.now() - start;
+    expect(result).toBeUndefined();
+    expect(elapsed).toBeLessThan(500);
   });
 });
 

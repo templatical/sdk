@@ -11,7 +11,12 @@ import type {
   ImportReport,
   ImportReportEntry,
 } from "./types";
-import { convertContent } from "./block-mapper";
+import {
+  convertContent,
+  DEFAULT_BODY_WIDTH,
+  FALLBACK_TEXT_COLOR,
+} from "./block-mapper";
+import type { ContentContext } from "./block-mapper";
 import {
   parsePxValue,
   parseColor,
@@ -43,18 +48,41 @@ function resolveColumnLayout(
   return "1";
 }
 
+/** Each column's share of the body width, by layout. */
+const COLUMN_SHARES: Record<ColumnLayout, number[]> = {
+  "1": [1],
+  "2": [1 / 2, 1 / 2],
+  "3": [1 / 3, 1 / 3, 1 / 3],
+  "1-2": [1 / 3, 2 / 3],
+  "2-1": [2 / 3, 1 / 3],
+};
+
+/**
+ * A column's px width as the renderer draws it: the body width times the
+ * column's share, rounded down. A column past the layout's last slot takes
+ * the whole body width, the renderer's fallback.
+ */
+function columnWidthAt(
+  layout: ColumnLayout,
+  bodyWidth: number,
+  index: number,
+): number {
+  return Math.floor(bodyWidth * (COLUMN_SHARES[layout][index] ?? 1));
+}
+
 /**
  * Converts all contents in a column to Templatical blocks.
  */
 function convertColumnContents(
   column: UnlayerColumn,
+  context: ContentContext,
   entries: ImportReportEntry[],
   warnings: string[],
 ): Block[] {
   const blocks: Block[] = [];
 
   for (const content of column.contents ?? []) {
-    const { block, entry } = convertContent(content, warnings);
+    const { block, entry } = convertContent(content, warnings, context);
     blocks.push(block);
     entries.push(entry);
   }
@@ -63,10 +91,33 @@ function convertColumnContents(
 }
 
 /**
+ * The section's fill. `columnsBackgroundColor` covers the content width, the
+ * area a section paints; `backgroundColor` is the band outside it, used only
+ * when the row sets no content colour.
+ */
+function resolveRowBackground(
+  row: UnlayerRow,
+  warnings: string[],
+): string | undefined {
+  const content = parseColor(row.values?.columnsBackgroundColor);
+  const band = parseColor(row.values?.backgroundColor);
+  if (content && band && content !== band) {
+    warnings.push(
+      `Row background ${band} outside the content width was dropped; the section keeps the content background ${content}.`,
+    );
+  }
+  return content || band || undefined;
+}
+
+/**
  * Processes a single Unlayer row into one or more Templatical blocks.
+ *
+ * Each column's px width derives from `settings.width` and the resolved
+ * layout; every block also learns the template's `textColor`.
  */
 function processRow(
   row: UnlayerRow,
+  settings: TemplateContent["settings"],
   entries: ImportReportEntry[],
   warnings: string[],
 ): Block[] {
@@ -75,21 +126,27 @@ function processRow(
 
   const cells = row.cells ?? columns.map(() => 1);
   const layout = resolveColumnLayout(cells, warnings);
+  const contextAt = (index: number): ContentContext => ({
+    columnWidth: columnWidthAt(layout, settings.width, index),
+    textColor: settings.textColor,
+  });
 
   let children: Block[][];
   if (layout === "1") {
     const merged: Block[] = [];
     for (const column of columns) {
-      merged.push(...convertColumnContents(column, entries, warnings));
+      merged.push(
+        ...convertColumnContents(column, contextAt(0), entries, warnings),
+      );
     }
     children = [merged];
   } else {
-    children = columns.map((col) =>
-      convertColumnContents(col, entries, warnings),
+    children = columns.map((col, index) =>
+      convertColumnContents(col, contextAt(index), entries, warnings),
     );
   }
 
-  const rowBg = parseColor(row.values?.backgroundColor);
+  const background = resolveRowBackground(row, warnings);
   const padding = parsePaddingShorthand(row.values?.padding);
 
   const section = createSectionBlock({
@@ -97,7 +154,7 @@ function processRow(
     children,
     styles: {
       padding,
-      ...(rowBg ? { backgroundColor: rowBg } : {}),
+      ...(background ? { backgroundColor: background } : {}),
     },
   });
 
@@ -115,14 +172,23 @@ function extractSettings(
   const width = parsePxValue(values.contentWidth);
   const bgColor = parseColor(values.backgroundColor) || "#ffffff";
   const fontFamily = parseFontFamily(values.fontFamily) || "Arial";
+  const textColor = parseColor(values.textColor) || FALLBACK_TEXT_COLOR;
+  const linkColor = parseColor(values.linkStyle?.linkColor);
+  // An unstated underline is on: Unlayer's default, the browser's and the SDK's.
+  const underline = values.linkStyle?.linkUnderline;
+  const linkUnderline = typeof underline === "boolean" ? underline : true;
+  const preheaderText =
+    typeof values.preheaderText === "string" ? values.preheaderText.trim() : "";
 
   return {
-    width: width || 600,
+    width: width > 0 ? width : DEFAULT_BODY_WIDTH,
     backgroundColor: bgColor,
-    textColor: "#1a1a1a",
-    linkUnderline: false,
+    textColor,
+    linkUnderline,
     fontFamily,
     locale: "en",
+    ...(linkColor ? { linkColor } : {}),
+    ...(preheaderText ? { preheaderText } : {}),
   };
 }
 
@@ -160,18 +226,19 @@ export function convertUnlayerTemplate(
 
   const headers = template.body.headers ?? [];
   const footers = template.body.footers ?? [];
+  const settings = extractSettings(template);
 
   if (headers.length > 0) {
     warnings.push(
       `${headers.length} Unlayer header row(s) were imported as regular rows at the top of the template.`,
     );
     for (const row of headers) {
-      blocks.push(...processRow(row, entries, warnings));
+      blocks.push(...processRow(row, settings, entries, warnings));
     }
   }
 
   for (const row of template.body.rows) {
-    blocks.push(...processRow(row, entries, warnings));
+    blocks.push(...processRow(row, settings, entries, warnings));
   }
 
   if (footers.length > 0) {
@@ -179,14 +246,14 @@ export function convertUnlayerTemplate(
       `${footers.length} Unlayer footer row(s) were imported as regular rows at the bottom of the template.`,
     );
     for (const row of footers) {
-      blocks.push(...processRow(row, entries, warnings));
+      blocks.push(...processRow(row, settings, entries, warnings));
     }
   }
 
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
-    settings: extractSettings(template),
+    settings,
   };
 
   const summary = {

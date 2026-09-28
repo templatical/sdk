@@ -91,7 +91,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Heading | `title` | Konvertiert |
 | Image | `image` | Konvertiert |
 | Button | `button` | Konvertiert |
-| Divider | `divider` | Konvertiert |
+| Divider | `divider` | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
 | Spacer | `spacer` | Konvertiert |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
@@ -102,13 +102,32 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 
 Unbekannte Inhaltstypen werden als Fallback in HTML-Blöcke konvertiert.
 
+### Divider-Breite
+
+| Unlayer-`width` | `DividerBlock.width` | Status |
+|---|---|---|
+| fehlt, oder `100%` | `"full"` | Konvertiert |
+| ein Prozentwert unter `100%`, etwa `50%` | derselbe Prozentwert auf zwei Nachkommastellen, `"50%"` | Konvertiert |
+| unter `0%` oder über `100%` | begrenzt auf `"0%"` bzw. `"full"` | Angenähert |
+| px, schmaler als die Spannweite der Linie | die px-Zahl | Konvertiert |
+| px, so breit wie diese Spannweite oder breiter | `"full"` | Konvertiert |
+| jeder andere Wert | `"full"` | Angenähert |
+
+Eine px-Breite wird mit der Spannweite der Linie verglichen: der Breite ihrer Spalte abzüglich des linken und rechten `containerPadding` des Dividers. Die Breite einer Spalte ist ihr Anteil an `settings.width` gemäß dem Spaltenlayout der Section, und `settings.width` ist eine px-Angabe in `contentWidth`, sonst `600`.
+
+::: tip
+`mj-divider` zeichnet `100%` über diese Spannweite, eine px-Breite, die sie erreicht, sieht deshalb aus wie `"full"`. `"full"` wird außerdem auf dem Smartphone mit der Spalte schmaler.
+:::
+
+Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den Unlayer links oder rechts ausrichtet (`textAlign`), ist angenähert; seine `note` nennt die Ausrichtung.
+
 ## Konvertierung des Spaltenlayouts
 
 Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cells`-Gewichtungsarray stammen. Diese werden auf Templaticals `SectionBlock` mit dem passenden `ColumnLayout` abgebildet:
 
 | Unlayer-cells | Templatical-Layout |
 |---|---|
-| `[1]` (einzelne Spalte) | reduziert — kein Section-Wrapper |
+| `[1]` (einzelne Spalte) | `'1'` |
 | `[1, 1]` (gleiche Hälften) | `'2'` |
 | `[1, 1, 1]` (gleiche Drittel) | `'3'` |
 | `[1, 2]` | `'1-2'` |
@@ -117,12 +136,28 @@ Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cell
 
 Zellverhältnisse, die keinem Standardlayout entsprechen, werden auf das nächstliegende verfügbare abgebildet.
 
+### Section-Hintergrund
+
+| Unlayer-Reihenwerte | `section.styles.backgroundColor` |
+|---|---|
+| `columnsBackgroundColor` gesetzt | `columnsBackgroundColor` |
+| nur `backgroundColor` gesetzt | `backgroundColor` |
+
+Setzt eine Reihe beide auf unterschiedliche Farben, übernimmt die Section `columnsBackgroundColor`, und `report.warnings` nennt das verworfene `backgroundColor`.
+
+::: tip
+`columnsBackgroundColor` füllt die Inhaltsbreite, also die Fläche, die eine Section einfärbt. `backgroundColor` füllt den Streifen außerhalb davon, und eine Templatical-Section hat keinen Streifen über die volle Breite.
+:::
+
 ## Template-Einstellungen
 
 Globale Template-Einstellungen werden übertragen, wo möglich:
 
 - **Breite** — Unlayers `body.values.contentWidth` wird auf `settings.width` abgebildet
-- **Hintergrundfarbe** — `body.values.backgroundColor` bleibt erhalten; Hintergründe auf Reihenebene werden auf den entsprechenden `SectionBlock` übertragen
+- **Hintergrundfarbe** — `body.values.backgroundColor` wird auf `settings.backgroundColor` abgebildet
+- **Textfarbe** — `body.values.textColor` wird auf `settings.textColor` abgebildet. Überschriften, Menüs und Absätze ohne eigene Farbe übernehmen sie.
+- **Links** — `body.values.linkStyle.linkColor` wird auf `settings.linkColor` abgebildet, `linkStyle.linkUnderline` auf `settings.linkUnderline`. Setzt `linkStyle` kein `linkUnderline`, werden Links unterstrichen, wie in Unlayer.
+- **Preheader** — `body.values.preheaderText` wird auf `settings.preheaderText` abgebildet und entfällt, wenn er leer ist
 - **Schriftfamilie** — `body.values.fontFamily.value` wird auf `settings.fontFamily` übertragen
 
 ## Bekannte Einschränkungen
@@ -132,6 +167,7 @@ Globale Template-Einstellungen werden übertragen, wo möglich:
 - **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Bauen Sie sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
 - **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; bauen Sie den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
 - **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Kein `type: "countdown"` erzeugen: dieser Block braucht Clouds serverseitiges GIF, der OSS-Renderer kann es nicht erzeugen. Als statischen Titel oder Absatz neu aufbauen (Datum, oder „noch X Tage“) oder den HTML-Platzhalter behalten.
+- **Hover-Linkstile und Linkstile einzelner Blöcke** — `linkStyle.linkHoverColor` und `linkHoverUnderline` haben kein Templatical-Feld und werden verworfen. Den eigenen `linkStyle` eines Textblocks liest der Konverter nicht; dessen Links übernehmen die Link-Einstellungen des Dokuments.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates überprüfen

@@ -123,11 +123,21 @@ export function parseBorderObject(border: UnlayerBorder | undefined): {
   };
 }
 
-export function parseWidthPercent(value: string | undefined): number {
-  if (!value) return 100;
-  const match = value.match(/^(\d+(?:\.\d+)?)\s*%/);
-  if (match) return Math.round(parseFloat(match[1]));
-  return 100;
+/**
+ * A divider's `width` as a percentage or a px length; a unitless value is px.
+ * `undefined` for anything else. The sign survives, so the caller can clamp.
+ */
+export function parseDividerWidth(
+  value: string | number,
+): { unit: "%" | "px"; value: number } | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? { unit: "px", value } : undefined;
+  }
+  // One `\s*` before the unit, so there is a single way to match trailing
+  // whitespace (see `parsePxValue` for the two-quantifier ReDoS shape).
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(%|px)?$/);
+  if (!match) return undefined;
+  return { unit: match[2] === "%" ? "%" : "px", value: parseFloat(match[1]) };
 }
 
 export function parseFontFamily(

@@ -13,6 +13,7 @@ import {
 } from "@templatical/types";
 import type {
   Block,
+  DividerBlock,
   HeadingLevel,
   SocialPlatform,
   SocialIcon,
@@ -30,7 +31,7 @@ import {
   parseFontFamily,
   parsePaddingShorthand,
   parseBorderObject,
-  parseWidthPercent,
+  parseDividerWidth,
 } from "./style-parser";
 
 const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
@@ -53,6 +54,28 @@ const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
   dribbble: "dribbble",
   behance: "behance",
 };
+
+/** The body width when a template's `contentWidth` states no px value. */
+export const DEFAULT_BODY_WIDTH = 600;
+
+/** The template text colour when the body sets none. */
+export const FALLBACK_TEXT_COLOR = "#1a1a1a";
+
+/**
+ * What the caller knows about where a content node lands.
+ */
+export interface ContentContext {
+  /**
+   * Width in px of the Templatical column the block renders in. Defaults to
+   * `DEFAULT_BODY_WIDTH`.
+   */
+  columnWidth?: number;
+  /**
+   * The template's `textColor`, which every text block without a colour of
+   * its own inherits. Defaults to `FALLBACK_TEXT_COLOR`.
+   */
+  textColor?: string;
+}
 
 type Align = "left" | "center" | "right";
 type LineStyle = "solid" | "dashed" | "dotted";
@@ -117,12 +140,13 @@ function makeStyles(values: UnlayerContentValues): Block["styles"] {
 function inlineStylesToHtml(
   html: string,
   values: UnlayerContentValues,
+  textColor: string,
 ): string {
   const spanParts: string[] = [];
   const fontSize = parsePxValue(values.fontSize);
   if (fontSize && fontSize !== 16) spanParts.push(`font-size: ${fontSize}px`);
   const color = parseColor(values.color);
-  if (color && color !== "#1a1a1a") spanParts.push(`color: ${color}`);
+  if (color && color !== textColor) spanParts.push(`color: ${color}`);
   const fontWeight = values.fontWeight;
   if (
     fontWeight !== undefined &&
@@ -212,11 +236,11 @@ function ensureParagraphWrapped(html: string): string {
   return `<p>${html}</p>`;
 }
 
-function convertText(values: UnlayerContentValues): Block {
+function convertText(values: UnlayerContentValues, textColor: string): Block {
   const html = ensureParagraphWrapped(values.text ?? "");
 
   return createParagraphBlock({
-    content: inlineStylesToHtml(html, values),
+    content: inlineStylesToHtml(html, values, textColor),
     styles: makeStyles(values),
   });
 }
@@ -239,7 +263,7 @@ function convertHeading(values: UnlayerContentValues): Block {
   return createTitleBlock({
     content,
     level: parseHeadingLevel(values.headingType),
-    color: parseColor(values.color) || "#1a1a1a",
+    color: parseColor(values.color) || undefined,
     textAlign: toAlign(values.textAlign),
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
     styles: makeStyles(values),
@@ -296,16 +320,79 @@ function convertButton(values: UnlayerContentValues): Block {
   });
 }
 
-function convertDivider(values: UnlayerContentValues): Block {
-  const border = parseBorderObject(values.border);
+/**
+ * `"full"` when the divider spans its column: no width, `100%`, or a px width
+ * that reaches `room`, the span the column leaves the line. Any other
+ * percentage stays a percentage, clamped to 0–100%.
+ */
+function resolveDividerWidth(
+  value: string | number | undefined,
+  room: number,
+  notes: string[],
+): DividerBlock["width"] {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "full";
 
-  return createDividerBlock({
-    lineStyle: toLineStyle(border.style),
-    color: border.color,
-    thickness: border.width || 1,
-    width: parseWidthPercent(values.width),
-    styles: makeStyles(values),
-  });
+  const parsed = parseDividerWidth(typeof value === "number" ? value : raw);
+  if (!parsed) {
+    notes.push(
+      `Divider width "${raw}" could not be read; imported as full width.`,
+    );
+    return "full";
+  }
+
+  if (parsed.unit === "%") {
+    const percent = Math.min(100, Math.max(0, parsed.value));
+    if (percent !== parsed.value) {
+      notes.push(`Divider width ${raw} was clamped to ${percent}%.`);
+    }
+    // Two decimals keep the value inside `DividerPercentWidth`'s pattern,
+    // which a float printed in exponent form would leave.
+    const share = Math.round(percent * 100) / 100;
+    return share === 100 ? "full" : `${share}%`;
+  }
+
+  const px = Math.max(0, Math.round(parsed.value));
+  if (px !== Math.round(parsed.value)) {
+    notes.push(`Divider width ${raw} was clamped to 0px.`);
+  }
+  return px >= room ? "full" : px;
+}
+
+/**
+ * Unlayer places a partial divider by `textAlign`, centred by default.
+ * Templatical centres every divider, so a left- or right-aligned partial one
+ * comes back with a note.
+ */
+function convertDivider(
+  values: UnlayerContentValues,
+  columnWidth: number,
+): { block: Block; notes: string[] } {
+  const border = parseBorderObject(values.border);
+  const styles = makeStyles(values);
+  const notes: string[] = [];
+  // `mj-divider` draws 100% across the column less the divider's own side
+  // padding, so a px width that reaches that span renders as "full" does.
+  const room = columnWidth - styles.padding.left - styles.padding.right;
+  const width = resolveDividerWidth(values.width, room, notes);
+
+  const align = values.textAlign;
+  if (width !== "full" && (align === "left" || align === "right")) {
+    notes.push(
+      `Unlayer aligns this divider ${align}; Templatical centres every divider.`,
+    );
+  }
+
+  return {
+    block: createDividerBlock({
+      lineStyle: toLineStyle(border.style),
+      color: border.color,
+      thickness: border.width || 1,
+      width,
+      styles,
+    }),
+    notes,
+  };
 }
 
 function convertSpacer(values: UnlayerContentValues): Block {
@@ -387,7 +474,7 @@ function convertMenu(values: UnlayerContentValues): Block {
     separator: values.separator || "|",
     separatorColor: "#999999",
     fontSize: parsePxValue(values.fontSize) || 14,
-    color: parseColor(values.color) || "#1a1a1a",
+    color: parseColor(values.color) || undefined,
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
     textAlign: toAlign(values.textAlign, "center"),
     styles: makeStyles(values),
@@ -409,14 +496,17 @@ function convertHtmlFallback(content: UnlayerContent, comment: string): Block {
 export function convertContent(
   content: UnlayerContent,
   warnings: string[],
+  context: ContentContext = {},
 ): { block: Block; entry: ImportReportEntry } {
   const type = content.type;
   const values = content.values ?? ({} as UnlayerContentValues);
+  const columnWidth = context.columnWidth ?? DEFAULT_BODY_WIDTH;
+  const textColor = context.textColor ?? FALLBACK_TEXT_COLOR;
 
   switch (type) {
     case "text":
       return {
-        block: convertText(values),
+        block: convertText(values, textColor),
         entry: {
           unlayerContentType: type,
           templaticalBlockType: "paragraph",
@@ -450,15 +540,18 @@ export function convertContent(
           status: "converted",
         },
       };
-    case "divider":
+    case "divider": {
+      const { block, notes } = convertDivider(values, columnWidth);
       return {
-        block: convertDivider(values),
+        block,
         entry: {
           unlayerContentType: type,
           templaticalBlockType: "divider",
-          status: "converted",
+          status: notes.length > 0 ? "approximated" : "converted",
+          ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
         },
       };
+    }
     case "spacer":
       return {
         block: convertSpacer(values),

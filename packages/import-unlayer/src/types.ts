@@ -31,6 +31,19 @@ export interface UnlayerFontFamily {
   value?: string;
 }
 
+/**
+ * Document-level link styling: colours are strings, flags are booleans.
+ * The hover pair has no Templatical field.
+ */
+export interface UnlayerLinkStyle {
+  body?: boolean;
+  inherit?: boolean;
+  linkColor?: string;
+  linkHoverColor?: string;
+  linkUnderline?: boolean;
+  linkHoverUnderline?: boolean;
+}
+
 export interface UnlayerBodyValues {
   backgroundColor?: string;
   backgroundImage?: UnlayerBackgroundImage;
@@ -38,7 +51,7 @@ export interface UnlayerBodyValues {
   contentAlignment?: string;
   fontFamily?: UnlayerFontFamily;
   textColor?: string;
-  linkStyle?: Record<string, string>;
+  linkStyle?: UnlayerLinkStyle;
   preheaderText?: string;
   [key: string]: unknown;
 }
