@@ -17,7 +17,12 @@ import {
   unwrapDocument,
   withWidgetInput,
 } from "./normalize";
-import { buildTopLevel } from "./section-builder";
+import {
+  applyWrapper,
+  buildTopLevel,
+  insideWidth,
+  withContentWidth,
+} from "./section-builder";
 import type {
   EasyEmailProDocument,
   EasyEmailProNode,
@@ -59,6 +64,13 @@ const STRUCTURE_TYPES = new Set([
 ]);
 
 const WIDGET_TYPES = new Set(["section_widget", "wrapper_widget"]);
+
+/**
+ * Header and footer bands. Easy Email Pro renders each as an `mj-wrapper`
+ * carrying the node's own attributes around `data.content`, whose items are
+ * page children.
+ */
+const PAGE_BAND_TYPES = new Set(["page-header", "page-footer"]);
 
 /**
  * `DEFAULT_TEMPLATE_DEFAULTS` is typed `Partial<TemplateSettings>` so a
@@ -104,8 +116,9 @@ export function convertEasyEmailProTemplate(
   const entries: ImportReportEntry[] = [];
   const blocks: Block[] = [];
   const resolve = contextFromPage(page);
-  const map: MapContext = { resolve, warnings };
   const data = isPlainObject(page.data) ? page.data : {};
+  const settings = readSettings(page, data, resolve);
+  const map: MapContext = { resolve, warnings, contentWidth: settings.width };
 
   const subjectRaw = typeof subject === "string" ? subject.trim() : "";
   if (subjectRaw) {
@@ -136,8 +149,6 @@ export function convertEasyEmailProTemplate(
     if (!isElement(child)) continue;
     walkNode(child, map, entries, blocks);
   }
-
-  const settings = readSettings(page, data, resolve);
 
   if (hasMobileAttributes(page)) {
     warnings.push(MOBILE_WARNING);
@@ -239,8 +250,8 @@ function walkNode(
     const data = isPlainObject(node.data) ? node.data : {};
     const input = isPlainObject(data.input) ? data.input : undefined;
     const inner: MapContext = {
+      ...map,
       resolve: withWidgetInput(map.resolve, input),
-      warnings: map.warnings,
     };
     for (const child of node.children ?? []) {
       if (!isElement(child)) continue;
@@ -265,6 +276,8 @@ function walkNode(
     const converted = buildTopLevel(node, map);
     for (const block of converted.blocks) blocks.push(block);
     for (const entry of converted.entries) entries.push(entry);
+  } else if (isPageBand(node)) {
+    walkBand(node, map, entries, blocks);
   } else {
     const converted = convertLeaf(node, map);
     for (const entry of converted.entries) entries.push(entry);
@@ -280,6 +293,52 @@ function walkNode(
   if (logicOn) {
     markApproximated(entries, from, `logic ${logicExpression(logic)}`);
   }
+}
+
+/**
+ * A band's content walks as page children, so sections, wrappers, widgets and
+ * bare leaves all convert as they would at the top. The band's own paint then
+ * lands on the resulting sections, the way a `standard-wrapper`'s does.
+ */
+function walkBand(
+  node: PageBand,
+  map: MapContext,
+  entries: ImportReportEntry[],
+  blocks: Block[],
+): void {
+  const inner = withContentWidth(map, insideWidth(map.contentWidth, node, map));
+  const bandBlocks: Block[] = [];
+  const bandEntries: ImportReportEntry[] = [];
+  for (const child of bandContent(node)) {
+    walkNode(child, inner, bandEntries, bandBlocks);
+  }
+  if (bandBlocks.length === 0 && bandEntries.length === 0) {
+    entries.push({
+      sourceTag: node.type,
+      templaticalBlockType: null,
+      status: "skipped",
+      note: `An empty ${node.type} produces nothing.`,
+    });
+    return;
+  }
+  applyWrapper(node, bandBlocks, bandEntries, map);
+  for (const block of bandBlocks) blocks.push(block);
+  for (const entry of bandEntries) entries.push(entry);
+}
+
+type PageBand = EasyEmailProNode & { type: string };
+
+function isPageBand(node: EasyEmailProNode): node is PageBand {
+  return typeof node.type === "string" && PAGE_BAND_TYPES.has(node.type);
+}
+
+function bandContent(node: EasyEmailProNode): EasyEmailProNode[] {
+  const content = isPlainObject(node.data) ? node.data.content : undefined;
+  if (!Array.isArray(content)) return [];
+  return content.filter(
+    (child): child is EasyEmailProNode =>
+      isPlainObject(child) && isElement(child as EasyEmailProNode),
+  );
 }
 
 function wrapInSection(blocks: Block[]): Block {
@@ -338,7 +397,8 @@ function logicExpression(
 }
 
 function hasTypedContent(node: EasyEmailProNode): boolean {
-  for (const child of node.children ?? []) {
+  const kids = isPageBand(node) ? bandContent(node) : (node.children ?? []);
+  for (const child of kids) {
     if (!isElement(child)) continue;
     if (child.type === "placeholder") continue;
     return true;
@@ -350,8 +410,11 @@ function hasMobileAttributes(node: unknown): boolean {
   if (!isPlainObject(node)) return false;
   const mobile = node.mobileAttributes;
   if (isPlainObject(mobile) && Object.keys(mobile).length > 0) return true;
-  if (!Array.isArray(node.children)) return false;
-  for (const child of node.children) {
+  const band = isPageBand(node as EasyEmailProNode)
+    ? bandContent(node as EasyEmailProNode)
+    : [];
+  const children = Array.isArray(node.children) ? node.children : [];
+  for (const child of [...children, ...band]) {
     if (hasMobileAttributes(child)) return true;
   }
   return false;

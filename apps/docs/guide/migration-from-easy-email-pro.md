@@ -89,7 +89,7 @@ Each `report.entries` item describes one produced block:
 | `converted` | Mapped to a Templatical block with no loss of fidelity. |
 | `approximated` | Mapped to the right block, with a clamp or flatten — `note` states what changed. |
 | `html-fallback` | No block equivalent exists; the raw node is preserved as JSON inside an `HtmlBlock`. |
-| `skipped` | Empty `logic` — there were no children to convert. |
+| `skipped` | Empty `logic`, `standard-wrapper`, `page-header` or `page-footer` — there was nothing to convert. |
 
 ```ts
 console.log(report.summary);
@@ -113,13 +113,13 @@ EmailTemplate { subject, content }
   content: page
     data: { globalAttributes, blockAttributes, categoryAttributes, fonts, preheader, variables[] }
     attributes: { width, background-color, content-background-color, link-color, … }
-    children: standard-section | standard-wrapper | standard-hero | *_widget | AMP_* | custom
+    children: standard-section | standard-wrapper | standard-hero | page-header | page-footer | *_widget | AMP_* | custom
       standard-section.children: standard-column | standard-group
         standard-group.children: standard-column
           standard-column.children: leaf | nested structure
 ```
 
-Leaves in the documented element list: `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `line-break`, `html-block-node`, `marketing-countdown`, `placeholder`. `uid` / `id` / `thumbnail` are discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped.
+Leaves in the documented element list: `standard-text`, `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `raw`, `marketing-countdown`, `placeholder`. Inline inside rich text: `line-break`, `html-block-node`, `html-node`, `mergetag`. `uid` / `id` / `thumbnail` are discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped.
 
 - **Easy Email Pro** stores this persist tree, plus optional `variables[]` (design tokens) and page `data`.
 - **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
@@ -163,18 +163,22 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
+| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
-| `standard-paragraph` | `ParagraphBlock` | Content from Slate children. Stays a paragraph even at a large `font-size`. |
+| `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
 | `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
 | `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
-| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. |
+| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
 | `standard-social` + `standard-social-element` | `SocialIconsBlock` | Platform inferred from `href` hostname, then `src` path. Custom PNG `src` is dropped, `approximated`. |
-| `standard-table2` / `tr` / `td` | `TableBlock` | Converted. |
+| `standard-table2` / `standard-table2-tr` / `standard-table2-td` | `TableBlock` | Converted. Plain `tr` / `td` rows are read too. |
+| `raw` | `HtmlBlock` | `data.content` as is. Converted. |
 | `line-break` | `<br>` | Inside the parent rich-text. No entry. |
 | `html-block-node` | HTML fragment | Inside the parent rich-text. No entry. |
+| `html-node` | Inline HTML element | Inside the parent rich-text: `<tagName>` with its string attributes; void tags (`br`, `img`, …) self-close. No entry. An `html-node` directly in a column is `html-fallback`. |
+| `mergetag` | <code v-pre>{{ name }}</code> | Inside the parent rich-text, written as Easy Email Pro renders it; the editor turns the token into a merge tag. No entry. |
 | `marketing-countdown` | Overlay text + `ImageBlock` of `src` | The GIF is the timer. Does not emit `type: "countdown"` (Cloud-only). `approximated`. |
 | kit `common-video` | `VideoBlock` | Converted when a URL is present; otherwise `html-fallback`. |
 | kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
@@ -197,6 +201,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
 - **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block is Cloud-only and blank on OSS, so this package does not emit it. The GIF is a static image; the timer does not tick.
+- **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip
 Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk rather than html-fallback the whole subtree so editable CTAs survive; overlay-on-image is what Templatical cannot express. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.

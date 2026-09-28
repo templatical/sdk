@@ -12,7 +12,7 @@ import {
   readPadding,
 } from "./attribute-parser";
 import { convertLeaf, type Converted, type MapContext } from "./block-mapper";
-import { COLUMN_COUNT, matchColumnLayout } from "./column-layout";
+import { COLUMN_COUNT, columnPixels, matchColumnLayout } from "./column-layout";
 import { isUnset, readAttr } from "./normalize";
 import type {
   ConversionStatus,
@@ -39,7 +39,6 @@ export function buildTopLevel(
 
 function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   const plan = collectSlots(node);
-  const leftover = convertFlow(plan.leftovers, map);
   const rawWidths = plan.columns.map((column) =>
     readAttr(column, "width", map.resolve),
   );
@@ -47,6 +46,13 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
     rawWidths.map((width) => parsePercent(width)),
   );
   const slots = COLUMN_COUNT[layout];
+  const sectionWidth = insideWidth(map.contentWidth, node, map);
+  const slotWidths =
+    sectionWidth === undefined ? undefined : columnPixels(layout, sectionWidth);
+  const leftover = convertFlow(
+    plan.leftovers,
+    withContentWidth(map, slotWidths?.[0]),
+  );
   const children: Block[][] = Array.from({ length: slots }, () => []);
   if (leftover.blocks.length > 0) {
     children[0].push(...leftover.blocks);
@@ -55,7 +61,10 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   const entries = leftover.entries;
   plan.columns.forEach((column, index) => {
     const slot = Math.min(index, slots - 1);
-    const inner = convertFlow(column.children ?? [], map);
+    const inner = convertFlow(
+      column.children ?? [],
+      withContentWidth(map, insideWidth(slotWidths?.[slot], column, map)),
+    );
     children[slot].push(...inner.blocks);
     for (const entry of inner.entries) entries.push(entry);
   });
@@ -112,7 +121,10 @@ function buildHero(node: EasyEmailProNode, map: MapContext): Converted {
       note: "hero background-url stacked as a leading image (overlay is the loss)",
     });
   }
-  const inner = convertFlow(node.children ?? [], map);
+  const inner = convertFlow(
+    node.children ?? [],
+    withContentWidth(map, insideWidth(map.contentWidth, node, map)),
+  );
   slot.push(...inner.blocks);
   for (const entry of inner.entries) entries.push(entry);
 
@@ -132,17 +144,18 @@ function buildHero(node: EasyEmailProNode, map: MapContext): Converted {
 function buildWrapper(node: EasyEmailProNode, map: MapContext): Converted {
   const blocks: Block[] = [];
   const entries: ImportReportEntry[] = [];
+  const childMap = withContentWidth(
+    map,
+    insideWidth(map.contentWidth, node, map),
+  );
   for (const child of elements(node)) {
     if (child.type === "placeholder") continue;
-    const inner = buildTopLevel(child, map);
+    const inner = buildTopLevel(child, childMap);
     for (const block of inner.blocks) blocks.push(block);
     for (const entry of inner.entries) entries.push(entry);
   }
 
-  const sections = blocks.filter(
-    (block): block is SectionBlock => block.type === "section",
-  );
-  if (sections.length === 0) {
+  if (!blocks.some(isSection)) {
     return {
       blocks: [],
       entries: [
@@ -156,12 +169,30 @@ function buildWrapper(node: EasyEmailProNode, map: MapContext): Converted {
     };
   }
 
+  applyWrapper(node, blocks, entries, map);
+  return { blocks, entries };
+}
+
+/**
+ * Paint `node`'s `mj-wrapper` band onto every section in `blocks`. A section
+ * holds one band, so a band around several sections is copied onto each and
+ * their `converted` entries become `approximated`.
+ */
+export function applyWrapper(
+  node: EasyEmailProNode,
+  blocks: Block[],
+  entries: ImportReportEntry[],
+  map: MapContext,
+): void {
+  const sections = blocks.filter(isSection);
+  if (sections.length === 0) return;
+
   const wrapper = readWrapper(node, map);
   for (const section of sections) {
     section.wrapper = { ...wrapper };
   }
   if (sections.length > 1) {
-    const note = `standard-wrapper holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
+    const note = `${node.type ?? "standard-wrapper"} holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
     for (const entry of entries) {
       if (entry.templaticalBlockType !== "section") continue;
       if (entry.status !== "converted") continue;
@@ -169,7 +200,28 @@ function buildWrapper(node: EasyEmailProNode, map: MapContext): Converted {
       entry.note = note;
     }
   }
-  return { blocks, entries };
+}
+
+/** `width` less `node`'s own left and right padding; unknown stays unknown. */
+export function insideWidth(
+  width: number | undefined,
+  node: EasyEmailProNode,
+  map: MapContext,
+): number | undefined {
+  if (width === undefined) return undefined;
+  const padding = readPadding((key) => readAttr(node, key, map.resolve));
+  return Math.max(0, width - padding.left - padding.right);
+}
+
+export function withContentWidth(
+  map: MapContext,
+  contentWidth: number | undefined,
+): MapContext {
+  return { ...map, contentWidth };
+}
+
+function isSection(block: Block): block is SectionBlock {
+  return block.type === "section";
 }
 
 /**

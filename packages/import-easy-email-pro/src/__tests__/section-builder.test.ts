@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildTopLevel } from "../section-builder";
 import { contextFromPage } from "../normalize";
 import type { EasyEmailProNode } from "../types";
-import type { SectionBlock } from "@templatical/types";
+import type { Block, DividerBlock, SectionBlock } from "@templatical/types";
 
 const page: EasyEmailProNode = {
   type: "page",
@@ -10,8 +10,27 @@ const page: EasyEmailProNode = {
   attributes: {},
   children: [],
 };
-function build(node: EasyEmailProNode, p: EasyEmailProNode = page) {
-  return buildTopLevel(node, { resolve: contextFromPage(p), warnings: [] });
+function build(
+  node: EasyEmailProNode,
+  p: EasyEmailProNode = page,
+  contentWidth?: number,
+) {
+  return buildTopLevel(node, {
+    resolve: contextFromPage(p),
+    warnings: [],
+    ...(contentWidth !== undefined ? { contentWidth } : {}),
+  });
+}
+
+const divider = (width: string): EasyEmailProNode => ({
+  type: "standard-divider",
+  data: {},
+  attributes: { width },
+  children: [],
+});
+
+function dividerWidths(blocks: Block[]): Array<DividerBlock["width"]> {
+  return (blocks as DividerBlock[]).map((block) => block.width);
 }
 
 const para = (text: string): EasyEmailProNode => ({
@@ -338,6 +357,87 @@ describe("buildTopLevel", () => {
           e.note?.includes("resolved to"),
       ),
     ).toBe(true);
+  });
+
+  it("judges a px divider against its column's content width", () => {
+    const { blocks } = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: { "padding-left": "20px", "padding-right": "20px" },
+        children: [
+          col([divider("280px"), divider("279px")], "50%"),
+          {
+            type: "standard-column",
+            data: {},
+            attributes: { width: "50%", "padding-left": "10px" },
+            children: [divider("270px"), divider("269px")],
+          },
+        ],
+      },
+      page,
+      600,
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(dividerWidths(s.children[0])).toEqual(["full", 279]);
+    expect(dividerWidths(s.children[1])).toEqual(["full", 269]);
+  });
+
+  it("narrows the width inside a standard-wrapper's padding", () => {
+    const { blocks } = build(
+      {
+        type: "standard-wrapper",
+        data: {},
+        attributes: { "padding-left": "50px", "padding-right": "50px" },
+        children: [
+          {
+            type: "standard-section",
+            data: {},
+            attributes: {},
+            children: [col([divider("500px"), divider("499px")])],
+          },
+        ],
+      },
+      page,
+      600,
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(dividerWidths(s.children[0])).toEqual(["full", 499]);
+  });
+
+  it("narrows the width inside a hero's padding", () => {
+    const { blocks } = build(
+      {
+        type: "standard-hero",
+        data: {},
+        attributes: { "padding-left": "30px", "padding-right": "30px" },
+        children: [divider("540px"), divider("539px")],
+      },
+      page,
+      600,
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(dividerWidths(s.children[0])).toEqual(["full", 539]);
+  });
+
+  it("gives leftover non-column children the first slot's width", () => {
+    const { blocks } = build(
+      {
+        type: "standard-section",
+        data: {},
+        attributes: {},
+        children: [
+          divider("300px"),
+          divider("299px"),
+          col([para("A")], "50%"),
+          col([para("B")], "50%"),
+        ],
+      },
+      page,
+      600,
+    );
+    const s = blocks[0] as SectionBlock;
+    expect(dividerWidths(s.children[0].slice(0, 2))).toEqual(["full", 299]);
   });
 
   it("drops leftover non-column children into the first slot", () => {

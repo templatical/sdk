@@ -4,6 +4,7 @@ import { contextFromPage } from "../normalize";
 import type { EasyEmailProNode } from "../types";
 import type {
   ButtonBlock,
+  DividerBlock,
   HtmlBlock,
   ImageBlock,
   MenuBlock,
@@ -21,11 +22,28 @@ const emptyPage: EasyEmailProNode = {
   attributes: {},
   children: [],
 };
-function map(node: EasyEmailProNode, page: EasyEmailProNode = emptyPage) {
+function map(
+  node: EasyEmailProNode,
+  page: EasyEmailProNode = emptyPage,
+  contentWidth?: number,
+) {
   return convertLeaf(node, {
     resolve: contextFromPage(page),
     warnings: [],
+    ...(contentWidth !== undefined ? { contentWidth } : {}),
   });
+}
+
+function dividerWidth(
+  attributes: Record<string, unknown>,
+  contentWidth?: number,
+): DividerBlock["width"] {
+  const { blocks } = map(
+    { type: "standard-divider", data: {}, attributes, children: [] },
+    emptyPage,
+    contentWidth,
+  );
+  return (blocks[0] as DividerBlock).width;
 }
 
 describe("convertLeaf", () => {
@@ -45,6 +63,131 @@ describe("convertLeaf", () => {
       templaticalBlockType: "paragraph",
       status: "converted",
     });
+  });
+
+  it("maps standard-text to a paragraph, the same way as standard-paragraph", () => {
+    const { blocks, entries } = map({
+      type: "standard-text",
+      data: {},
+      attributes: {
+        color: "#ff0000",
+        "font-size": "18px",
+        align: "center",
+        "padding-top": "10px",
+      },
+      children: [{ text: "Hello " }, { text: "world", bold: true }],
+    });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("paragraph");
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="color: #ff0000; font-size: 18px; text-align: center">Hello <strong>world</strong></p>',
+    );
+    expect(blocks[0].styles.padding).toEqual({
+      top: 10,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+    expect(entries).toEqual([
+      {
+        sourceTag: "standard-text",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("keeps the inline html-node children of a standard-text", () => {
+    const { blocks, entries } = map({
+      type: "standard-text",
+      data: {},
+      attributes: { align: "center", "font-size": "56px" },
+      children: [
+        { text: "" },
+        {
+          type: "html-node",
+          data: { tagName: "em" },
+          attributes: { style: "font-style: italic" },
+          children: [{ text: "The Studio," }],
+        },
+        { text: "" },
+        {
+          type: "html-node",
+          data: { tagName: "br" },
+          attributes: {},
+          children: [{ text: "" }],
+        },
+        { text: "est. 2019" },
+      ],
+    });
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="font-size: 56px; text-align: center"><em style="font-style: italic">The Studio,</em><br />est. 2019</p>',
+    );
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("keeps a mergetag inside a paragraph as a liquid token", () => {
+    const { blocks } = map({
+      type: "standard-paragraph",
+      data: {},
+      attributes: {},
+      children: [
+        { text: "Hello " },
+        {
+          type: "mergetag",
+          data: {},
+          attributes: {},
+          children: [{ text: "customer.name" }],
+        },
+        { text: ", here is your order" },
+      ],
+    });
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      "Hello {{ customer.name }}, here is your order",
+    );
+  });
+
+  it("html-fallbacks an html-node that sits in a column on its own", () => {
+    const node: EasyEmailProNode = {
+      type: "html-node",
+      data: { tagName: "span" },
+      attributes: {},
+      children: [{ text: "stray" }],
+    };
+    const { blocks, entries } = map(node);
+    expect(blocks[0].type).toBe("html");
+    expect((blocks[0] as HtmlBlock).content).toBe(JSON.stringify(node));
+    expect(entries[0]).toEqual({
+      sourceTag: "html-node",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: 'Unknown Easy Email Pro type "html-node"; preserved as HTML.',
+    });
+  });
+
+  it("reads standard-text through blockAttributes and the TEXT category", () => {
+    const page: EasyEmailProNode = {
+      type: "page",
+      data: {
+        blockAttributes: { "standard-text": { color: "#00ff00" } },
+        categoryAttributes: { TEXT: { "padding-left": "7px" } },
+      },
+      attributes: {},
+      children: [],
+    };
+    const { blocks } = map(
+      {
+        type: "standard-text",
+        data: {},
+        attributes: {},
+        children: [{ text: "Cascade" }],
+      },
+      page,
+    );
+    expect((blocks[0] as ParagraphBlock).content).toBe(
+      '<p style="color: #00ff00">Cascade</p>',
+    );
+    expect(blocks[0].styles.padding.left).toBe(7);
   });
 
   it("maps standard-h1 to Title level 1", () => {
@@ -187,6 +330,46 @@ describe("convertLeaf", () => {
     });
   });
 
+  it("maps raw to an HtmlBlock holding data.content", () => {
+    const { blocks, entries } = map({
+      type: "raw",
+      data: { content: '<!-- htmlmin:ignore --><div class="x">Raw</div>' },
+      attributes: {},
+      children: [],
+    });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("html");
+    expect((blocks[0] as HtmlBlock).content).toBe(
+      '<!-- htmlmin:ignore --><div class="x">Raw</div>',
+    );
+    expect(blocks[0].styles.padding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+    expect(entries).toEqual([
+      {
+        sourceTag: "raw",
+        templaticalBlockType: "html",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("html-fallbacks a raw node whose data.content is not a string", () => {
+    const node: EasyEmailProNode = {
+      type: "raw",
+      data: { value: { content: "<!-- legacy -->" } },
+      attributes: {},
+      children: [],
+    };
+    const { blocks, entries } = map(node);
+    expect((blocks[0] as HtmlBlock).content).toBe(JSON.stringify(node));
+    expect(entries[0].status).toBe("html-fallback");
+    expect(entries[0].sourceTag).toBe("raw");
+  });
+
   it("maps a divider as converted", () => {
     const { blocks, entries } = map({
       type: "standard-divider",
@@ -200,6 +383,36 @@ describe("convertLeaf", () => {
       templaticalBlockType: "divider",
       status: "converted",
     });
+  });
+
+  it("makes a divider full-width when its width is missing or 100%", () => {
+    expect(dividerWidth({})).toBe("full");
+    expect(dividerWidth({ width: "" })).toBe("full");
+    expect(dividerWidth({ width: "100%" })).toBe("full");
+    expect(dividerWidth({ width: "auto" })).toBe("full");
+  });
+
+  it("keeps any other percentage, clamped to 0-100", () => {
+    expect(dividerWidth({ width: "50%" })).toBe("50%");
+    expect(dividerWidth({ width: " 12.5 % " })).toBe("12.5%");
+    expect(dividerWidth({ width: "33.333%" })).toBe("33.33%");
+    expect(dividerWidth({ width: "0%" })).toBe("0%");
+    expect(dividerWidth({ width: "-10%" })).toBe("0%");
+    expect(dividerWidth({ width: "150%" })).toBe("full");
+  });
+
+  it("keeps a px divider width when the column width is unknown", () => {
+    expect(dividerWidth({ width: "300px" })).toBe(300);
+    expect(dividerWidth({ width: 120 })).toBe(120);
+  });
+
+  it("makes a px divider full once it fills the room its column leaves it", () => {
+    expect(dividerWidth({ width: "300px" }, 300)).toBe("full");
+    expect(dividerWidth({ width: "301px" }, 300)).toBe("full");
+    expect(dividerWidth({ width: "299px" }, 300)).toBe(299);
+    const padded = { "padding-left": "25px", "padding-right": "25px" };
+    expect(dividerWidth({ ...padded, width: "550px" }, 600)).toBe("full");
+    expect(dividerWidth({ ...padded, width: "549px" }, 600)).toBe(549);
   });
 
   it("maps a spacer height from px", () => {
@@ -320,6 +533,50 @@ describe("convertLeaf", () => {
     });
   });
 
+  it("maps table2 rows and cells from the standard-table2-tr / -td shape", () => {
+    const td = (text: string, bold = false): EasyEmailProNode => ({
+      type: "standard-table2-td",
+      data: { rowspan: 1, colspan: 1 },
+      attributes: {},
+      children: [{ text, ...(bold ? { bold: true } : {}) }],
+    });
+    const { blocks, entries } = map({
+      type: "standard-table2",
+      data: {},
+      attributes: { cellpadding: "10px" },
+      children: [
+        {
+          type: "standard-table2-tr",
+          data: {},
+          attributes: { "background-color": "#7daa55" },
+          children: [td("Item", true), td("Price", true)],
+        },
+        {
+          type: "standard-table2-tr",
+          data: {},
+          attributes: {},
+          children: [td("Tea"), td("$4")],
+        },
+      ],
+    });
+    const table = blocks[0] as TableBlock;
+    expect(table.type).toBe("table");
+    expect(
+      table.rows.map((row) => row.cells.map((cell) => cell.content)),
+    ).toEqual([
+      ["<strong>Item</strong>", "<strong>Price</strong>"],
+      ["Tea", "$4"],
+    ]);
+    expect(table.hasHeaderRow).toBe(false);
+    expect(entries).toEqual([
+      {
+        sourceTag: "standard-table2",
+        templaticalBlockType: "table",
+        status: "converted",
+      },
+    ]);
+  });
+
   it("skips a navbar with no links and writes no entry", () => {
     const { blocks, entries } = map({
       type: "standard-navbar",
@@ -399,6 +656,32 @@ describe("convertLeaf", () => {
     expect((blocks[0] as ImageBlock).borderRadius).toBe(8);
   });
 
+  it("keeps a standard-text overlay on a marketing-countdown", () => {
+    const { blocks, entries } = map({
+      type: "marketing-countdown",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-text",
+          data: {},
+          attributes: {},
+          children: [{ text: "ENDS SOON" }],
+        },
+      ],
+    });
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    expect((blocks[0] as ParagraphBlock).content).toBe("ENDS SOON");
+    expect(entries).toEqual([
+      {
+        sourceTag: "marketing-countdown",
+        templaticalBlockType: "paragraph",
+        status: "approximated",
+        note: "marketing-countdown GIF is the timer; Templatical countdown is Cloud-only",
+      },
+    ]);
+  });
+
   it("skips the countdown image when src is unset", () => {
     const { blocks, entries } = map({
       type: "marketing-countdown",
@@ -465,6 +748,8 @@ describe("convertLeaf", () => {
 describe("isLeafType", () => {
   it("recognises listed leaves including placeholder and common-video", () => {
     expect(isLeafType("standard-paragraph")).toBe(true);
+    expect(isLeafType("standard-text")).toBe(true);
+    expect(isLeafType("raw")).toBe(true);
     expect(isLeafType("standard-h3")).toBe(true);
     expect(isLeafType("placeholder")).toBe(true);
     expect(isLeafType("common-video")).toBe(true);

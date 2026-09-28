@@ -109,6 +109,17 @@ describe("readAttr cascade", () => {
     expect(readAttr(node, "padding-right", ctx)).toBe("25px");
   });
 
+  it("puts standard-text in the TEXT category", () => {
+    const withText = contextFromPage({
+      type: "page",
+      data: { categoryAttributes: { TEXT: { "line-height": "1.5" } } },
+      attributes: {},
+      children: [],
+    });
+    const node: EasyEmailProNode = { type: "standard-text", attributes: {} };
+    expect(readAttr(node, "line-height", withText)).toBe("1.5");
+  });
+
   it("falls through to globalAttributes", () => {
     const node: EasyEmailProNode = {
       type: "standard-paragraph",

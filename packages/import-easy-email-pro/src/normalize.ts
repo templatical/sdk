@@ -9,6 +9,7 @@ const VAR_PREFIX = "$var(";
 /** Spec §3.3 category map — unknown types skip the category layer. */
 export const CATEGORY_BY_TYPE: Record<string, string> = {
   "standard-paragraph": "TEXT",
+  "standard-text": "TEXT",
   "standard-h1": "TEXT",
   "standard-h2": "TEXT",
   "standard-h3": "TEXT",

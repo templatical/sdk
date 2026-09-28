@@ -89,7 +89,7 @@ Jeder Eintrag in `report.entries` beschreibt einen erzeugten Block:
 | `converted` | Auf einen Templatical-Block abgebildet, ohne Verlust. |
 | `approximated` | Auf den richtigen Block abgebildet, mit einer Begrenzung oder einem Flatten — `note` nennt die Änderung. |
 | `html-fallback` | Keine Block-Entsprechung vorhanden; der rohe Knoten bleibt als JSON in einem `HtmlBlock` erhalten. |
-| `skipped` | Leeres `logic` — es gab keine Kinder zu konvertieren. |
+| `skipped` | Leeres `logic`, `standard-wrapper`, `page-header` oder `page-footer` — es gab nichts zu konvertieren. |
 
 ```ts
 console.log(report.summary);
@@ -113,13 +113,13 @@ EmailTemplate { subject, content }
   content: page
     data: { globalAttributes, blockAttributes, categoryAttributes, fonts, preheader, variables[] }
     attributes: { width, background-color, content-background-color, link-color, … }
-    children: standard-section | standard-wrapper | standard-hero | *_widget | AMP_* | custom
+    children: standard-section | standard-wrapper | standard-hero | page-header | page-footer | *_widget | AMP_* | custom
       standard-section.children: standard-column | standard-group
         standard-group.children: standard-column
           standard-column.children: leaf | nested structure
 ```
 
-Blätter in der dokumentierten Elementliste: `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `line-break`, `html-block-node`, `marketing-countdown`, `placeholder`. `uid` / `id` / `thumbnail` werden verworfen — Templatical vergibt eigene IDs. `placeholder` ist Editor-Chrome und wird übersprungen.
+Blätter in der dokumentierten Elementliste: `standard-text`, `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `raw`, `marketing-countdown`, `placeholder`. Inline im Rich-Text: `line-break`, `html-block-node`, `html-node`, `mergetag`. `uid` / `id` / `thumbnail` werden verworfen — Templatical vergibt eigene IDs. `placeholder` ist Editor-Chrome und wird übersprungen.
 
 - **Easy Email Pro** speichert diesen Persist-Baum, plus optionale `variables[]` (Design-Tokens) und Seiten-`data`.
 - **Templatical** speichert Templates als JSON-Baum mit typisierten Blöcken (`SectionBlock`, `ParagraphBlock` usw.) und rendert diesen Baum beim Export zu MJML.
@@ -163,18 +163,22 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | `standard-group` | Abgeflachte Spalten; `stackOnMobile: false` | Eine Group aus Spalten auf einer Sektion ist die Spaltenstruktur dieser Sektion. Eine verschachtelte Group in einer Spalte wird abgeflacht, `approximated`. |
 | `standard-wrapper` | Innere Sektion(en) `wrapper` | Äußeres `background-color` / Padding → `section.wrapper`. Eine innere Sektion → converted. Mehrere Innere → Wrapper auf jede kopiert, `approximated`. |
 | `standard-hero` | 1-Spalten-`SectionBlock` | Kinder werden als h1 / Paragraph / Button durchlaufen. `background-color` auf die Sektion; `background-url` stellt einen `ImageBlock` voran (gestapelt, nicht Overlay), `approximated`. |
+| `page-header` / `page-footer` | Die Sektionen ihres Inhalts, das Band als `section.wrapper` | `data.content` wird in Reihenfolge so konvertiert wie Seiten-Kinder; ein nacktes Blatt landet in einer 1-Spalten-Sektion. `background-color` / Padding des Bands → `section.wrapper` auf jeder entstehenden Sektion. Mehrere Sektionen → Wrapper auf jede kopiert, `approximated`. Leer → `skipped`. |
 | `placeholder` | Übersprungen | Editor-Chrome. Kein Eintrag. |
-| `standard-paragraph` | `ParagraphBlock` | Inhalt aus Slate-Kindern. Bleibt ein Paragraph, auch bei großer `font-size`. |
+| `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` ist der Standard-Textblock; beide werden gleich abgebildet, einschließlich der Attribut-Kaskade. Inhalt aus Slate-Kindern. Bleibt ein Paragraph, auch bei großer `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 aus dem Typ. |
 | `standard-button` | `ButtonBlock` | Beschriftung aus den Kindern, nicht `data.content`. `href` → `url`. Ungesetztes Fill plus `border-enabled` ist outlined — Fill wird `#ffffff` (nicht das Factory-`#333333`), `approximated`. |
 | `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
-| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. |
+| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: fehlend oder `100%` → `"full"`; ein anderer Prozentwert bleibt ein Prozentwert, begrenzt auf 0–100; px bleibt px und wird `"full"`, sobald es die Inhaltsbreite der Spalte abzüglich des Paddings des Dividers ausfüllt. |
 | `standard-spacer` | `SpacerBlock` | Höhe aus `height` in px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Linktext aus den Kindern; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
 | `standard-social` + `standard-social-element` | `SocialIconsBlock` | Plattform aus `href`-Hostname, dann `src`-Pfad. Benutzerdefiniertes PNG-`src` entfällt, `approximated`. |
-| `standard-table2` / `tr` / `td` | `TableBlock` | Converted. |
+| `standard-table2` / `standard-table2-tr` / `standard-table2-td` | `TableBlock` | Converted. Einfache `tr`- / `td`-Zeilen werden ebenfalls gelesen. |
+| `raw` | `HtmlBlock` | `data.content` unverändert. Converted. |
 | `line-break` | `<br>` | Innerhalb des Eltern-Rich-Texts. Kein Eintrag. |
 | `html-block-node` | HTML-Fragment | Innerhalb des Eltern-Rich-Texts. Kein Eintrag. |
+| `html-node` | Inline-HTML-Element | Innerhalb des Eltern-Rich-Texts: `<tagName>` mit seinen String-Attributen; Void-Tags (`br`, `img`, …) schließen sich selbst. Kein Eintrag. Ein `html-node` direkt in einer Spalte ist `html-fallback`. |
+| `mergetag` | <code v-pre>{{ name }}</code> | Innerhalb des Eltern-Rich-Texts, so geschrieben, wie Easy Email Pro ihn rendert; der Editor macht aus dem Token ein Merge-Tag. Kein Eintrag. |
 | `marketing-countdown` | Overlay-Text + `ImageBlock` von `src` | Das GIF ist der Timer. Es wird kein `type: "countdown"` erzeugt (Cloud-only). `approximated`. |
 | Kit `common-video` | `VideoBlock` | Converted, wenn eine URL vorhanden ist; sonst `html-fallback`. |
 | Kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
@@ -197,6 +201,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 - **AMP** — `AMP_*`-Knoten haben keine Templatical-Entsprechung. Als JSON in einem `HtmlBlock` erhalten, `html-fallback`.
 - **`logic`** — Pro-`logic.condition` / `logic.iteration` werden zur `toMJML`-Zeit nach Liquid (oder einer eigenen Engine) kompiliert. Sie sind nicht `displayCondition.{ before, after }`. Leere Knoten `skipped`. Gefüllte Knoten konvertieren ihre Kinder und verwerfen die Verzweigung.
 - **Countdown als GIF** — `marketing-countdown` ist Overlay-Text plus ein `ImageBlock` von `attributes.src`. Templaticals `countdown`-Block ist Cloud-only und auf OSS leer, daher erzeugt dieses Paket ihn nicht. Das GIF ist ein statisches Bild; der Timer läuft nicht.
+- **Sperre von Header und Footer** — Der Inhalt von `page-header` / `page-footer` wird zu gewöhnlichen Sektionen. Die feste Position und das `editable`-Flag haben keine Templatical-Entsprechung.
 
 ::: tip
 Verschachtelte Groups werden abgeflacht, weil MJML eine Sektion innerhalb einer Spalte verbietet und `addBlock` das ebenfalls tut. Ein erfundener verschachtelter `SectionBlock` würde nicht rendern. Hero-Kinder werden durchlaufen, statt den ganzen Teilbaum als `html-fallback` zu legen, damit editierbare CTAs erhalten bleiben; Overlay-auf-Bild kann Templatical nicht ausdrücken. Leeres `logic` wird übersprungen statt zu einem undurchsichtigen `HtmlBlock`, sodass ein gefüllter Zweig aus Produktzeilen als konvertierte Kinder erhalten bleibt. Der Countdown bleibt ein Bild, damit ein OSS-Renderer den Block nicht leer lässt.

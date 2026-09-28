@@ -18,6 +18,7 @@ import type {
   BlockStyles,
   BlockVisibility,
   ButtonBlock,
+  DividerBlock,
   HeadingLevel,
   MenuItemData,
   SocialIcon,
@@ -25,7 +26,12 @@ import type {
   TableCellData,
   TableRowData,
 } from "@templatical/types";
-import { parseColor, parsePx, readPadding } from "./attribute-parser";
+import {
+  parseColor,
+  parsePercent,
+  parsePx,
+  readPadding,
+} from "./attribute-parser";
 import { isUnset, readAttr, type ResolveContext } from "./normalize";
 import { serialiseChildren } from "./rich-text";
 import type {
@@ -38,6 +44,12 @@ import type {
 export interface MapContext {
   resolve: ResolveContext;
   warnings: string[];
+  /**
+   * Width in px of the box the current node lays out in: the page, the inside
+   * of a wrapper, band or hero, or a column's content box. Absent where the
+   * converter cannot tell, and then no width is judged against it.
+   */
+  contentWidth?: number;
 }
 
 export interface Converted {
@@ -47,6 +59,7 @@ export interface Converted {
 
 const LEAF_TYPES = new Set([
   "standard-paragraph",
+  "standard-text",
   "standard-h1",
   "standard-h2",
   "standard-h3",
@@ -61,6 +74,7 @@ const LEAF_TYPES = new Set([
   "marketing-countdown",
   "placeholder",
   "common-video",
+  "raw",
 ]);
 
 const SOCIAL_PLATFORMS = [
@@ -86,6 +100,12 @@ const ENTITIES: Record<string, string> = {
   "&nbsp;": " ",
 };
 
+/**
+ * Easy Email Pro writes `standard-table2-tr` / `standard-table2-td`; the plain
+ * `tr` / `td` / `th` shape is read too.
+ */
+const TABLE_CELL_TYPES = new Set(["standard-table2-td", "td", "th"]);
+
 const COUNTDOWN_NOTE =
   "marketing-countdown GIF is the timer; Templatical countdown is Cloud-only";
 
@@ -101,7 +121,9 @@ export function convertLeaf(
 ): Converted {
   const type = node.type;
   if (type === "placeholder") return empty();
-  if (type === "standard-paragraph") return convertParagraph(node, map);
+  if (type === "standard-paragraph" || type === "standard-text") {
+    return convertParagraph(node, map);
+  }
 
   const heading = typeof type === "string" ? headingLevelFromType(type) : null;
   if (heading) return convertHeading(node, map, heading);
@@ -125,11 +147,17 @@ export function convertLeaf(
       return convertCountdown(node, map);
     case "common-video":
       return convertVideo(node, map);
+    case "raw":
+      return convertRaw(node, map);
     default:
       return convertUnknown(node, map);
   }
 }
 
+/**
+ * `standard-text` (the default text block) and `standard-paragraph` share one
+ * shape and one MJML renderer, so both land here.
+ */
 function convertParagraph(node: EasyEmailProNode, map: MapContext): Converted {
   return finish(
     createParagraphBlock({
@@ -137,7 +165,7 @@ function convertParagraph(node: EasyEmailProNode, map: MapContext): Converted {
       ...leafStyles(node, map),
     }),
     node,
-    report("standard-paragraph", "paragraph", "converted"),
+    report(node.type ?? "standard-paragraph", "paragraph", "converted"),
   );
 }
 
@@ -264,16 +292,47 @@ function convertDivider(node: EasyEmailProNode, map: MapContext): Converted {
   const color = parseColor(readAttr(node, "border-color", map.resolve));
   const thickness = parsePx(readAttr(node, "border-width", map.resolve));
   const lineStyle = asLineStyle(readAttr(node, "border-style", map.resolve));
+  const styles = leafStyles(node, map);
+  const { left, right } = styles.styles.padding;
+  const room =
+    map.contentWidth === undefined
+      ? undefined
+      : map.contentWidth - left - right;
   return finish(
     createDividerBlock({
       ...(color ? { color } : {}),
       ...(thickness !== undefined ? { thickness } : {}),
       ...(lineStyle ? { lineStyle } : {}),
-      ...leafStyles(node, map),
+      width: dividerWidth(readAttr(node, "width", map.resolve), room),
+      ...styles,
     }),
     node,
     report("standard-divider", "divider", "converted"),
   );
+}
+
+/**
+ * A missing or `100%` width is `"full"`. Any other percentage stays a share of
+ * the column, clamped to 0-100 and rounded to two decimals so it stays a
+ * `DividerPercentWidth`. A px width stays px until it fills `room`, the space
+ * the column leaves the line once the divider's own padding is off, and then
+ * it is `"full"`. An unreadable width falls back to `"full"`, MJML's default.
+ */
+function dividerWidth(
+  value: unknown,
+  room: number | undefined,
+): DividerBlock["width"] {
+  if (isUnset(value)) return "full";
+  if (typeof value === "string" && value.trim().endsWith("%")) {
+    const percent = parsePercent(value);
+    if (percent === null) return "full";
+    const clamped = Math.min(100, Math.max(0, percent));
+    const rounded = Math.round(clamped * 100) / 100;
+    return rounded >= 100 ? "full" : `${rounded}%`;
+  }
+  const px = parsePx(value);
+  if (px === undefined) return "full";
+  return room !== undefined && px >= room ? "full" : px;
 }
 
 function convertSpacer(node: EasyEmailProNode, map: MapContext): Converted {
@@ -364,8 +423,7 @@ function convertTable(node: EasyEmailProNode, map: MapContext): Converted {
     const cells: TableCellData[] = [];
     let rowHasTh = false;
     for (const cell of row.children ?? []) {
-      if (!isElement(cell)) continue;
-      if (cell.type !== "td" && cell.type !== "th") continue;
+      if (!isElement(cell) || !TABLE_CELL_TYPES.has(cell.type ?? "")) continue;
       if (cell.type === "th") rowHasTh = true;
       cells.push({
         id: generateId(),
@@ -449,6 +507,20 @@ function convertVideo(node: EasyEmailProNode, map: MapContext): Converted {
   );
 }
 
+/** `raw` is `<mj-raw>{data.content}</mj-raw>`: the markup moves across as is. */
+function convertRaw(node: EasyEmailProNode, map: MapContext): Converted {
+  const content = node.data?.["content"];
+  if (typeof content !== "string") return convertUnknown(node, map);
+  return finish(
+    createHtmlBlock({
+      content,
+      ...leafStyles(node, map),
+    }),
+    node,
+    report("raw", "html", "converted"),
+  );
+}
+
 function convertUnknown(node: EasyEmailProNode, map: MapContext): Converted {
   const sourceTag = node.type ?? "unknown";
   return finish(
@@ -470,7 +542,9 @@ function remapOverlay(child: EasyEmailProNode): EasyEmailProNode | null {
   if (child.type === "text") {
     return { ...child, type: "standard-paragraph" };
   }
-  if (child.type === "standard-paragraph") return child;
+  if (child.type === "standard-paragraph" || child.type === "standard-text") {
+    return child;
+  }
   if (typeof child.type === "string" && headingLevelFromType(child.type)) {
     return child;
   }
@@ -481,15 +555,19 @@ function collectRows(node: EasyEmailProNode): EasyEmailProNode[] {
   const rows: EasyEmailProNode[] = [];
   for (const child of node.children ?? []) {
     if (!isElement(child)) continue;
-    if (child.type === "tr") {
+    if (isTableRow(child)) {
       rows.push(child);
       continue;
     }
     for (const inner of child.children ?? []) {
-      if (isElement(inner) && inner.type === "tr") rows.push(inner);
+      if (isElement(inner) && isTableRow(inner)) rows.push(inner);
     }
   }
   return rows;
+}
+
+function isTableRow(node: EasyEmailProNode): boolean {
+  return node.type === "standard-table2-tr" || node.type === "tr";
 }
 
 function firstUrl(node: EasyEmailProNode, map: MapContext): string | undefined {

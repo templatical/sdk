@@ -52,6 +52,61 @@ function serialiseTextNode(node: EasyEmailProTextNode): string {
   return html;
 }
 
+/** Easy Email Pro's `HTML_NODE_VOID_TAGS`: rendered `<tag />`, children ignored. */
+const VOID_TAGS = new Set([
+  "img",
+  "br",
+  "hr",
+  "area",
+  "base",
+  "col",
+  "embed",
+  "input",
+  "link",
+  "meta",
+  "source",
+]);
+
+const TAG_NAME = /^[a-z][a-z0-9-]*$/;
+const ATTRIBUTE_NAME = /^[a-z_:][a-z0-9_:.-]*$/i;
+
+/**
+ * An inline `html-node` renders as `<tagName attrs>children</tagName>`. Only
+ * non-empty string attributes are written, as Easy Email Pro does. A tag or
+ * attribute name that could break out of the markup is dropped, the tag
+ * falling back to `span`.
+ */
+function serialiseHtmlNode(node: EasyEmailProNode): string {
+  const rawTag = node.data?.["tagName"];
+  const lowered = typeof rawTag === "string" ? rawTag.toLowerCase() : "";
+  const tagName = TAG_NAME.test(lowered) ? lowered : "span";
+
+  let attrs = "";
+  for (const [name, value] of Object.entries(node.attributes ?? {})) {
+    if (typeof value !== "string" || !ATTRIBUTE_NAME.test(name)) continue;
+    const trimmed = value.trim();
+    if (trimmed === "") continue;
+    attrs += ` ${name}="${escapeHtml(trimmed)}"`;
+  }
+
+  if (VOID_TAGS.has(tagName)) return `<${tagName}${attrs} />`;
+  return `<${tagName}${attrs}>${serialiseChildren(node.children)}</${tagName}>`;
+}
+
+/**
+ * Easy Email Pro renders a `mergetag` as `{{ name }}`, the name being its
+ * first text child and the marks on that child applying to the token.
+ * `data.default` is not part of that output. A blank name has no variable to
+ * keep.
+ */
+function serialiseMergetag(node: EasyEmailProNode): string {
+  const first = node.children?.[0];
+  if (!first || !isTextNode(first)) return "";
+  const name = first.text.trim();
+  if (name === "") return "";
+  return serialiseTextNode({ ...first, text: `{{ ${name} }}` });
+}
+
 function serialiseNode(node: EasyEmailProNode | EasyEmailProTextNode): string {
   if (node.type === "line-break") return "<br>";
 
@@ -64,8 +119,14 @@ function serialiseNode(node: EasyEmailProNode | EasyEmailProTextNode): string {
     return `<${tagName}>${inner}</${tagName}>`;
   }
 
-  // Typed elements other than line-break / html-block-node are ignored —
-  // the parent leaf mapper html-fallbacks whole unknown leaves.
+  if (node.type === "html-node") {
+    return serialiseHtmlNode(node as EasyEmailProNode);
+  }
+
+  if (node.type === "mergetag")
+    return serialiseMergetag(node as EasyEmailProNode);
+
+  // Any other typed element has no inline rendering here and is dropped.
   if (typeof node.type === "string" && node.type !== "") return "";
 
   if (isTextNode(node)) return serialiseTextNode(node);

@@ -2,12 +2,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type {
+  Block,
   ButtonBlock,
+  DividerBlock,
+  ImageBlock,
   ParagraphBlock,
   SectionBlock,
 } from "@templatical/types";
 import { convertEasyEmailProTemplate } from "../converter";
-import type { EasyEmailProDocument, EasyEmailProPage } from "../types";
+import type {
+  EasyEmailProDocument,
+  EasyEmailProNode,
+  EasyEmailProPage,
+} from "../types";
 import example1 from "./fixtures/example-1.json" with { type: "json" };
 
 const EMPTY_PAGE: EasyEmailProPage = {
@@ -408,6 +415,31 @@ describe("settings and walk", () => {
     ).toHaveLength(1);
   });
 
+  it("wraps a page-level standard-text in a one-column section", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "standard-text",
+          data: {},
+          attributes: {},
+          children: [{ text: "Loose text" }],
+        },
+      ],
+    });
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.columns).toBe("1");
+    expect(section.children[0].map((b) => b.type)).toEqual(["paragraph"]);
+    expect((section.children[0][0] as ParagraphBlock).content).toBe(
+      "Loose text",
+    );
+    expect(report.summary.htmlFallback).toBe(0);
+  });
+
   it("loads the hand-authored example-1 fixture", () => {
     const { content } = convertEasyEmailProTemplate(
       example1 as EasyEmailProDocument,
@@ -427,6 +459,312 @@ describe("settings and walk", () => {
     );
     expect(filled?.backgroundColor).toBe("#C5900C");
     expect(outlined?.backgroundColor).toBe("#ffffff");
+  });
+});
+
+function textSection(text: string): EasyEmailProNode {
+  return {
+    type: "standard-section",
+    data: {},
+    attributes: {},
+    children: [
+      {
+        type: "standard-column",
+        data: {},
+        attributes: {},
+        children: [
+          {
+            type: "standard-paragraph",
+            data: {},
+            attributes: {},
+            children: [{ text }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function band(
+  type: "page-header" | "page-footer",
+  content: EasyEmailProNode[],
+  extra: Partial<EasyEmailProNode> = {},
+): EasyEmailProNode {
+  return {
+    type,
+    data: { content, editable: true },
+    attributes: {},
+    children: [{ text: "" }],
+    ...extra,
+  };
+}
+
+function paragraphText(block: Block): string {
+  const section = block as SectionBlock;
+  return (section.children[0][0] as ParagraphBlock).content;
+}
+
+describe("page-header and page-footer", () => {
+  it("converts their sections in order and paints the band onto them", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band("page-header", [textSection("Header")], {
+          attributes: {
+            "background-color": "#4a90e2",
+            "padding-top": "12px",
+            "padding-bottom": "12px",
+          },
+        }),
+        textSection("Body"),
+        band("page-footer", [textSection("Footer")]),
+      ],
+    });
+    expect(content.blocks.map((b) => b.type)).toEqual([
+      "section",
+      "section",
+      "section",
+    ]);
+    expect(content.blocks.map(paragraphText)).toEqual([
+      "Header",
+      "Body",
+      "Footer",
+    ]);
+    const [header, body, footer] = content.blocks as SectionBlock[];
+    expect(header.wrapper).toEqual({
+      backgroundColor: "#4a90e2",
+      padding: { top: 12, right: 0, bottom: 12, left: 0 },
+    });
+    expect("wrapper" in body).toBe(false);
+    expect(footer.wrapper).toEqual({
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+    expect(report.summary).toEqual({
+      total: 6,
+      converted: 6,
+      approximated: 0,
+      htmlFallback: 0,
+      skipped: 0,
+    });
+  });
+
+  it("wraps a bare leaf in the band's content in a section", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band(
+          "page-header",
+          [
+            {
+              type: "standard-image",
+              data: {},
+              attributes: { src: "https://cdn.test/logo.png", alt: "Logo" },
+              children: [{ text: "" }],
+            },
+          ],
+          { attributes: { "background-color": "#FFFFFF" } },
+        ),
+      ],
+    });
+    const header = content.blocks[0] as SectionBlock;
+    expect(header.type).toBe("section");
+    expect(header.children[0].map((b) => b.type)).toEqual(["image"]);
+    expect((header.children[0][0] as ImageBlock).src).toBe(
+      "https://cdn.test/logo.png",
+    );
+    expect(header.wrapper?.backgroundColor).toBe("#FFFFFF");
+    expect(report.entries).toEqual([
+      {
+        sourceTag: "standard-image",
+        templaticalBlockType: "image",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("copies the band onto each of several sections and approximates them", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band("page-footer", [textSection("One"), textSection("Two")], {
+          attributes: { "background-color": "#222222" },
+        }),
+      ],
+    });
+    expect(content.blocks).toHaveLength(2);
+    expect(
+      (content.blocks as SectionBlock[]).map((s) => s.wrapper?.backgroundColor),
+    ).toEqual(["#222222", "#222222"]);
+    const sections = report.entries.filter(
+      (e) => e.templaticalBlockType === "section",
+    );
+    expect(sections).toEqual([
+      {
+        sourceTag: "standard-section",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "page-footer holding 2 sections was applied to each of them — Templatical has no multi-section band.",
+      },
+      {
+        sourceTag: "standard-section",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "page-footer holding 2 sections was applied to each of them — Templatical has no multi-section band.",
+      },
+    ]);
+  });
+
+  it("skips an empty band with one entry", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band("page-header", []),
+        band("page-footer", [
+          { type: "placeholder", data: {}, attributes: {}, children: [] },
+        ]),
+        textSection("Body"),
+      ],
+    });
+    expect(content.blocks.map(paragraphText)).toEqual(["Body"]);
+    expect(report.entries.filter((e) => e.status === "skipped")).toEqual([
+      {
+        sourceTag: "page-header",
+        templaticalBlockType: null,
+        status: "skipped",
+        note: "An empty page-header produces nothing.",
+      },
+      {
+        sourceTag: "page-footer",
+        templaticalBlockType: null,
+        status: "skipped",
+        note: "An empty page-footer produces nothing.",
+      },
+    ]);
+  });
+
+  it("converts a band's content under logic rather than skipping it", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band("page-header", [textSection("VIP header")], {
+          logic: { condition: "user.vip" },
+        }),
+      ],
+    });
+    expect(content.blocks.map(paragraphText)).toEqual(["VIP header"]);
+    expect(report.entries.map((e) => [e.status, e.note])).toEqual([
+      ["approximated", "logic user.vip"],
+      ["approximated", "logic user.vip"],
+    ]);
+  });
+
+  it("warns about mobileAttributes carried inside a band", () => {
+    const section = textSection("Header");
+    section.mobileAttributes = { "padding-top": "4px" };
+    const { report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [band("page-header", [section])],
+    });
+    expect(report.warnings).toEqual([
+      "mobileAttributes were dropped; Templatical has no per-viewport padding.",
+    ]);
+  });
+});
+
+function dividerSection(...widths: string[]): EasyEmailProNode {
+  return {
+    type: "standard-section",
+    data: {},
+    attributes: {},
+    children: [
+      {
+        type: "standard-column",
+        data: {},
+        attributes: {},
+        children: widths.map((width) => ({
+          type: "standard-divider",
+          data: {},
+          attributes: { width },
+          children: [],
+        })),
+      },
+    ],
+  };
+}
+
+function dividerWidths(block: Block): Array<DividerBlock["width"]> {
+  return ((block as SectionBlock).children[0] as DividerBlock[]).map(
+    (divider) => divider.width,
+  );
+}
+
+describe("divider width against the page", () => {
+  it("measures a column against the page width", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: { width: "500px" },
+      children: [dividerSection("500px", "499px", "40%")],
+    });
+    expect(dividerWidths(content.blocks[0])).toEqual(["full", 499, "40%"]);
+  });
+
+  it("keeps the page width inside a widget", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "section_widget",
+          data: { input: {} },
+          attributes: {},
+          children: [dividerSection("600px", "599px")],
+        },
+      ],
+    });
+    expect(dividerWidths(content.blocks[0])).toEqual(["full", 599]);
+  });
+
+  it("narrows the width inside a band's padding", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band("page-footer", [dividerSection("520px", "519px")], {
+          attributes: { "padding-left": "40px", "padding-right": "40px" },
+        }),
+      ],
+    });
+    expect(dividerWidths(content.blocks[0])).toEqual(["full", 519]);
+  });
+
+  it("measures a page-level divider against the page width", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: ["600px", "599px"].map((width) => ({
+        type: "standard-divider",
+        data: {},
+        attributes: { width },
+        children: [],
+      })),
+    });
+    expect(content.blocks.map(dividerWidths)).toEqual([["full"], [599]]);
   });
 });
 
