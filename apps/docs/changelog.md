@@ -204,7 +204,7 @@ One consequence worth stating: a tag whose entry is later removed from `tags` no
 
 **First release. `@templatical/template-tools` is the CLI and library behind the**
 
-`@templatical/template-tools` · `@templatical/types`
+`@templatical/template-tools`
 
 Templatical Agent Skill: `validate`, `render`, `edit`, `import`, `live`,
 `schema` and `list`, each with `--json` output and a documented exit contract
@@ -229,6 +229,18 @@ skills totalling 50 KB that loaded everything up front. Its SDK reference is
 fetched from docs.templatical.com rather than packed in, so an answer is never
 older than the site, and the block schema travels with the skill because it is
 contract rather than documentation.
+
+**Rename `McpOperation` → `TemplateOperation` and `McpOperationPayload` →**
+
+`@templatical/types`
+
+`TemplateOperationPayload`. The seven-operation vocabulary is shared by the
+`@templatical/template-tools` CLI's `edit` command, Cloud's MCP bridge and the
+collaboration broadcast, so naming it after one transport was misleading.
+
+`McpConfig` and the editor's `mcp` config key are unchanged — those really are
+about MCP — and the Pusher event names (`mcp-operation`, `client-operation`) are
+untouched, so the wire protocol is unaffected.
 
 ## 0.37.0
 
@@ -1038,7 +1050,7 @@ This is also what a CodeQL `js/incomplete-html-attribute-sanitization` alert on 
 
 **Fix: the media library could not mount at all on 0.27.0 — in either mount mode.**
 
-`@templatical/editor` · `@templatical/import-html` · `@templatical/media-library` · `@templatical/types`
+`@templatical/editor` · `@templatical/media-library`
 
 0.27.0 moved `authManager` / `projectId` / `planConfig` to props and had `MediaLibraryModal` re-provide the plan config under `PLAN_CONFIG_KEY` for its descendants, while `useMediaCategories()` was given a named throw for the no-provider case. Both host shells then called `useMediaCategories()` with no argument — and **a component never sees its own `provide`**, because Vue resolves `inject` against the _parent_ chain. So the new throw fired in the very components that supplied the value:
 
@@ -1077,15 +1089,135 @@ Omit `locale` and it loads English; omit `uiTheme` and no `data-tpl-theme` is st
 
 The regression escaped because no test or e2e had ever mounted either shell — the standalone suite mocks Vue's `createApp` wholesale, and the plan-config audit exercised the composable through an app-level `provide`, the one topology where self-injection works. Both shells are now mounted in tests, and the package's injection audit bans _any_ bare-string `inject` rather than an enumerated list of names.
 
+**Four field indicators that were translated but rendered nothing now say what they mean.**
+
+`@templatical/editor`
+
+Each had its string sitting in all seven locales, bound nowhere — a control on screen carrying no text:
+
+- **The required asterisk** (`FieldWrapper`) was a bare `<span>*</span>`. An asterisk announces as "asterisk" or as nothing, so a screen reader user could not tell a field was required. The glyph is now `aria-hidden` with `customBlocks.fields.required` carried alongside it and on `title`.
+- **The read-only lock** was a bare icon. It reuses `customBlocks.dataSource.readOnlyTooltip` — the string the seven field components already put on the input — rather than a new key, because `readOnly` here is only ever `field.readOnly && block.dataSourceFetched`, so "loaded from your data source" is the actual reason and a generic "Read-only" would say less.
+- **The minimum-items message** (`RepeatableField`) never appeared: `!canAdd` rendered `maxItemsReached`, while `!canRemove` silently dropped the Remove button. `customBlocks.fields.minItemsRequired` now mirrors it, with its `{count}` filled in. Both render together for a fixed-length list (`minItems === maxItems`) — that pair is what says the length is fixed.
+- **The image placeholder tooltip** (`ImageToolbar`) bound `placeholderUrl` and `placeholderUrlPlaceholder` but not `placeholderUrlTooltip`, which `VideoToolbar` had carried on its own placeholder field all along. The field explains itself now: the real image comes from the merge tag at send time, so this is a design-time stand-in that never ships.
+
+`image.optional` is a new key. The hint beside that same field was a hardcoded `"(optional)"` — the last hardcoded UI string in the editor — so every non-English locale showed English there. It copies each locale's existing `video.optional`, so no translation was invented.
+
+Nothing changes for anyone whose custom blocks set neither `required`, `readOnly`, nor `minItems`.
+
+**Remove dead code, dead translations, and comments that only recorded history.**
+
+`@templatical/editor` · `@templatical/import-html` · `@templatical/types`
+
+##### Breaking — `restoreMergeTagMarkup` is removed from `@templatical/types`
+
+It converted raw `{{ tag }}` tokens in stored HTML back into `<span data-merge-tag>` markup, and nothing in the SDK called it. It was also **unsafe**: its only guard was a literal `data-merge-tag="` lookbehind, so a token in any other attribute had an element injected into the attribute value —
+
+```html
+<a href="{{unsubscribe_url}}">
+<!-- became -->
+<a href="<span data-merge-tag="{{unsubscribe_url}}">Unsubscribe URL</span>">
+```
+
+— which is worse than the bare token it was meant to fix. Position-awareness needs parsing, not better lookarounds, so the fix is a parse-based replacement rather than a patch to this function. If you were calling it, stop: it corrupts attribute-positioned tokens. Its private `escapeRegExp` helper went with it.
+
+##### Breaking — `_internal` is removed from `@templatical/import-html`
+
+A test-support barrel (`export const _internal = { convertButton, … }`) that the tests had stopped using. Removing it revealed `convertSpacer` as reachable only through it — a line-for-line duplicate of the live `buildSpacerFromCell` in `section-builder.ts`, which is what actually converts spacer cells. Both are gone; conversion output is unchanged.
+
+##### Smaller locale chunks
+
+**772 unused translation strings** removed across ten locale files. The bulk was an 81-key `mediaLibrary` block in the editor's own OSS locales — a key-for-key duplicate of `@templatical/media-library`'s, read by nothing, which every OSS consumer downloaded for a package they do not install. The rest were strings for UI that was never built: a 23-key `aiRewrite` block (the composable is headless and unaffected), add/remove row and column labels for a table toolbar that uses number inputs, singular `social.platform`/`social.url` beside the live plural `social.platforms[…]`, and video platform names nothing renders.
+
+Every OSS session fetches exactly one locale chunk, so this is a direct **~1.1 KB gzip (−14%)** off it; cloud locales drop 18–19%.
+
+Nothing in the public API changes: `init()` accepts only `locale`, with no way to supply or type against these keys.
+
+A new guard (`i18n-key-usage.test.ts`) now checks locale ↔ source agreement in both directions — no reference to a missing key, no key without a reader — which the existing locale-parity test and `typecheck` both structurally miss, since each compares locales to _each other_ or derives the type from `en.ts`.
+
 ## 0.27.0
 
 <time datetime="2026-08-19">2026-08-19</time>
 
 ### Features
 
+****The `initCloud()` collapse — heavily breaking.** `initCloud()` is now a thin adapter-wiring wrapper over `init()`: it authenticates, fetches the plan, builds Cloud's providers, and delegates. One `Editor.vue`, one `useEditor`, one header. Read every bullet below — `minor` is the breaking channel on a 0.x line, and it still under-states this.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/types`
+
+**`TemplaticalCloudEditor` is now `TemplaticalEditor`.** The two entry points return the same type, which is the proof the unification worked. Three cloud-only members went with it:
+
+- `create(content)` → `create({ name?, content? })`, matching `init()`.
+- `setThemeOverrides(overrides)` — **removed.** `config.theme` is applied at init on both entry points, and the entitlement that gated changing it later is gone.
+- `sendTestEmail(recipient)` — **removed.** The shared test-email dialog is the supported path.
+
+**`initCloud()` rejects on a failed bootstrap** instead of mounting an editor that shows an error overlay. Auth, the health check and the plan fetch now run _before_ the mount, so a session that cannot authenticate never produces an editor. Handle it like any other rejected promise. A session that dies _later_ — a token refresh that cannot renew — still surfaces as an overlay. The 30s "initialization timed out" rejection is gone with the post-mount readiness handshake.
+
+**Eleven of the sixteen `PlanFeatures` are deleted.** An entitlement is legitimate only when it meters a resource Cloud itself buys; a gate on editor capability that OSS gives away free is either backwards or inert. Removed: `custom_fonts`, `theme_customization`, `custom_blocks`, `auto_save`, `pluggable_media`, `media_folders`, `import_from_url`, `white_label`, `html_block`, `export_mjml`, `headless_sdk`. Surviving: `ai_generation`, `collaboration`, `commenting`, `saved_modules`, `test_email`, plus all four limits (`max_templates` + `template_count`, `storage_limit_bytes`, `max_file_size_mb`, `media_categories`), including the header's usage readout. Behavioural consequences: custom fonts, custom blocks and `theme` are applied on every plan; media folders and URL import render on every plan; `onRequestMedia` needs only to be configured; and Cloud's renderer no longer drops custom faces from the export payload.
+
+**Removed APIs**
+
+- `@templatical/core/cloud` no longer exports `useEditor` / `UseEditorOptions` / `UseEditorReturn`. There is one editor core, exported from `@templatical/core`. The Cloud core's last member over it, `savedBlockIds`, was always a comments dependency and now reaches `CommentsSidebar` through `capabilities.comments.isBlockSaved`.
+- `@templatical/types` no longer exports `EditorState`; the surviving definition is exported from `@templatical/core`.
+- `resolveExportFonts(fonts, allowCustomFonts)` → `resolveExportFonts(fonts)`.
+- `createCloudRenderProvider({ …, canUseCustomFonts })` → the option is gone.
+- `useFonts()` no longer returns `customFontsEnabled` / `setCustomFontsEnabled`, and `resolveRenderFonts` no longer reads them.
+- `useMediaLibraryUI({ …, canUseMediaFolders })` → the option is gone.
+- The duplicated `header.save` / `saving` / `saved` / `unsaved` / `saveFailed` keys are removed from the cloud i18n chunk; the OSS chunk's copies are the only ones. `header.templatesUsed` stays cloud-only.
+
+**Internal deletions** (not public API, listed because they were large): `cloud/CloudEditor.vue`, `cloud/components/CloudHeader.vue`, `cloud/composables/useCloudInitialization.ts`, `cloud/composables/useCloudLifecycle.ts` and `core/src/cloud/editor.ts`. Their content is `EditorHeader.vue` (one shared header, with three slots for Cloud's controls), `cloud/createCloudRuntime.ts` (bootstrap + adapters) and Cloud's decorated templates provider, which is where the websocket-connect-on-load choreography belongs.
+
+**New on `initCloud()`:** `onDirtyChange` and `unsavedChangesGuard`, the two keys `init()` already had. The `beforeunload` guard is on by default, so a Cloud session can no longer lose work on tab close; pass `unsavedChangesGuard: false` to own that prompt yourself.
+
+**Fixed along the way:** the OSS editor's drag ghost showed an English "Drop here" whatever the locale, and `init({ fonts: { defaultFont } })` never seeded a blank template's body font — both were wired only on the deleted Cloud side.
+
+**Preserved deliberately:** Cloud's lint save-gate. `TemplatesProvider` saves now route through an optional `SaveGate`, so the shared header's Save, `Cmd`+`S`, autosave and the version-restore confirmation all still honour the server's `accessibility.blockOnError` policy — autosave by skipping silently rather than raising a prompt on a debounce timer.
+
+**Add a bring-your-own **templates provider**: the editor's save/load lifecycle over your own storage.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/types`
+
+Pass three methods as `init({ templates })` and the editor grows the chrome that goes with them — an inline-editable template name in the header, a save button, a three-state save-status indicator, `Cmd`/`Ctrl`+`S`, optional debounced autosave, and a `beforeunload` guard for unsaved work:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  templates: {
+    load: (id) => fetch(`/api/templates/${id}`).then((r) => r.json()),
+    create: (input) => post("/api/templates", input),
+    save: (id, patch) => patchJson(`/api/templates/${id}`, patch),
+  },
+  autoSave: true,
+});
+
+await editor.load("tpl_123");
+```
+
+Omit `templates` and no chrome appears: no name field, no save button, no status indicator. `onChange` keeps working exactly as before, and `Cmd`/`Ctrl`+`S` flushes its debounce immediately so a consumer persisting from `onChange` still receives the keystroke. (`onSave` is removed in this same release — see the render-provider entry.)
+
+New in `@templatical/types`: `Template`, `TemplatePatch`, `TemplatesProvider`. `create` and `save` are `false | fn` and **required**, mirroring `SavedBlocksProvider` — disabling one is a decision you state rather than something you get by forgetting a method. `save: false` yields a genuine read-only mode: the save button, the status indicator and the rename affordance all disappear, while loading and local editing keep working.
+
+New in `@templatical/editor`: `templates`, `autoSave`, `autoSaveDebounce`, `onDirtyChange`, `templateNameField` and `unsavedChangesGuard` config keys, plus `create()`, `load()`, `save()` and `isDirty()` on the instance. The lifecycle methods are always present on the type and reject with an explanatory error when no provider is configured — the documented `toMjml()` convention.
+
+The header chrome has two switches of its own:
+
+- **`templateNameField: false`** hides the inline name field — for a store with no name column, or when your own chrome owns the name. It hides the field and nothing else: `create({ name })`, `setName()` and the `name` in each save patch keep working. `initCloud()` accepts the same key.
+- **`Template.createdAt` / `updatedAt`** (optional, ISO 8601) render a relative line under the name — "Updated 5m ago" — with the full date on hover, refreshing while the editor stays open. `updatedAt` wins when both are present, and the wording follows whichever was used, so a template your store never rewrote reads "Created". Neither field, or a value that does not parse, renders nothing. Both are absent from `TemplatePatch`: the editor never writes them, and it renders whatever `load` or `save` returned. The line appears whether or not `save` is available, which is what a read-only template has in place of a status indicator.
+
+The four relative-time labels now live in one shared top-level `time` namespace, replacing the three identical copies under `savedBlocks`, `comments` and `versionHistory`.
+
+**Breaking, type-only:**
+
+- `EditorState` in `@templatical/core` gains three required members — `template: Template | null`, `isSaving: boolean` and `isLoading: boolean`. Code that constructs an `EditorState` object literal, or that mirrors the interface, must add them. Reading state is unaffected.
+- `Template` moved from `@templatical/types`' cloud module into its own `templates` module. It is still exported from the package root and re-exported from the cloud module, so no import breaks.
+- `useConditionPreview`, `useHistoryInterceptor` and `useCollaborationBroadcast` now take the minimal structural slice of an editor they actually use, instead of a whole `UseEditorReturn`. Passing either editor still works; a caller that relied on the parameter type by name should use the exported `ConditionPreviewEditor` / `HistoryInterceptorEditor` instead.
+
+Also fixed: a save that resolves _after_ an edit landed mid-flight no longer clears the dirty flag. Clearing it claimed the edit was persisted, and — because autosave decides dirtiness at debounce time — made the follow-up save skip it.
+
+Docs: [Saving & Loading Templates](https://docs.templatical.com/backend/templates).
+
 **Comments become a bring-your-own provider, and the editor learns who is using it.**
 
-`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/renderer` · `@templatical/types`
+`@templatical/core` · `@templatical/editor` · `@templatical/types`
 
 `init()` takes a new `comments?: CommentsProvider` key. Configure it — together with the new top-level `user` key — and the editor grows a review panel: threads with replies, per-block anchors, resolve and reopen, a count badge on every commented block. Omit it and none of that UI is downloaded.
 
@@ -1177,6 +1309,210 @@ Two dead translation keys (`comments.addComment`, `comments.resolved`) were drop
 ##### Shared rather than cloud-only
 
 `CommentsSidebar` moved out of `cloud/components/`, the Comments trigger moved from `CloudHeaderExtras` into the shared header, and both are lazily loaded behind the capability — so an OSS consumer without a provider pays nothing for them. `capabilities.comments` is now built by the shared feature and gained `isAvailable`, `unresolvedCount` and the four `can*` flags.
+
+**Fix: Cloud's media library was non-functional inside the editor.**
+
+`@templatical/editor` · `@templatical/media-library`
+
+`MediaLibraryModal` reached for its host's state by injection under bare **string** keys — `inject("authManager")`, `inject("projectId")`, `inject("planConfig")`, all non-null-asserted — while `@templatical/editor` provides `Symbol("authManager")` and had no key at all for the other two. Vue matches injection keys by identity, so a string never resolves a Symbol: opening the media library through `initCloud()` received `undefined` for all three and nothing worked. Only the editor path was affected; the standalone media SDK (`init()` from `@templatical/media-library`) provided them correctly and is unchanged in behaviour.
+
+The three values now travel as **props**, so `@templatical/editor`'s typecheck fails if a binding is dropped rather than the browser silently breaking again.
+
+##### Breaking — only if you mount `MediaLibraryModal` yourself
+
+If you render `MediaLibraryModal` in your own Vue app, pass the three as props instead of providing them:
+
+```vue
+<MediaLibraryModal
+  :visible="open"
+  :auth-manager="authManager"
+  :project-id="authManager.projectId"
+  :plan-config="planConfig"
+  @select="onSelect"
+  @close="open = false"
+/>
+```
+
+`planConfig` is a `UsePlanConfigReturn` (from `usePlanConfig(authManager)` in `@templatical/core/cloud`) — the same shape the modal read before. The modal re-provides it internally for the descendants that call `useMediaCategories`, so nothing below it changes.
+
+`useMediaCategories()` now throws a named error when no plan config is in scope, instead of failing several frames later on `undefined.config`.
+
+**Rendering becomes a bring-your-own provider, and the editor grows `toHtml()`.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/renderer` · `@templatical/types`
+
+`init()` takes a new `render?: RenderProvider` key. Every method is independently optional, and each is resolved on its own:
+
+| Call              | Order                                                                 |
+| ----------------- | --------------------------------------------------------------------- |
+| `editor.toMjml()` | `render.toMjml` → the bundled `@templatical/renderer` → reject        |
+| `editor.toHtml()` | `render.toHtml` → `toMjml()`'s result + `render.compileMjml` → reject |
+
+**`compileMjml` is the cheap tier and the point of the whole shape.** MJML compilation is a commodity — a hosted service, a container, a CLI shell-out — whereas rendering Templatical's block model is not. Wire up that one function and `toHtml()` works while the SDK keeps rendering the MJML itself, so a non-Node backend never has to stand up a Node sidecar. There is deliberately **no local HTML path**: with neither `toHtml` nor `compileMjml`, `toHtml()` rejects with an error naming the method to add.
+
+Provider methods receive a **render-complete** payload — custom blocks already resolved into `renderedHtml`, plus the editor's effective fonts. Both are things a backend cannot reconstruct from the template JSON, and the custom-block case failed silently before (a renderer given one with neither a resolver nor `renderedHtml` omits it from the output).
+
+**The Cloud editor now exposes `toMjml()` and `toHtml()`**, which it never did — Cloud consumers had to fish HTML out of the save result.
+
+##### Breaking — `SaveResult` is removed
+
+`SaveResult` is deleted from `@templatical/types` (and its re-export from `@templatical/editor`). The Cloud editor's `save()` resolved to `{ templateId, html, mjml, content }`; it now resolves to the stored `Template`.
+
+```ts
+// Before
+const { html, mjml } = await editor.save();
+
+// After
+const template = await editor.save();
+const html = await editor.toHtml();
+const mjml = await editor.toMjml();
+```
+
+It only ever existed because Cloud's save stitched `editor.save()` and its export endpoint together. Saving and rendering run at different frequencies — autosave was compiling MJML server-side on every debounce tick — and fail in different ways, so they are separate calls now.
+
+##### Breaking — `onSave` is removed from both entry points
+
+`init({ onSave })` and `initCloud({ onSave })` are gone. The provider _is_ the save.
+
+- **OSS** — `onSave` meant "the user hit Cmd+S, you persist it". With a `templates` provider, Cmd+S now calls `save()`. Without one, Cmd+S flushes the `onChange` debounce immediately, so a consumer persisting from `onChange` still receives the keystroke:
+
+  ```ts
+  // Before
+  init({ container, onChange: persist, onSave: persist });
+
+  // After
+  init({ container, onChange: persist });
+  ```
+
+- **Cloud** — `onSave` meant "a save completed", and carried the `SaveResult`. Use the resolved value of `await editor.save()`; `onCreate` and `onLoad` are unchanged.
+
+##### Breaking — `@templatical/renderer` marks unrenderable blocks instead of dropping them
+
+A block type with no built-in renderer **and** no `blockRenderers` override now emits an `mj-raw` placeholder comment plus a `console.warn`, where it previously returned an empty string:
+
+```html
+<mj-raw
+  ><!-- templatical:unrenderable-block type="countdown" id="0192…" --></mj-raw
+>
+```
+
+`countdown` is the only built-in block that lands here (Cloud renders it server-side as an animated GIF). Not a throw, because the renderer runs inside send pipelines and killing an entire render over one block is worse than shipping a marked gap; not silence either, because a countdown vanishing from a marketing email reaches recipients as a missing section with nothing anywhere explaining why. The marker survives an `mjml2html` compile under strict validation, and a block hidden on every viewport still renders nothing and warns about nothing.
+
+Two new exports go with it, so a send pipeline never hardcodes the marker text:
+
+```ts
+import {
+  UNRENDERABLE_MARKER_PREFIX,
+  renderUnrenderableBlock,
+} from "@templatical/renderer";
+
+if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
+  throw new Error(
+    "Refusing to send: a block in this template rendered as a gap.",
+  );
+}
+```
+
+`UNRENDERABLE_MARKER_PREFIX` is the marker's stable leading text — scan for it before shipping. `renderUnrenderableBlock(block)` emits one and logs the warning, so a `blockRenderers` override can degrade the same way for a variant it decides it cannot handle, rather than returning `""` and reintroducing the silent drop.
+
+##### New — `blockRenderers` on `renderToMjml()`
+
+A per-block-type override map that generalises `renderCustomBlock`:
+
+```ts
+renderToMjml(content, {
+  blockRenderers: {
+    countdown: (block) => `<mj-image src="${countdownGifUrl(block)}" />`,
+    video: (block, ctx) => renderVideoWithPlayButton(block, ctx),
+  },
+});
+```
+
+An entry replaces the built-in renderer for that type wholesale, including its hidden-on-all-viewports check. It exists so a backend whose output is a _superset_ of the browser's can inject exactly that delta instead of forking the renderer — which is how Cloud now runs the published renderer rather than a copy of it.
+
+`BlockRenderer` moved to `render-context.ts` next to the new `BlockRendererMap` and is re-exported from its previous path, so consumer imports are unaffected.
+
+##### Breaking — Cloud internals (`@templatical/core/cloud`)
+
+Consumers using `initCloud()` are unaffected; these matter only if you import the cloud subpath directly.
+
+- `useEditor({ templates })` is now required — Cloud persists through `createCloudTemplatesProvider(authManager)` rather than hardcoded `ApiClient` calls.
+- `ApiClient.updateTemplate(id, patch)` takes a `TemplatePatch` instead of bare content; `createTemplate(content, name?)` gained an optional name.
+- `useExport`'s methods take an explicit fonts payload and its options are now just `{ authManager }` — the `canUseCustomFonts` entitlement gate moved into `createCloudRenderProvider`, where plan gating belongs. New `resolveExportFonts()` helper.
+- New exports: `createCloudTemplatesProvider`, `createCloudRenderProvider`.
+
+`editor.toMjml()` / `toHtml()` also now pass the editor's resolved fonts to the bundled renderer. A template using a custom font family previously exported with no `<mj-font>` declaration and no fallback stack, so mail clients silently substituted.
+
+`initCloud()` deliberately does **not** take this key. Cloud renders server-side for delivery as well — test email, scheduled sends and API exports — so a consumer-supplied renderer would have changed `toMjml()` / `toHtml()` and nothing else, leaving what you preview and export out of step with what Cloud sends. One passed from JavaScript is ignored with a console warning. For your own MJML on Cloud, call `renderToMjml(editor.getContent())` directly.
+
+**Version history becomes a bring-your-own provider, and "snapshot" is renamed to "version" throughout.**
+
+`@templatical/core` · `@templatical/editor` · `@templatical/types`
+
+`init()` takes a new `versionHistory?: VersionHistoryProvider` key. Configure it and the editor grows a history control in the header — step older and newer through past states, preview one on the canvas, restore it. Omit it and none of that UI is downloaded.
+
+```ts
+init({
+  container,
+  templates: myTemplatesProvider,
+  versionHistory: {
+    list: (templateId) =>
+      fetch(`/api/templates/${templateId}/versions`).then((r) => r.json()),
+    get: (templateId, versionId) =>
+      fetch(`/api/templates/${templateId}/versions/${versionId}`)
+        .then((r) => r.json())
+        .then((v) => v.content),
+    create: false,
+    restore: (templateId, versionId) =>
+      fetch(`/api/templates/${templateId}/versions/${versionId}/restore`, {
+        method: "POST",
+      }).then((r) => r.json()),
+  },
+});
+```
+
+`list` and `get` are the operations and cannot be disabled; `create` and `restore` each take `false` instead of a function, so turning one off is a decision you state rather than something you get by forgetting a method.
+
+**Your `save` records the versions, not the editor.** Whichever `TemplatesProvider.save` you supply decides whether a save also records a version, which keeps throttling, retention and dedupe with the side that pays for the storage. `create` exists for versions a person asks for; the editor never calls it on its own.
+
+That rule is literal, and restore is no exception. Confirming a restore discards unsaved work, so **Restore asks first when there are unsaved changes** and offers to save them before restoring — through your ordinary `templates.save`, user-initiated. Without a `templates` provider, or with one whose `save` is `false`, the offer isn't made and the confirmation says plainly that the changes will be lost, because there is nowhere to put them.
+
+`initCloud()` does **not** take `versionHistory`, exactly as it does not take `templates`: a version is keyed to a template id Cloud issued, and Cloud's templates adapter keeps recording into Cloud's own store regardless. One passed from JavaScript is ignored with a console warning.
+
+**Restore is append-only** — it adds an entry rather than rewriting one. A backend with no atomic endpoint composes it in one line (`get` the old content, then `save` it), which the docs spell out.
+
+**Scrubbing stays synchronous.** Each `TemplateVersion` may carry an optional `content` — a _cache hint_, evaluated per entry, never an alternative to `get`. When it is present the editor previews that version in the same tick; when it is absent it calls `get` once and caches the result. So a provider that hydrates recent versions and omits older ones is a supported middle ground, and Templatical Cloud (which returns content on every entry) never waits.
+
+##### Breaking — snapshot → version, everywhere
+
+The rename is the largest part of this release. Cloud's REST routes change too.
+
+| Before                                                                   | After                                                                                                                                                     |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TemplateSnapshot` (`@templatical/types`)                                | `TemplateVersionResponse` — still Cloud's snake_case wire shape. The contract shape is the new camelCase `TemplateVersion`                                |
+| `useSnapshotHistory` (`@templatical/core/cloud`)                         | **Removed.** The reactive state is now `useVersionHistory` in `@templatical/core`, shared by both tiers, and takes a provider instead of an `authManager` |
+| `editor.createSnapshot()` (cloud core)                                   | **Removed.** A save records a version; `versionHistory.create` records one on demand                                                                      |
+| `ApiClient.getSnapshots` / `createSnapshot` / `restoreSnapshot`          | `getVersions` / `getVersion` / `createVersion` / `restoreVersion`                                                                                         |
+| `API_ROUTES["snapshots.*"]`, `templates/{id}/snapshots`                  | `API_ROUTES["versions.*"]`, `templates/{id}/versions`                                                                                                     |
+| `snapshotHistory.*` / `snapshotPreview.*` translation keys (cloud chunk) | `versionHistory.*` / `versionPreview.*` in the **OSS** chunk, in all seven OSS locales                                                                    |
+
+"Snapshot" was an implementation word, and it collided with the editor's undo/redo history — a different thing entirely (in-session, unsaved, per-keystroke).
+
+##### Breaking — Cloud internals (`@templatical/core/cloud`)
+
+Consumers using `initCloud()` are unaffected; these matter only if you import the cloud subpath directly.
+
+- `useEditor({ authManager })` is gone — the option was unused once persistence moved behind `TemplatesProvider`. Pass `templates` alone.
+- `createCloudTemplatesProvider`'s `save` now also records an automatic version, throttled to at most one per minute, and records nothing for a rename-only patch. This replaces the editor-side `createSnapshot()` on a timer, which put Cloud's retention policy in the editor. A version write that fails still resolves the save, but now logs a warning instead of being swallowed.
+- New export: `createCloudVersionHistoryProvider`.
+
+##### Cloud behaviour changes
+- **Autosave saves the template.** It previously created a snapshot and left the template itself unsaved, which meant "autosave" named two different things across the two entry points. It now routes through the same save the header button uses.
+- **Autosave does not fire while the lint save-gate would block.** No modal — one firing on a debounce timer would interrupt typing — but no save either, so `accessibility.blockOnError` stays a policy on every write path rather than a manual-save-only speed bump. The header keeps saying "unsaved", which is true, and the blocking issues stay listed in the Issues panel. Cmd+S and the header button remain gated, modal and all.
+- **The history list re-reads on every open** rather than only when empty, and no longer re-reads after every save. History also grows server-side, so a list fetched once went stale silently; and a refresh per save was a round-trip for a dropdown nobody had open.
+- The history control and preview banner are now shared components lazily loaded behind the capability, so an OSS consumer without a provider pays nothing for them.
+
+`VersionHistoryProvider.list` resolves to `{ versions, nextCursor? }` rather than a bare `TemplateVersion[]`, and `VersionHistoryListParams` carries `{ limit?, cursor? }`. The editor loads one page and calls `list` bare; a store that returns its whole history at once omits `nextCursor`. The envelope is there so that adding pagination later is not a breaking change — reserving only the params object would have covered the request and left the response needing a new shape.
 
 ## 0.26.3
 
@@ -1761,6 +2097,14 @@ A rich-text link (in Paragraph and Title blocks) can now carry its own color —
 
 Previously a link's color could only be applied as an inner text-color span, which colored the text but left the underline painted by the ancestor `<a>` in the document link color — a visible mismatch that also shipped in the exported email. Putting the color on the link resolves it, and completes the per-link styling deferred from the document-level link color work. (#373)
 
+### Fixes and improvements
+
+**Fix the paragraph text-color control so it reflects the color actually in use**
+
+`@templatical/editor`
+
+The rich-text toolbar's text-color swatch used a native `<input type="color">`, which can't represent "unset" — so for text with no inline color it always painted a hard-coded `#000000`. That both looked like an explicit choice and didn't even match the real inherited color (the document `textColor`, default `#1a1a1a`). The swatch now shows the effective color the selection renders in (an explicit inline mark if present, otherwise the inherited document `textColor`), and a reset control appears only when an explicit inline color is set, clearing it back to inherited. (#373)
+
 ## 0.16.0
 
 <time datetime="2026-07-17">2026-07-17</time>
@@ -1829,6 +2173,12 @@ A click on a rich-text link now selects the block on the canvas (double-click st
 `@templatical/editor` · `@templatical/media-library`
 
 `@templatical/media-library`'s shared `.tpl` form-element reset authored its button reset as a bare `.tpl button { background: none; border: none }` (specificity 0,1,1). Because `@templatical/editor` bundles these styles and shares the `.tpl` scope class, that reset out-specified the editor's single-class button utilities such as `.tpl:bg-[var(--tpl-primary)]` (0,1,0) — rendering the Insert/Update Link dialog's primary action button with a transparent background (invisible on light backgrounds) and stripping button borders. It surfaced in the CDN bundle and in any app that bundles the editor from source (e.g. the deployed playground); the npm `dist` was unaffected because it externalizes media-library. The reset is now `:where(.tpl) button` (specificity 0,0,1), matching the editor's own reset, so per-button utilities always win.
+
+**Fix: media-library form controls size with `border-box` and show a keyboard focus ring**
+
+`@templatical/media-library`
+
+This package's shared `.tpl` form-element reset diverged from the editor's in two ways. It omitted `box-sizing: border-box`, so — with Tailwind preflight disabled — a padded `tpl:w-full` input resolved to `width: 100%` + horizontal padding and could overflow its parent (the issue #115 class of bug). It also set `outline: none` unconditionally on every `.tpl button`, removing the keyboard focus ring entirely (an accessibility regression). The reset now matches the editor's: `box-sizing: border-box` on the form-control group, and `outline: none` scoped to `:where(.tpl) button:focus-visible` (plus input/select/textarea) paired with the existing `--tpl-ring` box-shadow so keyboard focus stays visible.
 
 ## 0.15.0
 
@@ -2813,8 +3163,12 @@ The only externals that remain are the optional cloud/feature peers a consumer e
 
 ### Fixes and improvements
 
+**Countdown block for cloud editor**
+
+`@templatical/editor` · `@templatical/media-library` · `@templatical/renderer`
+
 **Include CDN build (ES module with code-split chunks) in the editor package at dist/cdn/. Drop IIFE build in favor of ES-only output for smaller initial load. Add pusher-js as a dependency in core for typecheck support.**
 
-`@templatical/core` · `@templatical/editor` · `@templatical/media-library` · `@templatical/renderer`
+`@templatical/core` · `@templatical/editor`
 
 :::

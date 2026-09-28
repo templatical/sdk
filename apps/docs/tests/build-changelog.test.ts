@@ -220,6 +220,52 @@ describe("aggregate", () => {
     ]);
   });
 
+  // A squash-merged PR gives every changeset it carries the same commit hash,
+  // so a hash alone does not identify a change.
+  it("keeps every changeset that shares a commit hash", () => {
+    const result = aggregate([
+      {
+        pkgName: "@templatical/editor",
+        versions: [
+          {
+            version: "1.0.0",
+            entries: [
+              entry("abc1234", "patch", ["First fix."]),
+              entry("abc1234", "patch", ["Second fix."]),
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(result[0].changes.map((c: { title: string }) => c.title)).toEqual([
+      "First fix.",
+      "Second fix.",
+    ]);
+  });
+
+  it("attributes a shared-hash changeset only to the packages that carry it", () => {
+    const result = aggregate([
+      {
+        pkgName: "@templatical/editor",
+        versions: [{ version: "1.0.0", entries: [entry("abc1234", "patch", ["Editor fix."])] }],
+      },
+      {
+        pkgName: "@templatical/import-html",
+        versions: [{ version: "1.0.0", entries: [entry("abc1234", "patch", ["HTML fix."])] }],
+      },
+      {
+        pkgName: "@templatical/types",
+        versions: [{ version: "1.0.0", entries: [entry("abc1234", "patch", ["Editor fix."])] }],
+      },
+    ]);
+    expect(
+      result[0].changes.map((c: { title: string; packages: string[] }) => [c.title, c.packages]),
+    ).toEqual([
+      ["Editor fix.", ["@templatical/editor", "@templatical/types"]],
+      ["HTML fix.", ["@templatical/import-html"]],
+    ]);
+  });
+
   it("escalates to the highest level when packages bump differently", () => {
     const result = aggregate([
       {

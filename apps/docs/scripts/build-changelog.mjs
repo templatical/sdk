@@ -15,8 +15,8 @@
  *
  * Every top-level bullet in every changelog is exactly one of those three shapes,
  * so aggregation is mechanical: keep the `<hash>: <prose>` bullets, drop the
- * stubs, and dedupe by commit hash. The set of packages that carried a hash as
- * real prose is that entry's attribution — it does not have to be inferred.
+ * stubs, and dedupe by commit hash and title. The set of packages that carried
+ * an entry as real prose is its attribution — it does not have to be inferred.
  *
  * Outputs (both committed, so the docs build and the release step never have to
  * run this):
@@ -255,9 +255,12 @@ export function resolveDates(versions, { tagDates, recordedDates, today }) {
 /**
  * Merges the parsed per-package changelogs into one timeline.
  *
- * Entries dedupe by commit hash. When a changeset bumps packages at different
- * levels the highest wins, so a release that is breaking for one package is not
- * filed under "Fixes".
+ * Entries dedupe by commit hash and title: changesets copies one changeset's
+ * prose into every package it names, and that collapses to one entry. The hash
+ * alone is not enough, because a squash-merged PR gives every changeset it
+ * carries the same commit, and keying on it kept one and dropped the rest.
+ * When a changeset bumps packages at different levels the highest wins, so a
+ * release that is breaking for one package is not filed under "Fixes".
  */
 export function aggregate(parsedPackages) {
   /** @type {Map<string, Map<string, {hash: string, level: string, raw: string, packages: Set<string>}>>} */
@@ -270,9 +273,10 @@ export function aggregate(parsedPackages) {
 
       for (const entry of entries) {
         const raw = entry.lines.join("\n").replace(/\s+$/, "");
-        const existing = bucket.get(entry.hash);
+        const key = `${entry.hash}\n${raw.split("\n")[0].trim()}`;
+        const existing = bucket.get(key);
         if (!existing) {
-          bucket.set(entry.hash, {
+          bucket.set(key, {
             hash: entry.hash,
             level: entry.level,
             raw,
@@ -299,9 +303,13 @@ export function aggregate(parsedPackages) {
         packages: [...entry.packages].sort(),
       };
     });
-    // Highest-impact first, then stable by hash so output never reorders on rerun.
+    // Highest-impact first, then stable by hash and title so output never
+    // reorders on rerun.
     changes.sort(
-      (a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level] || a.hash.localeCompare(b.hash),
+      (a, b) =>
+        LEVEL_RANK[b.level] - LEVEL_RANK[a.level] ||
+        a.hash.localeCompare(b.hash) ||
+        a.title.localeCompare(b.title),
     );
     return { version, changes };
   });
