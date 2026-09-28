@@ -93,7 +93,7 @@ BeeFree block types map to Templatical equivalents:
 | List | `paragraph` | Converted |
 | Image | `image` | Converted |
 | Button | `button` | Converted |
-| Divider | `divider` | Converted |
+| Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
 | Social | `social` | Converted |
 | Html | `html` | Converted |
@@ -102,6 +102,22 @@ BeeFree block types map to Templatical equivalents:
 | Table | `table` | Converted |
 
 Unknown module types are converted to HTML blocks as a fallback.
+
+### Divider width
+
+| BeeFree `width` | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than its column's content width | the px number | Converted |
+| px, as wide as its column's content width or wider | `"full"` | Converted |
+| a negative px width | `0` | Approximated |
+| any other value | `"full"` | Approximated |
+
+A column's content width is its share of `settings.width`, by the section's column layout, less the divider's left and right padding. A row of four or more columns is flattened, and its modules span the whole `settings.width`.
+
+Templatical centres every divider. A partial-width divider that BeeFree aligns left or right (`computedStyle.align`) is approximated, and its `note` names the alignment.
 
 ## Column Layout Conversion
 
@@ -121,9 +137,11 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 
 Global template settings are converted where possible:
 
-- **Width** -- BeeFree `page.body.content.style.width` maps to `settings.width`
+- **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
 - **Background color** -- Row and body background colors are preserved
-- **Font family** -- The default font family carries over to `settings.fontFamily`
+- **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
+- **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
+- **Font family** -- The default font family carries over to `settings.fontFamily`. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
 
 ## Known Limitations
 
@@ -131,6 +149,7 @@ Global template settings are converted where possible:
 - **Conditional display** -- BeeFree dynamic content rules do not have a direct equivalent and are dropped during conversion.
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
 - **Forms** -- BeeFree form blocks have no Templatical equivalent and are skipped.
+- **Per-block link colors** -- A text module's own link color (`computedStyle.linkColor`) is dropped; its links take `settings.linkColor`.
 - **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
 
 ## Verifying Converted Templates

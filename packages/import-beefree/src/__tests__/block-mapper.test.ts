@@ -392,9 +392,165 @@ describe("convertModule", () => {
         expect(block.thickness).toBe(3);
         expect(block.lineStyle).toBe("dashed");
         expect(block.color).toBe("#aabbcc");
-        expect(block.width).toBe(75);
+        expect(block.width).toBe("75%");
       }
       expect(entry.status).toBe("converted");
+      expect(entry.note).toBeUndefined();
+    });
+
+    function dividerWith(
+      descriptor: BeeFreeeModule["descriptor"],
+      context?: Parameters<typeof convertModule>[2],
+    ) {
+      const { block, entry } = convertModule(
+        makeModule("mailup-bee-newsletter-modules-divider", descriptor),
+        [],
+        context,
+      );
+      if (block.type !== "divider") throw new Error("expected a divider block");
+      return { block, entry };
+    }
+
+    // A numeric width means pixels, so a percentage must never come through
+    // as a bare number: 100% would render as a 100px stub.
+    it("imports 100% as full, not as 100 pixels", () => {
+      const { block, entry } = dividerWith({
+        divider: {
+          style: { "border-top": "1px solid #aaaaaa", width: "100%" },
+        },
+      });
+      expect(block.width).toBe("full");
+      expect(entry.status).toBe("converted");
+    });
+
+    it("imports a divider with no width as full", () => {
+      const { block } = dividerWith({
+        divider: { style: { "border-top": "1px solid #aaaaaa" } },
+      });
+      expect(block.width).toBe("full");
+    });
+
+    it("keeps a px width as pixels when the column is unknown", () => {
+      const { block, entry } = dividerWith({
+        divider: { style: { width: "580px" } },
+      });
+      expect(block.width).toBe(580);
+      expect(entry.status).toBe("converted");
+    });
+
+    // MJML draws a full divider across the column minus the divider's own
+    // padding, so a px width that reaches that already renders as full.
+    it("reads a px width that reaches the column's content width as full", () => {
+      const descriptor = (width: string): BeeFreeeModule["descriptor"] => ({
+        divider: { style: { width } },
+        style: { "padding-left": "10px", "padding-right": "10px" },
+      });
+      expect(
+        dividerWith(descriptor("580px"), { columnWidth: 600 }).block.width,
+      ).toBe("full");
+      expect(
+        dividerWith(descriptor("700px"), { columnWidth: 600 }).block.width,
+      ).toBe("full");
+      expect(
+        dividerWith(descriptor("579px"), { columnWidth: 600 }).block.width,
+      ).toBe(579);
+    });
+
+    it("clamps an out-of-range percentage and says so in the note", () => {
+      const over = dividerWith({ divider: { style: { width: "150%" } } });
+      expect(over.block.width).toBe("full");
+      expect(over.entry.status).toBe("approximated");
+      expect(over.entry.note).toBe("Divider width 150% was clamped to 100%.");
+
+      const under = dividerWith({ divider: { style: { width: "-10%" } } });
+      expect(under.block.width).toBe("0%");
+      expect(under.entry.status).toBe("approximated");
+      expect(under.entry.note).toBe("Divider width -10% was clamped to 0%.");
+    });
+
+    it("clamps a negative px width to zero and says so in the note", () => {
+      const { block, entry } = dividerWith({
+        divider: { style: { width: "-5px" } },
+      });
+      expect(block.width).toBe(0);
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe("Divider width -5px was clamped to 0px.");
+    });
+
+    // A float printed in exponent form ("1e-7%") would fall outside
+    // `DividerPercentWidth`'s pattern and fail validation.
+    it("keeps a percentage to two decimals", () => {
+      expect(
+        dividerWith({ divider: { style: { width: "37.5%" } } }).block.width,
+      ).toBe("37.5%");
+      expect(
+        dividerWith({ divider: { style: { width: "33.3333%" } } }).block.width,
+      ).toBe("33.33%");
+      expect(
+        dividerWith({ divider: { style: { width: "0.0000001%" } } }).block
+          .width,
+      ).toBe("0%");
+    });
+
+    it("imports an unreadable width as full, and says so in the note", () => {
+      const { block, entry } = dividerWith({
+        divider: { style: { width: "auto" } },
+      });
+      expect(block.width).toBe("full");
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        'Divider width "auto" could not be read; imported as full width.',
+      );
+    });
+
+    // Templatical centres every divider, so only a divider narrower than its
+    // column loses anything by it.
+    it("approximates a left- or right-aligned partial divider", () => {
+      const left = dividerWith({
+        divider: { style: { width: "50%" } },
+        computedStyle: { align: "left" },
+      });
+      expect(left.block.width).toBe("50%");
+      expect(left.entry.status).toBe("approximated");
+      expect(left.entry.note).toBe(
+        "BeeFree aligns this divider left; Templatical centres every divider.",
+      );
+
+      const right = dividerWith({
+        divider: { style: { width: "200px" } },
+        computedStyle: { align: "right" },
+      });
+      expect(right.entry.status).toBe("approximated");
+      expect(right.entry.note).toBe(
+        "BeeFree aligns this divider right; Templatical centres every divider.",
+      );
+    });
+
+    it("reads the alignment from the module style when computedStyle has none", () => {
+      const { entry } = dividerWith({
+        divider: { style: { width: "50%" } },
+        style: { "text-align": "right" },
+      });
+      expect(entry.status).toBe("approximated");
+      expect(entry.note).toBe(
+        "BeeFree aligns this divider right; Templatical centres every divider.",
+      );
+    });
+
+    it("keeps a centred partial divider and an aligned full one converted", () => {
+      const centred = dividerWith({
+        divider: { style: { width: "50%" } },
+        computedStyle: { align: "center" },
+      });
+      expect(centred.entry.status).toBe("converted");
+
+      const full = dividerWith({
+        divider: { style: { width: "100%" } },
+        computedStyle: { align: "left" },
+      });
+      expect(full.block.width).toBe("full");
+      expect(full.entry.status).toBe("converted");
+      expect(full.entry.note).toBeUndefined();
     });
   });
 
@@ -1049,6 +1205,163 @@ describe("convertModule", () => {
         if (block.type === "paragraph") {
           expect(block.content).toBe("<p>Hi</p>");
         }
+      });
+    });
+
+    // BeeFree's paragraph modules write `font-family: inherit`. Carried over,
+    // the keyword becomes the block's own font and the sent email falls back
+    // to the client's default face instead of the template's.
+    describe("CSS-wide keywords as a font", () => {
+      const KEYWORDS = ["inherit", "initial", "unset", "revert"];
+
+      it.each(KEYWORDS)("leaves a title's font unset for %s", (keyword) => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            heading: {
+              title: "h2",
+              text: "Hello",
+              style: { "font-family": keyword },
+            },
+          }),
+          [],
+        );
+        if (block.type !== "title") throw new Error("expected a title block");
+        expect(block.fontFamily).toBeUndefined();
+      });
+
+      it.each(KEYWORDS)("leaves a button's font unset for %s", (keyword) => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-button", {
+            button: { label: "Go", style: { "font-family": keyword } },
+          }),
+          [],
+        );
+        if (block.type !== "button") throw new Error("expected a button block");
+        expect(block.fontFamily).toBeUndefined();
+      });
+
+      it.each(KEYWORDS)("leaves a menu's font unset for %s", (keyword) => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-menu", {
+            menu: {
+              items: [{ text: "Home", link: "https://x.test" }],
+              style: { "font-family": keyword },
+            },
+          }),
+          [],
+        );
+        if (block.type !== "menu") throw new Error("expected a menu block");
+        expect(block.fontFamily).toBeUndefined();
+      });
+
+      it.each(KEYWORDS)(
+        "adds no font-family span to a paragraph for %s",
+        (keyword) => {
+          const { block } = convertModule(
+            makeModule("mailup-bee-newsletter-modules-paragraph", {
+              paragraph: {
+                html: "<p>Hi</p>",
+                style: { "font-family": keyword },
+              },
+            }),
+            [],
+          );
+          if (block.type !== "paragraph")
+            throw new Error("expected a paragraph block");
+          expect(block.content).toBe("<p>Hi</p>");
+        },
+      );
+
+      it("still carries a named font on a title", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            heading: {
+              text: "Hello",
+              style: { "font-family": "'Open Sans', sans-serif" },
+            },
+          }),
+          [],
+        );
+        if (block.type !== "title") throw new Error("expected a title block");
+        expect(block.fontFamily).toBe("Open Sans");
+      });
+
+      it("adds no color span to a paragraph whose color is inherit", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-paragraph", {
+            paragraph: { html: "<p>Hi</p>", style: { color: "inherit" } },
+          }),
+          [],
+        );
+        if (block.type !== "paragraph")
+          throw new Error("expected a paragraph block");
+        expect(block.content).toBe("<p>Hi</p>");
+      });
+    });
+
+    // A title, menu or table without a color of its own inherits the
+    // template's `textColor`, the body color the import writes.
+    describe("text color", () => {
+      it("leaves a title's color unset when the heading sets none", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-heading", {
+            heading: { text: "Hello", style: {} },
+          }),
+          [],
+        );
+        if (block.type !== "title") throw new Error("expected a title block");
+        expect("color" in block).toBe(false);
+      });
+
+      it("leaves a menu's color unset when the menu sets none", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-menu", {
+            menu: { items: [{ text: "Home", link: "https://x.test" }] },
+          }),
+          [],
+        );
+        if (block.type !== "menu") throw new Error("expected a menu block");
+        expect("color" in block).toBe(false);
+      });
+
+      it("leaves a table's color unset when the table sets none", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-table", {
+            table: { rows: [{ cells: [{ content: "A1" }] }] },
+          }),
+          [],
+        );
+        if (block.type !== "table") throw new Error("expected a table block");
+        expect("color" in block).toBe(false);
+      });
+
+      it("compares a paragraph's color with the template's text color", () => {
+        const paragraph = (color: string) =>
+          makeModule("mailup-bee-newsletter-modules-paragraph", {
+            paragraph: { html: "<p>Hi</p>", style: { color } },
+          });
+        const context = { textColor: "#333333" };
+
+        const differs = convertModule(paragraph("#1a1a1a"), [], context).block;
+        const same = convertModule(paragraph("#333333"), [], context).block;
+        if (differs.type !== "paragraph" || same.type !== "paragraph")
+          throw new Error("expected paragraph blocks");
+        expect(differs.content).toBe(
+          '<p><span style="color: #1a1a1a">Hi</span></p>',
+        );
+        expect(same.content).toBe("<p>Hi</p>");
+      });
+
+      it("compares with #1a1a1a when the template's text color is unknown", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-paragraph", {
+            paragraph: { html: "<p>Hi</p>", style: { color: "#1a1a1a" } },
+          }),
+          [],
+        );
+        if (block.type !== "paragraph")
+          throw new Error("expected a paragraph block");
+        expect(block.content).toBe("<p>Hi</p>");
       });
     });
 

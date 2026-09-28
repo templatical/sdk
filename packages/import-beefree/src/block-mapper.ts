@@ -14,6 +14,7 @@ import {
 } from "@templatical/types";
 import type {
   Block,
+  DividerBlock,
   HeadingLevel,
   SocialPlatform,
   SocialIcon,
@@ -32,9 +33,30 @@ import {
   parseColor,
   parseBorderTop,
   extractPadding,
-  parseWidthPercent,
+  parseDividerWidth,
   parseFontFamily,
 } from "./style-parser";
+
+/**
+ * The template text color the import writes when the body sets none.
+ */
+export const FALLBACK_TEXT_COLOR = "#1a1a1a";
+
+/**
+ * What the caller knows about where a module lands.
+ */
+export interface ModuleContext {
+  /**
+   * Width in px of the Templatical column the block renders in. Without it a
+   * px divider width is kept as pixels.
+   */
+  columnWidth?: number;
+  /**
+   * The template's `textColor`, which every text block without a color of
+   * its own inherits. Defaults to `FALLBACK_TEXT_COLOR`.
+   */
+  textColor?: string;
+}
 
 /**
  * Maps BeeFree module type strings to short keys.
@@ -140,12 +162,15 @@ function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
 function inlineStylesToHtml(
   html: string,
   style: Record<string, string | undefined>,
+  textColor: string,
 ): string {
   const spanParts: string[] = [];
   const fontSize = parsePxValue(style["font-size"]);
   if (fontSize && fontSize !== 16) spanParts.push(`font-size: ${fontSize}px`);
   const color = parseColor(style.color);
-  if (color && color !== "#1a1a1a") spanParts.push(`color: ${color}`);
+  // A paragraph inherits the template's text color, so only a different
+  // color needs a span to survive.
+  if (color && color !== textColor) spanParts.push(`color: ${color}`);
   const fontWeight = style["font-weight"];
   // "400" is the numeric synonym for "normal" — neither needs an explicit
   // span (matches the import-unlayer importer).
@@ -229,14 +254,17 @@ function wrapParagraphInner(html: string, spanStyle: string): string {
   return out;
 }
 
-function convertText(descriptor: BeeFreeeModuleDescriptor): Block {
+function convertText(
+  descriptor: BeeFreeeModuleDescriptor,
+  textColor: string,
+): Block {
   const textContent =
     descriptor.text ?? descriptor.paragraph ?? descriptor.list;
   const html = textContent?.html ?? "";
   const style = textContent?.style ?? {};
 
   return createParagraphBlock({
-    content: inlineStylesToHtml(html, style),
+    content: inlineStylesToHtml(html, style, textColor),
     styles: makeStyles(descriptor),
   });
 }
@@ -250,9 +278,12 @@ function parseHeadingLevel(tag: string): HeadingLevel {
   return 2;
 }
 
-function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
+function convertHeading(
+  descriptor: BeeFreeeModuleDescriptor,
+  textColor: string,
+): Block {
   const heading = descriptor.heading;
-  if (!heading) return convertText(descriptor);
+  if (!heading) return convertText(descriptor, textColor);
 
   const style = heading.style ?? {};
   const tag = heading.title ?? "h2";
@@ -265,7 +296,7 @@ function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
   return createTitleBlock({
     content: content ? `<p>${content}</p>` : "<p></p>",
     level: parseHeadingLevel(tag),
-    color: parseColor(style.color) || "#1a1a1a",
+    color: parseColor(style.color) || undefined,
     textAlign: toAlign(style["text-align"]),
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
     styles: makeStyles(descriptor),
@@ -329,18 +360,93 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): Block {
   });
 }
 
-function convertDivider(descriptor: BeeFreeeModuleDescriptor): Block {
-  const divider = descriptor.divider;
-  const style = divider?.style ?? {};
-  const border = parseBorderTop(style["border-top"]);
+/**
+ * `"full"` when the divider spans its column: no width, `100%`, or a px width
+ * that reaches `contentWidth`. Without a `contentWidth` a px width stands as
+ * stated. Any other percentage stays a percentage, clamped to 0–100%.
+ */
+function resolveDividerWidth(
+  value: string | undefined,
+  contentWidth: number | undefined,
+  notes: string[],
+): DividerBlock["width"] {
+  const raw = (value ?? "").trim();
+  if (!raw) return "full";
 
-  return createDividerBlock({
-    lineStyle: toLineStyle(border.style),
-    color: border.color,
-    thickness: border.width || 1,
-    width: parseWidthPercent(style.width),
-    styles: makeStyles(descriptor),
-  });
+  const parsed = parseDividerWidth(raw);
+  if (!parsed) {
+    notes.push(
+      `Divider width "${raw}" could not be read; imported as full width.`,
+    );
+    return "full";
+  }
+
+  if (parsed.unit === "%") {
+    const percent = Math.min(100, Math.max(0, parsed.value));
+    if (percent !== parsed.value) {
+      notes.push(`Divider width ${raw} was clamped to ${percent}%.`);
+    }
+    // Two decimals keep the value inside `DividerPercentWidth`'s pattern,
+    // which a float printed in exponent form would leave.
+    const share = Math.round(percent * 100) / 100;
+    return share === 100 ? "full" : `${share}%`;
+  }
+
+  const px = Math.max(0, Math.round(parsed.value));
+  if (px !== Math.round(parsed.value)) {
+    notes.push(`Divider width ${raw} was clamped to 0px.`);
+  }
+  return contentWidth !== undefined && px >= contentWidth ? "full" : px;
+}
+
+function convertDivider(
+  descriptor: BeeFreeeModuleDescriptor,
+  columnWidth: number | undefined,
+): { block: Block; notes: string[] } {
+  const style = descriptor.divider?.style ?? {};
+  const border = parseBorderTop(style["border-top"]);
+  const styles = makeStyles(descriptor);
+  const notes: string[] = [];
+
+  // MJML draws a full divider across its column less the divider's own
+  // padding, so a px width that reaches that renders the same as "full", and
+  // "full" keeps narrowing with the column on a phone.
+  const contentWidth =
+    columnWidth === undefined
+      ? undefined
+      : columnWidth - styles.padding.left - styles.padding.right;
+  const width = resolveDividerWidth(style.width, contentWidth, notes);
+
+  const align = dividerAlign(descriptor);
+  if (width !== "full" && (align === "left" || align === "right")) {
+    notes.push(
+      `BeeFree aligns this divider ${align}; Templatical centres every divider.`,
+    );
+  }
+
+  return {
+    block: createDividerBlock({
+      lineStyle: toLineStyle(border.style),
+      color: border.color,
+      thickness: border.width || 1,
+      width,
+      styles,
+    }),
+    notes,
+  };
+}
+
+/**
+ * BeeFree keeps a divider's alignment in `computedStyle.align`; some exports
+ * also write it to the module style's `text-align`.
+ */
+function dividerAlign(
+  descriptor: BeeFreeeModuleDescriptor,
+): string | undefined {
+  const computed = descriptor.computedStyle?.align;
+  return typeof computed === "string"
+    ? computed
+    : descriptor.style?.["text-align"];
 }
 
 function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
@@ -436,7 +542,7 @@ function convertMenu(descriptor: BeeFreeeModuleDescriptor): Block {
     separator: menu.separator || "|",
     separatorColor: parseColor(menu.separatorColor) || "#999999",
     fontSize: parsePxValue(style["font-size"]) || 14,
-    color: parseColor(style.color) || "#1a1a1a",
+    color: parseColor(style.color) || undefined,
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
     textAlign: toAlign(style["text-align"], "center"),
     styles: makeStyles(descriptor),
@@ -487,7 +593,7 @@ function convertTable(descriptor: BeeFreeeModuleDescriptor): {
           ? table.cellPadding
           : parsePxValue(table.cellPadding as string) || 8,
       fontSize: parsePxValue(style["font-size"]) || 14,
-      color: parseColor(style.color) || "#1a1a1a",
+      color: parseColor(style.color) || undefined,
       textAlign: toAlign(style["text-align"]),
       styles: makeStyles(descriptor),
     }),
@@ -519,9 +625,11 @@ function convertHtmlFallback(module: BeeFreeeModule): Block {
 export function convertModule(
   module: BeeFreeeModule,
   warnings: string[],
+  context: ModuleContext = {},
 ): { block: Block; entry: ImportReportEntry } {
   const mappedType = MODULE_TYPE_MAP[module.type];
   const descriptor = module.descriptor;
+  const textColor = context.textColor ?? FALLBACK_TEXT_COLOR;
 
   if (!mappedType) {
     return {
@@ -537,14 +645,15 @@ export function convertModule(
 
   let block: Block;
   let isApproximation = false;
+  let notes: string[] = [];
 
   switch (mappedType) {
     case "paragraph":
     case "list":
-      block = convertText(descriptor);
+      block = convertText(descriptor, textColor);
       break;
     case "title":
-      block = convertHeading(descriptor);
+      block = convertHeading(descriptor, textColor);
       break;
     case "image":
       block = convertImage(descriptor);
@@ -552,9 +661,13 @@ export function convertModule(
     case "button":
       block = convertButton(descriptor);
       break;
-    case "divider":
-      block = convertDivider(descriptor);
+    case "divider": {
+      const result = convertDivider(descriptor, context.columnWidth);
+      block = result.block;
+      notes = result.notes;
+      isApproximation = notes.length > 0;
       break;
+    }
     case "spacer":
       block = convertSpacer(descriptor);
       break;
@@ -600,6 +713,7 @@ export function convertModule(
       beeFreeModuleType: module.type,
       templaticalBlockType: block.type,
       status: isApproximation ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     },
   };
 }

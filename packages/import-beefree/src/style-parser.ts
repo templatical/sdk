@@ -4,6 +4,18 @@ import type { SpacingValue } from "@templatical/types";
  * Parses CSS-like style values from BeeFree descriptors.
  */
 
+/**
+ * The CSS-wide keywords. Each one defers to the cascade instead of naming a
+ * value, and a block field that carried one would reach the renderer
+ * verbatim, so the parsers read them as unset and the caller's fallback
+ * applies.
+ */
+const CSS_WIDE_KEYWORDS = new Set(["inherit", "initial", "unset", "revert"]);
+
+function isCssWideKeyword(value: string): boolean {
+  return CSS_WIDE_KEYWORDS.has(value.trim().toLowerCase());
+}
+
 export function parsePxValue(value: string | undefined): number {
   if (!value) return 0;
   const match = value.match(/^(-?\d+(?:\.\d+)?)\s*px/);
@@ -45,10 +57,23 @@ export function parseImageBorderRadius(
   return px > 0 ? px : undefined;
 }
 
+/**
+ * A color as lowercase 6-digit hex where it is hex, otherwise as written.
+ *
+ * `""` means unset: returned for transparent, `none` and the CSS-wide
+ * keywords, so the caller's fallback applies.
+ */
 export function parseColor(value: string | undefined): string {
-  if (!value || value === "transparent") return "";
+  if (!value) return "";
 
   const trimmed = value.trim();
+  const keyword = trimmed.toLowerCase();
+  if (
+    keyword === "transparent" ||
+    keyword === "none" ||
+    isCssWideKeyword(keyword)
+  )
+    return "";
 
   // Already a valid hex color
   if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
@@ -135,16 +160,21 @@ function parseShorthandPadding(value: string): SpacingValue {
   }
 }
 
-export function parseWidthPercent(value: string | undefined): number {
-  if (!value) return 100;
-  const match = value.match(/^(\d+(?:\.\d+)?)\s*%/);
-  if (match) return Math.round(parseFloat(match[1]));
-  // Might be px — return 100 as default
-  return 100;
+/**
+ * A divider's `width` as a number and its unit, or `undefined` when it is
+ * neither a px nor a % length (`auto`, a keyword, anything unreadable).
+ */
+export function parseDividerWidth(
+  value: string,
+): { value: number; unit: "px" | "%" } | undefined {
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(%|px)$/);
+  if (!match) return undefined;
+  return { value: parseFloat(match[1]), unit: match[2] === "%" ? "%" : "px" };
 }
 
 export function parseFontFamily(value: string | undefined): string {
   if (!value) return "";
   // Take the first font in the stack
-  return value.split(",")[0].trim().replace(/['"]/g, "");
+  const family = value.split(",")[0].trim().replace(/['"]/g, "");
+  return isCssWideKeyword(family) ? "" : family;
 }

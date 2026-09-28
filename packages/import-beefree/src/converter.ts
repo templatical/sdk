@@ -11,7 +11,11 @@ import type {
   ImportReport,
   ImportReportEntry,
 } from "./types";
-import { convertModule } from "./block-mapper";
+import {
+  convertModule,
+  FALLBACK_TEXT_COLOR,
+  type ModuleContext,
+} from "./block-mapper";
 import { parsePxValue, parseColor, parseFontFamily } from "./style-parser";
 
 /**
@@ -46,17 +50,37 @@ function resolveColumnLayout(
 }
 
 /**
+ * Column widths in px for a layout, mirroring `renderer/src/columns.ts`, and
+ * floored as the renderer floors the width it hands each column.
+ */
+function columnPixels(layout: ColumnLayout, bodyWidth: number): number[] {
+  switch (layout) {
+    case "2":
+      return [bodyWidth * 0.5, bodyWidth * 0.5].map(Math.floor);
+    case "3":
+      return [bodyWidth / 3, bodyWidth / 3, bodyWidth / 3].map(Math.floor);
+    case "1-2":
+      return [bodyWidth / 3, (bodyWidth * 2) / 3].map(Math.floor);
+    case "2-1":
+      return [(bodyWidth * 2) / 3, bodyWidth / 3].map(Math.floor);
+    default:
+      return [Math.floor(bodyWidth)];
+  }
+}
+
+/**
  * Converts all modules in a column to Templatical blocks.
  */
 function convertColumnModules(
   column: BeeFreeeColumn,
+  context: ModuleContext,
   entries: ImportReportEntry[],
   warnings: string[],
 ): Block[] {
   const blocks: Block[] = [];
 
   for (const module of column.modules) {
-    const { block, entry } = convertModule(module, warnings);
+    const { block, entry } = convertModule(module, warnings, context);
     blocks.push(block);
     entries.push(entry);
   }
@@ -69,6 +93,7 @@ function convertColumnModules(
  */
 function processRow(
   row: BeeFreeeRow,
+  settings: TemplateContent["settings"],
   entries: ImportReportEntry[],
   warnings: string[],
 ): Block[] {
@@ -94,9 +119,14 @@ function processRow(
 
   if (!layout) {
     // Single column (or flattened 4+ columns) — return modules directly.
+    // Either way the modules end up spanning the body.
     const blocks: Block[] = [];
+    const context = {
+      columnWidth: settings.width,
+      textColor: settings.textColor,
+    };
     for (const column of columns) {
-      blocks.push(...convertColumnModules(column, entries, warnings));
+      blocks.push(...convertColumnModules(column, context, entries, warnings));
     }
     // A non-transparent row background can't survive on bare modules; wrap
     // them in a one-column section so the colored band still renders. Mirrors
@@ -117,8 +147,14 @@ function processRow(
   }
 
   // Multi-column — wrap in a SectionBlock
-  const children: Block[][] = columns.map((col) =>
-    convertColumnModules(col, entries, warnings),
+  const widths = columnPixels(layout, settings.width);
+  const children: Block[][] = columns.map((col, index) =>
+    convertColumnModules(
+      col,
+      { columnWidth: widths[index], textColor: settings.textColor },
+      entries,
+      warnings,
+    ),
   );
 
   const section = createSectionBlock({
@@ -141,20 +177,29 @@ function extractSettings(
 ): TemplateContent["settings"] {
   const body = template.page.body;
   const contentStyle = body?.content?.style ?? {};
+  const computedStyle = body?.content?.computedStyle ?? {};
   const containerStyle = body?.container?.style ?? {};
 
-  const width = parsePxValue(contentStyle["width"] ?? contentStyle.width);
+  // Exports keep the body width in `computedStyle.messageWidth` and usually
+  // carry no `style.width`.
+  const width =
+    parsePxValue(computedStyle.messageWidth) ||
+    parsePxValue(contentStyle.width);
   const bgColor =
     parseColor(contentStyle["background-color"]) ||
     parseColor(containerStyle["background-color"]) ||
     "#ffffff";
   const fontFamily = parseFontFamily(contentStyle["font-family"]) || "Arial";
+  const linkColor = parseColor(computedStyle.linkColor);
 
   return {
     width: width || 600,
     backgroundColor: bgColor,
-    textColor: "#1a1a1a",
-    linkUnderline: false,
+    textColor: parseColor(contentStyle.color) || FALLBACK_TEXT_COLOR,
+    ...(linkColor ? { linkColor } : {}),
+    // BeeFree underlines per link, in the link's own markup, and has no
+    // template-wide switch, so links take the browser default: underlined.
+    linkUnderline: true,
     fontFamily,
     locale: "en",
   };
@@ -203,17 +248,20 @@ export function convertBeeFreeTemplate(
     );
   }
 
+  // Rows are measured against the width the imported template renders at.
+  const settings = extractSettings(template);
+
   // Process rows
   for (const row of template.page.rows) {
     if (row.empty) continue;
-    blocks.push(...processRow(row, entries, warnings));
+    blocks.push(...processRow(row, settings, entries, warnings));
   }
 
   // Build template content
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
-    settings: extractSettings(template),
+    settings,
   };
 
   // Build report summary

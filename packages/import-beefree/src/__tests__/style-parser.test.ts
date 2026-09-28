@@ -4,7 +4,7 @@ import {
   parseColor,
   parseBorderTop,
   extractPadding,
-  parseWidthPercent,
+  parseDividerWidth,
   parseFontFamily,
 } from "../style-parser";
 
@@ -51,6 +51,24 @@ describe("parseColor", () => {
 
   it("passes through rgb values", () => {
     expect(parseColor("rgb(255, 0, 0)")).toBe("rgb(255, 0, 0)");
+  });
+
+  // A CSS-wide keyword names no color, so it has to read as unset: returned
+  // as is, it lands in a block field and the renderer writes it out verbatim.
+  it.each(["inherit", "initial", "unset", "revert"])(
+    "returns empty string for the CSS-wide keyword %s",
+    (keyword) => {
+      expect(parseColor(keyword)).toBe("");
+    },
+  );
+
+  it("matches keywords case-insensitively and ignores surrounding space", () => {
+    expect(parseColor(" INHERIT ")).toBe("");
+    expect(parseColor("Transparent")).toBe("");
+  });
+
+  it("returns empty string for none, like the other importers", () => {
+    expect(parseColor("none")).toBe("");
   });
 });
 
@@ -112,18 +130,23 @@ describe("extractPadding", () => {
   });
 });
 
-describe("parseWidthPercent", () => {
-  it("extracts percentage value", () => {
-    expect(parseWidthPercent("80%")).toBe(80);
-    expect(parseWidthPercent("100%")).toBe(100);
+describe("parseDividerWidth", () => {
+  it("reads a percentage", () => {
+    expect(parseDividerWidth("80%")).toEqual({ value: 80, unit: "%" });
+    expect(parseDividerWidth("37.5 %")).toEqual({ value: 37.5, unit: "%" });
+    expect(parseDividerWidth("-10%")).toEqual({ value: -10, unit: "%" });
   });
 
-  it("returns 100 for undefined", () => {
-    expect(parseWidthPercent(undefined)).toBe(100);
+  it("reads a px width as its number of pixels", () => {
+    expect(parseDividerWidth("600px")).toEqual({ value: 600, unit: "px" });
+    expect(parseDividerWidth(" 16.5px ")).toEqual({ value: 16.5, unit: "px" });
   });
 
-  it("returns 100 for px values", () => {
-    expect(parseWidthPercent("600px")).toBe(100);
+  it("returns undefined for anything that is neither px nor %", () => {
+    expect(parseDividerWidth("auto")).toBeUndefined();
+    expect(parseDividerWidth("inherit")).toBeUndefined();
+    expect(parseDividerWidth("50em")).toBeUndefined();
+    expect(parseDividerWidth("")).toBeUndefined();
   });
 });
 
@@ -141,4 +164,14 @@ describe("parseFontFamily", () => {
   it("returns empty for undefined", () => {
     expect(parseFontFamily(undefined)).toBe("");
   });
+
+  // A CSS-wide keyword names no font. Returned as is it would become a
+  // block's own font, and the sent email would fall back to the client's
+  // default face instead of the template's font.
+  it.each(["inherit", "initial", "unset", "revert", "Inherit"])(
+    "returns empty for the CSS-wide keyword %s",
+    (keyword) => {
+      expect(parseFontFamily(keyword)).toBe("");
+    },
+  );
 });
