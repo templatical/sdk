@@ -38,6 +38,9 @@ When the user asks for a change:
        continue.
      - **Replace with mine** → apply to your own version; say explicitly that
        this discards their browser edits.
+   `annotations` is the queue of notes left in the browser. Applying that
+   queue is [annotations.md](annotations.md), and that path keeps the browser
+   copy without asking. The question above is for every other request.
 2. **Apply the change.** For a scoped edit, prefer an operation (see [Editing
    with operations](edit.md)) — `edit` validates and writes
    in one step, composing on top of whatever's currently in the working file
@@ -55,8 +58,12 @@ When the user asks for a change:
    ```
    npx -y @templatical/template-tools@0.42.0 live reload --json
    ```
-   The page updates live (over Server-Sent Events) — no refresh. This also
-   clears `annotations`, so a note is never acted on twice.
+   The page updates live (over Server-Sent Events) — no refresh. A plain
+   reload leaves notes in place. Pass `--consume-annotations` only when
+   applying the queue, as [annotations.md](annotations.md) describes:
+   ```
+   npx -y @templatical/template-tools@0.42.0 live reload --consume-annotations --json
+   ```
 
 ## Export
 

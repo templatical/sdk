@@ -11,37 +11,33 @@ const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");
 // content, so it lives with it:
 // skills/templatical/tests/template-locale.test.ts.
 describe("live-mode locale", () => {
-  // The harness called `init()` with no `locale` at all, so live mode was an
-  // English editor no matter who opened it — even while the skill was generating
-  // German copy into it.
+  const html = read("../live/index.html");
+
   it("passes a locale to init()", () => {
-    const html = read("../live/index.html");
     const call = /init\(\{([\s\S]*?)\n\s*\}\);/.exec(html)?.[1];
     expect(call).toBeDefined();
-    expect(call).toContain("locale:");
+    expect(call).toContain("locale: readLocale()");
   });
 
-  // The browser that opens the harness belongs to the person hand-editing in it,
-  // so its language is the right one for the chrome. A hardcoded tag would be
-  // wrong for everyone but one audience, and the agent's own conversation
-  // language is a proxy at best.
-  it("takes it from the viewer's own browser rather than hardcoding one", () => {
-    const html = read("../live/index.html");
-    const call = /init\(\{([\s\S]*?)\n\s*\}\);/.exec(html)![1];
-    const locale = /locale:\s*([^,\n]+)/.exec(call)?.[1];
-    expect(locale).toBeDefined();
-    // Optional-chained or not — the third case below is what requires the guard.
-    expect(locale).toMatch(/navigator\??\.language/);
-    expect(locale).not.toMatch(/["'`]/);
+  // Nothing stored: the browser that opens the harness belongs to the person
+  // hand-editing in it. A hardcoded tag would be wrong for everyone but one
+  // audience. A stored tpl-live-locale overrides that, from the settings menu.
+  it("falls back to the viewer's browser language", () => {
+    const start = html.indexOf("function readLocale");
+    expect(start).toBeGreaterThan(-1);
+    const fn = html.slice(start, start + 800);
+    expect(fn).toMatch(/navigator\?\.language \|\| undefined/);
+    expect(fn).toContain("tpl-live-locale");
   });
 
-  // `navigator.language` is absent in a non-browser context and can be an empty
-  // string; the editor treats an unsupported tag as English, but an exception
-  // here would abort the whole mount.
-  it("tolerates a runtime that exposes no language", () => {
-    const html = read("../live/index.html");
-    const call = /init\(\{([\s\S]*?)\n\s*\}\);/.exec(html)![1];
-    const locale = /locale:\s*([^,\n]+)/.exec(call)![1];
-    expect(locale).toMatch(/\?\.|\|\||\?\?/);
+  it("offers every editor locale and system, light, and dark", () => {
+    expect(html).toContain("getSupportedLocales");
+    expect(html).toContain("Intl.DisplayNames");
+    expect(html).toContain('viewBox="0 0 24 24"');
+    expect(html).toContain('id="live-locale"');
+    expect(html).toContain('value="auto"');
+    expect(html).toContain('value="light"');
+    expect(html).toContain('value="dark"');
+    expect(html).not.toContain('id="btn-theme"');
   });
 });

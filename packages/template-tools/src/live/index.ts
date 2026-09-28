@@ -96,7 +96,11 @@ async function readJsonBody(req: NodeJS.ReadableStream): Promise<
       content?: unknown;
       baseline?: boolean;
       blockId?: string;
+      parentBlockId?: unknown;
+      blockType?: unknown;
+      label?: unknown;
       text?: string;
+      consumeAnnotations?: boolean;
     }
   | undefined
 > {
@@ -170,8 +174,58 @@ export interface Annotation {
   id: string;
   /** null for a note about the template rather than one block. */
   blockId: string | null;
+  /** The next data-block-id above the target. null at the top level and for a template note. */
+  parentBlockId: string | null;
+  blockType: string | null;
+  /** Snapshot of the block's text at save time, already truncated. */
+  label: string;
   text: string;
   createdAt: number;
+}
+
+const NOTE_TEXT_MAX = 2000;
+const NOTE_LABEL_MAX = 80;
+const NOTE_BLOCK_TYPE_MAX = 40;
+const NOTE_QUEUE_MAX = 40;
+
+function readNoteText(value: unknown): { text: string } | { error: string } {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text) return { error: "An annotation needs non-empty `text`." };
+  if (text.length > NOTE_TEXT_MAX) {
+    return { error: "A note can be at most 2000 characters." };
+  }
+  return { text };
+}
+
+function readOptionalId(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function readBlockType(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  return value.trim().slice(0, NOTE_BLOCK_TYPE_MAX);
+}
+
+function readLabel(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/\s+/g, " ").trim().slice(0, NOTE_LABEL_MAX);
+}
+
+function annotationIdFromPath(pathname: string): string | null {
+  const prefix = "/annotations/";
+  if (!pathname.startsWith(prefix)) return null;
+  const raw = pathname.slice(prefix.length);
+  if (!raw || raw.includes("/")) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}
+
+function noteNotFound(res: ServerResponse): void {
+  res.writeHead(404, { "content-type": "text/plain" });
+  res.end("No note with that id.");
 }
 
 // --------------------------------------------------------------------------
@@ -191,7 +245,11 @@ export interface BridgeHandle {
     annotations: Annotation[];
   };
   /** Re-read the working file and push it to every connected page. */
-  reload: () => { ok: boolean; clients: number };
+  reload: (options?: { consumeAnnotations?: boolean }) => {
+    ok: boolean;
+    clients: number;
+    consumed: boolean;
+  };
   close: () => Promise<void>;
 }
 
@@ -235,6 +293,11 @@ export function startBridge({
     divergent: false,
     annotations: [],
   };
+  let nextAnnotationNumber = 1;
+  function mintAnnotationId(): string {
+    const n = nextAnnotationNumber++;
+    return `a${n}-${Date.now().toString(36)}`;
+  }
   const clients = new Set<ServerResponse>();
 
   function broadcastTemplate(content: unknown): void {
@@ -254,19 +317,24 @@ export function startBridge({
     };
   }
 
-  function reload(): { ok: boolean; clients: number } {
-    // The caller wrote the working file; re-read and push it to the page. The
-    // freshly-written file is the new baseline, so any pending user edit is
-    // superseded — reset the divergence tracker.
+  function reload(options?: { consumeAnnotations?: boolean }): {
+    ok: boolean;
+    clients: number;
+    consumed: boolean;
+  } {
+    // The freshly-written file is the new baseline, so any pending user edit is
+    // superseded. Notes stay: a plain reload is an ordinary edit, and clearing
+    // them here would drop a queue the agent has not applied. consumeAnnotations
+    // clears only after the file was actually read — clearing first would drop
+    // the notes and push nothing when the file is missing.
     const content = readWorkingFile(workingPath);
     state.baseline = null;
     state.editorCurrent = null;
     state.divergent = false;
-    // The caller has read these by the time it writes and reloads, so reload is
-    // the resolve step: no separate protocol, and a note is never acted on twice.
-    state.annotations = [];
+    const consumed = options?.consumeAnnotations === true && content !== null;
+    if (consumed) state.annotations = [];
     if (content !== null) broadcastTemplate(content);
-    return { ok: true, clients: clients.size };
+    return { ok: true, clients: clients.size, consumed };
   }
 
   const server = createServer(async (req, res) => {
@@ -340,16 +408,27 @@ export function startBridge({
 
       if (method === "POST" && pathname === "/annotations") {
         const body = await readJsonBody(req);
-        const text = typeof body?.text === "string" ? body.text.trim() : "";
-        if (!text) {
+        const parsed = readNoteText(body?.text);
+        if ("error" in parsed) {
           res.writeHead(400, { "content-type": "text/plain" });
-          res.end("An annotation needs non-empty `text`.");
+          res.end(parsed.error);
           return;
         }
+        if (state.annotations.length >= NOTE_QUEUE_MAX) {
+          res.writeHead(400, { "content-type": "text/plain" });
+          res.end("The note queue is full (40).");
+          return;
+        }
+        const blockId = readOptionalId(body?.blockId);
+        let parentBlockId = readOptionalId(body?.parentBlockId);
+        if (parentBlockId === blockId) parentBlockId = null;
         const annotation: Annotation = {
-          id: `a${state.annotations.length + 1}-${Date.now().toString(36)}`,
-          blockId: typeof body?.blockId === "string" ? body.blockId : null,
-          text,
+          id: mintAnnotationId(),
+          blockId,
+          parentBlockId,
+          blockType: readBlockType(body?.blockType),
+          label: readLabel(body?.label),
+          text: parsed.text,
           createdAt: Date.now(),
         };
         state.annotations.push(annotation);
@@ -358,8 +437,40 @@ export function startBridge({
         return;
       }
 
+      const noteId = annotationIdFromPath(pathname);
+      if (noteId && (method === "PUT" || method === "DELETE")) {
+        const index = state.annotations.findIndex((note) => note.id === noteId);
+        if (index < 0) {
+          noteNotFound(res);
+          return;
+        }
+        if (method === "DELETE") {
+          state.annotations.splice(index, 1);
+          res.writeHead(204).end();
+          return;
+        }
+        const body = await readJsonBody(req);
+        const parsed = readNoteText(body?.text);
+        if ("error" in parsed) {
+          res.writeHead(400, { "content-type": "text/plain" });
+          res.end(parsed.error);
+          return;
+        }
+        const updated: Annotation = {
+          ...state.annotations[index],
+          text: parsed.text,
+        };
+        state.annotations[index] = updated;
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify(updated));
+        return;
+      }
+
       if (method === "POST" && pathname === "/reload") {
-        const result = reload();
+        const body = await readJsonBody(req);
+        const result = reload({
+          consumeAnnotations: body?.consumeAnnotations === true,
+        });
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(result));
         return;
