@@ -38,6 +38,26 @@ describe("annotation capture UI", () => {
     expect(match?.[1]).toBe("true");
   });
 
+  it("explains the Live status in a hover tip", () => {
+    expect(HARNESS).toContain('id="status-tip"');
+    expect(HARNESS).toContain(
+      "Connected. Edits here and the agent's changes both show up on this page.",
+    );
+    const setStatus = HARNESS.indexOf("function setStatus");
+    expect(HARNESS.slice(setStatus, setStatus + 300)).toContain(
+      '$("status-tip").textContent',
+    );
+  });
+
+  it("gives Annotate a pressed style and lets Cancel dismiss an empty composer", () => {
+    expect(HARNESS).toContain(
+      '#annotate-toggle[aria-pressed="true"]',
+    );
+    const cancel = HARNESS.indexOf('$("note-cancel").onclick');
+    expect(cancel).toBeGreaterThan(-1);
+    expect(HARNESS.slice(cancel, cancel + 400)).toContain("setAnnotating(false)");
+  });
+
   it("annotates from a toggle, not from alt-click", () => {
     expect(HARNESS).toContain('id="annotate-toggle"');
     expect(HARNESS).toContain("aria-pressed");
@@ -75,6 +95,14 @@ describe("annotation capture UI", () => {
     expect(HARNESS).toContain('method: "PUT"');
     expect(HARNESS).toContain('method: "DELETE"');
     expect(HARNESS).toContain("refreshNotes");
+  });
+
+  it("re-reads the note queue when the agent pushes a template", () => {
+    const start = HARNESS.indexOf("async function applyRemote");
+    const end = HARNESS.indexOf("// ---- Export ----", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(HARNESS.slice(start, end)).toContain("await refreshNotes()");
   });
 
   it("hides the queue count when there are no notes", () => {

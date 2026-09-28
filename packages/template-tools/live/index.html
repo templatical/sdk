@@ -92,6 +92,26 @@
           --scrim: oklch(10% 0.01 60 / 0.6);
           color-scheme: dark;
         }
+        :root:not([data-theme="light"]) .btn.primary,
+        :root:not([data-theme="light"]) .btn.primary:hover {
+          background: var(--text);
+          color: var(--canvas);
+        }
+        :root:not([data-theme="light"]) .btn.primary:hover {
+          background: color-mix(in oklch, var(--text) 86%, var(--canvas));
+        }
+        :root:not([data-theme="light"]) #annotate-toggle[aria-pressed="true"],
+        :root:not([data-theme="light"])
+          #annotate-toggle[aria-pressed="true"]:hover {
+          color: var(--text);
+        }
+        :root:not([data-theme="light"]) #annotate-count,
+        :root:not([data-theme="light"])
+          #annotate-toggle[aria-pressed="true"]
+          #annotate-count {
+          background: var(--text);
+          color: var(--canvas);
+        }
       }
       :root[data-theme="dark"] {
         --canvas: oklch(16% 0.008 60);
@@ -110,7 +130,25 @@
         --scrim: oklch(10% 0.01 60 / 0.6);
         color-scheme: dark;
       }
-
+      :root[data-theme="dark"] .btn.primary,
+      :root[data-theme="dark"] .btn.primary:hover {
+        background: var(--text);
+        color: var(--canvas);
+      }
+      :root[data-theme="dark"] .btn.primary:hover {
+        background: color-mix(in oklch, var(--text) 86%, var(--canvas));
+      }
+      :root[data-theme="dark"] #annotate-toggle[aria-pressed="true"],
+      :root[data-theme="dark"] #annotate-toggle[aria-pressed="true"]:hover {
+        color: var(--text);
+      }
+      :root[data-theme="dark"] #annotate-count,
+      :root[data-theme="dark"]
+        #annotate-toggle[aria-pressed="true"]
+        #annotate-count {
+        background: var(--text);
+        color: var(--canvas);
+      }
       * {
         box-sizing: border-box;
       }
@@ -139,17 +177,15 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        height: 52px;
+        height: 56px;
         flex: none;
-        padding: 0 14px 0 16px;
-        background: var(--bar);
-        border-bottom: 1px solid var(--border);
-        overflow-x: auto;
-        scrollbar-width: none;
-        z-index: 10;
+        padding: 0 16px;
+        position: relative;
+        background: var(--canvas);
+        z-index: 20;
       }
-      .bar::-webkit-scrollbar {
-        display: none;
+      #settings {
+        position: relative;
       }
       .bar .group {
         display: flex;
@@ -182,6 +218,7 @@
       }
 
       .status {
+        position: relative;
         display: inline-flex;
         align-items: center;
         gap: 7px;
@@ -193,6 +230,30 @@
         font-weight: 500;
         color: var(--muted);
         white-space: nowrap;
+      }
+      .status-tip {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 2;
+        width: max-content;
+        max-width: 260px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.4;
+        white-space: normal;
+        box-shadow: 0 12px 32px oklch(18% 0.01 60 / 0.14);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .status:hover .status-tip,
+      .status:focus-visible .status-tip {
+        opacity: 1;
       }
       .status .dot {
         width: 7px;
@@ -289,13 +350,145 @@
         justify-content: center;
       }
       .btn.primary {
-        background: var(--primary);
+        background: var(--n-900);
         border-color: transparent;
         color: var(--paper);
       }
       .btn.primary:hover {
-        background: var(--primary-hover);
+        background: var(--n-700);
         color: var(--paper);
+      }
+      /* Pressed Annotate is a tint, not a second amber fill. The editor
+         toolbar under this bar already uses amber for its own active state. */
+      #annotate-toggle[aria-pressed="true"] {
+        background: var(--primary-tint);
+        border-color: var(--primary);
+        color: var(--n-900);
+      }
+      #annotate-toggle[aria-pressed="true"]:hover {
+        background: var(--primary-tint);
+        border-color: var(--primary);
+        color: var(--n-900);
+      }
+      #annotate-count[hidden] {
+        display: none;
+      }
+      #annotate-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: var(--n-900);
+        color: var(--paper);
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 16px;
+      }
+      #annotate-toggle[aria-pressed="true"] #annotate-count {
+        background: var(--n-900);
+        color: var(--paper);
+      }
+
+      .settings-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 1;
+        width: 240px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        box-shadow:
+          0 10px 15px -3px oklch(18% 0.01 60 / 0.12),
+          0 4px 6px -4px oklch(18% 0.01 60 / 0.08);
+        transform-origin: top right;
+      }
+      .settings-panel[hidden] {
+        display: none;
+      }
+      .settings-label {
+        display: block;
+        margin: 0 0 6px;
+        padding: 0;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .settings-label.spaced {
+        margin-top: 12px;
+      }
+      .theme-field {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+      .theme-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        margin: 0;
+        padding: 4px;
+        border-radius: 6px;
+        background: var(--canvas);
+      }
+      .theme-options label {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 32px;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .theme-options label:hover {
+        color: var(--text);
+      }
+      .theme-options svg {
+        width: 14px;
+        height: 14px;
+        flex: none;
+      }
+      .theme-options input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .theme-options label:has(input:checked) {
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 1px 2px oklch(18% 0.01 60 / 0.08);
+      }
+      #live-locale {
+        width: 100%;
+        height: 36px;
+        padding: 0 28px 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background-color: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378706a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+      }
+      #live-locale:focus-visible {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--ring);
       }
       :focus-visible {
         outline: none;
@@ -303,10 +496,18 @@
       }
 
       /* ---- Editor + loading ------------------------------------------- */
+      /* The editor fills this card. The 15px well is the margin outside the border. */
       .stage {
         position: relative;
+        z-index: 0;
         flex: 1;
         min-height: 0;
+        margin: 0 15px 15px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--surface);
+        box-shadow: 0 1px 2px oklch(18% 0.01 60 / 0.06);
       }
       #editor {
         position: absolute;
@@ -321,7 +522,7 @@
         align-items: center;
         justify-content: center;
         gap: 18px;
-        background: var(--canvas);
+        background: var(--surface);
         z-index: 5;
         transition: opacity 260ms var(--spring);
       }
@@ -366,7 +567,7 @@
         width: min(840px, 92vw);
         max-height: 86vh;
         border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: 12px;
         padding: 0;
         background: var(--raised);
         color: var(--text);
@@ -495,13 +696,13 @@
         right: 16px;
         bottom: 16px;
         z-index: 20000;
-        width: 280px;
-        padding: 12px;
+        width: 300px;
+        padding: 14px;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface);
         color: var(--text);
-        box-shadow: 0 8px 24px oklch(18% 0.01 60 / 0.16);
+        box-shadow: 0 12px 32px oklch(18% 0.01 60 / 0.14);
         font-size: 13px;
         line-height: 1.4;
       }
@@ -624,9 +825,13 @@
           id="status"
           class="status"
           data-state="connecting"
-          title="Connecting to the live preview…"
+          tabindex="0"
+          aria-describedby="status-tip"
         >
           <span class="dot"></span><span id="status-text">Connecting…</span>
+          <span id="status-tip" class="status-tip" role="tooltip">
+            Connecting to the live preview…
+          </span>
         </span>
         <span class="divider"></span>
         <button
@@ -639,7 +844,13 @@
           <span class="label">Annotate</span>
           <span id="annotate-count" hidden></span>
         </button>
-        <button id="btn-export" class="btn" title="Export the template">
+        <button
+          id="btn-export"
+          type="button"
+          class="btn icon-only"
+          title="Export the template"
+          aria-label="Export the template"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -652,15 +863,102 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span class="label">Export</span>
         </button>
         <span class="divider"></span>
-        <button
-          id="btn-theme"
-          class="btn icon-only"
-          title="Toggle theme"
-          aria-label="Toggle theme"
-        ></button>
+        <div id="settings">
+          <button
+            id="btn-settings"
+            type="button"
+            class="btn icon-only"
+            title="Settings"
+            aria-label="Settings"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="settings-panel"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 7h-9" />
+              <path d="M14 17H5" />
+              <circle cx="17" cy="17" r="3" />
+              <circle cx="7" cy="7" r="3" />
+            </svg>
+          </button>
+          <div
+            id="settings-panel"
+            class="settings-panel"
+            role="dialog"
+            aria-label="Settings"
+            hidden
+          >
+            <fieldset class="theme-field">
+              <legend class="settings-label">Theme</legend>
+              <div class="theme-options">
+              <label>
+                <input type="radio" name="live-theme" value="auto" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect width="20" height="14" x="2" y="3" rx="2" />
+                  <path d="M8 21h8" />
+                  <path d="M12 17v4" />
+                </svg>
+                System
+              </label>
+              <label>
+                <input type="radio" name="live-theme" value="light" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="4" />
+                  <path
+                    d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+                  />
+                </svg>
+                Light
+              </label>
+              <label>
+                <input type="radio" name="live-theme" value="dark" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+                Dark
+              </label>
+              </div>
+            </fieldset>
+            <label class="settings-label spaced" for="live-locale">
+              Language
+            </label>
+            <select id="live-locale"></select>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -718,7 +1016,10 @@
     <div id="toast" class="toast"></div>
 
     <script type="module">
-      import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
+      import {
+        getSupportedLocales,
+        init,
+      } from "https://cdn.jsdelivr.net/npm/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
 
       const $ = (id) => document.getElementById(id);
       const statusEl = $("status");
@@ -732,11 +1033,11 @@
       let applyingRemote = false;
       let debounceTimer = null;
 
-      // ---- Theme (auto default, manual light/dark override) ----
-      const SUN =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
-      const MOON =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+      // ---- Settings: theme (auto / light / dark) and editor UI locale ----
+      // Locale is read once at init. There is no setLocale, so a language
+      // change remounts with the current template. The page's own labels stay
+      // English. This does not write settings.locale — that is the email's
+      // language, owned by Template Settings.
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
       const readTheme = () => {
         try {
@@ -745,19 +1046,27 @@
           return "auto";
         }
       };
-      const effective = (stored) =>
-        stored === "auto" ? (prefersDark.matches ? "dark" : "light") : stored;
+      function readLocale() {
+        try {
+          const stored = localStorage.getItem("tpl-live-locale");
+          if (stored) return stored;
+        } catch {
+          /* private mode */
+        }
+        // The browser that opens this harness belongs to whoever is
+        // hand-editing in it. Optional-chained: a runtime with no navigator
+        // must not abort the mount. The editor falls back to English for a
+        // tag it has no bundle for.
+        return navigator?.language || undefined;
+      }
       function applyTheme(stored) {
         if (stored === "auto")
           document.documentElement.removeAttribute("data-theme");
         else document.documentElement.setAttribute("data-theme", stored);
-        const eff = effective(stored);
-        const btn = $("btn-theme");
-        btn.innerHTML = eff === "dark" ? SUN : MOON;
-        btn.setAttribute(
-          "aria-label",
-          eff === "dark" ? "Switch to light theme" : "Switch to dark theme",
+        const input = document.querySelector(
+          `input[name="live-theme"][value="${stored}"]`,
         );
+        if (input) input.checked = true;
         if (editor) {
           try {
             editor.setTheme(stored);
@@ -766,35 +1075,104 @@
           }
         }
       }
-      $("btn-theme").onclick = () => {
-        const next = effective(readTheme()) === "dark" ? "light" : "dark";
-        try {
-          localStorage.setItem("tpl-live-theme", next);
-        } catch {}
-        applyTheme(next);
-      };
+      document.querySelectorAll('input[name="live-theme"]').forEach((input) => {
+        input.addEventListener("change", () => {
+          if (!input.checked) return;
+          try {
+            localStorage.setItem("tpl-live-theme", input.value);
+          } catch {
+            /* private mode */
+          }
+          applyTheme(input.value);
+        });
+      });
       prefersDark.addEventListener("change", () => {
         if (readTheme() === "auto") applyTheme("auto");
       });
       applyTheme(readTheme());
 
+      const settingsPanel = $("settings-panel");
+      const settingsButton = $("btn-settings");
+      function closeSettings() {
+        settingsPanel.hidden = true;
+        settingsButton.setAttribute("aria-expanded", "false");
+      }
+      function openSettings() {
+        settingsPanel.hidden = false;
+        settingsButton.setAttribute("aria-expanded", "true");
+      }
+      settingsButton.onclick = () => {
+        if (settingsPanel.hidden) openSettings();
+        else closeSettings();
+      };
+      document.addEventListener(
+        "mousedown",
+        (event) => {
+          if (settingsPanel.hidden) return;
+          if ($("settings").contains(event.target)) return;
+          closeSettings();
+        },
+        true,
+      );
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key !== "Escape" || settingsPanel.hidden) return;
+          event.preventDefault();
+          event.stopPropagation();
+          closeSettings();
+          settingsButton.focus();
+        },
+        true,
+      );
+
+      function localeLabel(code) {
+        try {
+          const name = new Intl.DisplayNames([code], { type: "language" }).of(
+            code,
+          );
+          if (name && name.toLowerCase() !== code.toLowerCase()) {
+            return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
+          }
+        } catch {
+          /* a runtime without DisplayNames keeps the code */
+        }
+        return code;
+      }
+      const localeSelect = $("live-locale");
+      const supportedLocales = getSupportedLocales()
+        .slice()
+        .sort((a, b) => localeLabel(a).localeCompare(localeLabel(b)));
+      for (const code of supportedLocales) {
+        const option = document.createElement("option");
+        option.value = code;
+        option.textContent = localeLabel(code);
+        localeSelect.appendChild(option);
+      }
+      function localeChoice(tag) {
+        if (tag && supportedLocales.includes(tag)) return tag;
+        const base = tag ? tag.split("-")[0] : "";
+        if (base && supportedLocales.includes(base)) return base;
+        return supportedLocales.includes("en") ? "en" : supportedLocales[0];
+      }
+      localeSelect.value = localeChoice(readLocale());
+
       // ---- Status + toast ----
-      // The status pill is a connection-state signal, not decoration: when it's
-      // "live" the SSE link is up, so agent updates land here and your in-browser
-      // edits are reported back for the divergence check. The hover title spells
-      // that out (a native tooltip — the bar's overflow would clip a styled one).
+      // The status pill is the connection to this preview server. "Live" means
+      // the page can receive the agent's updates and report hand-edits back.
+      // The green dot pulses only in that state.
       const STATUS_TITLE = {
         connecting: "Connecting to the live preview…",
-        live: "Connected — your edits and the agent's changes sync here in real time.",
+        live: "Connected. Edits here and the agent's changes both show up on this page.",
         reconnecting:
-          "Reconnecting to the live server — changes won't sync until it's back.",
+          "Reconnecting to the live server. Changes won't sync until it's back.",
         error:
-          "Disconnected — changes won't sync until the connection is restored.",
+          "Disconnected. Changes won't sync until the connection is restored.",
       };
       function setStatus(state, text) {
         statusEl.dataset.state = state;
         statusText.textContent = text;
-        statusEl.title = STATUS_TITLE[state] ?? "";
+        $("status-tip").textContent = STATUS_TITLE[state] ?? "";
       }
       let toastTimer = null;
       function toast(msg) {
@@ -840,7 +1218,9 @@
         await new Promise((r) => setTimeout(r, 0)); // let Vue flush setContent
         await postContent(true);
         applyingRemote = false;
-        schedulePlace();
+        // The reload may have consumed the note queue. The template frame does
+        // not carry it, so re-read it or the badges stay until a manual refresh.
+        await refreshNotes();
         toast("Updated from agent");
       }
 
@@ -912,7 +1292,41 @@
         toast(ok ? "Copied to clipboard" : "Select the text to copy");
       };
 
+      localeSelect.onchange = async () => {
+        const next = localeSelect.value;
+        try {
+          localStorage.setItem("tpl-live-locale", next);
+        } catch {
+          /* private mode */
+        }
+        const content = editor ? editor.getContent() : undefined;
+        await mountEditor(content);
+      };
+
       // ---- Boot ----
+      async function mountEditor(content) {
+        applyingRemote = true;
+        try {
+          if (editor) {
+            editor.unmount();
+            editor = null;
+          }
+          editor = await init({
+            container: "#editor",
+            locale: readLocale(),
+            content, // undefined → editor starts from its default empty template
+            uiTheme: readTheme(),
+            onChange: () => {
+              if (!applyingRemote) scheduleContentPost();
+            },
+          });
+          await postContent(true); // seed the baseline with the normalized view
+          await refreshNotes();
+        } finally {
+          applyingRemote = false;
+        }
+      }
+
       async function boot() {
         let content;
         try {
@@ -922,24 +1336,8 @@
           /* fall through to an empty editor */
         }
 
-        editor = await init({
-          container: "#editor",
-          // The browser that opens this harness belongs to whoever is
-          // hand-editing in it, so its language is the right one for the
-          // chrome. Optional-chained: a runtime that exposes no `navigator`
-          // must not abort the mount, and the editor falls back to English for
-          // any tag it has no bundle for.
-          locale: navigator?.language || undefined,
-          content, // undefined → editor starts from its default empty template
-          uiTheme: readTheme(),
-          onChange: () => {
-            if (!applyingRemote) scheduleContentPost();
-          },
-        });
-
+        await mountEditor(content);
         document.body.classList.add("ready");
-        await postContent(true); // seed the baseline with the normalized view
-        await refreshNotes();
         setStatus("live", "Live");
 
         const es = new EventSource("/events");
@@ -975,6 +1373,7 @@
       const noteStatus = $("note-status");
       const annotateToggle = $("annotate-toggle");
       let annotating = false;
+      let panelDismissed = false;
       let draftTarget = null;
       let notes = [];
       let editingId = null;
@@ -1030,11 +1429,13 @@
         const count = $("annotate-count");
         count.hidden = notes.length === 0;
         count.textContent = String(notes.length);
-        notePanel.hidden = !annotating && notes.length === 0;
+        notePanel.hidden =
+          panelDismissed || (!annotating && notes.length === 0);
       }
 
       function setAnnotating(next) {
         annotating = next;
+        if (next) panelDismissed = false;
         if (!next) {
           editingId = null;
           draftTarget = null;
@@ -1048,6 +1449,7 @@
       annotateToggle.onclick = () => setAnnotating(!annotating);
 
       function showComposer(target, id) {
+        panelDismissed = false;
         editingId = id;
         const note = id ? notes.find((item) => item.id === id) : null;
         if (note) {
@@ -1249,6 +1651,14 @@
         if (!res.ok) return;
         const body = await res.json();
         notes = Array.isArray(body.annotations) ? body.annotations : [];
+        if (editingId && !notes.some((note) => note.id === editingId)) {
+          editingId = null;
+          draftTarget = null;
+          noteText.value = "";
+          noteStatus.textContent = "";
+          noteLabel.textContent = "the template";
+          $("note-save").textContent = "Leave note";
+        }
         renderNotes();
         syncOutlines();
         bindBadgeTracking();
@@ -1288,12 +1698,23 @@
         setAnnotating(false);
       });
 
-      $("note-cancel").onclick = () => {
+      function clearComposer() {
         editingId = null;
         draftTarget = null;
         noteText.value = "";
         noteStatus.textContent = "";
+        noteLabel.textContent = "the template";
         $("note-save").textContent = "Leave note";
+      }
+
+      $("note-cancel").onclick = () => {
+        const pending = noteText.value.trim() || editingId;
+        if (pending) {
+          clearComposer();
+          return;
+        }
+        panelDismissed = true;
+        setAnnotating(false);
       };
 
       $("note-save").onclick = async () => {
