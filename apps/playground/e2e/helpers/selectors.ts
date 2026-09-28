@@ -13,6 +13,12 @@ export const SELECTORS = {
   editorStage: '[data-testid="editor-stage"]',
   toolbarCode: '[data-testid="toolbar-code"]',
   toolbarDocs: '[data-testid="toolbar-docs"]',
+  setupCard: '[data-testid="setup-card"]',
+  setupCardSnippet: '[data-testid="setup-card-snippet"]',
+  setupCardCopy: '[data-testid="setup-card-copy"]',
+  setupCardProof: '[data-testid="setup-card-proof"]',
+  setupCardDocs: '[data-testid="setup-card-docs"]',
+  setupCardWiderScreen: '[data-testid="setup-card-wider-screen"]',
 
   // Chooser
   templateCard: '[data-testid="template-card"]',
@@ -205,6 +211,7 @@ export const SELECTORS = {
   // Merge tag sample values. The mode toggle renders only when some configured
   // tag declares a `sample`, and only while a preview is showing.
   mergeTagModeToggle: '[data-testid="merge-tag-mode-toggle"]',
+  mergeTagModeToggleAnchor: '[data-testid="merge-tag-mode-toggle-anchor"]',
   // Preview resolution (the consumer `resolvePreview` hook)
   previewResolutionLoading: '[data-testid="preview-resolution-loading"]',
   previewResolutionFailed: '[data-testid="preview-resolution-failed"]',
@@ -308,6 +315,7 @@ export const SELECTORS = {
   importTextareaEasyEmailPro: '[data-testid="import-textarea-easy-email-pro"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
+  importSample: '[data-testid="import-sample"]',
   importPanel: '[data-testid="import-panel"]',
   importCancel: '[data-testid="import-cancel"]',
   importClose: '[data-testid="import-close"]',

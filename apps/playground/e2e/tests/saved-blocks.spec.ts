@@ -1,5 +1,6 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { animationsFinished } from "../helpers/motion";
 import type { Page } from "@playwright/test";
 
 /**
@@ -497,7 +498,9 @@ test.describe("saved blocks — pick session", () => {
     // or this test would also pass with the old document-order derivation.
     expect(pickOrder).not.toEqual(canvasIds.slice(0, 3));
 
-    // Drag the first row past the second.
+    // Drag the first row past the second, measured once the panel has
+    // finished scaling in: mid-animation the rows sit higher than they settle.
+    await animationsFinished(dialog);
     const handle = rows.nth(0).locator(SELECTORS.savedBlocksReorderHandle);
     const handleBox = await handle.boundingBox();
     const targetBox = await rows.nth(1).boundingBox();

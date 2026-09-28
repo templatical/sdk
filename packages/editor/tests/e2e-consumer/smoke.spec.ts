@@ -50,6 +50,28 @@ test("editor mounts and inserts a block when sidebar palette item is clicked", a
   expect(consoleErrors).toEqual([]);
 });
 
+// A constructed sheet drops each `@import` and warns on the host page. The
+// built bundle inlines the editor's CSS, Geist import included, into the
+// sheet a shadow mount adopts, so only the packed output exercises the
+// string that reaches `replaceSync`.
+test("a shadow mount logs no @import warnings", async ({ page }) => {
+  const warnings: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.text().includes("@import")) warnings.push(msg.text());
+  });
+
+  await page.goto("/");
+  const editor = page.locator("#editor");
+  await expect(editor.locator("button[data-palette-type]").first()).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.querySelector("#editor")?.shadowRoot !== null,
+    ),
+  ).toBe(true);
+
+  expect(warnings).toEqual([]);
+});
+
 test("editor exposes the documented public API on window", async ({ page }) => {
   // The fixture stashes the editor instance on `window.editor`. If init
   // resolved, the documented methods exist.

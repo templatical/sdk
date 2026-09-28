@@ -263,8 +263,8 @@ test.describe("Test email", () => {
     const stage = page.locator(SELECTORS.blockPreviewStage);
     await expect(stage).toBeVisible();
 
-    // `offset*` rather than `boundingBox()`: the dialog animates in under a
-    // `scale(0.9)`, and a transformed box reads 90% of the truth.
+    // `offset*` rather than `boundingBox()`: the dialog animates in from
+    // `scale(0.97)`, and a transformed box reads short until it settles.
     const gutter = await stage.evaluate((el) => {
       const column = el.querySelector<HTMLElement>(
         '[data-testid="block-preview-canvas"]',

@@ -4,6 +4,7 @@ import { Upload } from "@lucide/vue";
 import { useFileDialog } from "@vueuse/core";
 import type { TemplaticalEditor } from "@templatical/editor";
 import { convertImportSource } from "@/host/importConvert";
+import { loadImportSample } from "@/scenes/import/samples";
 import { usePlaygroundI18n } from "@/i18n";
 import {
   IMPORT_KIND_BY_ID,
@@ -173,6 +174,14 @@ async function runConvert(): Promise<void> {
   }
 }
 
+/** One click from an empty box to a converted email: fill it, then import. */
+async function trySample(): Promise<void> {
+  const current = kind.value;
+  if (!current) return;
+  source.value = await loadImportSample(current);
+  await runConvert();
+}
+
 const { open: openImportFile, onChange: onImportFileChange } = useFileDialog({
   accept: ".json,.html,.htm,.mjml",
   multiple: false,
@@ -249,24 +258,35 @@ onImportFileChange(async (files) => {
         >
           {{ error }}
         </p>
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <button
             type="button"
-            class="pg-cancel-btn"
-            data-testid="import-cancel"
-            @click="dismiss"
-          >
-            {{ t.importModal.cancel }}
-          </button>
-          <button
-            type="button"
-            class="pg-cta h-9 px-4 text-[13px] rounded-md"
-            data-testid="import-confirm"
+            class="pg-toolbar-link -ml-2"
+            data-testid="import-sample"
             :disabled="converting || !editor"
-            @click="runConvert"
+            @click="trySample"
           >
-            {{ t.importModal.import }}
+            {{ t.importModal.trySample }}
           </button>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="pg-cancel-btn"
+              data-testid="import-cancel"
+              @click="dismiss"
+            >
+              {{ t.importModal.cancel }}
+            </button>
+            <button
+              type="button"
+              class="pg-cta h-9 px-4 text-[13px] rounded-md"
+              data-testid="import-confirm"
+              :disabled="converting || !editor"
+              @click="runConvert"
+            >
+              {{ t.importModal.import }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

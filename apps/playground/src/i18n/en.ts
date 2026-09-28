@@ -17,6 +17,8 @@ export default {
     catalogNav: "Main",
     snippet: "init() snippet",
     minimumPaste: "init({ container })",
+    catalogPageTitle: "Templatical Playground",
+    pageTitle: "{name} · Templatical Playground",
     pickValue: "Choose {key}",
     brand: "Templatical",
     headline: "The email editor you drop into your app.",
@@ -34,6 +36,11 @@ export default {
       theme: "Theme",
       language: "Language",
       showNotes: "Show notes",
+    },
+    phone: {
+      widerScreen:
+        "The editor needs a tablet or a desktop. Open this page on a wider screen to try it.",
+      proofAlt: "Preview of the {name} email",
     },
     hideRail: "Hide setups",
     showRail: "Show setups",
@@ -88,107 +95,129 @@ export default {
   // as the editor shows them, which is English unless the scene sets a locale.
   scenes: {
     minimum: {
+      title: "Minimum setup",
       seeIt:
         "Drag any block onto the canvas: that one call is the whole integration.",
     },
     fonts: {
+      title: "Fonts",
       seeIt:
         "Open Settings and pick a font: only Georgia, Times New Roman and Arial are offered.",
       note: "only 3 fonts",
     },
     defaults: {
+      title: "Defaults",
       seeIt:
         "The blank page starts tinted, and a Button you drag in arrives teal.",
       note: "drag a Button",
     },
     theming: {
+      title: "Theming",
       seeIt:
         "The editor's chrome wears the brand's crimson, from its toggles to the canvas behind the email.",
       note: "brand colors",
     },
     layout: {
+      title: "Layout",
       seeIt:
         "Switch to preview: the email sits inside your card shell, which the saved JSON never contains.",
       note: "switch to preview",
     },
     i18n: {
+      title: "Internationalization",
       seeIt:
         "Pick a language from `locale`: the editor's chrome and the blocks you drag in follow it.",
       note: "pick a language",
     },
     "shadow-dom-off": {
+      title: "Shadow DOM off",
       seeIt:
         "It looks the same: the editor mounts straight into the page, with no shadow root.",
     },
     issues: {
+      title: "Issues",
       seeIt:
         "The Issues tab flags a missing alt text and a vague button label: jump to each block to fix it.",
       note: "2 issues",
     },
     "custom-blocks": {
+      title: "Custom blocks",
       seeIt:
         "Your Testimonial block sits on the palette and the canvas: select it to edit its fields.",
       note: "your block",
     },
     "merge-tags": {
+      title: "Merge tags",
       seeIt:
         "Edit the paragraph and insert a merge tag: the picker lists your tags by label.",
       note: "insert a tag",
     },
     "merge-tags-on-request": {
+      title: "Merge tags on request",
       seeIt:
         "Edit the paragraph and insert a merge tag: your own chooser opens instead of the list.",
       note: "insert a tag",
     },
     "merge-tags-samples": {
+      title: "Merge tag samples",
       seeIt: "Switch to preview: tags read as their sample values.",
       note: "switch to preview",
     },
     "merge-tags-resolve-preview": {
+      title: "Resolve preview",
       seeIt:
         "Switch to preview: your resolver fills in the tags and settles the IF branches.",
       note: "switch to preview",
     },
     "logic-tags": {
+      title: "Logic tags",
       seeIt:
         "The IF and ENDIF badges are logic tags: edit the paragraph to add more from Logic.",
       note: "logic tags",
     },
     "display-conditions": {
+      title: "Display conditions",
       seeIt:
         "Select a block, then pick a condition such as VIP Partners under Display Condition.",
       note: "select a block",
     },
     templates: {
+      title: "Templates",
       seeIt:
         "Rename the template or edit it, then save: the header shows Saved and Updated just now.",
       note: "save",
     },
     "version-history": {
+      title: "Version history",
       seeIt:
         "Save, then open Version history to preview and restore a version.",
       note: "versions",
     },
     comments: {
+      title: "Comments",
       seeIt: "Open Comments, comment on a block and reply.",
       note: "comments",
     },
     "saved-blocks": {
+      title: "Saved blocks",
       seeIt:
         "Open Saved Blocks to insert one, or save your own with a block's bookmark.",
       note: "saved blocks",
     },
     media: {
+      title: "Media",
       seeIt:
         "Drag an Image in and click Browse Media: pick from the gallery or drop a file.",
       note: "drag an Image",
     },
     "test-email": {
+      title: "Test email",
       seeIt:
         "Click Test, pick a recipient and send. Nothing leaves the browser.",
       note: "send a test",
     },
     render: {
+      title: "Render",
       seeIt:
         "Open Export: MJML comes from `toMjml()`, HTML from your `compileMjml`.",
       note: "export",
@@ -208,6 +237,7 @@ export default {
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
+    trySample: "Try the sample email",
     import: "Import & Open",
     cancel: "Cancel",
     beefree: {

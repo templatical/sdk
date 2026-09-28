@@ -106,6 +106,42 @@ describe("editor shadow mount (Phase 1.5)", () => {
     expect(editorPropsCaptured!.shadowRoot).toBe(container.shadowRoot);
   });
 
+  // A constructed sheet drops `@import` and warns "@import rules are not
+  // allowed here" on the host page, so both sheets the mount builds must be
+  // handed CSS with none left: the editor's own, and (in dev) each document
+  // style the mirror copies.
+  it("builds its shadow sheets from CSS with the @import rules stripped", async () => {
+    vi.resetModules();
+    vi.doMock("virtual:editor-css", () => ({
+      default:
+        '@import"https://fonts.bunny.net/css?family=geist:400,500,600";.tpl{color:red}',
+    }));
+    const pageStyle = document.createElement("style");
+    pageStyle.textContent =
+      '@import url("https://page.test/fonts.css");.page{color:blue}';
+    document.head.appendChild(pageStyle);
+    // Earlier mounts in this file left their mirrors observing <head>; let
+    // them react to the new style before counting this mount's calls.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const replaceSync = vi.spyOn(CSSStyleSheet.prototype, "replaceSync");
+
+    try {
+      const { init } = await import("../src/index");
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      await init({ container, shadowDom: true });
+
+      expect(replaceSync.mock.calls.map(([css]) => css)).toEqual([
+        ".tpl{color:red}",
+        ".page{color:blue}",
+      ]);
+    } finally {
+      replaceSync.mockRestore();
+      pageStyle.remove();
+      vi.doUnmock("virtual:editor-css");
+    }
+  });
+
   it("`shadowDom: false` mounts directly on container — no shadow root", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

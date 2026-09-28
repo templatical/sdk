@@ -1,0 +1,1007 @@
+{
+  "page": {
+    "title": "Launchpad v2.0 launch",
+    "description": "",
+    "template": {
+      "name": "template-base",
+      "type": "basic",
+      "version": "2.0.0"
+    },
+    "body": {
+      "type": "mailup-bee-page-properties",
+      "container": {
+        "style": {
+          "background-color": "#f3f4f6"
+        }
+      },
+      "content": {
+        "style": {
+          "color": "#1a1a1a",
+          "font-family": "Arial, Helvetica, sans-serif"
+        },
+        "computedStyle": {
+          "linkColor": "#0f766e",
+          "messageBackgroundColor": "#ffffff",
+          "messageWidth": "600px"
+        }
+      },
+      "webFonts": []
+    },
+    "rows": [
+      {
+        "uuid": "06acc692-48c5-4b27-9e26-5a5e7e33e817",
+        "type": "one-column-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "68f4cd94-f5bf-473b-8dc6-1f225b954c6e",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-heading",
+                "descriptor": {
+                  "heading": {
+                    "title": "h3",
+                    "text": "▲ launchpad",
+                    "style": {
+                      "color": "#0f766e",
+                      "direction": "ltr",
+                      "font-family": "Arial, Helvetica, sans-serif",
+                      "font-size": "24px",
+                      "font-weight": "700",
+                      "letter-spacing": "0px",
+                      "line-height": "120%",
+                      "text-align": "center",
+                      "link-color": "#0f766e",
+                      "mso-line-height-alt": "28.8px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "8px",
+                    "padding-left": "20px",
+                    "padding-right": "20px",
+                    "padding-top": "32px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "4e9a6f4c-58cd-435f-969d-7e5767ce6656",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-heading",
+                "descriptor": {
+                  "heading": {
+                    "title": "h2",
+                    "text": "Introducing Launchpad v2.0",
+                    "style": {
+                      "color": "#111827",
+                      "direction": "ltr",
+                      "font-family": "Arial, Helvetica, sans-serif",
+                      "font-size": "30px",
+                      "font-weight": "700",
+                      "letter-spacing": "0px",
+                      "line-height": "120%",
+                      "text-align": "center",
+                      "link-color": "#0f766e",
+                      "mso-line-height-alt": "36px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "8px",
+                    "padding-left": "40px",
+                    "padding-right": "40px",
+                    "padding-top": "8px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "b5fd9d25-b988-4aa2-b87f-0b79188a95c4",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p>We have been working on something big. Today we are launching Launchpad v2.0 — completely rebuilt with a new interface, faster performance, and the features you have been asking for.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "16px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "16px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "center",
+                      "mso-line-height-alt": "24px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "16px",
+                    "padding-left": "40px",
+                    "padding-right": "40px",
+                    "padding-top": "8px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "da71077e-2748-4013-9bae-3aa848924f7a",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-button",
+                "descriptor": {
+                  "button": {
+                    "label": "<div class=\"txtTinyMce-wrapper\" style=\"\" data-mce-style=\"\"><p dir=\"ltr\" style=\"word-break: break-word;\" data-mce-style=\"word-break: break-word;\"><span style=\"word-break: break-word; line-height: 19.2px;\" data-mce-style=\"word-break: break-word; line-height: 19.2px;\">See What’s New</span></p></div>",
+                    "href": "https://example.com/whats-new",
+                    "style": {
+                      "background-color": "#0f766e",
+                      "border-bottom": "0px solid transparent",
+                      "border-left": "0px solid transparent",
+                      "border-radius": "6px",
+                      "border-right": "0px solid transparent",
+                      "border-top": "0px solid transparent",
+                      "color": "#ffffff",
+                      "direction": "ltr",
+                      "font-family": "Arial, Helvetica, sans-serif",
+                      "font-size": "16px",
+                      "font-weight": "700",
+                      "letter-spacing": "0px",
+                      "line-height": "120%",
+                      "max-width": "100%",
+                      "padding-bottom": "14px",
+                      "padding-left": "32px",
+                      "padding-right": "32px",
+                      "padding-top": "14px",
+                      "width": "auto"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "32px",
+                    "padding-left": "20px",
+                    "padding-right": "20px",
+                    "padding-top": "8px",
+                    "text-align": "center"
+                  },
+                  "computedStyle": {
+                    "height": 47,
+                    "hideContentOnMobile": false,
+                    "width": 186
+                  }
+                },
+                "uuid": "3dcdad7a-72a5-4486-9244-43fb96591973",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "ab028a2b-f8fd-4db0-bd13-87e972a3698e",
+        "type": "one-column-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "5e22f5c7-157c-4436-84bf-682d3f2f80ce",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-image",
+                "descriptor": {
+                  "image": {
+                    "alt": "Launchpad v2.0 dashboard",
+                    "height": "auto",
+                    "href": "",
+                    "prefix": "",
+                    "src": "/examples/launchpad/dashboard.png",
+                    "width": "600px"
+                  },
+                  "style": {
+                    "padding-bottom": "0px",
+                    "padding-left": "0px",
+                    "padding-right": "0px",
+                    "padding-top": "0px",
+                    "width": "100%"
+                  },
+                  "computedStyle": {
+                    "class": "center autowidth",
+                    "hideContentOnMobile": false,
+                    "width": "600px"
+                  }
+                },
+                "uuid": "e01097a0-0b43-4a45-b8ca-1d609597cd39",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "861dac07-3e11-4920-bad8-84ca38c4d300",
+        "type": "one-column-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "dc56da02-e612-40ca-9978-8588e52f22f6",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-heading",
+                "descriptor": {
+                  "heading": {
+                    "title": "h3",
+                    "text": "What’s new in v2.0",
+                    "style": {
+                      "color": "#111827",
+                      "direction": "ltr",
+                      "font-family": "Arial, Helvetica, sans-serif",
+                      "font-size": "22px",
+                      "font-weight": "700",
+                      "letter-spacing": "0px",
+                      "line-height": "120%",
+                      "text-align": "center",
+                      "link-color": "#0f766e",
+                      "mso-line-height-alt": "26.4px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "16px",
+                    "padding-left": "20px",
+                    "padding-right": "20px",
+                    "padding-top": "32px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "79008124-e901-424e-b44f-b0ef01450f9d",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "29966431-a0eb-4f0d-a1d4-903ff30218d6",
+        "type": "two-columns-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "1d9a0a69-48bc-41b0-877e-f85c4cdd65cf",
+            "grid-columns": 6,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p><strong>Redesigned Dashboard</strong></p><p>A cleaner, faster workspace that puts your most important metrics front and center.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "4px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "14px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "left",
+                      "mso-line-height-alt": "21px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "20px",
+                    "padding-left": "32px",
+                    "padding-right": "12px",
+                    "padding-top": "0px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "82f1dac3-5a91-4e92-a403-512af6ffbf8a",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          },
+          {
+            "uuid": "d715fa31-81e2-485a-9f06-5d27bcf19e09",
+            "grid-columns": 6,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p><strong>Team Collaboration</strong></p><p>Invite your team, assign roles, and work together in real-time with live cursors.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "4px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "14px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "left",
+                      "mso-line-height-alt": "21px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "20px",
+                    "padding-left": "12px",
+                    "padding-right": "32px",
+                    "padding-top": "0px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "9095e166-93b1-435a-85b0-e8a06d41fab6",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "b93ae206-90d9-4e42-b9b0-f22a3b385bf0",
+        "type": "two-columns-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "a230e29e-d37c-4252-9e01-19e34396cf16",
+            "grid-columns": 6,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p><strong>API v3</strong></p><p>New REST and webhook endpoints with better rate limits, pagination, and error handling.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "4px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "14px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "left",
+                      "mso-line-height-alt": "21px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "20px",
+                    "padding-left": "32px",
+                    "padding-right": "12px",
+                    "padding-top": "0px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "4fb11bba-8af7-4ee0-9fdd-b015a6ea7d5b",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          },
+          {
+            "uuid": "126292b6-e5fb-47f4-804d-c7ff068f8c20",
+            "grid-columns": 6,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p><strong>Advanced Analytics</strong></p><p>Track opens, clicks, and conversions with our new built-in analytics dashboard.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "4px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "14px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "left",
+                      "mso-line-height-alt": "21px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "20px",
+                    "padding-left": "12px",
+                    "padding-right": "32px",
+                    "padding-top": "0px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "7217cc98-fbaf-4e8c-9617-93a32a5ce2c5",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "b934a066-5782-42bd-b234-25d22944c2e2",
+        "type": "one-column-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "64d2cac9-1d5a-4d94-aecc-c24b52e4beca",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-divider",
+                "descriptor": {
+                  "divider": {
+                    "style": {
+                      "border-top": "1px solid #e5e7eb",
+                      "width": "100%"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "16px",
+                    "padding-left": "40px",
+                    "padding-right": "40px",
+                    "padding-top": "16px",
+                    "text-align": "center"
+                  },
+                  "computedStyle": {
+                    "align": "center",
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "639dcb6f-772a-4295-9fb9-73c69feae2fb",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p>Ready to upgrade? Your existing data will be automatically migrated — no action needed.</p>",
+                    "computedStyle": {
+                      "linkColor": "#0f766e",
+                      "paragraphSpacing": "16px"
+                    },
+                    "style": {
+                      "color": "#4b5563",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "15px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "center",
+                      "mso-line-height-alt": "22.5px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "8px",
+                    "padding-left": "40px",
+                    "padding-right": "40px",
+                    "padding-top": "16px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "7def54c7-742d-4d1a-b3fc-da95db15e11f",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-button",
+                "descriptor": {
+                  "button": {
+                    "label": "<div class=\"txtTinyMce-wrapper\" style=\"\" data-mce-style=\"\"><p dir=\"ltr\" style=\"word-break: break-word;\" data-mce-style=\"word-break: break-word;\"><span style=\"word-break: break-word; line-height: 19.2px;\" data-mce-style=\"word-break: break-word; line-height: 19.2px;\">Open Your Dashboard</span></p></div>",
+                    "href": "https://example.com/dashboard",
+                    "style": {
+                      "background-color": "#0f766e",
+                      "border-bottom": "0px solid transparent",
+                      "border-left": "0px solid transparent",
+                      "border-radius": "6px",
+                      "border-right": "0px solid transparent",
+                      "border-top": "0px solid transparent",
+                      "color": "#ffffff",
+                      "direction": "ltr",
+                      "font-family": "Arial, Helvetica, sans-serif",
+                      "font-size": "16px",
+                      "font-weight": "700",
+                      "letter-spacing": "0px",
+                      "line-height": "120%",
+                      "max-width": "100%",
+                      "padding-bottom": "14px",
+                      "padding-left": "32px",
+                      "padding-right": "32px",
+                      "padding-top": "14px",
+                      "width": "auto"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "24px",
+                    "padding-left": "20px",
+                    "padding-right": "20px",
+                    "padding-top": "8px",
+                    "text-align": "center"
+                  },
+                  "computedStyle": {
+                    "height": 47,
+                    "hideContentOnMobile": false,
+                    "width": 228
+                  }
+                },
+                "uuid": "011aebda-b3ea-4465-8709-2493034f1109",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      },
+      {
+        "uuid": "26e9a8cf-a32f-4934-9589-9158d54c17f5",
+        "type": "one-column-empty",
+        "locked": false,
+        "synced": false,
+        "empty": false,
+        "columns": [
+          {
+            "uuid": "325a1568-1047-4a4f-b168-65ff9750d7f2",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-social",
+                "descriptor": {
+                  "iconsList": {
+                    "icons": [
+                      {
+                        "type": "follow",
+                        "name": "Twitter",
+                        "image": {
+                          "prefix": "https://twitter.com/",
+                          "alt": "Twitter",
+                          "src": "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/twitter@2x.png",
+                          "title": "Twitter",
+                          "href": "https://twitter.com/acme"
+                        },
+                        "text": "",
+                        "id": "twitter"
+                      },
+                      {
+                        "type": "follow",
+                        "name": "GitHub",
+                        "image": {
+                          "prefix": "https://github.com/",
+                          "alt": "GitHub",
+                          "src": "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/github@2x.png",
+                          "title": "GitHub",
+                          "href": "https://github.com/acme"
+                        },
+                        "text": "",
+                        "id": "github"
+                      },
+                      {
+                        "type": "follow",
+                        "name": "LinkedIn",
+                        "image": {
+                          "prefix": "https://www.linkedin.com/",
+                          "alt": "LinkedIn",
+                          "src": "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-dark-gray/linkedin@2x.png",
+                          "title": "LinkedIn",
+                          "href": "https://linkedin.com/company/acme"
+                        },
+                        "text": "",
+                        "id": "linkedin"
+                      }
+                    ]
+                  },
+                  "style": {
+                    "padding-bottom": "8px",
+                    "padding-left": "20px",
+                    "padding-right": "20px",
+                    "padding-top": "8px",
+                    "text-align": "center"
+                  },
+                  "computedStyle": {
+                    "height": 40,
+                    "hideContentOnMobile": false,
+                    "iconsDefaultWidth": 32,
+                    "padding": "0 4px 0 4px",
+                    "width": 120
+                  }
+                },
+                "uuid": "6ac44456-08fc-4f17-b92a-05fb9658bef0",
+                "locked": false
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "descriptor": {
+                  "paragraph": {
+                    "html": "<p>You’re receiving this email because you signed up for Launchpad. <a href=\"https://example.com/unsubscribe\" target=\"_blank\" style=\"text-decoration: underline;\" rel=\"noopener\">Unsubscribe</a></p>",
+                    "computedStyle": {
+                      "linkColor": "#6b7280",
+                      "paragraphSpacing": "16px"
+                    },
+                    "style": {
+                      "color": "#6b7280",
+                      "direction": "ltr",
+                      "font-family": "inherit",
+                      "font-size": "12px",
+                      "font-weight": "400",
+                      "letter-spacing": "0px",
+                      "line-height": "150%",
+                      "text-align": "center",
+                      "mso-line-height-alt": "18px"
+                    }
+                  },
+                  "style": {
+                    "padding-bottom": "32px",
+                    "padding-left": "40px",
+                    "padding-right": "40px",
+                    "padding-top": "8px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnDesktop": false,
+                    "hideContentOnMobile": false
+                  }
+                },
+                "uuid": "731501bd-ddc2-4a99-b056-b86e557dfeb9",
+                "locked": false
+              }
+            ],
+            "style": {
+              "background-color": "transparent",
+              "border-bottom": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "border-right": "0px solid transparent",
+              "border-top": "0px solid transparent",
+              "padding-bottom": "0px",
+              "padding-left": "0px",
+              "padding-right": "0px",
+              "padding-top": "0px"
+            }
+          }
+        ],
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat"
+          }
+        },
+        "content": {
+          "style": {
+            "background-color": "#ffffff",
+            "background-image": "none",
+            "background-position": "top left",
+            "background-repeat": "no-repeat",
+            "border-bottom": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "border-radius": "0px",
+            "border-right": "0px solid transparent",
+            "border-top": "0px solid transparent",
+            "color": "#1a1a1a",
+            "width": "600px"
+          },
+          "computedStyle": {
+            "hideContentOnDesktop": false,
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "rowReverseColStackOnMobile": false,
+            "verticalAlign": "top"
+          }
+        }
+      }
+    ]
+  },
+  "comments": {}
+}

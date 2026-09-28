@@ -12,8 +12,8 @@ import type { ScenePage } from "../pages/scene.page";
  *
  *  - **A blank canvas.** The showcase templates ship their own copy, so a block
  *    inserted into one proves nothing about what the *factory* produced.
- *  - **`/scenes/i18n`**, whose snippet is `locale: "de"`. `?locale=en` is the
- *    live override (host SDK-locale knob later); the snippet stays `de`.
+ *  - **`/scenes/i18n`**, which opens in German. `?locale=en`, the value its
+ *    locale chip sets, mounts the same scene in English.
  *
  * One insert per test: a second consecutive palette click does not land once a
  * block is selected, and batching them would make a locale failure
@@ -23,9 +23,9 @@ test.describe("localized block defaults", () => {
   async function openBlankEditor(
     scenePage: ScenePage,
     editorPage: EditorPage,
-    sdkLocale: string,
+    locale: string,
   ): Promise<void> {
-    await scenePage.goto("i18n", sdkLocale === "en" ? { locale: "en" } : {});
+    await scenePage.goto("i18n", locale === "en" ? { locale: "en" } : {});
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await editorPage.closeCodeDrawer();

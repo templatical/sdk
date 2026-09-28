@@ -267,8 +267,11 @@
    `.tpl-block-content` (not the whole canvas-wrapper) so block chrome
    outside this wrapper (action bar, indicators) follows the editor's UI
    theme naturally. Dark-mode preview is a separate feature handled via
-   CSS filter inversion on `.tpl-block-content`. */
-.tpl[data-tpl-theme="dark"] .tpl-block-content {
+   CSS filter inversion on `.tpl-block-content`. The empty-canvas
+   placeholder sits on the email's page too, so it takes the same values:
+   in the editor's dark palette it reads as a dark hole in a light page. */
+.tpl[data-tpl-theme="dark"] .tpl-block-content,
+.tpl[data-tpl-theme="dark"] .tpl-canvas-empty {
     --tpl-bg-elevated: oklch(98% 0.004 60);
     --tpl-border-light: oklch(86% 0.01 60);
     --tpl-text: oklch(18% 0.01 60);

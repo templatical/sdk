@@ -24,10 +24,7 @@ test.describe("Editor canvas", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test("viewport toggle shows 2 options", async ({
-    editorReady,
-    page,
-  }) => {
+  test("viewport toggle shows 2 options", async ({ editorReady, page }) => {
     const group = page.locator(SELECTORS.viewportGroup);
     await expect(group).toBeVisible();
     const radios = page.locator('[role="radio"]');
@@ -80,5 +77,89 @@ test.describe("Editor canvas", () => {
     await expect(toggle).toHaveAttribute("aria-pressed", "false");
     await editorPage.togglePreview();
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+test.describe("Editor canvas in a narrow pane", () => {
+  // At this width the canvas pane is narrower than the email, so the stage
+  // overflows it: both of its edges must still be reachable by scrolling.
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test("an email wider than its pane scrolls to both edges", async ({
+    editorReady,
+    page,
+  }) => {
+    void editorReady;
+    const pane = page.locator(".tpl-body");
+    const email = page.locator(SELECTORS.canvasWrapper);
+    // The email keeps its real width: the pane scrolls instead of the email
+    // reflowing narrower than it will be sent.
+    expect((await email.boundingBox())!.width).toBe(600);
+    const overflow = await pane.evaluate(
+      (el) => el.scrollWidth - el.clientWidth,
+    );
+    expect(overflow).toBeGreaterThan(0);
+
+    const paneBox = (await pane.boundingBox())!;
+    await pane.evaluate((el) => {
+      el.scrollLeft = 0;
+    });
+    const atStart = (await email.boundingBox())!;
+    expect(atStart.x).toBeGreaterThanOrEqual(paneBox.x - 0.5);
+
+    await pane.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth;
+    });
+    const atEnd = (await email.boundingBox())!;
+    expect(atEnd.x + atEnd.width).toBeLessThanOrEqual(
+      paneBox.x + paneBox.width + 0.5,
+    );
+  });
+
+  test("an email narrower than its pane stays centred", async ({
+    editorReady,
+    page,
+  }) => {
+    void editorReady;
+    await page.setViewportSize({ width: 1600, height: 900 });
+    const pane = page.locator(".tpl-body");
+    const stage = page.locator(".tpl-canvas-stage");
+    await expect
+      .poll(async () => {
+        const paneBox = (await pane.boundingBox())!;
+        const stageBox = (await stage.boundingBox())!;
+        const paneMiddle = paneBox.x + paneBox.width / 2;
+        return Math.abs(stageBox.x + stageBox.width / 2 - paneMiddle);
+      })
+      .toBeLessThan(1);
+  });
+});
+
+test.describe("Editor canvas empty state in dark UI", () => {
+  test("stays light, like the email page it sits on", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    const empty = page.locator(SELECTORS.canvasEmpty);
+    const background = () =>
+      empty.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    await scenePage.goto("minimum");
+    await editorPage.waitForReady();
+    const light = await background();
+
+    await page.evaluate(() => {
+      // Raw string: the playground's theme ref uses the string serializer.
+      localStorage.setItem("tpl-playground-theme", "dark");
+    });
+    await page.reload();
+    await editorPage.waitForReady();
+    // The editor really is dark, or this test proves nothing.
+    await expect(page.locator(".tpl[data-tpl-theme]").first()).toHaveAttribute(
+      "data-tpl-theme",
+      "dark",
+    );
+    expect(await background()).toBe(light);
   });
 });

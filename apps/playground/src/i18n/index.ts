@@ -1,9 +1,6 @@
 import { computed } from "vue";
 import { useLocalStorage, useMediaQuery, watchImmediate } from "@vueuse/core";
-import {
-  getSupportedLocales,
-  getSupportedCloudLocales,
-} from "@templatical/editor";
+import { getSupportedLocales } from "@templatical/editor";
 import en from "./en";
 import de from "./de";
 
@@ -33,12 +30,6 @@ export function usePlaygroundI18n() {
 }
 
 export const ossSdkLocales = getSupportedLocales();
-export const cloudSdkLocales = getSupportedCloudLocales();
-
-export function useSdkLocale() {
-  const sdkLocale = useLocalStorage<string>("tpl-playground-sdk-locale", "en");
-  return { sdkLocale };
-}
 
 export type PlaygroundTheme = "auto" | "light" | "dark";
 

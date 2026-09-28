@@ -70,6 +70,25 @@ test.describe("Playground smoke tests", () => {
     expect(await mountsShadow("fonts")).toBe(true);
   });
 
+  // A constructed sheet drops each `@import` and warns on the host page, so
+  // the editor's own CSS and every document style the dev mirror copies must
+  // reach the shadow root with none left.
+  test("a shadow mount logs no @import warnings", async ({
+    page,
+    scenePage,
+    editorPage,
+    shadowDom,
+  }) => {
+    test.skip(!shadowDom, "only a shadow mount builds constructed sheets");
+    const warnings: string[] = [];
+    page.on("console", (message) => {
+      if (message.text().includes("@import")) warnings.push(message.text());
+    });
+    await scenePage.goto("fonts");
+    await editorPage.waitForReady();
+    expect(warnings).toEqual([]);
+  });
+
   test("blank template shows empty canvas", async ({
     blankEditorReady,
     page,

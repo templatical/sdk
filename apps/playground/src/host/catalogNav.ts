@@ -15,6 +15,18 @@ export function prefersReducedMotion(): boolean {
 }
 
 /**
+ * A scene's title in the playground's language. Setups carry one in
+ * `scenes.<id>.title`; importers and examples keep their names, which are
+ * brands and emails rather than words to translate.
+ */
+export function sceneTitle(
+  scene: Scene,
+  copies: Record<string, { title?: string } | undefined>,
+): string {
+  return copies[scene.id]?.title ?? scene.title;
+}
+
+/**
  * The code a setup stands for: its init() key, or the whole call for
  * Minimum, which has no key of its own. The rail row and the scene header
  * both show it, so the two always agree.

@@ -19,6 +19,8 @@ export default {
     catalogNav: "Hauptnavigation",
     snippet: "init()-Snippet",
     minimumPaste: "init({ container })",
+    catalogPageTitle: "Templatical Playground",
+    pageTitle: "{name} · Templatical Playground",
     pickValue: "{key} wählen",
     brand: "Templatical",
     headline: "Der E-Mail-Editor, den Sie in Ihre App einbauen.",
@@ -36,6 +38,11 @@ export default {
       theme: "Darstellung",
       language: "Sprache",
       showNotes: "Notizen anzeigen",
+    },
+    phone: {
+      widerScreen:
+        "Der Editor braucht ein Tablet oder einen Desktop. Öffnen Sie diese Seite auf einem breiteren Bildschirm, um ihn auszuprobieren.",
+      proofAlt: "Vorschau der E-Mail „{name}“",
     },
     hideRail: "Setups ausblenden",
     showRail: "Setups einblenden",
@@ -86,108 +93,130 @@ export default {
   },
   scenes: {
     minimum: {
+      title: "Minimales Setup",
       seeIt:
         "Ziehen Sie einen beliebigen Block auf die Arbeitsfläche: Dieser eine Aufruf ist die ganze Integration.",
     },
     fonts: {
+      title: "Schriftarten",
       seeIt:
         "Öffnen Sie „Settings“ und wählen Sie eine Schrift: Angeboten werden nur Georgia, Times New Roman und Arial.",
       note: "nur 3 Schriften",
     },
     defaults: {
+      title: "Standardwerte",
       seeIt:
         "Die leere Seite startet getönt, und ein hineingezogener „Button“ kommt in Petrol an.",
       note: "Button hineinziehen",
     },
     theming: {
+      title: "Theming",
       seeIt:
         "Die Oberfläche des Editors trägt das Karminrot der Marke, von den Schaltern bis zur Fläche hinter der E-Mail.",
       note: "Markenfarben",
     },
     layout: {
+      title: "Layout",
       seeIt:
         "Wechseln Sie in die Vorschau: Die E-Mail sitzt in Ihrer Kartenhülle, die im gespeicherten JSON nie vorkommt.",
       note: "zur Vorschau",
     },
     i18n: {
+      title: "Internationalisierung",
       seeIt:
         "Wählen Sie über `locale` eine Sprache: Die Oberfläche des Editors und hineingezogene Blöcke folgen ihr.",
       note: "Sprache wählen",
     },
     "shadow-dom-off": {
+      title: "Shadow DOM aus",
       seeIt:
         "Sieht gleich aus: Der Editor wird direkt in die Seite eingehängt, ohne Shadow Root.",
     },
     issues: {
+      title: "Probleme",
       seeIt:
         "Der Tab „Issues“ meldet einen fehlenden Alt-Text und eine vage Button-Beschriftung: Springen Sie jeweils zum Block und beheben Sie das Problem.",
       note: "2 Probleme",
     },
     "custom-blocks": {
+      title: "Benutzerdefinierte Blöcke",
       seeIt:
         "Ihr Block „Testimonial“ steht in der Palette und auf der Arbeitsfläche: Wählen Sie ihn aus, um seine Felder zu bearbeiten.",
       note: "Ihr Block",
     },
     "merge-tags": {
+      title: "Merge-Tags",
       seeIt:
         "Bearbeiten Sie den Absatz und fügen Sie ein Merge-Tag ein: Der Picker listet Ihre Tags mit ihrer Beschriftung.",
       note: "Tag einfügen",
     },
     "merge-tags-on-request": {
+      title: "Merge-Tags auf Anfrage",
       seeIt:
         "Bearbeiten Sie den Absatz und fügen Sie ein Merge-Tag ein: Statt der Liste öffnet sich Ihre eigene Auswahl.",
       note: "Tag einfügen",
     },
     "merge-tags-samples": {
+      title: "Merge-Tag-Beispielwerte",
       seeIt: "Wechseln Sie in die Vorschau: Tags zeigen ihre Beispielwerte.",
       note: "zur Vorschau",
     },
     "merge-tags-resolve-preview": {
+      title: "Vorschau auflösen",
       seeIt:
         "Wechseln Sie in die Vorschau: Ihr Resolver füllt die Tags und entscheidet die IF-Zweige.",
       note: "zur Vorschau",
     },
     "logic-tags": {
+      title: "Logik-Tags",
       seeIt:
         "Die Badges IF und ENDIF sind Logik-Tags: Bearbeiten Sie den Absatz, um über „Logic“ weitere einzufügen.",
       note: "Logik-Tags",
     },
     "display-conditions": {
+      title: "Anzeigebedingungen",
       seeIt:
         "Wählen Sie einen Block und dann unter „Display Condition“ eine Bedingung wie „VIP Partners“.",
       note: "Block auswählen",
     },
     templates: {
+      title: "Vorlagen",
       seeIt:
         "Benennen Sie die Vorlage um oder bearbeiten Sie sie und speichern Sie dann: Der Header zeigt „Saved“ und „Updated just now“.",
       note: "speichern",
     },
     "version-history": {
+      title: "Versionsverlauf",
       seeIt:
         "Speichern Sie, dann öffnen Sie „Version history“, um eine Version anzusehen und wiederherzustellen.",
       note: "Versionen",
     },
     comments: {
+      title: "Kommentare",
       seeIt:
         "Öffnen Sie „Comments“, kommentieren Sie einen Block und antworten Sie darauf.",
       note: "Kommentare",
     },
     "saved-blocks": {
+      title: "Gespeicherte Blöcke",
       seeIt:
         "Öffnen Sie „Saved Blocks“, um einen einzufügen, oder speichern Sie einen eigenen über das Lesezeichen eines Blocks.",
       note: "gespeicherte Blöcke",
     },
     media: {
+      title: "Medien",
       seeIt:
         "Ziehen Sie ein „Image“ hinein und klicken Sie auf „Browse Media“: Wählen Sie aus der Galerie oder legen Sie eine Datei ab.",
       note: "Bild hineinziehen",
     },
     "test-email": {
+      title: "Test-E-Mail",
       seeIt:
         "Klicken Sie auf „Test“, wählen Sie einen Empfänger und senden Sie. Nichts verlässt den Browser.",
       note: "Test senden",
     },
     render: {
+      title: "Rendering",
       seeIt:
         "Öffnen Sie „Exportieren“: MJML kommt aus `toMjml()`, HTML aus Ihrem `compileMjml`.",
       note: "exportieren",
@@ -207,6 +236,7 @@ export default {
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",
+    trySample: "Beispiel-E-Mail laden",
     import: "Importieren & \u00d6ffnen",
     cancel: "Abbrechen",
     beefree: {

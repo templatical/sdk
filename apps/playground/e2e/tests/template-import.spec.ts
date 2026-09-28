@@ -542,4 +542,27 @@ test.describe("Template import", () => {
     await expect(page.locator(SELECTORS.importError)).toBeVisible();
     await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
+
+  for (const id of IMPORT_SCENE_IDS) {
+    test(`${id}: one click imports the sample email`, async ({
+      scenePage,
+      editorPage,
+      page,
+    }) => {
+      await scenePage.goto(id);
+      await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+      await page.locator(SELECTORS.importSample).click();
+      await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+      await editorPage.waitForReady();
+
+      // The same Launchpad email, whichever vendor's markup it came from.
+      const buttons = page.locator(blockByType("button"));
+      await expect(buttons).toHaveCount(2);
+      await expect(buttons.last()).toContainText("Open Your Dashboard");
+      await expect(page.locator(blockByType("image")).first()).toBeVisible();
+      await expect(page.locator(SELECTORS.canvasWrapper)).toContainText(
+        "Introducing Launchpad v2.0",
+      );
+    });
+  }
 });

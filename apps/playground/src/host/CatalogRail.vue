@@ -3,7 +3,7 @@ import { computed, ref, watch, type Component } from "vue";
 import { ChevronRight } from "@lucide/vue";
 import CatalogGroupMark from "@/host/CatalogGroupMark.vue";
 import { SCENE_ICONS } from "@/host/catalogIcons";
-import { RAIL_NAV_GROUPS, sceneInitCode } from "@/host/catalogNav";
+import { RAIL_NAV_GROUPS, sceneInitCode, sceneTitle } from "@/host/catalogNav";
 import {
   isPlainLeftClick,
   navigatePlayground,
@@ -17,6 +17,10 @@ const props = defineProps<{
 }>();
 
 const { t } = usePlaygroundI18n();
+
+function titleOf(scene: Scene): string {
+  return sceneTitle(scene, t.value.scenes);
+}
 const grouped = scenesByGroup();
 const current = computed(() => getScene(props.currentId));
 const expandedGroup = ref<SceneGroup | null>(current.value?.group ?? null);
@@ -130,7 +134,7 @@ function toggleGroup(group: SceneGroup): void {
                   />
                 </span>
                 <span class="min-w-0">
-                  <span class="block truncate">{{ item.title }}</span>
+                  <span class="block truncate">{{ titleOf(item) }}</span>
                   <code v-if="codeFor(item)" class="pg-rail-row-code">{{
                     codeFor(item)
                   }}</code>

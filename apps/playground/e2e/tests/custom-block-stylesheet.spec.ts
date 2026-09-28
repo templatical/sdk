@@ -220,11 +220,11 @@ test.describe("Custom block stylesheet (#155)", () => {
     // Narrow the browser viewport BEFORE the editor mounts so the media
     // query is evaluated as "mobile" from the start — avoids racing the
     // canvas's own layout transitions and the CSSOM media-query rematch.
-    // The playground header/chooser may overflow at this width; that's
-    // fine — we only care about the testimonial's computed style.
+    // `?phoneCard=0`: below the editor's breakpoint the playground shows its
+    // setup card instead of mounting the editor.
     await page.setViewportSize({ width: 400, height: 800 });
 
-    await scenePage.goto("example-launchpad-launch");
+    await scenePage.goto("example-launchpad-launch", { phoneCard: "0" });
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 

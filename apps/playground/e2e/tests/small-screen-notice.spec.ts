@@ -1,5 +1,7 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import type { EditorPage } from "../pages/editor.page";
+import type { ScenePage } from "../pages/scene.page";
 
 /**
  * Small-screen gate (#235). The editor is desktop-class — below ~768px it
@@ -12,15 +14,29 @@ import { SELECTORS } from "../helpers/selectors";
  * drive a real narrow viewport and a real resize, exercising the live media
  * query, the shadow-DOM-adopted overlay, and the reactive teardown end to end.
  * Runs in both the light- and shadow-DOM projects.
+ *
+ * Below this width the playground shows its setup card instead of mounting
+ * the editor, so the scene opens with `?phoneCard=0` to reach the SDK's own
+ * notice.
  */
 test.describe("Small-screen notice (#235)", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
+  async function openNarrowEditor(
+    scenePage: ScenePage,
+    editorPage: EditorPage,
+  ): Promise<void> {
+    await scenePage.goto("example-launchpad-launch", { phoneCard: "0" });
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+  }
+
   test("replaces the editor chrome with a full-cover notice below the breakpoint", async ({
-    editorReady,
+    scenePage,
+    editorPage,
     page,
   }) => {
-    void editorReady; // fixture navigated + readied at the narrow viewport
+    await openNarrowEditor(scenePage, editorPage);
 
     const notice = page.locator(SELECTORS.smallScreenNotice);
     await expect(notice).toBeVisible();
@@ -64,10 +80,11 @@ test.describe("Small-screen notice (#235)", () => {
   });
 
   test("clears the notice and restores the chrome when the viewport grows past the breakpoint", async ({
-    editorReady,
+    scenePage,
+    editorPage,
     page,
   }) => {
-    void editorReady;
+    await openNarrowEditor(scenePage, editorPage);
 
     const notice = page.locator(SELECTORS.smallScreenNotice);
     await expect(notice).toBeVisible();

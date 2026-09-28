@@ -96,4 +96,34 @@ test.describe("Host header", () => {
     await expect(header.locator("svg.lucide-settings-2")).toHaveCount(1);
     await expect(header.locator("svg.lucide-sun")).toHaveCount(0);
   });
+
+  test("the tab names the scene it shows, and the catalog once back", async ({
+    scenePage,
+    page,
+  }) => {
+    await scenePage.goto("fonts");
+    await expect(page).toHaveTitle("Fonts · Templatical Playground");
+    await page.getByTestId("toolbar-back").click();
+    await expect(page).toHaveTitle("Templatical Playground");
+  });
+
+  test("German names setups as the German docs do; brands keep their names", async ({
+    scenePage,
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-locale", "de");
+    });
+    await scenePage.goto("fonts");
+    await expect(page).toHaveTitle("Schriftarten · Templatical Playground");
+    await expect(page.getByTestId("scene-header").locator("h1")).toHaveText(
+      "Schriftarten",
+    );
+    await expect(page.getByTestId("rail-scene-fonts")).toContainText(
+      "Schriftarten",
+    );
+    await expect(page.getByTestId("rail-scene-import-unlayer")).toContainText(
+      "Unlayer",
+    );
+  });
 });

@@ -1,0 +1,926 @@
+{
+  "counters": {
+    "u_row": 7,
+    "u_column": 9,
+    "u_content_heading": 3,
+    "u_content_text": 7,
+    "u_content_button": 2,
+    "u_content_image": 1,
+    "u_content_divider": 1,
+    "u_content_social": 1
+  },
+  "body": {
+    "id": "Hli3w8Cjjo",
+    "rows": [
+      {
+        "id": "8Gdb81chPw",
+        "cells": [
+          1
+        ],
+        "columns": [
+          {
+            "id": "CTVIVW-tac",
+            "contents": [
+              {
+                "id": "_DOkrubVdV",
+                "type": "heading",
+                "values": {
+                  "containerPadding": "32px 20px 8px",
+                  "anchor": "",
+                  "headingType": "h3",
+                  "fontWeight": 700,
+                  "fontSize": "24px",
+                  "color": "#0f766e",
+                  "textAlign": "center",
+                  "lineHeight": "120%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_heading_1",
+                    "htmlClassNames": "u_content_heading"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "▲ launchpad"
+                }
+              },
+              {
+                "id": "83ycB3VxI4",
+                "type": "heading",
+                "values": {
+                  "containerPadding": "8px 40px",
+                  "anchor": "",
+                  "headingType": "h2",
+                  "fontWeight": 700,
+                  "fontSize": "30px",
+                  "color": "#111827",
+                  "textAlign": "center",
+                  "lineHeight": "120%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_heading_2",
+                    "htmlClassNames": "u_content_heading"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "Introducing Launchpad v2.0"
+                }
+              },
+              {
+                "id": "rrC-e6sh0q",
+                "type": "text",
+                "values": {
+                  "containerPadding": "8px 40px 16px",
+                  "anchor": "",
+                  "fontSize": "16px",
+                  "color": "#4b5563",
+                  "textAlign": "center",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_1",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\">We have been working on something big. Today we are launching Launchpad v2.0 — completely rebuilt with a new interface, faster performance, and the features you have been asking for.</p>"
+                }
+              },
+              {
+                "id": "CMxPNrw7Vr",
+                "type": "button",
+                "values": {
+                  "containerPadding": "8px 20px 32px",
+                  "anchor": "",
+                  "href": {
+                    "name": "web",
+                    "values": {
+                      "href": "https://example.com/whats-new",
+                      "target": "_blank"
+                    }
+                  },
+                  "buttonColors": {
+                    "color": "#ffffff",
+                    "backgroundColor": "#0f766e",
+                    "hoverColor": "#ffffff",
+                    "hoverBackgroundColor": "#115e59"
+                  },
+                  "size": {
+                    "autoWidth": true,
+                    "width": "100%"
+                  },
+                  "fontSize": "16px",
+                  "fontWeight": 700,
+                  "textAlign": "center",
+                  "lineHeight": "120%",
+                  "padding": "14px 32px",
+                  "border": {},
+                  "borderRadius": "6px",
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_button_1",
+                    "htmlClassNames": "u_content_button"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<span style=\"line-height: 19.2px;\">See What’s New</span>",
+                  "calculatedWidth": 186,
+                  "calculatedHeight": 47
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_1",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_1",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "Deo4YEE-_L",
+        "cells": [
+          1
+        ],
+        "columns": [
+          {
+            "id": "PwGJHQE1ym",
+            "contents": [
+              {
+                "id": "R8CusCr-rc",
+                "type": "image",
+                "values": {
+                  "containerPadding": "0px",
+                  "anchor": "",
+                  "src": {
+                    "url": "/examples/launchpad/dashboard.png",
+                    "autoWidth": true,
+                    "maxWidth": "100%"
+                  },
+                  "textAlign": "center",
+                  "altText": "Launchpad v2.0 dashboard",
+                  "action": {
+                    "name": "web",
+                    "values": {
+                      "href": "",
+                      "target": "_blank"
+                    }
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_image_1",
+                    "htmlClassNames": "u_content_image"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_2",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_2",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "m6ca72dP8i",
+        "cells": [
+          1
+        ],
+        "columns": [
+          {
+            "id": "H82Ujj5ZDA",
+            "contents": [
+              {
+                "id": "0kFJZKOe44",
+                "type": "heading",
+                "values": {
+                  "containerPadding": "32px 20px 16px",
+                  "anchor": "",
+                  "headingType": "h3",
+                  "fontWeight": 700,
+                  "fontSize": "22px",
+                  "color": "#111827",
+                  "textAlign": "center",
+                  "lineHeight": "120%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_heading_3",
+                    "htmlClassNames": "u_content_heading"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "What’s new in v2.0"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_3",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_3",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "KooTl9fXsu",
+        "cells": [
+          1,
+          1
+        ],
+        "columns": [
+          {
+            "id": "-zlf2DUAt2",
+            "contents": [
+              {
+                "id": "4ZHgRLA2p1",
+                "type": "text",
+                "values": {
+                  "containerPadding": "0px 12px 20px 32px",
+                  "anchor": "",
+                  "fontSize": "14px",
+                  "color": "#4b5563",
+                  "textAlign": "left",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_2",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\"><strong>Redesigned Dashboard</strong></p><p style=\"line-height: 150%;\">A cleaner, faster workspace that puts your most important metrics front and center.</p>"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_4",
+                "htmlClassNames": "u_column"
+              }
+            }
+          },
+          {
+            "id": "EnQj2Eu6-d",
+            "contents": [
+              {
+                "id": "eAxEfs9GfZ",
+                "type": "text",
+                "values": {
+                  "containerPadding": "0px 32px 20px 12px",
+                  "anchor": "",
+                  "fontSize": "14px",
+                  "color": "#4b5563",
+                  "textAlign": "left",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_3",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\"><strong>Team Collaboration</strong></p><p style=\"line-height: 150%;\">Invite your team, assign roles, and work together in real-time with live cursors.</p>"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_5",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_4",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "QuZn7ECJMU",
+        "cells": [
+          1,
+          1
+        ],
+        "columns": [
+          {
+            "id": "Ku3umc-tfJ",
+            "contents": [
+              {
+                "id": "4CXBgsRipI",
+                "type": "text",
+                "values": {
+                  "containerPadding": "0px 12px 20px 32px",
+                  "anchor": "",
+                  "fontSize": "14px",
+                  "color": "#4b5563",
+                  "textAlign": "left",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_4",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\"><strong>API v3</strong></p><p style=\"line-height: 150%;\">New REST and webhook endpoints with better rate limits, pagination, and error handling.</p>"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_6",
+                "htmlClassNames": "u_column"
+              }
+            }
+          },
+          {
+            "id": "ng7rYXXpcD",
+            "contents": [
+              {
+                "id": "geZ8m85qrk",
+                "type": "text",
+                "values": {
+                  "containerPadding": "0px 32px 20px 12px",
+                  "anchor": "",
+                  "fontSize": "14px",
+                  "color": "#4b5563",
+                  "textAlign": "left",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_5",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\"><strong>Advanced Analytics</strong></p><p style=\"line-height: 150%;\">Track opens, clicks, and conversions with our new built-in analytics dashboard.</p>"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_7",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_5",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "sF8IdmmFIG",
+        "cells": [
+          1
+        ],
+        "columns": [
+          {
+            "id": "UY4Nox8XqE",
+            "contents": [
+              {
+                "id": "kFx8Q_gqZy",
+                "type": "divider",
+                "values": {
+                  "width": "100%",
+                  "border": {
+                    "borderTopWidth": "1px",
+                    "borderTopStyle": "solid",
+                    "borderTopColor": "#e5e7eb"
+                  },
+                  "textAlign": "center",
+                  "containerPadding": "16px 40px",
+                  "anchor": "",
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_divider_1",
+                    "htmlClassNames": "u_content_divider"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true
+                }
+              },
+              {
+                "id": "xNBXohKluh",
+                "type": "text",
+                "values": {
+                  "containerPadding": "16px 40px 8px",
+                  "anchor": "",
+                  "fontSize": "15px",
+                  "color": "#4b5563",
+                  "textAlign": "center",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": true,
+                    "linkColor": "#0000ee",
+                    "linkHoverColor": "#0000ee",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_6",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\">Ready to upgrade? Your existing data will be automatically migrated — no action needed.</p>"
+                }
+              },
+              {
+                "id": "e95_IwMW8W",
+                "type": "button",
+                "values": {
+                  "containerPadding": "8px 20px 24px",
+                  "anchor": "",
+                  "href": {
+                    "name": "web",
+                    "values": {
+                      "href": "https://example.com/dashboard",
+                      "target": "_blank"
+                    }
+                  },
+                  "buttonColors": {
+                    "color": "#ffffff",
+                    "backgroundColor": "#0f766e",
+                    "hoverColor": "#ffffff",
+                    "hoverBackgroundColor": "#115e59"
+                  },
+                  "size": {
+                    "autoWidth": true,
+                    "width": "100%"
+                  },
+                  "fontSize": "16px",
+                  "fontWeight": 700,
+                  "textAlign": "center",
+                  "lineHeight": "120%",
+                  "padding": "14px 32px",
+                  "border": {},
+                  "borderRadius": "6px",
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_button_2",
+                    "htmlClassNames": "u_content_button"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<span style=\"line-height: 19.2px;\">Open Your Dashboard</span>",
+                  "calculatedWidth": 228,
+                  "calculatedHeight": 47
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_8",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_6",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      },
+      {
+        "id": "h6wnaLLohM",
+        "cells": [
+          1
+        ],
+        "columns": [
+          {
+            "id": "wVla7XI3OJ",
+            "contents": [
+              {
+                "id": "LPtOXVx-Fv",
+                "type": "social",
+                "values": {
+                  "containerPadding": "8px 20px",
+                  "anchor": "",
+                  "icons": {
+                    "iconType": "circle-black",
+                    "icons": [
+                      {
+                        "name": "Twitter",
+                        "url": "https://twitter.com/acme"
+                      },
+                      {
+                        "name": "GitHub",
+                        "url": "https://github.com/acme"
+                      },
+                      {
+                        "name": "LinkedIn",
+                        "url": "https://linkedin.com/company/acme"
+                      }
+                    ]
+                  },
+                  "align": "center",
+                  "iconSize": 32,
+                  "spacing": 8,
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_social_1",
+                    "htmlClassNames": "u_content_social"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true
+                }
+              },
+              {
+                "id": "v6GhFR15_y",
+                "type": "text",
+                "values": {
+                  "containerPadding": "8px 40px 32px",
+                  "anchor": "",
+                  "fontSize": "12px",
+                  "color": "#6b7280",
+                  "textAlign": "center",
+                  "lineHeight": "150%",
+                  "linkStyle": {
+                    "inherit": false,
+                    "linkColor": "#6b7280",
+                    "linkHoverColor": "#4b5563",
+                    "linkUnderline": true,
+                    "linkHoverUnderline": true
+                  },
+                  "hideDesktop": false,
+                  "displayCondition": null,
+                  "_meta": {
+                    "htmlID": "u_content_text_7",
+                    "htmlClassNames": "u_content_text"
+                  },
+                  "selectable": true,
+                  "draggable": true,
+                  "duplicatable": true,
+                  "deletable": true,
+                  "hideable": true,
+                  "text": "<p style=\"line-height: 150%;\">You’re receiving this email because you signed up for Launchpad. <a rel=\"noopener\" href=\"https://example.com/unsubscribe\" target=\"_blank\"><span style=\"text-decoration: underline;\">Unsubscribe</span></a></p>"
+                }
+              }
+            ],
+            "values": {
+              "backgroundColor": "",
+              "padding": "0px",
+              "border": {},
+              "borderRadius": "0px",
+              "_meta": {
+                "htmlID": "u_column_9",
+                "htmlClassNames": "u_column"
+              }
+            }
+          }
+        ],
+        "values": {
+          "displayCondition": null,
+          "columns": false,
+          "backgroundColor": "",
+          "columnsBackgroundColor": "#ffffff",
+          "backgroundImage": {
+            "url": "",
+            "fullWidth": true,
+            "repeat": "no-repeat",
+            "size": "custom",
+            "position": "center"
+          },
+          "padding": "0px",
+          "anchor": "",
+          "hideDesktop": false,
+          "_meta": {
+            "htmlID": "u_row_7",
+            "htmlClassNames": "u_row"
+          },
+          "selectable": true,
+          "draggable": true,
+          "duplicatable": true,
+          "deletable": true,
+          "hideable": true
+        }
+      }
+    ],
+    "headers": [],
+    "footers": [],
+    "values": {
+      "contentAlign": "center",
+      "contentWidth": "600px",
+      "fontFamily": {
+        "label": "Arial",
+        "value": "arial,helvetica,sans-serif",
+        "url": "",
+        "weights": null,
+        "defaultFont": true
+      },
+      "textColor": "#1a1a1a",
+      "backgroundColor": "#f3f4f6",
+      "backgroundImage": {
+        "url": "",
+        "fullWidth": true,
+        "repeat": "no-repeat",
+        "size": "custom",
+        "position": "center"
+      },
+      "preheaderText": "Introducing Launchpad v2.0 — rebuilt from the ground up.",
+      "linkStyle": {
+        "body": true,
+        "linkColor": "#0f766e",
+        "linkHoverColor": "#115e59",
+        "linkUnderline": true,
+        "linkHoverUnderline": true
+      },
+      "_meta": {
+        "htmlID": "u_body",
+        "htmlClassNames": "u_body"
+      }
+    }
+  },
+  "schemaVersion": 16
+}

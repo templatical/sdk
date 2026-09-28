@@ -94,7 +94,7 @@ describe("block chrome structure", () => {
     // and must follow the editor's UI theme. Putting the override back on
     // `.tpl-canvas-wrapper` forces chrome to read as light even in dark UI.
     expect(styles).toMatch(
-      /\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-block-content\s*\{/,
+      /\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-block-content\s*[,{]/,
     );
     expect(styles).not.toMatch(
       /\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-canvas-wrapper\s*\{[^}]*--tpl-bg-elevated/,
@@ -425,14 +425,34 @@ describe("chrome tokens survive the email-content override", () => {
     "primary-hover",
   ];
 
-  /** The real rule body — `indexOf` would match the selector inside a comment. */
-  function overrideBody(): string {
+  /**
+   * The real rule — `indexOf` would match the selector inside a comment. Its
+   * selector list starts with `.tpl-block-content` and may name more surfaces
+   * that sit on the email's page.
+   */
+  function overrideRule(): { selectors: string[]; body: string } {
     const m = styles.match(
-      /^\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-block-content\s*\{([^}]*)\}/m,
+      /^(\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-block-content\s*(?:,[^{]*)?)\{([^}]*)\}/m,
     );
     expect(m).not.toBe(null);
-    return m![1];
+    return {
+      selectors: m![1].split(",").map((selector) => selector.trim()),
+      body: m![2],
+    };
   }
+
+  function overrideBody(): string {
+    return overrideRule().body;
+  }
+
+  // The empty-canvas placeholder sits on the email's page, which renders
+  // light in both themes, so it takes the same values as block content.
+  it("gives the empty-canvas placeholder the email-content override", () => {
+    expect(overrideRule().selectors).toEqual([
+      '.tpl[data-tpl-theme="dark"] .tpl-block-content',
+      '.tpl[data-tpl-theme="dark"] .tpl-canvas-empty',
+    ]);
+  });
 
   it("declares a chrome alias for every token the content override shadows", () => {
     const override = overrideBody();

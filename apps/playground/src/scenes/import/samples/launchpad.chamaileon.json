@@ -1,0 +1,577 @@
+{
+  "title": "Launchpad v2.0 launch",
+  "subjectLine": "",
+  "previewText": "Introducing Launchpad v2.0 — rebuilt from the ground up.",
+  "fontFiles": {},
+  "variables": [],
+  "components": [],
+  "body": {
+    "eid": "root",
+    "type": "body",
+    "version": "4.1.0",
+    "attrs": {},
+    "style": {
+      "bodyWidth": 600,
+      "backgroundColor": "#f3f4f6"
+    },
+    "children": [
+      {
+        "eid": "06f85727-0f7a-4051-9c59-7316e5382a75",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "32px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "8px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "e9ac64aa-4fda-40db-bbe8-4f791af7c63d",
+            "type": "text",
+            "attrs": {
+              "text": "<h3 style=\"text-align: center;\">▲ launchpad</h3>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "0px",
+              "paddingRight": "40px",
+              "paddingBottom": "0px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "h2Color": "#0f766e",
+              "h2FontSize": "24px"
+            }
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "9f20c096-0e42-44e9-b7a7-5cef1b4b63e3",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "16px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "32px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "ca2665cf-b160-4269-b3fa-ed4922a0682e",
+            "type": "text",
+            "attrs": {
+              "text": "<h2 style=\"text-align: center;\">Introducing Launchpad v2.0</h2>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "0px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "h2Color": "#111827",
+              "h2FontSize": "30px"
+            }
+          },
+          {
+            "eid": "df3c6696-baba-4b93-b83b-f483a959346a",
+            "type": "text",
+            "attrs": {
+              "text": "<p style=\"text-align: center;\"><span style=\"font-size: 16px; color: #4b5563;\">We have been working on something big. Today we are launching Launchpad v2.0 — completely rebuilt with a new interface, faster performance, and the features you have been asking for.</span></p>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "8px",
+              "paddingRight": "40px",
+              "paddingBottom": "16px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "paragraphColor": "#4b5563",
+              "paragraphFontSize": "16px",
+              "paragraphLineHeight": "1.5",
+              "linkColor": "#0f766e"
+            }
+          },
+          {
+            "eid": "1e3643f3-82de-4718-90fb-30b8df6747a9",
+            "type": "button",
+            "attrs": {
+              "text": "<p><strong>See What’s New</strong></p>\n",
+              "href": "https://example.com/whats-new",
+              "align": "center",
+              "fullWidthOnMobile": false,
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "8px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px",
+              "backgroundColor": "#0f766e",
+              "color": "#ffffff",
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": "16px",
+              "borderRadius": "6px"
+            }
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "24645596-6cf1-4e50-96c3-af987666fcab",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "0px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "0px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "1f9a75aa-8718-4f59-abb0-ce08883ffbac",
+            "type": "image",
+            "attrs": {
+              "src": "/examples/launchpad/dashboard.png",
+              "altText": "Launchpad v2.0 dashboard",
+              "link": "",
+              "align": "center",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "0px",
+              "paddingRight": "0px",
+              "paddingBottom": "0px",
+              "paddingLeft": "0px",
+              "width": "600px",
+              "borderRadius": "0px"
+            }
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "b19e0fc1-22ba-4fc9-85c0-5be0e9716b47",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "32px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "8px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "364193c5-90aa-4ed3-a725-d85fa6160f5d",
+            "type": "text",
+            "attrs": {
+              "text": "<h3 style=\"text-align: center;\">What’s new in v2.0</h3>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "0px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "h3Color": "#111827",
+              "h3FontSize": "22px"
+            }
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "c9e46c40-4842-44ce-9fa0-ccac239835b9",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "8px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "0px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "8c489e3d-9af6-47df-bf9a-f15201fa802b",
+            "type": "multicolumn",
+            "attrs": {
+              "stacking": "left-on-top",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {},
+            "children": [
+              {
+                "eid": "121f93f0-46f0-4b19-a653-a292f94c3a5a",
+                "type": "column",
+                "attrs": {},
+                "style": {
+                  "width": "300px"
+                },
+                "children": [
+                  {
+                    "eid": "59cf88ea-03af-4481-aa73-8825fb910ed9",
+                    "type": "text",
+                    "attrs": {
+                      "text": "<p><span style=\"font-size: 14px; color: #4b5563;\"><strong>Redesigned Dashboard</strong></span></p><p><span style=\"font-size: 14px; color: #4b5563;\">A cleaner, faster workspace that puts your most important metrics front and center.</span></p>",
+                      "hideOnMobile": false,
+                      "hideOnDesktop": false
+                    },
+                    "style": {
+                      "paddingTop": "8px",
+                      "paddingRight": "16px",
+                      "paddingBottom": "16px",
+                      "paddingLeft": "40px",
+                      "backgroundColor": null,
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "paragraphColor": "#4b5563",
+                      "paragraphFontSize": "14px",
+                      "paragraphLineHeight": "1.5",
+                      "linkColor": "#0f766e"
+                    }
+                  }
+                ]
+              },
+              {
+                "eid": "272c23c1-d217-4f78-8f27-c04d115c5883",
+                "type": "column",
+                "attrs": {},
+                "style": {
+                  "width": "300px"
+                },
+                "children": [
+                  {
+                    "eid": "f7cc930a-4def-44d3-9d5b-c04342a73fd6",
+                    "type": "text",
+                    "attrs": {
+                      "text": "<p><span style=\"font-size: 14px; color: #4b5563;\"><strong>Team Collaboration</strong></span></p><p><span style=\"font-size: 14px; color: #4b5563;\">Invite your team, assign roles, and work together in real-time with live cursors.</span></p>",
+                      "hideOnMobile": false,
+                      "hideOnDesktop": false
+                    },
+                    "style": {
+                      "paddingTop": "8px",
+                      "paddingRight": "40px",
+                      "paddingBottom": "16px",
+                      "paddingLeft": "16px",
+                      "backgroundColor": null,
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "paragraphColor": "#4b5563",
+                      "paragraphFontSize": "14px",
+                      "paragraphLineHeight": "1.5",
+                      "linkColor": "#0f766e"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "98934c57-b285-4b94-b17f-cafa77b0877c",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "0px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "16px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "fd6d1823-ac25-49d8-9501-cb19fcbc1f10",
+            "type": "multicolumn",
+            "attrs": {
+              "stacking": "left-on-top",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {},
+            "children": [
+              {
+                "eid": "629854a3-031a-413e-b493-8b960fda35a0",
+                "type": "column",
+                "attrs": {},
+                "style": {
+                  "width": "300px"
+                },
+                "children": [
+                  {
+                    "eid": "d7c9a25d-47d1-435b-a01d-3f35bf853851",
+                    "type": "text",
+                    "attrs": {
+                      "text": "<p><span style=\"font-size: 14px; color: #4b5563;\"><strong>API v3</strong></span></p><p><span style=\"font-size: 14px; color: #4b5563;\">New REST and webhook endpoints with better rate limits, pagination, and error handling.</span></p>",
+                      "hideOnMobile": false,
+                      "hideOnDesktop": false
+                    },
+                    "style": {
+                      "paddingTop": "8px",
+                      "paddingRight": "16px",
+                      "paddingBottom": "16px",
+                      "paddingLeft": "40px",
+                      "backgroundColor": null,
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "paragraphColor": "#4b5563",
+                      "paragraphFontSize": "14px",
+                      "paragraphLineHeight": "1.5",
+                      "linkColor": "#0f766e"
+                    }
+                  }
+                ]
+              },
+              {
+                "eid": "5a12ca9e-4487-45e2-a293-3e5bd6291b5a",
+                "type": "column",
+                "attrs": {},
+                "style": {
+                  "width": "300px"
+                },
+                "children": [
+                  {
+                    "eid": "337892e9-4c49-450b-a53e-5fdb21e94939",
+                    "type": "text",
+                    "attrs": {
+                      "text": "<p><span style=\"font-size: 14px; color: #4b5563;\"><strong>Advanced Analytics</strong></span></p><p><span style=\"font-size: 14px; color: #4b5563;\">Track opens, clicks, and conversions with our new built-in analytics dashboard.</span></p>",
+                      "hideOnMobile": false,
+                      "hideOnDesktop": false
+                    },
+                    "style": {
+                      "paddingTop": "8px",
+                      "paddingRight": "40px",
+                      "paddingBottom": "16px",
+                      "paddingLeft": "16px",
+                      "backgroundColor": null,
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "paragraphColor": "#4b5563",
+                      "paragraphFontSize": "14px",
+                      "paragraphLineHeight": "1.5",
+                      "linkColor": "#0f766e"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "6ab0fe34-8472-46dc-9043-f89078d8c743",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "8px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "32px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "775072b9-7431-42f5-95f8-72be4d5e8daf",
+            "type": "divider",
+            "attrs": {
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "16px",
+              "paddingRight": "40px",
+              "paddingBottom": "16px",
+              "paddingLeft": "40px",
+              "width": "1px",
+              "type": "solid",
+              "color": "#e5e7eb"
+            }
+          },
+          {
+            "eid": "203a025a-7d67-4b8d-ad21-86858b2c8262",
+            "type": "text",
+            "attrs": {
+              "text": "<p style=\"text-align: center;\"><span style=\"font-size: 15px; color: #4b5563;\">Ready to upgrade? Your existing data will be automatically migrated — no action needed.</span></p>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "16px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "paragraphColor": "#4b5563",
+              "paragraphFontSize": "15px",
+              "paragraphLineHeight": "1.5",
+              "linkColor": "#0f766e"
+            }
+          },
+          {
+            "eid": "d8889831-fa91-4d51-967f-c43dc8932202",
+            "type": "button",
+            "attrs": {
+              "text": "<p><strong>Open Your Dashboard</strong></p>\n",
+              "href": "https://example.com/dashboard",
+              "align": "center",
+              "fullWidthOnMobile": false,
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "8px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px",
+              "backgroundColor": "#0f766e",
+              "color": "#ffffff",
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": "16px",
+              "borderRadius": "6px"
+            }
+          }
+        ],
+        "placeholder": []
+      },
+      {
+        "eid": "07beede4-0c38-46d1-8b87-1639e40be3f2",
+        "type": "fullwidth",
+        "attrs": {
+          "hideOnMobile": false,
+          "hideOnDesktop": false
+        },
+        "style": {
+          "backgroundColor": null,
+          "contentBackgroundColor": "#ffffff",
+          "contentPaddingTop": "0px",
+          "contentPaddingRight": "0px",
+          "contentPaddingBottom": "32px",
+          "contentPaddingLeft": "0px",
+          "bodyWidth": 600,
+          "contentWidth": 600
+        },
+        "children": [
+          {
+            "eid": "a048587a-0c06-43d5-89d5-511a8f2c2a4f",
+            "type": "social",
+            "attrs": {
+              "elements": [
+                {
+                  "type": "Twitter",
+                  "link": "https://twitter.com/acme",
+                  "src": "img/Twitter/tw-4-colorful.png"
+                },
+                {
+                  "type": "Github",
+                  "link": "https://github.com/acme",
+                  "src": "img/Github/gh-4-colorful.png"
+                },
+                {
+                  "type": "LinkedIn",
+                  "link": "https://linkedin.com/company/acme",
+                  "src": "img/LinkedIn/li-4-colorful.png"
+                }
+              ],
+              "align": "center",
+              "color": "colorful",
+              "iconSet": 4,
+              "size": 24,
+              "layout": "horizontal",
+              "spacing": 16,
+              "baseUrl": "https://example.com/assets/",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "8px",
+              "paddingRight": "40px",
+              "paddingBottom": "8px",
+              "paddingLeft": "40px"
+            }
+          },
+          {
+            "eid": "f7979f0f-a89b-48db-9f69-e056e475ca85",
+            "type": "text",
+            "attrs": {
+              "text": "<p style=\"text-align: center;\"><span style=\"font-size: 12px; color: #6b7280;\">You’re receiving this email because you signed up for Launchpad. <a href=\"https://example.com/unsubscribe\" style=\"color: #6b7280;\">Unsubscribe</a></span></p>",
+              "hideOnMobile": false,
+              "hideOnDesktop": false
+            },
+            "style": {
+              "paddingTop": "8px",
+              "paddingRight": "40px",
+              "paddingBottom": "0px",
+              "paddingLeft": "40px",
+              "backgroundColor": null,
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "paragraphColor": "#6b7280",
+              "paragraphFontSize": "12px",
+              "paragraphLineHeight": "1.5",
+              "linkColor": "#0f766e"
+            }
+          }
+        ],
+        "placeholder": []
+      }
+    ]
+  }
+}

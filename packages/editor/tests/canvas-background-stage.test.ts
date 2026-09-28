@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { useEditor } from "@templatical/core";
 import {
@@ -77,6 +79,29 @@ describe("canvas background stage (regression: #230)", () => {
     // full-width section can never cover.
     expect(column.style.width).toBe("600px");
     expect(stage.style.width).toBe(`${600 + GUTTER * 2}px`);
+  });
+
+  // The pane (`.tpl-main` in Editor.vue) carries no inline padding: the stage
+  // keeps that clearance itself and stops at the email column, so an email
+  // wider than the pane scrolls from its left edge instead of clipping it.
+  it("centres the stage with auto margins, keeping the pane's clearance down to the column", () => {
+    const { stage } = getParts(mountCanvas("desktop"));
+
+    expect(stage.classList.contains("tpl:mx-auto")).toBe(true);
+    expect(stage.style.maxWidth).toBe("calc(100% - 4 * var(--tpl-base-size))");
+    expect(stage.style.minWidth).toBe("min-content");
+  });
+
+  it("gives the pane no justify-center and no inline padding", () => {
+    const editorVue = readFileSync(
+      join(import.meta.dirname, "../src/Editor.vue"),
+      "utf8",
+    );
+    const mainClasses = editorVue
+      .match(/<main class="([^"]+)"/)![1]
+      .split(/\s+/);
+
+    expect(mainClasses).toEqual(["tpl-main", "tpl:flex", "tpl:py-8"]);
   });
 
   it("paints the global background across the full stage, not inside the content column", () => {

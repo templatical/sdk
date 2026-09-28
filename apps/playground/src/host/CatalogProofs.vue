@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { ArrowRight } from "@lucide/vue";
 import { HERO_PROOF_IDS, proofFor } from "@/host/proofs";
+import { sceneTitle } from "@/host/catalogNav";
 import { sceneHref } from "@/host/sceneHref";
 import { format, usePlaygroundI18n } from "@/i18n";
 import { getScene, type Scene } from "@/scenes";
@@ -11,6 +12,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = usePlaygroundI18n();
+
+function titleOf(scene: Scene): string {
+  return sceneTitle(scene, t.value.scenes);
+}
 
 function hrefFor(scene: Scene): string {
   return sceneHref(scene.id, window.location.search);
@@ -40,7 +45,7 @@ const cards = computed(() =>
         <a
           :href="hrefFor(card.scene)"
           :data-testid="`hero-proof-${card.scene.id}`"
-          :aria-label="format(t.host.openProof, { name: card.scene.title })"
+          :aria-label="format(t.host.openProof, { name: titleOf(card.scene) })"
           class="pg-fan-link"
           @click="emit('open', $event, card.scene)"
         >
@@ -54,7 +59,7 @@ const cards = computed(() =>
             class="block h-auto w-full"
           />
           <span class="pg-fan-caption" aria-hidden="true">
-            {{ card.scene.title }}
+            {{ titleOf(card.scene) }}
             <ArrowRight :size="12" :stroke-width="2" />
           </span>
         </a>

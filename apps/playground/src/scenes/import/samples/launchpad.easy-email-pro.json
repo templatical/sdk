@@ -1,0 +1,653 @@
+{
+  "subject": "Introducing Launchpad v2.0",
+  "content": {
+    "type": "page",
+    "data": {
+      "breakpoint": "480px",
+      "globalAttributes": {
+        "font-family": "Arial, sans-serif",
+        "color": "#1a1a1a"
+      },
+      "variables": [
+        {
+          "name": "primary-color",
+          "value": "#0f766e",
+          "label": "Primary Color",
+          "type": "color"
+        }
+      ],
+      "headStyles": [],
+      "fonts": [],
+      "preheader": "Introducing Launchpad v2.0 — rebuilt from the ground up."
+    },
+    "attributes": {
+      "width": "600px",
+      "margin-top": "0px",
+      "margin-bottom": "0px",
+      "background-color": "#f3f4f6",
+      "content-background-color": "#ffffff"
+    },
+    "children": [
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "32px",
+          "padding-bottom": "0px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-h3",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "$var(primary-color)",
+                  "font-size": "24px",
+                  "font-weight": "bold",
+                  "padding-top": "0px",
+                  "padding-bottom": "16px",
+                  "padding-left": "0px",
+                  "padding-right": "0px"
+                },
+                "children": [
+                  {
+                    "text": "▲ launchpad"
+                  }
+                ],
+                "id": "jEbM4tZqE7DhzMHYiDe9k"
+              }
+            ],
+            "id": "qWaWcMeVtg2ABsGdfA922"
+          }
+        ],
+        "id": "CLupVQLItvNLaCjRM6FUr"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "32px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-h2",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "#111827",
+                  "font-size": "30px",
+                  "font-weight": "bold",
+                  "padding-top": "0px",
+                  "padding-bottom": "12px",
+                  "padding-left": "20px",
+                  "padding-right": "20px"
+                },
+                "children": [
+                  {
+                    "text": "Introducing Launchpad v2.0"
+                  }
+                ],
+                "id": "MUMUqLXvshgbcAZ3hCyCc"
+              },
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "#4b5563",
+                  "font-size": "16px",
+                  "line-height": "1.6",
+                  "padding-top": "0px",
+                  "padding-bottom": "24px",
+                  "padding-left": "20px",
+                  "padding-right": "20px"
+                },
+                "children": [
+                  {
+                    "text": "We have been working on something big. Today we are launching Launchpad v2.0 — completely rebuilt with a new interface, faster performance, and the features you have been asking for."
+                  }
+                ],
+                "id": "ayP-3vInlBS91zx3OwBwW"
+              },
+              {
+                "type": "standard-button",
+                "data": {
+                  "content": "Button"
+                },
+                "attributes": {
+                  "href": "https://example.com/whats-new",
+                  "align": "center",
+                  "background-color": "$var(primary-color)",
+                  "color": "#ffffff",
+                  "font-size": "16px",
+                  "font-weight": "bold",
+                  "border-radius": "6px",
+                  "inner-padding-top": "14px",
+                  "inner-padding-bottom": "14px",
+                  "inner-padding-left": "32px",
+                  "inner-padding-right": "32px",
+                  "padding-top": "0px",
+                  "padding-bottom": "0px"
+                },
+                "children": [
+                  {
+                    "text": "See What’s New"
+                  }
+                ],
+                "id": "7nIjzmeHPumCA7T5uubXg"
+              }
+            ],
+            "id": "C9K59c1rqN4SLTwZyP8oR"
+          }
+        ],
+        "id": "VIkw29iTc39Mw3oQTeoXK"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "0px",
+          "padding-left": "0px",
+          "padding-right": "0px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-image",
+                "data": {},
+                "attributes": {
+                  "src": "/examples/launchpad/dashboard.png",
+                  "alt": "Launchpad v2.0 dashboard",
+                  "width": "600px",
+                  "align": "center",
+                  "padding-top": "0px",
+                  "padding-bottom": "0px",
+                  "padding-left": "0px",
+                  "padding-right": "0px"
+                },
+                "children": [
+                  {
+                    "text": ""
+                  }
+                ],
+                "id": "zOQWimN2GLGk2rANH99Mi"
+              }
+            ],
+            "id": "pcUCW0q92OwnLxEOcNHvg"
+          }
+        ],
+        "id": "lhCFRIei1WBma9Oehh6nu"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "32px",
+          "padding-bottom": "8px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-h3",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "#111827",
+                  "font-size": "22px",
+                  "font-weight": "bold",
+                  "padding-top": "0px",
+                  "padding-bottom": "12px",
+                  "padding-left": "0px",
+                  "padding-right": "0px"
+                },
+                "children": [
+                  {
+                    "text": "What’s new in v2.0"
+                  }
+                ],
+                "id": "wPYqm7f0T7gw3zC_-_6t-"
+              }
+            ],
+            "id": "mdA6I2jqFWK1mC5h3otcp"
+          }
+        ],
+        "id": "2nQDavpFmHPX_Tkmv-BWX"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "0px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "50%"
+            },
+            "children": [
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "color": "#4b5563",
+                  "font-size": "14px",
+                  "line-height": "1.6",
+                  "padding-top": "0px",
+                  "padding-bottom": "16px",
+                  "padding-left": "4px",
+                  "padding-right": "16px"
+                },
+                "children": [
+                  {
+                    "text": "Redesigned Dashboard",
+                    "bold": true
+                  },
+                  {
+                    "type": "line-break",
+                    "data": {},
+                    "attributes": {},
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "8t__FNaLodQRedsZCu-iN"
+                  },
+                  {
+                    "text": "A cleaner, faster workspace that puts your most important metrics front and center."
+                  }
+                ],
+                "id": "IW0xPLrN_wTMnJ1FBXWD-"
+              }
+            ],
+            "id": "e0EoikfmOv3Oc-7sBW0Oo"
+          },
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "50%"
+            },
+            "children": [
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "color": "#4b5563",
+                  "font-size": "14px",
+                  "line-height": "1.6",
+                  "padding-top": "0px",
+                  "padding-bottom": "16px",
+                  "padding-left": "16px",
+                  "padding-right": "4px"
+                },
+                "children": [
+                  {
+                    "text": "Team Collaboration",
+                    "bold": true
+                  },
+                  {
+                    "type": "line-break",
+                    "data": {},
+                    "attributes": {},
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "uSK1S0tbCDcx_eb-5YyYP"
+                  },
+                  {
+                    "text": "Invite your team, assign roles, and work together in real-time with live cursors."
+                  }
+                ],
+                "id": "EYDIzYyv0Y5EgbqFoeq-u"
+              }
+            ],
+            "id": "5RS8AZGrTbDPqmVnCzDp9"
+          }
+        ],
+        "id": "uQ0n6oWIQ4akzTw6_L4Bv"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "16px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "50%"
+            },
+            "children": [
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "color": "#4b5563",
+                  "font-size": "14px",
+                  "line-height": "1.6",
+                  "padding-top": "0px",
+                  "padding-bottom": "16px",
+                  "padding-left": "4px",
+                  "padding-right": "16px"
+                },
+                "children": [
+                  {
+                    "text": "API v3",
+                    "bold": true
+                  },
+                  {
+                    "type": "line-break",
+                    "data": {},
+                    "attributes": {},
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "3Xh53TZBHwmw-6oRCvkgo"
+                  },
+                  {
+                    "text": "New REST and webhook endpoints with better rate limits, pagination, and error handling."
+                  }
+                ],
+                "id": "uT2dcbjGd3YyL8dq7HbwP"
+              }
+            ],
+            "id": "1TLUaGP6fM7zLAPspbRbg"
+          },
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "50%"
+            },
+            "children": [
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "color": "#4b5563",
+                  "font-size": "14px",
+                  "line-height": "1.6",
+                  "padding-top": "0px",
+                  "padding-bottom": "16px",
+                  "padding-left": "16px",
+                  "padding-right": "4px"
+                },
+                "children": [
+                  {
+                    "text": "Advanced Analytics",
+                    "bold": true
+                  },
+                  {
+                    "type": "line-break",
+                    "data": {},
+                    "attributes": {},
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "RmjnhP4-qNRSMsVT9u1xS"
+                  },
+                  {
+                    "text": "Track opens, clicks, and conversions with our new built-in analytics dashboard."
+                  }
+                ],
+                "id": "NoijovdoC8m-fM2u840Qj"
+              }
+            ],
+            "id": "GTFB4vpATIhMlnl3z7iCD"
+          }
+        ],
+        "id": "rwabIDYzlQyoykeG8jWUX"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "32px",
+          "padding-left": "0px",
+          "padding-right": "0px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-divider",
+                "data": {},
+                "attributes": {
+                  "border-width": "1px",
+                  "border-style": "solid",
+                  "border-color": "#e5e7eb",
+                  "padding-top": "0px",
+                  "padding-bottom": "0px",
+                  "padding-left": "40px",
+                  "padding-right": "40px"
+                },
+                "children": [
+                  {
+                    "text": ""
+                  }
+                ],
+                "id": "wqcEonZUs7gT1FHMw4Z7i"
+              },
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "#4b5563",
+                  "font-size": "15px",
+                  "line-height": "1.6",
+                  "padding-top": "24px",
+                  "padding-bottom": "16px",
+                  "padding-left": "40px",
+                  "padding-right": "40px"
+                },
+                "children": [
+                  {
+                    "text": "Ready to upgrade? Your existing data will be automatically migrated — no action needed."
+                  }
+                ],
+                "id": "0dJQiitqretdPn7_Igscr"
+              },
+              {
+                "type": "standard-button",
+                "data": {
+                  "content": "Button"
+                },
+                "attributes": {
+                  "href": "https://example.com/dashboard",
+                  "align": "center",
+                  "background-color": "$var(primary-color)",
+                  "color": "#ffffff",
+                  "font-size": "16px",
+                  "font-weight": "bold",
+                  "border-radius": "6px",
+                  "inner-padding-top": "14px",
+                  "inner-padding-bottom": "14px",
+                  "inner-padding-left": "32px",
+                  "inner-padding-right": "32px",
+                  "padding-top": "0px",
+                  "padding-bottom": "0px"
+                },
+                "children": [
+                  {
+                    "text": "Open Your Dashboard"
+                  }
+                ],
+                "id": "-fdacu2jHSV9E5nBR9REv"
+              }
+            ],
+            "id": "qoEpqQ4fNhs-PR8CFFGmi"
+          }
+        ],
+        "id": "VfeHUpVtWSC5lhKqOdcuc"
+      },
+      {
+        "type": "standard-section",
+        "data": {},
+        "attributes": {
+          "padding-top": "0px",
+          "padding-bottom": "32px",
+          "padding-left": "20px",
+          "padding-right": "20px"
+        },
+        "children": [
+          {
+            "type": "standard-column",
+            "data": {},
+            "attributes": {
+              "width": "100%"
+            },
+            "children": [
+              {
+                "type": "standard-social",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "icon-size": "24px",
+                  "padding-top": "0px",
+                  "padding-bottom": "12px"
+                },
+                "children": [
+                  {
+                    "type": "standard-social-element",
+                    "data": {},
+                    "attributes": {
+                      "src": "https://example.com/assets/social/x.png",
+                      "href": "https://twitter.com/acme",
+                      "padding-left": "0px",
+                      "padding-right": "8px"
+                    },
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "ASPQUIHvnq8rXIIzvKIlC"
+                  },
+                  {
+                    "type": "standard-social-element",
+                    "data": {},
+                    "attributes": {
+                      "src": "https://example.com/assets/social/github.png",
+                      "href": "https://github.com/acme",
+                      "padding-left": "8px",
+                      "padding-right": "8px"
+                    },
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "Nhb3kN3c7Lo3-7oOo5d-s"
+                  },
+                  {
+                    "type": "standard-social-element",
+                    "data": {},
+                    "attributes": {
+                      "src": "https://example.com/assets/social/linkedin.png",
+                      "href": "https://linkedin.com/company/acme",
+                      "padding-left": "8px",
+                      "padding-right": "0px"
+                    },
+                    "children": [
+                      {
+                        "text": ""
+                      }
+                    ],
+                    "id": "lLent3Ccn2VIigb4iQsvX"
+                  }
+                ],
+                "id": "J_ShLucANd7P-6q0ksFm1"
+              },
+              {
+                "type": "standard-paragraph",
+                "data": {},
+                "attributes": {
+                  "align": "center",
+                  "color": "#6b7280",
+                  "font-size": "12px",
+                  "line-height": "1.5",
+                  "padding-top": "0px",
+                  "padding-bottom": "0px"
+                },
+                "children": [
+                  {
+                    "text": "You’re receiving this email because you signed up for Launchpad. "
+                  },
+                  {
+                    "text": "Unsubscribe",
+                    "link": {
+                      "href": "https://example.com/unsubscribe",
+                      "blank": false
+                    }
+                  }
+                ],
+                "id": "YCBDVdGfBSmZisqKsmbhZ"
+              }
+            ],
+            "id": "ZoE9qk-gY7NJnoYx6iTYy"
+          }
+        ],
+        "id": "ixuwSjUT_tEbBWc84DGkr"
+      }
+    ],
+    "id": "LqLRUjn7TUsc5nM5kxK1J"
+  }
+}

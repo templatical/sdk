@@ -34,6 +34,31 @@ async function centreX(
   return box ? box.x + box.width / 2 : null;
 }
 
+/**
+ * Both pills animate in under `scale(0.9)`, and `boundingBox()` reports the
+ * *transformed* box, so geometry read before the transform settles is short.
+ * The Sample/Label switch's entrance plays on its anchor, so settle
+ * `mergeTagModeToggleAnchor` for the switch; the restore pill animates itself.
+ */
+async function settled(
+  page: import("@playwright/test").Page,
+  ...selectors: string[]
+) {
+  // Read through the locator, not `document.querySelector`: in the shadow-DOM
+  // project these live inside a shadow root, which a raw document query does
+  // not reach — it would poll `null` until the timeout.
+  await expect
+    .poll(async () => {
+      const transforms = await Promise.all(
+        selectors.map((s) =>
+          page.locator(s).evaluate((el) => getComputedStyle(el).transform),
+        ),
+      );
+      return transforms.every((t) => t === "none");
+    })
+    .toBe(true);
+}
+
 test.describe("header layout stability", () => {
   test.beforeEach(async ({ scenePage, editorPage }) => {
     await scenePage.goto(SCENE);
@@ -94,6 +119,7 @@ test.describe("header layout stability", () => {
 
     const toggle = page.locator(SELECTORS.mergeTagModeToggle);
     await expect(toggle).toBeVisible();
+    await settled(page, SELECTORS.mergeTagModeToggleAnchor);
 
     const header = await page.locator(SELECTORS.editorHeader).boundingBox();
     const box = await toggle.boundingBox();
@@ -155,30 +181,6 @@ test.describe("preview overlay pills are one family", () => {
     await expect(page.locator(SELECTORS.restoreHiddenBlocks)).toBeVisible();
   }
 
-  /**
-   * Both pills animate in under `scale(0.9)`, and `boundingBox()` reports the
-   * *transformed* box — so measuring geometry before the transform settles reads
-   * 90% of the truth. Waits for it rather than sleeping.
-   */
-  async function settled(
-    page: import("@playwright/test").Page,
-    ...selectors: string[]
-  ) {
-    // Read through the locator, not `document.querySelector`: in the shadow-DOM
-    // project these live inside a shadow root, which a raw document query does
-    // not reach — it would poll `null` until the timeout.
-    await expect
-      .poll(async () => {
-        const transforms = await Promise.all(
-          selectors.map((s) =>
-            page.locator(s).evaluate((el) => getComputedStyle(el).transform),
-          ),
-        );
-        return transforms.every((t) => t === "none");
-      })
-      .toBe(true);
-  }
-
   test("the restore pill sits at the top of the canvas while editing", async ({
     page,
     editorPage,
@@ -210,10 +212,11 @@ test.describe("preview overlay pills are one family", () => {
   });
 
   /**
-   * Offset geometry, not `boundingBox()`. `offsetTop`/`offsetHeight` are layout
-   * values and ignore transforms entirely, so the `scale(0.9)` entrance cannot
-   * skew them — no waiting, nothing to race. Both pills share an offsetParent
-   * (the positioned column), so their offsets are directly comparable.
+   * Offset geometry, not `boundingBox()`: `offsetTop`/`offsetHeight` ignore the
+   * pills' own `scale(0.9)` entrance. Offsets compare only within one
+   * offsetParent, though, and Chromium makes a transformed ancestor the
+   * offsetParent. The switch's anchor carries its entrance transform, so the
+   * two share the positioned column only once that has settled.
    */
   async function offsetBox(
     page: import("@playwright/test").Page,
@@ -236,6 +239,21 @@ test.describe("preview overlay pills are one family", () => {
     await hideSecondBlock(editorPage);
     await editorPage.togglePreview();
     await expect(page.locator(SELECTORS.mergeTagModeToggle)).toBeVisible();
+    await settled(page, SELECTORS.mergeTagModeToggleAnchor);
+
+    const pillHandle = await page
+      .locator(SELECTORS.restoreHiddenBlocks)
+      .elementHandle();
+    expect(
+      await page
+        .locator(SELECTORS.mergeTagModeToggle)
+        .evaluate(
+          (el, pillEl) =>
+            (el as HTMLElement).offsetParent ===
+            (pillEl as HTMLElement).offsetParent,
+          pillHandle,
+        ),
+    ).toBe(true);
 
     const sw = await offsetBox(page, SELECTORS.mergeTagModeToggle);
     const pill = await offsetBox(page, SELECTORS.restoreHiddenBlocks);

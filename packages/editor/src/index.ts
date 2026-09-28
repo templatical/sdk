@@ -51,6 +51,7 @@ import {
 } from "./i18n";
 import { logger } from "./utils/logger";
 import { useFonts } from "./composables";
+import { stripStylesheetImports } from "./utils/stripStylesheetImports";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
 import {
@@ -764,10 +765,15 @@ export type TemplaticalCloudEditor = TemplaticalEditor;
  * how many editors mount.
  */
 let cachedEditorStyleSheet: CSSStyleSheet | null = null;
+
 function getEditorStyleSheet(): CSSStyleSheet {
   if (cachedEditorStyleSheet === null) {
     const sheet = new CSSStyleSheet();
-    sheet.replaceSync(editorStylesInline);
+    // The one `@import` in the editor's CSS loads Geist. The document-level
+    // stylesheet (`style.css`, or `editor.css` from the CDN) imports it too,
+    // and font faces loaded there reach the shadow tree, so stripping it
+    // here loses nothing and keeps `replaceSync` from warning.
+    sheet.replaceSync(stripStylesheetImports(editorStylesInline));
     cachedEditorStyleSheet = sheet;
   }
   return cachedEditorStyleSheet;
@@ -812,10 +818,8 @@ interface MountTarget {
  *     editor from npm dist (the dev branch is dead-coded out). It only
  *     matters when a consumer source-resolves this package, which is
  *     unusual outside this repo's own playground.
- *   - `replaceSync` strips `@import` rules per the CSSOM spec. Styles
- *     containing `@import` are skipped silently (the catch below). The
- *     primary bundled sheet covers Tailwind imports already, so this
- *     should never matter in practice.
+ *   - A constructed sheet cannot hold `@import`: `replaceSync` drops each
+ *     such rule and logs a warning, so they are stripped before the call.
  */
 function attachDevStyleMirror(shadowRoot: ShadowRoot): () => void {
   if (!import.meta.env?.DEV) return () => {};
@@ -828,10 +832,12 @@ function attachDevStyleMirror(shadowRoot: ShadowRoot): () => void {
       if (!text) return;
       try {
         const sheet = new CSSStyleSheet();
-        sheet.replaceSync(text);
+        // These are document styles, so the document has loaded their
+        // imports already.
+        sheet.replaceSync(stripStylesheetImports(text));
         sheets.push(sheet);
       } catch {
-        // Skip styles that contain disallowed constructs (e.g. `@import`).
+        // Skip a style the CSSOM refuses to parse.
       }
     });
     return sheets;

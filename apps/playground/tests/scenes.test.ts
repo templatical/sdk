@@ -16,6 +16,7 @@ import {
   codeSpans,
   localeLabel,
   plainText,
+  sceneTitle,
 } from "../src/host/catalogNav";
 import { NOTE_IDS } from "../src/host/sceneNotes";
 import { SCENE_ICONS } from "../src/host/catalogIcons";
@@ -388,7 +389,10 @@ const SEE_IT_GROUPS = new Set([
   "backend",
 ]);
 const setupScenes = SCENES.filter((scene) => SEE_IT_GROUPS.has(scene.group));
-type SceneCopies = Record<string, { seeIt: string; note?: string } | undefined>;
+type SceneCopies = Record<
+  string,
+  { title: string; seeIt: string; note?: string } | undefined
+>;
 const COPIES = [
   ["en", en.scenes as SceneCopies],
   ["de", de.scenes as SceneCopies],
@@ -501,5 +505,34 @@ describe("value pickers", () => {
     expect(localeLabel("fr")).toBe("fr · Français");
     expect(localeLabel("ja")).toBe("ja · 日本語");
     expect(localeLabel("pt-BR")).toBe("pt-BR · Português (Brasil)");
+  });
+});
+
+describe("scene titles", () => {
+  it("names every setup in English exactly as the registry does", () => {
+    // The registry title feeds llms.txt and the agent pages; the English
+    // copy must not drift from it.
+    for (const scene of setupScenes) {
+      expect((en.scenes as SceneCopies)[scene.id]?.title, scene.id).toBe(
+        scene.title,
+      );
+    }
+  });
+
+  it("names every setup in German", () => {
+    for (const scene of setupScenes) {
+      expect((de.scenes as SceneCopies)[scene.id]?.title, scene.id).toMatch(
+        /\S/,
+      );
+    }
+  });
+
+  it("keeps importer and example names, which are brands and emails", () => {
+    const copies = de.scenes as SceneCopies;
+    expect(sceneTitle(getScene("fonts")!, copies)).toBe("Schriftarten");
+    expect(sceneTitle(getScene("import-unlayer")!, copies)).toBe("Unlayer");
+    expect(sceneTitle(getScene("example-launchpad-launch")!, copies)).toBe(
+      "Launchpad launch",
+    );
   });
 });

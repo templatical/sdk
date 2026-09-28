@@ -292,11 +292,18 @@ function handleFetchData(
        around full-width sections, mirroring how `mj-body background-color`
        renders in the gutters when sent (#230). The neutral work area beyond
        the stage is preserved so the canvas still reads as a floating card and
-       editor chrome stays legible. -->
+       editor chrome stays legible.
+
+       Auto margins centre it in the pane. The max-width keeps the pane's
+       clearance on each side by shrinking the gutters first, and min-content
+       stops it at the email column: past that the margins fall to zero and
+       the pane scrolls from the column's left edge instead of clipping it. -->
   <div
-    class="tpl-canvas-stage tpl:relative tpl:flex tpl:justify-center tpl:rounded-lg"
+    class="tpl-canvas-stage tpl:relative tpl:mx-auto tpl:flex tpl:justify-center tpl:rounded-lg"
     :style="{
       width: `${stageWidth}px`,
+      maxWidth: 'calc(100% - 4 * var(--tpl-base-size))',
+      minWidth: 'min-content',
       boxShadow: darkMode ? 'none' : 'var(--tpl-shadow-xl)',
       transition: EMAIL_FRAME_WIDTH_TRANSITION,
     }"

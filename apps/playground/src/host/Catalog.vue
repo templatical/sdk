@@ -14,10 +14,15 @@ import {
   navigatePlayground,
   sceneHref,
 } from "@/host/sceneHref";
+import { sceneTitle } from "@/host/catalogNav";
 import { format, usePlaygroundI18n } from "@/i18n";
 import { getScene, scenesByGroup, type Scene, type SceneGroup } from "@/scenes";
 
 const { t } = usePlaygroundI18n();
+
+function titleOf(scene: Scene): string {
+  return sceneTitle(scene, t.value.scenes);
+}
 
 const minimum = getScene("minimum");
 const grouped = scenesByGroup();
@@ -308,13 +313,15 @@ onMounted(() => {
                 <a
                   :href="hrefFor(scene)"
                   :data-testid="`scene-link-${scene.id}`"
-                  :aria-label="format(t.a11y.openScene, { name: scene.title })"
+                  :aria-label="
+                    format(t.a11y.openScene, { name: titleOf(scene) })
+                  "
                   class="-mx-2 flex items-start justify-between gap-4 rounded-md px-2 py-3 text-inherit no-underline transition-colors duration-150 ease-out-expo hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:hover:bg-gray-800"
                   @click="openScene($event, scene)"
                 >
                   <span class="min-w-0">
                     <span class="block text-sm font-medium">{{
-                      scene.title
+                      titleOf(scene)
                     }}</span>
                     <span
                       class="mt-0.5 block text-xs text-gray-600 dark:text-gray-400"
@@ -357,10 +364,10 @@ onMounted(() => {
               <a
                 :href="hrefFor(scene)"
                 :data-testid="`scene-link-${scene.id}`"
-                :aria-label="format(t.a11y.openScene, { name: scene.title })"
+                :aria-label="format(t.a11y.openScene, { name: titleOf(scene) })"
                 class="rounded-sm text-sm font-medium text-gray-700 underline decoration-gray-300 decoration-1 underline-offset-4 transition-colors duration-150 hover:text-gray-900 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-300 dark:decoration-gray-600 dark:hover:text-gray-100"
                 @click="openScene($event, scene)"
-                >{{ scene.title }}</a
+                >{{ titleOf(scene) }}</a
               >
             </li>
           </ul>
@@ -395,7 +402,7 @@ onMounted(() => {
             <a
               :href="hrefFor(scene)"
               :data-testid="`scene-link-${scene.id}`"
-              :aria-label="format(t.a11y.openScene, { name: scene.title })"
+              :aria-label="format(t.a11y.openScene, { name: titleOf(scene) })"
               class="pg-proof-link block rounded-lg text-inherit no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-table"
               @click="openProof($event, scene)"
             >
@@ -417,7 +424,7 @@ onMounted(() => {
                 />
               </span>
               <span class="mt-3 block text-sm font-medium">{{
-                scene.title
+                titleOf(scene)
               }}</span>
               <span
                 class="mt-0.5 block text-xs text-gray-600 dark:text-gray-400"

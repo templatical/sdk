@@ -2,7 +2,6 @@
 import { computed, nextTick, onUnmounted, ref, shallowRef, watch } from "vue";
 import {
   ArrowUpRight,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CodeXml,
@@ -12,13 +11,15 @@ import {
   Share2,
 } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, useMediaQuery } from "@vueuse/core";
 import CatalogRail from "@/host/CatalogRail.vue";
 import CodeDrawer from "@/host/CodeDrawer.vue";
 import ExportModal from "@/host/ExportModal.vue";
 import HostKnobs from "@/host/HostKnobs.vue";
 import ImportPastePanel from "@/host/ImportPastePanel.vue";
+import SceneInitKey from "@/host/SceneInitKey.vue";
 import SceneNotes from "@/host/SceneNotes.vue";
+import SetupCard from "@/host/SetupCard.vue";
 import ShareModal from "@/host/ShareModal.vue";
 import {
   isPlainLeftClick,
@@ -31,7 +32,9 @@ import {
   localeLabel,
   plainText,
   sceneInitCode,
+  sceneTitle,
 } from "@/host/catalogNav";
+import { proofFor } from "@/host/proofs";
 import type { NotesMode } from "@/host/sceneNotes";
 import { SHARE_LOAD_FAILED, SHARE_NOT_FOUND } from "@/host/share";
 import { useSceneInit } from "@/host/useSceneInit";
@@ -49,6 +52,10 @@ const props = defineProps<{
 }>();
 
 const { t } = usePlaygroundI18n();
+
+function titleOf(scene: Scene): string {
+  return sceneTitle(scene, t.value.scenes);
+}
 const { theme: uiTheme } = usePlaygroundTheme();
 const scene = computed(() => getScene(props.sceneId));
 const editorContainer = ref<HTMLElement | null>(null);
@@ -59,6 +66,17 @@ const codeOpen = useLocalStorage("tpl-playground-code-open", false);
 // Remembered per browser too; hiding the rail gives the editor its width.
 const railOpen = useLocalStorage("tpl-playground-rail-open", true);
 const neighbours = computed(() => sceneNeighbours(props.sceneId));
+// The editor's own small-screen breakpoint (SMALL_SCREEN_QUERY): below it the
+// editor covers itself with a notice, so a phone gets the setup as a card and
+// no editor mounts at all. `?phoneCard=0` mounts the editor anyway, which is
+// how the e2e suite reaches that notice and a custom block's mobile styles.
+const belowEditorBreakpoint = useMediaQuery("(max-width: 767px)");
+const isPhone = computed(
+  () => belowEditorBreakpoint.value && props.search.get("phoneCard") !== "0",
+);
+const docsHref = computed(() =>
+  scene.value ? `https://docs.templatical.com${scene.value.docs}` : "",
+);
 // The notes show by themselves once per browser, on the first scene that
 // opens; the settings menu's "Show notes" brings them back on any scene.
 const notesSeen = useLocalStorage("tpl-playground-notes-seen", false);
@@ -107,10 +125,9 @@ const sceneSnippet = computed(() =>
     : "",
 );
 
-function onPick(event: Event): void {
+function onPick(value: string): void {
   const p = picker.value;
   if (!p) return;
-  const value = (event.target as HTMLSelectElement).value;
   navigatePlayground(
     sceneHref(
       props.sceneId,
@@ -205,7 +222,13 @@ watch(uiTheme, (theme) => {
 const boot = createSerializedBoot();
 
 watch(
-  () => [props.sceneId, props.search.toString(), retryTick.value] as const,
+  () =>
+    [
+      props.sceneId,
+      props.search.toString(),
+      retryTick.value,
+      isPhone.value,
+    ] as const,
   () => {
     void boot.enqueue(async (isCurrent) => {
       const current = scene.value;
@@ -216,6 +239,11 @@ watch(
       editor.value?.unmount();
       editor.value = null;
       if (!current || !isCurrent()) return;
+      if (isPhone.value) {
+        // The card has nothing to load.
+        sceneReady.value = true;
+        return;
+      }
       await nextTick();
       if (!isCurrent()) return;
       const container = editorContainer.value;
@@ -283,20 +311,23 @@ onUnmounted(() => {
     data-testid="scene-host"
     :data-scene-ready="sceneReady ? 'true' : undefined"
     :data-notes="notesOpen ? 'open' : undefined"
-    class="flex h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    class="flex font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    :class="isPhone ? 'min-h-screen' : 'h-screen'"
   >
-    <div class="pg-rail-slot" :data-open="railOpen">
+    <div v-if="!isPhone" class="pg-rail-slot" :data-open="railOpen">
       <CatalogRail id="catalog-rail" :current-id="scene.id" />
     </div>
     <div class="flex min-w-0 flex-1 flex-col">
       <header
         data-testid="scene-header"
         class="flex items-center justify-between h-14 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-3"
+        :class="{ 'sticky top-0': isPhone }"
       >
         <!-- Only the title block shrinks: a long see-it line would otherwise
              squeeze the controls before it and nudge the arrows. -->
         <div class="flex items-center gap-3 min-w-0">
           <button
+            v-if="!isPhone"
             type="button"
             data-testid="toolbar-rail"
             class="pg-toolbar-icon-btn shrink-0"
@@ -328,7 +359,7 @@ onUnmounted(() => {
             @click="onBack"
           >
             <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
-            <span class="pg-toolbar-label">{{ t.host.back }}</span>
+            <span>{{ t.host.back }}</span>
           </a>
           <!-- Before the title, not after it: a title's width changes from
                scene to scene, and arrows placed after it would move out
@@ -341,12 +372,12 @@ onUnmounted(() => {
               class="pg-pager-btn"
               :title="
                 format(t.host.pager.previous, {
-                  name: neighbours.previous.title,
+                  name: titleOf(neighbours.previous),
                 })
               "
               :aria-label="
                 format(t.host.pager.previous, {
-                  name: neighbours.previous.title,
+                  name: titleOf(neighbours.previous),
                 })
               "
               @click="onPager($event, neighbours.previous)"
@@ -369,10 +400,10 @@ onUnmounted(() => {
               data-testid="scene-next"
               class="pg-pager-btn"
               :title="
-                format(t.host.pager.next, { name: neighbours.next.title })
+                format(t.host.pager.next, { name: titleOf(neighbours.next) })
               "
               :aria-label="
-                format(t.host.pager.next, { name: neighbours.next.title })
+                format(t.host.pager.next, { name: titleOf(neighbours.next) })
               "
               @click="onPager($event, neighbours.next)"
             >
@@ -389,46 +420,21 @@ onUnmounted(() => {
               <ChevronRight :size="16" :stroke-width="1.5" aria-hidden="true" />
             </a>
           </div>
-          <div class="min-w-0">
+          <!-- On a phone the card carries the title block. -->
+          <div v-if="!isPhone" class="min-w-0">
             <div class="flex min-w-0 items-baseline gap-2">
               <h1
                 class="m-0 min-w-0 truncate text-base font-semibold leading-tight text-gray-900 dark:text-gray-100"
               >
-                {{ scene.title }}
+                {{ titleOf(scene) }}
               </h1>
-              <!-- A transparent native select over the chip: the menu, the
-                   keyboard and screen readers are the platform's own. -->
-              <label
-                v-if="initCode && picker"
-                data-testid="scene-init-key"
-                class="pg-init-picker"
-              >
-                <code class="font-mono"
-                  >{{ initCode }}: "{{ pickedValue }}"</code
-                >
-                <ChevronDown :size="12" :stroke-width="2" aria-hidden="true" />
-                <select
-                  data-testid="scene-value-picker"
-                  class="pg-init-picker-select"
-                  :value="pickedValue"
-                  :aria-label="format(t.host.pickValue, { key: initCode })"
-                  @change="onPick"
-                >
-                  <option
-                    v-for="option in pickerOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
-              </label>
-              <code
-                v-else-if="initCode"
-                data-testid="scene-init-key"
-                class="shrink-0 font-mono text-xs text-gray-600 dark:text-gray-400"
-                >{{ initCode }}</code
-              >
+              <SceneInitKey
+                v-if="initCode"
+                :code="initCode"
+                :value="pickedValue"
+                :options="pickerOptions"
+                @pick="onPick"
+              />
             </div>
             <p
               data-testid="scene-see-it"
@@ -444,51 +450,57 @@ onUnmounted(() => {
         </div>
         <!-- No overflow clipping here: the settings popover hangs below. -->
         <div class="flex items-center gap-1 shrink-0">
-          <a
-            :href="'https://docs.templatical.com' + scene.docs"
-            data-testid="toolbar-docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="pg-toolbar-link"
-          >
-            {{ t.host.docs }}
-            <ArrowUpRight :size="14" :stroke-width="1.75" aria-hidden="true" />
-          </a>
-          <button
-            type="button"
-            data-testid="toolbar-share"
-            class="pg-toolbar-icon-btn"
-            :title="t.toolbar.share"
-            :aria-label="t.toolbar.share"
-            :disabled="!editor"
-            @click="shareOpen = true"
-          >
-            <Share2 :size="16" :stroke-width="1.5" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            data-testid="toolbar-export"
-            class="pg-toolbar-icon-btn"
-            :title="t.toolbar.export"
-            :aria-label="t.toolbar.export"
-            :disabled="!editor"
-            @click="exportOpen = true"
-          >
-            <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            ref="codeButton"
-            data-testid="toolbar-code"
-            class="pg-toolbar-primary ml-1"
-            :aria-expanded="codeOpen"
-            aria-controls="code-drawer"
-            @click="codeOpen = !codeOpen"
-          >
-            <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
-            {{ t.host.code }}
-          </button>
-          <HostKnobs notes @show-notes="openNotes('all')" />
+          <template v-if="!isPhone">
+            <a
+              :href="docsHref"
+              data-testid="toolbar-docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="pg-toolbar-link"
+            >
+              {{ t.host.docs }}
+              <ArrowUpRight
+                :size="14"
+                :stroke-width="1.75"
+                aria-hidden="true"
+              />
+            </a>
+            <button
+              type="button"
+              data-testid="toolbar-share"
+              class="pg-toolbar-icon-btn"
+              :title="t.toolbar.share"
+              :aria-label="t.toolbar.share"
+              :disabled="!editor"
+              @click="shareOpen = true"
+            >
+              <Share2 :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              data-testid="toolbar-export"
+              class="pg-toolbar-icon-btn"
+              :title="t.toolbar.export"
+              :aria-label="t.toolbar.export"
+              :disabled="!editor"
+              @click="exportOpen = true"
+            >
+              <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              ref="codeButton"
+              data-testid="toolbar-code"
+              class="pg-toolbar-primary ml-1"
+              :aria-expanded="codeOpen"
+              aria-controls="code-drawer"
+              @click="codeOpen = !codeOpen"
+            >
+              <CodeXml :size="16" :stroke-width="1.75" aria-hidden="true" />
+              {{ t.host.code }}
+            </button>
+          </template>
+          <HostKnobs :notes="!isPhone" @show-notes="openNotes('all')" />
         </div>
       </header>
       <!--
@@ -497,6 +509,7 @@ onUnmounted(() => {
       dialogs.
     -->
       <div
+        v-if="!isPhone"
         data-testid="editor-screen"
         class="flex flex-1 flex-col min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800"
       >
@@ -549,6 +562,25 @@ onUnmounted(() => {
           </div>
         </Transition>
       </div>
+      <SetupCard
+        v-else
+        :title="titleOf(scene)"
+        :see-it="seeIt"
+        :snippet="sceneSnippet"
+        :docs-href="docsHref"
+        :proof="proofFor(scene.id)"
+        :proof-alt="format(t.host.phone.proofAlt, { name: titleOf(scene) })"
+      >
+        <template #init-key>
+          <SceneInitKey
+            v-if="initCode"
+            :code="initCode"
+            :value="pickedValue"
+            :options="pickerOptions"
+            @pick="onPick"
+          />
+        </template>
+      </SetupCard>
       <ExportModal v-model:open="exportOpen" :editor="editor" />
       <ShareModal
         v-model:open="shareOpen"

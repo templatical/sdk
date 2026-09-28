@@ -1,5 +1,6 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { animationsFinished } from "../helpers/motion";
 import type { Page } from "@playwright/test";
 
 /**
@@ -136,6 +137,7 @@ test.describe("modal height clamp", () => {
 
     await page.locator(SELECTORS.testEmailTrigger).click();
     await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
+    await animationsFinished(page.locator(SELECTORS.testEmailDialog));
 
     const clamp = await measureClamp(page, SELECTORS.testEmailDialog);
     expect(clamp).not.toBe(null);
@@ -176,6 +178,7 @@ test.describe("modal height clamp", () => {
 
     await page.locator(SELECTORS.testEmailTrigger).click();
     await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
+    await animationsFinished(page.locator(SELECTORS.testEmailDialog));
 
     // The reported symptom, stated as the control the user could not reach.
     //
@@ -226,6 +229,7 @@ test.describe("modal height clamp", () => {
 
     await page.locator(SELECTORS.savedBlocksRailBtn).click();
     await expect(page.locator(SELECTORS.savedBlocksBrowser)).toBeVisible();
+    await animationsFinished(page.locator(SELECTORS.savedBlocksBrowser));
 
     const clamp = await measureClamp(page, SELECTORS.savedBlocksBrowser);
     expect(clamp).not.toBe(null);
@@ -260,6 +264,7 @@ test.describe("modal height clamp", () => {
       await page.locator(SELECTORS.testEmailTrigger).click();
       const dialog = page.locator(SELECTORS.testEmailDialog);
       await expect(dialog).toBeVisible();
+      await animationsFinished(dialog);
 
       // Horizontally inside the panel's own column, so the point lands on the
       // wrapper rather than on the backdrop either side of it.
@@ -303,6 +308,7 @@ test.describe("modal height clamp", () => {
       // rather than by the editor's own (possibly small) box.
       await page.locator(SELECTORS.testEmailTrigger).click();
       await expect(page.locator(SELECTORS.testEmailDialog)).toBeVisible();
+      await animationsFinished(page.locator(SELECTORS.testEmailDialog));
 
       const clamp = await measureClamp(page, SELECTORS.testEmailDialog);
       expect(clamp).not.toBe(null);

@@ -1,10 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, provide, ref, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  watch,
+  watchEffect,
+} from "vue";
 import Catalog from "@/host/Catalog.vue";
 import DataSourcePicker from "@/host/DataSourcePicker.vue";
+import { sceneTitle } from "@/host/catalogNav";
 import SceneHost from "@/host/SceneHost.vue";
 import { fetchShare, ShareError } from "@/host/share";
-import { usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
+import { format, usePlaygroundI18n, usePlaygroundTheme } from "@/i18n";
 import { getScene, parsePlaygroundRoute } from "@/scenes";
 
 const { t } = usePlaygroundI18n();
@@ -25,6 +34,17 @@ const playgroundRoute = computed(() =>
 const sceneRoute = computed(() =>
   playgroundRoute.value.kind === "scene" ? playgroundRoute.value : null,
 );
+
+// The tab names the page it shows, in the playground's language.
+watchEffect(() => {
+  const route = sceneRoute.value;
+  const scene = route ? getScene(route.id) : undefined;
+  document.title = scene
+    ? format(t.value.host.pageTitle, {
+        name: sceneTitle(scene, t.value.scenes),
+      })
+    : t.value.host.catalogPageTitle;
+});
 
 type ShareGate = "idle" | "loading" | "not-found" | "error";
 const shareGate = ref<ShareGate>("idle");

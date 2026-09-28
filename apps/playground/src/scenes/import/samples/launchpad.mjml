@@ -1,0 +1,94 @@
+<mjml lang="en">
+  <mj-head>
+    <mj-preview>Introducing Launchpad v2.0 — rebuilt from the ground up.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-section background-color="#ffffff" padding="0" />
+      <mj-text color="#1a1a1a" font-size="16px" line-height="24px" padding="0 40px" />
+      <mj-button background-color="#0f766e" color="#ffffff" font-size="16px" font-weight="bold" border-radius="6px" inner-padding="14px 32px" />
+      <mj-class name="heading" align="center" font-weight="bold" line-height="1.25" color="#111827" />
+      <mj-class name="feature" font-size="14px" line-height="21px" color="#4b5563" />
+    </mj-attributes>
+    <mj-style>
+      h2, h3 { margin: 0; font-size: inherit; line-height: inherit; }
+    </mj-style>
+  </mj-head>
+  <mj-body width="600px" background-color="#f3f4f6">
+    <mj-section padding="40px 0 0">
+      <mj-column>
+        <mj-text mj-class="heading" font-size="24px" color="#0f766e" padding="0 40px 16px">
+          <h3>▲ launchpad</h3>
+        </mj-text>
+        <mj-text mj-class="heading" font-size="30px" padding="0 40px 12px">
+          <h2>Introducing Launchpad v2.0</h2>
+        </mj-text>
+        <mj-text padding="0 40px 24px">
+          <p style="margin: 0; text-align: center;"><span style="font-size: 16px; color: #4b5563;">We have been working on something big. Today we are launching Launchpad v2.0 — completely rebuilt with a new interface, faster performance, and the features you have been asking for.</span></p>
+        </mj-text>
+        <mj-button href="https://example.com/whats-new" padding="0 40px 40px">
+          See What’s New
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section>
+      <mj-column>
+        <mj-image src="/examples/launchpad/dashboard.png" alt="Launchpad v2.0 dashboard" width="600px" padding="0" />
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="40px 0 24px">
+      <mj-column>
+        <mj-text mj-class="heading" font-size="22px">
+          <h3>What’s new in v2.0</h3>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0 20px">
+      <mj-column>
+        <mj-text mj-class="feature" padding="0 20px 24px">
+          <p style="margin: 0;"><span style="font-size: 14px; color: #4b5563;"><strong>Redesigned Dashboard</strong><br />A cleaner, faster workspace that puts your most important metrics front and center.</span></p>
+        </mj-text>
+      </mj-column>
+      <mj-column>
+        <mj-text mj-class="feature" padding="0 20px 24px">
+          <p style="margin: 0;"><span style="font-size: 14px; color: #4b5563;"><strong>Team Collaboration</strong><br />Invite your team, assign roles, and work together in real-time with live cursors.</span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0 20px 8px">
+      <mj-column>
+        <mj-text mj-class="feature" padding="0 20px 24px">
+          <p style="margin: 0;"><span style="font-size: 14px; color: #4b5563;"><strong>API v3</strong><br />New REST and webhook endpoints with better rate limits, pagination, and error handling.</span></p>
+        </mj-text>
+      </mj-column>
+      <mj-column>
+        <mj-text mj-class="feature" padding="0 20px 24px">
+          <p style="margin: 0;"><span style="font-size: 14px; color: #4b5563;"><strong>Advanced Analytics</strong><br />Track opens, clicks, and conversions with our new built-in analytics dashboard.</span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0 0 40px">
+      <mj-column>
+        <mj-divider border-width="1px" border-style="solid" border-color="#e5e7eb" padding="0 40px 32px" />
+        <mj-text padding="0 40px 24px">
+          <p style="margin: 0; text-align: center;"><span style="font-size: 15px; color: #4b5563;">Ready to upgrade? Your existing data will be automatically migrated — no action needed.</span></p>
+        </mj-text>
+        <mj-button href="https://example.com/dashboard" padding="0 40px 40px">
+          Open Your Dashboard
+        </mj-button>
+        <mj-social align="center" icon-size="24px" mode="horizontal" padding="0 40px 16px">
+          <mj-social-element name="x-noshare" href="https://twitter.com/acme" alt="X" />
+          <mj-social-element name="github-noshare" href="https://github.com/acme" alt="GitHub" />
+          <mj-social-element name="linkedin-noshare" href="https://linkedin.com/company/acme" alt="LinkedIn" />
+        </mj-social>
+        <mj-text line-height="18px">
+          <p style="margin: 0; text-align: center;"><span style="font-size: 12px; color: #6b7280;">You’re receiving this email because you signed up for Launchpad. <a href="https://example.com/unsubscribe" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a></span></p>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
