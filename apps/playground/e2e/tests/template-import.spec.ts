@@ -382,6 +382,45 @@ test.describe("Template import", () => {
     await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
   });
 
+  // The editor's parser decides whether imported paragraph formatting survives
+  // an edit, so open the block, type, and read the canvas back.
+  test("an imported MJML paragraph keeps its formatting through an edit", async ({
+    scenePage,
+    editorPage,
+    page,
+  }) => {
+    await importOnScene(
+      scenePage,
+      page,
+      "mjml",
+      '<mjml><mj-body><mj-section><mj-column><mj-text align="center" color="#4b5563" font-size="18px">Hi, welcome aboard</mj-text></mj-column></mj-section></mj-body></mjml>',
+    );
+    await expect(page.locator(SELECTORS.importPanel)).toHaveCount(0);
+    await editorPage.waitForReady();
+
+    await editorPage.doubleClickBlock("paragraph");
+    await editorPage.focusTextEditableAtEnd("paragraph");
+    await page.keyboard.type(" today");
+    await page.keyboard.press("Escape");
+
+    const paragraph = page.locator(blockByType("paragraph")).first();
+    await expect(paragraph).toContainText("welcome aboard today");
+    const stored = await paragraph.evaluate((el) => {
+      const p = el.querySelector("p")!;
+      const span = el.querySelector<HTMLElement>('span[style*="color"]');
+      return {
+        align: getComputedStyle(p).textAlign,
+        color: span ? getComputedStyle(span).color : null,
+        fontSize: span ? getComputedStyle(span).fontSize : null,
+      };
+    });
+    expect(stored).toEqual({
+      align: "center",
+      color: "rgb(75, 85, 99)",
+      fontSize: "18px",
+    });
+  });
+
   test("imports a Topol design and renders converted blocks", async ({
     scenePage,
     editorPage,
