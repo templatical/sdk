@@ -15,6 +15,31 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.42.1
+
+<time datetime="2026-09-29">2026-09-29</time>
+
+### Fixes and improvements
+
+**Palette clicks insert the block you asked for**
+
+`@templatical/editor`
+
+- **A drag from the palette onto the canvas inserts one block.** A small pointer movement started a drag and then also fired the palette button's click, so a second copy landed beside the one you dropped.
+- **A click that slips a few pixels on the palette inserts on the next press.** Releasing still on the same button collapsed the rail under the pointer and swallowed the following click. The rail stays open, and that next click inserts the block. A drag that ends on the canvas still collapses the rail.
+
+**Live notes survive a plain `live reload`. `live reload --consume-annotations` clears them after the working file was read. A note can name the block that contains its target, and the queue can be edited or deleted one note at a time.**
+
+`@templatical/template-tools`
+
+**Canvas and shadow-mount fixes**
+
+`@templatical/editor`
+
+- **An email wider than the canvas pane scrolls to both edges.** When the email was wider than the pane, as in a 1024px-wide window, the canvas centred it and it overflowed on both sides, so the part past the left edge could not be scrolled to. The pane now scrolls from the email's left edge. Wherever the email fits, the canvas sits exactly where it did before.
+- **The empty-canvas placeholder stays light in the dark theme.** It sits on the email's page, which renders light in both themes, so it now takes the same light tokens as block content. In the dark theme it read as a dark hole in a light page.
+- **A shadow-mounted editor no longer logs "@import rules are not allowed here".** The editor's stylesheet starts with an `@import` for the Geist font, and a constructed stylesheet cannot hold one, so every shadow mount logged a warning on the host page. The shadow root's sheet now leaves it out. Geist still loads from the stylesheet you import at document level (`style.css`, or `editor.css` from the CDN), as it did before.
+
 ## 0.42.0
 
 <time datetime="2026-09-25">2026-09-25</time>

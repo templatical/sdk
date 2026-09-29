@@ -1,5 +1,22 @@
 # @templatical/template-tools
 
+## 0.42.1
+
+### Patch Changes
+
+- 46d066e: Live notes survive a plain `live reload`. `live reload --consume-annotations` clears them after the working file was read. A note can name the block that contains its target, and the queue can be edited or deleted one note at a time.
+- @templatical/import-beefree@0.42.1
+  - @templatical/import-chamaileon@0.42.1
+  - @templatical/import-easy-email-pro@0.42.1
+  - @templatical/import-html@0.42.1
+  - @templatical/import-mjml@0.42.1
+  - @templatical/import-stripo@0.42.1
+  - @templatical/import-topol@0.42.1
+  - @templatical/import-unlayer@0.42.1
+  - @templatical/quality@0.42.1
+  - @templatical/renderer@0.42.1
+  - @templatical/types@0.42.1
+
 ## 0.42.0
 
 ### Minor Changes
