@@ -5,6 +5,10 @@ import type { Block, SectionBlock } from "@templatical/types";
 export interface ConvertCtx {
   entries: ImportReportEntry[];
   warnings: string[];
+  /** Caller's plugin CSS. Applied inside each HTML fragment, never raw. */
+  css?: string;
+  /** `es-wrapper` colour, or `#ffffff` when the document has none. */
+  pageBackground?: string;
 }
 
 /** Paint after `createSectionBlock` so `styles` keeps its required padding. */
@@ -28,11 +32,23 @@ export function flattenBlocks(blocks: Block[]): Block[] {
   return out;
 }
 
-/** Run the generic HTML importer on a subtree and keep its blocks, not its sections. */
+function fragmentDocument(inner: string, css?: string): string {
+  const safe = css ? css.replace(/<\/style/gi, "<\\/style") : "";
+  const head = safe ? `<head><style>${safe}</style></head>` : "";
+  return `<!DOCTYPE html><html>${head}<body>${inner}</body></html>`;
+}
+
+/**
+ * Run the generic HTML importer on a subtree and keep its blocks.
+ * Section entries belong to the row the HTML importer invented; Stripo's own
+ * section entries are recorded by the caller.
+ */
 export function blocksFromHtml(inner: string, ctx: ConvertCtx): Block[] {
-  const wrapped = `<!DOCTYPE html><html><body>${inner}</body></html>`;
-  const result = convertHtmlTemplate(wrapped);
-  ctx.entries.push(...result.report.entries);
+  const result = convertHtmlTemplate(fragmentDocument(inner, ctx.css));
+  for (const entry of result.report.entries) {
+    if (entry.templaticalBlockType === "section") continue;
+    ctx.entries.push(entry);
+  }
   ctx.warnings.push(...result.report.warnings);
   return flattenBlocks(result.content.blocks);
 }

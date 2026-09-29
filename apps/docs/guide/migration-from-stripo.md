@@ -73,7 +73,7 @@ const editor = await init({
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each source element (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
-Pass `options.css` when converting plugin storage. It is ignored on compiled exports (those already inline their styles).
+Pass `options.css` with plugin storage (`getTemplateData().css`). Those rules apply to each cell the HTML importer converts. A compiled File → HTML export already inlines the same rules.
 
 Unrecognized HTML (no Stripo class attributes) is converted through `@templatical/import-html` and the report carries a warning naming that fallback.
 
@@ -87,6 +87,8 @@ Each `report.entries` item describes one source element:
 | `approximated` | Mapped to a Templatical block, with a clamp or flatten — `note` states what changed. |
 | `html-fallback` | No block equivalent; the original markup is preserved in an `HtmlBlock`. |
 | `skipped` | Reserved for parity with the other `@templatical/import-*` packages; this converter does not currently produce it. |
+
+The report lists the blocks that remain in `content`, including each section Stripo emits. A `<tr>` section the HTML importer invents while walking a cell is omitted. Warnings from that walk remain.
 
 ```ts
 console.log(report.summary);
@@ -116,7 +118,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. |
+| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
 | `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`. |
@@ -124,33 +126,41 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
 | `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
-| `esd-block-spacer` | `spacer` | Height from `style` or the `height` attribute. |
+| `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
 ## Compiled HTML mapping {#compiled-mapping}
 
-Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Stripes (`es-header` / `es-content` / `es-footer`) become sections. Columns are sibling floated tables (`es-left` / `es-right`), not cell counts.
+Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each direct row of a stripe becomes its own section, in document order. Columns are the floated `es-left` / `es-right` tables inside that row.
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `es-header` / `es-content` / `es-footer` | `SectionBlock` | One section per top-level stripe. Fill comes from the inner `es-*-body` `background-color` (style wins over `bgcolor`). |
-| 1–3 `es-left` / `es-right` siblings | `columns` `"1"` / `"2"` / `"3"` | Floated tables, not `<td>` count. |
-| 4+ floated siblings | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
-| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. |
+| `es-header` / `es-content` / `es-footer` | one or more `SectionBlock`s | One section per direct row of the stripe's `es-*-body`. A stripe with no `es-*-body` uses its own rows. An empty row is skipped. |
+| Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
+| 1–3 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
+| 4+ floated tables in one row | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
-| `table.es-menu` (1 item cell) | inner mapping, not `menu` | Same stacked-step rule as the plugin path. |
+| `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
 | `table.es-social` | `social` | Same platform mapping as the plugin path. |
-| `es-spacer` | `spacer` | |
+| `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
+| `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-Everything else in a stripe goes through `@templatical/import-html` (headings, paragraphs, images, dividers).
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. A `background-image` is reported and dropped; the colour still applies.
+
+The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
+
+A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share of the body width, less the section padding on the edge that column owns, and the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
+
+Everything else in a row goes through `@templatical/import-html` (headings, paragraphs, images, `<hr>` dividers).
 
 ## Where the mapping is lossy
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables keeps three slots and folds the rest into the last.
+- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables in one row keeps three slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
 - **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
 - **Block IDs** — every imported block gets a freshly generated ID.
 - **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.
-- **Inline CSS vs. plugin CSS** — compiled exports already inline. Plugin CSS must be passed as `options.css` or styles that lived only in that stylesheet are missing from the conversion.
+- **Plugin CSS** — pass `options.css` with plugin storage. Rules that live only in that stylesheet are applied to the converted blocks. Compiled exports already inline them.
 
 ## Things that don't map automatically
 

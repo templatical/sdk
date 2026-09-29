@@ -1,14 +1,15 @@
-import { load } from "cheerio";
+import { load, type CheerioAPI } from "cheerio";
 import { convertHtmlTemplate } from "@templatical/import-html";
 import type { ImportReport, ImportResult } from "@templatical/import-html";
 import { createDefaultTemplateContent } from "@templatical/types";
 import { convertCompiled } from "./compiled";
+import { colorFromPaint } from "./css";
 import { detectStripoKind } from "./detect";
 import { convertEditor } from "./editor";
 import type { ConvertCtx } from "./fragment";
 
 export interface ConvertStripoOptions {
-  /** Sibling CSS from plugin `getTemplateData()`. Ignored on compiled exports. */
+  /** Sibling CSS from plugin `getTemplateData()`. Applied inside each HTML fragment. */
   css?: string;
 }
 
@@ -26,6 +27,19 @@ function injectCss(html: string, css?: string): string {
   const $style = $("<style></style>").attr("data-stripo-css", "1").text(safe);
   $("head").append($style);
   return $.html() ?? html;
+}
+
+/** First painted `es-wrapper-color` / `es-wrapper`, or white when neither is set. */
+function pageBackground($: CheerioAPI): string {
+  const nodes = $(
+    "[class~='es-wrapper-color'], [class~='es-wrapper']",
+  ).toArray();
+  for (const node of nodes) {
+    const $el = $(node);
+    const color = colorFromPaint($el.attr("style"), $el.attr("bgcolor"));
+    if (color) return color;
+  }
+  return "#ffffff";
 }
 
 function summarize(ctx: ConvertCtx): ImportReport {
@@ -86,17 +100,31 @@ export function convertStripoTemplate(
     };
   }
 
-  const ctx: ConvertCtx = { entries: [], warnings: [] };
+  const ctx: ConvertCtx = {
+    entries: [],
+    warnings: [],
+    css: options?.css,
+  };
+  const pageBg = pageBackground(load(prepared));
+  ctx.pageBackground = pageBg;
   const blocks =
     kind === "editor"
       ? convertEditor(prepared, ctx)
       : convertCompiled(prepared, ctx);
 
+  // After `fallback.content`: its settings carry the HTML importer's white
+  // page, which would hide the wrapper colour.
+  const defaults = createDefaultTemplateContent();
   return {
     content: {
-      ...createDefaultTemplateContent(),
+      ...defaults,
       ...fallback.content,
       blocks,
+      settings: {
+        ...defaults.settings,
+        ...fallback.content.settings,
+        backgroundColor: pageBg,
+      },
     },
     report: summarize(ctx),
   };

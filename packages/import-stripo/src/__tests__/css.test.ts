@@ -17,6 +17,14 @@ describe("parseColor", () => {
   it("treats transparent as unset", () => {
     expect(parseColor("transparent")).toBe("");
   });
+
+  it("reads an rgb() fill as hex", () => {
+    expect(parseColor("rgb(229, 251, 246)")).toBe("#e5fbf6");
+  });
+
+  it("drops the alpha from rgba()", () => {
+    expect(parseColor("rgba(229, 251, 246, 0.5)")).toBe("#e5fbf6");
+  });
 });
 
 describe("parsePxValue", () => {

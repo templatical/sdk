@@ -7588,7 +7588,7 @@ BeeFree block types map to Templatical equivalents:
 | List | `paragraph` | Converted |
 | Image | `image` | Converted |
 | Button | `button` | Converted |
-| Divider | `divider` | Converted |
+| Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
 | Social | `social` | Converted |
 | Html | `html` | Converted |
@@ -7597,6 +7597,22 @@ BeeFree block types map to Templatical equivalents:
 | Table | `table` | Converted |
 
 Unknown module types are converted to HTML blocks as a fallback.
+
+### Divider width
+
+| BeeFree `width` | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than its column's content width | the px number | Converted |
+| px, as wide as its column's content width or wider | `"full"` | Converted |
+| a negative px width | `0` | Approximated |
+| any other value | `"full"` | Approximated |
+
+A column's content width is its share of `settings.width`, by the section's column layout, less the divider's left and right padding. A row of four or more columns is flattened, and its modules span the whole `settings.width`.
+
+Templatical centres every divider. A partial-width divider that BeeFree aligns left or right (`computedStyle.align`) is approximated, and its `note` names the alignment.
 
 ## Column Layout Conversion
 
@@ -7616,9 +7632,11 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 
 Global template settings are converted where possible:
 
-- **Width** -- BeeFree `page.body.content.style.width` maps to `settings.width`
+- **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
 - **Background color** -- Row and body background colors are preserved
-- **Font family** -- The default font family carries over to `settings.fontFamily`
+- **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
+- **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
+- **Font family** -- The default font family carries over to `settings.fontFamily`. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
 
 ## Known Limitations
 
@@ -7626,6 +7644,7 @@ Global template settings are converted where possible:
 - **Conditional display** -- BeeFree dynamic content rules do not have a direct equivalent and are dropped during conversion.
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
 - **Forms** -- BeeFree form blocks have no Templatical equivalent and are skipped.
+- **Per-block link colors** -- A text module's own link color (`computedStyle.linkColor`) is dropped; its links take `settings.linkColor`.
 - **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
 
 ## Verifying Converted Templates
@@ -7930,7 +7949,7 @@ Each `report.entries` item describes one produced block:
 | `converted` | Mapped to a Templatical block with no loss of fidelity. |
 | `approximated` | Mapped to the right block, with a clamp or flatten — `note` states what changed. |
 | `html-fallback` | No block equivalent exists; the raw node is preserved as JSON inside an `HtmlBlock`. |
-| `skipped` | Empty `logic` — there were no children to convert. |
+| `skipped` | Empty `logic`, `standard-wrapper`, `page-header` or `page-footer` — there was nothing to convert. |
 
 ```ts
 console.log(report.summary);
@@ -7954,13 +7973,13 @@ EmailTemplate { subject, content }
   content: page
     data: { globalAttributes, blockAttributes, categoryAttributes, fonts, preheader, variables[] }
     attributes: { width, background-color, content-background-color, link-color, … }
-    children: standard-section | standard-wrapper | standard-hero | *_widget | AMP_* | custom
+    children: standard-section | standard-wrapper | standard-hero | page-header | page-footer | *_widget | AMP_* | custom
       standard-section.children: standard-column | standard-group
         standard-group.children: standard-column
           standard-column.children: leaf | nested structure
 ```
 
-Leaves in the documented element list: `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `line-break`, `html-block-node`, `marketing-countdown`, `placeholder`. `uid` / `id` / `thumbnail` are discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped.
+Leaves in the documented element list: `standard-text`, `standard-paragraph`, `standard-h1`–`h4`, `standard-button`, `standard-image`, `standard-divider`, `standard-spacer`, `standard-navbar` + `standard-navbar-link`, `standard-social` + `standard-social-element`, `standard-table2`, `raw`, `marketing-countdown`, `placeholder`. Inline inside rich text: `line-break`, `html-block-node`, `html-node`, `mergetag`. `uid` / `id` / `thumbnail` are discarded — Templatical mints its own IDs. `placeholder` is editor chrome and is skipped.
 
 - **Easy Email Pro** stores this persist tree, plus optional `variables[]` (design tokens) and page `data`.
 - **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
@@ -8004,18 +8023,22 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
+| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
-| `standard-paragraph` | `ParagraphBlock` | Content from Slate children. Stays a paragraph even at a large `font-size`. |
+| `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
 | `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
 | `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
-| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. |
+| `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
 | `standard-social` + `standard-social-element` | `SocialIconsBlock` | Platform inferred from `href` hostname, then `src` path. Custom PNG `src` is dropped, `approximated`. |
-| `standard-table2` / `tr` / `td` | `TableBlock` | Converted. |
+| `standard-table2` / `standard-table2-tr` / `standard-table2-td` | `TableBlock` | Converted. Plain `tr` / `td` rows are read too. |
+| `raw` | `HtmlBlock` | `data.content` as is. Converted. |
 | `line-break` | `<br>` | Inside the parent rich-text. No entry. |
 | `html-block-node` | HTML fragment | Inside the parent rich-text. No entry. |
+| `html-node` | Inline HTML element | Inside the parent rich-text: `<tagName>` with its string attributes; void tags (`br`, `img`, …) self-close. No entry. An `html-node` directly in a column is `html-fallback`. |
+| `mergetag` | <code v-pre>{{ name }}</code> | Inside the parent rich-text, written as Easy Email Pro renders it; the editor turns the token into a merge tag. No entry. |
 | `marketing-countdown` | Overlay text + `ImageBlock` of `src` | The GIF is the timer. Does not emit `type: "countdown"` (Cloud-only). `approximated`. |
 | kit `common-video` | `VideoBlock` | Converted when a URL is present; otherwise `html-fallback`. |
 | kit shopwindow / qr-code / countdown-v2 | `HtmlBlock` | `JSON.stringify(node)`, `html-fallback`. |
@@ -8038,6 +8061,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
 - **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block is Cloud-only and blank on OSS, so this package does not emit it. The GIF is a static image; the timer does not tick.
+- **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip
 Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk rather than html-fallback the whole subtree so editable CTAs survive; overlay-on-image is what Templatical cannot express. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
@@ -8147,7 +8171,7 @@ HTML elements map to Templatical equivalents:
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
-| `<hr>` | `divider` | Converted |
+| `<hr>` | `divider` | Converted (approximated when the width is clamped or unreadable, or a partial-width divider is aligned left or right) |
 | Empty `<td>` with explicit height | `spacer` | Converted |
 | `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
@@ -8159,6 +8183,26 @@ Anything that can't be mapped is preserved verbatim inside an HTML block, so no 
 A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell whose entire content is one styled text `<a>` reads as a button.
 
 A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
+
+A text-only wrapper's `text-align` applies to each `<p>` inside it that states no `text-align` of its own. A `<p>` that states one keeps it.
+
+### Divider width
+
+The width comes from the `<hr>`'s `width` style, then its `width` attribute.
+
+| `<hr>` width | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, `auto` or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than the line's room | the px number | Converted |
+| px, as wide as the line's room or wider | `"full"` | Converted |
+| a negative px width | `0` | Approximated |
+| any other value, such as `20em` | `"full"` | Approximated |
+
+The line's room is the column's share of `settings.width`, by the section's column layout, less the padding of the section, of every cell and wrapper around the `<hr>`, and of the `<hr>` itself.
+
+Templatical centres every divider. A partial-width `<hr>` that its `align` attribute or its margins place at the left or the right is approximated, and its `note` names the alignment.
 
 ## Inline Formatting
 
@@ -8194,7 +8238,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper rows
 
-Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row carries no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+
+A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it.
 
 ### Gutter rows
 
@@ -8213,6 +8259,24 @@ Every container must be laid out side by side, none may be empty, and no text of
 ### Nesting
 
 Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell. A nested row with more than one cell loses its columns that way, and `report.entries` records it as `approximated` with a note.
+
+### Section backgrounds
+
+A section takes the nearest fill, read from a `background-color` style, a `background` colour or a `bgcolor` attribute:
+
+1. The `<tr>`.
+2. The row's cells, when they all share one fill. Gutter cells do not count, and a cell whose entire content is one styled text `<a>` keeps its colour on the `button`.
+3. The `<table>` holding the row, then the tables and wrapper cells around it.
+
+A section has one background colour, so a row whose cells render on different fills is approximated, and its `note` names each cell's fill.
+
+### Cell padding {#cell-padding}
+
+A cell's padding is added to the padding of every block the cell holds: the left and right to every block, the top to the first and the bottom to the last. A table's `cellpadding` pads each of its cells, and a side the cell's own `padding` states overrides it.
+
+The padding of nested cells, and of the `<div>`, `<center>` and `<main>` wrappers inside a cell, adds up. A cell holding one column container per column pads the row: the top and bottom go to each column's first and last block, the left to the first column and the right to the last.
+
+A spacer renders at its height, so a spacer at a cell's edge takes that side's padding as extra height. A cell whose entire content is one styled text `<a>` keeps its padding as the `button`'s own.
 
 ## CSS Handling
 
@@ -8234,6 +8298,7 @@ Global template settings are extracted from the document:
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
 - **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
 - **Font family** — `<body>` `font-family` style. Defaults to `Arial`.
+- **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.
 
 ## Known Limitations
@@ -8254,7 +8319,7 @@ After conversion, review the output in the editor to check for:
 1. **Element classification** — review `report.entries` for entries with `status: 'approximated'` or `status: 'html-fallback'`.
 2. **Image URLs** — relative paths and CID references won't resolve in the preview; replace with absolute URLs.
 3. **Column proportions** — automatic mapping picks the closest standard layout; fine-tune in the section settings panel.
-4. **Spacing and padding** — `padding` shorthand is parsed faithfully, but margin/spacing on bare cells may need touch-up.
+4. **Spacing and padding** — cell padding is carried onto the blocks it holds, as described in [Cell padding](#cell-padding). Margins are not imported and may need touch-up.
 5. **HTML-fallback blocks** — anything that landed in an HTML block can be edited inline or replaced with first-class blocks.
 
 ## Reading the Report
@@ -8283,7 +8348,7 @@ for (const warning of report.warnings) {
 
 `report.entries` accounts for the sections alongside the leaf blocks, so the entries reconcile against `content.blocks`:
 
-- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged or when the ratio had no equivalent.
+- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column and its fill, and `approximated` with a note when cells were merged, when the ratio had no equivalent, or when its cells rendered on different fills.
 - One entry with `sourceTag: 'body'` and a note when loose top-level content is grouped into a synthetic single-column section.
 - One entry with `templaticalBlockType: null` and a note for a nested row whose columns were dropped.
 
@@ -8429,10 +8494,10 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
-| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, padding. |
-| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, padding. |
+| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
@@ -8440,7 +8505,24 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
 | `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. |
 | `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
+| `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
+
+### Divider width
+
+| `mj-divider` `width` | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | `converted` |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | `converted` |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | `approximated` |
+| px, narrower than the line can span | the px number | `converted` |
+| px, as wide as the line can span or wider | `"full"` | `converted` |
+| px, below `0` | clamped to `0` | `approximated` |
+| any other value | `"full"` | `approximated` |
+
+The line can span its column less the column's side padding and the divider's own, which is how `mj-divider` draws `100%`. A column's width is its share of `mj-body`'s `width`, by the section's column layout.
+
+Templatical centres every divider. A partial-width divider that MJML aligns left or right (`align`) is `approximated`, and its `note` names the alignment.
 
 ## Where the mapping is lossy
 
@@ -8449,6 +8531,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML allows any number of columns at any width, so a ratio outside those five resolves to the nearest layout, and a fourth or later column's content folds into the last column.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
+- **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
 - **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
 - **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
@@ -8536,7 +8619,7 @@ const editor = await init({
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each source element (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
-Pass `options.css` when converting plugin storage. It is ignored on compiled exports (those already inline their styles).
+Pass `options.css` with plugin storage (`getTemplateData().css`). Those rules apply to each cell the HTML importer converts. A compiled File → HTML export already inlines the same rules.
 
 Unrecognized HTML (no Stripo class attributes) is converted through `@templatical/import-html` and the report carries a warning naming that fallback.
 
@@ -8550,6 +8633,8 @@ Each `report.entries` item describes one source element:
 | `approximated` | Mapped to a Templatical block, with a clamp or flatten — `note` states what changed. |
 | `html-fallback` | No block equivalent; the original markup is preserved in an `HtmlBlock`. |
 | `skipped` | Reserved for parity with the other `@templatical/import-*` packages; this converter does not currently produce it. |
+
+The report lists the blocks that remain in `content`, including each section Stripo emits. A `<tr>` section the HTML importer invents while walking a cell is omitted. Warnings from that walk remain.
 
 ```ts
 console.log(report.summary);
@@ -8579,7 +8664,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. |
+| `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
 | `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`. |
@@ -8587,33 +8672,41 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
 | `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
-| `esd-block-spacer` | `spacer` | Height from `style` or the `height` attribute. |
+| `esd-block-spacer` | `spacer` or `divider` | A visible `border-bottom` or `border-top` on the spacer or its inner cell becomes a divider (style, colour, thickness, and the width rule below). Otherwise a spacer: height from `style`, the `height` attribute, or vertical padding. |
 | `esd-block-html` | `html` | Inner markup preserved. |
 
 ## Compiled HTML mapping {#compiled-mapping}
 
-Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Stripes (`es-header` / `es-content` / `es-footer`) become sections. Columns are sibling floated tables (`es-left` / `es-right`), not cell counts.
+Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each direct row of a stripe becomes its own section, in document order. Columns are the floated `es-left` / `es-right` tables inside that row.
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `es-header` / `es-content` / `es-footer` | `SectionBlock` | One section per top-level stripe. Fill comes from the inner `es-*-body` `background-color` (style wins over `bgcolor`). |
-| 1–3 `es-left` / `es-right` siblings | `columns` `"1"` / `"2"` / `"3"` | Floated tables, not `<td>` count. |
-| 4+ floated siblings | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
-| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. |
+| `es-header` / `es-content` / `es-footer` | one or more `SectionBlock`s | One section per direct row of the stripe's `es-*-body`. A stripe with no `es-*-body` uses its own rows. An empty row is skipped. |
+| Content beside the columns in the same cell | one-column `SectionBlock` | Leading content stays before the column section and trailing content after it. Content that sat between the columns is placed after the column section (`approximated`). Splitting one padded cell into more than one section is `approximated`; the top padding stays on the first section, the bottom on the last, and the sides on each. |
+| 1–3 `es-left` / `es-right` in one row | `columns` `"1"` / `"2"` / `"3"` | Floated tables in that row, including tables nested in a wrapper. Columns nested inside another `es-left` / `es-right` stay inside it. |
+| 4+ floated tables in one row | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. Widgets stay in document order with the copy around them. |
 | `table.es-menu` (2+ item cells) | `menu` | |
-| `table.es-menu` (1 item cell) | inner mapping, not `menu` | Same stacked-step rule as the plugin path. |
+| `table.es-menu` (1 item cell) | inner mapping | A stacked step, same rule as the plugin path. |
 | `table.es-social` | `social` | Same platform mapping as the plugin path. |
-| `es-spacer` | `spacer` | |
+| `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
+| `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-Everything else in a stripe goes through `@templatical/import-html` (headings, paragraphs, images, dividers).
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. A `background-image` is reported and dropped; the colour still applies.
+
+The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
+
+A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share of the body width, less the section padding on the edge that column owns, and the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
+
+Everything else in a row goes through `@templatical/import-html` (headings, paragraphs, images, `<hr>` dividers).
 
 ## Where the mapping is lossy
 
-- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables keeps three slots and folds the rest into the last.
+- **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Plugin HTML with 4+ frames flattens to one column. Compiled HTML with 4+ floated tables in one row keeps three slots and folds the rest into the last. Content between those columns becomes its own one-column section after them, and a padded cell split across the resulting sections is `approximated`.
 - **Social icon `alt`** — platforms are inferred; the original `alt` string is not stored on `SocialIcon`.
 - **Block IDs** — every imported block gets a freshly generated ID.
 - **AMP / timers / modules** — no Templatical equivalent; inner markup lands as `html` or is skipped with a warning.
-- **Inline CSS vs. plugin CSS** — compiled exports already inline. Plugin CSS must be passed as `options.css` or styles that lived only in that stylesheet are missing from the conversion.
+- **Plugin CSS** — pass `options.css` with plugin storage. Rules that live only in that stylesheet are applied to the converted blocks. Compiled exports already inline them.
 
 ## Things that don't map automatically
 
@@ -8901,7 +8994,7 @@ Unlayer content types map to Templatical equivalents:
 | Heading | `title` | Converted |
 | Image | `image` | Converted |
 | Button | `button` | Converted |
-| Divider | `divider` | Converted |
+| Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
@@ -8912,13 +9005,32 @@ Unlayer content types map to Templatical equivalents:
 
 Unknown content types are converted to HTML blocks as a fallback.
 
+### Divider width
+
+| Unlayer `width` | `DividerBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | the same percentage to two decimals, `"50%"` | Converted |
+| below `0%` or above `100%` | clamped to `"0%"` or `"full"` | Approximated |
+| px, narrower than the line's span | the px number | Converted |
+| px, as wide as that span or wider | `"full"` | Converted |
+| any other value | `"full"` | Approximated |
+
+A px width is compared with the line's span: its column's width less the divider's left and right `containerPadding`. The column's width is its share of `settings.width` under the section's column layout, and `settings.width` is a px `contentWidth`, else `600`.
+
+::: tip
+`mj-divider` draws `100%` across that span, so a px width that reaches it renders the same as `"full"`. `"full"` also narrows with the column on a phone.
+:::
+
+Templatical centres every divider. A partial-width divider that Unlayer aligns left or right (`textAlign`) is approximated, and its `note` names the alignment.
+
 ## Column Layout Conversion
 
 Unlayer organizes content into rows with columns whose widths come from a `cells` weight array. These map to Templatical's `SectionBlock` with the appropriate `ColumnLayout`:
 
 | Unlayer cells | Templatical Layout |
 |---|---|
-| `[1]` (single column) | flattened — no section wrapper |
+| `[1]` (single column) | `'1'` |
 | `[1, 1]` (equal halves) | `'2'` |
 | `[1, 1, 1]` (equal thirds) | `'3'` |
 | `[1, 2]` | `'1-2'` |
@@ -8927,12 +9039,28 @@ Unlayer organizes content into rows with columns whose widths come from a `cells
 
 Cell ratios that don't match a standard layout are mapped to the closest available one.
 
+### Section background
+
+| Unlayer row values | `section.styles.backgroundColor` |
+|---|---|
+| `columnsBackgroundColor` set | `columnsBackgroundColor` |
+| only `backgroundColor` set | `backgroundColor` |
+
+When a row sets both to different colours, the section takes `columnsBackgroundColor` and `report.warnings` names the dropped `backgroundColor`.
+
+::: tip
+`columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
+:::
+
 ## Template Settings
 
 Global template settings are converted where possible:
 
 - **Width** — Unlayer `body.values.contentWidth` maps to `settings.width`
-- **Background color** — `body.values.backgroundColor` is preserved; row-level backgrounds carry over to the corresponding `SectionBlock`
+- **Background color** — `body.values.backgroundColor` maps to `settings.backgroundColor`
+- **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
+- **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
+- **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty
 - **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`
 
 ## Known Limitations
@@ -8942,6 +9070,7 @@ Global template settings are converted where possible:
 - **Custom modules / paid-tier blocks** — Unlayer custom blocks are converted to placeholder HTML blocks. Recreate them as a [custom block](/guide/custom-blocks) if reusable.
 - **Forms** — Unlayer form blocks are skipped. Most email clients block form submission for security reasons; rebuild the call-to-action as a button linking to a hosted form.
 - **Timers / countdowns** — Imported as a placeholder HTML block. Do not emit `type: "countdown"`: that block needs Cloud's server-side GIF and the OSS renderer cannot produce it. Recreate as a static title or paragraph (the date, or "X days to go"), or keep the HTML placeholder.
+- **Link hover styles and per-block link styles** — `linkStyle.linkHoverColor` and `linkHoverUnderline` have no Templatical field and are dropped. A text block's own `linkStyle` is not read, so its links take the document's link settings.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
