@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
-import { Upload } from "@lucide/vue";
+import { computed, onUnmounted, ref, shallowRef, watch } from "vue";
+import { ChevronDown, Upload } from "@lucide/vue";
 import { useFileDialog } from "@vueuse/core";
 import type { TemplaticalEditor } from "@templatical/editor";
-import { convertImportSource } from "@/host/importConvert";
+import {
+  convertImportSourceWithReport,
+  type ImportResult,
+  type ImportReportEntry,
+} from "@/host/importConvert";
 import { loadImportSample } from "@/scenes/import/samples";
 import { usePlaygroundI18n } from "@/i18n";
 import {
@@ -22,6 +26,42 @@ const source = ref("");
 const error = ref("");
 const open = ref(true);
 const converting = ref(false);
+const report = shallowRef<ImportResult["report"] | null>(null);
+const reportOpen = ref(false);
+
+const statuses = [
+  "converted",
+  "approximated",
+  "html-fallback",
+  "skipped",
+] as const;
+type Status = (typeof statuses)[number];
+const reportGroups = computed(() =>
+  statuses.map((status) => ({
+    status,
+    entries:
+      report.value?.entries.filter((entry) => entry.status === status) ?? [],
+  })),
+);
+
+function sourceName(entry: ImportReportEntry): string {
+  return (
+    entry.sourceTag ??
+    entry.unlayerContentType ??
+    entry.beeFreeModuleType ??
+    "?"
+  );
+}
+
+function statusCount(status: Status): number {
+  const summary = report.value?.summary;
+  if (!summary) return 0;
+  return status === "html-fallback" ? summary.htmlFallback : summary[status];
+}
+
+function withCount(template: string, count: number): string {
+  return template.replace("{count}", String(count));
+}
 
 const kind = computed((): ImportKind | undefined => {
   const id = props.sceneId as ImportSceneId;
@@ -35,6 +75,8 @@ watch(
     error.value = "";
     open.value = true;
     converting.value = false;
+    report.value = null;
+    reportOpen.value = false;
   },
 );
 
@@ -164,8 +206,11 @@ async function runConvert(): Promise<void> {
   error.value = "";
   converting.value = true;
   try {
-    const content = await convertImportSource(current, raw);
+    const { content, report: importReport } =
+      await convertImportSourceWithReport(current, raw);
     props.editor.setContent(content);
+    report.value = importReport;
+    reportOpen.value = false;
     open.value = false;
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err);
@@ -196,6 +241,121 @@ onImportFileChange(async (files) => {
 </script>
 
 <template>
+  <div
+    v-if="report && !open"
+    data-testid="import-report"
+    class="absolute bottom-3 right-3 z-[10000] flex max-h-[min(80%,36rem)] w-[min(26rem,calc(100%-1.5rem))] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-modal dark:border-gray-700 dark:bg-gray-800"
+  >
+    <div class="flex items-start justify-between gap-3 p-4">
+      <div class="min-w-0">
+        <p class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {{ t.importModal.report.title }}
+        </p>
+        <p class="m-0 mt-1 text-xs text-gray-600 dark:text-gray-300">
+          {{ withCount(t.importModal.report.detected, report.summary.total) }}
+        </p>
+      </div>
+      <button
+        type="button"
+        data-testid="import-report-toggle"
+        :aria-expanded="reportOpen"
+        :aria-controls="reportOpen ? 'import-report-details' : undefined"
+        class="pg-toolbar-btn shrink-0"
+        @click="reportOpen = !reportOpen"
+      >
+        {{
+          reportOpen
+            ? t.importModal.report.hideDetails
+            : t.importModal.report.viewDetails
+        }}
+        <ChevronDown
+          :size="14"
+          aria-hidden="true"
+          :class="reportOpen ? 'rotate-180' : ''"
+        />
+      </button>
+    </div>
+    <div
+      class="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-3 text-xs text-gray-700 dark:text-gray-200"
+    >
+      <span
+        v-for="status in statuses"
+        :key="status"
+        :data-testid="`import-report-count-${status}`"
+      >
+        <strong>{{ statusCount(status) }}</strong>
+        {{ t.importModal.report.status[status] }}
+      </span>
+      <span
+        v-if="report.warnings.length"
+        data-testid="import-report-warnings-count"
+      >
+        {{ t.importModal.report.warningLabel }}:
+        <strong>{{ report.warnings.length }}</strong>
+      </span>
+    </div>
+    <div
+      v-if="reportOpen"
+      id="import-report-details"
+      data-testid="import-report-details"
+      class="min-h-0 overflow-y-auto border-t border-gray-200 px-4 py-3 text-xs dark:border-gray-700"
+    >
+      <p class="m-0 text-gray-600 dark:text-gray-300">
+        {{ t.importModal.report.scope }}
+      </p>
+      <section
+        v-if="report.warnings.length"
+        class="mt-4"
+        aria-labelledby="import-report-warnings-title"
+      >
+        <h3
+          id="import-report-warnings-title"
+          class="m-0 text-xs font-semibold text-gray-900 dark:text-gray-100"
+        >
+          {{ withCount(t.importModal.report.warnings, report.warnings.length) }}
+        </h3>
+        <ul
+          class="mt-2 list-disc space-y-1 pl-4 text-gray-700 dark:text-gray-200"
+        >
+          <li v-for="(warning, index) in report.warnings" :key="index">
+            {{ warning }}
+          </li>
+        </ul>
+      </section>
+      <section v-for="group in reportGroups" :key="group.status" class="mt-4">
+        <h3 class="m-0 text-xs font-semibold text-gray-900 dark:text-gray-100">
+          {{ t.importModal.report.status[group.status] }} ({{
+            group.entries.length
+          }})
+        </h3>
+        <ul v-if="group.entries.length" class="mt-2 space-y-2">
+          <li
+            v-for="(entry, index) in group.entries"
+            :key="index"
+            class="rounded-md bg-gray-50 px-3 py-2 text-gray-700 dark:bg-gray-700/50 dark:text-gray-200"
+          >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              sourceName(entry)
+            }}</span>
+            <span v-if="entry.templaticalBlockType">
+              → {{ entry.templaticalBlockType }}</span
+            >
+            <p v-if="entry.note" class="m-0 mt-1">{{ entry.note }}</p>
+          </li>
+        </ul>
+      </section>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-2 dark:border-gray-700">
+      <button
+        type="button"
+        data-testid="import-again"
+        class="pg-toolbar-link"
+        @click="open = true"
+      >
+        {{ t.importModal.report.importAgain }}
+      </button>
+    </div>
+  </div>
   <Transition name="pg-modal">
     <div
       v-if="open && kind && copy"

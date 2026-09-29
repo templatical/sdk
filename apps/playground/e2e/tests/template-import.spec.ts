@@ -18,6 +18,13 @@ const unlayerJson = readFileSync(
   join(fixturesDir, "unlayer-template.json"),
   "utf8",
 );
+const mixedUnlayerJson = readFileSync(
+  join(
+    fixturesDir,
+    "../../../../packages/import-unlayer/src/__tests__/fixtures/example-1.json",
+  ),
+  "utf8",
+);
 const htmlSource = readFileSync(
   join(fixturesDir, "sample-html-email.html"),
   "utf8",
@@ -105,6 +112,39 @@ async function importOnScene(
 }
 
 test.describe("Template import", () => {
+  test("shows import findings and lets visitors import again", async ({
+    scenePage,
+    page,
+  }) => {
+    await importOnScene(scenePage, page, "unlayer", mixedUnlayerJson);
+    const report = page.getByTestId("import-report");
+    await expect(report).toBeVisible();
+    await expect(
+      page.getByTestId("import-report-count-approximated"),
+    ).toContainText("1 approximated");
+    await expect(
+      page.getByTestId("import-report-count-html-fallback"),
+    ).toContainText("2 kept as HTML");
+    await expect(page.getByTestId("import-report-count-skipped")).toContainText(
+      "1 skipped",
+    );
+    await expect(
+      page.getByTestId("import-report-warnings-count"),
+    ).toContainText("Warnings: 1");
+
+    await page.getByTestId("import-report-toggle").click();
+    const details = page.getByTestId("import-report-details");
+    await expect(details).toContainText("Warnings (1)");
+    await expect(details).toContainText("flattened to a single column");
+    await expect(details).toContainText("menu");
+    await expect(details).toContainText("timer → html");
+    await expect(details).toContainText("form");
+
+    await page.getByTestId("import-again").click();
+    await expect(page.locator(SELECTORS.importPanel)).toBeVisible();
+    await expect(report).toHaveCount(0);
+  });
+
   test("catalog lists one scene per importer", async ({
     chooserPage,
     page,

@@ -225,6 +225,23 @@ export default {
   },
   importModal: {
     title: "Import existing template",
+    report: {
+      title: "Import results",
+      detected: "{count} items reported",
+      viewDetails: "View details",
+      hideDetails: "Hide details",
+      importAgain: "Import another template",
+      warningLabel: "Warnings",
+      warnings: "Warnings ({count})",
+      scope:
+        "This report covers items the importer detected. Compare the email with your source to check its appearance and content.",
+      status: {
+        converted: "converted",
+        approximated: "approximated",
+        "html-fallback": "kept as HTML",
+        skipped: "skipped",
+      },
+    },
     sources: {
       unlayer: "From Unlayer",
       beefree: "From BeeFree",

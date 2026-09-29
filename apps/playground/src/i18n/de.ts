@@ -224,6 +224,23 @@ export default {
   },
   importModal: {
     title: "Bestehende Vorlage importieren",
+    report: {
+      title: "Importergebnis",
+      detected: "{count} Elemente im Bericht",
+      viewDetails: "Details anzeigen",
+      hideDetails: "Details ausblenden",
+      importAgain: "Weitere Vorlage importieren",
+      warningLabel: "Warnungen",
+      warnings: "Warnungen ({count})",
+      scope:
+        "Dieser Bericht erfasst die vom Importer erkannten Elemente. Vergleichen Sie die E-Mail mit der Quelle, um Aussehen und Inhalt zu prüfen.",
+      status: {
+        converted: "konvertiert",
+        approximated: "angenähert",
+        "html-fallback": "als HTML erhalten",
+        skipped: "übersprungen",
+      },
+    },
     sources: {
       unlayer: "Aus Unlayer",
       beefree: "Aus BeeFree",

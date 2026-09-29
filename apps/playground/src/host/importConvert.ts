@@ -20,10 +20,20 @@ function parseStripo(raw: string): { html: string; css?: string } {
   return { html: raw };
 }
 
-/** What every converter reports: counts, not its per-format entry shapes. */
+/** The fields shared by every converter's report entries. */
+export interface ImportReportEntry {
+  sourceTag?: string;
+  unlayerContentType?: string;
+  beeFreeModuleType?: string;
+  templaticalBlockType: string | null;
+  status: "converted" | "approximated" | "html-fallback" | "skipped";
+  note?: string;
+}
+
 export interface ImportResult {
   content: TemplateContent;
   report: {
+    entries: ImportReportEntry[];
     summary: {
       total: number;
       converted: number;
