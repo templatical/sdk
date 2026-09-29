@@ -3,7 +3,7 @@ import { useI18n } from "../composables/useI18n";
 import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, onScopeDispose, ref, watch } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
@@ -47,6 +47,29 @@ const showSavedBlocksSection = computed(
 const isExpanded = ref(false);
 const isDragging = ref(false);
 const railEl = ref<HTMLElement | null>(null);
+
+// Sortable's default is 0, and the `fallbackTolerance &&` guard treats 0 as
+// "no threshold", so any pointer movement starts a force-fallback drag. The
+// palette button is also the click-to-insert control, and a drag that jitters
+// onto the canvas then clicks it inserts a second block (#817). 3–5px is
+// Sortable's own range for clickable items. 4 matches the e2e nudge in
+// `pointerDriveFromPalette` (`startX + 4`): Sortable starts the drag when
+// movement is not strictly below this value, so that nudge still counts.
+const PALETTE_DRAG_TOLERANCE_PX = 4;
+
+// `start` means a drag actually began. A stationary click emits `choose` +
+// `unchoose` and never `start`, so this must not key off `isDragging` — that
+// flag flips at pointerdown. Cleared on a macrotask after `end`: `end` runs
+// inside mouseup, and the click is dispatched later in that same turn, after
+// microtasks. `nextTick` / `queueMicrotask` would drop the flag first and the
+// duplicate would land. `unchoose` fires before `end` on a completed drag, so
+// clearing there has the same hole.
+let suppressPaletteClick = false;
+let suppressPaletteClickTimer = 0;
+
+onScopeDispose(() => {
+  window.clearTimeout(suppressPaletteClickTimer);
+});
 
 // `:focus-visible`, never `:focus`: a mouse click leaves the clicked palette
 // button focused, so a plain `:focus` test would pin the rail open from the
@@ -97,13 +120,59 @@ function handleDragUnchoose(): void {
   isDragging.value = false;
 }
 
+function handleDragStart(): void {
+  // Click suppression only. The rail-width guard stays on `choose`: `start`
+  // is after `_dragStarted`, which is too late to stop the collapse race.
+  suppressPaletteClick = true;
+  window.clearTimeout(suppressPaletteClickTimer);
+}
+
+function handleRailFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget;
+  if (next instanceof Node && railEl.value?.contains(next)) return;
+  // Inserting selects the new block and moves focus off the palette button.
+  // The pointer is often still on the rail. Collapsing here shrinks the
+  // label strip out from under it, and the next press opens the rail
+  // instead of inserting (#818).
+  if (railEl.value?.matches(":hover")) return;
+  isExpanded.value = false;
+}
+
+function clearFallbackClickSwallow(): void {
+  // A fallback drag sets Sortable's ignoreNextClick. Sortable clears it by
+  // swallowing the next click. A slip that stays on the palette cancels
+  // mouseup, so that click is never dispatched and the author's next press
+  // is the one swallowed. This click is aimed at the document, not a palette
+  // button, so it spends the swallow without inserting. The button's own
+  // click stays suppressed until the macrotask in handleDragEnd.
+  railEl.value?.ownerDocument.dispatchEvent(
+    new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    }),
+  );
+}
+
 function handleDragEnd(): void {
   isDragging.value = false;
-  // Collapse the rail on drop. A drag ends with the cursor out in the canvas,
-  // so no `mouseleave` fires to collapse it — and `handleSidebarLeave` had
-  // bailed out earlier because `isDragging` was true. Without this the rail
-  // stays expanded until the next hover-in/hover-out cycle.
-  isExpanded.value = false;
+  // A canvas drop ends outside the rail, and `mouseleave` never fires for
+  // that path: `handleSidebarLeave` bailed while `isDragging` was true.
+  // Collapse only then. A press that slipped into a fallback drag and
+  // released still on the palette must leave the rail open (#818), including
+  // when focusout already collapsed it earlier in this same pointerup.
+  // `:hover` matches the rail while the pointer is over a button inside it.
+  // The fallback ghost has `pointer-events: none`, so it does not take the hit.
+  if (railEl.value?.matches(":hover")) {
+    isExpanded.value = true;
+    clearFallbackClickSwallow();
+  } else {
+    isExpanded.value = false;
+  }
+  window.clearTimeout(suppressPaletteClickTimer);
+  suppressPaletteClickTimer = window.setTimeout(() => {
+    suppressPaletteClick = false;
+  }, 0);
 }
 
 const builtInBlockTypeOrder: string[] = [
@@ -216,6 +285,15 @@ function insertBlockFromItem(item: BlockTypeItem): void {
   scrollToBlock(block.id);
 }
 
+function handlePaletteClick(item: BlockTypeItem): void {
+  // The drag element is this button. Sortable moves it into the canvas drop
+  // slot and clears `ignoreNextClick` inside `_onDragOver` once the pointer
+  // enters that list, so the click after mouseup still reaches this handler
+  // and inserts a second block (#817).
+  if (suppressPaletteClick) return;
+  insertBlockFromItem(item);
+}
+
 function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
@@ -240,7 +318,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
     @mouseenter="isExpanded = true"
     @mouseleave="handleSidebarLeave"
     @focusin="isExpanded = true"
-    @focusout="isExpanded = false"
+    @focusout="handleRailFocusOut"
   >
     <!-- Saved blocks browser trigger. Needs the feature to be available (a
          provider configured, and in Cloud the plan to allow it). -->
@@ -282,8 +360,10 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :sort="false"
       :animation="150"
       :force-fallback="true"
+      :fallback-tolerance="PALETTE_DRAG_TOLERANCE_PX"
       class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col tpl:gap-0.5 tpl:overflow-y-auto tpl:p-1"
       @choose="handleDragChoose"
+      @start="handleDragStart"
       @unchoose="handleDragUnchoose"
       @end="handleDragEnd"
     >
@@ -299,7 +379,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
-        @click="insertBlockFromItem(blockType)"
+        @click="handlePaletteClick(blockType)"
         @keydown="handlePaletteKeydown($event, blockType)"
       >
         <div

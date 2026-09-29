@@ -577,14 +577,35 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     );
   });
 
-  it("VueDraggable wires `@end` to clear `isDragging` and collapse the rail", () => {
-    // `end` covers the completed-drag release: it fires whether the drop
-    // succeeded or was cancelled back to the source, and the cursor is out in
-    // the canvas by then, so no mouseleave follows to collapse the rail.
+  it("VueDraggable wires `@end` to clear `isDragging` and collapse the rail once the pointer has left it", () => {
+    // `end` covers the completed-drag release, including a canvas drop, where
+    // no mouseleave follows. Collapsing unconditionally also fires when the
+    // pointer is still on the palette (#818): the rail animates shut under
+    // the cursor and the next press is the one that opens it, so that click
+    // never lands. `:hover` is the check — happy-dom reports it false, which
+    // is why the canvas-drop unit case still expects 48px.
     expect(sidebar).toMatch(/@end="handleDragEnd"/);
-    expect(sidebar).toMatch(
-      /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{[^}]*isDragging\.value\s*=\s*false/,
+    const end = sidebar.match(
+      /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
     );
+    expect(end?.[1]).toMatch(/isDragging\.value\s*=\s*false/);
+    expect(end?.[1]).toMatch(
+      /if\s*\(\s*railEl\.value\?\.matches\(":hover"\)\s*\)\s*\{\s*isExpanded\.value\s*=\s*true;\s*clearFallbackClickSwallow\(\);\s*\} else \{\s*isExpanded\.value\s*=\s*false;\s*\}/,
+    );
+    expect(sidebar).toMatch(/@focusout="handleRailFocusOut"/);
+    expect(sidebar).not.toMatch(/@focusout="isExpanded = false"/);
+    const focusOut = sidebar.match(
+      /function\s+handleRailFocusOut\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(focusOut?.[1]).toMatch(/railEl\.value\?\.contains\(next\)/);
+    expect(focusOut?.[1]).toMatch(
+      /if\s*\(\s*railEl\.value\?\.matches\(":hover"\)\s*\)\s*return/,
+    );
+    const clear = sidebar.match(
+      /function\s+clearFallbackClickSwallow\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(clear?.[1]).toMatch(/ownerDocument\.dispatchEvent/);
+    expect(clear?.[1]).toMatch(/new MouseEvent\(\s*"click"/);
   });
 
   it("VueDraggable also wires `@unchoose` — `end` never fires for a plain click", () => {
@@ -602,6 +623,51 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     );
     expect(unchoose?.[1]).toMatch(/isDragging\.value\s*=\s*false/);
     expect(unchoose?.[1]).not.toMatch(/isExpanded\.value\s*=/);
+    // A completed drag emits `unchoose` before `end`. Clearing the click
+    // suppression here would let the post-mouseup click insert a second
+    // block (#817).
+    expect(unchoose?.[1]).not.toMatch(/suppressPaletteClick/);
+  });
+
+  it("palette drag tolerance and the post-drag click guard stay off the rail-width flag", () => {
+    // #817. `fallbackTolerance` 0 starts a drag on any movement, and Sortable
+    // clears `ignoreNextClick` once the pointer enters the canvas, so the
+    // palette button's own click inserts a second block. The tolerance and
+    // the `@start` flag are that fix. `@start` must not flip `isDragging`:
+    // the rail-width guard has to run at `choose`, before mouseleave.
+    expect(sidebar).toMatch(/const PALETTE_DRAG_TOLERANCE_PX = 4/);
+    expect(sidebar).toMatch(
+      /:fallback-tolerance="PALETTE_DRAG_TOLERANCE_PX"/,
+    );
+    expect(sidebar).toMatch(/@start="handleDragStart"/);
+    expect(sidebar).toMatch(/@click="handlePaletteClick\(blockType\)"/);
+
+    const start = sidebar.match(
+      /function\s+handleDragStart\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(start?.[1]).toMatch(/suppressPaletteClick\s*=\s*true/);
+    expect(start?.[1]).not.toMatch(/isDragging/);
+    expect(start?.[1]).not.toMatch(/isExpanded/);
+
+    const click = sidebar.match(
+      /function\s+handlePaletteClick\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(click?.[1]).toMatch(/if\s*\(\s*suppressPaletteClick\s*\)\s*return/);
+    expect(click?.[1]).toMatch(/insertBlockFromItem\(item\)/);
+
+    const end = sidebar.match(
+      /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(end?.[1]).toMatch(
+      /window\.setTimeout\(\(\) => \{\s*suppressPaletteClick = false;\s*\}, 0\)/,
+    );
+    expect(end?.[1]).not.toMatch(/nextTick|queueMicrotask/);
+
+    const keydown = sidebar.match(
+      /function\s+handlePaletteKeydown\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(keydown?.[1]).toMatch(/insertBlockFromItem\(item\)/);
+    expect(keydown?.[1]).not.toMatch(/handlePaletteClick|suppressPaletteClick/);
   });
 });
 

@@ -393,8 +393,12 @@ export class EditorPage {
 
     await this.page.mouse.move(startX, startY);
     await this.page.mouse.down();
-    // Sortable.js gates drag-start on a small initial movement; tiny
-    // nudge fires the threshold check before the interpolated long move.
+    // Sortable starts a fallback drag when movement is not strictly below
+    // `fallbackTolerance`. The sidebar's is `PALETTE_DRAG_TOLERANCE_PX` (4),
+    // so this nudge has to stay at least 4 — a smaller one returns early and
+    // the drag never starts if the rest of the path is also under the
+    // threshold. The long move below is not, but the nudge is what the
+    // threshold check was written to clear.
     await this.page.mouse.move(startX + 4, startY + 4);
     // Approach the target from clearly above it, then descend.
     //

@@ -116,10 +116,106 @@ describe('Sidebar', () => {
     await rail.trigger('mouseleave');
     expect(rail.attributes('style')).toContain('width: 200px');
 
-    // Drop: the rail collapses.
+    // Drop with the pointer outside the rail: it collapses. happy-dom reports
+    // `:hover` as false, which is this path — a canvas drop.
     draggable.vm.$emit('end');
     await wrapper.vm.$nextTick();
     expect(rail.attributes('style')).toContain('width: 48px');
+  });
+
+  it('keeps the rail open when a drag ends with the pointer still over it', async () => {
+    // #818. A press that slips past the fallback tolerance and releases still
+    // on the palette starts a drag, and the click is never dispatched.
+    // Collapsing the rail under that pointer makes the next press the one
+    // that opens it, and the 200ms width animation moves the button between
+    // mousedown and mouseup, so that click is lost too. `:hover` is stubbed:
+    // happy-dom never reports it, and the ghost has pointer-events: none so
+    // the rail is what matches while the pointer is over a palette button.
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    const draggable = wrapper.findComponent(VueDraggable);
+    const matches = vi
+      .spyOn(rail.element, 'matches')
+      .mockImplementation((selector) => selector === ':hover');
+
+    await rail.trigger('mouseenter');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    draggable.vm.$emit('choose');
+    draggable.vm.$emit('start');
+    draggable.vm.$emit('end');
+    await wrapper.vm.$nextTick();
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    matches.mockRestore();
+  });
+
+  it('keeps the rail open on focusout while the pointer is still over it', async () => {
+    // #818. Inserting selects the new block and moves focus off the palette
+    // button. `@focusout` used to collapse the rail under a pointer that had
+    // not left, so the next press was the one that opened it.
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    const matches = vi
+      .spyOn(rail.element, 'matches')
+      .mockImplementation((selector) => selector === ':hover');
+
+    await rail.trigger('mouseenter');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    await rail.trigger('focusout');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    matches.mockRestore();
+  });
+
+  it('keeps the rail open when focus moves to another palette button', async () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar(
+      { [EDITOR_KEY]: editor },
+      { attachTo: document.body },
+    );
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    await rail.trigger('mouseenter');
+    const next = wrapper.get('[data-palette-type="paragraph"]').element;
+
+    rail.element.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: next }),
+    );
+    await wrapper.vm.$nextTick();
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    wrapper.unmount();
+  });
+
+  it('dispatches a click that clears the fallback swallow when a drag ends over the rail', async () => {
+    // Sortable swallows the next click after a fallback drag. A slip that
+    // stays on the palette never dispatches one, so the author's next press
+    // is the click that gets swallowed. Drag-end fires a click on the
+    // document to spend that swallow without inserting.
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    const draggable = wrapper.findComponent(VueDraggable);
+    const matches = vi
+      .spyOn(rail.element, 'matches')
+      .mockImplementation((selector) => selector === ':hover');
+    const targets: Array<EventTarget | null> = [];
+    const onClick = (event: Event) => {
+      targets.push(event.target);
+    };
+    document.addEventListener('click', onClick, true);
+
+    await rail.trigger('mouseenter');
+    draggable.vm.$emit('end');
+
+    document.removeEventListener('click', onClick, true);
+    matches.mockRestore();
+    expect(targets).toHaveLength(1);
+    expect(targets[0]).toBe(document);
+    expect(rail.attributes('style')).toContain('width: 200px');
   });
 
   it('does not latch the drag guard when a click ends with `unchoose` and no `end`', async () => {
@@ -152,6 +248,42 @@ describe('Sidebar', () => {
     draggable.vm.$emit('unchoose');
     await rail.trigger('mouseleave');
     expect(rail.attributes('style')).toContain('width: 48px');
+  });
+
+  it('ignores the click that follows a real palette drag, then accepts the next one', async () => {
+    // #817. The palette button is both the click-to-insert control and the
+    // Sortable drag node. A fallback drag moves that node into the canvas,
+    // Sortable clears its own click-swallow once the pointer enters the other
+    // list, and the click dispatched after mouseup inserts a second block.
+    // `start` means a drag actually began. `choose` + `unchoose` is a
+    // stationary click and must keep inserting. The suppression has to
+    // outlive `end`: that event runs inside mouseup, and the click is
+    // dispatched later in the same turn, after microtasks.
+    const { editor, addBlock } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const draggable = wrapper.findComponent(VueDraggable);
+    const button = wrapper.find('button[data-palette-type="paragraph"]');
+
+    draggable.vm.$emit('choose');
+    draggable.vm.$emit('unchoose');
+    await button.trigger('click');
+    expect(addBlock).toHaveBeenCalledTimes(1);
+
+    draggable.vm.$emit('start');
+    await button.trigger('keydown', { key: 'Enter' });
+    expect(addBlock).toHaveBeenCalledTimes(2);
+
+    await button.trigger('click');
+    expect(addBlock).toHaveBeenCalledTimes(2);
+
+    draggable.vm.$emit('end');
+    await nextTick();
+    await button.trigger('click');
+    expect(addBlock).toHaveBeenCalledTimes(2);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await button.trigger('click');
+    expect(addBlock).toHaveBeenCalledTimes(3);
   });
 
   it('stays expanded on mouseleave while a palette entry holds keyboard focus', async () => {
