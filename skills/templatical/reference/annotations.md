@@ -29,7 +29,7 @@ else):
    full rewrite, the same rule as any other live write.
 5. On success, reload with the consume flag. That clears skipped notes too:
    ```
-   npx -y @templatical/template-tools@0.42.0 live reload --consume-annotations --json
+   npx -y @templatical/template-tools@0.42.1 live reload --consume-annotations --json
    ```
 6. If the write or the reload fails, run a plain `live reload` (no flag) only
    when a reload is still required, and tell the user the notes are still there.
