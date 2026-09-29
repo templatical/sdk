@@ -15,6 +15,82 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.43.0
+
+<time datetime="2026-09-29">2026-09-29</time>
+
+### Features
+
+**Dividers can be a percentage of their column**
+
+`@templatical/editor` · `@templatical/renderer` · `@templatical/template-tools` · `@templatical/types`
+
+`DividerBlock.width` takes `"full"`, a pixel number, or a percentage from `"0%"` to `"100%"` (the new `DividerPercentWidth` type). The renderer writes a percentage straight into `mj-divider`, which MJML renders as a share of the column, so the line shrinks with the column on a phone where a pixel width would overflow. The canvas draws it the same way, and `templatical validate` accepts it. A custom `blockRenderers.divider` must handle the percentage string.
+
+### Fixes and improvements
+
+**BeeFree imports keep divider widths, fonts and link colour**
+
+`@templatical/import-beefree`
+
+- **A divider keeps its width.** `100%` imported as a 100px line. A missing width or `100%` now imports as `"full"`, any other percentage stays a percentage such as `"50%"` (clamped to 0–100%, kept to two decimals), and a px width stays px unless it reaches its column's content width, the column less the divider's own padding, where it becomes `"full"`. Templatical centres every divider, so a partial-width divider that BeeFree aligns left or right is reported `approximated`, and so is a clamped or unreadable width.
+- **A CSS-wide keyword is no longer a font.** BeeFree's paragraph modules write `font-family: inherit`, which became a font of its own on the block, and the sent email fell back to the client's default face. `inherit`, `initial`, `unset` and `revert` now leave a title, button or menu font unset, so it follows `settings.fontFamily`, and a paragraph gains no `font-family` span. In a colour, the same keywords and `none` read as unset.
+- **The link colour carries over.** `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. Links are underlined: BeeFree sets underlines per link, and every import turned the document-wide underline off before.
+- **The body width and text colour carry over.** BeeFree exports keep the body width in `page.body.content.computedStyle.messageWidth`, which now maps to `settings.width`, with `style.width` as the fallback; every real export imported at 600px before, and dividers are now measured against the real width. `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when unset. A heading, menu or table with no colour of its own now follows it instead of carrying `#1a1a1a`, and a paragraph keeps a colour span only where its colour differs from the body's.
+
+**Easy Email Pro imports keep text, merge tags, tables, raw HTML, headers and footers**
+
+`@templatical/import-easy-email-pro`
+
+- **`standard-text` imports as a paragraph.** It is Easy Email Pro's default text block, and it imported as an HTML block holding the node's JSON, so recipients saw JSON. It now maps the same way as `standard-paragraph`, with `blockAttributes["standard-text"]` and the `TEXT` category in its attribute cascade.
+- **Inline `html-node` elements keep their text.** A `<span>`, `<em>`, `<strong>` or `<br>` inside rich text was dropped along with its words. It now serialises as its tag with its string attributes, escaped; void tags such as `br` and `img` self-close. An `html-node` sitting directly in a column is still an `html-fallback`.
+- **Merge tags survive.** "Hello {mergetag}, here is your order" imported as "Hello , here is your order". A `mergetag` now becomes the token Easy Email Pro renders, such as `{{ customer.name }}`, with the marks of its text, and the editor turns it into a merge tag.
+- **`standard-table2` tables import.** Their rows are `standard-table2-tr` and their cells `standard-table2-td`; only a `tr` / `td` shape was read, so a real table produced no block and no report entry. Both shapes are read now.
+- **`raw` imports as an HTML block of its `data.content`,** reported `converted`. It was an HTML block holding the node's JSON.
+- **`page-header` and `page-footer` convert their content.** Their `data.content` walks the way page children do, in order, and the band's background and padding land on the resulting sections as `section.wrapper`, as a `standard-wrapper`'s do. The whole band was one HTML block holding its JSON. An empty band is reported `skipped`.
+- **A divider keeps its width.** A missing width or `100%` imports as `"full"`, any other percentage stays a percentage such as `"50%"` (clamped to 0–100%), and a px width stays px unless it fills its column's content width less the divider's own padding, where it becomes `"full"`. Every divider imported full-width before.
+
+**HTML import keeps divider widths, section backgrounds, cell padding, paragraph alignment and link underlines**
+
+`@templatical/import-html`
+
+- **Dividers keep their width.** Every `<hr>` imported as a 100px line. An `<hr>` with no width, `auto` or `100%` now spans the column, any other percentage stays a share of the column (rounded to two decimals, clamped to 0–100%), and a px width stays px unless it reaches the room the line has in its column, measured from `settings.width`, the column's share and the padding around the line. A clamped or unreadable width, and a partial-width divider aligned left or right, are reported as `approximated`.
+- **Sections keep their background colour.** Only a `<tr>` style was read, so a `bgcolor` attribute and the fill of a cell or a table were dropped, including the section colours of HTML compiled from Templatical's own MJML. A section now takes the nearest fill: the `<tr>`, then the row's cells when they share one, then the tables around it, including those of the wrapper rows the importer descends through. A row whose cells render on different fills is reported as `approximated`, and a button cell's `bgcolor` colours its button rather than the section.
+- **Cell padding reaches every block in the cell.** Only bare text took a cell's padding, so a padded cell holding a heading, an image, a divider or a button imported them flush against its edges. The padding is now added to the blocks the cell holds: the sides to every block, the top to the first and the bottom to the last. A table's `cellpadding` is honoured, nested cells and wrappers add up, and a spacer at a cell's edge takes that side's padding as height.
+- **A paragraph keeps its own alignment.** A wrapper's `text-align` overrode the `text-align` of a `<p>` inside it. The paragraph's own alignment now wins.
+- **Links are underlined unless the source says otherwise.** `settings.linkUnderline` was always `false`. It is now `true`, the browser default, unless a `<style>` rule for every link, `a { text-decoration: … }`, sets it.
+
+**Imported Topol buttons no longer paint their row in their fill colour**
+
+`@templatical/import-topol`
+
+On a Topol `mj-button`, `background-color` is the button face. The importer also copied it into the block background, which renders as the row behind the button, so a button with a fill painted its whole row in that colour. A block's background now comes from `container-background-color`, the attribute MJML paints behind every leaf element, and the button face still comes from `background-color`. Text, image, spacer, divider and social nodes follow the same rule: a `background-color` on them, which MJML never paints, no longer becomes a block background, and a `container-background-color` they set now does. A section still takes its fill from its own `background-color`.
+
+**MJML imports keep paragraph alignment, colour and size, and divider widths**
+
+`@templatical/import-mjml`
+
+- **A paragraph keeps its `mj-text` alignment, colour and size.** `<mj-text align="center" color="#4b5563" font-size="15px">` imported left-aligned in the document's colour and size, and the same values set through `mj-class` were lost too. `align` now lands as `text-align` on each `<p>`, and `color` and `font-size` on one span inside it, the shape the paragraph editor keeps through an edit. Bare list-item text gets a `<p>` first. The `<p>`'s own values win, alignment to the start edge and a 14px size add nothing, and markup with nothing to apply is left exactly as it was. `<mjml dir>` sets `settings.direction` when it differs from the direction `lang` implies, so the start edge is the imported template's own.
+- **A divider keeps its width.** Every `mj-divider` imported as `"full"`, so `50%` and `200px` were both lost while reported `converted`. A missing width or `100%` still imports as `"full"`, any other percentage stays a percentage to two decimals such as `"50%"`, and a px width stays px unless it reaches the width the line can span, where it becomes `"full"`. That width is the column less the column's and the divider's own side padding, which is how `mj-divider` draws `100%`. A width clamped into 0–100% or up to 0px, an unreadable width, and a partial-width divider aligned left or right, which Templatical centres, are reported `approximated`.
+
+**Stripo import keeps one section per row, divider widths, page and band colours, structure padding and plugin CSS**
+
+`@templatical/import-stripo`
+
+- **Each structure row is its own section.** Compiled HTML made one section per stripe, so a heading and a two-column row in the same cell landed in one section and copy between the columns was dropped or appended. Each direct row is now a section, in document order. Content before the columns stays before them, content after stays after them, and content that sat between them becomes a one-column section after the columns. An empty row is skipped. A padded cell split across those sections keeps the top padding on the first, the bottom on the last and the sides on each, and that split is `approximated`. Four or more floated columns in one row still fold into three.
+- **A line-drawing spacer is a divider.** `es-spacer` and `esd-block-spacer` imported as a spacer whenever they carried a height, so a `border-bottom` line became empty space. A visible `border-bottom` or `border-top` is now a divider: style, colour, thickness and width. No width, `auto` or `100%` spans the column; another percentage stays a percentage, rounded to two decimals and clamped to 0–100; a px width stays px until it fills the column's room. `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred. Both are `approximated`. A spacer with no border stays a spacer.
+- **Page, band and body colours land on the surface that paints them.** `settings.backgroundColor` stayed `#ffffff`, so a Launchpad page of `#F3F4F6` imported white. The first painted `es-wrapper` or `es-wrapper-color` is now the page colour. An `es-*-body` fill is the section background. A transparent body leaves the stripe colour on the section. A stripe colour that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. A background image is reported and dropped; the colour still applies.
+- **Structure padding is the section's padding.** Sections kept the factory padding of 20 on every side. The structure cell's padding is now the section's, and the default is 0. Plugin HTML reads `es-p*` (`es-p20`, then `es-p10t` / `r` / `b` / `l`), and an inline padding overrides the sides it states.
+- **Plugin CSS reaches the blocks.** `options.css` was injected for detection and never reached the HTML walk, so a `p { color }` rule left the paragraph uncoloured. The same CSS is now applied inside each cell, with a `</style` breakout still neutralized. The report lists the blocks that remain in the content: a `<tr>` section the HTML walk invents is omitted, and Stripo's own section entries stay.
+
+**Unlayer imports keep divider widths, section colours and document settings**
+
+`@templatical/import-unlayer`
+
+- **A divider keeps its width.** `100%` imported as a 100px line. A missing width or `100%` now imports as `"full"`, any other percentage stays a percentage such as `"50%"` (clamped to 0–100%), and a px width stays px until it spans its column less the divider's side padding, where it becomes `"full"`. Templatical centres every divider, so a partial-width divider that Unlayer aligns left or right is reported `approximated`.
+- **A section takes the row's content colour.** Sections read `columnsBackgroundColor`, the colour Unlayer fills the content width with, and fall back to the row's `backgroundColor`. They read only `backgroundColor` before, which is the band outside the content width. When a row sets both to different colours, `report.warnings` names the dropped one.
+- **The preheader, text colour and link style carry over.** `preheaderText`, `textColor`, `linkStyle.linkColor` and `linkStyle.linkUnderline` map to their `settings` fields. Headings and menus with no colour of their own follow the imported text colour instead of a fixed `#1a1a1a`, and a paragraph keeps a colour span that differs from it. Links are underlined when `linkStyle` does not say, as in Unlayer; every import turned the underline off before. `UnlayerTemplate` types the `linkStyle` flags as booleans.
+
 ## 0.42.1
 
 <time datetime="2026-09-29">2026-09-29</time>

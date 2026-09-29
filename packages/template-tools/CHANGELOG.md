@@ -1,5 +1,33 @@
 # @templatical/template-tools
 
+## 0.43.0
+
+### Patch Changes
+
+- be4ac17: Dividers can be a percentage of their column
+
+  `DividerBlock.width` takes `"full"`, a pixel number, or a percentage from `"0%"` to `"100%"` (the new `DividerPercentWidth` type). The renderer writes a percentage straight into `mj-divider`, which MJML renders as a share of the column, so the line shrinks with the column on a phone where a pixel width would overflow. The canvas draws it the same way, and `templatical validate` accepts it. A custom `blockRenderers.divider` must handle the percentage string.
+
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+- Updated dependencies [be4ac17]
+  - @templatical/types@0.43.0
+  - @templatical/renderer@0.43.0
+  - @templatical/import-beefree@0.43.0
+  - @templatical/import-easy-email-pro@0.43.0
+  - @templatical/import-html@0.43.0
+  - @templatical/import-mjml@0.43.0
+  - @templatical/import-stripo@0.43.0
+  - @templatical/import-topol@0.43.0
+  - @templatical/import-unlayer@0.43.0
+  - @templatical/import-chamaileon@0.43.0
+  - @templatical/quality@0.43.0
+
 ## 0.42.1
 
 ### Patch Changes

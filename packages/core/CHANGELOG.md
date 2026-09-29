@@ -1,5 +1,12 @@
 # @templatical/core
 
+## 0.43.0
+
+### Patch Changes
+
+- Updated dependencies [be4ac17]
+  - @templatical/types@0.43.0
+
 ## 0.42.1
 
 ### Patch Changes
