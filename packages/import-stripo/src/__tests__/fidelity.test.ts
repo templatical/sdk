@@ -216,6 +216,17 @@ describe("compiled structure rows", () => {
 });
 
 describe("compiled widget order", () => {
+  it("keeps text in an es-button wrapper that has no link", () => {
+    const html = compiled(
+      contentBody(`<tr><td style="padding:0">
+        <div class="es-button">No link yet</div>
+      </td></tr>`),
+    );
+    const blocks = flat(convertStripoTemplate(html).content.blocks);
+    expect(JSON.stringify(blocks)).toContain("No link yet");
+    expect(blocks.some((block) => block.type === "button")).toBe(false);
+  });
+
   it("keeps a button between the paragraphs around it", () => {
     const html = compiled(
       contentBody(`
@@ -254,6 +265,20 @@ describe("compiled widget order", () => {
 });
 
 describe("compiled lines and spacers", () => {
+  it("keeps a borderless spacer and reads its height from the attribute or padding", () => {
+    const html = compiled(
+      contentBody(`<tr><td style="padding:0">
+        <table class="es-spacer" height="36"><tr><td></td></tr></table>
+        <table class="es-spacer" style="padding:7px 0 11px"><tr><td></td></tr></table>
+        <table class="es-spacer"><tr><td></td></tr></table>
+      </td></tr>`),
+    );
+    const { content } = convertStripoTemplate(html);
+    expect(
+      flat(content.blocks).filter((block) => block.type === "spacer"),
+    ).toMatchObject([{ height: 36 }, { height: 18 }, { height: 24 }]);
+  });
+
   it("reads a bordered es-spacer as a divider, with the cell's padding", () => {
     const html = compiled(
       contentBody(`
@@ -660,6 +685,27 @@ ${structure}
     });
   });
 
+  it("keeps a frameless structure and paints its enclosing stripe cell", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table class="esd-stripe"><tr><td style="background-color:#0f766e">
+  <table class="es-content-body" width="600" style="background-color:#ffffff"><tr>
+    <td class="esd-structure" style="padding:12px"><p>No frame needed</p></td>
+  </tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.columns).toBe("1");
+    expect(JSON.stringify(section.children)).toContain("No frame needed");
+    expect(section.styles.padding).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
+    expect(section.wrapper).toEqual({ backgroundColor: "#0f766e" });
+  });
+
   it("wraps a stripe colour around a white body", () => {
     const html = `<!DOCTYPE html><html><body>
 <table><tr><td class="esd-stripe" style="background-color:#0f766e">
@@ -723,6 +769,28 @@ ${structure}
       width: "full",
       styles: { padding: { top: 10, right: 0, bottom: 10, left: 0 } },
     });
+  });
+
+  it("reads padding and centre placement from a nested spacer table", () => {
+    const html = editorDoc(
+      `<td class="esd-structure"><table><tr><td class="esd-container-frame"><table><tr>
+        <td class="esd-block-spacer">
+          <table class="es-spacer" width="50%" style="width:50%;padding:4px 8px;margin:0 auto">
+            <tr><td style="border-bottom:2px solid #336699"></td></tr>
+          </table>
+        </td>
+      </tr></table></td></tr></table></td>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(dividers(content.blocks)[0]).toMatchObject({
+      width: "50%",
+      styles: { padding: { top: 4, right: 8, bottom: 4, left: 8 } },
+    });
+    expect(
+      report.entries.some((entry) =>
+        /centres every divider/.test(entry.note ?? ""),
+      ),
+    ).toBe(false);
   });
 
   it("applies plugin CSS to the paragraph and does not leak the rule", () => {

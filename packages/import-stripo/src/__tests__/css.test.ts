@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { colorFromPaint, parseColor, parsePxValue } from "../css";
+import {
+  colorFromPaint,
+  parseColor,
+  parsePaddingShorthand,
+  parsePxValue,
+} from "../css";
 
 describe("parseColor", () => {
   it("normalizes 6-digit hex", () => {
@@ -30,6 +35,17 @@ describe("parseColor", () => {
 describe("parsePxValue", () => {
   it("reads a px length", () => {
     expect(parsePxValue("30px")).toBe(30);
+  });
+});
+
+describe("parsePaddingShorthand", () => {
+  it("maps three values to top, horizontal, and bottom padding", () => {
+    expect(parsePaddingShorthand("8px 12px 16px")).toEqual({
+      top: 8,
+      right: 12,
+      bottom: 16,
+      left: 12,
+    });
   });
 });
 

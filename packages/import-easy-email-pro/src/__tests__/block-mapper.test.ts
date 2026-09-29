@@ -577,6 +577,39 @@ describe("convertLeaf", () => {
     ]);
   });
 
+  it("keeps a table2 row nested one level inside a table body", () => {
+    const { blocks } = map({
+      type: "standard-table2",
+      data: {},
+      attributes: {},
+      children: [
+        {
+          type: "tbody",
+          data: {},
+          attributes: {},
+          children: [
+            {
+              type: "standard-table2-tr",
+              data: {},
+              attributes: {},
+              children: [
+                {
+                  type: "standard-table2-td",
+                  data: {},
+                  attributes: {},
+                  children: [{ text: "Nested row" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect((blocks[0] as TableBlock).rows[0].cells[0].content).toBe(
+      "Nested row",
+    );
+  });
+
   it("skips a navbar with no links and writes no entry", () => {
     const { blocks, entries } = map({
       type: "standard-navbar",
