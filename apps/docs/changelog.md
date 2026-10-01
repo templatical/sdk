@@ -15,6 +15,16 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.43.1
+
+<time datetime="2026-10-01">2026-10-01</time>
+
+### Fixes and improvements
+
+**Fix merge and logic tag tooltip contrast inside email content when the editor is in dark mode.**
+
+`@templatical/editor`
+
 ## 0.43.0
 
 <time datetime="2026-09-29">2026-09-29</time>

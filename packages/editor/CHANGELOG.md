@@ -1,5 +1,13 @@
 # @templatical/editor
 
+## 0.43.1
+
+### Patch Changes
+
+- d1c58d0: Fix merge and logic tag tooltip contrast inside email content when the editor is in dark mode.
+- @templatical/quality@0.43.1
+  - @templatical/renderer@0.43.1
+
 ## 0.43.0
 
 ### Patch Changes

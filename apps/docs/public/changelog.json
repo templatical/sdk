@@ -17,8 +17,23 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.43.0",
+  "latest": "0.43.1",
   "versions": [
+    {
+      "version": "0.43.1",
+      "date": "2026-10-01",
+      "changes": [
+        {
+          "hash": "d1c58d0",
+          "level": "patch",
+          "title": "Fix merge and logic tag tooltip contrast inside email content when the editor is in dark mode.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.43.0",
       "date": "2026-09-29",
