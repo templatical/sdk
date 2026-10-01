@@ -782,7 +782,10 @@
     transform: translateX(-50%);
     padding: 4px 10px;
     border-radius: var(--tpl-radius-sm);
-    background-color: var(--tpl-text);
+    /* Tooltips can sit inside email content, where dark UI mode resets
+       --tpl-text to the email's light-theme ink. Use the UI token captured
+       on the editor root so the tooltip keeps its contrasting surface. */
+    background-color: var(--tpl-chrome-text);
     color: var(--tpl-bg);
     font-size: 12px;
     font-weight: 500;
@@ -809,7 +812,7 @@
     left: 50%;
     transform: translateX(-50%);
     border: 4px solid transparent;
-    border-bottom-color: var(--tpl-text);
+    border-bottom-color: var(--tpl-chrome-text);
     pointer-events: none;
     opacity: 0;
     transition: opacity 150ms ease;
