@@ -288,10 +288,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     mediaId: string,
     filename: string,
     altText?: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const { update } = provider;
     if (typeof update !== "function") {
-      return;
+      return false;
     }
 
     try {
@@ -307,8 +307,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
         previewItem.value = updated;
       }
       notify(() => provider.onUpdated?.(updated));
+      return true;
     } catch (error) {
       options.onError?.(error as Error);
+      return false;
     }
   }
 

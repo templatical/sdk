@@ -16,6 +16,8 @@ export interface UseMediaCategoriesReturn {
   isMediaLibraryEnabled: ComputedRef<boolean>;
   allAcceptedMimeTypes: ComputedRef<string[]>;
   allAcceptedInputString: ComputedRef<string>;
+  /** `false` when the provider set no `mimeTypes`, so every type is accepted. */
+  restrictsMimeTypes: ComputedRef<boolean>;
   maxFileSize: ComputedRef<number>;
   availableCategories: ComputedRef<MediaCategory[]>;
   isAcceptedMimeType: (mimeType: string, accept?: MediaCategory[]) => boolean;
@@ -91,6 +93,9 @@ export function useMediaCategories(
     allAcceptedMimeTypes.value.join(","),
   );
 
+  // The same condition `isAcceptedMimeType` short-circuits on.
+  const restrictsMimeTypes = computed(() => limits.mimeTypes !== undefined);
+
   function isAcceptedMimeType(
     mimeType: string,
     accept?: MediaCategory[],
@@ -141,6 +146,7 @@ export function useMediaCategories(
     isMediaLibraryEnabled,
     allAcceptedMimeTypes,
     allAcceptedInputString,
+    restrictsMimeTypes,
     maxFileSize,
     availableCategories,
     isAcceptedMimeType,

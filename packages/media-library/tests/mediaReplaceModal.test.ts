@@ -108,8 +108,12 @@ describe("MediaReplaceModal", () => {
       usageInfo: { templateCount: 3, templateNames: ["Welcome"] },
     });
     await flushPromises();
-    expect(document.body.textContent).toContain("3");
-    expect(document.body.textContent).toContain("template");
+    // Promises nothing about references: a provider may give the new file a
+    // new URL, leaving templates on the old one.
+    expect(document.body.textContent).toContain(
+      "This file is used in 3 template(s). Check them after replacing it.",
+    );
+    expect(document.body.textContent).not.toContain("update all references");
   });
 
   it("surfaces a replace error on the file input", async () => {

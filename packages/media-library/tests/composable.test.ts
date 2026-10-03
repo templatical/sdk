@@ -854,7 +854,7 @@ describe("useMediaLibrary", () => {
       lib.items.value = [createAsset("m1"), createAsset("m2")];
       lib.previewItem.value = createAsset("m1");
 
-      await lib.updateFile("m1", "renamed.jpg", "Alt");
+      expect(await lib.updateFile("m1", "renamed.jpg", "Alt")).toBe(true);
 
       expect(update).toHaveBeenCalledWith("m1", {
         filename: "renamed.jpg",
@@ -871,8 +871,27 @@ describe("useMediaLibrary", () => {
       });
       lib.items.value = [createAsset("m1", { filename: "keep.jpg" })];
 
-      await lib.updateFile("m1", "renamed.jpg", "Alt");
+      expect(await lib.updateFile("m1", "renamed.jpg", "Alt")).toBe(false);
 
+      expect(lib.items.value[0].filename).toBe("keep.jpg");
+    });
+
+    it("reports a rejected update to onError and resolves false", async () => {
+      const failure = new Error("backend down");
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        provider: fakeProvider({
+          update: vi.fn(async () => {
+            throw failure;
+          }),
+        }),
+        onError,
+      });
+      lib.items.value = [createAsset("m1", { filename: "keep.jpg" })];
+
+      expect(await lib.updateFile("m1", "renamed.jpg", "Alt")).toBe(false);
+
+      expect(onError).toHaveBeenCalledWith(failure);
       expect(lib.items.value[0].filename).toBe("keep.jpg");
     });
   });

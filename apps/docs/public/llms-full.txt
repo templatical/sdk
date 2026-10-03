@@ -2238,7 +2238,9 @@ interface MediaFoldersProvider {
 
 `delete` and `checkUsage` are bulk: the grid is multi-select. `folders` is nested so a gallery without folders writes `folders: false` once; `folders.list()` returns a **flat** array and the UI trees it via `parentId`.
 
-Cropping is client-side. Persist a crop by calling `create` or `replace` with the resulting `File`. There is no crop method on the provider, and no upload-progress callback: `create` takes a `File` and resolves with the asset.
+Cropping is client-side. The Edit dialog crops and resizes JPEG, PNG and WebP images in the browser and saves the result with `replace(id, file)`, then `update(id, patch)`. It calls `replace` only when the crop or a max width or height changed the image; an alt-text or filename edit calls `update` alone. If `replace` rejects, `update` is not called and the dialog stays open with an error. With `replace: false` the dialog offers no crop. GIFs get no crop either, since the exported file would hold one frame.
+
+There is no crop method on the provider, and no upload-progress callback: `create` takes a `File` and resolves with the asset.
 
 Confirm always inserts `asset.url`. The grid uses `thumbnailUrl`, falling back to `url`. There is no conversion set (`small` / `medium` / `large`) on `MediaAsset` — if a derivative belongs in the email, put that URL on `url`.
 
@@ -2293,7 +2295,7 @@ interface MediaListPage {
 - **`templateId` is opportunistic.** Passed on `list` / `create` / `importFromUrl` when a template is loaded; omitted on a blank canvas. Media is not gated on it. Cloud ignores it; a CMS that scopes a gallery per template reads it here.
 - **Ordering comes from the provider.** The editor renders `list()`'s order and never re-sorts.
 - **Timestamps are display only.** Omit both and no label renders.
-- **`maxFileSize` / `mimeTypes`** on the provider are a client pre-check, not a security boundary — the backend must enforce too.
+- **`maxFileSize` / `mimeTypes`** on the provider are a client pre-check, not a security boundary — the backend must enforce too. The upload zone's hint is built from them, and files they reject are named under it.
 
 ```ts
 interface MediaOptions {

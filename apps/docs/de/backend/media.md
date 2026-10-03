@@ -96,7 +96,9 @@ interface MediaFoldersProvider {
 
 `delete` und `checkUsage` sind gesammelt: Das Raster ist Mehrfachauswahl. `folders` ist verschachtelt, sodass eine Galerie ohne Ordner einmal `folders: false` schreibt; `folders.list()` gibt ein **flaches** Array zurück, und die Oberfläche baut den Baum über `parentId`.
 
-Der Zuschnitt geschieht im Client. Einen Zuschnitt persistieren Sie, indem Sie `create` oder `replace` mit der entstandenen `File` aufrufen. Es gibt keine Crop-Methode am Provider und keinen Fortschritts-Callback: `create` nimmt eine `File` und löst mit dem Asset auf.
+Der Zuschnitt geschieht im Client. Der Bearbeiten-Dialog schneidet JPEG-, PNG- und WebP-Bilder im Browser zu, skaliert sie und speichert das Ergebnis mit `replace(id, file)`, danach `update(id, patch)`. `replace` ruft er nur auf, wenn der Zuschnitt oder eine maximale Breite oder Höhe das Bild verändert hat; eine Änderung am Alt-Text oder Dateinamen ruft nur `update` auf. Lehnt `replace` ab, wird `update` nicht aufgerufen, und der Dialog bleibt mit einer Fehlermeldung offen. Mit `replace: false` bietet der Dialog keinen Zuschnitt an. GIFs ebenfalls nicht, da die exportierte Datei nur ein Einzelbild enthielte.
+
+Es gibt keine Crop-Methode am Provider und keinen Fortschritts-Callback: `create` nimmt eine `File` und löst mit dem Asset auf.
 
 Bestätigen setzt immer `asset.url` ein. Das Raster verwendet `thumbnailUrl`, ersatzweise `url`. Auf `MediaAsset` gibt es keine Conversion-Menge (`small` / `medium` / `large`) — gehört ein Derivat in die E-Mail, setzen Sie diese URL auf `url`.
 
@@ -151,7 +153,7 @@ interface MediaListPage {
 - **`templateId` ist opportunistisch.** Wird bei `list` / `create` / `importFromUrl` übergeben, wenn eine Vorlage geladen ist; auf einer leeren Arbeitsfläche weggelassen. Medien sind nicht daran gebunden. Cloud ignoriert es; ein CMS, das eine Galerie pro Vorlage abgrenzt, liest es hier.
 - **Die Reihenfolge kommt vom Provider.** Der Editor stellt die Reihenfolge von `list()` dar und sortiert nie um.
 - **Zeitstempel dienen nur der Anzeige.** Lassen Sie beide weg, entfällt die Angabe.
-- **`maxFileSize` / `mimeTypes`** am Provider sind eine clientseitige Vorprüfung, keine Sicherheitsgrenze — das Backend muss zusätzlich durchsetzen.
+- **`maxFileSize` / `mimeTypes`** am Provider sind eine clientseitige Vorprüfung, keine Sicherheitsgrenze — das Backend muss zusätzlich durchsetzen. Der Hinweis in der Upload-Zone wird daraus gebildet, und abgelehnte Dateien werden darunter genannt.
 
 ```ts
 interface MediaOptions {

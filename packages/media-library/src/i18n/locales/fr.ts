@@ -13,7 +13,9 @@ const fr = {
     noFiles: "Aucun fichier trouvé",
     noSearchResults: "Aucun fichier ne correspond à votre recherche",
     dropOrClick: "Déposez des fichiers ici ou cliquez pour téléverser",
-    acceptedFormats: "Images, PDF, vidéo, audio, documents (max 10 Mo)",
+    acceptedAnyType: "Tous types de fichiers",
+    acceptedFormatsMaxSize: "{formats} (max {size})",
+    uploadRejected: "Non téléversé, type ou taille non accepté : {files}",
     uploading: "Téléversement...",
     uploadingProgress: "Téléversement de {current} sur {total}...",
     selectImage: "Sélectionner l'image",
@@ -63,12 +65,16 @@ const fr = {
     replaceWarningMessage:
       "Vous êtes sur le point de remplacer ce fichier. Le remplacement doit avoir la même extension ({extension}).",
     replaceWarningUsageNote:
-      "Ce fichier est utilisé dans {count} modèle(s). Le remplacer mettra à jour toutes les références.",
+      "Ce fichier est utilisé dans {count} modèle(s). Vérifiez-les après l'avoir remplacé.",
     replaceSelectFile: "Sélectionner le fichier de remplacement",
     replace: "Remplacer",
     replacing: "Remplacement...",
     replaceError: "Échec du remplacement du fichier",
     saving: "Enregistrement...",
+    editSaveError:
+      "Impossible d'enregistrer vos modifications. Veuillez réessayer.",
+    editCropError:
+      "Impossible de traiter l'image modifiée. Veuillez réessayer.",
     cropAspectRatio: "Proportions",
     cropFree: "Libre",
     cropSquare: "1:1",

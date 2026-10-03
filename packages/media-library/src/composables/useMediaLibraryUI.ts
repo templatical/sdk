@@ -1,4 +1,7 @@
-import type { CropData } from "../components/media/MediaEditModal.vue";
+import type {
+  CropData,
+  MediaEditSaveResult,
+} from "../components/media/MediaEditModal.vue";
 import type { MediaAsset } from "@templatical/types";
 import type { useMediaLibrary } from "../composable";
 import { treeFolders, type MediaFolderNode } from "../utils/treeFolders";
@@ -45,7 +48,7 @@ export interface UseMediaLibraryUIReturn {
     filename: string,
     altText?: string,
     cropData?: CropData,
-  ) => Promise<void>;
+  ) => Promise<MediaEditSaveResult>;
   handleImportFromUrl: (url: string) => Promise<void>;
   handleMoveToFolder: (folderId: string | null) => Promise<void>;
   handleDeleteClick: () => Promise<void>;
@@ -159,12 +162,24 @@ export function useMediaLibraryUI(
     filename: string,
     altText?: string,
     cropData?: CropData,
-  ): Promise<void> {
+  ): Promise<MediaEditSaveResult> {
+    // A failed replace stops here: saving the metadata anyway would close the
+    // dialog over an image that never changed.
     if (cropData) {
-      await library.replaceMediaDirectly(mediaId, cropData.file);
+      const replaced = await library.replaceMediaDirectly(
+        mediaId,
+        cropData.file,
+      );
+      if (!replaced) {
+        return "failed";
+      }
     }
-    await library.updateFile(mediaId, filename, altText);
+    const updated = await library.updateFile(mediaId, filename, altText);
+    if (!updated) {
+      return cropData ? "replaced" : "failed";
+    }
     editingItem.value = null;
+    return "saved";
   }
 
   async function handleImportFromUrl(url: string): Promise<void> {

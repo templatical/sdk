@@ -507,7 +507,8 @@ defineExpose({ nestedDialogOpen, handleEscape, library, ui });
       v-if="ui.editingItem.value"
       :visible="true"
       :item="ui.editingItem.value"
-      @save="ui.handleEditSave"
+      :save="ui.handleEditSave"
+      :can-crop="canReplace && ui.editingItem.value.canUpdate !== false"
       @close="ui.editingItem.value = null"
     />
 

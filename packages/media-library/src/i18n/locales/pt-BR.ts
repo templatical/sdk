@@ -13,7 +13,9 @@ const ptBR = {
     noFiles: "Nenhum arquivo encontrado",
     noSearchResults: "Nenhum arquivo corresponde à sua busca",
     dropOrClick: "Solte arquivos aqui ou clique para enviar",
-    acceptedFormats: "Imagens, PDF, Vídeo, Áudio, Documentos (máx. 10MB)",
+    acceptedAnyType: "Qualquer tipo de arquivo",
+    acceptedFormatsMaxSize: "{formats} (máx. {size})",
+    uploadRejected: "Não enviado, tipo ou tamanho não aceito: {files}",
     uploading: "Enviando...",
     uploadingProgress: "Enviando {current} de {total}...",
     selectImage: "Selecionar Imagem",
@@ -63,12 +65,15 @@ const ptBR = {
     replaceWarningMessage:
       "Você está prestes a substituir este arquivo. O substituto deve ter a mesma extensão ({extension}).",
     replaceWarningUsageNote:
-      "Este arquivo é usado em {count} template(s). Substituí-lo atualizará todas as referências.",
+      "Este arquivo é usado em {count} template(s). Verifique-os depois de substituí-lo.",
     replaceSelectFile: "Selecionar arquivo substituto",
     replace: "Substituir",
     replacing: "Substituindo...",
     replaceError: "Falha ao substituir arquivo",
     saving: "Salvando...",
+    editSaveError: "Não foi possível salvar as alterações. Tente novamente.",
+    editCropError:
+      "Não foi possível processar a imagem editada. Tente novamente.",
     cropAspectRatio: "Proporção",
     cropFree: "Livre",
     cropSquare: "1:1",

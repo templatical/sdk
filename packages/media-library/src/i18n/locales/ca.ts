@@ -13,7 +13,9 @@ const ca = {
     noFiles: "No s'ha trobat cap fitxer",
     noSearchResults: "Cap fitxer no coincideix amb la cerca",
     dropOrClick: "Deixa anar els fitxers aquí o fes clic per pujar-los",
-    acceptedFormats: "Imatges, PDF, vídeo, àudio i documents (màx. 10 MB)",
+    acceptedAnyType: "Qualsevol tipus de fitxer",
+    acceptedFormatsMaxSize: "{formats} (màx. {size})",
+    uploadRejected: "No s'ha pujat, tipus o mida no acceptats: {files}",
     uploading: "S'està pujant...",
     uploadingProgress: "S'està pujant {current} de {total}...",
     selectImage: "Selecciona una imatge",
@@ -63,12 +65,15 @@ const ca = {
     replaceWarningMessage:
       "Estàs a punt de substituir aquest fitxer. El fitxer de substitució ha de tenir la mateixa extensió ({extension}).",
     replaceWarningUsageNote:
-      "Aquest fitxer s'utilitza en {count} plantilla(es). En substituir-lo, s'actualitzaran totes les referències.",
+      "Aquest fitxer s'utilitza en {count} plantilla(es). Revisa-les després de substituir-lo.",
     replaceSelectFile: "Selecciona el fitxer de substitució",
     replace: "Substitueix",
     replacing: "S'està substituint...",
     replaceError: "No s'ha pogut substituir el fitxer",
     saving: "S'està desant...",
+    editSaveError: "No s'han pogut desar els canvis. Torna-ho a provar.",
+    editCropError:
+      "No s'ha pogut processar la imatge editada. Torna-ho a provar.",
     cropAspectRatio: "Relació d'aspecte",
     cropFree: "Lliure",
     cropSquare: "1:1",

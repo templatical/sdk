@@ -20,19 +20,28 @@ export interface CropData {
   file: File;
 }
 
+/**
+ * `"replaced"`: the cropped file landed but the metadata update failed. The
+ * dialog stays open either way short of `"saved"`.
+ */
+export type MediaEditSaveResult = "saved" | "replaced" | "failed";
+
+export type MediaEditSave = (
+  id: string,
+  filename: string,
+  altText?: string,
+  cropData?: CropData,
+) => Promise<MediaEditSaveResult>;
+
 const props = defineProps<{
   visible: boolean;
   item: MediaAsset | null;
+  save: MediaEditSave;
+  /** The provider can `replace` this asset, so a crop has somewhere to go. */
+  canCrop?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (
-    e: "save",
-    id: string,
-    filename: string,
-    altText?: string,
-    cropData?: CropData,
-  ): void;
   (e: "close"): void;
 }>();
 
@@ -57,21 +66,35 @@ const cropCoordinates = ref<{ width: number; height: number } | null>(null);
 const imageLoaded = ref(false);
 const isSaving = ref(false);
 const hasModifiedCrop = ref(false);
+const saveError = ref<"save" | "crop" | null>(null);
+
+interface CropBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+// The cropper emits `change` once on load with its default box. That event is
+// the baseline, not an edit: treated as one, every alt-text save re-encoded
+// and replaced the image.
+let baselineCoordinates: CropBox | null = null;
+
+// GIF is excluded: the canvas export holds one frame, so a crop would save a
+// still image in place of an animation.
+const CROPPABLE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const isCroppableImage = computed(() => {
-  if (!props.item) {
+  if (!props.item || !props.canCrop) {
     return false;
   }
 
-  const croppableMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-  ];
-
-  return croppableMimeTypes.includes(props.item.mimeType ?? "");
+  return CROPPABLE_MIME_TYPES.includes(props.item.mimeType ?? "");
 });
+
+const hasResize = computed(
+  () => maxWidth.value !== undefined || maxHeight.value !== undefined,
+);
 
 const aspectRatioValue = computed(() => {
   if (aspectRatio.value === "original") {
@@ -109,6 +132,8 @@ watch(
       cropCoordinates.value = null;
       imageLoaded.value = false;
       hasModifiedCrop.value = false;
+      saveError.value = null;
+      baselineCoordinates = null;
 
       if (props.item.width && props.item.height) {
         originalAspectRatio.value = props.item.width / props.item.height;
@@ -120,14 +145,48 @@ watch(
   { immediate: true },
 );
 
+function roundBox(box: CropBox): CropBox {
+  return {
+    left: Math.round(box.left),
+    top: Math.round(box.top),
+    width: Math.round(box.width),
+    height: Math.round(box.height),
+  };
+}
+
+function sameBox(a: CropBox, b: CropBox): boolean {
+  return (
+    a.left === b.left &&
+    a.top === b.top &&
+    a.width === b.width &&
+    a.height === b.height
+  );
+}
+
 function handleCropChange(result: CropperResult): void {
-  if (result.coordinates) {
-    cropCoordinates.value = {
-      width: Math.round(result.coordinates.width),
-      height: Math.round(result.coordinates.height),
-    };
-    hasModifiedCrop.value = true;
+  if (!result.coordinates) {
+    return;
   }
+  const box = roundBox(result.coordinates);
+  cropCoordinates.value = { width: box.width, height: box.height };
+
+  if (!baselineCoordinates) {
+    baselineCoordinates = box;
+    return;
+  }
+  // Compared rather than latched: a box dragged back to where it started, or
+  // a preset whose box is the whole image (Original), is no crop.
+  hasModifiedCrop.value = !sameBox(box, baselineCoordinates);
+}
+
+// The default box is the whole image, so an untouched cropper's result is the
+// original and a resize without a crop scales the full image.
+function fullImageSize({
+  imageSize,
+}: {
+  imageSize: { width: number; height: number };
+}): { width: number; height: number } {
+  return { width: imageSize.width, height: imageSize.height };
 }
 
 function handleImageReady(): void {
@@ -156,42 +215,80 @@ async function handleSave(): Promise<void> {
     return;
   }
 
-  const isImage = isImageMimeType(props.item.mimeType ?? "");
+  const item = props.item;
+  const isImage = isImageMimeType(item.mimeType ?? "");
   let cropData: CropData | undefined;
 
-  if (isCroppableImage.value && cropperRef.value && hasModifiedCrop.value) {
-    isSaving.value = true;
+  isSaving.value = true;
+  saveError.value = null;
+
+  if (
+    isCroppableImage.value &&
+    cropperRef.value &&
+    (hasModifiedCrop.value || hasResize.value)
+  ) {
     try {
       const { canvas } = cropperRef.value.getResult();
-      if (canvas) {
-        const resizedCanvas = resizeCanvas(
-          canvas,
-          maxWidth.value,
-          maxHeight.value,
-        );
-        const settings = getExportSettings(props.item.mimeType ?? "");
+      if (!canvas) {
+        throw new Error("The cropper returned no canvas");
+      }
+      const resizedCanvas = resizeCanvas(
+        canvas,
+        maxWidth.value,
+        maxHeight.value,
+      );
+      // A max larger than the image resizes nothing, so there is no file.
+      if (hasModifiedCrop.value || resizedCanvas !== canvas) {
         const file = await canvasToFile(
           resizedCanvas,
-          props.item.filename ?? "image",
-          settings,
+          item.filename ?? "image",
+          getExportSettings(item.mimeType ?? ""),
         );
         cropData = { file };
       }
     } catch {
+      saveError.value = "crop";
       isSaving.value = false;
       return;
     }
-    isSaving.value = false;
   }
 
-  emit(
-    "save",
-    props.item.id,
+  const result = await props.save(
+    item.id,
     trimmedFilename,
     isImage ? altTextValue.value : undefined,
     cropData,
   );
-  emit("close");
+  isSaving.value = false;
+  if (result === "saved") {
+    emit("close");
+    return;
+  }
+  if (result === "replaced") {
+    markCropApplied();
+  }
+  saveError.value = "save";
+}
+
+// The stored image now matches what is on screen, so a retry sends only the
+// metadata. Re-sending the file would write a second version on a provider
+// that mints a new URL per replace.
+function markCropApplied(): void {
+  const box = cropperRef.value?.getResult().coordinates;
+  if (box) {
+    baselineCoordinates = roundBox(box);
+  }
+  hasModifiedCrop.value = false;
+  maxWidth.value = undefined;
+  maxHeight.value = undefined;
+  maxWidthInput.value = "";
+  maxHeightInput.value = "";
+}
+
+function requestClose(): void {
+  if (!isSaving.value) {
+    emit("close");
+  }
 }
 
 const dialogRef = ref<HTMLElement | null>(null);
@@ -209,7 +306,7 @@ function handleKeydown(event: KeyboardEvent): void {
     handleSave();
   }
   if (event.key === "Escape") {
-    emit("close");
+    requestClose();
   }
 }
 </script>
@@ -232,7 +329,7 @@ function handleKeydown(event: KeyboardEvent): void {
           'tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4',
         ]"
         style="background-color: var(--tpl-overlay)"
-        @click.self="emit('close')"
+        @click.self="requestClose"
         @keydown="handleKeydown"
       >
         <div
@@ -276,6 +373,7 @@ function handleKeydown(event: KeyboardEvent): void {
                   }"
                   class="tpl:h-full tpl:w-full"
                   background-class="tpl-cropper-background"
+                  :default-size="fullImageSize"
                   @change="handleCropChange"
                   @ready="handleImageReady"
                 />
@@ -465,6 +563,21 @@ function handleKeydown(event: KeyboardEvent): void {
             </div>
           </div>
 
+          <!-- Outside the scroll region, so it stays beside Save on a tall image -->
+          <p
+            v-if="saveError"
+            id="tpl-media-edit-error"
+            role="alert"
+            class="tpl:shrink-0 tpl:px-5 tpl:pt-3 tpl:text-xs"
+            style="color: var(--tpl-danger)"
+          >
+            {{
+              saveError === "crop"
+                ? t.mediaLibrary.editCropError
+                : t.mediaLibrary.editSaveError
+            }}
+          </p>
+
           <!-- Actions -->
           <div
             class="tpl:flex tpl:shrink-0 tpl:justify-end tpl:gap-2 tpl:p-5 tpl:pt-4"
@@ -476,7 +589,8 @@ function handleKeydown(event: KeyboardEvent): void {
                 color: var(--tpl-text);
                 background-color: var(--tpl-bg);
               "
-              @click="emit('close')"
+              :disabled="isSaving"
+              @click="requestClose"
             >
               {{ t.mediaLibrary.cancel }}
             </button>

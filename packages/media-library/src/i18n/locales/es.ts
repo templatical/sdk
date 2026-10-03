@@ -13,7 +13,9 @@ const es = {
     noFiles: "No se han encontrado archivos",
     noSearchResults: "Ningún archivo coincide con tu búsqueda",
     dropOrClick: "Suelta los archivos aquí o haz clic para subirlos",
-    acceptedFormats: "Imágenes, PDF, vídeo, audio y documentos (máx. 10 MB)",
+    acceptedAnyType: "Cualquier tipo de archivo",
+    acceptedFormatsMaxSize: "{formats} (máx. {size})",
+    uploadRejected: "No se ha subido, tipo o tamaño no admitido: {files}",
     uploading: "Subiendo...",
     uploadingProgress: "Subiendo {current} de {total}...",
     selectImage: "Seleccionar imagen",
@@ -63,12 +65,15 @@ const es = {
     replaceWarningMessage:
       "Estás a punto de reemplazar este archivo. El archivo de reemplazo debe tener la misma extensión ({extension}).",
     replaceWarningUsageNote:
-      "Este archivo se utiliza en {count} plantilla(s). Al reemplazarlo, se actualizarán todas las referencias.",
+      "Este archivo se utiliza en {count} plantilla(s). Revísalas después de reemplazarlo.",
     replaceSelectFile: "Seleccionar archivo de reemplazo",
     replace: "Reemplazar",
     replacing: "Reemplazando...",
     replaceError: "No se ha podido reemplazar el archivo",
     saving: "Guardando...",
+    editSaveError: "No se han podido guardar los cambios. Inténtalo de nuevo.",
+    editCropError:
+      "No se ha podido procesar la imagen editada. Inténtalo de nuevo.",
     cropAspectRatio: "Relación de aspecto",
     cropFree: "Libre",
     cropSquare: "1:1",

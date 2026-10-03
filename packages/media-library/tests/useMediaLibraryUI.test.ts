@@ -273,10 +273,13 @@ describe("useMediaLibraryUI", () => {
 
     it("handleEditSave updates file and clears editingItem", async () => {
       const { ui, library } = createUI();
+      library.updateFile.mockResolvedValueOnce(true);
       ui.editingItem.value = createAsset();
 
-      await ui.handleEditSave("m1", "renamed.jpg", "alt text");
+      const result = await ui.handleEditSave("m1", "renamed.jpg", "alt text");
 
+      expect(result).toBe("saved");
+      expect(library.replaceMediaDirectly).not.toHaveBeenCalled();
       expect(library.updateFile).toHaveBeenCalledWith(
         "m1",
         "renamed.jpg",
@@ -287,19 +290,65 @@ describe("useMediaLibraryUI", () => {
 
     it("handleEditSave replaces media when cropData provided", async () => {
       const { ui, library } = createUI();
+      library.replaceMediaDirectly.mockResolvedValueOnce(createAsset());
+      library.updateFile.mockResolvedValueOnce(true);
       ui.editingItem.value = createAsset();
       const cropFile = new File([""], "cropped.jpg");
 
-      await ui.handleEditSave("m1", "photo.jpg", undefined, {
+      const result = await ui.handleEditSave("m1", "photo.jpg", undefined, {
         file: cropFile,
       });
 
+      expect(result).toBe("saved");
       expect(library.replaceMediaDirectly).toHaveBeenCalledWith("m1", cropFile);
       expect(library.updateFile).toHaveBeenCalledWith(
         "m1",
         "photo.jpg",
         undefined,
       );
+      expect(ui.editingItem.value).toBeNull();
+    });
+
+    it("handleEditSave skips the metadata when the replace fails", async () => {
+      const { ui, library } = createUI();
+      library.replaceMediaDirectly.mockResolvedValueOnce(null);
+      const item = createAsset();
+      ui.editingItem.value = item;
+
+      const result = await ui.handleEditSave("m1", "photo.jpg", "alt", {
+        file: new File([""], "cropped.jpg"),
+      });
+
+      expect(result).toBe("failed");
+      expect(library.updateFile).not.toHaveBeenCalled();
+      expect(ui.editingItem.value).toEqual(item);
+    });
+
+    it("handleEditSave reports a replace that landed when the update fails", async () => {
+      const { ui, library } = createUI();
+      library.replaceMediaDirectly.mockResolvedValueOnce(createAsset());
+      library.updateFile.mockResolvedValueOnce(false);
+      const item = createAsset();
+      ui.editingItem.value = item;
+
+      const result = await ui.handleEditSave("m1", "photo.jpg", "alt", {
+        file: new File([""], "cropped.jpg"),
+      });
+
+      expect(result).toBe("replaced");
+      expect(ui.editingItem.value).toEqual(item);
+    });
+
+    it("handleEditSave fails and keeps the dialog when the update fails", async () => {
+      const { ui, library } = createUI();
+      library.updateFile.mockResolvedValueOnce(false);
+      const item = createAsset();
+      ui.editingItem.value = item;
+
+      const result = await ui.handleEditSave("m1", "photo.jpg", "alt");
+
+      expect(result).toBe("failed");
+      expect(ui.editingItem.value).toEqual(item);
     });
 
     it("handleImportFromUrl closes modal on success", async () => {

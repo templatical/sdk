@@ -15,7 +15,9 @@ const de: typeof en = {
     noFiles: "Keine Dateien gefunden",
     noSearchResults: "Keine Dateien entsprechen Ihrer Suche",
     dropOrClick: "Dateien hierher ziehen oder klicken zum Hochladen",
-    acceptedFormats: "Bilder, PDF, Video, Audio, Dokumente (max. 10 MB)",
+    acceptedAnyType: "Alle Dateitypen",
+    acceptedFormatsMaxSize: "{formats} (max. {size})",
+    uploadRejected: "Nicht hochgeladen, Typ oder Größe nicht zulässig: {files}",
     uploading: "Wird hochgeladen...",
     uploadingProgress: "{current} von {total} wird hochgeladen...",
     selectImage: "Bild auswählen",
@@ -66,12 +68,16 @@ const de: typeof en = {
     replaceWarningMessage:
       "Sie sind dabei, diese Datei zu ersetzen. Die Ersatzdatei muss dieselbe Dateierweiterung haben ({extension}).",
     replaceWarningUsageNote:
-      "Diese Datei wird in {count} Vorlage(n) verwendet. Das Ersetzen aktualisiert alle Verweise.",
+      "Diese Datei wird in {count} Vorlage(n) verwendet. Prüfen Sie diese nach dem Ersetzen.",
     replaceSelectFile: "Ersatzdatei auswählen",
     replace: "Ersetzen",
     replacing: "Wird ersetzt...",
     replaceError: "Ersetzen der Datei fehlgeschlagen",
     saving: "Wird gespeichert...",
+    editSaveError:
+      "Ihre Änderungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    editCropError:
+      "Das bearbeitete Bild konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
     cropAspectRatio: "Seitenverhältnis",
     cropFree: "Frei",
     cropSquare: "1:1",

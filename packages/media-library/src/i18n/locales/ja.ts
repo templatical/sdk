@@ -15,7 +15,10 @@ const translations: typeof en = {
     noFiles: "ファイルが見つかりません",
     noSearchResults: "検索結果がありません",
     dropOrClick: "ファイルをドロップするか、クリックしてアップロード",
-    acceptedFormats: "画像、PDF、動画、音声、ドキュメント（最大10 MB）",
+    acceptedAnyType: "すべてのファイル形式",
+    acceptedFormatsMaxSize: "{formats}（最大{size}）",
+    uploadRejected:
+      "形式またはサイズが対応していないため、アップロードされませんでした: {files}",
     uploading: "アップロード中...",
     uploadingProgress: "{total} 件中 {current} 件をアップロード中...",
     selectImage: "画像を選択",
@@ -65,12 +68,15 @@ const translations: typeof en = {
     replaceWarningMessage:
       "このファイルを差し替えます。差し替えるファイルの拡張子は同じ（{extension}）である必要があります。",
     replaceWarningUsageNote:
-      "このファイルは {count} 件のテンプレートで使用されています。差し替えると、すべての参照先が更新されます。",
+      "このファイルは {count} 件のテンプレートで使用されています。差し替え後に確認してください。",
     replaceSelectFile: "差し替えるファイルを選択",
     replace: "差し替える",
     replacing: "差し替え中...",
     replaceError: "ファイルの差し替えに失敗しました",
     saving: "保存中...",
+    editSaveError: "変更を保存できませんでした。もう一度お試しください。",
+    editCropError:
+      "編集した画像を処理できませんでした。もう一度お試しください。",
     cropAspectRatio: "縦横比",
     cropFree: "自由",
     cropSquare: "1:1",

@@ -13,7 +13,9 @@ const nl = {
     noFiles: "Geen bestanden gevonden",
     noSearchResults: "Geen bestanden komen overeen met uw zoekopdracht",
     dropOrClick: "Sleep bestanden hierheen of klik om te uploaden",
-    acceptedFormats: "Afbeeldingen, PDF, video, audio, documenten (max. 10 MB)",
+    acceptedAnyType: "Elk bestandstype",
+    acceptedFormatsMaxSize: "{formats} (max. {size})",
+    uploadRejected: "Niet geüpload, type of grootte niet toegestaan: {files}",
     uploading: "Uploaden...",
     uploadingProgress: "Uploaden van {current} van {total}...",
     selectImage: "Afbeelding selecteren",
@@ -64,12 +66,16 @@ const nl = {
     replaceWarningMessage:
       "U staat op het punt dit bestand te vervangen. De vervanging moet dezelfde bestandsextensie hebben ({extension}).",
     replaceWarningUsageNote:
-      "Dit bestand wordt gebruikt in {count} sjabloon(en). Vervangen werkt alle verwijzingen bij.",
+      "Dit bestand wordt gebruikt in {count} sjabloon(en). Controleer ze na het vervangen.",
     replaceSelectFile: "Vervangend bestand selecteren",
     replace: "Vervangen",
     replacing: "Vervangen...",
     replaceError: "Bestand vervangen mislukt",
     saving: "Opslaan...",
+    editSaveError:
+      "Uw wijzigingen konden niet worden opgeslagen. Probeer het opnieuw.",
+    editCropError:
+      "De bewerkte afbeelding kon niet worden verwerkt. Probeer het opnieuw.",
     cropAspectRatio: "Beeldverhouding",
     cropFree: "Vrij",
     cropSquare: "1:1",

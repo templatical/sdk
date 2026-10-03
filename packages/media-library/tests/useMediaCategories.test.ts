@@ -209,6 +209,24 @@ describe("useMediaCategories", () => {
     });
   });
 
+  describe("restrictsMimeTypes", () => {
+    it("is true when the provider lists mimeTypes", () => {
+      const { restrictsMimeTypes } = withProvide(() => useMediaCategories(), {
+        limits: sampleLimits,
+      });
+      expect(restrictsMimeTypes.value).toBe(true);
+    });
+
+    it("is false without mimeTypes, matching isAcceptedMimeType", () => {
+      const { restrictsMimeTypes, isAcceptedMimeType } = withProvide(
+        () => useMediaCategories(),
+        { limits: { accept: ["images"] } },
+      );
+      expect(restrictsMimeTypes.value).toBe(false);
+      expect(isAcceptedMimeType("application/zip")).toBe(true);
+    });
+  });
+
   describe("maxFileSize", () => {
     it("omitted means no cap", () => {
       const { maxFileSize } = withProvide(() => useMediaCategories(), {
