@@ -6,12 +6,21 @@ import { MEDIA_LIMITS_KEY, UI_LOCALE_KEY, type MediaLimits } from "../src/keys";
 
 const picker = vi.hoisted(() => ({
   onChange: null as ((files: FileList | File[] | null) => void) | null,
+  onDrop: null as ((files: File[] | null) => void) | null,
 }));
 
 vi.mock("@vueuse/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@vueuse/core")>();
+  const { ref: vueRef } = await import("vue");
   return {
     ...actual,
+    useDropZone: (
+      _target: unknown,
+      options: { onDrop: (files: File[] | null) => void },
+    ) => {
+      picker.onDrop = options.onDrop;
+      return { isOverDropZone: vueRef(false) };
+    },
     useFileDialog: () => ({
       open: vi.fn(),
       onChange: (cb: (files: FileList | File[] | null) => void) => {
@@ -68,6 +77,7 @@ afterEach(() => {
   }
   document.body.innerHTML = "";
   picker.onChange = null;
+  picker.onDrop = null;
 });
 
 describe("MediaUploadZone accepted-formats hint", () => {
@@ -138,6 +148,24 @@ describe("MediaUploadZone accepted-formats hint", () => {
       "tpl-media-upload-hint",
     );
   });
+
+  it("swaps the hint for progress while uploading, and drops the description", async () => {
+    const wrapper = mountZone({ maxFileSize: 10 * MB });
+    await wrapper.setProps({
+      isUploading: true,
+      uploadProgress: { current: 2, total: 3 },
+    });
+    const zone = document.querySelector('[data-testid="media-upload-zone"]');
+
+    expect(hint()).toBeUndefined();
+    // Pointing at a hint that is not rendered would leave a dangling id.
+    expect(zone?.hasAttribute("aria-describedby")).toBe(false);
+    expect(zone?.getAttribute("aria-busy")).toBe("true");
+    expect(zone?.textContent?.trim()).toBe("Uploading 2 of 3...");
+
+    await wrapper.setProps({ uploadProgress: { current: 1, total: 1 } });
+    expect(zone?.textContent?.trim()).toBe("Uploading...");
+  });
 });
 
 describe("MediaUploadZone rejected files", () => {
@@ -170,6 +198,34 @@ describe("MediaUploadZone rejected files", () => {
   it("reports a pick where every file is rejected and uploads nothing", async () => {
     const wrapper = mountZone(limits);
     picker.onChange!([file("huge.png", "image/png", 2 * MB)]);
+    await nextTick();
+
+    expect(wrapper.emitted("upload")).toBeUndefined();
+    expect(rejected()).toBe(
+      "Not uploaded, type or size not accepted: huge.png",
+    );
+  });
+
+  it("names files rejected from a drop, not only from the picker", async () => {
+    const wrapper = mountZone(limits);
+    const ok = file("ok.png", "image/png", 1000);
+    picker.onDrop!([ok, file("clip.mov", "video/quicktime", 1000)]);
+    await nextTick();
+
+    expect(wrapper.emitted("upload")).toEqual([[[ok]]]);
+    expect(rejected()).toBe(
+      "Not uploaded, type or size not accepted: clip.mov",
+    );
+  });
+
+  it("ignores an empty drop or pick and keeps the last message", async () => {
+    const wrapper = mountZone(limits);
+    picker.onDrop!([file("huge.png", "image/png", 2 * MB)]);
+    await nextTick();
+
+    picker.onDrop!(null);
+    picker.onDrop!([]);
+    picker.onChange!(null);
     await nextTick();
 
     expect(wrapper.emitted("upload")).toBeUndefined();

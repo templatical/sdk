@@ -382,6 +382,67 @@ describe("MediaEditModal sends a file only for a real edit (#834)", () => {
     expect(save.mock.calls[0][3]?.file.name).toBe("hero.jpg");
   });
 
+  it("ignores a change without coordinates instead of taking it as the baseline", async () => {
+    const { wrapper, save } = mountEdit(createAsset());
+    await nextTick();
+    cropper(wrapper).vm.$emit("ready");
+    cropper(wrapper).vm.$emit("change", {});
+    await nextTick();
+    expect(document.body.textContent).not.toContain("Output Size");
+
+    // The first box with coordinates is still the baseline, so it is no crop.
+    await moveCrop(wrapper, FULL_IMAGE);
+    expect(document.body.textContent).toContain("800 x 600 px");
+
+    buttonByText("Save").click();
+    await flushPromises();
+    expect(canvasToFile).not.toHaveBeenCalled();
+    expect(save.mock.calls[0][3]).toBeUndefined();
+  });
+
+  it("exports a scaled file when only a max height was entered", async () => {
+    const scaled = { width: 400, height: 300 } as HTMLCanvasElement;
+    resizeCanvas.mockImplementation(() => scaled);
+    const { wrapper, save } = mountEdit(createAsset());
+    await nextTick();
+    await loadImage(wrapper);
+
+    const heightInput = document.querySelectorAll<HTMLInputElement>(
+      'input[type="number"]',
+    )[1];
+    heightInput.value = "300";
+    heightInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+    expect(document.body.textContent).toContain("400 x 300 px");
+
+    buttonByText("Save").click();
+    await flushPromises();
+
+    expect(resizeCanvas).toHaveBeenCalledWith(SOURCE_CANVAS, undefined, 300);
+    expect(save.mock.calls[0][3]?.file.name).toBe("hero.jpg");
+  });
+
+  it("treats a cleared or non-numeric max as no resize", async () => {
+    const { wrapper, save } = mountEdit(createAsset());
+    await nextTick();
+    await loadImage(wrapper);
+    await typeMaxWidth("400");
+    await typeMaxWidth("");
+
+    const heightInput = document.querySelectorAll<HTMLInputElement>(
+      'input[type="number"]',
+    )[1];
+    heightInput.value = "abc";
+    heightInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
+
+    buttonByText("Save").click();
+    await flushPromises();
+
+    expect(resizeCanvas).not.toHaveBeenCalled();
+    expect(save.mock.calls[0][3]).toBeUndefined();
+  });
+
   it("sends no file when the max width is larger than the image", async () => {
     const { wrapper, save } = mountEdit(createAsset());
     await nextTick();
