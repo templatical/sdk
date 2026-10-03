@@ -256,7 +256,9 @@ describe("MediaPreviewPanel", () => {
     expect(wrapper.text()).toContain("Launch");
     expect(wrapper.text()).toContain("800");
     expect(wrapper.text()).toContain("Photos/2024");
-    expect(wrapper.text()).toContain("2.0 KB");
+    // The shared formatter drops a trailing `.0`.
+    expect(wrapper.text()).toContain("2 KB");
+    expect(wrapper.text()).not.toContain("2.0 KB");
   });
 
   it("falls back to the url when filename is missing and skips the image chrome for a pdf", () => {

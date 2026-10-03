@@ -2,6 +2,7 @@
 import MediaFileIcon from "./MediaFileIcon.vue";
 import { UI_LOCALE_KEY } from "../../keys";
 import { formatAbsoluteDate } from "../../utils/formatAbsoluteDate";
+import { formatFileSize } from "../../utils/formatFileSize";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import type { MediaAsset } from "@templatical/types";
 import type { MediaFolderNode } from "../../utils/treeFolders";
@@ -46,12 +47,6 @@ const folderPath = computed(() => {
 const mimeType = computed(() => props.item.mimeType ?? "");
 const isImage = computed(() => isImageMimeType(mimeType.value));
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function formatDate(dateStr: string): string {
   return formatAbsoluteDate(dateStr, uiLocale?.value, {
     year: "numeric",
@@ -91,7 +86,7 @@ const filename = computed(() => props.item.filename || props.item.url);
         style="color: var(--tpl-text-muted)"
       >
         <template v-if="item.size != null">{{
-          formatSize(item.size)
+          formatFileSize(item.size)
         }}</template>
         <template v-if="item.createdAt">
           <template v-if="item.size != null"> &middot; </template>

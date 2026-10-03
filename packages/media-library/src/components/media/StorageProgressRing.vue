@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
+import { formatFileSize } from "../../utils/formatFileSize";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -35,23 +36,12 @@ const progressColor = computed(() => {
   return "var(--tpl-primary)";
 });
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const value = bytes / Math.pow(k, i);
-  // Show 1 decimal for MB/GB, no decimals for B/KB
-  const decimals = i >= 2 ? 1 : 0;
-  return `${value.toFixed(decimals)} ${sizes[i]}`;
-}
-
-const usedFormatted = computed(() => formatBytes(props.usedBytes));
-const limitFormatted = computed(() => formatBytes(props.limitBytes));
+const usedFormatted = computed(() => formatFileSize(props.usedBytes));
+const limitFormatted = computed(() => formatFileSize(props.limitBytes));
 const remainingBytes = computed(() =>
   Math.max(0, props.limitBytes - props.usedBytes),
 );
-const remainingFormatted = computed(() => formatBytes(remainingBytes.value));
+const remainingFormatted = computed(() => formatFileSize(remainingBytes.value));
 
 const tooltipText = computed(() =>
   format(t.mediaLibrary.storageTooltip, {

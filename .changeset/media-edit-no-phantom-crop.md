@@ -12,4 +12,5 @@ Other fixes on the same path:
 - The upload zone's hint lists the categories and size cap from the provider's `mimeTypes` and `maxFileSize`, instead of a fixed "max 10MB".
 - Files the upload zone rejects for type or size are named under it, instead of disappearing.
 - The Replace dialog no longer promises that every reference updates, which is false for a provider that gives the new file a new URL.
+- File sizes on cards, in the preview panel and on the storage ring share one format: `2 KB`, `1.5 MB`, `3 GB`. Sizes past 1 GB no longer read as thousands of MB.
 - `useMediaLibrary().updateFile()` resolves to `true` on success and `false` when the update failed or the provider has none.

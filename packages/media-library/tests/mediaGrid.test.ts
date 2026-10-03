@@ -182,12 +182,16 @@ describe("MediaGrid", () => {
       items: [
         createAsset("tiny", { size: 512 }),
         createAsset("kilo", { size: 2048 }),
-        createAsset("mega", { size: 2 * 1024 * 1024 }),
+        createAsset("mega", { size: 2.5 * 1024 * 1024 }),
+        createAsset("giga", { size: 3 * 1024 * 1024 * 1024 }),
       ],
     });
     expect(wrapper.text()).toContain("512 B");
-    expect(wrapper.text()).toContain("2.0 KB");
-    expect(wrapper.text()).toContain("2.0 MB");
+    expect(wrapper.text()).toContain("2 KB");
+    expect(wrapper.text()).toContain("2.5 MB");
+    // Sizes past 1 GB read in GB, not as thousands of MB.
+    expect(wrapper.text()).toContain("3 GB");
+    expect(wrapper.text()).not.toContain("3072");
   });
 
   it("asks for the next page when the sentinel intersects", async () => {

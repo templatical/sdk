@@ -3,6 +3,7 @@ import MediaFileIcon from "./MediaFileIcon.vue";
 import { useI18n } from "../../composables/useI18n";
 import { UI_LOCALE_KEY } from "../../keys";
 import { formatAbsoluteDate } from "../../utils/formatAbsoluteDate";
+import { formatFileSize } from "../../utils/formatFileSize";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import type { MediaAsset, MediaCategory } from "@templatical/types";
 import { useIntersectionObserver } from "@vueuse/core";
@@ -103,12 +104,6 @@ useIntersectionObserver(
   },
   { threshold: 0.1 },
 );
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function formatDate(dateStr: string): string {
   return formatAbsoluteDate(dateStr, uiLocale?.value, {
@@ -213,7 +208,9 @@ function formatDate(dateStr: string): string {
             class="tpl:flex tpl:justify-between tpl:text-[10px]"
             style="color: var(--tpl-text-muted)"
           >
-            <span v-if="item.size != null">{{ formatSize(item.size) }}</span>
+            <span v-if="item.size != null">{{
+              formatFileSize(item.size)
+            }}</span>
             <span
               v-if="isImageMimeType(mimeOf(item)) && item.width && item.height"
             >
@@ -324,7 +321,7 @@ function formatDate(dateStr: string): string {
           </p>
           <p class="tpl:text-[10px]" style="color: var(--tpl-text-muted)">
             <template v-if="item.size != null">{{
-              formatSize(item.size)
+              formatFileSize(item.size)
             }}</template>
             <template v-if="item.createdAt">
               <template v-if="item.size != null"> &middot; </template>
