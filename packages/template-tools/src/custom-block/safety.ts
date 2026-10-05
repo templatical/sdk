@@ -40,6 +40,42 @@ export function stripCssComments(css: string): string {
   }
 }
 
+/**
+ * Remove `url(...)` and quoted strings so the class scan can't read `.png` or
+ * `"x.y"` as a selector. Linear: each opener's next position is searched for
+ * again only once the cursor has passed it, so an opener that never closes
+ * costs one scan, not one per occurrence. An unterminated `url(` or quote
+ * drops the rest, as a CSS parser would.
+ */
+export function stripCssUrlsAndStrings(css: string): string {
+  const lower = css.toLowerCase();
+  const next = (needle: string, from: number) => {
+    const at = lower.indexOf(needle, from);
+    return at === -1 ? Infinity : at;
+  };
+  const closers: Record<string, string> = { "url(": ")", '"': '"', "'": "'" };
+  const pos: Record<string, number> = { "url(": 0, '"': 0, "'": 0 };
+  for (const k of Object.keys(pos)) pos[k] = next(k, 0);
+  let out = "";
+  let i = 0;
+  for (;;) {
+    let opener = "";
+    let open = Infinity;
+    for (const k of Object.keys(pos)) {
+      if (pos[k] < i) pos[k] = next(k, i);
+      if (pos[k] < open) {
+        open = pos[k];
+        opener = k;
+      }
+    }
+    if (open === Infinity) return out + css.slice(i);
+    out += css.slice(i, open);
+    const close = lower.indexOf(closers[opener], open + opener.length);
+    if (close === -1) return out;
+    i = close + 1;
+  }
+}
+
 /** Layout rules that hold for stylesheet text: the definition's and a `<style>`'s. */
 function cssLayoutIssues(css: string, path?: string): CustomBlockIssue[] {
   const text = stripCssComments(css);
@@ -76,9 +112,7 @@ function stylesheetIssues(
     });
   }
   issues.push(...cssLayoutIssues(css, "/stylesheet"));
-  const stripped = stripCssComments(css)
-    .replace(/url\([^)]*\)/gi, "")
-    .replace(/"[^"]*"|'[^']*'/g, "");
+  const stripped = stripCssUrlsAndStrings(stripCssComments(css));
   const prefix = `tplc-${def.type}-`;
   const unscoped = [
     ...new Set(

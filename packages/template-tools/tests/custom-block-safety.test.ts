@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkEmailSafety, stripCssComments } from "../src/custom-block/safety";
+import { checkEmailSafety, stripCssComments, stripCssUrlsAndStrings } from "../src/custom-block/safety";
 
 const def = (stylesheet = "") => ({ type: "promo", name: "P", fields: [], template: "", stylesheet }) as never;
 const lint = (html: string, stylesheet = "", state = "defaults") =>
@@ -75,6 +75,27 @@ describe("stripCssComments", () => {
     for (const input of ["/*" + "a/*".repeat(50000), "/*/".repeat(60000), "/* */".repeat(40000)]) {
       const t = performance.now();
       stripCssComments(input);
+      expect(performance.now() - t).toBeLessThan(200);
+    }
+  });
+});
+
+describe("stripCssUrlsAndStrings", () => {
+  it("removes url(...) and quoted strings, keeping selectors", () => {
+    expect(stripCssUrlsAndStrings('.a { background: URL(x.png) } .b::after { content: "x.y" } .c { font: \'p.q\' }'))
+      .toBe(".a { background:  } .b::after { content:  } .c { font:  }");
+  });
+  it("drops everything after an unterminated url( or quote", () => {
+    expect(stripCssUrlsAndStrings(".a{} url(never closed .b{}")).toBe(".a{} ");
+    expect(stripCssUrlsAndStrings('.a{} "never closed .b{}')).toBe(".a{} ");
+  });
+  it("leaves text without urls or strings untouched", () => {
+    expect(stripCssUrlsAndStrings(".a { color: red } .curl { x: 1 }")).toBe(".a { color: red } .curl { x: 1 }");
+  });
+  it("scans adversarial input in linear time", () => {
+    for (const input of ["url(".repeat(50000), "uRl(".repeat(50000), '"'.repeat(1) + "a".repeat(200000), "url(\")".repeat(40000)]) {
+      const t = performance.now();
+      stripCssUrlsAndStrings(input);
       expect(performance.now() - t).toBeLessThan(200);
     }
   });
