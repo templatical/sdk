@@ -156,3 +156,38 @@ describe("buildSpecimenTemplate", () => {
     ).toBe(false);
   });
 });
+
+describe("repeatable items", () => {
+  const rep = (default_?: unknown) =>
+    ({
+      type: "list",
+      name: "List",
+      template: "",
+      fields: [
+        {
+          key: "rows",
+          label: "Rows",
+          type: "repeatable",
+          minItems: 1,
+          maxItems: 2,
+          ...(default_ === undefined ? {} : { default: default_ }),
+          fields: [
+            { key: "t", label: "T", type: "text" },
+            { key: "n", label: "N", type: "number" },
+            { key: "b", label: "B", type: "boolean" },
+          ],
+        },
+      ],
+    }) as never;
+  const state = (d: never, s: string) => buildSpecimen(d).find((i) => i.state === s)!.fieldValues;
+
+  it("seeds an item from each sub-field's type fallback when nothing is declared", () => {
+    expect(state(rep(), "min-items")).toEqual({ rows: [{ t: "", n: 0, b: false }] });
+  });
+
+  it("lengthens text inside a repeatable's default items", () => {
+    const d = rep([{ t: "x", n: 1, b: true }]);
+    expect(state(d, "long")).toEqual({ rows: [{ t: "x x x", n: 1, b: true }] });
+  });
+});
+

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { connect } from "node:net";
 import { createServer, request as httpRequest, type Server } from "node:http";
 import { startBridge, type BridgeHandle } from "../src/live/index";
 
@@ -202,3 +203,58 @@ describe("bridge custom-block mode", () => {
     expect(t.blocks[0].type).toBe("paragraph");
   });
 });
+
+describe("bridge custom-block edge paths", () => {
+  it("serves a definition given as an absolute path", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "tt-abs-"));
+    const abs = join(cwd, "quote.json");
+    writeFileSync(abs, JSON.stringify(def()));
+    const h = await startBridge({ cwd: mkdtempSync(join(tmpdir(), "tt-other-")), customBlock: abs });
+    open.push(h);
+    expect(h.workingPath).toBe(abs);
+    expect((await (await fetch(`${h.url}custom-block`)).json()).definition.type).toBe("quote");
+  });
+
+  it("clears annotations on a consuming reload of a valid block, and keeps them for an invalid one", async () => {
+    const { h, get } = await project(def());
+    const note = { blockId: "b1", text: "tighten this" };
+    await get("/annotations", { method: "POST", headers: JSON_HDR, body: JSON.stringify(note) });
+    expect((await (await get("/content")).json()).annotations).toHaveLength(1);
+    expect(h.reload({ consumeAnnotations: true })).toMatchObject({ ok: true, consumed: true });
+    expect((await (await get("/content")).json()).annotations).toEqual([]);
+
+    const bad = await project({ type: "quote" });
+    await bad.get("/annotations", { method: "POST", headers: JSON_HDR, body: JSON.stringify(note) });
+    expect(bad.h.reload({ consumeAnnotations: true })).toMatchObject({ ok: false, consumed: false });
+    expect((await (await bad.get("/content")).json()).annotations).toHaveLength(1);
+  });
+
+  it("answers 422 on the fetch route for an invalid definition, before reading the body", async () => {
+    const { get } = await project({ type: "quote" });
+    const res = await get("/data-source/fetch", { method: "POST", headers: JSON_HDR, body: "{}" });
+    expect(res.status).toBe(422);
+    expect(typeof (await res.json()).error).toBe("string");
+  });
+
+  it("answers 415 when the fetch request carries no content type at all", async () => {
+    const up = await upstream();
+    const { get } = await project(def({ dataSourcePreview: { label: "F", request: { url: `${up.base}/q`, headers: {} }, map: {} } }));
+    const res = await get("/data-source/fetch", { method: "POST" });
+    expect(res.status).toBe(415);
+    expect(up.seen).toEqual([]);
+  });
+
+  it("refuses a request with no Host header", async () => {
+    const { h } = await project(def());
+    const port = Number(new URL(h.url).port);
+    const reply = await new Promise<string>((resolve) => {
+      let data = "";
+      const sock = connect(port, "127.0.0.1", () => sock.write("GET /custom-block HTTP/1.0\r\n\r\n"));
+      sock.on("data", (c) => (data += c));
+      sock.on("close", () => resolve(data));
+    });
+    expect(reply).toContain("403");
+    expect(reply).toContain("Forbidden host.");
+  });
+});
+

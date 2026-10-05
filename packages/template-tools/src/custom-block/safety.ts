@@ -26,9 +26,23 @@ const FLEX_GRID_MESSAGE =
 const POSITION_MESSAGE =
   "`position: absolute/fixed` is unsupported in email clients.";
 
+/** Drops `/* … *\/` comments in one linear pass; an unterminated comment drops the rest. */
+export function stripCssComments(css: string): string {
+  let out = "";
+  let i = 0;
+  for (;;) {
+    const open = css.indexOf("/*", i);
+    if (open === -1) return out + css.slice(i);
+    out += css.slice(i, open);
+    const close = css.indexOf("*/", open + 2);
+    if (close === -1) return out;
+    i = close + 2;
+  }
+}
+
 /** Layout rules that hold for stylesheet text: the definition's and a `<style>`'s. */
 function cssLayoutIssues(css: string, path?: string): CustomBlockIssue[] {
-  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const text = stripCssComments(css);
   const issues: CustomBlockIssue[] = [];
   const at = path === undefined ? {} : { path };
   if (CSS_FLEX_GRID.test(text))
@@ -62,8 +76,7 @@ function stylesheetIssues(
     });
   }
   issues.push(...cssLayoutIssues(css, "/stylesheet"));
-  const stripped = css
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+  const stripped = stripCssComments(css)
     .replace(/url\([^)]*\)/gi, "")
     .replace(/"[^"]*"|'[^']*'/g, "");
   const prefix = `tplc-${def.type}-`;
@@ -158,7 +171,7 @@ export function checkEmailSafety(
               add(
                 "safety.empty-img-src",
                 "warning",
-                `An \`<img>\` renders with an empty \`src\` in the "${state}" state; wrap it in \`{% if <field> %}\`.`,
+                `An \`<img>\` renders with an empty \`src\` in the "${state}" state; wrap it in \`{% if <field> != blank %}\` (Liquid treats an empty string as true, so a bare \`{% if <field> %}\` doesn't hide it).`,
               );
           }
         },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkEmailSafety } from "../src/custom-block/safety";
+import { checkEmailSafety, stripCssComments } from "../src/custom-block/safety";
 
 const def = (stylesheet = "") => ({ type: "promo", name: "P", fields: [], template: "", stylesheet }) as never;
 const lint = (html: string, stylesheet = "", state = "defaults") =>
@@ -29,6 +29,9 @@ describe("checkEmailSafety", () => {
     const issues = checkEmailSafety(def(), [{ state: "empty", html: '<img src="" alt="" width="4">' }]);
     expect(issues).toEqual([expect.objectContaining({ ruleId: "safety.empty-img-src", severity: "warning" })]);
     expect(issues[0].message).toContain("empty");
+    // Liquid treats "" as truthy, and a cleared field is "", so a bare
+    // `{% if <field> %}` guard still renders the image.
+    expect(issues[0].message).toContain("`{% if <field> != blank %}`");
   });
   it("checks the stylesheet: @import is an error, unprefixed classes warn, url() and decimals don't false-positive", () => {
     expect(lint("<p>x</p>", '@import "x.css"; .tplc-promo-a { margin: 0.5em; background: url(x.png); } .hero {}'))
@@ -55,5 +58,24 @@ describe("checkEmailSafety", () => {
       { state: "long", html: '<div style="display:flex"></div>' },
     ]);
     expect(r.map((i) => i.ruleId)).toEqual(["safety.flex-grid"]);
+  });
+});
+
+describe("stripCssComments", () => {
+  it("removes closed comments and keeps the text around them", () => {
+    expect(stripCssComments("a/* x */b/**/c")).toBe("abc");
+  });
+  it("drops everything after an unterminated comment", () => {
+    expect(stripCssComments("a{}/* never closed")).toBe("a{}");
+  });
+  it("leaves text without comments untouched", () => {
+    expect(stripCssComments(".a { color: red }")).toBe(".a { color: red }");
+  });
+  it("scans adversarial input in linear time", () => {
+    for (const input of ["/*" + "a/*".repeat(50000), "/*/".repeat(60000), "/* */".repeat(40000)]) {
+      const t = performance.now();
+      stripCssComments(input);
+      expect(performance.now() - t).toBeLessThan(200);
+    }
   });
 });

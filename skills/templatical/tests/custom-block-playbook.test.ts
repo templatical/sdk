@@ -10,6 +10,11 @@ describe("custom-block playbook", () => {
   it("triages saved blocks before authoring", () => {
     expect(md).toMatch(/saved block[\s\S]{0,400}\[providers\.md\]\(providers\.md\)/i);
   });
+  it("guards optional fields with `!= blank`, since Liquid treats an empty string as true", () => {
+    expect(md).toContain("{% if <key> != blank %}");
+    expect(md).not.toMatch(/Wrap every optional field in `\{% if <key> %\}`/);
+  });
+
   it("asks for the env var's name, never the secret", () => {
     expect(md).toContain("${env:");
     expect(md).toMatch(/never (ask for|paste|write) (the|its) (secret|value|token)/i);

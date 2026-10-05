@@ -94,3 +94,71 @@ it("rejects an unknown subcommand and a missing file", async () => {
   await expect(run(["frob", "x.json"])).rejects.toThrow(UsageError);
   await expect(run(["validate"])).rejects.toThrow(UsageError);
 });
+
+describe("custom-block human output", () => {
+  const text = () => stdout.join("");
+  it("validate prints a clean line for a definition without issues", async () => {
+    expect(await run(["validate", file(good)])).toBe(0);
+    expect(text()).toBe("✓ Valid custom block — no issues\n");
+  });
+  it("validate lists each issue and marks an invalid definition", async () => {
+    const bad = { ...good, template: "{{ nope }}{{ text }}{{ on }}" };
+    expect(await run(["validate", file(bad)])).toBe(1);
+    expect(text()).toMatch(/^✗ Invalid · 1 issue\(s\):\n {2}- \[error\] liquid\.undefined-variable/);
+  });
+  it("validate reports a safety error from the template", async () => {
+    const warned = { ...good, template: `<div style="position:absolute">{{ text }}{{ on }}</div>` };
+    const code = await run(["validate", file(warned)]);
+    expect(code).toBe(1);
+    expect(text()).toContain("[error] safety.position");
+  });
+  it("render prints MJML to stdout without -o", async () => {
+    expect(await run(["render", file(good)])).toBe(0);
+    expect(text()).toContain("<mjml");
+    expect(text()).toContain("Specimen:</strong> defaults");
+  });
+  it("render --json wraps the output with its format", async () => {
+    setJsonMode(true);
+    expect(await run(["render", file(good), "--json"])).toBe(0);
+    expect(json().format).toBe("mjml");
+    expect(json().output).toContain("<mjml");
+  });
+  it("render --format html compiles through mjml", async () => {
+    expect(await run(["render", file(good), "--format", "html"])).toBe(0);
+    expect(text()).toContain("<!doctype html>");
+    expect(text()).toContain("Hi");
+  });
+  it("render rejects an unknown --format", async () => {
+    await expect(run(["render", file(good), "--format", "pdf"])).rejects.toThrow(
+      'Unknown --format "pdf". Use mjml or html.',
+    );
+  });
+  it("render and fetch reject an invalid definition", async () => {
+    const bad = file({ type: "Bad Type" });
+    await expect(run(["render", bad])).rejects.toThrow(InvalidTemplateError);
+    await expect(run(["fetch", bad])).rejects.toThrow(InvalidTemplateError);
+  });
+  it("fetch rejects --values that is not JSON", async () => {
+    const f = file({ ...good, dataSourcePreview: { label: "F", request: { url: "http://127.0.0.1:1/q" }, map: {} } });
+    await expect(run(["fetch", f, "--values", "{nope"])).rejects.toThrow("--values must be a JSON object.");
+  });
+  it("fetch prints a failure and exits 1 in human mode", async () => {
+    const f = file({ ...good, dataSourcePreview: { label: "F", request: { url: "http://127.0.0.1:1/q" }, map: { text: "t" } } });
+    expect(await run(["fetch", f])).toBe(1);
+    expect(text()).toMatch(/^✗ /);
+  });
+  it("fetch prints the mapped values and unmapped keys in human mode", async () => {
+    const server = createServer((_q, r) => { r.writeHead(200, { "content-type": "application/json" }); r.end('{"t":"Fetched"}'); });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+    try {
+      const f = file({ ...good, dataSourcePreview: { label: "F", request: { url: `${base}/q` }, map: { text: "t", on: "missing" } } });
+      expect(await run(["fetch", f])).toBe(0);
+      expect(text()).toContain("✓ 200");
+      expect(text()).toContain('"text": "Fetched"');
+      expect(text()).toContain("Unmapped: on");
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+  });
+});

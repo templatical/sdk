@@ -40,6 +40,20 @@ describe("checkLiquid", () => {
     expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.unused-field", severity: "warning", path: "/fields/0" })]);
   });
 
+  it("counts a field the data-source recipe reads as used", () => {
+    const template = "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
+    const recipe = (request: object) => ({ label: "Fetch", request, map: {} });
+    expect(run({ template, dataSourcePreview: recipe({ url: "https://x.test/{{ heading }}" }) })).toEqual([]);
+    expect(run({ template, dataSourcePreview: recipe({ url: "https://x.test/", body: '{"q":"{{ heading }}"}' }) })).toEqual([]);
+  });
+
+  it("still warns when neither the template nor the recipe reads a field", () => {
+    const template = "{% for item in items %}{{ item.title }}{{ item.url }}{% endfor %}";
+    const issues = run({ template, dataSourcePreview: { label: "Fetch", request: { url: "https://x.test/p" }, map: {} } });
+    expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.unused-field", path: "/fields/0" })]);
+    expect(issues[0].message).toBe("Field `heading` is never read by the template or the data-source recipe.");
+  });
+
   it("errors on a repeatable sub-key the repeatable doesn't define", () => {
     const issues = run({ template: `${base.template}{% for x in items %}{{ x.image }}{% endfor %}` });
     expect(issues.map((i) => i.ruleId)).toEqual(["liquid.unknown-item-key"]);

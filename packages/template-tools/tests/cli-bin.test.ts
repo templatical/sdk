@@ -63,6 +63,12 @@ describe("bin dispatch", () => {
     expect(stderr.join("")).toContain('Unknown command "frobnicate"');
   });
 
+  it("dispatches custom-block through main, which needs a subcommand", async () => {
+    await expect(main(["custom-block"])).rejects.toThrow(
+      'Unknown "custom-block ". Use `custom-block validate <file>`, `custom-block render <file>` or `custom-block fetch <file>`.',
+    );
+  });
+
   it("dispatches list through main", async () => {
     const dir = mkdtempSync(join(tmpdir(), "tt-bin-list-"));
     expect(await main(["list", "--cwd", dir, "--json"])).toBe(0);

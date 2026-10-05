@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
-import { checkRecipe, getPath, runRecipe } from "../src/custom-block/recipe";
+import { checkRecipe, getPath, replaceLiquid, runRecipe } from "../src/custom-block/recipe";
 
 const SECRET = "sk_live_verysecretvalue123";
 const fields = [
@@ -34,6 +34,11 @@ describe("checkRecipe", () => {
   ])("rejects Liquid in the URL's scheme or authority: %s", (url) => {
     const ids = checkRecipe(def({ ...ok, request: { ...ok.request, url } })).map((i) => i.ruleId);
     expect(ids).toContain("recipe.url-host-template");
+  });
+  it("reports a URL template that does not parse", () => {
+    const issues = checkRecipe(def({ ...ok, request: { ...ok.request, url: "https://x.test/{{ productId" } }));
+    expect(issues.map((i) => i.ruleId)).toContain("recipe.undefined-variable");
+    expect(issues.find((i) => i.message.startsWith("Does not parse:"))?.path).toBe("/dataSourcePreview/request/url");
   });
   it("accepts Liquid in the path and query after a literal host", () => {
     for (const url of ["https://x.test/{{ productId }}", "https://x.test/p?id={{ productId }}", "https://x.test?id={{ productId }}"]) {
@@ -177,9 +182,74 @@ describe("runRecipe against a local server", () => {
   });
 
   it("ignores a __proto__ map key", async () => {
-    const r = await runRecipe({ ...recipe(), map: { ["__proto__"]: "title", name: "title" } }, { productId: "1" }, { env: { SHOP_TOKEN: SECRET } });
+    const r = await runRecipe({ ...recipe(), map: JSON.parse('{"__proto__":"title","name":"title"}') }, { productId: "1" }, { env: { SHOP_TOKEN: SECRET } });
     expect(r).toMatchObject({ ok: true, values: { name: "Lamp" } });
     expect(Object.getPrototypeOf((r as { values: object }).values)).toBe(Object.prototype);
     expect(Object.keys((r as { values: object }).values)).toEqual(["name"]);
+  });
+});
+
+describe("runRecipe without a server", () => {
+  const json = (v: unknown) => (async () => new Response(JSON.stringify(v))) as unknown as typeof fetch;
+  const at = (url: string, map: Record<string, string> = { name: "title" }) => ({ label: "F", request: { url }, map });
+
+  it("refuses a URL with no scheme, since no origin can be derived", async () => {
+    const r = await runRecipe(at("x.test/p"), {}, { fetch: json({}) });
+    expect(r).toEqual({ ok: false, error: "The request URL's scheme and host must be literal; Liquid may only follow the first `/` after the host." });
+  });
+
+  it("accepts a URL that is only a scheme and host", async () => {
+    let seen = "";
+    const f = (async (u: string) => { seen = String(u); return new Response('{"title":"Lamp"}'); }) as unknown as typeof fetch;
+    const r = await runRecipe(at("http://x.test"), {}, { fetch: f });
+    expect(r).toEqual({ ok: true, status: 200, values: { name: "Lamp" }, unmapped: [] });
+    expect(seen).toBe("http://x.test");
+  });
+
+  it("redacts a secret nested in mapped arrays and objects and keeps non-strings", async () => {
+    const f = json({ tags: [SECRET, "a", 3], meta: { k: SECRET, n: 5, ok: true, z: null } });
+    const r = await runRecipe(
+      { ...ok, request: { ...ok.request, url: "http://x.test/p" }, map: { name: "tags", image: "meta" } },
+      {},
+      { env: { SHOP_TOKEN: SECRET }, fetch: f },
+    );
+    expect(r).toEqual({
+      ok: true,
+      status: 200,
+      values: { name: ["***", "a", 3], image: { k: "***", n: 5, ok: true, z: null } },
+      unmapped: [],
+    });
+  });
+
+  it("names a redirect that carries no Location header", async () => {
+    const f = (async () => new Response(null, { status: 302 })) as unknown as typeof fetch;
+    const r = await runRecipe(at("http://x.test/p"), {}, { fetch: f });
+    expect(r).toEqual({ ok: false, status: 302, error: expect.stringContaining("to (none)") });
+  });
+
+  it("reports a thrown fetch as a failure that names the URL", async () => {
+    const f = (async () => { throw new Error("boom"); }) as unknown as typeof fetch;
+    const r = await runRecipe(at("http://x.test/p"), {}, { fetch: f });
+    expect(r).toEqual({ ok: false, error: "GET http://x.test/p failed: boom" });
+  });
+});
+
+describe("replaceLiquid", () => {
+  it("replaces each output and tag span with x", () => {
+    expect(replaceLiquid("a{{ b }}c{% if d %}e{% endif %}f")).toBe("axcxexf");
+  });
+  it("swallows the rest of the text after an unterminated opener", () => {
+    expect(replaceLiquid("https://x.test/{{ id")).toBe("https://x.test/x");
+    expect(replaceLiquid("p{%")).toBe("px");
+  });
+  it("leaves text without Liquid untouched", () => {
+    expect(replaceLiquid("https://x.test/{ a }")).toBe("https://x.test/{ a }");
+  });
+  it("scans adversarial input in linear time", () => {
+    for (const input of ["{{".repeat(50000), "{{%".repeat(30000), "{%{{".repeat(25000), "{% %}".repeat(50000), "{{ }}".repeat(50000)]) {
+      const t = performance.now();
+      replaceLiquid(input);
+      expect(performance.now() - t).toBeLessThan(200);
+    }
   });
 });

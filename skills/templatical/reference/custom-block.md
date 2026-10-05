@@ -61,8 +61,10 @@ Write `.templatical/custom-blocks/<type>.json`. It is the definition minus
   `stylesheet`.
 - Every `<img>` has `alt` (bound to a field, or `""` if decorative) and a
   `width` attribute.
-- Wrap every optional field in `{% if <key> %}` so an empty value renders
-  nothing rather than an empty image or a stray label.
+- Wrap every optional field in `{% if <key> != blank %}` so an empty value
+  renders nothing rather than an empty image or a stray label. A bare
+  `{% if <key> %}` is not enough: Liquid treats an empty string as true, and a
+  field the user cleared is an empty string.
 - Prefix every stylesheet class `tplc-<type>-`; the SDK doesn't scope them.
 
 ### Backend data
@@ -103,7 +105,8 @@ their picker.
     npx -y @templatical/template-tools@0.43.2 custom-block validate .templatical/custom-blocks/<type>.json --json
 
 Fix every `error`. Treat `warning`s as defects unless there's a reason —
-say the reason. Never start or reload the preview on an invalid definition.
+say the reason. Never start or reload the preview on an invalid definition. A
+field only the recipe reads (the id it fetches by) counts as used.
 
 To check the rendered output without the browser, render one state to a file:
 

@@ -120,10 +120,7 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
   ) {
     err("recipe.url-host-template", "/request/url", HOST_TEMPLATE_ERROR);
   }
-  const probeUrl = r.request.url.replace(
-    /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g,
-    "x",
-  );
+  const probeUrl = replaceLiquid(r.request.url);
   let parses = true;
   try {
     new URL(probeUrl);
@@ -307,5 +304,31 @@ export async function runRecipe(
       ok: false,
       error: redact(`${method} ${url} failed: ${(e as Error).message}`),
     };
+  }
+}
+
+/** Replaces each `{{…}}` / `{%…%}` span with "x" in one linear pass; an unterminated opener swallows the rest. */
+export function replaceLiquid(text: string): string {
+  const MISSING = Infinity;
+  const next = (needle: string, from: number) => {
+    const at = text.indexOf(needle, from);
+    return at === -1 ? MISSING : at;
+  };
+  let out = "";
+  let i = 0;
+  // Each opener is searched for again only once the cursor passes its cached
+  // position, so an opener that never recurs is scanned for once, not per span.
+  let a = next("{{", 0);
+  let b = next("{%", 0);
+  for (;;) {
+    if (a < i) a = next("{{", i);
+    if (b < i) b = next("{%", i);
+    const open = Math.min(a, b);
+    if (open === MISSING) return out + text.slice(i);
+    out += text.slice(i, open);
+    const close = text.indexOf(open === a ? "}}" : "%}", open + 2);
+    if (close === -1) return out + "x";
+    out += "x";
+    i = close + 2;
   }
 }

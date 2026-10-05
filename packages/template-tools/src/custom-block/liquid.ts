@@ -84,13 +84,27 @@ export function checkLiquid(def: CustomBlockWorkingFile): CustomBlockIssue[] {
       });
     }
   }
+  // A field only the data-source recipe reads (the product id it fetches by)
+  // is in use; recipe Liquid that fails to parse is reported by checkRecipe.
+  const recipeReads = new Set<string>();
+  const request = def.dataSourcePreview?.request;
+  for (const text of [request?.url, request?.body]) {
+    if (text === undefined) continue;
+    try {
+      for (const [name] of engine.globalVariableSegmentsSync(text)) {
+        recipeReads.add(String(name));
+      }
+    } catch {
+      /* reported by checkRecipe */
+    }
+  }
   for (const [key, { index }] of fields) {
-    if (!globals.has(key)) {
+    if (!globals.has(key) && !recipeReads.has(key)) {
       issues.push({
         ruleId: "liquid.unused-field",
         severity: "warning",
         path: `/fields/${index}`,
-        message: `Field \`${key}\` is never read by the template.`,
+        message: `Field \`${key}\` is never read by the template or the data-source recipe.`,
       });
     }
   }
