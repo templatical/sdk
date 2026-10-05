@@ -28,6 +28,19 @@ describe("bin dispatch", () => {
     expect(stderr.join("")).toContain("templatical <command>");
   });
 
+  it("lists each custom-block usage line exactly once", async () => {
+    await main(["help"]);
+    const out = stderr.join("");
+    for (const line of [
+      "custom-block validate <file>",
+      "custom-block render <file>",
+      "custom-block fetch <file>",
+      "live --custom-block <file>",
+    ]) {
+      expect(out.split(line).length - 1, line).toBe(1);
+    }
+  });
+
   // parseArgs strips leading dashes into flags, so this never reaches a
   // case "--help" — regression coverage for that dead-code trap.
   it("--help exits 0 and prints usage", async () => {

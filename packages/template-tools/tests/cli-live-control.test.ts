@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -81,6 +81,7 @@ describe("live already-running / reload / stop", () => {
     );
     expect(JSON.parse(stdout.join(""))).toEqual({
       reloaded: true,
+      ok: true,
       clients: 2,
       consumed: false,
     });
@@ -115,8 +116,143 @@ describe("live already-running / reload / stop", () => {
     });
     expect(JSON.parse(stdout.join(""))).toEqual({
       reloaded: true,
+      ok: true,
       clients: 1,
       consumed: true,
+    });
+  });
+
+  it("exits 1 and pushes nothing when a custom-block reload fails", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({
+          ok: false,
+          clients: 1,
+          consumed: false,
+          mode: "custom-block",
+          error: "The custom block definition is missing or invalid.",
+        }),
+      })),
+    );
+    setJsonMode(true);
+    expect(
+      await runLive(parseArgs(["live", "reload", "--cwd", dir, "--json"])),
+    ).toBe(1);
+    expect(JSON.parse(stdout.join(""))).toEqual({
+      reloaded: false,
+      ok: false,
+      clients: 1,
+      consumed: false,
+      error:
+        "The custom block definition is missing or invalid; nothing was pushed. Run `templatical custom-block validate`.",
+    });
+  });
+
+  it("names the --host template when that is what failed", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({
+          ok: false,
+          clients: 0,
+          consumed: false,
+          mode: "custom-block",
+          error: "The --host template is missing or invalid.",
+        }),
+      })),
+    );
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(1);
+    expect(stdout.join("")).toBe(
+      "The --host template is missing or invalid; nothing was pushed. Run `templatical validate` on it.\n",
+    );
+  });
+
+  it("words a custom-block reload's success line for the block", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({ ok: true, clients: 3, consumed: false, mode: "custom-block" }),
+      })),
+    );
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(0);
+    expect(stdout.join("")).toBe("Pushed the custom block to 3 page(s).\n");
+  });
+
+  it("refuses to start a custom-block server while a template server runs", async () => {
+    live.readPidfile.mockReturnValue({
+      pid: 4242,
+      port: 4747,
+      mode: "template",
+      path: join(dir, ".templatical", "template.json"),
+    });
+    live.processAlive.mockReturnValue(true);
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "q.json", "--cwd", dir])),
+    ).rejects.toThrow(
+      `A live server is already running for ${join(dir, ".templatical", "template.json")} (template). Run \`templatical live stop\` first.`,
+    );
+    expect(live.startBridgePreferring).not.toHaveBeenCalled();
+  });
+
+  it("refuses a different custom block, and treats a mode-less pidfile as template mode", async () => {
+    live.processAlive.mockReturnValue(true);
+    live.readPidfile.mockReturnValue({
+      pid: 4242,
+      port: 4747,
+      mode: "custom-block",
+      path: join(dir, "a.json"),
+    });
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "b.json", "--cwd", dir])),
+    ).rejects.toThrow(`A live server is already running for ${join(dir, "a.json")} (custom-block).`);
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 4747 });
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "b.json", "--cwd", dir])),
+    ).rejects.toThrow("(template). Run `templatical live stop` first.");
+  });
+
+  it("reports alreadyRunning for the same custom block", async () => {
+    live.readPidfile.mockReturnValue({
+      pid: 4242,
+      port: 4747,
+      mode: "custom-block",
+      path: join(dir, "a.json"),
+    });
+    live.processAlive.mockReturnValue(true);
+    setJsonMode(true);
+    expect(
+      await runLive(parseArgs(["live", "--custom-block", "a.json", "--cwd", dir, "--json"])),
+    ).toBe(0);
+    expect(JSON.parse(stdout.join(""))).toMatchObject({ alreadyRunning: true, pid: 4242 });
+  });
+
+  it("records the mode and served path in the pidfile", async () => {
+    live.readPidfile.mockReturnValue(null);
+    live.startBridgePreferring.mockResolvedValue({
+      port: 4848,
+      url: "http://localhost:4848/",
+      workingPath: join(dir, "a.json"),
+      fellBack: false,
+      close: async () => {},
+    });
+    const before = { int: process.listeners("SIGINT"), term: process.listeners("SIGTERM") };
+    void runLive(parseArgs(["live", "--custom-block", "a.json", "--no-open", "--cwd", dir]));
+    const pid = join(dir, ".templatical", "live-server.pid");
+    await vi.waitFor(() => expect(existsSync(pid)).toBe(true));
+    for (const l of process.listeners("SIGINT")) if (!before.int.includes(l)) process.removeListener("SIGINT", l);
+    for (const l of process.listeners("SIGTERM")) if (!before.term.includes(l)) process.removeListener("SIGTERM", l);
+    expect(JSON.parse(readFileSync(pid, "utf8"))).toEqual({
+      pid: process.pid,
+      port: 4848,
+      mode: "custom-block",
+      path: join(dir, "a.json"),
     });
   });
 

@@ -20,6 +20,7 @@ import { runValidate } from "./cli/commands/validate";
 import { runRender } from "./cli/commands/render";
 import { runEdit } from "./cli/commands/edit";
 import { runImport } from "./cli/commands/import";
+import { runCustomBlock } from "./cli/commands/custom-block";
 import { runList, runLive } from "./cli/commands/live";
 
 const USAGE = `templatical <command> [options]
@@ -31,6 +32,10 @@ const USAGE = `templatical <command> [options]
   import   <file> [--format <fmt>] | --list-formats  convert a design to Templatical JSON
   live     [--file <f>] [--port <n>] [--cwd <d>] [--no-open]
   live reload | live stop
+  custom-block validate <file>          check a custom block definition
+  custom-block render <file> [--state <s>] [--format mjml|html] [-o <file>]
+  custom-block fetch <file> [--values '<json>']  run its dataSourcePreview once
+  live --custom-block <file> [--host <template>]  preview a custom block
   list                                           working files in .templatical/
 
 Options:
@@ -56,6 +61,8 @@ export async function main(argv: string[]): Promise<number> {
       return await runLive(args);
     case "list":
       return runList(args);
+    case "custom-block":
+      return await runCustomBlock(args);
     case "help":
       note(USAGE);
       return EXIT.ok;

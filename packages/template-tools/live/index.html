@@ -1304,6 +1304,52 @@
       };
 
       // ---- Boot ----
+      // ---- Custom-block mode ----
+      // The bridge serves the definition without its preview recipe; onFetch
+      // asks the bridge, which holds the recipe and the secrets. The page sends
+      // fieldValues only — never a URL or headers.
+      let customBlock = null; // { definition, dataSource: { label } | null }
+
+      async function loadCustomBlock() {
+        try {
+          const res = await fetch("/custom-block");
+          if (res.status === 200) {
+            customBlock = await res.json();
+          } else {
+            customBlock = null;
+            if (res.status === 422) {
+              toast((await res.json().catch(() => ({}))).error ?? "Custom block is invalid");
+            }
+          }
+        } catch {
+          customBlock = null;
+        }
+      }
+
+      function customBlocksConfig() {
+        if (!customBlock) return undefined;
+        const definition = { ...customBlock.definition };
+        if (customBlock.dataSource) {
+          definition.dataSource = {
+            label: customBlock.dataSource.label,
+            onFetch: async ({ fieldValues }) => {
+              const res = await fetch("/data-source/fetch", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ fieldValues }),
+              });
+              const body = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                toast(body.error ?? "Fetch failed");
+                return null;
+              }
+              return body.values;
+            },
+          };
+        }
+        return [definition];
+      }
+
       async function mountEditor(content) {
         applyingRemote = true;
         try {
@@ -1316,6 +1362,7 @@
             locale: readLocale(),
             content, // undefined → editor starts from its default empty template
             uiTheme: readTheme(),
+            customBlocks: customBlocksConfig(),
             onChange: () => {
               if (!applyingRemote) scheduleContentPost();
             },
@@ -1328,6 +1375,7 @@
       }
 
       async function boot() {
+        await loadCustomBlock();
         let content;
         try {
           const res = await fetch("/template");
@@ -1344,6 +1392,16 @@
         es.addEventListener("template", (e) => {
           try {
             applyRemote(JSON.parse(e.data));
+          } catch {
+            /* malformed frame; ignore */
+          }
+        });
+        es.addEventListener("custom-block", async (e) => {
+          try {
+            const { block, template } = JSON.parse(e.data);
+            customBlock = block;
+            await mountEditor(template);
+            toast("Updated from agent");
           } catch {
             /* malformed frame; ignore */
           }

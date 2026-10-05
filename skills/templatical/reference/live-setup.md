@@ -42,11 +42,20 @@ template first. A mid-session switch just points the bridge at that file.
    the URL in the user's default browser itself. It prefers port 4747 but
    falls back to a free OS-assigned port if that's taken (`fellBack: true`
    when it did — don't assume the fixed port). It's single-instance via a
-   pidfile guard; a second start just reports the one already running. Other
-   flags: `--port <n>`, `--cwd <project>`, `--no-open` (skip the auto-open).
+   pidfile guard: a second start for the same file reports the one already
+   running (`alreadyRunning: true`), and a start for a different file or mode
+   is refused until you run `live stop`. Other flags: `--port <n>`,
+   `--cwd <project>`, `--no-open` (skip the auto-open).
 3. Share the URL in your reply so the user has it (to reopen, or open on
    another device). The bridge **already opened it in their default
    browser** on start, so you don't need to open it yourself — and never with
    a browser-automation/testing tool (e.g. Playwright). If the auto-open
    didn't fire (a headless or sandboxed environment), just point the user to
    the URL. The page shows the current template in the real editor.
+
+A custom block definition is previewed the same way, with `--custom-block`
+instead of `--file` (and `--host` to show it inside a template):
+
+    npx -y @templatical/template-tools@0.43.2 live --custom-block .templatical/custom-blocks/<type>.json [--host .templatical/<name>.json] --json
+
+That mode's loop is in [custom-block.md](custom-block.md).

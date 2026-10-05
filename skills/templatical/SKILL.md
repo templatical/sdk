@@ -13,10 +13,11 @@ description: >-
   user prompts — triggered by intent such as "show it live", "preview it live",
   "open it in the editor" or "build this in live mode". Also covers the SDK
   itself (@templatical/editor): embedding, mounting, configuring, theming,
-  extending or troubleshooting an integration, and answering "how do I" / "is
-  it possible" questions about it.
+  extending or troubleshooting an integration, defining or changing a custom
+  block type (fields + Liquid template, optionally filled from the user's own
+  API), and answering "how do I" / "is it possible" questions about it.
 user-invocable: true
-argument-hint: "[build|edit|import|validate|export|live] [integrate|scaffold|diagnose|docs] [target]"
+argument-hint: "[build|edit|import|validate|export|live] [integrate|scaffold|custom-block|diagnose|docs] [target]"
 license: MIT
 ---
 
@@ -49,6 +50,7 @@ whichever playbook ran.
 | `live` | Preview and co-edit in the browser | [reference/live.md](reference/live.md) |
 | `integrate` | Mount the editor in an application | [reference/integrate.md](reference/integrate.md) |
 | `scaffold` | Write the integration into their repository | [reference/scaffold.md](reference/scaffold.md) |
+| `custom-block` | Define a custom block type, or change one | [reference/custom-block.md](reference/custom-block.md) |
 | `diagnose` | Fix an integration that misbehaves | [reference/diagnose.md](reference/diagnose.md) |
 | `docs` | Answer a question from the SDK reference | [reference/docs.md](reference/docs.md) |
 

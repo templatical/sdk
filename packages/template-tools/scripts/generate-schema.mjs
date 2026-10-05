@@ -3,9 +3,10 @@
 // every consumer that validates a Templatical template — this package's own
 // `validate`/`schema` CLI commands, and the templatical Agent Skill.
 //
-// This script writes THREE files from one schema object: this package's own
-// schema.json, skills/templatical/reference/schema.json, and the per-type
-// field lists inside skills/templatical/reference/block-guide.md. The skill
+// This script writes FIVE files: this package's own schema.json,
+// skills/templatical/reference/schema.json, the per-type field lists inside
+// skills/templatical/reference/block-guide.md, and custom-block-schema.json
+// (this package's copy plus skills/templatical/reference/custom-block-schema.json). The skill
 // needs its schema copy committed in the repo because the agent reads it in
 // context to generate templates — the CLI's `schema` command exists for other
 // callers and does not replace the file. A package script reaching into
@@ -52,6 +53,15 @@ export const SKILL_SCHEMA_PATH = resolve(
 export const SKILL_GUIDE_PATH = resolve(
   repoRoot,
   "skills/templatical/reference/block-guide.md",
+);
+
+export const CUSTOM_BLOCK_SCHEMA_PATH = resolve(
+  here,
+  "../custom-block-schema.json",
+);
+export const SKILL_CUSTOM_BLOCK_SCHEMA_PATH = resolve(
+  repoRoot,
+  "skills/templatical/reference/custom-block-schema.json",
 );
 
 // Documented once under "## Common block fields"; repeating them per block is
@@ -220,6 +230,30 @@ export function buildSchema() {
   ).createSchema(config.type);
 }
 
+// A custom block definition is consumer code, not template data, and its
+// `dataSource.onFetch` is a function. `functions: "hide"` drops it from the
+// schema: the agent's working file never carries it (the TS handoff writes it),
+// and the preview-only `dataSourcePreview` recipe is validated separately in
+// src/custom-block/definition.ts.
+const customBlockConfig = {
+  ...config,
+  path: resolve(repoRoot, "packages/types/src/custom-blocks.ts"),
+  type: "CustomBlockDefinition",
+  schemaId: "https://templatical.com/schema/custom-block-definition.json",
+  functions: "hide",
+};
+
+/** Build the JSON Schema for CustomBlockDefinition (minus dataSource). */
+export function buildCustomBlockSchema() {
+  const program = ts.createProgram([customBlockConfig.path], COMPILER_OPTIONS);
+  return new SchemaGenerator(
+    program,
+    createParser(program, customBlockConfig),
+    createFormatter(customBlockConfig),
+    customBlockConfig,
+  ).createSchema(customBlockConfig.type);
+}
+
 /** Serialize a schema object the same way the committed file is written. */
 export function serializeSchema(schema) {
   return `${JSON.stringify(schema, null, 2)}\n`;
@@ -245,6 +279,14 @@ function main() {
   console.log(`Wrote ${SCHEMA_PATH} (${defCount} definitions)`);
   console.log(`Wrote ${SKILL_SCHEMA_PATH} (${defCount} definitions)`);
   console.log(`Wrote ${SKILL_GUIDE_PATH} (${guideCount} generated field lists)`);
+
+  const blockSerialized = serializeSchema(buildCustomBlockSchema());
+  for (const path of [CUSTOM_BLOCK_SCHEMA_PATH, SKILL_CUSTOM_BLOCK_SCHEMA_PATH]) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, blockSerialized, "utf8");
+  }
+  console.log(`Wrote ${CUSTOM_BLOCK_SCHEMA_PATH}`);
+  console.log(`Wrote ${SKILL_CUSTOM_BLOCK_SCHEMA_PATH}`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

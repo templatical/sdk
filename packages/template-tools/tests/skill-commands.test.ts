@@ -16,6 +16,10 @@ const LIVE_TS = resolve(
   REPO_ROOT,
   "packages/template-tools/src/cli/commands/live.ts",
 );
+const CUSTOM_BLOCK_TS = resolve(
+  REPO_ROOT,
+  "packages/template-tools/src/cli/commands/custom-block.ts",
+);
 
 /**
  * The router plus every reference island, repo-relative label paired with its
@@ -67,7 +71,7 @@ function skillMarkdownFiles(): { label: string; path: string }[] {
  */
 function validTopLevelCommands(): Set<string> {
   const src = readFileSync(BIN_TS, "utf8");
-  const commands = [...src.matchAll(/case "([a-z]+)":/g)].map(
+  const commands = [...src.matchAll(/case "([a-z-]+)":/g)].map(
     (match) => match[1],
   );
   return new Set(commands);
@@ -84,6 +88,14 @@ function validTopLevelCommands(): Set<string> {
  */
 function validLiveSubcommands(): Set<string> {
   const src = readFileSync(LIVE_TS, "utf8");
+  const subcommands = [...src.matchAll(/sub === "([a-z]+)"/g)].map(
+    (match) => match[1],
+  );
+  return new Set(subcommands);
+}
+
+function validCustomBlockSubcommands(): Set<string> {
+  const src = readFileSync(CUSTOM_BLOCK_TS, "utf8");
   const subcommands = [...src.matchAll(/sub === "([a-z]+)"/g)].map(
     (match) => match[1],
   );
@@ -141,8 +153,15 @@ function isValidInvocation(
   invocation: Pick<Invocation, "command" | "next">,
   commands: Set<string>,
   liveSubcommands: Set<string>,
+  customBlockSubcommands: Set<string>,
 ): boolean {
   if (!commands.has(invocation.command)) return false;
+  if (invocation.command === "custom-block") {
+    return (
+      invocation.next !== undefined &&
+      customBlockSubcommands.has(invocation.next)
+    );
+  }
   // Only `live` takes a subcommand-shaped second token; every other command's
   // next token is a file path or placeholder, which this function has no
   // opinion on — that's the CLI's own argument parsing to reject at runtime,
@@ -156,15 +175,21 @@ function isValidInvocation(
 describe("documented commands across the skill", () => {
   const commands = validTopLevelCommands();
   const liveSubcommands = validLiveSubcommands();
+  const customBlockSubcommands = validCustomBlockSubcommands();
 
   it("derived the command sets from source, not an empty/stale scan", () => {
     // Guards the derivation itself: if either regex above stops matching
     // (e.g. bin.ts's switch changes shape), every check below would pass
     // vacuously rather than catching the drift.
     expect([...commands].sort()).toEqual(
-      ["edit", "help", "import", "list", "live", "render", "schema", "validate"].sort(),
+      ["custom-block", "edit", "help", "import", "list", "live", "render", "schema", "validate"].sort(),
     );
     expect([...liveSubcommands].sort()).toEqual(["reload", "stop"]);
+    expect([...customBlockSubcommands].sort()).toEqual([
+      "fetch",
+      "render",
+      "validate",
+    ]);
   });
 
   it("every `npx …` invocation across the skill dispatches to a real command", () => {
@@ -177,7 +202,7 @@ describe("documented commands across the skill", () => {
     expect(invocations.length).toBeGreaterThan(0);
 
     const invalid = invocations.filter(
-      (invocation) => !isValidInvocation(invocation, commands, liveSubcommands),
+      (invocation) => !isValidInvocation(invocation, commands, liveSubcommands, customBlockSubcommands),
     );
     expect(
       // Name the file with each offending line — a tree-wide scan that only
@@ -192,26 +217,38 @@ describe("documented commands across the skill", () => {
     // current content: `live` alone is a valid top-level command, but that
     // must not be enough to wave through anything typed after it.
     expect(
-      isValidInvocation({ command: "live", next: "frobnicate" }, commands, liveSubcommands),
+      isValidInvocation({ command: "live", next: "frobnicate" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(false);
     expect(
-      isValidInvocation({ command: "live", next: "reload" }, commands, liveSubcommands),
+      isValidInvocation({ command: "live", next: "reload" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(true);
     expect(
-      isValidInvocation({ command: "live", next: "stop" }, commands, liveSubcommands),
+      isValidInvocation({ command: "live", next: "stop" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(true);
     // A flag right after `live` (e.g. `live --file x.json`) is a bare `live`
     // invocation, not a subcommand attempt — parseInvocations already turns
     // this into `next: undefined`, so this checks isValidInvocation directly
     // for the case where it doesn't.
     expect(
-      isValidInvocation({ command: "live", next: undefined }, commands, liveSubcommands),
+      isValidInvocation({ command: "live", next: undefined }, commands, liveSubcommands, customBlockSubcommands),
+    ).toBe(true);
+  });
+
+  it("rejects a bad or missing `custom-block` subcommand", () => {
+    expect(
+      isValidInvocation({ command: "custom-block", next: "frobnicate" }, commands, liveSubcommands, customBlockSubcommands),
+    ).toBe(false);
+    expect(
+      isValidInvocation({ command: "custom-block" }, commands, liveSubcommands, customBlockSubcommands),
+    ).toBe(false);
+    expect(
+      isValidInvocation({ command: "custom-block", next: "validate" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(true);
   });
 
   it("rejects an unknown top-level command", () => {
     expect(
-      isValidInvocation({ command: "frobnicate" }, commands, liveSubcommands),
+      isValidInvocation({ command: "frobnicate" }, commands, liveSubcommands, customBlockSubcommands),
     ).toBe(false);
   });
 });

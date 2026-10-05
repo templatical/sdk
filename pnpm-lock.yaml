@@ -802,6 +802,12 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+      htmlparser2:
+        specifier: ^12.0.0
+        version: 12.0.0
+      liquidjs:
+        specifier: ^10.30.0
+        version: 10.30.0
     devDependencies:
       '@types/node':
         specifier: ^25.9.9

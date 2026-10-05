@@ -96,6 +96,24 @@
       "prompt": "Password-reset email for our Mailchimp audience. Use their merge tags for first name and the unsubscribe URL. Short, transactional, one button to reset.",
       "expected_output": "Valid TemplateContent JSON. Personalization uses Mailchimp tokens (`*|FNAME|*`, `*|UNSUB|*` or similar `*|…|*`), not Liquid `{{contact.first_name}}` and not a mix of dialects in one template. One primary reset button, restrained transactional layout. settings.locale matches the copy language.",
       "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "I want a new custom block for our emails: a testimonial with the customer's quote, their name and job title, an optional photo, and a 1-5 star rating that can be hidden.",
+      "expected_output": "Routes to the custom-block mode (not build). Writes .templatical/custom-blocks/testimonial.json with text/textarea/image/number(min 1, max 5)/boolean fields, a table-based Liquid template that guards the optional photo with {% if %} and gives the img alt + width. Runs custom-block validate with no errors, offers the live specimen preview, and on handoff writes a typed CustomBlockDefinition module and adds it to init({ customBlocks }).",
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "can you make a block for our footer with our logo, address and social links? it's the same in every email.",
+      "expected_output": "Recognises nothing varies per use, so it is a saved block, not a custom block. Points to the saved-blocks provider (providers.md) instead of generating a Liquid definition.",
+      "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "add a product card block. our API is GET https://api.shop.test/v1/products/{id} with a bearer token, it returns { title, price: { formatted }, images: [{ url }] }.",
+      "expected_output": "Writes a definition with a productId field (readOnly is fine) and name/price/image fields, plus a dataSourcePreview recipe: url interpolating {{ productId }}, Authorization header using ${env:NAME}, map title/price.formatted/images[0].url. Asks for the env var's name, never the token. Runs custom-block fetch to check the mapping, then validate. Handoff generates onFetch from the same recipe.",
+      "files": []
     }
   ]
 }

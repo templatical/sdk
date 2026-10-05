@@ -33,6 +33,7 @@ If your agent doesn't pick the skill up afterwards, check that it is enabled in 
 - **Preview it live** in the real Templatical editor in your browser, kept in sync as you keep prompting — your own hand-edits included.
 - **Integrate** the editor into an application — detect the stack, propose the change, and wait before writing anything.
 - **Scaffold** a proposed integration into your repository, installed with your own package manager and checked against your running dev server.
+- **Define a custom block** from a description: fields and a Liquid template, checked against a schema and for email-client safety, then shown in the live editor in its edge-case states. A block that loads data can be filled from a real endpoint through a recipe whose credential is an environment variable, so the secret stays out of the page. The skill writes the block into your codebase, and changes one you already have.
 - **Diagnose** an integration that misbehaves, against a table of verified traps.
 - **Answer a question** about the SDK by fetching this documentation site directly.
 

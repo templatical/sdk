@@ -604,3 +604,7 @@ dataSource: {
 Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integrierten Blöcken in der Palette erscheint.
 
 [Im Playground öffnen](https://play.templatical.com/scenes/custom-blocks)
+
+## Mit dem Agent Skill
+
+Der [Agent Skill](/de/guide/agent-skill) definiert einen benutzerdefinierten Block aus einer Beschreibung, zeigt ihn live an und schreibt ihn in Ihre Codebasis.

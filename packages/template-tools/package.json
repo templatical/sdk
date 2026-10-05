@@ -10,7 +10,9 @@
     "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
-    "ajv": "^8.20.0"
+    "ajv": "^8.20.0",
+    "htmlparser2": "^12.0.0",
+    "liquidjs": "^10.30.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.9",
@@ -28,13 +30,15 @@
       "types": "./dist/live/index.d.ts",
       "import": "./dist/live/index.js"
     },
-    "./schema.json": "./schema.json"
+    "./schema.json": "./schema.json",
+    "./custom-block-schema.json": "./custom-block-schema.json"
   },
   "files": [
     "README.md",
     "dist",
     "live",
-    "schema.json"
+    "schema.json",
+    "custom-block-schema.json"
   ],
   "homepage": "https://templatical.com",
   "keywords": [

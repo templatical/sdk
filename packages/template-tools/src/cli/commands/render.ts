@@ -7,22 +7,12 @@ import { emit, note } from "../output";
 import {
   EXIT,
   InvalidTemplateError,
-  MissingDependencyError,
   readTemplateFile,
   resolveFrom,
   UsageError,
 } from "../io";
-import { resolveOptional } from "../resolve-optional";
+import { requireMjml } from "../mjml";
 import { validateTemplate } from "../../index";
-
-// The mjml npm package's own top-level function (lib/index.js) is declared
-// `async`, so it always returns a Promise even though mjml-core's underlying
-// compile is synchronous — calling it without awaiting silently hands back a
-// pending Promise instead of { html, errors }.
-type Mjml2Html = (
-  mjml: string,
-  options?: Record<string, unknown>,
-) => Promise<{ html: string; errors: unknown[] }>;
 
 const FORMATS = new Set(["mjml", "html"]);
 
@@ -54,16 +44,8 @@ export async function runRender(args: ParsedArgs): Promise<number> {
 
   let output = mjml;
   if (format === "html") {
-    // The SDK bundles no MJML compiler by design, so there is no fallback to
-    // reach for: a missing peer is a hard stop with an actionable message.
-    const mod = await resolveOptional<{ default: Mjml2Html }>("mjml", cwd);
-    if (!mod) {
-      throw new MissingDependencyError(
-        "mjml",
-        "Rendering HTML needs the optional `mjml` package, which isn't installed.\n  npm install mjml",
-      );
-    }
-    output = (await mod.default(mjml, { validationLevel: "soft" })).html;
+    const compile = await requireMjml(cwd, "Rendering HTML");
+    output = (await compile(mjml, { validationLevel: "soft" })).html;
   }
 
   const out = flagValue(args, "out", "o");

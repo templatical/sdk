@@ -1,0 +1,434 @@
+{
+  "$id": "https://templatical.com/schema/custom-block-definition.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/CustomBlockDefinition",
+  "definitions": {
+    "CustomBlockDefinition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomBlockField"
+          }
+        },
+        "template": {
+          "type": "string"
+        },
+        "defaultStyles": {
+          "type": "object",
+          "properties": {
+            "padding": {
+              "$ref": "#/definitions/SpacingValue"
+            },
+            "backgroundColor": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Default block styles applied when a new instance of this custom block is created. Deep-merged over the built-in defaults — only specify the fields you want to override. Controls both the editor canvas wrapper and the rendered MJML/email output."
+        },
+        "stylesheet": {
+          "type": "string",
+          "description": "Optional CSS rules attached to this custom block definition. Emitted once (deduped across instances) into `<mj-head><mj-style>…</mj-style></mj-head>` in the rendered MJML, and adopted into the editor canvas (shadow root or light-DOM mount) so authored responsive/hover/font behavior previews inside the editor.\n\nUse this for media queries, hover states, or any CSS that should apply once per definition rather than per block instance. Class names are not scoped by the SDK — namespace them yourself (e.g. `.tplc-<type>-<el>`) to avoid collisions with other definitions or built-in editor styles."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "fields",
+        "template"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockField": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CustomBlockTextField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockTextareaField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockImageField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockColorField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockNumberField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockSelectField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockBooleanField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockRepeatableField"
+        }
+      ]
+    },
+    "CustomBlockTextField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "text"
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockTextareaField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "textarea"
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockImageField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockColorField": {
+      "type": "object",
+      "properties": {
+        "presets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Preset colors rendered as a clickable grid inside every color picker popover. Each entry is a hex string (`'#0b5cff'`); clicking one applies it, and the preset matching the current value is marked selected (matched case-insensitively). The grid supplements the wheel and hex input unless `allowCustom` is `false`."
+        },
+        "allowCustom": {
+          "type": "boolean",
+          "description": "Allow free-form color entry — the wheel and hex input — alongside the presets. Defaults to `true`.\n\nSet to `false` together with `presets` to lock authors to the preset palette: the popover then offers only the preset grid, with no wheel or hex field (a white-label / brand-kit constraint). Ignored with a warning when no `presets` are configured — hiding the only inputs would leave the picker with no way to choose a color."
+        },
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "color"
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A color-picker field. Beyond the shared field props it accepts the same flat `presets` / `allowCustom` pair as the editor-wide `colors` config (their shapes are derived from `ColorsConfig`, so the two can't drift), scoping this one field to a color *role* — e.g. a button-color field offering only the brand's accent/ink pair while other color fields inherit the global palette.\n\n**Narrowing only — of the author's freedom, not the palette.** A field can restrict what authors may do (lock this field, or give it its own `presets`), but never unlock what the editor locked. Its `presets` *replace* the editor-wide grid rather than intersecting it, so a locked field may offer colors outside `colors.presets`:\n\n- `presets` — entries are validated exactly like editor-level presets   (`#rgb` / `#rrggbb` hex; invalid ones are skipped with a console warning   naming the block and field). A non-empty valid list replaces the editor's   palette for this field; leaving it unset, passing `[]`, or passing only   invalid entries all inherit the editor's palette.\n- `allowCustom` — `false` locks this field to its palette even while the rest   of the editor allows free-form entry. `true` cannot unlock a field when the   editor-wide `colors.allowCustom` is `false`; it is ignored with a warning."
+    },
+    "CustomBlockNumberField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "number"
+        },
+        "default": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockSelectField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "select"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SelectOption"
+          }
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "options",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "SelectOption": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockBooleanField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "boolean"
+        },
+        "default": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlockRepeatableField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "const": "repeatable"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomBlockField"
+          }
+        },
+        "default": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "minItems": {
+          "type": "number"
+        },
+        "maxItems": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fields",
+        "key",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "SpacingValue": {
+      "type": "object",
+      "properties": {
+        "top": {
+          "type": "number"
+        },
+        "right": {
+          "type": "number"
+        },
+        "bottom": {
+          "type": "number"
+        },
+        "left": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

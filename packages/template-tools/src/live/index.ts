@@ -19,6 +19,15 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { TemplateContent } from "@templatical/types";
+import {
+  buildSpecimenTemplate,
+  checkRecipe,
+  runRecipe,
+  validateCustomBlockDefinition,
+  type CustomBlockWorkingFile,
+} from "../custom-block";
+import { validateTemplate } from "../validate";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -101,6 +110,7 @@ async function readJsonBody(req: NodeJS.ReadableStream): Promise<
       label?: unknown;
       text?: string;
       consumeAnnotations?: boolean;
+      fieldValues?: unknown;
     }
   | undefined
 > {
@@ -137,9 +147,26 @@ export function openBrowser(url: string): void {
 // not need them)
 // --------------------------------------------------------------------------
 
+export type LiveMode = "template" | "custom-block";
+
 export interface PidfileInfo {
   pid: number;
   port: number;
+  /** Absent in a pidfile from a template-only bridge; read as "template". */
+  mode?: LiveMode;
+  /** The absolute path the server is serving. */
+  path?: string;
+  /** Custom-block mode: the absolute --host template, when one was given. */
+  host?: string;
+}
+
+/** What a reload pushed, and why it pushed nothing when `ok` is false. */
+export interface ReloadResult {
+  ok: boolean;
+  clients: number;
+  consumed: boolean;
+  mode: LiveMode;
+  error?: string;
 }
 
 export function pidfilePath(cwd: string): string {
@@ -223,6 +250,10 @@ function annotationIdFromPath(pathname: string): string | null {
   }
 }
 
+function loopbackNames(port: number): string[] {
+  return [`localhost:${port}`, `127.0.0.1:${port}`, `[::1]:${port}`];
+}
+
 function noteNotFound(res: ServerResponse): void {
   res.writeHead(404, { "content-type": "text/plain" });
   res.end("No note with that id.");
@@ -245,11 +276,7 @@ export interface BridgeHandle {
     annotations: Annotation[];
   };
   /** Re-read the working file and push it to every connected page. */
-  reload: (options?: { consumeAnnotations?: boolean }) => {
-    ok: boolean;
-    clients: number;
-    consumed: boolean;
-  };
+  reload: (options?: { consumeAnnotations?: boolean }) => ReloadResult;
   close: () => Promise<void>;
 }
 
@@ -258,6 +285,12 @@ export interface StartBridgeOptions {
   port?: number;
   file?: string;
   harnessFile?: string;
+  /** Custom-block mode: serve this definition's specimen instead of a template. */
+  customBlock?: string;
+  /** Custom-block mode only: a template the specimen is appended to. */
+  host?: string;
+  /** Environment the data-source recipe resolves `${env:…}` from. Defaults to process.env. */
+  env?: Record<string, string | undefined>;
 }
 
 /**
@@ -274,8 +307,14 @@ export function startBridge({
   port = 0,
   file = join(WORKING_DIR, "template.json"),
   harnessFile = HARNESS_FILE,
+  customBlock,
+  host,
+  env = process.env,
 }: StartBridgeOptions = {}): Promise<BridgeHandle> {
-  const workingPath = isAbsolute(file) ? file : resolve(cwd, file);
+  const abs = (p: string) => (isAbsolute(p) ? p : resolve(cwd, p));
+  const customBlockPath = customBlock ? abs(customBlock) : null;
+  const hostPath = host ? abs(host) : null;
+  const workingPath = customBlockPath ?? abs(file);
 
   // Sync state. `baseline` is the editor's NORMALIZED view of the caller's last
   // content (captured by the page right after it applies an update), so the
@@ -305,6 +344,57 @@ export function startBridge({
     for (const res of clients) res.write(payload);
   }
 
+  type BlockView =
+    | {
+        ok: true;
+        def: CustomBlockWorkingFile;
+        payload: unknown;
+        template: TemplateContent;
+      }
+    | { ok: false; error: string };
+
+  // Read fresh on every request: the agent edits the file between reloads,
+  // and the page must never be handed a definition that failed validation.
+  function readBlockView(): BlockView {
+    const data = readWorkingFile(customBlockPath as string);
+    if (data === null || !validateCustomBlockDefinition(data).valid) {
+      return {
+        ok: false,
+        error:
+          "The custom block definition is missing or invalid. Run `templatical custom-block validate` on it.",
+      };
+    }
+    let hostContent: TemplateContent | undefined;
+    if (hostPath) {
+      const h = readWorkingFile(hostPath);
+      if (h === null || !validateTemplate(h).valid) {
+        return {
+          ok: false,
+          error: "The --host template is missing or invalid.",
+        };
+      }
+      hostContent = h as TemplateContent;
+    }
+    const def = data as CustomBlockWorkingFile;
+    const { dataSourcePreview, ...definition } = def;
+    return {
+      ok: true,
+      def,
+      payload: {
+        definition,
+        dataSource: dataSourcePreview
+          ? { label: dataSourcePreview.label }
+          : null,
+      },
+      template: buildSpecimenTemplate(def, hostContent),
+    };
+  }
+
+  function sendJson(res: ServerResponse, status: number, body: unknown): void {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify(body));
+  }
+
   function getEditorState(): {
     divergent: boolean;
     content: unknown;
@@ -317,11 +407,33 @@ export function startBridge({
     };
   }
 
-  function reload(options?: { consumeAnnotations?: boolean }): {
-    ok: boolean;
-    clients: number;
-    consumed: boolean;
-  } {
+  function reload(options?: { consumeAnnotations?: boolean }): ReloadResult {
+    if (customBlockPath) {
+      const view = readBlockView();
+      state.baseline = null;
+      state.editorCurrent = null;
+      state.divergent = false;
+      const consumed = options?.consumeAnnotations === true && view.ok;
+      if (consumed) state.annotations = [];
+      if (!view.ok) {
+        return {
+          ok: false,
+          clients: clients.size,
+          consumed,
+          mode: "custom-block",
+          error: view.error,
+        };
+      }
+      const payload = `event: custom-block\ndata: ${JSON.stringify({ block: view.payload, template: view.template })}\n\n`;
+      for (const res of clients) res.write(payload);
+      return {
+        ok: true,
+        clients: clients.size,
+        consumed,
+        mode: "custom-block",
+      };
+    }
+
     // The freshly-written file is the new baseline, so any pending user edit is
     // superseded. Notes stay: a plain reload is an ordinary edit, and clearing
     // them here would drop a queue the agent has not applied. consumeAnnotations
@@ -334,7 +446,7 @@ export function startBridge({
     const consumed = options?.consumeAnnotations === true && content !== null;
     if (consumed) state.annotations = [];
     if (content !== null) broadcastTemplate(content);
-    return { ok: true, clients: clients.size, consumed };
+    return { ok: true, clients: clients.size, consumed, mode: "template" };
   }
 
   const server = createServer(async (req, res) => {
@@ -342,6 +454,19 @@ export function startBridge({
     const method = req.method ?? "GET";
 
     try {
+      // Only this listener's own loopback names are served: a DNS-rebound
+      // hostname would otherwise let any web page read the bridge as same-origin.
+      const addr = server.address();
+      const listening =
+        typeof addr === "object" && addr !== null ? addr.port : port;
+      const hostHeader = req.headers.host ?? "";
+      if (!loopbackNames(listening).some((n) => n === hostHeader)) {
+        res
+          .writeHead(403, { "content-type": "text/plain" })
+          .end("Forbidden host.");
+        return;
+      }
+
       if (
         method === "GET" &&
         (pathname === "/" || pathname === "/index.html")
@@ -355,7 +480,92 @@ export function startBridge({
         return;
       }
 
+      if (method === "GET" && pathname === "/custom-block") {
+        if (!customBlockPath) {
+          res.writeHead(204).end();
+          return;
+        }
+        const view = readBlockView();
+        if (view.ok) sendJson(res, 200, view.payload);
+        else sendJson(res, 422, { error: view.error });
+        return;
+      }
+
+      if (method === "POST" && pathname === "/data-source/fetch") {
+        if (!customBlockPath) {
+          res.writeHead(404, { "content-type": "text/plain" }).end("Not found");
+          return;
+        }
+        const view = readBlockView();
+        if (!view.ok) {
+          sendJson(res, 422, { error: view.error });
+          return;
+        }
+        if (!view.def.dataSourcePreview) {
+          sendJson(res, 409, { error: "This block has no dataSourcePreview." });
+          return;
+        }
+        // The recipe gate runs before the page's request is even read: a
+        // recipe `custom-block validate` rejects is never sent anywhere.
+        const recipeErrors = checkRecipe(view.def).filter(
+          (i) => i.severity === "error",
+        );
+        if (recipeErrors.length > 0) {
+          sendJson(res, 422, {
+            error: `The dataSourcePreview recipe is refused: ${recipeErrors
+              .map((i) => `${i.ruleId}: ${i.message}`)
+              .join("; ")}`,
+          });
+          return;
+        }
+        // A JSON content type forces a CORS preflight the bridge never answers,
+        // and a cross-site Origin is refused outright, so a foreign page cannot
+        // make this process call out with the author's env secrets.
+        if (
+          !(req.headers["content-type"] ?? "").startsWith("application/json")
+        ) {
+          sendJson(res, 415, { error: "Send application/json." });
+          return;
+        }
+        const origin = req.headers.origin;
+        if (
+          origin !== undefined &&
+          !loopbackNames(listening).some((n) => origin === `http://${n}`)
+        ) {
+          sendJson(res, 403, { error: "Forbidden origin." });
+          return;
+        }
+        // Only fieldValues is read: the recipe (URL, headers) never comes from the page.
+        const body = await readJsonBody(req);
+        const fieldValues =
+          body?.fieldValues &&
+          typeof body.fieldValues === "object" &&
+          !Array.isArray(body.fieldValues)
+            ? (body.fieldValues as Record<string, unknown>)
+            : {};
+        const result = await runRecipe(
+          view.def.dataSourcePreview,
+          fieldValues,
+          { env },
+        );
+        if (result.ok) {
+          sendJson(res, 200, {
+            values: result.values,
+            unmapped: result.unmapped,
+          });
+        } else {
+          sendJson(res, 502, { error: result.error });
+        }
+        return;
+      }
+
       if (method === "GET" && pathname === "/template") {
+        if (customBlockPath) {
+          const view = readBlockView();
+          if (view.ok) sendJson(res, 200, view.template);
+          else sendJson(res, 422, { error: view.error });
+          return;
+        }
         const content = readWorkingFile(workingPath);
         if (content === null) {
           res.writeHead(204).end(); // no working file yet — page inits empty
