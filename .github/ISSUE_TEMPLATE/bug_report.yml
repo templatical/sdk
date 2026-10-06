@@ -36,6 +36,6 @@ body:
     attributes:
       label: Version
       description: What version are you using?
-      placeholder: "0.1.0"
+      placeholder: "e.g. the version npm ls @templatical/editor prints"
     validations:
       required: true
