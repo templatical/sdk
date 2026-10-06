@@ -138,8 +138,12 @@ function titleFromPath(relPath) {
     .join(" ");
 }
 
-/** cleanUrls is on, so a page's url carries no extension. */
-function urlFor(relPath) {
+/**
+ * The url a page is served at. cleanUrls is on, so it carries no extension.
+ * config.ts names each page's canonical and og:url with it, so those and the
+ * page urls in llms.txt come from one function.
+ */
+export function urlFor(relPath) {
   if (relPath === "index.md") return `${SITE_URL}/`;
   if (relPath.endsWith("/index.md")) {
     return `${SITE_URL}/${relPath.slice(0, -"index.md".length)}`;

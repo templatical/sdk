@@ -1,0 +1,24 @@
+# Retired docs routes and the page that replaced each. Cloudflare Pages reads
+# this file from the build output; VitePress copies public/ there unchanged.
+/guide/test-email /backend/test-email 301
+/guide/saved-blocks /backend/saved-blocks 301
+/quality/getting-started /quality/ 301
+/quality/rule-catalog /quality/accessibility/rule-catalog 301
+/quality/accessibility/getting-started /quality/ 301
+/quality/accessibility/options /quality/options 301
+/quality/accessibility/severity-and-fixes /quality/severity-and-fixes 301
+/quality/accessibility/headless-usage /quality/headless-usage 301
+/quality/accessibility/contributing-locales /quality/contributing-locales 301
+/cloud/saved-modules /cloud/saved-blocks 301
+/cloud/snapshots /cloud/version-history 301
+/de/guide/test-email /de/backend/test-email 301
+/de/guide/saved-blocks /de/backend/saved-blocks 301
+/de/quality/getting-started /de/quality/ 301
+/de/quality/rule-catalog /de/quality/accessibility/rule-catalog 301
+/de/quality/accessibility/getting-started /de/quality/ 301
+/de/quality/accessibility/options /de/quality/options 301
+/de/quality/accessibility/severity-and-fixes /de/quality/severity-and-fixes 301
+/de/quality/accessibility/headless-usage /de/quality/headless-usage 301
+/de/quality/accessibility/contributing-locales /de/quality/contributing-locales 301
+/de/cloud/saved-modules /de/cloud/saved-blocks 301
+/de/cloud/snapshots /de/cloud/version-history 301

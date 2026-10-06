@@ -214,13 +214,19 @@ describe("OSS docs house style", () => {
 
     const transform = config.sitemap?.transformItems;
     expect(typeof transform).toBe("function");
+    // VitePress passes relative URLs here (generateSitemap: the page path with
+    // `.md` dropped and `index.md` reduced to its directory), never absolute
+    // ones, so the fixture must use that shape or the filter goes untested.
     expect(
       transform!([
-        { url: "https://docs.templatical.com/guide/theming" },
-        { url: "https://docs.templatical.com/cloud/ai" },
-        { url: "https://docs.templatical.com/de/cloud/" },
+        { url: "guide/theming" },
+        { url: "cloud/ai" },
+        { url: "cloud/" },
+        { url: "de/cloud/ai" },
+        { url: "de/guide/theming" },
+        { url: "" },
       ]),
-    ).toEqual([{ url: "https://docs.templatical.com/guide/theming" }]);
+    ).toEqual([{ url: "guide/theming" }, { url: "de/guide/theming" }, { url: "" }]);
 
     const src = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
     expect(src).not.toMatch(/link:\s*"\/(?:de\/)?cloud/);

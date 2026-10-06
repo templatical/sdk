@@ -27,13 +27,17 @@ const DOCS = join(import.meta.dirname, "..");
 
 /**
  * The head entries the config's own transformHead hook emits for one page.
- * Only `pageData.filePath` is read, so the rest of the build context is left
- * out rather than faked.
+ * The hook reads `pageData.filePath` (where the markdown twin lives) and
+ * `pageData.relativePath` (the page's own URL). With no `rewrites` configured
+ * the two are the same path, so one argument supplies both and the rest of the
+ * build context is left out rather than faked.
  */
 async function headEntriesFor(filePath: string): Promise<HeadConfig[] | void> {
   const { transformHead } = config;
   if (!transformHead) throw new Error(".vitepress/config.ts has no transformHead hook");
-  return transformHead({ pageData: { filePath } } as unknown as TransformContext);
+  return transformHead({
+    pageData: { filePath, relativePath: filePath },
+  } as unknown as TransformContext);
 }
 
 /** The head entry that advertises a page's raw-markdown twin. */
@@ -341,12 +345,18 @@ describe("the transformHead hook", () => {
     // check passes for a hook that is wired and emits nothing, which is the
     // failure this case exists to catch. A root-level page, the one shape the
     // four cases below do not cover.
-    expect(await headEntriesFor("license-faq.md")).toEqual([alternate("/license-faq.md")]);
+    expect(await headEntriesFor("license-faq.md")).toContainEqual(alternate("/license-faq.md"));
   });
 
-  it("advertises the twin as a text/markdown alternate, and emits nothing else", async () => {
+  it("advertises the twin beside the page's own canonical and og:url, and emits nothing else", async () => {
+    // The one case that pins the hook's whole output, so an unexpected head
+    // entry fails here. The other cases pin only the twin's href;
+    // docs-seo.test.ts owns the canonical and og:url values.
+    const url = "https://docs.templatical.com/getting-started/installation";
     expect(await headEntriesFor("getting-started/installation.md")).toEqual([
       alternate("/getting-started/installation.md"),
+      ["link", { rel: "canonical", href: url }],
+      ["meta", { property: "og:url", content: url }],
     ]);
   });
 
@@ -355,21 +365,21 @@ describe("the transformHead hook", () => {
     // index.md basename while cleanUrls serves the page at /guide/widgets/.
     // Deriving the href from the url instead of the source path yields
     // /guide/widgets/.md, which is nothing.
-    expect(await headEntriesFor("guide/widgets/index.md")).toEqual([
+    expect(await headEntriesFor("guide/widgets/index.md")).toContainEqual(
       alternate("/guide/widgets/index.md"),
-    ]);
+    );
   });
 
   it("points the home page at /index.md, not at the site root", async () => {
-    expect(await headEntriesFor("index.md")).toEqual([alternate("/index.md")]);
+    expect(await headEntriesFor("index.md")).toContainEqual(alternate("/index.md"));
   });
 
   it("keeps the locale prefix, so a German page points at the German source", async () => {
     // copyMarkdownSources covers de/ — it is the generated index that is
     // English-only — so the German tree has twins of its own.
-    expect(await headEntriesFor("de/guide/theming.md")).toEqual([
+    expect(await headEntriesFor("de/guide/theming.md")).toContainEqual(
       alternate("/de/guide/theming.md"),
-    ]);
+    );
   });
 
   it("emits nothing for a virtual page, which has no markdown source to point at", async () => {

@@ -1,6 +1,8 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
 // @ts-expect-error — plain .mjs generator, no types
-import { copyMarkdownSources } from "../scripts/build-agent-surface.mjs";
+import { copyMarkdownSources, SITE_URL, urlFor } from "../scripts/build-agent-surface.mjs";
+// @ts-expect-error — plain .mjs helper, no types
+import { hasFullHistory } from "../scripts/git-history.mjs";
 
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/quick-start" },
@@ -352,18 +354,25 @@ const deSidebar: DefaultTheme.SidebarMulti = {
   ],
 };
 
+/** Cloud docs are disallowed in public/robots.txt, so the sitemap must not list them. */
+const isCloudPage = (url: string) => /^(?:de\/)?cloud(?:\/|$)/.test(url);
+
 export default defineConfig({
   title: "Templatical",
   description:
     "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
   cleanUrls: true,
+  // Page dates come from git. A shallow clone would date every page to its
+  // one commit, so lastUpdated (and the sitemap's lastmod) is on only with
+  // full history; on Cloudflare Pages the build unshallows first.
+  lastUpdated: hasFullHistory(),
   // VitePress scans the whole project root for *.md, which otherwise renders
   // the vitest fixtures under tests/fixtures/ as real, navigable pages.
   srcExclude: ["tests/**"],
   sitemap: {
-    hostname: "https://docs.templatical.com",
+    hostname: SITE_URL,
     transformItems: (items: { url: string }[]) =>
-      items.filter((item) => !item.url.includes("/cloud")),
+      items.filter((item) => !isCloudPage(item.url)),
   },
   // Serve each page's source markdown beside its rendered page: append `.md`
   // to the page's URL, or `index.md` when that URL ends in `/`. Agents that
@@ -384,19 +393,26 @@ export default defineConfig({
   // serves the page itself at /guide/widgets/. pageData.filePath is exactly
   // that source path, and it is empty for virtual pages (the 404, which has no
   // markdown source and so no twin to point at).
-  transformHead: ({ pageData }) =>
-    pageData.filePath
-      ? [
-          [
-            "link",
-            {
-              rel: "alternate",
-              type: "text/markdown",
-              href: `/${pageData.filePath}`,
-            },
-          ],
-        ]
-      : [],
+  //
+  // Each page also names its own canonical and og:url, built with the same
+  // urlFor that writes the page urls in llms.txt. A site-wide value would mark
+  // every page a duplicate of the home page.
+  transformHead: ({ pageData }) => {
+    if (!pageData.filePath) return [];
+    const url = urlFor(pageData.relativePath);
+    return [
+      [
+        "link",
+        {
+          rel: "alternate",
+          type: "text/markdown",
+          href: `/${pageData.filePath}`,
+        },
+      ],
+      ["link", { rel: "canonical", href: url }],
+      ["meta", { property: "og:url", content: url }],
+    ];
+  },
   head: [
     [
       "link",
@@ -423,7 +439,6 @@ export default defineConfig({
       },
     ],
     ["meta", { property: "og:type", content: "website" }],
-    ["meta", { property: "og:url", content: "https://docs.templatical.com" }],
     [
       "meta",
       {
@@ -454,7 +469,6 @@ export default defineConfig({
         content: "https://docs.templatical.com/og-image.png",
       },
     ],
-    ["link", { rel: "canonical", href: "https://docs.templatical.com" }],
   ],
   themeConfig: {
     logo: "https://templatical.com/logo.svg",
