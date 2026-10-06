@@ -79,21 +79,34 @@ export function EmailEditor() {
   const editorRef = useRef<TemplaticalEditor | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
     let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
     (async () => {
-      const ed = await init({ container: containerRef.current });
-      if (!cancelled) editorRef.current = ed;
+      const ed = await init({ container });
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
     })();
     return () => {
       cancelled = true;
-      editorRef.current?.unmount();
+      instance?.unmount();
+      editorRef.current = null;
     };
   }, []);
 
   return <div ref={containerRef} style={{ height: "100vh" }} />;
 }
 ```
+
+If the effect re-runs before `init()` resolves (React StrictMode does this in
+development), `cancelled` unmounts the editor that arrives late and `instance`
+is what the cleanup unmounts once one has settled; unmounting only the ref
+leaks an editor.
 
 ## Cloud
 
