@@ -383,3 +383,54 @@ describe("live reload failure wording", () => {
   });
 });
 
+
+describe("live template-mode wording and path identity", () => {
+  it("words a template reload's success line for the working file", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({ ok: true, clients: 2, consumed: false, mode: "template" }),
+      })),
+    );
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(0);
+    expect(stdout.join("")).toBe("Pushed the working file to 2 connected page(s).\n");
+  });
+
+  it("starts a template server with the Working file line", async () => {
+    live.readPidfile.mockReturnValue(null);
+    live.startBridgePreferring.mockResolvedValue({
+      port: 4848,
+      url: "http://localhost:4848/",
+      workingPath: join(dir, "t.json"),
+      fellBack: false,
+      close: async () => {},
+    });
+    const before = { int: process.listeners("SIGINT"), term: process.listeners("SIGTERM") };
+    void runLive(parseArgs(["live", "--no-open", "--cwd", dir]));
+    await vi.waitFor(() => expect(existsSync(join(dir, ".templatical", "live-server.pid"))).toBe(true));
+    for (const l of process.listeners("SIGINT")) if (!before.int.includes(l)) process.removeListener("SIGINT", l);
+    for (const l of process.listeners("SIGTERM")) if (!before.term.includes(l)) process.removeListener("SIGTERM", l);
+    expect(stdout.join("")).toBe(
+      ["Templatical live preview running at http://localhost:4848/", `Working file: ${join(dir, "t.json")}`, ""].join("\n"),
+    );
+  });
+
+  it("treats an absolute and a relative path to the same block as the same server", async () => {
+    live.readPidfile.mockReturnValue({
+      pid: 4242,
+      port: 4747,
+      mode: "custom-block",
+      path: join(dir, "a.json"),
+    });
+    live.processAlive.mockReturnValue(true);
+    for (const given of ["a.json", join(dir, "a.json")]) {
+      stdout.length = 0;
+      setJsonMode(true);
+      expect(await runLive(parseArgs(["live", "--custom-block", given, "--cwd", dir, "--json"]))).toBe(0);
+      expect(JSON.parse(stdout.join(""))).toMatchObject({ alreadyRunning: true, pid: 4242 });
+    }
+    expect(live.startBridgePreferring).not.toHaveBeenCalled();
+  });
+});

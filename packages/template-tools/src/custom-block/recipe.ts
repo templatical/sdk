@@ -213,12 +213,16 @@ export async function runRecipe(
   } catch {
     /* reported below */
   }
+  // Unreachable while the URL authority refuses Liquid and every value is
+  // encoded; it stops the proxy being repointed if either guard regresses.
+  /* v8 ignore start */
   if (renderedOrigin !== expectedOrigin) {
     return {
       ok: false,
       error: `The rendered URL's origin (${renderedOrigin ?? "unparseable"}) differs from the recipe's (${expectedOrigin}); no request was made.`,
     };
   }
+  /* v8 ignore stop */
 
   const secrets: string[] = [];
   const headers: Record<string, string> = {};
