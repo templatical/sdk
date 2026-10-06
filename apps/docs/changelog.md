@@ -15,6 +15,20 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.43.3
+
+<time datetime="2026-10-06">2026-10-06</time>
+
+### Fixes and improvements
+
+**An editor instance's `unmount()` now tears down only that instance. Once another `init()` on the same container has replaced it, calling the old instance's `unmount()` does nothing instead of unmounting the replacement — which left a blank editor under React StrictMode when a bundler settled both mounts in the same tick, as webpack's shared chunk loading can. The top-level `unmount()` export still tears down the most recently mounted editor.**
+
+`@templatical/editor`
+
+**The editor footer draws the Templatical mark inline instead of loading `https://templatical.com/logo.svg`, so `init()` makes no requests to Templatical. The footer no longer carries an "Open Source" link: the editor is source-available under FSL-1.1-MIT. `branding: false` still hides the footer.**
+
+`@templatical/editor`
+
 ## 0.43.2
 
 <time datetime="2026-10-03">2026-10-03</time>
