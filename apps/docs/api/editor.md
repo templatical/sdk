@@ -28,7 +28,7 @@ const editor = await init({
 
 ## `unmount()`
 
-Destroys the editor instance and cleans up event listeners.
+Destroys the most recently mounted editor and cleans up event listeners. To tear down a specific editor, call `unmount()` on the instance `init()` returned.
 
 ```ts
 import { unmount } from "@templatical/editor";
@@ -240,7 +240,7 @@ Use it when tags are minted or renamed while the editor is open. Mutating the ar
 
 ### `unmount()`
 
-Destroys this editor instance.
+Destroys this editor instance and no other. Once another `init()` on the same container has replaced it, the old instance's `unmount()` does nothing.
 
 ### `create(input?)` / `load(id)` / `save()`
 

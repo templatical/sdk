@@ -400,7 +400,8 @@ export default {
   },
   cloud: {
     title: "Templatical Cloud",
-    subtitle: "Alles aus dem OSS-Editor, plus Cloud-basierte Funktionen.",
+    subtitle:
+      "Alles aus dem selbst gehosteten Editor, plus Cloud-basierte Funktionen.",
     auth: {
       apiCredentials: "API-Zugangsdaten",
       authProxy: "Auth-Proxy",
@@ -451,7 +452,7 @@ export default {
       whiteLabel: "White Label",
       andMore: "und mehr \u2192",
     },
-    backToOss: "\u2190 Zur\u00fcck zum OSS Playground",
+    backToOss: "\u2190 Zur\u00fcck zum Playground",
     editor: {
       back: "Zur\u00fcck",
       cloud: "Cloud",

@@ -188,14 +188,15 @@ export function EmailEditor() {
   const editorRef = useRef<TemplaticalEditor | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     let cancelled = false;
     let instance: TemplaticalEditor | null = null;
 
     (async () => {
       const ed = await init({
-        container: containerRef.current,
+        container,
         onChange(content) {
           console.log("Content changed", content);
         },

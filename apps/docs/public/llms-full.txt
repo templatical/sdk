@@ -31,7 +31,7 @@ const editor = await init({
 
 ## `unmount()`
 
-Destroys the editor instance and cleans up event listeners.
+Destroys the most recently mounted editor and cleans up event listeners. To tear down a specific editor, call `unmount()` on the instance `init()` returned.
 
 ```ts
 import { unmount } from "@templatical/editor";
@@ -243,7 +243,7 @@ Use it when tags are minted or renamed while the editor is open. Mutating the ar
 
 ### `unmount()`
 
-Destroys this editor instance.
+Destroys this editor instance and no other. Once another `init()` on the same container has replaced it, the old instance's `unmount()` does nothing.
 
 ### `create(input?)` / `load(id)` / `save()`
 
@@ -1118,7 +1118,7 @@ The raw generated JSON Schema as a `.json` file — importable anywhere your bun
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
-It never imports `@templatical/core`, the one SDK package still under [FSL-1.1-MIT](/license-faq) rather than plain MIT. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
+It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
 
 ---
 
@@ -4216,14 +4216,15 @@ export function EmailEditor() {
   const editorRef = useRef<TemplaticalEditor | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     let cancelled = false;
     let instance: TemplaticalEditor | null = null;
 
     (async () => {
       const ed = await init({
-        container: containerRef.current,
+        container,
         onChange(content) {
           console.log("Content changed", content);
         },
@@ -4977,6 +4978,8 @@ Empty vertical space.
 ## HTML
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
+
+The editor and the renderer output this markup unchanged; neither sanitizes it. If the HTML can come from untrusted sources, sanitize `content` on your server before saving or sending. To leave HTML blocks out of the rendered email entirely, pass [`allowHtmlBlocks: false`](/api/renderer-typescript) to `renderToMjml`.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -6492,7 +6495,7 @@ export default translations;
 
 ### Cloud strings are optional
 
-Translations are split into two chunks. The OSS chunk (`locales/*.ts`) covers everything in the open-source editor. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — AI, collaboration, template scoring, the lint save gate, and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
+Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — AI, collaboration, template scoring, the lint save gate, and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 
@@ -8062,7 +8065,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 - **Custom social PNGs** — `standard-social-element` carries a custom PNG `src`. `SocialIconsBlock` has no custom src — it picks an icon from `platform` + `iconStyle`. The PNG is the loss; the entry is `approximated` when a custom `src` was present.
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
-- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block is Cloud-only and blank on OSS, so this package does not emit it. The GIF is a static image; the timer does not tick.
+- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block renders on Cloud or through a `blockRenderers.countdown` override and is blank otherwise, so this package does not emit it. The GIF is a static image; the timer does not tick.
 - **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip
@@ -10410,6 +10413,10 @@ This page answers the questions teams ask most often when evaluating Templatical
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
 - **Only the editor, core and media library are FSL-licensed** — every other package is pure MIT today.
 
+## Is Templatical open source?
+
+The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
+
 ## What is FSL-1.1-MIT?
 
 FSL stands for [**Functional Source License**](https://fsl.software/). It's a modern source-available license designed by Sentry to balance two things teams care about:
@@ -10439,8 +10446,9 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers) is permissive MIT and free of any future-license consideration.
+The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI) is permissive MIT and free of any future-license consideration.
 
 ## Can I use Templatical commercially?
 
@@ -10507,7 +10515,7 @@ The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://ww
 
 **Yes, please.** Community contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
 
-By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`, `import-easy-email-pro`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
+By contributing, you agree your contribution is licensed under the same license as the package you're contributing to: FSL-1.1-MIT for `editor`, `core` and `media-library`, MIT for every other package.
 
 There is currently **no separate Contributor License Agreement (CLA)** to sign — your PR alone is enough.
 
@@ -10532,7 +10540,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 ## Is using the Cloud tier required?
 
-**No.** The Cloud tier is optional. The OSS SDK works completely standalone — every feature in `@templatical/editor` (the OSS init path) runs without any backend.
+**No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
 
 Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
@@ -11262,7 +11270,7 @@ When `true`:
 - The Issues sidebar tab is **not registered**.
 - The inline canvas badges produce **no DOM**.
 
-Use this when a tenant has explicitly opted out, or to keep the default OSS bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
+Use this when a tenant has explicitly opted out, or to keep the default editor bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
 
 ::: tip Disabling every linter individually has the same effect
 The editor treats `{ accessibility: false, structure: false, links: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
@@ -11606,7 +11614,7 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are OSS BYO providers on `init()` (or source-available self-host).
+- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are providers you pass to `init()`, backed by your own storage.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML, optional Cloud tier for AI/collab.
 
@@ -11626,7 +11634,7 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 You're not building a customer-facing product — you need a controlled tool for your team to design transactional and marketing emails, with the JSON output stored in your own systems.
 
 **Templatical fits because:**
-- Self-hostable in full. The OSS SDK has no required cloud dependency.
+- Self-hostable in full. The SDK has no required cloud dependency.
 - Multilingual (English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese) out of the box, with a clean path to add more locales for international teams.
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 

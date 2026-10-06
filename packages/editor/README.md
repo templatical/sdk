@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/editor)
 [![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)
 
-The visual editor for [Templatical](https://github.com/templatical/sdk) — an open-source drag-and-drop email editor with JSON templates and MJML output.
+The visual editor for [Templatical](https://github.com/templatical/sdk) — a source-available drag-and-drop email editor with JSON templates and MJML output.
 
 - 🧩 **14 block types** — title, paragraph, image, button, section, divider, spacer, social icons, menu, table, HTML, video, countdown, custom
 - 🛡 **Shadow DOM isolated** — mounts inside an open shadow root by default so host page CSS cannot bleed in

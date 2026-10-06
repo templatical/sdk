@@ -44,7 +44,7 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 ## Bringing your own
 
-Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks, test emails and media can still be yours while Cloud handles the rest:
+Cloud is a first-party implementation of the same [provider contracts](/backend/) the self-hosted editor exposes — one editor component, one core, one header behind both entry points. Saved blocks, test emails and media can still be yours while Cloud handles the rest:
 
 ```ts
 await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
@@ -68,4 +68,4 @@ To own the whole set, use [`init()`](/backend/).
 
 Plans start at $99/month. All plans include the full editor, AI features, and collaboration.
 
-[Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [View Pricing](https://templatical.com/pricing) &nbsp;·&nbsp; [Contact Sales](mailto:hi@templatical.com)
+[Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [Contact Sales](mailto:hi@templatical.com)

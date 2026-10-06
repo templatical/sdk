@@ -7,7 +7,7 @@ description: How Templatical Cloud sends test emails, and how to send them from 
 
 Send test emails directly from the editor to verify rendering in a real inbox before going live.
 
-Test email is a **shared feature**: the trigger, the dialog, recipient validation and every sending state are the same components in the OSS and Cloud editors. Only the sender differs. The [Test Emails guide](/backend/test-email) covers the feature itself — this page is what Cloud adds, and how to override it.
+Test email is a **shared feature**: the trigger, the dialog, recipient validation and every sending state are the same components in the `init()` and `initCloud()` editors. Only the sender differs. The [Test Emails guide](/backend/test-email) covers the feature itself — this page is what Cloud adds, and how to override it.
 
 ## How Cloud sends
 
@@ -81,7 +81,7 @@ await initCloud({
 
 Cloud tells them apart by `send`, never by whether the value is an object: something with a working `send` replaces Cloud's sender, and anything else — including this narrower shape — keeps Cloud's own sender and stays plan-gated.
 
-Because the key's full-provider form is identical on both entry points, moving an OSS integration to Cloud means deleting this key or leaving it untouched — never rewriting it.
+Because the key's full-provider form is identical on both entry points, moving an `init()` integration to Cloud means deleting this key or leaving it untouched — never rewriting it.
 
 ## Events
 

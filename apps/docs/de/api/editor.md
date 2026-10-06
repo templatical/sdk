@@ -28,7 +28,7 @@ const editor = await init({
 
 ## `unmount()`
 
-Zerstört die Editor-Instanz und räumt Event-Listener auf.
+Zerstört den zuletzt gemounteten Editor und räumt Event-Listener auf. Um einen bestimmten Editor abzubauen, rufen Sie `unmount()` an der von `init()` zurückgegebenen Instanz auf.
 
 ```ts
 import { unmount } from "@templatical/editor";
@@ -240,7 +240,7 @@ Verwenden Sie die Methode, wenn Tags erzeugt oder umbenannt werden, während der
 
 ### `unmount()`
 
-Zerstört diese Editor-Instanz.
+Zerstört diese Editor-Instanz und keine andere. Hat ein späteres `init()` auf demselben Container sie bereits ersetzt, bewirkt das `unmount()` der alten Instanz nichts.
 
 ### `create(input?)` / `load(id)` / `save()`
 

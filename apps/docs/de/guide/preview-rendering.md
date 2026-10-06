@@ -202,4 +202,4 @@ Preise, Lagerbestände, ein personalisiertes Produktraster. Alles, worauf die Vo
 - [Logik-Tags](/de/guide/logic-tags) — Kontrollfluss einfügen und hervorheben
 - [Anzeigebedingungen](/de/guide/display-conditions) — Bedingungen simulieren und über diesen Hook echt auswerten
 - [Test-E-Mails](/de/backend/test-email) — der Dialog, dessen Vorschau pro Empfänger auflöst
-- [Editor-API](/api/editor) — Referenz für `resolvePreview` und `mergeTags`
+- [Editor-API](/de/api/editor) — Referenz für `resolvePreview` und `mergeTags`

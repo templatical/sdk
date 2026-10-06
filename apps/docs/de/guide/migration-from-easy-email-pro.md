@@ -200,7 +200,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 - **Benutzerdefinierte Social-PNGs** — `standard-social-element` trägt ein eigenes PNG-`src`. `SocialIconsBlock` hat kein Custom-Src — es wählt ein Icon aus `platform` + `iconStyle`. Das PNG ist der Verlust; der Eintrag ist `approximated`, wenn ein Custom-`src` vorhanden war.
 - **AMP** — `AMP_*`-Knoten haben keine Templatical-Entsprechung. Als JSON in einem `HtmlBlock` erhalten, `html-fallback`.
 - **`logic`** — Pro-`logic.condition` / `logic.iteration` werden zur `toMJML`-Zeit nach Liquid (oder einer eigenen Engine) kompiliert. Sie sind nicht `displayCondition.{ before, after }`. Leere Knoten `skipped`. Gefüllte Knoten konvertieren ihre Kinder und verwerfen die Verzweigung.
-- **Countdown als GIF** — `marketing-countdown` ist Overlay-Text plus ein `ImageBlock` von `attributes.src`. Templaticals `countdown`-Block ist Cloud-only und auf OSS leer, daher erzeugt dieses Paket ihn nicht. Das GIF ist ein statisches Bild; der Timer läuft nicht.
+- **Countdown als GIF** — `marketing-countdown` ist Overlay-Text plus ein `ImageBlock` von `attributes.src`. Templaticals `countdown`-Block rendert auf Cloud oder über einen `blockRenderers.countdown`-Override und ist sonst leer, daher erzeugt dieses Paket ihn nicht. Das GIF ist ein statisches Bild; der Timer läuft nicht.
 - **Sperre von Header und Footer** — Der Inhalt von `page-header` / `page-footer` wird zu gewöhnlichen Sektionen. Die feste Position und das `editable`-Flag haben keine Templatical-Entsprechung.
 
 ::: tip

@@ -200,7 +200,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 - **Custom social PNGs** — `standard-social-element` carries a custom PNG `src`. `SocialIconsBlock` has no custom src — it picks an icon from `platform` + `iconStyle`. The PNG is the loss; the entry is `approximated` when a custom `src` was present.
 - **AMP** — `AMP_*` nodes have no Templatical equivalent. Preserved as JSON inside an `HtmlBlock`, `html-fallback`.
 - **`logic`** — Pro `logic.condition` / `logic.iteration` compile to Liquid (or a custom engine) at `toMJML` time. They are not `displayCondition.{ before, after }`. Empty nodes `skipped`. Populated nodes convert their children and drop the branching.
-- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block is Cloud-only and blank on OSS, so this package does not emit it. The GIF is a static image; the timer does not tick.
+- **Countdown as GIF** — `marketing-countdown` is overlay text plus an `ImageBlock` of `attributes.src`. Templatical's `countdown` block renders on Cloud or through a `blockRenderers.countdown` override and is blank otherwise, so this package does not emit it. The GIF is a static image; the timer does not tick.
 - **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip

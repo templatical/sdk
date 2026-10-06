@@ -22,7 +22,7 @@ Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt 
 | `update` | Benennt um oder ändert die Kategorie |
 | `delete` | Entfernt ihn aus dem Projekt |
 
-**Eine Bibliothek pro Projekt**, geteilt von allen Beteiligten — ein Block, den eine Kollegin speichert, liegt beim nächsten Öffnen im Browser aller anderen. Genau das hat kein OSS-Gegenstück: nicht der Speicher, sondern die Tatsache, dass er bereits geteilt ist.
+**Eine Bibliothek pro Projekt**, geteilt von allen Beteiligten — ein Block, den eine Kollegin speichert, liegt beim nächsten Öffnen im Browser aller anderen. Genau das hat kein selbst gehostetes Gegenstück: nicht der Speicher, sondern die Tatsache, dass er bereits geteilt ist.
 
 Alle vier sind aktiv. Clouds Bibliothek ist an die Planfunktion `savedModules` gebunden.
 

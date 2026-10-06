@@ -30,7 +30,7 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are OSS BYO providers on `init()` (or source-available self-host).
+- Cloud is the managed adapter for AI rewrite and real-time collaboration, plus hosted storage — comments, version history, and saved blocks are providers you pass to `init()`, backed by your own storage.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for MJML then any MJML library for HTML, optional Cloud tier for AI/collab.
 
@@ -50,7 +50,7 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 You're not building a customer-facing product — you need a controlled tool for your team to design transactional and marketing emails, with the JSON output stored in your own systems.
 
 **Templatical fits because:**
-- Self-hostable in full. The OSS SDK has no required cloud dependency.
+- Self-hostable in full. The SDK has no required cloud dependency.
 - Multilingual (English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese) out of the box, with a clean path to add more locales for international teams.
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 

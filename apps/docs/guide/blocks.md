@@ -110,6 +110,8 @@ Empty vertical space.
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
 
+The editor and the renderer output this markup unchanged; neither sanitizes it. If the HTML can come from untrusted sources, sanitize `content` on your server before saving or sending. To leave HTML blocks out of the rendered email entirely, pass [`allowHtmlBlocks: false`](/api/renderer-typescript) to `renderToMjml`.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | Raw HTML markup |
