@@ -4,7 +4,6 @@ const es: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",
-    openSource: "Código abierto",
   },
 
   // Header — nombre de la plantilla + estado de guardado. Solo se muestra cuando

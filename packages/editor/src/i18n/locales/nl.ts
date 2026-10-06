@@ -3,7 +3,6 @@ import type en from "./en";
 const nl: typeof en = {
   footer: {
     poweredBy: "Mogelijk gemaakt door",
-    openSource: "Open Source",
   },
 
   header: {

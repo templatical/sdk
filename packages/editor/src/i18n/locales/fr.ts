@@ -3,7 +3,6 @@ import type en from "./en";
 const fr: typeof en = {
   footer: {
     poweredBy: "Propulsé par",
-    openSource: "Open Source",
   },
 
   header: {

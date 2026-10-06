@@ -3,7 +3,6 @@ import type en from "./en";
 const translations: typeof en = {
   footer: {
     poweredBy: "提供元:",
-    openSource: "オープンソース",
   },
   header: {
     save: "保存",

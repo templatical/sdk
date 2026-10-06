@@ -667,6 +667,12 @@ interface TemplaticalEditorBase {
    * enables it for the next block opened, not one already being edited.
    */
   setMergeTags(tags: MergeTag[]): void;
+  /**
+   * Tear this editor down. It unmounts only this instance: once a later
+   * `init()` on the same container has replaced it, calling `unmount()` here
+   * does nothing, so a stale handle never removes the editor that replaced it.
+   * Calling it again after the teardown is also a no-op.
+   */
   unmount(): void;
   /**
    * Render the current template to MJML.
@@ -936,9 +942,17 @@ const ossEntries = new Map<Element, OssEntry>();
 // whatever was most recently mounted.
 let lastOssContainer: Element | null = null;
 
-function unmountOssContainer(container: Element): void {
+// Tears down whatever app the container holds, or with `onlyApp` just that app:
+// an instance unmounts only itself. A StrictMode double-mount can call a
+// superseded instance's `unmount()` after its replacement mounted on the same
+// container, and a container-scoped teardown there removes the replacement and
+// leaves a blank editor. `mountEditor`'s auto-unmount and the top-level
+// `unmount()` export pass no `onlyApp`: they mean "whatever this container
+// holds now".
+function unmountOssContainer(container: Element, onlyApp?: App): void {
   const entry = ossEntries.get(container);
   if (!entry) return;
+  if (onlyApp && entry.app !== onlyApp) return;
   entry.cleanup();
   entry.app.unmount();
   ossEntries.delete(container);
@@ -1098,7 +1112,9 @@ async function mountEditor(
       // read, so the call is never silently lost.
       config.mergeTags = { ...config.mergeTags, tags };
     },
-    unmount: () => unmountOssContainer(container),
+    // This instance's own app: once a later `init()` replaced it on the
+    // container, this call must leave the replacement mounted.
+    unmount: () => unmountOssContainer(container, app),
     create(input?: { name?: string; content?: TemplateContent }) {
       if (!editorRef.value) {
         return Promise.reject(new Error("[Templatical] Editor not ready"));
@@ -1316,7 +1332,7 @@ export async function initCloud(
 /**
  * Unmount the most-recently-created OSS editor. Single-instance legacy
  * API — callers managing multiple editors should use `instance.unmount()`
- * from each returned object, which targets the specific container.
+ * from each returned object, which tears down only that instance.
  */
 export function unmount(): void {
   if (lastOssContainer) {

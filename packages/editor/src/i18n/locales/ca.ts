@@ -4,7 +4,6 @@ const ca: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",
-    openSource: "Codi obert",
   },
 
   // Header — nom de la plantilla + estat de desat. Només es mostra quan hi ha un

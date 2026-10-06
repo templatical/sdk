@@ -2,7 +2,6 @@ export default {
   // Footer (OSS only)
   footer: {
     poweredBy: "Powered by",
-    openSource: "Open Source",
   },
 
   // Header — template name + save state. Shown only when a templates provider

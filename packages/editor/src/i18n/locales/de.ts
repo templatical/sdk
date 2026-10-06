@@ -4,7 +4,6 @@ const de: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",
-    openSource: "Open Source",
   },
 
   // Header — Vorlagenname + Speicherstatus. Nur sichtbar, wenn ein

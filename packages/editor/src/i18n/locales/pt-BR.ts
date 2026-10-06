@@ -4,7 +4,6 @@ const ptBR: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Desenvolvido por",
-    openSource: "Código Aberto",
   },
 
   // Header — nome do template + estado de salvamento. Exibido apenas quando um
