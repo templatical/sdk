@@ -9,6 +9,6 @@ is the method
 Read their `init()` call, their bundler config and their CSS setup, and match
 what you find against the table before changing anything. Several of these
 symptoms are indistinguishable from a broken build until you know the
-signature — an editor that renders but ignores every click is the
-duplicate-reactivity row in [failure-modes.md](failure-modes.md), and nothing
+signature — an editor whose canvas keeps the old text after an edit is the
+reactive-`content` row in [failure-modes.md](failure-modes.md), and nothing
 throws or logs to make it obvious.

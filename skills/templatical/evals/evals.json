@@ -46,7 +46,7 @@
     {
       "id": 8,
       "prompt": "Add the editor to our Nuxt 3 app, on the /compose page.",
-      "expected_output": "Mounts inside `onMounted()` and tears down in `onUnmounted()` — Vue's own client-only lifecycle hooks — with a template ref carrying an explicit height and the `@templatical/editor/style.css` import. Proposes the file and mount point before editing. Must not treat 'the host app is already Vue' as license to add `@templatical/core` (or any other Vue-using `@templatical/*` package) as a project dependency to 'share' Vue with the editor — the editor bundles and dedupes its own Vue instance internally regardless of the host framework, and a sibling Vue-using package still risks a second reactivity instance. Must not claim `tailwindcss` needs installing even though most Nuxt apps already have it.",
+      "expected_output": "Mounts inside `onMounted()` and tears down in `onUnmounted()` — Vue's own client-only lifecycle hooks — with a template ref carrying an explicit height and the `@templatical/editor/style.css` import. Proposes the file and mount point before editing. Must not treat 'the host app is already Vue' as license to add `@templatical/core` (or any other Vue-using `@templatical/*` package) as a project dependency to 'share' Vue with the editor — the editor bundles its own Vue and `@templatical/core`, and its JavaScript never imports the app's copies, so adding them shares nothing. Must not claim `tailwindcss` needs installing even though most Nuxt apps already have it.",
       "files": []
     },
     {

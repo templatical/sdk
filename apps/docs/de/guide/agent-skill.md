@@ -125,7 +125,7 @@ Bitten Sie ihn, eine komplett neue Integration aufzusetzen, einer bestehenden ei
 4. **Überprüft er, indem er Ihren Dev-Server startet** und dessen Konsolen- und Netzwerkausgabe liest — nicht, indem er Sie bittet, selbst nachzusehen.
 5. **Berichtet er**, was sich geändert hat, was unangetastet blieb, und was noch gebraucht wird — ein Provider, eine optionale Peer-Abhängigkeit, ein Cloud-Auth-Endpunkt.
 
-Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-/`initCloud()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen eine Tabelle verifizierter Fallstricke — doppelte Vue-Reaktivität, ein fehlender `style.css`-Import, ein gefangener `position: fixed`-Vorfahre, und mehr.
+Eine bestehende Integration zu diagnostizieren durchläuft dieselben Schritte rückwärts: Er liest Ihren `init()`-/`initCloud()`-Aufruf, die Bundler-Konfiguration und das CSS-Setup, und prüft jedes davon gegen eine Tabelle verifizierter Fallstricke — ein reaktives `content`-Objekt aus dem eigenen Vue der App, ein fehlender `style.css`-Import, ein gefangener `position: fixed`-Vorfahre, und mehr.
 
 ## Gut zu wissen
 

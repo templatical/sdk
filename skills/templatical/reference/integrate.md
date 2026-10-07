@@ -20,9 +20,11 @@ idiomatically, not a missing-component workaround.
 npm install @templatical/editor
 ```
 
-`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`
-and `pusher-js` are optional peers, each gated by a specific feature — install
-only the ones actually used (see [failure-modes.md](failure-modes.md)).
+`@templatical/renderer` and `@templatical/quality` are optional peers, each
+gated by a specific feature — install only the ones actually used. A
+production `vite build` also needs `pusher-js`, installed or marked external
+in an app that never calls `initCloud()`: the editor imports it for Cloud
+realtime without declaring it (see [failure-modes.md](failure-modes.md)).
 
 ## Vanilla
 

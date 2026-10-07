@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Symptom → cause for a Templatical editor mount — duplicate Vue, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
+description: Symptom → cause for a Templatical editor mount — reactive content, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
 ---
 
 # Troubleshooting
@@ -9,8 +9,8 @@ Match the symptom to the row before changing anything. Several of these look lik
 
 | Symptom | Cause | What to do |
 |---|---|---|
-| Chrome renders, clicks / drags / keystrokes do nothing | A second Vue reactivity instance. `@templatical/core` (or any other Vue-using `@templatical/*` package) is in the app's own `dependencies`, so refs the editor creates are invisible to that second `WeakMap`. | Keep those packages out of the app's `dependencies`. The editor already bundles them. |
-| Editor mounts, layout is gone | `@templatical/editor/style.css` was not imported. The `exports` map resolves that subpath to `dist/style.css`. | Import the stylesheet next to `init()`. Do not install `tailwindcss` as a peer — it is compiled into that file. |
+| Text and settings edits reach `getContent()`, but the canvas and properties panel do not update | `init({ content })` keeps the object it is given. An object from the app's own Vue — `reactive()`, a `ref()`'s `.value`, or `markRaw()` — stays on the app's reactivity, which the editor's bundled Vue never subscribes to. | Pass a plain copy: `content: JSON.parse(JSON.stringify(content))`. Installing or removing `vue` or `@templatical/core` does not affect this; the editor's JavaScript never imports them. |
+| Editor renders in a fallback font, or has no layout with `shadowDom: false` | `@templatical/editor/style.css` was not imported. It loads the editor's Geist font, and with `shadowDom: false` it is the editor's only stylesheet. The default shadow mount carries its own copy of the editor's CSS. The `exports` map resolves that subpath to `dist/style.css`. | Import the stylesheet next to `init()`. Do not install `tailwindcss` as a peer — it is compiled into that file. |
 | Dialogs clipped, painted under host chrome, or a drag ghost that drifts | An ancestor of the container is a containing block for `position: fixed`: `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`, `isolation`, `opacity` below `1`, or a positioned element with `z-index`. | Remove that property from ancestors, or mount outside that stacking context. |
 | Sidebar last items / footer clip, no scroll | The container has no definite height. The editor fills its parent; without one it uses a small anti-collapse floor and chrome still assumes real height. | Give the container a real height (`100%` of a sized parent, or a `px`/`vh` value). |
 | React 18 StrictMode: extra editors, leaked listeners | `init()` is async. StrictMode unmounts the effect before the promise resolves, so the created instance is never stored and never `unmount()`ed. | Unmount the instance that just finished when the effect was cancelled. See [Installation](/getting-started/installation). |

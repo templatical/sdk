@@ -19,7 +19,7 @@ Documentation for SDK version 0.43.3. Every page below is also available as raw 
 - [Installation](https://docs.templatical.com/getting-started/installation): Install the Templatical email editor with a package manager or from a CDN.
 - [Starting points](https://docs.templatical.com/getting-started/paths): Which docs page to open first — embed the editor, connect your backend, generate a template from a prompt, or compile JSON to sendable HTML.
 - [Quick Start](https://docs.templatical.com/getting-started/quick-start): Get the Templatical email editor running in under 5 minutes.
-- [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — duplicate Vue, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
+- [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — reactive content, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
 
 ## Guide
 
