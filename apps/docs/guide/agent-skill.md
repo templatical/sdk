@@ -125,7 +125,7 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 4. **Verifies by running your dev server** and reading its console and network output — not by asking you to check yourself.
 5. **Reports** what changed, what was left alone, and what's still needed — a provider, an optional peer, a Cloud auth endpoint.
 
-Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a reactive `content` object from the app's own Vue, a missing `style.css` import, a trapped `position: fixed` ancestor, and more.
+Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
 
 ## Good to know
 

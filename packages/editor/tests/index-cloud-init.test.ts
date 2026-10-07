@@ -537,7 +537,9 @@ describe("OSS init — instance methods", () => {
 
     const { toMjmlForInstance } = await import("../src/utils/toMjml");
     const source = vi.mocked(toMjmlForInstance).mock.calls.at(-1)![0];
-    expect(source.getLayout?.()).toBe(layout);
+    // A copy: the layout enters through the same normalization as content,
+    // which never hands the editor the caller's own object.
+    expect(source.getLayout?.()).toEqual(layout);
   });
 
   describe("render provider", () => {
@@ -623,6 +625,58 @@ describe("OSS init — instance methods", () => {
       await expect(instance.toHtml()).rejects.toThrow(
         /no local HTML path|toHtml\(\) requires a `render` provider/,
       );
+    });
+  });
+
+  describe("content entry points hand the editor a copy", () => {
+    // The editor edits the object it holds in place. Holding the caller's own
+    // object leaks every edit into it, and one another Vue made reactive, or
+    // froze, would hide edits from the editor's own Vue or throw on them.
+    function fakeEditorWith(extra: Record<string, unknown> = {}) {
+      return {
+        getContent: vi.fn(() => ({})),
+        setContent: vi.fn(),
+        setTheme: vi.fn(),
+        renderCustomBlock: vi.fn(),
+        getCustomBlockStylesheet: vi.fn(),
+        ...extra,
+      };
+    }
+
+    it("init() mounts the editor on a copy of `content`", async () => {
+      const { content } = await mountOss(null);
+
+      const config = captured.props!.config as { content: unknown };
+      expect(config.content).toEqual(content);
+      expect(config.content).not.toBe(content);
+    });
+
+    it("setContent() hands the mounted editor a copy", async () => {
+      const fakeEditor = fakeEditorWith();
+      const { instance } = await mountOss(fakeEditor);
+      const next = { blocks: [{ id: "next" }] } as never;
+
+      instance.setContent(next);
+
+      const handed = fakeEditor.setContent.mock.calls[0][0];
+      expect(handed).toEqual(next);
+      expect(handed).not.toBe(next);
+    });
+
+    it("create({ content }) hands the mounted editor a copy", async () => {
+      const fakeEditor = fakeEditorWith({
+        create: vi.fn(() => Promise.resolve({ id: "t1", content: {} })),
+      });
+      const { instance } = await mountOss(fakeEditor);
+      const content = { blocks: [{ id: "fresh" }] } as never;
+
+      await instance.create({ name: "Fresh", content });
+
+      const handed = (fakeEditor.create as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as { name: string; content: unknown };
+      expect(handed.name).toBe("Fresh");
+      expect(handed.content).toEqual(content);
+      expect(handed.content).not.toBe(content);
     });
   });
 

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
+import { isReactive, markRaw, reactive } from "vue";
 import {
   createParagraphBlock,
   createDefaultTemplateContent,
@@ -75,10 +76,64 @@ describe("normalizeContentForConfig", () => {
     expect(firstParagraph(result)).toBe("<p>Hi {{first_name}}</p>");
   });
 
-  it("returns the same reference when there is nothing to normalize", () => {
+  it("returns a copy even when there is nothing to normalize", () => {
+    // The editor edits the content it holds in place, so it never holds the
+    // caller's own object.
     const content = bareContent("<p>Nothing here</p>");
 
-    expect(normalizeContentForConfig(content, MERGE_TAGS)).toBe(content);
+    const result = normalizeContentForConfig(content, MERGE_TAGS);
+
+    expect(result).toEqual(content);
+    expect(result).not.toBe(content);
+    expect(result.blocks[0]).not.toBe(content.blocks[0]);
+  });
+
+  it("returns a plain copy of an object another Vue made reactive", () => {
+    // A host app's own Vue tracks its proxies itself; the editor's bundled Vue
+    // never sees edits made through one.
+    const result = normalizeContentForConfig(
+      reactive(bareContent("<p>Nothing here</p>")),
+      MERGE_TAGS,
+    );
+
+    expect(isReactive(result)).toBe(false);
+    expect(isReactive(result.blocks[0])).toBe(false);
+    expect(firstParagraph(result)).toBe("<p>Nothing here</p>");
+  });
+
+  it("drops markRaw's flag, so the editor's Vue can track the copy", () => {
+    const result = normalizeContentForConfig(
+      markRaw(bareContent("<p>Nothing here</p>")),
+      MERGE_TAGS,
+    );
+
+    expect(isReactive(reactive(result))).toBe(true);
+  });
+
+  it("returns a mutable copy of frozen content", () => {
+    // Immer and Redux Toolkit freeze their state; the editor's first edit
+    // would throw on the frozen original.
+    const frozen = bareContent("<p>Nothing here</p>");
+    Object.freeze(frozen.blocks[0]);
+    Object.freeze(frozen.blocks);
+    Object.freeze(frozen);
+
+    const result = normalizeContentForConfig(frozen, MERGE_TAGS);
+    (result.blocks[0] as ParagraphBlock).content = "<p>Edited</p>";
+
+    expect(firstParagraph(result)).toBe("<p>Edited</p>");
+    expect(firstParagraph(frozen)).toBe("<p>Nothing here</p>");
+  });
+
+  it("passes missing content through instead of throwing", () => {
+    // A provider can hand back a template without content; shape checks
+    // further on decide what to do with it.
+    expect(
+      normalizeContentForConfig(
+        undefined as unknown as TemplateContent,
+        MERGE_TAGS,
+      ),
+    ).toBeUndefined();
   });
 });
 
@@ -130,7 +185,9 @@ describe("withNormalizedTemplateLoads", () => {
     expect(template.id).toBe("tpl-1");
   });
 
-  it("returns the provider's own template object when nothing normalized", async () => {
+  it("hands the editor a copy of the provider's content, never its object", async () => {
+    // A provider that caches templates would otherwise have its cache edited
+    // in place by every change the author makes.
     const template: Template = {
       id: "tpl-1",
       content: bareContent("<p>Nothing here</p>"),
@@ -140,7 +197,10 @@ describe("withNormalizedTemplateLoads", () => {
       MERGE_TAGS,
     );
 
-    expect(await wrapped.load("tpl-1")).toBe(template);
+    const loaded = await wrapped.load("tpl-1");
+
+    expect(loaded.content).toEqual(template.content);
+    expect(loaded.content).not.toBe(template.content);
   });
 
   // `create: false` / `save: false` are how a provider disables a mutation.
