@@ -43,7 +43,10 @@ type Tab = "content" | "settings" | "issues";
 const activeTab = ref<Tab>("content");
 
 const lint = inject(TEMPLATE_LINT_KEY, null);
-const lintEnabled = computed(() => lint !== null);
+// `@templatical/quality` is an optional peer imported at mount. The tab renders
+// from the start, so apps that install it never see the tab pop in, and goes
+// once the import fails: without the package the panel has nothing to show.
+const lintAvailable = computed(() => lint !== null && !lint.unavailable.value);
 const issueCount = computed(() => lint?.issues.value.length ?? 0);
 
 // The tab follows the panel: with every setting excluded there is nothing for
@@ -84,6 +87,14 @@ watch(
     }
   },
 );
+
+// The Issues tab can be picked while the quality import is in flight; when
+// that import then fails, the sidebar would otherwise show no panel at all.
+watch(lintAvailable, (available) => {
+  if (!available && activeTab.value === "issues") {
+    activeTab.value = "content";
+  }
+});
 </script>
 
 <template>
@@ -128,7 +139,7 @@ watch(
         <span v-if="activeTab === 'settings'">{{ t.sidebar.settings }}</span>
       </button>
       <button
-        v-if="lintEnabled"
+        v-if="lintAvailable"
         id="tpl-tab-issues"
         role="tab"
         :aria-selected="activeTab === 'issues'"
@@ -199,7 +210,7 @@ watch(
     </div>
 
     <div
-      v-if="activeTab === 'issues' && lintEnabled"
+      v-if="activeTab === 'issues' && lintAvailable"
       id="tpl-tabpanel-issues"
       role="tabpanel"
       aria-labelledby="tpl-tab-issues"
