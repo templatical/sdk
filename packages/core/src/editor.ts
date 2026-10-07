@@ -447,8 +447,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
    * would read as "saved" to whoever awaited it.
    *
    * The message names the provider key the consumer set, not an internal
-   * capability flag: `EditorCapabilities` is type-only and its injection key is
-   * unexported, so neither a core nor an editor consumer can read one. Note the
+   * capability flag: neither `EditorCapabilities` nor its injection key is
+   * exported, so neither a core nor an editor consumer can read one. Note the
    * editor hides its own save controls when `save` is withheld but has no
    * create affordance to hide at all, so `create()` is reachable by definition.
    */

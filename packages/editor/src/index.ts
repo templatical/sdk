@@ -1395,9 +1395,7 @@ export { createLocalStorageMediaProvider } from "@templatical/core";
 export type { LocalStorageMediaProviderOptions } from "@templatical/core";
 
 export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
-export type { UseFontsReturn, FontOption } from "./composables/useFonts";
-export { useFonts } from "./composables/useFonts";
-export type { EditorCapabilities } from "./types/editor-capabilities";
+export type { FontOption } from "./composables/useFonts";
 export type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 
 export {

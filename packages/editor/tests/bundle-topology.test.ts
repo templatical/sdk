@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { init as initLexer, parse } from "es-module-lexer";
+import ts from "typescript";
 
 /**
  * These tests guard the editor's bundle topology — specifically the constraints
@@ -204,6 +205,42 @@ describe("editor bundle topology", () => {
     );
     expect(peers.sort()).toEqual(optionalPeers.sort());
     expect(peers).not.toContain("@templatical/media-library");
+  });
+
+  it("ships type declarations that import no package", () => {
+    // The editor has no runtime dependencies, so nothing a declaration file
+    // imports is guaranteed to be installed. An unresolved import is a TS2307
+    // under `skipLibCheck: false`, and with the usual `skipLibCheck: true` it
+    // silently types everything it carries as `any` — `init({ content: 42 })`
+    // compiled. api-extractor's `bundledPackages` inlines what the editor's
+    // types use instead.
+    // Parsed, not grepped: the doc comments carry `import … from
+    // "@templatical/editor"` examples that are not imports.
+    const file = ts.createSourceFile(
+      "index.d.ts",
+      readFileSync(join(DIST, "index.d.ts"), "utf8"),
+      ts.ScriptTarget.Latest,
+    );
+    const imported: string[] = [];
+    const visit = (node: ts.Node): void => {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      ) {
+        imported.push(node.moduleSpecifier.text);
+      }
+      if (
+        ts.isImportTypeNode(node) &&
+        ts.isLiteralTypeNode(node.argument) &&
+        ts.isStringLiteral(node.argument.literal)
+      ) {
+        imported.push(node.argument.literal.text);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+    expect(imported.filter(isBareSpecifier)).toEqual([]);
   });
 
   it("declares exactly its bare imports, dynamic ones included, as optional peers", () => {

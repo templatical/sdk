@@ -299,8 +299,8 @@ describe('useEditor — templates provider', () => {
     });
 
     it('names the provider key, never an unreachable capability flag', async () => {
-      // `EditorCapabilities` is exported type-only and CAPABILITIES_KEY is not
-      // exported at all, so neither a core nor an editor consumer can read one.
+      // Neither `EditorCapabilities` nor CAPABILITIES_KEY is exported, so
+      // neither a core nor an editor consumer can read one.
       // An earlier message told callers to "Check `capabilities.templates.canCreate`",
       // which no consumer could act on.
       const editor = useEditor({
