@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/templatical/sdk",
+  "public_key": "pk_GwdvZ2YYNH5Q55iJ7tAce",
   "projectTitle": "Templatical",
   "description": "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, framework-agnostic, with your own backend behind every storage feature. Source-available (FSL-1.1-MIT).",
   "folders": ["apps/docs"],
@@ -19,7 +21,7 @@
     "Call `editor.unmount()` when the component is removed. In React, use the StrictMode-safe effect from the installation guide: when the effect was cleaned up before `init()` resolved, unmount the instance that arrives late.",
     "Templates are JSON: a `TemplateContent` object (`{ blocks, settings }`). Read it with `editor.getContent()`, restore it with `init({ content })` or `editor.setContent()`, and store it as JSON.",
     "Render a template to MJML with `await renderToMjml(content)` from `@templatical/renderer`, then compile the MJML to HTML on your server with the `mjml` package. The SDK bundles no MJML compiler, so `editor.toHtml()` needs a `render` provider.",
-    "Storage features are providers: plain objects passed to `init()` as `templates`, `versionHistory`, `comments`, `savedBlocks`, `media` and `testEmail`. A feature is absent until its key is passed, and none of them needs Cloud. `initCloud()` is the hosted variant of the same mount.",
+    "Storage features are providers: plain objects passed to `init()` as `templates`, `versionHistory`, `comments`, `savedBlocks`, `media` and `testEmail`. Each is off until its key is passed, and none needs Cloud; `initCloud()` is the hosted variant.",
     "Install `@templatical/editor` on its own. It bundles its own Vue and `@templatical/core`, so the app needs neither. Add `@templatical/renderer` for `editor.toMjml()` and `@templatical/quality` for the Issues panel; both are optional peers."
   ]
 }
