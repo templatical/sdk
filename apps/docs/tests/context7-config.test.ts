@@ -10,7 +10,12 @@ import { describe, expect, it } from "vitest";
  * generated `llms-full.txt`, which repeats the whole corpus.
  *
  * The field limits and semantics are Context7's own
- * (https://context7.com/docs/library-owners). The description follows the
+ * (https://context7.com/docs/library-owners). Context7 validates the file
+ * against its published schema (https://context7.com/schema/context7.json)
+ * and ignores all of it when one field fails: a single rule over 255
+ * characters is enough to index the Cloud pages and generated output this
+ * config excludes. So the schema's limits are asserted below, not trusted.
+ * The description follows the
  * licence rule: the editor is source-available (FSL-1.1-MIT), so it is never
  * called open source. The rule that says what to install makes claims about the
  * editor's manifest, so the manifest is read here rather than trusted: the
@@ -27,7 +32,26 @@ interface Context7Config {
   excludeFolders: string[];
   excludeFiles: string[];
   rules: string[];
+  url?: string;
+  public_key?: string;
 }
+
+/** The top-level keys Context7's schema allows (it sets additionalProperties: false). */
+const SCHEMA_KEYS = [
+  "$schema",
+  "projectTitle",
+  "description",
+  "branch",
+  "folders",
+  "excludeFolders",
+  "excludeFiles",
+  "rules",
+  "disallow",
+  "redirect",
+  "previousVersions",
+  "url",
+  "public_key",
+];
 
 function loadConfig(): Context7Config {
   return JSON.parse(readFileSync(join(REPO, "context7.json"), "utf8"));
@@ -208,5 +232,50 @@ describe("context7.json", () => {
         : [];
     });
     expect(unknown).toEqual([]);
+  });
+});
+
+describe("context7.json against Context7's schema", () => {
+  it("uses only keys the schema allows", () => {
+    const config = loadConfig() as unknown as Record<string, unknown>;
+    expect(
+      Object.keys(config).filter((key) => !SCHEMA_KEYS.includes(key)),
+    ).toEqual([]);
+  });
+
+  it("keeps every rule within 255 characters, and at most 50 rules", () => {
+    const { rules } = loadConfig();
+    expect(rules.filter((rule) => rule.length > 255)).toEqual([]);
+    expect(rules.length).toBeLessThanOrEqual(50);
+  });
+
+  it("keeps the description between 10 and 200 characters and the title within 100", () => {
+    const { description, projectTitle } = loadConfig();
+    expect(description.length).toBeGreaterThanOrEqual(10);
+    expect(description.length).toBeLessThanOrEqual(200);
+    expect(projectTitle.length).toBeGreaterThanOrEqual(1);
+    expect(projectTitle.length).toBeLessThanOrEqual(100);
+  });
+
+  it("keeps each folder list within 50 entries of at most 255 characters", () => {
+    const { folders, excludeFolders } = loadConfig();
+    for (const list of [folders, excludeFolders]) {
+      expect(list.length).toBeLessThanOrEqual(50);
+      expect(
+        list.filter((entry) => entry.length === 0 || entry.length > 255),
+      ).toEqual([]);
+    }
+  });
+
+  it("names excluded files without a path, at most 100 of them", () => {
+    const { excludeFiles } = loadConfig();
+    expect(excludeFiles.length).toBeLessThanOrEqual(100);
+    expect(excludeFiles.filter((name) => !/^[^/\\]+$/.test(name))).toEqual([]);
+  });
+
+  it("claims the library with its Context7 URL and public key", () => {
+    const { url, public_key } = loadConfig();
+    expect(url).toBe("https://context7.com/templatical/sdk");
+    expect(public_key).toMatch(/^pk_[A-Za-z0-9]+$/);
   });
 });
