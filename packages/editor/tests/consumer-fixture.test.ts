@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -11,6 +12,7 @@ import {
   readWorkspacePackages,
   resolveWorkspaceClosure,
   tarballPlaceholder,
+  vanillaConsumerDir,
 } from "../scripts/consumer-fixture.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +37,28 @@ const fixtureNames = () =>
   readdirSync(FIXTURES_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
+
+describe("vanillaConsumerDir", () => {
+  // A consumer inside the repo also resolves bare imports from the repo-root
+  // node_modules, where pnpm links workspace packages; it then cannot model
+  // an optional peer the app did not install.
+  it("sits outside the repo, in the OS temp folder", () => {
+    const dir = vanillaConsumerDir(REPO_ROOT);
+    expect(relative(REPO_ROOT, dir).startsWith("..")).toBe(true);
+    expect(dir.startsWith(tmpdir())).toBe(true);
+  });
+
+  it("is stable for one checkout and differs between checkouts", () => {
+    // Playwright re-imports its config per process, so the path cannot be
+    // random; two worktrees running at once must not share one.
+    expect(vanillaConsumerDir("/work/sdk")).toBe(
+      vanillaConsumerDir("/work/sdk"),
+    );
+    expect(vanillaConsumerDir("/work/sdk")).not.toBe(
+      vanillaConsumerDir("/work/sdk-worktree"),
+    );
+  });
+});
 
 describe("tarballPlaceholder", () => {
   it("derives the token from the unscoped name", () => {

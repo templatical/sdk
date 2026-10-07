@@ -23,6 +23,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
@@ -32,6 +33,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const SCOPE = "@templatical/";
@@ -243,6 +245,19 @@ export function materializeConsumer({
 function run(cmd, opts, log) {
   log(`$ ${cmd}`);
   execSync(cmd, { stdio: "inherit", ...opts });
+}
+
+/**
+ * Where the vanilla consumer is materialized: outside the repo, because a
+ * consumer inside it also resolves bare imports from the repo-root
+ * node_modules, where pnpm links workspace packages, and then cannot model an
+ * optional peer the app did not install. Derived from the checkout path, not
+ * random: Playwright re-imports its config in each process, the prepare step
+ * and that config must agree, and two worktrees must not share one folder.
+ */
+export function vanillaConsumerDir(repoRoot) {
+  const id = createHash("sha256").update(repoRoot).digest("hex").slice(0, 12);
+  return join(tmpdir(), `templatical-e2e-consumer-${id}`);
 }
 
 /** Resolve the repo root from a script in `packages/editor/scripts/`. */

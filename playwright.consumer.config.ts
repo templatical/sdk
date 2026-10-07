@@ -1,9 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// @ts-expect-error — plain .mjs build script, no declarations
+import { vanillaConsumerDir } from "./packages/editor/scripts/consumer-fixture.mjs";
+
 /**
  * Real-browser smoke against the editor's packed-and-installed tarball, served
- * by an ephemeral vanilla-HTML consumer materialized into
- * `node_modules/.cache/e2e-consumer/` at run time from fixtures under
+ * by an ephemeral vanilla-HTML consumer materialized at run time, outside the
+ * repo (`vanillaConsumerDir`), from fixtures under
  * `packages/editor/tests/e2e-fixtures/vanilla-consumer/`.
  *
  * Why a separate config from playwright.config.ts:
@@ -21,7 +24,8 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 const PORT = 51731;
-const CONSUMER_ROOT = "node_modules/.cache/e2e-consumer";
+// The prepare step derives the same folder from the same checkout path.
+const CONSUMER_ROOT = vanillaConsumerDir(__dirname);
 
 export default defineConfig({
   testDir: "./packages/editor/tests/e2e-consumer",
@@ -38,7 +42,9 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `node ./packages/editor/scripts/e2e-consumer-prepare.mjs && pnpm --dir ${CONSUMER_ROOT} exec vite --port ${PORT} --strictPort`,
+    // The fixture's own Vite, not `pnpm --dir … exec vite`: the consumer is an
+    // npm project outside the workspace, and pnpm reinstalls it first.
+    command: `node ./packages/editor/scripts/e2e-consumer-prepare.mjs && cd "${CONSUMER_ROOT}" && node node_modules/vite/bin/vite.js --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     // Pack + install can take 30–60s on a cold cache.
