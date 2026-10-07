@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { safeClone } from '../src';
+import { createCustomBlock, safeClone, type CustomBlockDefinition } from '../src';
 
 describe('safeClone', () => {
     it('deep-clones plain data (no shared references with the source)', () => {
@@ -49,5 +49,65 @@ describe('safeClone', () => {
 
         expect(clone.keep).toBe('value');
         expect(clone.self).toBeUndefined();
+    });
+
+    it('copies an object reached by two paths into both places', () => {
+        // Two blocks sharing one styles object is still tree data once
+        // serialized; dropping the second visit loses that block's styles.
+        const shared = { padding: 8 };
+        const source = {
+            blocks: [
+                { id: 'a', styles: shared },
+                { id: 'b', styles: shared },
+            ],
+        };
+
+        const clone = safeClone(source);
+
+        expect(clone.blocks[0].styles).toEqual({ padding: 8 });
+        expect(clone.blocks[1].styles).toEqual({ padding: 8 });
+        expect(clone.blocks[0].styles).not.toBe(clone.blocks[1].styles);
+    });
+
+    it('keeps the repeatable default two custom blocks of one type share', () => {
+        // createCustomBlock hands every block the definition's own `default`
+        // array, so `getContent()` and undo meet it once per block.
+        const definition: CustomBlockDefinition = {
+            type: 'list',
+            name: 'List',
+            template: '',
+            fields: [
+                {
+                    key: 'items',
+                    type: 'repeatable',
+                    label: 'Items',
+                    fields: [{ key: 't', type: 'text', label: 'T' }],
+                    default: [{ t: 'one' }],
+                },
+            ],
+        };
+        const first = createCustomBlock(definition);
+        const second = createCustomBlock(definition);
+
+        const clone = safeClone({ blocks: [first, second] });
+
+        expect(clone.blocks.map((block) => block.fieldValues.items)).toEqual([
+            [{ t: 'one' }],
+            [{ t: 'one' }],
+        ]);
+    });
+
+    it('drops a reference back to an ancestor further up the tree', () => {
+        const parent: Record<string, unknown> = { id: 'p' };
+        const child: Record<string, unknown> = { id: 'c', up: parent };
+        parent.child = child;
+        parent.after = { id: 'sibling' };
+
+        const clone = safeClone(parent);
+        const clonedChild = clone.child as Record<string, unknown>;
+
+        expect(clonedChild.id).toBe('c');
+        expect(clonedChild.up).toBeUndefined();
+        expect(clone.after).toEqual({ id: 'sibling' });
     });
 });

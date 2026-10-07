@@ -10,19 +10,25 @@
  * than throw. Losing a transient DOM expando is harmless; the block data is
  * intact.
  *
- * The `WeakSet` replacer omits any object already seen on the current path,
- * which covers every cyclic shape. Template content is tree-shaped (and is
- * serialized to JSON for storage anyway), so dropping repeated references
- * never costs real data.
+ * The replacer tracks the ancestors of the value it is serializing and omits
+ * only a reference back to one of them, which is what every cycle is. An
+ * object reached by two paths is not a cycle and is copied into each place:
+ * content can legitimately share one, e.g. the repeatable `default` array that
+ * `createCustomBlock` hands every block of a type, and dropping the second
+ * visit would lose that block's data from `getContent()` and undo.
  */
 export function safeClone<T>(value: T): T {
-  const seen = new WeakSet<object>();
+  const ancestors: object[] = [];
   return JSON.parse(
-    JSON.stringify(value, (_key, val) => {
-      if (typeof val === "object" && val !== null) {
-        if (seen.has(val)) return undefined;
-        seen.add(val);
+    JSON.stringify(value, function (this: unknown, _key, val) {
+      if (typeof val !== "object" || val === null) return val;
+      // `this` is the object holding `val`; anything above it on the stack
+      // belongs to a branch serialization has already left.
+      while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) {
+        ancestors.pop();
       }
+      if (ancestors.includes(val)) return undefined;
+      ancestors.push(val);
       return val;
     }),
   ) as T;
