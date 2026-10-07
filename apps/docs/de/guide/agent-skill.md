@@ -23,6 +23,42 @@ npx skills update templatical
 
 Falls Ihr Agent den Skill danach nicht aufgreift, prüfen Sie, ob er in der Skill-Liste des Agenten aktiviert ist.
 
+## Der frühere Skill `templatical-email` {#previous-skill}
+
+Der Skill erschien zuvor als `templatical-email`. Diese Installationsbefehle dafür funktionieren nicht mehr:
+
+```text
+/plugin marketplace add templatical/sdk
+/plugin install templatical-email@templatical
+cp -r skills/templatical-email ~/.agents/skills/
+npx claudepluginhub templatical/sdk --plugin templatical-email
+```
+
+Der Skill wurde in `templatical` umbenannt, und `npx skills add templatical/sdk` ist sein einziger Installationsbefehl.
+
+Entfernen Sie zuerst die alte Kopie, damit Agenten sie nicht zusammen mit `templatical` laden:
+
+- Wenn Sie über die Plugin-Befehle von Claude Code oder `npx claudepluginhub` installiert haben, führen Sie diese Befehle in Claude Code aus:
+
+  ```text
+  /plugin uninstall templatical-email@templatical
+  /plugin marketplace remove templatical
+  ```
+
+  Das Repository stellt keinen Marketplace mehr bereit, daher verweist der Marketplace-Eintrag `templatical` ins Leere.
+
+- Wenn Sie den Ordner `templatical-email` in ein Skills-Verzeichnis kopiert oder per Symlink eingebunden haben (`~/.agents/skills/`, `~/.claude/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/` oder im Projekt `.agents/skills/`, `.claude/skills/` oder `.cursor/skills/`), löschen Sie ihn aus jedem dieser Verzeichnisse. Für `~/.agents/skills/`:
+
+  ```bash
+  rm -rf ~/.agents/skills/templatical-email
+  ```
+
+Installieren Sie danach den umbenannten Skill:
+
+```bash
+npx skills add templatical/sdk
+```
+
 ## Fähigkeiten
 
 - **Bauen** Sie eine Vorlage aus einem Briefing — „mach mir eine Produktlaunch-E-Mail", „gestalte eine Willkommens-E-Mail".

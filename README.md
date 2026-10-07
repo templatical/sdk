@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/dm/@templatical/editor?label=downloads&color=cb3837" alt="npm downloads" /></a>
   <a href="https://github.com/templatical/sdk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--MIT-blue" alt="License" /></a>
   <a href="https://github.com/templatical/sdk/actions"><img src="https://img.shields.io/github/actions/workflow/status/templatical/sdk/ci.yml?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/templatical/sdk"><img src="https://codecov.io/gh/templatical/sdk/branch/main/graph/badge.svg" alt="Coverage" /></a>
@@ -43,6 +44,8 @@
 Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source Agent Skill, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
 The [`templatical` Agent Skill](./skills/templatical) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+
+Installed the earlier `templatical-email` skill? Remove it before installing this one: [The previous `templatical-email` skill](https://docs.templatical.com/guide/agent-skill#previous-skill).
 
 One command and you're done:
 
