@@ -18,9 +18,8 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { materializeConsumer, repoRootFrom } from "./consumer-fixture.mjs";
@@ -64,19 +63,16 @@ try {
   // doesn't reach, so a consumer's production build is the only place an
   // undeclared optional import fails. The fixture installs no `pusher-js`.
   // This directory sits inside the repo's node_modules, so a bare import also
-  // resolves from every ancestor; the build proves nothing once `pusher-js`
-  // resolves from one of them.
-  let leakedPusher = null;
-  try {
-    leakedPusher = createRequire(join(CONSUMER_DIR, "package.json")).resolve(
-      "pusher-js",
-    );
-  } catch {
-    // Unresolvable, which is the state the build below depends on.
-  }
+  // resolves from every ancestor node_modules; the build proves nothing once
+  // `pusher-js` is in one of them. Check those folders the way a bundler does,
+  // not with Node's resolver: it also reads NODE_PATH, which pnpm's `.bin`
+  // shims point at its hoist folder, and Vite never consults it.
+  const leakedPusher = ancestorNodeModules(CONSUMER_DIR).find((dir) =>
+    existsSync(join(dir, "pusher-js", "package.json")),
+  );
   if (leakedPusher) {
     throw new Error(
-      `pusher-js resolves from the consumer (${leakedPusher}), so its production build can no longer catch an undeclared optional import`,
+      `pusher-js is installed in ${leakedPusher}, where the consumer resolves bare imports, so its production build can no longer catch an undeclared optional import`,
     );
   }
   log("running the consumer's production build (vite build)");
@@ -88,4 +84,17 @@ try {
   log(`OK — consumer at ${CONSUMER_DIR}`);
 } finally {
   rmSync(packDir, { recursive: true, force: true });
+}
+
+/** Every `node_modules` folder a bare import from `dir` is looked up in. */
+function ancestorNodeModules(dir) {
+  const folders = [];
+  for (let current = dir; ; current = dirname(current)) {
+    folders.push(
+      basename(current) === "node_modules"
+        ? current
+        : join(current, "node_modules"),
+    );
+    if (dirname(current) === current) return folders;
+  }
 }
