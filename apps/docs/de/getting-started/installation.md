@@ -139,7 +139,7 @@ Wenn Sie sie nicht installieren, mountet der Editor trotzdem. Der Issues-Tab von
 
 ### Hinweis zur Bundler-Ausgabe
 
-Der Editor funktioniert mit allen modernen Bundlern out of the box — unabhängig davon, welche optionalen Peers Sie installieren, ist keinerlei Konfiguration auf Consumer-Seite erforderlich. Vite, esbuild, Rollup und Rolldown behandeln die optionalen dynamischen Imports stillschweigend. Webpack 5 ist etwas gesprächiger: Es analysiert jeden `import()`-Aufruf statisch und gibt für jeden nicht installierten optionalen Peer eine harmlose `Module not found`-**Warnung** aus. Der Build ist trotzdem erfolgreich und der Editor läuft korrekt — diese Warnungen sind rein kosmetisch.
+Der Editor funktioniert mit allen modernen Bundlern out of the box — unabhängig davon, welche optionalen Peers Sie installieren, ist keinerlei Konfiguration auf Consumer-Seite erforderlich. Vite, esbuild und Rolldown behandeln die optionalen dynamischen Imports stillschweigend. Rollup gibt eine Warnung `Unresolved dependencies` aus, die jeden nicht installierten optionalen Peer nennt, und behandelt ihn als extern. Webpack 5 ist etwas gesprächiger: Es analysiert jeden `import()`-Aufruf statisch und gibt für jeden nicht installierten optionalen Peer eine harmlose `Module not found`-**Warnung** aus. Der Build ist trotzdem erfolgreich und der Editor läuft korrekt — diese Warnungen sind rein kosmetisch.
 
 Wenn Sie eine saubere Webpack-Ausgabe bevorzugen, können Sie die Warnungen optional über `ignoreWarnings` ausblenden:
 

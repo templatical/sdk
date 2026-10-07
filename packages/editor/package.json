@@ -65,13 +65,17 @@
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/quality": "workspace:*",
-    "@templatical/renderer": "workspace:*"
+    "@templatical/renderer": "workspace:*",
+    "pusher-js": "^8.6.0"
   },
   "peerDependenciesMeta": {
     "@templatical/renderer": {
       "optional": true
     },
     "@templatical/quality": {
+      "optional": true
+    },
+    "pusher-js": {
       "optional": true
     }
   },

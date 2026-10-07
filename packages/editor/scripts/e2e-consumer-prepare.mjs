@@ -16,6 +16,7 @@
  * Idempotent — wipes the cache dir before re-materializing.
  */
 
+import { execSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -57,6 +58,15 @@ try {
       );
     }
   }
+
+  // The dev server the smoke runs against never resolves an `import()` it
+  // doesn't reach, so a consumer's production build is the only place an
+  // undeclared optional import fails. The fixture installs no `pusher-js`.
+  log("running the consumer's production build (vite build)");
+  execSync("node node_modules/vite/bin/vite.js build --logLevel warn", {
+    cwd: CONSUMER_DIR,
+    stdio: "inherit",
+  });
 
   log(`OK — consumer at ${CONSUMER_DIR}`);
 } finally {

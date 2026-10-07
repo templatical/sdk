@@ -436,6 +436,9 @@ importers:
       '@templatical/renderer':
         specifier: workspace:*
         version: link:../renderer
+      pusher-js:
+        specifier: ^8.6.0
+        version: 8.6.0
     devDependencies:
       '@lucide/vue':
         specifier: ^1.51.0

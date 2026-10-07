@@ -139,7 +139,7 @@ If you don't install them, the editor still mounts. Quality's Issues tab and Pus
 
 ### A note on bundler output
 
-The editor works out of the box with every modern bundler — no consumer configuration is required regardless of which optional peers you install. Vite, esbuild, Rollup, and Rolldown handle the optional dynamic imports silently. Webpack 5 is slightly more verbose: it statically analyzes every `import()` and prints a harmless `Module not found` **warning** for each uninstalled optional peer. The build still succeeds and the editor runs correctly — these warnings are cosmetic only.
+The editor works out of the box with every modern bundler — no consumer configuration is required regardless of which optional peers you install. Vite, esbuild, and Rolldown handle the optional dynamic imports silently. Rollup prints an `Unresolved dependencies` warning naming each uninstalled optional peer and leaves it external. Webpack 5 is slightly more verbose: it statically analyzes every `import()` and prints a harmless `Module not found` **warning** for each uninstalled optional peer. The build still succeeds and the editor runs correctly — these warnings are cosmetic only.
 
 If you'd prefer a clean Webpack log, you can opt into silencing them with `ignoreWarnings`:
 

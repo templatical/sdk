@@ -4,8 +4,9 @@
  *
  * The editor uses dynamic `import()` with try/catch to load three optional
  * peers (`pusher-js`, `@templatical/quality`, `@templatical/renderer`).
- * Vite/esbuild silently pass these through when the package isn't installed;
- * Webpack 5 statically resolves every `import()` regardless of try/catch and
+ * A Vite build stubs a missing one because the manifest declares it optional,
+ * and esbuild leaves it external without a warning; Webpack 5 statically
+ * resolves every `import()` regardless of try/catch and
  * emits "Module not found" warnings/errors. That was the entire content of
  * issue #63 — the editor's docs claim "no peer dependencies" but Webpack
  * consumers still got a noisy or failing build.

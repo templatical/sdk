@@ -69,6 +69,18 @@ function extractImports(source: string): string[] {
     .filter((n): n is string => typeof n === "string");
 }
 
+/**
+ * Static and dynamic specifiers alike. Every optional peer is reached through
+ * `import()`, which `extractImports` leaves out.
+ */
+function extractAllImports(source: string): string[] {
+  const [imports] = parse(source);
+  return imports
+    .filter((i) => (i.type === "static" || i.type === "dynamic") && !i.typeOnly)
+    .map((i) => i.specifier)
+    .filter((n): n is string => typeof n === "string");
+}
+
 describe("editor bundle topology", () => {
   let allFiles: string[];
   let bareImportsByFile: Map<string, Set<string>>;
@@ -192,6 +204,27 @@ describe("editor bundle topology", () => {
     );
     expect(peers.sort()).toEqual(optionalPeers.sort());
     expect(peers).not.toContain("@templatical/media-library");
+  });
+
+  it("declares exactly its bare imports, dynamic ones included, as optional peers", () => {
+    // A consumer's production build resolves every `import()` it can see. Vite
+    // stubs a missing package only when the importer declares it as an
+    // optional peer; an undeclared one fails `vite build` with "failed to
+    // resolve import" while the dev server runs. The reverse direction keeps a
+    // declared peer from outliving the import that needed it.
+    const pkg = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"),
+    );
+    const optionalPeers = Object.keys(pkg.peerDependenciesMeta ?? {})
+      .filter((k) => pkg.peerDependenciesMeta[k]?.optional === true)
+      .sort();
+    const bare = new Set<string>();
+    for (const file of allFiles) {
+      for (const spec of extractAllImports(readFileSync(file, "utf8"))) {
+        if (isBareSpecifier(spec)) bare.add(getEntrypointSpecifier(spec));
+      }
+    }
+    expect([...bare].sort()).toEqual(optionalPeers);
   });
 
   it("ships the media library modal in an npm chunk", () => {
