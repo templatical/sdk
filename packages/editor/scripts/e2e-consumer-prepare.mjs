@@ -18,6 +18,7 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,6 +63,22 @@ try {
   // The dev server the smoke runs against never resolves an `import()` it
   // doesn't reach, so a consumer's production build is the only place an
   // undeclared optional import fails. The fixture installs no `pusher-js`.
+  // This directory sits inside the repo's node_modules, so a bare import also
+  // resolves from every ancestor; the build proves nothing once `pusher-js`
+  // resolves from one of them.
+  let leakedPusher = null;
+  try {
+    leakedPusher = createRequire(join(CONSUMER_DIR, "package.json")).resolve(
+      "pusher-js",
+    );
+  } catch {
+    // Unresolvable, which is the state the build below depends on.
+  }
+  if (leakedPusher) {
+    throw new Error(
+      `pusher-js resolves from the consumer (${leakedPusher}), so its production build can no longer catch an undeclared optional import`,
+    );
+  }
   log("running the consumer's production build (vite build)");
   execSync("node node_modules/vite/bin/vite.js build --logLevel warn", {
     cwd: CONSUMER_DIR,
