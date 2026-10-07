@@ -324,8 +324,8 @@ importers:
         specifier: ^1.5.6
         version: 1.5.6
       '@lucide/vue':
-        specifier: ^1.51.0
-        version: 1.51.0(vue@3.5.43(typescript@6.0.3))
+        specifier: ^1.52.0
+        version: 1.52.0(vue@3.5.43(typescript@6.0.3))
       '@templatical/editor':
         specifier: workspace:*
         version: link:../../packages/editor
@@ -441,8 +441,8 @@ importers:
         version: 8.6.0
     devDependencies:
       '@lucide/vue':
-        specifier: ^1.51.0
-        version: 1.51.0(vue@3.5.43(typescript@6.0.3))
+        specifier: ^1.52.0
+        version: 1.52.0(vue@3.5.43(typescript@6.0.3))
       '@templatical/core':
         specifier: workspace:*
         version: link:../core
@@ -692,8 +692,8 @@ importers:
   packages/media-library:
     dependencies:
       '@lucide/vue':
-        specifier: ^1.51.0
-        version: 1.51.0(vue@3.5.43(typescript@6.0.3))
+        specifier: ^1.52.0
+        version: 1.52.0(vue@3.5.43(typescript@6.0.3))
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
@@ -1309,8 +1309,8 @@ packages:
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
 
-  '@lucide/vue@1.51.0':
-    resolution: {integrity: sha512-zMkTAMP8OsPESz/GDedsZfr3VUF2IiHlj25mBZG6Pc8A8J8BdygkE8k1HhRFXEUNzytp5DqxiBQNm3RG/U2bVg==}
+  '@lucide/vue@1.52.0':
+    resolution: {integrity: sha512-Gwr6c14jhY6BscoFU+B9OKsr7lg8RTAKOLgW0e61kkFwkt9Q7CZmB9AyJcvhoqapEJgRg2bFoeAcO+cqpgKzEQ==}
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -5094,7 +5094,7 @@ snapshots:
     dependencies:
       '@lezer/common': 1.5.3
 
-  '@lucide/vue@1.51.0(vue@3.5.43(typescript@6.0.3))':
+  '@lucide/vue@1.52.0(vue@3.5.43(typescript@6.0.3))':
     dependencies:
       vue: 3.5.43(typescript@6.0.3)
 
