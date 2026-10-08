@@ -1,5 +1,11 @@
 # @templatical/types
 
+## 0.44.0
+
+### Patch Changes
+
+- 841cb38: `safeClone` drops only a reference back to an ancestor, so an object reached by two paths is copied into both places. It dropped the second visit before, which lost data from `editor.getContent()` and undo snapshots whenever two blocks shared an object, such as two custom blocks of a type whose repeatable field has a `default`.
+
 ## 0.43.3
 
 No changes in this release.

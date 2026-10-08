@@ -17,8 +17,60 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.43.3",
+  "latest": "0.44.0",
   "versions": [
+    {
+      "version": "0.44.0",
+      "date": "2026-10-08",
+      "changes": [
+        {
+          "hash": "841cb38",
+          "level": "minor",
+          "title": "The editor's type declarations no longer import any package. They imported `@templatical/types`, `@templatical/core`, `@templatical/quality` and `vue`, none of which the editor declares, so with only the editor installed TypeScript reported `Cannot find module` under `skipLibCheck: false` and typed those parts as `any` otherwise, letting a call like `init({ content: 42 })` compile. The types they reference are now part of the editor's own declarations.",
+          "body": "**Removed exports:** `EditorCapabilities`, `useFonts` and `UseFontsReturn`. They described the editor's internals and only worked inside its own Vue instance. `FontOption` is still exported.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "841cb38",
+          "level": "patch",
+          "title": "`pusher-js` is now declared as an optional peer. The editor imports it for `initCloud()` realtime, and without the declaration a production `vite build` of an app that doesn't install it failed with `failed to resolve import \"pusher-js\"`, while the dev server ran normally.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "841cb38",
+          "level": "patch",
+          "title": "`safeClone` drops only a reference back to an ancestor, so an object reached by two paths is copied into both places. It dropped the second visit before, which lost data from `editor.getContent()` and undo snapshots whenever two blocks shared an object, such as two custom blocks of a type whose repeatable field has a `default`.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "841cb38",
+          "level": "patch",
+          "title": "The editor works on a copy of the content it receives: `init({ content })`, `setContent()`, `create({ content })`, a `templates.load` result and version-history content. Edits never change the caller's object, and content from another Vue's `reactive()`, a `ref()`'s `.value` or `markRaw()`, or frozen store state, now edits normally. The editor held the object it was given before: an app's own reactive object kept text and settings edits off the canvas and the properties panel, and frozen state threw on the first edit.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "841cb38",
+          "level": "patch",
+          "title": "The Issues tab goes away when `@templatical/quality` isn't installed: the editor removes it once the package's import fails, and switches to the Content tab if Issues was open. Without the package the tab used to stay and open onto an empty panel.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.43.3",
       "date": "2026-10-06",
