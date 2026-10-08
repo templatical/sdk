@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 /**
  * `context7.json` at the repo root tells Context7, the docs index many coding
  * agents query, what to index and which instructions to show beside it. It
- * indexes the English docs only: the German mirror duplicates every page, the
- * Cloud pages describe a tier that is not live, and `public/` holds the
- * generated `llms-full.txt`, which repeats the whole corpus.
+ * indexes the English docs and the examples' READMEs (Context7 reads
+ * documentation formats, not source files): the German mirror duplicates every
+ * page, the Cloud pages describe a tier that is not live, and `public/` holds
+ * the generated `llms-full.txt`, which repeats the whole corpus.
  *
  * The field limits and semantics are Context7's own
  * (https://context7.com/docs/library-owners). Context7 validates the file
@@ -141,8 +142,8 @@ describe("context7.json", () => {
     );
   });
 
-  it("indexes the English docs and nothing else", () => {
-    expect(loadConfig().folders).toEqual(["apps/docs"]);
+  it("indexes the English docs and the examples, and nothing else", () => {
+    expect(loadConfig().folders).toEqual(["apps/docs", "examples"]);
   });
 
   it("excludes the German mirror, Cloud, generated output, tests, scripts and VitePress internals", () => {

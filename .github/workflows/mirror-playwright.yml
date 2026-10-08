@@ -2,9 +2,10 @@ name: Mirror Playwright image
 
 # mcr.microsoft.com intermittently throttles concurrent image pulls at its
 # Azure edge ("The request is blocked."). That fails the `container:`
-# "Initialize containers" step in ci.yml and turns the e2e / e2e-consumer jobs
-# red at random — most often when the build job fans out into 4 simultaneous
-# pulls of the same ~2GB image (e2e ×3 + e2e-consumer). GHCR sits next to the
+# "Initialize containers" step in ci.yml and turns the e2e, e2e-consumer and
+# examples jobs red at random — most often when the build job fans out into
+# simultaneous pulls of the same ~2GB image (the e2e shards, e2e-consumer and
+# the examples matrix). GHCR sits next to the
 # Actions runners and isn't throttled, so CI pulls the Playwright image from
 # there instead. This workflow keeps the GHCR copy in sync with MCR.
 #
@@ -12,10 +13,10 @@ name: Mirror Playwright image
 # matching ci.yml change lands, otherwise the first CI run has no image to
 # pull. After that the weekly schedule refreshes it.
 #
-# Version sync: TAG below must match the `container.image:` tag in BOTH the
-# `e2e` and `e2e-consumer` jobs of ci.yml AND the pinned `@playwright/test`
-# version in pnpm-lock.yaml. Bump all three together, then re-run this workflow
-# to mirror the new tag before the ci.yml bump merges.
+# Version sync: TAG below must match the `container.image:` tag in the `e2e`,
+# `e2e-consumer` and `examples` jobs of ci.yml AND the pinned `@playwright/test`
+# version in pnpm-lock.yaml. Bump them together, then re-run this workflow to
+# mirror the new tag before the ci.yml bump merges.
 
 on:
   workflow_dispatch:

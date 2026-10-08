@@ -15,10 +15,10 @@
 // size for no gain. Cloud is absent too: that tier is WIP and has no OSS
 // clients, and listing it sends agents into pages that contradict the BYO
 // contracts. Per-page raw markdown (served by the buildEnd hook in
-// .vitepress/config.ts) still copies every locale and cloud/, because that
-// is a file copy.
+// .vitepress/config.ts) still covers every locale and cloud/: it copies every
+// page, inlining only `<<<` includes.
 import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +64,7 @@ const GROUP_NAMES = {
 const GROUP_ORDER = [
   "Overview",
   "Getting Started",
+  "Frameworks",
   "Guide",
   "API Reference",
   "Connect your backend",
@@ -151,6 +152,91 @@ export function urlFor(relPath) {
   return `${SITE_URL}/${relPath.slice(0, -".md".length)}`;
 }
 
+// VitePress's `<<< path` include: a block line, indented at most three spaces.
+const SNIPPET_RE = /^ {0,3}<<<[ \t]+(.+?)[ \t]*$/;
+const FENCE_RE = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
+ * Walk `source` line by line and replace every `<<<` include outside a fenced
+ * code block with what `replace(rawPath)` returns.
+ */
+function mapSnippetIncludes(source, replace) {
+  const out = [];
+  let open = null;
+  for (const line of source.split("\n")) {
+    const fence = FENCE_RE.exec(line)?.[1] ?? null;
+    if (open) {
+      if (fence && fence[0] === open[0] && fence.length >= open.length && line.trim() === fence) {
+        open = null;
+      }
+      out.push(line);
+      continue;
+    }
+    if (fence) {
+      open = fence;
+      out.push(line);
+      continue;
+    }
+    const include = SNIPPET_RE.exec(line);
+    out.push(include ? replace(include[1]) : line);
+  }
+  return out.join("\n");
+}
+
+/** Every `<<<` include path in a markdown source, in order. */
+export function snippetIncludes(source) {
+  const found = [];
+  mapSnippetIncludes(source, (rawPath) => {
+    found.push(rawPath);
+    return "";
+  });
+  return found;
+}
+
+/**
+ * The file an include names, resolved as VitePress resolves it: `@` from the
+ * docs root, anything else from the including page's directory. Only a bare
+ * path is accepted. VitePress also reads a title, a region and line highlights
+ * from that line, which the inlining below would drop, so those throw rather
+ * than let the agent copy differ from the rendered page.
+ */
+export function resolveSnippetPath(rawPath, pagePath, docsDir = DOCS_DIR) {
+  if (/\s\[|[{}]|#[\w.-]+$/.test(rawPath)) {
+    throw new Error(
+      `${relative(docsDir, pagePath)}: "<<< ${rawPath}" uses a snippet option (a title, a region or highlighted lines) that the agent surface does not reproduce. Include a bare path.`,
+    );
+  }
+  if (rawPath.startsWith("@")) {
+    return join(docsDir, rawPath.slice(/[\\/]/.test(rawPath[1] ?? "") ? 2 : 1));
+  }
+  return join(dirname(pagePath), rawPath);
+}
+
+/**
+ * `source` with every `<<<` include replaced by a fenced block holding the
+ * included file. llms-full.txt and each page's raw-markdown twin then carry the
+ * code itself, not a VitePress directive an agent cannot follow.
+ */
+export function inlineSnippetIncludes(source, pagePath, docsDir = DOCS_DIR) {
+  return mapSnippetIncludes(source, (rawPath) => {
+    const file = resolveSnippetPath(rawPath, pagePath, docsDir);
+    let code;
+    try {
+      code = readFileSync(file, "utf8");
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        throw new Error(
+          `${relative(docsDir, pagePath)}: "<<< ${rawPath}" names a file that does not exist (${file})`,
+        );
+      }
+      throw error;
+    }
+    const longestRun = Math.max(0, ...[...code.matchAll(/`+/g)].map(([run]) => run.length));
+    const fence = "`".repeat(Math.max(3, longestRun + 1));
+    return [`${fence}${extname(file).slice(1)}`, code.replace(/\n$/, ""), fence].join("\n");
+  });
+}
+
 /**
  * Every English page, with its frontmatter and body.
  *
@@ -162,7 +248,8 @@ export function collectPages(docsDir = DOCS_DIR) {
   return walk(docsDir, docsDir)
     .sort()
     .flatMap((rel) => {
-      const { fields, body } = parsePage(readFileSync(join(docsDir, rel), "utf8"));
+      const abs = join(docsDir, rel);
+      const { fields, body } = parsePage(readFileSync(abs, "utf8"));
       // Stubs that exist so a human URL does not 404. Agents should fetch the
       // canonical page instead (see llms: false on guide/keyboard.md).
       if (fields.llms === "false") return [];
@@ -189,7 +276,7 @@ export function collectPages(docsDir = DOCS_DIR) {
           group: groupOf(rel),
           title,
           description,
-          body,
+          body: inlineSnippetIncludes(body, abs, docsDir),
         },
       ];
     });
@@ -311,14 +398,15 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
  * Copy every source markdown file into the build output beside its rendered
  * page, so each page is fetchable as raw markdown: append `.md` to its URL,
  * or `index.md` when the URL ends in `/`. The second half is a consequence of
- * this being a plain copy — a directory index keeps its `index.md` basename
- * while cleanUrls serves the page itself at the bare directory URL.
+ * each twin sitting at its source path — a directory index keeps its
+ * `index.md` basename while cleanUrls serves the page itself at the bare
+ * directory URL.
  *
  * Called from VitePress's buildEnd hook. Covers every locale, including de/,
- * and cloud/, because it is a file copy — only the generated index is
- * English-only and Cloud-free. Not routed through public/: that directory is
- * copied to the output root, and mirroring a route tree inside it invites
- * collisions with real routes.
+ * and cloud/: it copies every page, inlining only `<<<` includes. Only the
+ * generated index is English-only and Cloud-free. Not routed through public/:
+ * that directory is copied to the output root, and mirroring a route tree
+ * inside it invites collisions with real routes.
  */
 export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
   const copied = [];
@@ -335,7 +423,7 @@ export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
       const rel = relative(docsDir, abs).split(sep).join("/");
       const dest = join(outDir, rel);
       mkdirSync(dirname(dest), { recursive: true });
-      writeFileSync(dest, readFileSync(abs, "utf8"));
+      writeFileSync(dest, inlineSnippetIncludes(readFileSync(abs, "utf8"), abs, docsDir));
       copied.push(rel);
     }
   };

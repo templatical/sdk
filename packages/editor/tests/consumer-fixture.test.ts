@@ -8,11 +8,14 @@ import { describe, expect, it } from "vitest";
 // @ts-expect-error — plain .mjs build script, no declarations
 import {
   buildOrder,
+  readExampleRoots,
   readFixtureRoots,
   readWorkspacePackages,
   resolveWorkspaceClosure,
+  shouldCopyExampleEntry,
   tarballPlaceholder,
   vanillaConsumerDir,
+  withTarballs,
 } from "../scripts/consumer-fixture.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -239,7 +242,9 @@ describe("buildOrder", () => {
  * wholesale. Unlike `buildOrder`, this walks `devDependencies` too, because
  * pnpm's task graph does.
  */
-const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => {
+const findWorkspaceCycle = (
+  manifests: Map<string, Manifest>,
+): string | null => {
   const DONE = 1;
   const VISITING = 0;
   const state = new Map<string, number>();
@@ -252,7 +257,9 @@ const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => 
     }
     state.set(name, VISITING);
     path.push(name);
-    const edges = (["dependencies", "devDependencies", "peerDependencies"] as const)
+    const edges = (
+      ["dependencies", "devDependencies", "peerDependencies"] as const
+    )
       .flatMap((field) => Object.keys(manifests.get(name)?.[field] ?? {}))
       .filter((dep) => manifests.has(dep));
     for (const dep of edges) {
@@ -375,13 +382,150 @@ describe("the real workspace and fixtures", () => {
       ).toEqual(["@templatical/types"]);
     }
   });
+});
 
-  it("pins nothing for the turbopack fixture, which installs the editor alone", () => {
+describe("example materialization helpers", () => {
+  const manifests = new Map<
+    string,
+    { name: string; version: string; dependencies?: Record<string, string> }
+  >([
+    ["@templatical/editor", { name: "@templatical/editor", version: "0.43.3" }],
+    [
+      "@templatical/renderer",
+      {
+        name: "@templatical/renderer",
+        version: "0.43.3",
+        dependencies: { "@templatical/types": "workspace:*" },
+      },
+    ],
+    ["@templatical/types", { name: "@templatical/types", version: "0.43.3" }],
+  ]);
+
+  it("accepts ranges equal to ^<workspace version> and returns the roots in declaration order", () => {
     expect(
-      resolveWorkspaceClosure(
-        readFixtureRoots(readFixture("turbopack-consumer")),
+      readExampleRoots(
+        {
+          dependencies: {
+            next: "^16.0.0",
+            "@templatical/editor": "^0.43.3",
+            "@templatical/renderer": "^0.43.3",
+          },
+        },
         manifests,
-      ).transitive,
-    ).toEqual([]);
+      ),
+    ).toEqual(["@templatical/editor", "@templatical/renderer"]);
+  });
+
+  it("rejects a stale range and names sync-pins", () => {
+    expect(() =>
+      readExampleRoots(
+        { dependencies: { "@templatical/editor": "^0.42.0" } },
+        manifests,
+      ),
+    ).toThrow(
+      'example declares @templatical/editor: "^0.42.0" — expected "^0.43.3" (run: pnpm --filter @templatical/template-tools run sync-pins)',
+    );
+  });
+
+  it("rejects a @templatical package that is not in the workspace", () => {
+    expect(() =>
+      readExampleRoots(
+        { dependencies: { "@templatical/nope": "^0.43.3" } },
+        manifests,
+      ),
+    ).toThrow("@templatical/nope is not a workspace package under packages/");
+  });
+
+  it("reads devDependencies after dependencies, with the same range rule", () => {
+    expect(
+      readExampleRoots(
+        {
+          dependencies: { "@templatical/editor": "^0.43.3" },
+          devDependencies: { "@templatical/types": "^0.43.3" },
+        },
+        manifests,
+      ),
+    ).toEqual(["@templatical/editor", "@templatical/types"]);
+    expect(() =>
+      readExampleRoots(
+        { devDependencies: { "@templatical/types": "^0.42.0" } },
+        manifests,
+      ),
+    ).toThrow(
+      'example declares @templatical/types: "^0.42.0" — expected "^0.43.3"',
+    );
+  });
+
+  it("rewrites direct @templatical deps to tarballs and pins only the transitive ones", () => {
+    const input = {
+      name: "x",
+      dependencies: { react: "^19.0.0", "@templatical/editor": "^0.43.3" },
+    };
+    const tarballs = new Map([
+      ["@templatical/editor", "file:/p/templatical-editor-0.43.3.tgz"],
+      ["@templatical/types", "file:/p/templatical-types-0.43.3.tgz"],
+    ]);
+    const out = withTarballs(input, tarballs, ["@templatical/types"]);
+    expect(out.dependencies).toEqual({
+      react: "^19.0.0",
+      "@templatical/editor": "file:/p/templatical-editor-0.43.3.tgz",
+    });
+    expect(out.overrides).toEqual({
+      "@templatical/types": "file:/p/templatical-types-0.43.3.tgz",
+    });
+    expect(typeof out["//overrides"]).toBe("string");
+    expect(input.dependencies["@templatical/editor"]).toBe("^0.43.3");
+  });
+
+  it("adds no overrides when nothing is transitive", () => {
+    const out = withTarballs(
+      { dependencies: { "@templatical/types": "^0.43.3" } },
+      new Map([["@templatical/types", "file:/p/t.tgz"]]),
+      [],
+    );
+    expect(out).toEqual({
+      dependencies: { "@templatical/types": "file:/p/t.tgz" },
+    });
+  });
+
+  it("rewrites @templatical devDependencies to tarballs as well", () => {
+    expect(
+      withTarballs(
+        {
+          devDependencies: {
+            "@templatical/types": "^0.43.3",
+            typescript: "^6.0.0",
+          },
+        },
+        new Map([["@templatical/types", "file:/p/t.tgz"]]),
+        [],
+      ),
+    ).toEqual({
+      devDependencies: {
+        "@templatical/types": "file:/p/t.tgz",
+        typescript: "^6.0.0",
+      },
+    });
+  });
+
+  it.each([
+    ["/x/examples/nextjs/node_modules", false],
+    ["/x/examples/nextjs/.next", false],
+    ["/x/examples/nuxt/.nuxt", false],
+    ["/x/examples/nuxt/.output", false],
+    ["/x/examples/sveltekit/.svelte-kit", false],
+    ["/x/examples/react-router/.react-router", false],
+    ["/x/examples/react-router/build", false],
+    ["/x/examples/react-vite/dist", false],
+    ["/x/examples/nextjs/data", false],
+    ["/x/examples/nextjs/package-lock.json", false],
+    ["/x/examples/nextjs/pnpm-lock.yaml", false],
+    ["/x/examples/nextjs/yarn.lock", false],
+    ["/x/examples/nextjs/bun.lock", false],
+    ["/x/examples/nextjs/bun.lockb", false],
+    ["/x/examples/nextjs/app/page.tsx", true],
+    ["/x/examples/nextjs/package.json", true],
+  ])("shouldCopyExampleEntry(%s) is %s", (path, expected) => {
+    expect(shouldCopyExampleEntry(path)).toBe(expected);
   });
 });

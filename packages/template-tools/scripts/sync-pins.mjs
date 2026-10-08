@@ -1,6 +1,6 @@
 // Rewrites the release-time version pins that live outside this package.
 //
-// Two independent jobs, run together because both fire from the same root
+// Three independent jobs, run together because all three fire from the same root
 // `changeset:version` step and each keeps something that ships outside this
 // package in sync with it:
 //
@@ -14,6 +14,11 @@
 //    `npx -y @templatical/template-tools@…` invocation any island documents.
 //    Pinning is what keeps reference/schema.json from ever disagreeing with
 //    the published CLI's block model, since a release moves both together.
+// 3. The @templatical/* ranges in every examples/<name>/package.json, from
+//    @templatical/editor's version: each example installs the current
+//    release from npm, so the range moves with every release, and the
+//    Version Packages PR carries it.
+//
 // Runs at release time from the root `changeset:version` script (wired into
 // changesets/action's `version` step), so the Version Packages PR carries all
 // changes with no manual step. Also runnable by hand:
@@ -23,7 +28,13 @@
 // no-ops on a missing target is worse than no sync at all, because the pin
 // test then keeps passing on stale content right up until the release that
 // needed it.
-import { lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -73,17 +84,15 @@ export function syncEditorVersion() {
 
 const OWN_PKG = resolve(here, "../package.json");
 // applyCliPin's fallback label when a caller omits one. Every real caller
-// below passes its own label explicitly (syncCliPin per island
-// per docs page), so this only surfaces if applyCliPin is ever called
-// directly without one.
+// below passes its own label explicitly (syncCliPin, once per island), so this
+// only surfaces if applyCliPin is ever called directly without one.
 const SKILL_MD_LABEL = "skills/templatical/SKILL.md";
 
 // The fixed invocation prefix every reference island's Requirements section
 // declares as canonical: `npx -y @templatical/template-tools@<version>`,
 // identical for every command any island documents. Global so every
 // occurrence rewrites together — see the post-replace check below for what
-// happens if it didn't. Reused as-is by job 3 below: the docs site quotes the
-// exact same prefix.
+// happens if it didn't.
 const CLI_PIN_RE = /(npx -y @templatical\/template-tools@)(\S+)/g;
 
 /**
@@ -150,7 +159,9 @@ export function skillMarkdownFiles(dir = SKILL_DIR, base = SKILL_DIR) {
       continue;
     }
     if (entry.endsWith(".md")) {
-      out.push(`${SKILL_DIR_LABEL}/${relative(base, abs).split(sep).join("/")}`);
+      out.push(
+        `${SKILL_DIR_LABEL}/${relative(base, abs).split(sep).join("/")}`,
+      );
     }
   }
   return out;
@@ -188,6 +199,91 @@ export function syncCliPin() {
 }
 
 // ---------------------------------------------------------------------------
+// 3. The @templatical/* ranges in every examples/<name>/package.json
+// ---------------------------------------------------------------------------
+
+const EXAMPLES_DIR_LABEL = "examples";
+const EXAMPLES_DIR = resolve(here, "../../../", EXAMPLES_DIR_LABEL);
+const SCOPE = "@templatical/";
+const RANGE_FIELDS = ["dependencies", "devDependencies"];
+
+/**
+ * Pure: return `text` (an example's package.json) with every @templatical/*
+ * range in dependencies and devDependencies set to `^<version>`, plus how many
+ * it set. Throws when there are none — an example that installs no
+ * @templatical package means the walk reached the wrong file — and re-scans
+ * the result, like applyCliPin, so a regression here cannot leave a range
+ * stale while reporting success.
+ */
+export function applyExampleRanges(text, version, label) {
+  let manifest;
+  try {
+    manifest = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${label}: not valid JSON (${error.message})`);
+  }
+  let count = 0;
+  for (const field of RANGE_FIELDS) {
+    for (const name of Object.keys(manifest[field] ?? {})) {
+      if (!name.startsWith(SCOPE)) continue;
+      manifest[field][name] = `^${version}`;
+      count += 1;
+    }
+  }
+  if (count === 0) {
+    throw new Error(`No @templatical/* dependency in ${label}`);
+  }
+  const next = `${JSON.stringify(manifest, null, 2)}\n`;
+  const reparsed = JSON.parse(next);
+  const stale = RANGE_FIELDS.flatMap((field) =>
+    Object.entries(reparsed[field] ?? {}).filter(
+      ([name, range]) => name.startsWith(SCOPE) && range !== `^${version}`,
+    ),
+  );
+  if (stale.length > 0) {
+    throw new Error(
+      `${label}: ${stale.length} @templatical range(s) still differ from ^${version}`,
+    );
+  }
+  return { next, count };
+}
+
+/** Every examples/<name>/package.json, repo-relative, `/`-joined, sorted. */
+export function exampleManifests(dir = EXAMPLES_DIR) {
+  return readdirSync(dir)
+    .filter(
+      (entry) =>
+        lstatSync(join(dir, entry)).isDirectory() &&
+        existsSync(join(dir, entry, "package.json")),
+    )
+    .sort()
+    .map((entry) => `${EXAMPLES_DIR_LABEL}/${entry}/package.json`);
+}
+
+/** Rewrite every example's @templatical ranges to the editor's version. */
+export function syncExampleRanges() {
+  const version = JSON.parse(readFileSync(EDITOR_PKG, "utf8")).version;
+  const files = exampleManifests();
+  if (files.length === 0) {
+    throw new Error(
+      `No ${EXAMPLES_DIR_LABEL}/*/package.json found. The example sync is broken, not idle.`,
+    );
+  }
+  let count = 0;
+  let changed = false;
+  for (const label of files) {
+    const path = resolve(here, "../../../", label);
+    const src = readFileSync(path, "utf8");
+    const result = applyExampleRanges(src, version, label);
+    count += result.count;
+    if (result.next !== src) {
+      writeFileSync(path, result.next, "utf8");
+      changed = true;
+    }
+  }
+  return { version, changed, count, files: files.length };
+}
+
 // ---------------------------------------------------------------------------
 
 function main() {
@@ -205,6 +301,12 @@ function main() {
       : `${cli.count} CLI pin(s) across the skill's islands already ${cli.version} — no change`,
   );
 
+  const examples = syncExampleRanges();
+  console.log(
+    examples.changed
+      ? `Synced ${examples.count} @templatical range(s) across ${examples.files} example(s) to ^${examples.version}`
+      : `${examples.count} @templatical range(s) across ${examples.files} example(s) already ^${examples.version} — no change`,
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

@@ -108,6 +108,29 @@ development), `cancelled` unmounts the editor that arrives late and `instance`
 is what the cleanup unmounts once one has settled; unmounting only the ref
 leaks an editor.
 
+## Working examples
+
+Complete apps, built and run in CI against every SDK change. To start a
+project from one, copy it:
+`npx degit templatical/sdk/examples/<name> my-app`. To read one, fetch its
+docs page as raw markdown, which inlines every file the page shows.
+
+| Example | Stack | Code | Docs page |
+| --- | --- | --- | --- |
+| `nextjs` | Next.js 16 App Router, API routes | https://github.com/templatical/sdk/tree/main/examples/nextjs | https://docs.templatical.com/frameworks/nextjs.md |
+| `nuxt` | Nuxt 4, server routes | https://github.com/templatical/sdk/tree/main/examples/nuxt | https://docs.templatical.com/frameworks/nuxt.md |
+| `sveltekit` | SvelteKit 3, `+server.ts` routes | https://github.com/templatical/sdk/tree/main/examples/sveltekit | https://docs.templatical.com/frameworks/sveltekit.md |
+| `react-router` | React Router 8 framework mode, resource routes | https://github.com/templatical/sdk/tree/main/examples/react-router | https://docs.templatical.com/frameworks/react-router.md |
+| `react-vite` | Vite + React, no backend (`localStorage`) | https://github.com/templatical/sdk/tree/main/examples/react-vite | https://docs.templatical.com/frameworks/react.md |
+
+The full-stack examples share these files byte for byte (React Router names the server-side ones `*.server.ts`):
+- `store.ts`, the storage to replace
+- `render.ts`, which turns a template into MJML and HTML
+- `outbox.ts`, holding `deliver()`, the email sender to replace
+- `providers.ts`, the editor's `fetch`-based providers
+
+Only the framework glue differs. When a consumer's repository uses one of these frameworks, follow that example's file layout. The provider contracts are in [providers.md](providers.md).
+
 ## Cloud
 
 `initCloud()` is the same mount with Cloud's storage, comments, saved blocks,

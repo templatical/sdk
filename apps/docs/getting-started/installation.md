@@ -324,6 +324,8 @@ If the effect re-runs before `init()` resolves — React StrictMode does this in
 Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
 :::
 
+Runnable example apps, tested in CI against every SDK change: [React (Vite)](/frameworks/react), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt) and [SvelteKit](/frameworks/sveltekit).
+
 ## TypeScript support
 
 All packages ship with full TypeScript type definitions. Configuration options, callback payloads, block types, and instance methods are fully typed:

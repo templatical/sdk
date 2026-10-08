@@ -4,7 +4,7 @@
   "public_key": "pk_GwdvZ2YYNH5Q55iJ7tAce",
   "projectTitle": "Templatical",
   "description": "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, framework-agnostic, with your own backend behind every storage feature. Source-available (FSL-1.1-MIT).",
-  "folders": ["apps/docs"],
+  "folders": ["apps/docs", "examples"],
   "excludeFolders": [
     "apps/docs/de",
     "apps/docs/cloud",

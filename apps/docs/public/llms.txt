@@ -21,6 +21,14 @@ Documentation for SDK version 0.43.3. Every page below is also available as raw 
 - [Quick Start](https://docs.templatical.com/getting-started/quick-start): Get the Templatical email editor running in under 5 minutes.
 - [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
 
+## Frameworks
+
+- [Next.js](https://docs.templatical.com/frameworks/nextjs): A runnable Next.js 16 App Router app with the Templatical editor, backed by API routes for templates, saved blocks, HTML export and test emails.
+- [Nuxt](https://docs.templatical.com/frameworks/nuxt): A runnable Nuxt 4 app with the Templatical editor, backed by server routes for templates, saved blocks, HTML export and test emails.
+- [React Router](https://docs.templatical.com/frameworks/react-router): A runnable React Router 8 framework-mode app with the Templatical editor, backed by resource routes for templates, saved blocks, HTML export and test emails.
+- [React (Vite)](https://docs.templatical.com/frameworks/react): A runnable Vite and React 19 single-page app with the Templatical editor and no backend, the starting point for a React front end on any server.
+- [SvelteKit](https://docs.templatical.com/frameworks/sveltekit): A runnable SvelteKit 3 app with the Templatical editor, backed by +server.ts routes for templates, saved blocks, HTML export and test emails.
+
 ## Guide
 
 - [Editor accessibility](https://docs.templatical.com/guide/accessibility): Keyboard, focus, dialogs, shadow DOM, and host duties for the editor chrome. Not the email quality linter.

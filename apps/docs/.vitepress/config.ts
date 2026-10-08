@@ -76,6 +76,16 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       ],
     },
     {
+      text: "Frameworks",
+      items: [
+        { text: "React (Vite)", link: "/frameworks/react" },
+        { text: "Next.js", link: "/frameworks/nextjs" },
+        { text: "React Router", link: "/frameworks/react-router" },
+        { text: "Nuxt", link: "/frameworks/nuxt" },
+        { text: "SvelteKit", link: "/frameworks/sveltekit" },
+      ],
+    },
+    {
       text: "Guide",
       items: [
         { text: "Merge Tags", link: "/guide/merge-tags" },
@@ -254,6 +264,16 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       ],
     },
     {
+      text: "Frameworks",
+      items: [
+        { text: "React (Vite)", link: "/de/frameworks/react" },
+        { text: "Next.js", link: "/de/frameworks/nextjs" },
+        { text: "React Router", link: "/de/frameworks/react-router" },
+        { text: "Nuxt", link: "/de/frameworks/nuxt" },
+        { text: "SvelteKit", link: "/de/frameworks/sveltekit" },
+      ],
+    },
+    {
       text: "Anleitung",
       items: [
         { text: "Merge-Tags", link: "/de/guide/merge-tags" },
@@ -388,7 +408,7 @@ export default defineConfig({
   // and never fetches robots.txt or /llms.txt.
   //
   // The href is the page's markdown SOURCE path, not its rendered URL:
-  // copyMarkdownSources is a plain file copy, so the twin of
+  // copyMarkdownSources writes each twin at its source path, so the twin of
   // `guide/widgets/index.md` sits at /guide/widgets/index.md while cleanUrls
   // serves the page itself at /guide/widgets/. pageData.filePath is exactly
   // that source path, and it is empty for virtual pages (the 404, which has no
