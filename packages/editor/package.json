@@ -4,7 +4,7 @@
   "version": "0.43.3",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
-    "@lucide/vue": "^1.51.0",
+    "@lucide/vue": "^1.52.0",
     "@templatical/core": "workspace:*",
     "@templatical/media-library": "workspace:*",
     "@templatical/quality": "workspace:*",
@@ -27,7 +27,7 @@
     "@vueuse/core": "^15.0.0",
     "es-module-lexer": "^3.0.2",
     "happy-dom": "^20.14.5",
-    "jsdom": "30.1.1",
+    "jsdom": "30.1.2",
     "liquidjs": "^10.30.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",

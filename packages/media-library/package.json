@@ -4,7 +4,7 @@
   "version": "0.43.3",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.51.0",
+    "@lucide/vue": "^1.52.0",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^15.0.0",
     "vue-advanced-cropper": "^2.8.9"

@@ -12,7 +12,7 @@
     "@codemirror/view": "^6.43.13",
     "@lezer/highlight": "^1.2.5",
     "@lezer/javascript": "^1.5.6",
-    "@lucide/vue": "^1.51.0",
+    "@lucide/vue": "^1.52.0",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-chamaileon": "workspace:*",
