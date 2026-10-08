@@ -8,7 +8,9 @@ import { describe, expect, it } from "vitest";
  * indexes the English docs and the examples' READMEs (Context7 reads
  * documentation formats, not source files): the German mirror duplicates every
  * page, the Cloud pages describe a tier that is not live, and `public/` holds
- * the generated `llms-full.txt`, which repeats the whole corpus.
+ * the generated `llms-full.txt`, which repeats the whole corpus. Because the
+ * examples' code never reaches the index, one rule points agents at the
+ * framework pages' served markdown, which includes it.
  *
  * The field limits and semantics are Context7's own
  * (https://context7.com/docs/library-owners). Context7 validates the file
@@ -108,6 +110,7 @@ const ESSENTIALS: Array<[string, ...string[]]> = [
   ],
   ["describe storage features as providers", "savedBlocks"],
   ["name initCloud as the hosted variant", "initCloud()"],
+  ["point at the framework pages", "docs.templatical.com/frameworks/"],
 ];
 
 describe("context7.json", () => {
@@ -182,6 +185,22 @@ describe("context7.json", () => {
     expect(
       rules.some((rule) => needles.every((needle) => rule.includes(needle))),
     ).toBe(true);
+  });
+
+  it("names every framework page in the rule that points at them", () => {
+    const pointer = loadConfig().rules.filter((rule) =>
+      rule.includes("docs.templatical.com/frameworks/"),
+    );
+    expect(pointer).toHaveLength(1);
+    const pages = readdirSync(join(REPO, "apps/docs/frameworks"))
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => file.slice(0, -".md".length));
+    // Read from disk, so an empty list would pass the check below for the
+    // wrong reason.
+    expect(pages.length).toBeGreaterThan(0);
+    expect(pages.filter((page) => !pointer[0].includes(`\`${page}\``))).toEqual(
+      [],
+    );
   });
 
   describe("the rule that says what to install", () => {

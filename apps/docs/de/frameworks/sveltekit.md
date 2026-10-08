@@ -9,7 +9,9 @@ description: Eine lauffähige SvelteKit-3-App mit dem Templatical-Editor, angebu
 
 ## Ausführen des Beispiels
 
-[Öffnen Sie es auf StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit), oder kopieren Sie es in ein neues Verzeichnis:
+[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit)
+
+Oder kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/sveltekit my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Die Komponente bindet den Editor in `onMount` ein und gibt den Cleanup zurück, der ihn unmountet – auch einen Editor, der erst fertig lädt, nachdem die Komponente entfernt wurde. Sie importiert `init()` innerhalb von `onMount`, daher läuft der Editor nie auf dem Server. Ohne `?id=` in der URL legt sie ein Template an und schreibt die neue ID mit SvelteKits `goto` in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Der Link zum Neustart trägt `data-sveltekit-reload`. Dadurch lädt er die Seite vollständig neu, und die Komponente legt beim erneuten Mounten ein Template an.
+Die Komponente bindet den Editor in `onMount` ein und gibt den Cleanup zurück, der ihn unmountet – auch einen Editor, der erst fertig lädt, nachdem die Komponente entfernt wurde. Sie importiert `init()` innerhalb von `onMount`, daher läuft der Editor nie auf dem Server. Ohne `?id=` in der URL legt sie ein Template an und schreibt die neue ID mit SvelteKits `goto` in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Der Link zum Neustart trägt `data-sveltekit-reload`. Dadurch lädt er die Seite vollständig neu, und die Komponente legt beim erneuten Mounten ein Template an. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa eine Bibliothek gespeicherter Blöcke, die nicht lädt, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `src/lib/EmailEditor.svelte`
 
@@ -36,7 +38,11 @@ Der Editor erreicht das Backend nur über diese Objekte. Jede Methode ist ein `f
 
 ## Die Server-Routen
 
-Jede `+server.ts`-Datei exportiert einen Handler pro HTTP-Methode. Jeder Handler prüft seine Eingaben, ruft den Store oder den Renderer auf und antwortet mit JSON oder einem leeren 204. Eine abgelehnte Anfrage erhält einen 4xx-Status und `{ message }`, die der Editor anzeigt.
+Jede `+server.ts`-Datei exportiert einen Handler pro HTTP-Methode. Jeder Handler prüft seine Eingaben, ruft den Store oder den Renderer auf und antwortet mit JSON oder einem leeren 204. Eine abgelehnte Anfrage erhält einen 4xx-Status und `{ message }`, die der Editor anzeigt. Die Handler lesen Request-Bodies mit `readJson`, das einen Body über dem `BODY_SIZE_LIMIT` von adapter-node mit einem 413 beantwortet, der die Einstellung nennt.
+
+`src/lib/server/read-json.ts`
+
+<<< @/../../examples/sveltekit/src/lib/server/read-json.ts
 
 `src/routes/api/templates/+server.ts`
 

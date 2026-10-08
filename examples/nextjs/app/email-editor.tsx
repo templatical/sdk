@@ -12,8 +12,13 @@ import {
 
 type Problem = { message: string; offerRestart: boolean };
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
 
 export function EmailEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,7 +43,7 @@ export function EmailEditor() {
         testEmail: testEmailProvider,
         render: renderProvider,
         onError: (error) => {
-          if (!cancelled) setProblem({ message: error.message, offerRestart: false });
+          if (!cancelled) setProblem({ message: messageOf(error), offerRestart: false });
         },
       });
       if (cancelled) {
@@ -70,6 +75,9 @@ export function EmailEditor() {
   }, []);
 
   async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    setProblem((current) => (current?.offerRestart ? current : null));
     // Opened inside the click, so a popup blocker allows it, and filled once
     // the HTML is ready.
     const tab = window.open("", "_blank");

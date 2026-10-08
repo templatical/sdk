@@ -13,6 +13,8 @@ npm install
 npm run dev
 ```
 
+StackBlitz starts the app with `next dev --webpack` (the `stackblitz.startCommand` in `package.json`): Turbopack needs native bindings, which StackBlitz's in-browser runtime doesn't have. `npm run dev` on your machine uses Turbopack.
+
 ## Files
 
 | File | Role |

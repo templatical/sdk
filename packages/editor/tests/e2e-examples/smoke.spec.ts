@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 const KIND = process.env.EXAMPLE_KIND;
+const EXAMPLE = process.env.EXAMPLE ?? "";
 const DATA_DIR = process.env.TEMPLATICAL_DATA_DIR ?? "";
 
 const APP_ORIGIN = new URL(process.env.EXAMPLE_URL ?? "http://localhost")
@@ -37,6 +38,11 @@ function outboxFiles(outbox: string): string[] {
 
 const buttons = (page: Page) => page.locator('[data-block-type="button"]');
 
+// Next.js renders its own empty role="alert" route announcer, so the
+// example's alert is found inside its toolbar.
+const toolbarAlert = (page: Page) =>
+  page.locator(".toolbar").getByRole("alert");
+
 async function insertButton(page: Page) {
   await page.locator('[data-palette-type="button"]').click();
 }
@@ -63,8 +69,10 @@ async function openLibraryCard(page: Page, name: string) {
 
 test("runs against a known example kind", () => {
   // Each describe below skips unless its kind matches, so a wrong
-  // EXAMPLE_KIND would otherwise pass with nothing run.
+  // EXAMPLE_KIND would otherwise pass with nothing run. The same holds for
+  // EXAMPLE and the one test that runs against a single example.
   expect(["fullstack", "minimal"]).toContain(KIND);
+  expect(EXAMPLE).not.toBe("");
 });
 
 test.describe("full-stack example", () => {
@@ -114,6 +122,12 @@ test.describe("full-stack example", () => {
     });
     expect(renamed.status()).toBe(200);
     expect(((await renamed.json()) as { name: string }).name).toBe(renamedTo);
+    const listedAfter = (await (
+      await page.request.get("/api/saved-blocks")
+    ).json()) as { id: string; name: string }[];
+    expect(listedAfter.find((block) => block.id === saved?.id)?.name).toBe(
+      renamedTo,
+    );
 
     // Deleting sends the journey's only bodyless request, the one a
     // framework's CSRF check is likeliest to reject, so the saved block is
@@ -166,8 +180,89 @@ test.describe("full-stack example", () => {
     expect(errors).toEqual([]);
   });
 
+  test("shows editor and export failures in the toolbar until the next export", async ({
+    page,
+    context,
+  }) => {
+    // The 500s below are deliberate, so only page errors count.
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    const alert = toolbarAlert(page);
+
+    await page.goto("/");
+    await expect(page).toHaveURL(/[?&]id=[0-9a-f-]{36}/);
+
+    // The editor reports a saved-block library that fails to load through
+    // onError, which the example shows in its toolbar.
+    await page.route("**/api/saved-blocks", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({
+            status: 500,
+            json: { message: "Saved blocks are unavailable." },
+          })
+        : route.fallback(),
+    );
+    await page.locator('button[aria-label="Browse saved blocks"]').click();
+    await expect(alert).toHaveText("Saved blocks are unavailable.");
+    await page.locator('[data-testid="saved-blocks-browser-close"]').click();
+    await page.unroute("**/api/saved-blocks");
+
+    // A failed render closes the tab the export opened, and its message
+    // replaces the earlier one.
+    await page.route("**/api/render", (route) =>
+      route.fulfill({ status: 500, json: { message: "Rendering failed." } }),
+    );
+    const failedTab = context.waitForEvent("page");
+    await page.getByTestId("export-html").click();
+    const failed = await failedTab;
+    await expect(alert).toHaveText("Rendering failed.");
+    await expect.poll(() => failed.isClosed()).toBe(true);
+    await page.unroute("**/api/render");
+
+    const exportTab = context.waitForEvent("page");
+    await page.getByTestId("export-html").click();
+    const exported = await exportTab;
+    await expect(exported.locator("iframe")).toHaveAttribute("sandbox", "");
+    await exported.close();
+    await expect(alert).toHaveCount(0);
+
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("asks for pop-ups when the browser blocks the export tab", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.open = () => null;
+    });
+    await page.goto("/");
+    await expect(page).toHaveURL(/[?&]id=[0-9a-f-]{36}/);
+    await page.getByTestId("export-html").click();
+    await expect(toolbarAlert(page)).toHaveText(
+      "Allow pop-ups for this page to see the export.",
+    );
+  });
+
+  test("answers a body over adapter-node's BODY_SIZE_LIMIT with 413", async ({
+    request,
+  }) => {
+    test.skip(
+      EXAMPLE !== "sveltekit",
+      "only adapter-node limits request bodies",
+    );
+    // Over the 512K default, so adapter-node fails the read.
+    const response = await request.post("/api/templates", {
+      data: { name: "x".repeat(600 * 1024) },
+    });
+    expect(response.status()).toBe(413);
+    expect(((await response.json()) as { message: string }).message).toBe(
+      "The request body is larger than BODY_SIZE_LIMIT allows (512K by default).",
+    );
+  });
+
   test("offers a new template when the requested one is missing", async ({
     page,
+    context,
   }) => {
     // The 404 for the missing template is expected, so only page errors count.
     const pageErrors: string[] = [];
@@ -178,6 +273,13 @@ test.describe("full-stack example", () => {
       .filter({ hasText: "Template not found." });
 
     await page.goto(`/?id=${missing}`);
+    await expect(notFound).toBeVisible();
+    // An export keeps the message and its link: the template never opened.
+    const exportTab = context.waitForEvent("page");
+    await page.getByTestId("export-html").click();
+    const exported = await exportTab;
+    await expect(exported.locator("iframe")).toHaveAttribute("sandbox", "");
+    await exported.close();
     await expect(notFound).toBeVisible();
     await notFound.getByRole("link", { name: "Start a new template" }).click();
     // A different id: the old URL would satisfy a plain id pattern at once.
@@ -226,5 +328,31 @@ test.describe("minimal example", () => {
     await expect(page.getByTestId("export-output")).toContainText(BUTTON_TEXT);
 
     expect(errors).toEqual([]);
+  });
+
+  test("shows an editor failure in the toolbar until the next export", async ({
+    page,
+  }) => {
+    // The editor's localStorage provider can't read the saved-block library,
+    // and the editor reports that through onError.
+    await page.addInitScript(() => {
+      const getItem = Storage.prototype.getItem;
+      Storage.prototype.getItem = function (this: Storage, key: string) {
+        if (key === "templatical:saved-blocks") {
+          throw new Error("Saved blocks are unavailable.");
+        }
+        return getItem.call(this, key);
+      };
+    });
+    const alert = toolbarAlert(page);
+
+    await page.goto("/");
+    await page.locator('button[aria-label="Browse saved blocks"]').click();
+    await expect(alert).toHaveText("Saved blocks are unavailable.");
+    await page.locator('[data-testid="saved-blocks-browser-close"]').click();
+
+    await page.getByTestId("export-mjml").click();
+    await expect(page.getByTestId("export-output")).toContainText("<mjml");
+    await expect(alert).toHaveCount(0);
   });
 });

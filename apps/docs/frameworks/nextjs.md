@@ -9,7 +9,9 @@ description: A runnable Next.js 16 App Router app with the Templatical editor, b
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## The editor component
 
-A client component mounts the editor. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template.
+A client component mounts the editor. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/email-editor.tsx`
 

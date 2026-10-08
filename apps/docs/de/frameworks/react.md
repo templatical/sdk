@@ -9,7 +9,9 @@ description: Eine lauffähige Single-Page-App mit Vite, React 19 und dem Templat
 
 ## Ausführen des Beispiels
 
-[Öffnen Sie es auf StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite), oder kopieren Sie es in ein neues Verzeichnis:
+[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite)
+
+Oder kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/react-vite my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Die Komponente bindet den Editor in einem Effect ein, und ihr Cleanup unmountet ihn – auch einen Editor, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. `onChange` schreibt jede Änderung nach `localStorage`, und der nächste Mount übergibt sie als `content` zurück an den Editor. Startet der Editor nicht oder schlägt ein Export fehl, zeigt die Werkzeugleiste die Fehlermeldung an.
+Die Komponente bindet den Editor in einem Effect ein, und ihr Cleanup unmountet ihn – auch einen Editor, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. `onChange` schreibt jede Änderung nach `localStorage`, und der nächste Mount übergibt sie als `content` zurück an den Editor. Startet der Editor nicht, zeigt die Werkzeugleiste die Fehlermeldung an. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa gespeicherte Blöcke, die er nicht aus `localStorage` lesen kann, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `src/email-editor.tsx`
 

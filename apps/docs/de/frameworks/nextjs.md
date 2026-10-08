@@ -9,7 +9,9 @@ description: Eine lauffähige Next.js-16-App mit App Router und dem Templatical-
 
 ## Ausführen des Beispiels
 
-[Öffnen Sie es auf StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs), oder kopieren Sie es in ein neues Verzeichnis:
+[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs)
+
+Oder kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Eine Client-Komponente bindet den Editor ein. Sie importiert `init()` innerhalb des Effects, daher läuft der Editor nie auf dem Server, und ihr Cleanup unmountet den Editor – auch einen, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. Ohne `?id=` in der URL legt sie ein Template an und schreibt dessen neue ID in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt.
+Eine Client-Komponente bindet den Editor ein. Sie importiert `init()` innerhalb des Effects, daher läuft der Editor nie auf dem Server, und ihr Cleanup unmountet den Editor – auch einen, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. Ohne `?id=` in der URL legt sie ein Template an und schreibt dessen neue ID in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa eine Bibliothek gespeicherter Blöcke, die nicht lädt, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `app/email-editor.tsx`
 

@@ -76,8 +76,14 @@ export function EmailEditor() {
   }, []);
 
   async function exportMjml() {
+    const ed = editorRef.current;
+    // No editor yet, or it failed to start: nothing to export, and a start
+    // failure keeps its alert.
+    if (!ed) return;
+    // A new export replaces an earlier failure.
+    setProblem(null);
     try {
-      setMjml((await editorRef.current?.toMjml()) ?? "");
+      setMjml(await ed.toMjml());
     } catch (error) {
       setProblem(messageOf(error));
     }

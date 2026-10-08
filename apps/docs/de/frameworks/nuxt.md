@@ -9,7 +9,9 @@ description: Eine lauffähige Nuxt-4-App mit dem Templatical-Editor, angebunden 
 
 ## Ausführen des Beispiels
 
-[Öffnen Sie es auf StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt), oder kopieren Sie es in ein neues Verzeichnis:
+[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt)
+
+Oder kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Eine reine Client-Komponente (`.client.vue`) bindet den Editor in `onMounted` ein und unmountet ihn in `onBeforeUnmount` – auch einen Editor, der erst fertig lädt, nachdem die Komponente entfernt wurde. Sie wartet zuerst einen Tick, weil Nuxt das Template einer reinen Client-Komponente erst nach dem Mounten der Komponente rendert. Sie importiert `init()` innerhalb von `onMounted`, daher läuft der Editor nie auf dem Server. Ohne `?id=` in der URL legt sie ein Template an und schreibt dessen neue ID in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt.
+Eine reine Client-Komponente (`.client.vue`) bindet den Editor in `onMounted` ein und unmountet ihn in `onBeforeUnmount` – auch einen Editor, der erst fertig lädt, nachdem die Komponente entfernt wurde. Sie wartet zuerst einen Tick, weil Nuxt das Template einer reinen Client-Komponente erst nach dem Mounten der Komponente rendert. Sie importiert `init()` innerhalb von `onMounted`, daher läuft der Editor nie auf dem Server. Ohne `?id=` in der URL legt sie ein Template an und schreibt dessen neue ID in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa eine Bibliothek gespeicherter Blöcke, die nicht lädt, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `app/components/EmailEditor.client.vue`
 

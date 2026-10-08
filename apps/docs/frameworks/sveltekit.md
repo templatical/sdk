@@ -9,7 +9,9 @@ description: A runnable SvelteKit 3 app with the Templatical editor, backed by +
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/sveltekit my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in `onMount` and returns the cleanup that unmounts it, including an editor that finishes loading after the component has gone. It imports `init()` inside `onMount`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL with SvelteKit's `goto`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The restart link carries `data-sveltekit-reload`, which makes it a full page load, so the component mounts again and creates a template.
+The component mounts the editor in `onMount` and returns the cleanup that unmounts it, including an editor that finishes loading after the component has gone. It imports `init()` inside `onMount`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL with SvelteKit's `goto`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The restart link carries `data-sveltekit-reload`, which makes it a full page load, so the component mounts again and creates a template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `src/lib/EmailEditor.svelte`
 
@@ -36,7 +38,11 @@ The editor reaches the backend only through these objects. Each method is one `f
 
 ## The server routes
 
-Each `+server.ts` file exports one handler per HTTP method. Each handler validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports.
+Each `+server.ts` file exports one handler per HTTP method. Each handler validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports. The handlers read request bodies with `readJson`, which answers a body over adapter-node's `BODY_SIZE_LIMIT` with a 413 that names the setting.
+
+`src/lib/server/read-json.ts`
+
+<<< @/../../examples/sveltekit/src/lib/server/read-json.ts
 
 `src/routes/api/templates/+server.ts`
 

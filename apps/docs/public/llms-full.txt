@@ -3741,7 +3741,9 @@ Source: https://docs.templatical.com/frameworks/nextjs
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app
@@ -3752,7 +3754,7 @@ npm run dev
 
 ## The editor component
 
-A client component mounts the editor. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template.
+A client component mounts the editor. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/email-editor.tsx`
 
@@ -3771,8 +3773,13 @@ import {
 
 type Problem = { message: string; offerRestart: boolean };
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
 
 export function EmailEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -3797,7 +3804,7 @@ export function EmailEditor() {
         testEmail: testEmailProvider,
         render: renderProvider,
         onError: (error) => {
-          if (!cancelled) setProblem({ message: error.message, offerRestart: false });
+          if (!cancelled) setProblem({ message: messageOf(error), offerRestart: false });
         },
       });
       if (cancelled) {
@@ -3829,6 +3836,9 @@ export function EmailEditor() {
   }, []);
 
   async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    setProblem((current) => (current?.offerRestart ? current : null));
     // Opened inside the click, so a popup blocker allows it, and filled once
     // the HTML is ready.
     const tab = window.open("", "_blank");
@@ -4111,7 +4121,9 @@ Source: https://docs.templatical.com/frameworks/nuxt
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app
@@ -4122,7 +4134,7 @@ npm run dev
 
 ## The editor component
 
-A client-only component (`.client.vue`) mounts the editor in `onMounted` and unmounts it in `onBeforeUnmount`, including an editor that finishes loading after the component has gone. It waits one tick first, because Nuxt renders a client-only component's template after the component mounts. It imports `init()` inside `onMounted`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template.
+A client-only component (`.client.vue`) mounts the editor in `onMounted` and unmounts it in `onBeforeUnmount`, including an editor that finishes loading after the component has gone. It waits one tick first, because Nuxt renders a client-only component's template after the component mounts. It imports `init()` inside `onMounted`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/components/EmailEditor.client.vue`
 
@@ -4140,8 +4152,13 @@ import {
 
 type Problem = { message: string; offerRestart: boolean };
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
 
 const container = ref<HTMLDivElement>();
 const problem = ref<Problem | null>(null);
@@ -4159,7 +4176,7 @@ async function openEditor(el: HTMLDivElement) {
     testEmail: testEmailProvider,
     render: renderProvider,
     onError: (error) => {
-      if (!unmounted) problem.value = { message: error.message, offerRestart: false };
+      if (!unmounted) problem.value = { message: messageOf(error), offerRestart: false };
     },
   });
   if (unmounted) {
@@ -4198,6 +4215,9 @@ onBeforeUnmount(() => {
 });
 
 async function exportHtml() {
+  // A new export replaces an earlier failure. A failed load keeps its message
+  // and restart link: the template it names never opened.
+  if (!problem.value?.offerRestart) problem.value = null;
   // Opened inside the click, so a popup blocker allows it, and filled once
   // the HTML is ready.
   const tab = window.open("", "_blank");
@@ -4507,7 +4527,9 @@ Source: https://docs.templatical.com/frameworks/react-router
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-router), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-router)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/react-router my-app
@@ -4518,7 +4540,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in an effect. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL with `navigate` from `useNavigate`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template.
+The component mounts the editor in an effect. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL with `navigate` from `useNavigate`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/components/email-editor.tsx`
 
@@ -4536,8 +4558,13 @@ import {
 
 type Problem = { message: string; offerRestart: boolean };
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
 
 export function EmailEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -4565,7 +4592,7 @@ export function EmailEditor() {
         testEmail: testEmailProvider,
         render: renderProvider,
         onError: (error) => {
-          if (!cancelled) setProblem({ message: error.message, offerRestart: false });
+          if (!cancelled) setProblem({ message: messageOf(error), offerRestart: false });
         },
       });
       if (cancelled) {
@@ -4597,6 +4624,9 @@ export function EmailEditor() {
   }, [navigate]);
 
   async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    setProblem((current) => (current?.offerRestart ? current : null));
     // Opened inside the click, so a popup blocker allows it, and filled once
     // the HTML is ready.
     const tab = window.open("", "_blank");
@@ -4903,7 +4933,9 @@ Source: https://docs.templatical.com/frameworks/react
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/react-vite my-app
@@ -4914,7 +4946,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in an effect, and its cleanup unmounts it, including an editor that finishes loading after React StrictMode has cleaned the effect up. `onChange` writes every change to `localStorage`, and the next mount passes it back as `content`. If the editor fails to start or an export fails, the toolbar shows the error message.
+The component mounts the editor in an effect, and its cleanup unmounts it, including an editor that finishes loading after React StrictMode has cleaned the effect up. `onChange` writes every change to `localStorage`, and the next mount passes it back as `content`. If the editor fails to start, the toolbar shows the error message. It also shows errors the editor reports through `onError`, such as saved blocks it can't read from `localStorage`, and a failed export; the next export clears them.
 
 `src/email-editor.tsx`
 
@@ -4997,8 +5029,14 @@ export function EmailEditor() {
   }, []);
 
   async function exportMjml() {
+    const ed = editorRef.current;
+    // No editor yet, or it failed to start: nothing to export, and a start
+    // failure keeps its alert.
+    if (!ed) return;
+    // A new export replaces an earlier failure.
+    setProblem(null);
     try {
-      setMjml((await editorRef.current?.toMjml()) ?? "");
+      setMjml(await ed.toMjml());
     } catch (error) {
       setProblem(messageOf(error));
     }
@@ -5045,7 +5083,9 @@ Source: https://docs.templatical.com/frameworks/sveltekit
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/sveltekit my-app
@@ -5056,7 +5096,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in `onMount` and returns the cleanup that unmounts it, including an editor that finishes loading after the component has gone. It imports `init()` inside `onMount`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL with SvelteKit's `goto`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The restart link carries `data-sveltekit-reload`, which makes it a full page load, so the component mounts again and creates a template.
+The component mounts the editor in `onMount` and returns the cleanup that unmounts it, including an editor that finishes loading after the component has gone. It imports `init()` inside `onMount`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL with SvelteKit's `goto`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The restart link carries `data-sveltekit-reload`, which makes it a full page load, so the component mounts again and creates a template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `src/lib/EmailEditor.svelte`
 
@@ -5075,8 +5115,13 @@ The component mounts the editor in `onMount` and returns the cleanup that unmoun
 
   type Problem = { message: string; offerRestart: boolean };
 
-  const messageOf = (error: unknown) =>
-    error instanceof Error ? error.message : String(error);
+  // Every message ends as a sentence: the providers' fallback, such as
+  // "GET /api/templates/… failed (500)", has no full stop and would run into the
+  // restart link.
+  const messageOf = (error: unknown) => {
+    const text = (error instanceof Error ? error.message : String(error)).trim();
+    return /[.!?]$/.test(text) ? text : `${text}.`;
+  };
 
   let container: HTMLDivElement;
   let editor: TemplaticalEditor | null = null;
@@ -5096,7 +5141,7 @@ The component mounts the editor in `onMount` and returns the cleanup that unmoun
         testEmail: testEmailProvider,
         render: renderProvider,
         onError: (error) => {
-          if (!cancelled) problem = { message: error.message, offerRestart: false };
+          if (!cancelled) problem = { message: messageOf(error), offerRestart: false };
         },
       });
       if (cancelled) {
@@ -5127,6 +5172,9 @@ The component mounts the editor in `onMount` and returns the cleanup that unmoun
   });
 
   async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    if (!problem?.offerRestart) problem = null;
     // Opened inside the click, so a popup blocker allows it, and filled once
     // the HTML is ready.
     const tab = window.open("", "_blank");
@@ -5240,16 +5288,39 @@ export const renderProvider: RenderProvider = {
 
 ## The server routes
 
-Each `+server.ts` file exports one handler per HTTP method. Each handler validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports.
+Each `+server.ts` file exports one handler per HTTP method. Each handler validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports. The handlers read request bodies with `readJson`, which answers a body over adapter-node's `BODY_SIZE_LIMIT` with a 413 that names the setting.
+
+`src/lib/server/read-json.ts`
+
+```ts
+import { error } from "@sveltejs/kit";
+
+/**
+ * The request body as JSON, or null when it is not JSON. adapter-node fails the
+ * read of a body larger than BODY_SIZE_LIMIT (512K by default), and that
+ * answers 413 with a message naming the setting, not a 400 blaming the body.
+ */
+export async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch (cause) {
+    if (typeof cause === "object" && cause !== null && "status" in cause && cause.status === 413) {
+      error(413, "The request body is larger than BODY_SIZE_LIMIT allows (512K by default).");
+    }
+    return null;
+  }
+}
+```
 
 `src/routes/api/templates/+server.ts`
 
 ```ts
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { createTemplate, templateInputError, type TemplateInput } from "#lib/server/templatical/store.ts";
 
 export const POST: RequestHandler = async ({ request }) => {
-  const body: unknown = await request.json().catch(() => null);
+  const body: unknown = await readJson(request);
   const problem = templateInputError(body, false);
   if (problem) return Response.json({ message: problem }, { status: 400 });
   return Response.json(await createTemplate(body as TemplateInput), { status: 201 });
@@ -5261,6 +5332,7 @@ export const POST: RequestHandler = async ({ request }) => {
 ```ts
 import type { TemplatePatch } from "@templatical/types";
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { getTemplate, templateInputError, updateTemplate } from "#lib/server/templatical/store.ts";
 
 const notFound = () => Response.json({ message: "Template not found." }, { status: 404 });
@@ -5271,7 +5343,7 @@ export const GET: RequestHandler = async ({ params }) => {
 };
 
 export const PATCH: RequestHandler = async ({ params, request }) => {
-  const body: unknown = await request.json().catch(() => null);
+  const body: unknown = await readJson(request);
   const problem = templateInputError(body, true);
   if (problem) return Response.json({ message: problem }, { status: 400 });
   const template = await updateTemplate(params.id, body as TemplatePatch);
@@ -5284,6 +5356,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 ```ts
 import type { SavedBlockInput } from "@templatical/types";
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { createSavedBlock, listSavedBlocks, savedBlockInputError } from "#lib/server/templatical/store.ts";
 
 export const GET: RequestHandler = async ({ url }) =>
@@ -5295,7 +5368,7 @@ export const GET: RequestHandler = async ({ url }) =>
   );
 
 export const POST: RequestHandler = async ({ request }) => {
-  const body: unknown = await request.json().catch(() => null);
+  const body: unknown = await readJson(request);
   const problem = savedBlockInputError(body, false);
   if (problem) return Response.json({ message: problem }, { status: 400 });
   return Response.json(await createSavedBlock(body as SavedBlockInput), { status: 201 });
@@ -5307,12 +5380,13 @@ export const POST: RequestHandler = async ({ request }) => {
 ```ts
 import type { SavedBlockPatch } from "@templatical/types";
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { deleteSavedBlock, savedBlockInputError, updateSavedBlock } from "#lib/server/templatical/store.ts";
 
 const notFound = () => Response.json({ message: "Saved block not found." }, { status: 404 });
 
 export const PATCH: RequestHandler = async ({ params, request }) => {
-  const body: unknown = await request.json().catch(() => null);
+  const body: unknown = await readJson(request);
   const problem = savedBlockInputError(body, true);
   if (problem) return Response.json({ message: problem }, { status: 400 });
   const block = await updateSavedBlock(params.id, body as SavedBlockPatch);
@@ -5328,10 +5402,11 @@ export const DELETE: RequestHandler = async ({ params }) =>
 ```ts
 import { isRenderableTemplateContent } from "@templatical/types";
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { renderTemplate } from "#lib/server/templatical/render.ts";
 
 export const POST: RequestHandler = async ({ request }) => {
-  const body = (await request.json().catch(() => null)) as { content?: unknown } | null;
+  const body = (await readJson(request)) as { content?: unknown } | null;
   if (!isRenderableTemplateContent(body?.content)) {
     return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
   }
@@ -5344,11 +5419,12 @@ export const POST: RequestHandler = async ({ request }) => {
 ```ts
 import { isRenderableTemplateContent } from "@templatical/types";
 import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
 import { deliver, isEmailAddress } from "#lib/server/templatical/outbox.ts";
 import { renderTemplate } from "#lib/server/templatical/render.ts";
 
 export const POST: RequestHandler = async ({ request }) => {
-  const body = (await request.json().catch(() => null)) as { recipient?: unknown; content?: unknown } | null;
+  const body = (await readJson(request)) as { recipient?: unknown; content?: unknown } | null;
   if (!isEmailAddress(body?.recipient)) {
     return Response.json({ message: "Enter a valid email address." }, { status: 400 });
   }

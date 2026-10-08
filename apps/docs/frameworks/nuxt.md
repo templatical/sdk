@@ -9,7 +9,9 @@ description: A runnable Nuxt 4 app with the Templatical editor, backed by server
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## The editor component
 
-A client-only component (`.client.vue`) mounts the editor in `onMounted` and unmounts it in `onBeforeUnmount`, including an editor that finishes loading after the component has gone. It waits one tick first, because Nuxt renders a client-only component's template after the component mounts. It imports `init()` inside `onMounted`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template.
+A client-only component (`.client.vue`) mounts the editor in `onMounted` and unmounts it in `onBeforeUnmount`, including an editor that finishes loading after the component has gone. It waits one tick first, because Nuxt renders a client-only component's template after the component mounts. It imports `init()` inside `onMounted`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/components/EmailEditor.client.vue`
 

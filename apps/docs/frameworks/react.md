@@ -9,7 +9,9 @@ description: A runnable Vite and React 19 single-page app with the Templatical e
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite), or copy it into a new directory:
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite)
+
+Or copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/react-vite my-app
@@ -20,7 +22,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in an effect, and its cleanup unmounts it, including an editor that finishes loading after React StrictMode has cleaned the effect up. `onChange` writes every change to `localStorage`, and the next mount passes it back as `content`. If the editor fails to start or an export fails, the toolbar shows the error message.
+The component mounts the editor in an effect, and its cleanup unmounts it, including an editor that finishes loading after React StrictMode has cleaned the effect up. `onChange` writes every change to `localStorage`, and the next mount passes it back as `content`. If the editor fails to start, the toolbar shows the error message. It also shows errors the editor reports through `onError`, such as saved blocks it can't read from `localStorage`, and a failed export; the next export clears them.
 
 `src/email-editor.tsx`
 
