@@ -37,7 +37,17 @@ const EXAMPLES = {
   "react-vite": {
     port: 51745,
     kind: "minimal",
-    startArgs: (port) => ["--port", String(port), "--strictPort"],
+    // vite preview listens on whichever address `localhost` resolves to first,
+    // and in CI's Playwright container the probe never reached it. Binding and
+    // probing 127.0.0.1 puts both ends on one address.
+    host: "127.0.0.1",
+    startArgs: (port) => [
+      "--port",
+      String(port),
+      "--strictPort",
+      "--host",
+      "127.0.0.1",
+    ],
   },
 };
 
@@ -219,7 +229,7 @@ async function main() {
   }
 
   const repoRoot = repoRootFrom(dirname(fileURLToPath(import.meta.url)));
-  const url = `http://localhost:${example.port}`;
+  const url = `http://${example.host ?? "localhost"}:${example.port}`;
   // Checked again right before the server starts; this one fails before the
   // build instead of after it.
   await assertPortFree(url, name);
