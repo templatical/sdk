@@ -9,9 +9,7 @@ description: Eine lauffähige Nuxt-4-App mit dem Templatical-Editor, angebunden 
 
 ## Ausführen des Beispiels
 
-[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt)
-
-Oder kopieren Sie es in ein neues Verzeichnis:
+Kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app

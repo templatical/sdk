@@ -7,9 +7,6 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit"
   },
-  "stackblitz": {
-    "startCommand": "npm run dev -- --webpack"
-  },
   "dependencies": {
     "@templatical/editor": "^0.44.0",
     "@templatical/renderer": "^0.44.0",

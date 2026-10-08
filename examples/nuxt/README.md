@@ -4,7 +4,7 @@ A Nuxt 4 app that embeds the Templatical email editor and backs it with its own 
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt), or copy it and run it locally:
+Copy it and run it locally:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app

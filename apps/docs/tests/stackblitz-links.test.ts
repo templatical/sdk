@@ -9,6 +9,13 @@ import { describe, expect, it } from "vitest";
  * locale, and the pill rule must cover it wherever it covers a playground link.
  */
 
+// Pages whose example doesn't run on StackBlitz, and why. Each carries no
+// StackBlitz link at all. Next.js 16: StackBlitz's runtime has no native
+// Turbopack bindings, and in webpack mode Next fails its own "workStore"
+// invariant there (500), while the same app renders locally. Nuxt 4: `nuxt dev`
+// dies inside StackBlitz's BroadcastChannel built-in before the app loads.
+const WITHOUT_STACKBLITZ = new Set(["nextjs.md", "nuxt.md"]);
+
 const DOCS = join(import.meta.dirname, "..");
 const REPO = join(DOCS, "../..");
 
@@ -40,36 +47,37 @@ describe.each(LOCALES)("%s framework pages", (_locale, dir, label) => {
     );
   });
 
-  it.each(PAGES)(
+  it.each(PAGES.filter((page) => !WITHOUT_STACKBLITZ.has(page)))(
     "%s opens its own example on StackBlitz from a link alone in its paragraph",
     (page) => {
       const source = readFileSync(join(DOCS, dir, page), "utf8");
       const example = includedExample(source);
       expect(existsSync(join(REPO, "examples", example))).toBe(true);
       const url = `https://stackblitz.com/github/templatical/sdk/tree/main/examples/${example}`;
-      expect([...source.matchAll(STACKBLITZ)].map(([match]) => match)).toEqual(
-        [url],
-      );
+      expect([...source.matchAll(STACKBLITZ)].map(([match]) => match)).toEqual([
+        url,
+      ]);
       expect(source).toContain(`\n\n[${label}](${url})\n\n`);
     },
   );
+
+  it.each([...WITHOUT_STACKBLITZ])("%s carries no StackBlitz link", (page) => {
+    expect(PAGES).toContain(page);
+    const source = readFileSync(join(DOCS, dir, page), "utf8");
+    expect([...source.matchAll(STACKBLITZ)]).toEqual([]);
+  });
 });
 
 describe("custom.css", () => {
   it("draws a StackBlitz link as the playground pill, in every state", () => {
-    const css = readFileSync(
-      join(DOCS, ".vitepress/theme/custom.css"),
-      "utf8",
-    );
+    const css = readFileSync(join(DOCS, ".vitepress/theme/custom.css"), "utf8");
     const selectorLists = css
       .split("}")
       .map((block) => block.split("{")[0])
       .filter((selectors) => selectors.includes(PLAY_PILL));
     expect(selectorLists.length).toBeGreaterThan(0);
     for (const selectors of selectorLists) {
-      const suffix = (
-        selectors.split(PLAY_PILL)[1].split(",")[0] ?? ""
-      ).trim();
+      const suffix = (selectors.split(PLAY_PILL)[1].split(",")[0] ?? "").trim();
       expect(selectors).toContain(`${STACKBLITZ_PILL}${suffix}`);
     }
   });

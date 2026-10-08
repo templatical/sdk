@@ -4,7 +4,7 @@ A Next.js 16 (App Router) app that embeds the Templatical email editor and backs
 
 ## Running the example
 
-[Open it on StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs), or copy it and run it locally:
+Copy it and run it locally:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app
@@ -12,8 +12,6 @@ cd my-app
 npm install
 npm run dev
 ```
-
-StackBlitz starts the app with `next dev --webpack` (the `stackblitz.startCommand` in `package.json`): Turbopack needs native bindings, which StackBlitz's in-browser runtime doesn't have. `npm run dev` on your machine uses Turbopack.
 
 ## Files
 

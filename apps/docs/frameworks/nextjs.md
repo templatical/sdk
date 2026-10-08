@@ -9,9 +9,7 @@ description: A runnable Next.js 16 App Router app with the Templatical editor, b
 
 ## Running the example
 
-[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs)
-
-Or copy it into a new directory:
+Copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app

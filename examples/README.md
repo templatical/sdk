@@ -1,11 +1,11 @@
 # Examples
 
-Working integrations of the Templatical editor, each checked in CI against every change to the SDK. Each one is a standalone app: open it on StackBlitz, or copy it with `npx degit templatical/sdk/examples/<name> my-app`.
+Working integrations of the Templatical editor, each checked in CI against every change to the SDK. Each one is a standalone app: open it on StackBlitz, or copy it with `npx degit templatical/sdk/examples/<name> my-app`. Next.js 16 and Nuxt 4 don't run on StackBlitz, so those two are copy-only.
 
 | Example | Stack | Backend | Try it | Docs |
 |---|---|---|---|---|
-| [`nextjs`](./nextjs) | Next.js 16, App Router | API routes + JSON files | [StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs) | [Next.js](https://docs.templatical.com/frameworks/nextjs) |
-| [`nuxt`](./nuxt) | Nuxt 4 | server routes + JSON files | [StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt) | [Nuxt](https://docs.templatical.com/frameworks/nuxt) |
+| [`nextjs`](./nextjs) | Next.js 16, App Router | API routes + JSON files | — | [Next.js](https://docs.templatical.com/frameworks/nextjs) |
+| [`nuxt`](./nuxt) | Nuxt 4 | server routes + JSON files | — | [Nuxt](https://docs.templatical.com/frameworks/nuxt) |
 | [`sveltekit`](./sveltekit) | SvelteKit 3, Svelte 5 | `+server.ts` routes + JSON files | [StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit) | [SvelteKit](https://docs.templatical.com/frameworks/sveltekit) |
 | [`react-router`](./react-router) | React Router 8, framework mode | resource routes + JSON files | [StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-router) | [React Router](https://docs.templatical.com/frameworks/react-router) |
 | [`react-vite`](./react-vite) | Vite + React 19 | none: localStorage | [StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite) | [React](https://docs.templatical.com/frameworks/react) |

@@ -9,9 +9,7 @@ description: A runnable Nuxt 4 app with the Templatical editor, backed by server
 
 ## Running the example
 
-[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nuxt)
-
-Or copy it into a new directory:
+Copy it into a new directory:
 
 ```bash
 npx degit templatical/sdk/examples/nuxt my-app

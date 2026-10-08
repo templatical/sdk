@@ -79,16 +79,6 @@ describe("examples/", () => {
     expect(existsSync(join(EXAMPLES, "README.md"))).toBe(true);
   });
 
-  it("starts Next.js with webpack on StackBlitz", () => {
-    // StackBlitz's in-browser runtime has no native Turbopack bindings, so
-    // Next.js 16's default `next dev` refuses to start there.
-    const manifest = JSON.parse(
-      readFileSync(join(EXAMPLES, "nextjs/package.json"), "utf8"),
-    );
-    expect(manifest.stackblitz?.startCommand).toBe("npm run dev -- --webpack");
-    expect(manifest.scripts.dev).toBe("next dev");
-  });
-
   it("runs every example in CI's examples matrix", () => {
     // The examples job's matrix decides which apps CI builds and runs; an
     // example missing from it would never be checked.

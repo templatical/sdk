@@ -9,9 +9,7 @@ description: Eine lauffähige Next.js-16-App mit App Router und dem Templatical-
 
 ## Ausführen des Beispiels
 
-[In StackBlitz öffnen](https://stackblitz.com/github/templatical/sdk/tree/main/examples/nextjs)
-
-Oder kopieren Sie es in ein neues Verzeichnis:
+Kopieren Sie es in ein neues Verzeichnis:
 
 ```bash
 npx degit templatical/sdk/examples/nextjs my-app
