@@ -569,6 +569,50 @@ describe("content direction", () => {
     expect(mjml).toMatch(/<mj-group[^>]*direction="rtl"/);
   });
 
+  it("puts direction=rtl on every mj-column when the template is RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createParagraphBlock({ content: "<p>مرحبا</p>" }),
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [createParagraphBlock({ content: "<p>A</p>" })],
+          [createParagraphBlock({ content: "<p>B</p>" })],
+        ],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml.match(/<mj-column[^>]*direction="rtl"/g)).toHaveLength(3);
+    expect(mjml.match(/<mj-column\b(?![^>]*direction="rtl")[^/>]*>/g)).toBe(
+      null,
+    );
+  });
+
+  it("puts direction=rtl on a section.wrapper mj-wrapper when the template is RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createSectionBlock({
+        wrapper: { backgroundColor: "#eeeeee" },
+        children: [[createParagraphBlock({ content: "<p>A</p>" })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-wrapper[^>]*direction="rtl"/);
+  });
+
+  it("puts direction=rtl on a layout wrapper mj-wrapper when the template is RTL", async () => {
+    const content = withBlocks(
+      [createParagraphBlock({ content: "<p>A</p>" })],
+      {
+        direction: "rtl",
+      },
+    );
+    const mjml = await renderToMjml(content, { layout: cardLayout() });
+    expect(mjml).toMatch(/<mj-wrapper[^>]*direction="rtl"/);
+  });
+
   it("aligns an RTL paragraph mj-text to the start edge", async () => {
     const content = createDefaultTemplateContent();
     content.settings.direction = "rtl";

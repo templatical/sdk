@@ -222,11 +222,15 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
       .map((child) => renderTopLevelBlock(child, context))
       .filter((value) => value !== "")
       .join("\n");
-    const framed = renderMjWrapper(inner, {
-      backgroundColor: block.styles.backgroundColor,
-      padding: block.styles.padding,
-      borderRadius: block.borderRadius,
-    });
+    const framed = renderMjWrapper(
+      inner,
+      {
+        backgroundColor: block.styles.backgroundColor,
+        padding: block.styles.padding,
+        borderRadius: block.borderRadius,
+      },
+      context.contentDirection,
+    );
     return wrapWithDisplayCondition(block, framed);
   }
 
@@ -235,7 +239,7 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
     // An empty render (hidden section) stays empty — never emit a bare wrapper.
     const framed =
       block.wrapper && rendered !== ""
-        ? renderMjWrapper(rendered, block.wrapper)
+        ? renderMjWrapper(rendered, block.wrapper, context.contentDirection)
         : rendered;
     return wrapWithDisplayCondition(block, framed);
   }
@@ -248,15 +252,21 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
 /**
  * `mj-wrapper` attributes shared by a layout `wrapper` block and
  * `section.wrapper`. Padding is always explicit: MJML's wrapper default is
- * `20px 0`, ours is 0.
+ * `20px 0`, ours is 0. Direction is explicit for the same reason: MJML's
+ * default `ltr` would otherwise be inlined on the band of an RTL email.
  */
-function renderMjWrapper(inner: string, wrapper: SectionWrapper): string {
+function renderMjWrapper(
+  inner: string,
+  wrapper: SectionWrapper,
+  direction: ContentDirection,
+): string {
   const bg = bgAttr(wrapper.backgroundColor, "native");
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
   }"`;
   const radius = borderRadiusAttr(wrapper.borderRadius);
-  return `<mj-wrapper${bg}${padding}${radius}>
+  const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
+  return `<mj-wrapper${bg}${padding}${radius}${dirAttr}>
 ${inner}
 </mj-wrapper>`;
 }
@@ -271,7 +281,7 @@ function wrapInSection(content: string, direction: ContentDirection): string {
 
   const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
   return `<mj-section${dirAttr}>
-  <mj-column>
+  <mj-column${dirAttr}>
 ${content}
   </mj-column>
 </mj-section>`;
