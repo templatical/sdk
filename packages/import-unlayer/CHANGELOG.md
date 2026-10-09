@@ -1,5 +1,11 @@
 # @templatical/import-unlayer
 
+## 0.44.3
+
+### Patch Changes
+
+- @templatical/types@0.44.3
+
 ## 0.44.2
 
 ### Patch Changes
