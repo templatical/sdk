@@ -531,6 +531,96 @@ test.describe("saved blocks — crowded card confirm", () => {
 });
 
 /**
+ * Arming a delete, deleting and closing a rename each unmount the element that
+ * holds focus. Each hands focus on rather than dropping it to the page, which
+ * would send a keyboard user back to the top.
+ */
+test.describe("saved blocks — keyboard focus", () => {
+  test("arming focuses the confirm, Escape backs out, and a delete moves focus on", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const hero = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    const trash = hero.getByRole("button", { name: "Delete", exact: true });
+    const confirm = hero.getByRole("button", {
+      name: "Delete this saved block?",
+      exact: true,
+    });
+
+    await trash.focus();
+    await page.keyboard.press("Enter");
+    await expect(confirm).toBeFocused();
+
+    // Escape at the confirm backs out to the trash, not out of the browser.
+    await page.keyboard.press("Escape");
+    await expect(confirm).toHaveCount(0);
+    await expect(browser).toBeVisible();
+    await expect(trash).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(confirm).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    // The entry that moved into the deleted one's place takes focus.
+    await expect(hero).toHaveCount(0);
+    await expect(
+      page
+        .locator(SELECTORS.savedBlocksCard, { hasText: "Footer CTA" })
+        .getByRole("button", { name: "Footer CTA 1 block(s)", exact: true }),
+    ).toBeFocused();
+  });
+
+  test("Enter and Escape in a rename hand focus back to Rename", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const hero = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    const rename = hero.getByRole("button", { name: "Rename", exact: true });
+    const input = browser.locator('input[aria-label="Rename"]');
+
+    await rename.focus();
+    await page.keyboard.press("Enter");
+    await expect(input).toBeFocused();
+    await input.fill("Hero Header v2");
+    await page.keyboard.press("Enter");
+
+    await expect(input).toHaveCount(0);
+    await expect(hero).toContainText("Hero Header v2");
+    await expect(rename).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(input).toBeFocused();
+    await page.keyboard.press("Escape");
+
+    await expect(input).toHaveCount(0);
+    await expect(browser).toBeVisible();
+    await expect(rename).toBeFocused();
+  });
+});
+
+/**
  * The canvas pick session — the flow that replaced the save dialog's checklist.
  *
  * The checklist labelled rows `"${type} ${index + 1}"`, so with several same-type
