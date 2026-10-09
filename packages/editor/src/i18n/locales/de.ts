@@ -610,6 +610,7 @@ const de: typeof en = {
     rename: "Umbenennen",
     delete: "Löschen",
     deleteConfirm: "Diesen gespeicherten Block löschen?",
+    deleteConfirmShort: "Löschen?",
     blockCount: "{count} Block/Blöcke",
     browse: "Gespeicherte Blöcke durchsuchen",
     selectToPreview: "Gespeicherten Block für Vorschau auswählen",

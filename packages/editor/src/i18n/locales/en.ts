@@ -601,7 +601,10 @@ export default {
     insert: "Insert",
     rename: "Rename",
     delete: "Delete",
+    // The delete confirm shows the short label and is named by the question,
+    // so the label must stay part of the question (WCAG 2.5.3).
     deleteConfirm: "Delete this saved block?",
+    deleteConfirmShort: "Delete?",
     blockCount: "{count} block(s)",
     browse: "Browse Saved Blocks",
     selectToPreview: "Select a saved block to preview",

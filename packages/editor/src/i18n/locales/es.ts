@@ -606,6 +606,7 @@ const es: typeof en = {
     rename: "Cambiar nombre",
     delete: "Eliminar",
     deleteConfirm: "¿Eliminar este bloque guardado?",
+    deleteConfirmShort: "¿Eliminar?",
     blockCount: "{count} bloque(s)",
     browse: "Explorar bloques guardados",
     selectToPreview: "Selecciona un bloque guardado para previsualizarlo",

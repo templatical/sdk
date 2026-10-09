@@ -540,6 +540,7 @@ const fr: typeof en = {
     rename: "Renommer",
     delete: "Supprimer",
     deleteConfirm: "Supprimer ce bloc enregistré ?",
+    deleteConfirmShort: "Supprimer ?",
     blockCount: "{count} bloc(s)",
     browse: "Parcourir les blocs enregistrés",
     selectToPreview: "Sélectionnez un bloc enregistré pour l'afficher",

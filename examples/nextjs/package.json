@@ -11,14 +11,14 @@
     "@templatical/editor": "^0.44.2",
     "@templatical/renderer": "^0.44.2",
     "@templatical/types": "^0.44.2",
-    "mjml": "^5.4.0",
+    "mjml": "^5.4.1",
     "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@types/mjml": "^5.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3"

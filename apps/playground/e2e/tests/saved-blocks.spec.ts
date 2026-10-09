@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 import { animationsFinished } from "../helpers/motion";
@@ -384,6 +387,242 @@ test.describe("saved blocks", () => {
 
     await page.keyboard.press("Space");
     await expect(select).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+/**
+ * The delete confirm shares a card's bottom row with up to five type icons, an
+ * overflow count and the timestamp. The full question, "Delete this saved
+ * block?", can't fit a crowded row: it wrapped onto two lines, grew the card
+ * and squeezed the icons. So the confirm shows a short label, keeps the full
+ * question as its accessible name, and the timestamp is the only item that
+ * gives way.
+ */
+test.describe("saved blocks — crowded card confirm", () => {
+  const DAY = 86_400_000;
+
+  /** The editor's locale files: a locale a contributor adds is measured too. */
+  const LOCALES_DIR = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../packages/editor/src/i18n/locales",
+  );
+  const EDITOR_LOCALES = readdirSync(LOCALES_DIR)
+    .filter((name) => name.endsWith(".ts"))
+    .map((name) => name.slice(0, -".ts".length))
+    .sort();
+
+  /** The strings this spec reads from a locale file. */
+  interface LocaleStrings {
+    savedBlocks: { deleteConfirmShort: string };
+    time: { daysAgo: string };
+  }
+
+  /**
+   * Seven block types, so the row shows five icons and "+2". Only each
+   * block's type reaches the card, and the entry is never previewed.
+   */
+  function crowdedEntry(updatedAt: string) {
+    return {
+      id: "seed-crowded",
+      name: "Kitchen Sink",
+      content: [
+        {
+          id: "crowded-1",
+          type: "title",
+          content: "<p>Title</p>",
+          level: 2,
+          textAlign: "left",
+          styles: PAD,
+        },
+        {
+          id: "crowded-2",
+          type: "paragraph",
+          content: "<p>Paragraph</p>",
+          styles: PAD,
+        },
+        { id: "crowded-3", type: "image", src: "", alt: "", styles: PAD },
+        { id: "crowded-4", type: "button", text: "Go", url: "#", styles: PAD },
+        { id: "crowded-5", type: "divider", styles: PAD },
+        { id: "crowded-6", type: "spacer", height: 20, styles: PAD },
+        { id: "crowded-7", type: "html", content: "<p>HTML</p>", styles: PAD },
+      ],
+      createdAt: updatedAt,
+      updatedAt,
+    };
+  }
+
+  test("keeps the armed confirm on one line inside the card, in every locale", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    // 280 days old: a three-digit day count, the widest timestamp a card shows
+    // for most of a year.
+    await seedSavedBlocks(page, [
+      crowdedEntry(new Date(Date.now() - 280 * DAY).toISOString()),
+    ]);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const card = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Kitchen Sink",
+    });
+    await expect(card).toContainText("+2");
+    // The dialog scales in, and geometry read mid-animation is scaled down.
+    await animationsFinished(page.locator(SELECTORS.savedBlocksBrowser));
+
+    await card.getByRole("button", { name: "Delete", exact: true }).click();
+    const confirm = card.getByRole("button", {
+      name: "Delete this saved block?",
+      exact: true,
+    });
+    await expect(confirm).toBeVisible();
+
+    /** The armed row's geometry, optionally after swapping in other text. */
+    const measureRow = (text?: { label: string; stamp: string }) =>
+      confirm.evaluate((button, text) => {
+        const row = button.parentElement as HTMLElement;
+        if (text) {
+          button.textContent = text.label;
+          row.querySelector('[data-testid="saved-block-updated"]')!.textContent =
+            text.stamp;
+        }
+        // The height one line of text gives the button: its line box plus
+        // vertical padding and border.
+        const style = getComputedStyle(button);
+        const oneLine = [
+          "line-height",
+          "padding-top",
+          "padding-bottom",
+          "border-top-width",
+          "border-bottom-width",
+        ].reduce((sum, prop) => sum + parseFloat(style.getPropertyValue(prop)), 0);
+        const box = button.getBoundingClientRect();
+        return {
+          height: box.height,
+          oneLine,
+          overflow: Math.round(box.right - row.getBoundingClientRect().right),
+          icons: Array.from(
+            row.querySelectorAll(":scope > svg"),
+            (svg) => svg.getBoundingClientRect().width,
+          ),
+        };
+      }, text);
+
+    const en = await measureRow();
+    expect(en.height).toBe(en.oneLine);
+    expect(en.overflow).toBeLessThanOrEqual(0);
+    expect(en.icons).toEqual([14, 14, 14, 14, 14]);
+
+    // The scene renders English only, so each locale's label and timestamp
+    // are measured in this same crowded row.
+    for (const locale of EDITOR_LOCALES) {
+      const { default: t } = (await import(
+        pathToFileURL(join(LOCALES_DIR, `${locale}.ts`)).href
+      )) as { default: LocaleStrings };
+      const label = t.savedBlocks.deleteConfirmShort;
+      expect(label, `${locale} label`).toBeTruthy();
+
+      const row = await measureRow({
+        label,
+        stamp: t.time.daysAgo.replace("{days}", "280"),
+      });
+      expect(row.height, `${locale} confirm height`).toBe(row.oneLine);
+      expect(row.overflow, `${locale} overflow`).toBeLessThanOrEqual(0);
+      expect(row.icons, `${locale} icons`).toEqual([14, 14, 14, 14, 14]);
+    }
+  });
+});
+
+/**
+ * Arming a delete, deleting and closing a rename each unmount the element that
+ * holds focus. Each hands focus on rather than dropping it to the page, which
+ * would send a keyboard user back to the top.
+ */
+test.describe("saved blocks — keyboard focus", () => {
+  test("arming focuses the confirm, Escape backs out, and a delete moves focus on", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const hero = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    const trash = hero.getByRole("button", { name: "Delete", exact: true });
+    const confirm = hero.getByRole("button", {
+      name: "Delete this saved block?",
+      exact: true,
+    });
+
+    await trash.focus();
+    await page.keyboard.press("Enter");
+    await expect(confirm).toBeFocused();
+
+    // Escape at the confirm backs out to the trash, not out of the browser.
+    await page.keyboard.press("Escape");
+    await expect(confirm).toHaveCount(0);
+    await expect(browser).toBeVisible();
+    await expect(trash).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(confirm).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    // The entry that moved into the deleted one's place takes focus.
+    await expect(hero).toHaveCount(0);
+    await expect(
+      page
+        .locator(SELECTORS.savedBlocksCard, { hasText: "Footer CTA" })
+        .getByRole("button", { name: "Footer CTA 1 block(s)", exact: true }),
+    ).toBeFocused();
+  });
+
+  test("Enter and Escape in a rename hand focus back to Rename", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const hero = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    const rename = hero.getByRole("button", { name: "Rename", exact: true });
+    const input = browser.locator('input[aria-label="Rename"]');
+
+    await rename.focus();
+    await page.keyboard.press("Enter");
+    await expect(input).toBeFocused();
+    await input.fill("Hero Header v2");
+    await page.keyboard.press("Enter");
+
+    await expect(input).toHaveCount(0);
+    await expect(hero).toContainText("Hero Header v2");
+    await expect(rename).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(input).toBeFocused();
+    await page.keyboard.press("Escape");
+
+    await expect(input).toHaveCount(0);
+    await expect(browser).toBeVisible();
+    await expect(rename).toBeFocused();
   });
 });
 
