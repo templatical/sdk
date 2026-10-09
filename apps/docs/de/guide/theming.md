@@ -43,45 +43,48 @@ Die Vererbung benutzerdefinierter CSS-Eigenschaften überquert Shadow Roots, sod
 
 ### Tokens für den Light-Modus
 
-Jedes Token folgt derselben Form: Deklarieren Sie `--tpl-user-<name>` auf dem Container, um den SDK-Standard zu überschreiben.
+Jedes Token folgt derselben Form: Deklarieren Sie `--tpl-user-<name>` auf dem Container, um den SDK-Standard zu überschreiben. Ein ✓ in der Spalte **Dark** bedeutet, dass das Token zusätzlich ein Gegenstück für den Dark-Modus hat (siehe unten). Alle anderen gelten in beiden Modi.
 
-| Überschreibungsvariable      | Zweck                                      |
-| ---------------------------- | ------------------------------------------ |
-| `--tpl-user-bg`              | Haupt-Hintergrund                          |
-| `--tpl-user-bg-elevated`     | Erhöhte Oberflächen (Panels, Dropdowns)    |
-| `--tpl-user-bg-hover`        | Hintergrund im Hover-Zustand               |
-| `--tpl-user-bg-active`       | Hintergrund im Aktiv-/Gedrückt-Zustand     |
-| `--tpl-user-border`          | Standard-Rahmenfarbe                       |
-| `--tpl-user-border-light`    | Dezenter Rahmen (Trenner, Separatoren)     |
-| `--tpl-user-text`            | Primärer Text                              |
-| `--tpl-user-text-muted`      | Sekundärer Text                            |
-| `--tpl-user-text-dim`        | Deaktivierter oder Hinweistext             |
-| `--tpl-user-primary`         | Primäre Markenfarbe (Schaltflächen, Links) |
-| `--tpl-user-primary-hover`   | Primärer Hover-Zustand                     |
-| `--tpl-user-primary-light`   | Primärer getönter Hintergrund              |
-| `--tpl-user-secondary`       | Sekundäre Akzentfarbe                      |
-| `--tpl-user-secondary-hover` | Sekundärer Hover-Zustand                   |
-| `--tpl-user-secondary-light` | Sekundärer getönter Hintergrund            |
-| `--tpl-user-success`         | Erfolgszustand-Farbe                       |
-| `--tpl-user-success-light`   | Erfolg getönter Hintergrund                |
-| `--tpl-user-warning`         | Warn-Farbe                                 |
-| `--tpl-user-warning-light`   | Warnung getönter Hintergrund               |
-| `--tpl-user-danger`          | Gefahren-/Fehlerfarbe                      |
-| `--tpl-user-danger-light`    | Gefahr getönter Hintergrund                |
-| `--tpl-user-canvas-bg`       | Canvas-Bereich hinter dem E-Mail-Template  |
-| `--tpl-user-base-size`       | Größeneinheit der Editor-UI (`16px`) — siehe [Editor-Größe](#editor-groesse) |
-| `--tpl-user-radius`          | Standard-Rahmenradius (`10px`)             |
-| `--tpl-user-radius-sm`       | Kleiner Rahmenradius (`7px`)               |
-| `--tpl-user-radius-lg`       | Großer Rahmenradius (`14px`)               |
-| `--tpl-user-font-family`     | UI-Schriftartstack                         |
-| `--tpl-user-shadow-sm`       | Dezenter Schatten                          |
-| `--tpl-user-shadow`          | Standardschatten                           |
-| `--tpl-user-shadow-md`       | Mittlerer Schatten                         |
-| `--tpl-user-shadow-lg`       | Großer Schatten                            |
-| `--tpl-user-shadow-xl`       | Extra-großer Schatten                      |
-| `--tpl-user-overlay`         | Modal-Hintergrund-Overlay                  |
-| `--tpl-user-ring`            | Fokus-Ring                                 |
-| `--tpl-user-transition`      | Spring-Easing-Übergang                     |
+| Überschreibungsvariable      | Zweck                                      | Dark |
+| ---------------------------- | ------------------------------------------ | ---- |
+| `--tpl-user-bg`              | Haupt-Hintergrund                          | ✓    |
+| `--tpl-user-bg-elevated`     | Erhöhte Oberflächen (Panels, Dropdowns)    | ✓    |
+| `--tpl-user-bg-hover`        | Hintergrund im Hover-Zustand               | ✓    |
+| `--tpl-user-bg-active`       | Hintergrund im Aktiv-/Gedrückt-Zustand     | ✓    |
+| `--tpl-user-border`          | Standard-Rahmenfarbe                       | ✓    |
+| `--tpl-user-border-light`    | Dezenter Rahmen (Trenner, Separatoren)     | ✓    |
+| `--tpl-user-text`            | Primärer Text                              | ✓    |
+| `--tpl-user-text-muted`      | Sekundärer Text                            | ✓    |
+| `--tpl-user-text-dim`        | Deaktivierter oder Hinweistext             | ✓    |
+| `--tpl-user-primary`         | Primäre Markenfarbe (Schaltflächen, Links) | ✓    |
+| `--tpl-user-primary-hover`   | Primärer Hover-Zustand                     | ✓    |
+| `--tpl-user-primary-light`   | Primärer getönter Hintergrund              | ✓    |
+| `--tpl-user-on-primary`      | Text und Icons auf Primärflächen           |      |
+| `--tpl-user-secondary`       | Sekundäre Akzentfarbe                      | ✓    |
+| `--tpl-user-secondary-hover` | Sekundärer Hover-Zustand                   | ✓    |
+| `--tpl-user-secondary-light` | Sekundärer getönter Hintergrund            | ✓    |
+| `--tpl-user-success`         | Erfolgszustand-Farbe                       | ✓    |
+| `--tpl-user-success-light`   | Erfolg getönter Hintergrund                | ✓    |
+| `--tpl-user-warning`         | Warn-Farbe                                 | ✓    |
+| `--tpl-user-warning-light`   | Warnung getönter Hintergrund               | ✓    |
+| `--tpl-user-danger`          | Gefahren-/Fehlerfarbe                      | ✓    |
+| `--tpl-user-danger-light`    | Gefahr getönter Hintergrund                | ✓    |
+| `--tpl-user-canvas-bg`       | Canvas-Bereich hinter dem E-Mail-Template  | ✓    |
+| `--tpl-user-base-size`       | UI-Größeneinheit (`16px`), siehe [unten](#editor-groesse) |      |
+| `--tpl-user-radius`          | Standard-Rahmenradius (`10px`)             |      |
+| `--tpl-user-radius-sm`       | Kleiner Rahmenradius (`7px`)               |      |
+| `--tpl-user-radius-lg`       | Großer Rahmenradius (`14px`)               |      |
+| `--tpl-user-font-family`     | UI-Schriftartstack                         |      |
+| `--tpl-user-shadow-sm`       | Dezenter Schatten                          | ✓    |
+| `--tpl-user-shadow`          | Standardschatten                           | ✓    |
+| `--tpl-user-shadow-md`       | Mittlerer Schatten                         | ✓    |
+| `--tpl-user-shadow-lg`       | Großer Schatten                            | ✓    |
+| `--tpl-user-shadow-xl`       | Extra-großer Schatten                      | ✓    |
+| `--tpl-user-overlay`         | Modal-Hintergrund-Overlay                  | ✓    |
+| `--tpl-user-ring`            | Fokus-Ring                                 | ✓    |
+| `--tpl-user-transition`      | Spring-Easing-Übergang                     |      |
+
+`--tpl-user-on-primary` braucht kein Gegenstück. Ohne eigenen Wert folgt es dem aktiven Hintergrund, Text auf Primärflächen ist also im Light-Modus nahezu weiß und im Dark-Modus nahezu schwarz. Wenn Sie es setzen, gilt eine Farbe für beide Modi, und eine nahezu weiße Beschriftung erreicht auf der helleren Standard-Primärfarbe des Dark-Modus keinen ausreichenden Kontrast.
 
 ### Tokens für den Dark-Modus
 
@@ -99,7 +102,7 @@ Der Dark-Modus verwendet einen parallelen `--tpl-user-dark-*`-Namensraum, sodass
 }
 ```
 
-Ersetzen Sie `--tpl-user-` durch `--tpl-user-dark-` in jedem Token-Namen aus der obigen Tabelle, um den Dark-Modus anzusprechen. Der Editor aktiviert den Dark-Modus über `data-tpl-theme="dark"` auf seinem Root und liest die Dark-Namespace-Defaults; Ihre `--tpl-user-dark-*`-Überschreibungen klinken sich dort ein.
+Ersetzen Sie `--tpl-user-` durch `--tpl-user-dark-` in jedem Token, das in der obigen Tabelle mit ✓ markiert ist, um den Dark-Modus anzusprechen. Der Editor aktiviert den Dark-Modus über `data-tpl-theme="dark"` auf seinem Root und liest die Dark-Namespace-Defaults; Ihre `--tpl-user-dark-*`-Überschreibungen klinken sich dort ein.
 
 Der Dark-Modus ist über die `uiTheme`-Konfiguration optional — setzen Sie `'dark'` oder `'auto'`, um ihn zu aktivieren. Siehe [Dark Mode](#dark-mode) unten.
 

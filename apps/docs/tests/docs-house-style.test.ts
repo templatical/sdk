@@ -272,6 +272,14 @@ describe("OSS docs house style", () => {
     expect(src).not.toMatch(/Cloud tier \(below\)/);
   });
 
+  it("does not put a design-token count in either README", () => {
+    // The count goes stale whenever a hook is added or removed, and the
+    // theming guide's table is the list that is kept accurate.
+    for (const rel of ["README.md", "packages/editor/README.md"]) {
+      expect(readRepo(rel)).not.toMatch(/\b\d+ design tokens\b/i);
+    }
+  });
+
   it("points the editor README saved-blocks link at the backend page", () => {
     const src = readRepo("packages/editor/README.md");
     expect(src).toMatch(
