@@ -750,8 +750,9 @@ describe("a resolver owns the display-condition filter", () => {
       expect(src, label).not.toMatch(
         /appliesConditionFilter\s*=\s*computed\(/,
       );
+      // `?.value` where it runs in script rather than the template.
       expect(src, label).toMatch(
-        /appliesConditionFilter === false \|\|\s*!conditionPreview\?\.isHidden/,
+        /appliesConditionFilter(?:\?\.value)? === false \|\|\s*!conditionPreview\?\.isHidden/,
       );
     }
   });

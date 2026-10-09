@@ -101,6 +101,19 @@ function getColumnBlocks(colIndex: number): Block[] {
   return columns.value[colIndex] || [];
 }
 
+function isChildShown(blockId: string): boolean {
+  return (
+    appliesConditionFilter?.value === false ||
+    !conditionPreview?.isHidden(blockId)
+  );
+}
+
+// A column showing no blocks keeps a drop target's height. One showing blocks
+// is exactly as tall as they are, as it will be in the sent email.
+function showsNoBlocks(colIndex: number): boolean {
+  return !getColumnBlocks(colIndex).some((child) => isChildShown(child.id));
+}
+
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
   // Strip non-Block fields (e.g., a DOM `.el` back-reference Sortable
   // attaches to its list root expando) before the array lands in state.
@@ -148,7 +161,7 @@ function handleFetchData(
       <div
         v-for="(_, colIndex) in columns"
         :key="colIndex"
-        class="tpl:relative tpl:min-h-[60px] tpl:rounded"
+        class="tpl:relative tpl:rounded"
         :class="
           getColumnBlocks(colIndex).length === 0
             ? 'tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)]'
@@ -156,6 +169,12 @@ function handleFetchData(
         "
         :style="{ width: isMobileStacked ? '100%' : columnWidths[colIndex] }"
       >
+        <!-- The bound class covers what the model says, including a drag
+             hovering over an empty column, where Sortable's placeholder is
+             already in the list. The static rule covers a drag out: Sortable
+             moves the block away before the model changes, leaving its
+             floating `.sortable-fallback` clone and any blocks the condition
+             preview hides with v-show's `display: none`. -->
         <VueDraggable
           :model-value="getColumnBlocks(colIndex)"
           :group="{
@@ -172,16 +191,14 @@ function handleFetchData(
           :inverted-swap-threshold="0.65"
           :empty-insert-threshold="20"
           :force-fallback="true"
-          class="tpl:min-h-[60px]"
+          class="tpl:[&:not(:has(>:not(.sortable-fallback,[style*='display:_none'])))]:min-h-[60px]"
+          :class="{ 'tpl:min-h-[60px]': showsNoBlocks(colIndex) }"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >
           <div
             v-for="childBlock in getColumnBlocks(colIndex)"
             :key="childBlock.id"
-            v-show="
-              appliesConditionFilter === false ||
-              !conditionPreview?.isHidden(childBlock.id)
-            "
+            v-show="isChildShown(childBlock.id)"
           >
             <BlockWrapper
               :block="childBlock"
