@@ -14,8 +14,8 @@
     "@templatical/editor": "^0.44.2",
     "@templatical/renderer": "^0.44.2",
     "@templatical/types": "^0.44.2",
-    "isbot": "^5.2.0",
-    "mjml": "^5.4.0",
+    "isbot": "^5.2.2",
+    "mjml": "^5.4.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0"
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@react-router/dev": "^8.4.0",
     "@types/mjml": "^5.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3",
