@@ -8,9 +8,9 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@templatical/editor": "^0.44.1",
-    "@templatical/renderer": "^0.44.1",
-    "@templatical/types": "^0.44.1",
+    "@templatical/editor": "^0.44.2",
+    "@templatical/renderer": "^0.44.2",
+    "@templatical/types": "^0.44.2",
     "mjml": "^5.4.0",
     "next": "^16.4.0",
     "react": "^19.3.0",
