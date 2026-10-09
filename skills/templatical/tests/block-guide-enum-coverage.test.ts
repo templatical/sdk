@@ -207,6 +207,7 @@ describe("block-guide.md documents every enum value the schema declares", () => 
       "settings.direction",
       "social.iconSize",
       "social.iconStyle",
+      "social.iconTone",
       "social.icons.platform",
       "title.level",
     ]);

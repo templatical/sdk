@@ -748,7 +748,7 @@ interface RenderOptions {
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. |
-| `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
+| `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${dir}/${platform}.png`, where `dir` is the style, plus `-${tone}` for a `dark` or `light` `iconTone`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks
 
@@ -779,10 +779,10 @@ const mjml = await renderToMjml(content, {
 
 ### Social icons
 
-Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (every `SocialPlatform` × 5 styles) alongside the package:
+Social icon blocks are emitted as `<img src="…/{dir}/{platform}.png">`. `dir` is the icon style for brand colors (`circle`) and `{style}-{tone}` for an `iconTone` of `dark` or `light` (`circle-dark`). The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (every `SocialPlatform` × 6 styles × 3 tones) alongside the package:
 
 ```
-https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{dir}/{platform}.png
 ```
 
 **Why PNGs.** Outlook desktop (Word rendering engine) does not support SVG and rejects base64 data URIs in `<img src>`. Hosted PNGs are the only format that renders across every mainstream email client.
@@ -797,7 +797,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-The exact filenames the renderer expects are `{style}/{platform}.png` where `style` is one of `solid | outlined | rounded | square | circle` and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website`. The shipped 192×192 PNGs are a reasonable starting point if you want to mirror them.
+The exact filenames the renderer expects are `{dir}/{platform}.png`, where `dir` is a `style` of `solid | outlined | rounded | square | circle | plain`, followed by `-dark` or `-light` for those colors (a brand-colored icon has no suffix), and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website`. The shipped 192×192 PNGs are a reasonable starting point if you want to mirror them.
 
 The package also exports `DEFAULT_SOCIAL_ICONS_BASE_URL` if you want to compose URLs against the same default:
 
@@ -1427,6 +1427,7 @@ interface SocialIconsBlock extends BaseBlock {
   type: 'social';
   icons: SocialIcon[];
   iconStyle: SocialIconStyle;
+  iconTone?: SocialIconTone; // absent means 'brand'
   iconSize: SocialIconSize;
   spacing: number;
   align: 'left' | 'center' | 'right';
@@ -1446,7 +1447,9 @@ type SocialPlatform =
   | 'website';
 
 
-type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
+type SocialIconStyle =
+  | 'solid' | 'outlined' | 'rounded' | 'square' | 'circle' | 'plain';
+type SocialIconTone = 'brand' | 'dark' | 'light';
 type SocialIconSize = 'small' | 'medium' | 'large';
 ```
 
@@ -6752,7 +6755,8 @@ A row of social media icons linking to platform profiles.
 | Property | Type | Description |
 |----------|------|-------------|
 | `icons` | `SocialIcon[]` | List of social icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visual style |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle' \| 'plain'` | Shape. `plain` is the glyph alone, with no badge or outline |
+| `iconTone` | `'brand' \| 'dark' \| 'light'` | Optional. Each platform's brand color (the default), or one tone for every icon. A filled shape draws the glyph in white on the tone, or near-black on `light` |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | Icon size |
 | `spacing` | `number` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |

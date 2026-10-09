@@ -70,7 +70,7 @@ interface RenderOptions {
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. |
-| `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${style}/${platform}.png` aufgelöst. Siehe [Social-Media-Icons](#social-media-icons) unten. |
+| `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${dir}/${platform}.png` aufgelöst, wobei `dir` der Stil ist, bei einem `iconTone` von `dark` oder `light` gefolgt von `-${tone}`. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke
 
@@ -101,10 +101,10 @@ const mjml = await renderToMjml(content, {
 
 ### Social-Media-Icons
 
-Social-Icon-Blöcke werden als `<img src="…/{style}/{platform}.png">` ausgegeben. Der Standardwert von `socialIconsBaseUrl` verweist auf den versionsgebundenen jsDelivr-Mirror von `@templatical/renderer`, der vorgerasterte PNGs (jede `SocialPlatform` × 5 Stile) mit dem Paket ausliefert:
+Social-Icon-Blöcke werden als `<img src="…/{dir}/{platform}.png">` ausgegeben. `dir` ist bei Markenfarben der Icon-Stil (`circle`) und bei einem `iconTone` von `dark` oder `light` `{style}-{tone}` (`circle-dark`). Der Standardwert von `socialIconsBaseUrl` verweist auf den versionsgebundenen jsDelivr-Mirror von `@templatical/renderer`, der vorgerasterte PNGs (jede `SocialPlatform` × 6 Stile × 3 Farbtöne) mit dem Paket ausliefert:
 
 ```
-https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{dir}/{platform}.png
 ```
 
 **Warum PNGs.** Outlook Desktop (Word-Rendering-Engine) unterstützt kein SVG und lehnt base64-Daten-URIs in `<img src>` ab. Gehostete PNGs sind das einzige Format, das in allen gängigen E-Mail-Clients zuverlässig dargestellt wird.
@@ -119,7 +119,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-Die exakten Dateinamen, die der Renderer erwartet, sind `{style}/{platform}.png`, wobei `style` einer von `solid | outlined | rounded | square | circle` und `platform` einer von `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website` ist. Die ausgelieferten 192×192-PNGs sind ein sinnvoller Ausgangspunkt, wenn Sie sie spiegeln möchten.
+Die exakten Dateinamen, die der Renderer erwartet, sind `{dir}/{platform}.png`, wobei `dir` ein `style` aus `solid | outlined | rounded | square | circle | plain` ist, für diese Farben gefolgt von `-dark` oder `-light` (ein Icon in Markenfarbe hat kein Suffix), und `platform` einer von `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website` ist. Die ausgelieferten 192×192-PNGs sind ein sinnvoller Ausgangspunkt, wenn Sie sie spiegeln möchten.
 
 Das Paket exportiert außerdem `DEFAULT_SOCIAL_ICONS_BASE_URL`, falls Sie URLs gegen denselben Standardwert komponieren möchten:
 

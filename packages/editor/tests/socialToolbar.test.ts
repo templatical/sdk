@@ -95,3 +95,30 @@ describe('SocialToolbar CRUD', () => {
     expect(update.icons![0].id).toBe('b');
   });
 });
+
+describe('SocialToolbar style and color', () => {
+  it('offers the plain style', () => {
+    const wrapper = mountIt(withIcons([]));
+    const values = wrapper
+      .findAll('option')
+      .map((o) => (o.element as HTMLOptionElement).value);
+    expect(values).toContain('plain');
+  });
+
+  it('shows brand for a block with no color and emits the chosen tone', async () => {
+    // Content saved before iconTone existed has no such field.
+    const { iconTone: _absent, ...legacy } = withIcons([]);
+    const wrapper = mountIt(legacy as SocialIconsBlock);
+    const select = wrapper.find('[data-testid="social-tone-select"]');
+    expect((select.element as HTMLSelectElement).value).toBe('brand');
+    expect(
+      select.findAll('option').map((o) => (o.element as HTMLOptionElement).value),
+    ).toEqual(['brand', 'dark', 'light']);
+
+    await select.setValue('light');
+    const [update] = wrapper.emitted('update')!.at(-1) as [
+      Partial<SocialIconsBlock>,
+    ];
+    expect(update).toEqual({ iconTone: 'light' });
+  });
+});

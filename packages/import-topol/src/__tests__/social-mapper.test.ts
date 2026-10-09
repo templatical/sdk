@@ -171,7 +171,7 @@ describe("convertSocial", () => {
     expect((r.block as SocialIconsBlock).iconStyle).toBe("outlined");
   });
 
-  it("maps Topol's outlinedbw icon set to the outlined style", () => {
+  it("maps Topol's outlinedbw icon set to the outlined style in the dark tone", () => {
     const r = convertSocial(
       social({
         display: "facebook:url",
@@ -180,10 +180,11 @@ describe("convertSocial", () => {
       }),
       ctx(),
     )!;
-    // Not "solid": outlinedbw is the outlined set in monochrome, and the
+    // Not "solid": outlinedbw is the outlined set in black and white, and the
     // fallback would import it as filled. Both folder names occur in the
     // reference exports.
     expect((r.block as SocialIconsBlock).iconStyle).toBe("outlined");
+    expect((r.block as SocialIconsBlock).iconTone).toBe("dark");
   });
 
   it("leaves the style at the factory default for an unrecognised base-url segment", () => {

@@ -123,7 +123,8 @@ A row of social media icons linking to platform profiles.
 | Property | Type | Description |
 |----------|------|-------------|
 | `icons` | `SocialIcon[]` | List of social icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visual style |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle' \| 'plain'` | Shape. `plain` is the glyph alone, with no badge or outline |
+| `iconTone` | `'brand' \| 'dark' \| 'light'` | Optional. Each platform's brand color (the default), or one tone for every icon. A filled shape draws the glyph in white on the tone, or near-black on `light` |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | Icon size |
 | `spacing` | `number` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |

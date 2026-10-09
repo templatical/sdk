@@ -123,7 +123,8 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `icons` | `SocialIcon[]` | Liste der Social Icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visueller Stil |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle' \| 'plain'` | Form. `plain` ist das Symbol allein, ohne Fläche oder Umriss |
+| `iconTone` | `'brand' \| 'dark' \| 'light'` | Optional. Die Markenfarbe jeder Plattform (Standard) oder ein Farbton für alle Icons. Eine gefüllte Form zeigt das Symbol weiß auf dem Farbton, bei `light` fast schwarz |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | Icon-Größe |
 | `spacing` | `number` | Abstand zwischen Icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |

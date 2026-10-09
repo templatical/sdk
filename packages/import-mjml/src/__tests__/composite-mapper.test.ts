@@ -97,6 +97,24 @@ describe("mj-social", () => {
     expect(block.spacing).toBe(14);
   });
 
+  it("reads the style and tone from a one-tone icon folder", () => {
+    const styleOf = (dir: string) => {
+      const block = convert(
+        `<mj-social>
+           <mj-social-element src="https://cdn.test/icons/${dir}/github.png" href="https://gh.test/x" border-radius="50%" />
+         </mj-social>`,
+        "mj-social",
+      ).result.block as SocialIconsBlock;
+      return [block.iconStyle, block.iconTone];
+    };
+
+    expect(styleOf("circle-dark")).toEqual(["circle", "dark"]);
+    expect(styleOf("plain-light")).toEqual(["plain", "light"]);
+    expect(styleOf("plain")).toEqual(["plain", undefined]);
+    // An unknown tone is not a Templatical folder: the radius decides.
+    expect(styleOf("rounded-neon")).toEqual(["circle", undefined]);
+  });
+
   it("maps x to twitter and strips a -noshare suffix", () => {
     const { result } = convert(
       `<mj-social>

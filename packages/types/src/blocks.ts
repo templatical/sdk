@@ -390,8 +390,17 @@ export type SocialPlatform =
   | "behance"
   | "website";
 
+/**
+ * The icon's shape. `plain` is the glyph alone, with no badge or outline.
+ */
 export type SocialIconStyle =
-  "solid" | "outlined" | "rounded" | "square" | "circle";
+  "solid" | "outlined" | "rounded" | "square" | "circle" | "plain";
+
+/**
+ * The colors an icon is drawn in: each platform's own brand color, or one
+ * tone (dark or light) for every icon.
+ */
+export type SocialIconTone = "brand" | "dark" | "light";
 
 export type SocialIconSize = "small" | "medium" | "large";
 
@@ -405,6 +414,8 @@ export interface SocialIconsBlock extends BaseBlock {
   type: "social";
   icons: SocialIcon[];
   iconStyle: SocialIconStyle;
+  /** Absent means `"brand"`. */
+  iconTone?: SocialIconTone;
   iconSize: SocialIconSize;
   spacing: number;
   align: "left" | "center" | "right";

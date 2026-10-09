@@ -201,6 +201,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: social -->
 **Required** — `icons` (SocialIcon[]), `iconStyle` (SocialIconStyle), `iconSize` (SocialIconSize), `spacing` (int), `align` ("left" | "center" | "right").
+**Optional** — `iconTone` (SocialIconTone).
 <!-- END GENERATED FIELDS: social -->
 
 - `icons` — each is `{ id, platform, url }`.
@@ -208,7 +209,9 @@ underline: bool, color?: hex }`.
   `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
   `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
-  `"circle"`.
+  `"circle"`, `"plain"` (the glyph alone, no badge).
+- `iconTone` is one of `"brand"` (each platform's color, the default),
+  `"dark"`, `"light"`. Use `"light"` on a dark background.
 - `iconSize` is one of `"small"`, `"medium"`, `"large"`.
 
 ### video

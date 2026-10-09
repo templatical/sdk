@@ -114,6 +114,7 @@ function buildFixtureTemplate(): TemplateContent {
                 },
               ],
               iconStyle: "circle",
+              iconTone: "dark",
               iconSize: "medium",
               spacing: 14,
             }),

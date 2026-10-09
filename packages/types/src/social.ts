@@ -1,4 +1,4 @@
-import type { SocialPlatform } from "./blocks";
+import type { SocialIconTone, SocialIconStyle, SocialPlatform } from "./blocks";
 
 /**
  * SVG glyph (24×24 path) + brand color for each social platform.
@@ -88,3 +88,86 @@ export const SOCIAL_ICON_GLYPHS: Record<SocialPlatform, SocialIconGlyph> = {
     path: "M22 7h-7V5h7v2zm1.726 10c-.442 1.297-2.029 3-5.101 3-3.074 0-5.564-1.729-5.564-5.675 0-3.91 2.325-5.92 5.466-5.92 3.082 0 4.964 1.782 5.375 4.426.078.506.109 1.188.095 2.14H15.97c.13 3.211 3.483 3.312 4.588 2.029h3.168zm-7.686-4h4.965c-.105-1.547-1.136-2.219-2.477-2.219-1.466 0-2.277.768-2.488 2.219zm-9.574 6.988H0V5.021h6.953c5.476.081 5.58 5.444 2.72 6.906 3.461 1.26 3.577 8.061-3.207 8.061zM3 11h3.584c2.508 0 2.906-3-.312-3H3v3zm3.391 3H3v3.016h3.341c3.055 0 2.868-3.016.05-3.016z",
   },
 };
+
+// Keyed by the unions, so a style or tone added to the type is a compile error
+// here until these lists, and so the PNG build that iterates them, include it.
+const STYLE_KEYS: Record<SocialIconStyle, true> = {
+  solid: true,
+  outlined: true,
+  rounded: true,
+  square: true,
+  circle: true,
+  plain: true,
+};
+const TONE_KEYS: Record<SocialIconTone, true> = {
+  brand: true,
+  dark: true,
+  light: true,
+};
+
+export const SOCIAL_ICON_STYLES = Object.keys(
+  STYLE_KEYS,
+) as readonly SocialIconStyle[];
+
+export const SOCIAL_ICON_TONES = Object.keys(
+  TONE_KEYS,
+) as readonly SocialIconTone[];
+
+/** The color of each one-color tone, as a 6-digit hex string. */
+export const SOCIAL_ICON_TONE_COLORS: Record<
+  Exclude<SocialIconTone, "brand">,
+  string
+> = {
+  dark: "#1f1f1f",
+  light: "#ffffff",
+};
+
+// `hasOwn`, not `in`: a tampered `"constructor"` must not pass as a tone.
+function oneColorTone(
+  tone: SocialIconTone | undefined,
+): Exclude<SocialIconTone, "brand"> | undefined {
+  return tone !== undefined && Object.hasOwn(SOCIAL_ICON_TONE_COLORS, tone)
+    ? (tone as Exclude<SocialIconTone, "brand">)
+    : undefined;
+}
+
+/**
+ * The two colors an icon is drawn with, shared by the editor's inline SVG
+ * and the renderer's PNGs. `fill` is the icon's color: the badge of a filled
+ * style, the outline and glyph of `outlined`, the glyph of `plain`. `onFill`
+ * is the glyph on a badge: white, or near-black on a light one. An unknown
+ * tone falls back to the brand color.
+ */
+export function socialIconColors(
+  platform: SocialPlatform,
+  tone: SocialIconTone | undefined,
+): { fill: string; onFill: string } {
+  const known = oneColorTone(tone);
+  return {
+    fill: known
+      ? SOCIAL_ICON_TONE_COLORS[known]
+      : SOCIAL_ICON_GLYPHS[platform].color,
+    onFill: known === "light" ? SOCIAL_ICON_TONE_COLORS.dark : "#ffffff",
+  };
+}
+
+/**
+ * The folder an icon's PNG sits in under `socialIconsBaseUrl`: the style for
+ * brand colors, which keeps every existing URL as it was, and
+ * `{style}-{tone}` for a one-color tone.
+ */
+export function socialIconAssetDir(
+  style: SocialIconStyle,
+  tone: SocialIconTone | undefined,
+): string {
+  const known = oneColorTone(tone);
+  return known ? `${style}-${known}` : style;
+}
+
+/**
+ * The glyph's share of the icon's width: larger when it stands alone
+ * (`plain`) than inside a badge or outline.
+ */
+export function socialIconGlyphScale(style: SocialIconStyle): number {
+  return style === "plain" ? 0.84 : 0.6;
+}

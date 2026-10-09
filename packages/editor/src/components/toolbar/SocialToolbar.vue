@@ -13,6 +13,7 @@ import {
 import { socialPlatformOptions } from "../../constants/socialIcons";
 import type {
   SocialIcon,
+  SocialIconTone,
   SocialIconsBlock,
   SocialIconStyle,
   SocialPlatform,
@@ -130,6 +131,25 @@ function removeSocialIcon(iconId: string): void {
       <option value="rounded">{{ t.social.styleRounded }}</option>
       <option value="square">{{ t.social.styleSquare }}</option>
       <option value="circle">{{ t.social.styleCircle }}</option>
+      <option value="plain">{{ t.social.stylePlain }}</option>
+    </select>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.social.color }}</label>
+    <select
+      data-testid="social-tone-select"
+      :class="inputClass"
+      :value="block.iconTone ?? 'brand'"
+      @change="
+        updateField(
+          'iconTone',
+          ($event.target as HTMLSelectElement).value as SocialIconTone,
+        )
+      "
+    >
+      <option value="brand">{{ t.social.colorBrand }}</option>
+      <option value="dark">{{ t.social.colorDark }}</option>
+      <option value="light">{{ t.social.colorLight }}</option>
     </select>
   </div>
   <div class="tpl:mb-3.5">

@@ -1,6 +1,7 @@
 import { createSocialIconsBlock, generateId } from "@templatical/types";
 import type {
   SocialIcon,
+  SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
   SocialPlatform,
@@ -54,13 +55,15 @@ const KNOWN_STYLES = new Set<string>([
 ]);
 
 // Topol ships icon sets whose folder name is not a Templatical style name.
-// `outlinedbw` is the outlined set in black and white; Templatical has no
-// monochrome variant, so `outlined` is the closest true answer — mapping it to
-// the `solid` fallback instead would import an outlined icon set as filled.
-// Measured: both `/social-icos/outlined/` and `/social-icos/outlinedbw/` appear
-// across the reference exports.
-const STYLE_ALIASES: Record<string, SocialIconStyle> = {
-  outlinedbw: "outlined",
+// `outlinedbw` is the outlined set in black and white, so it imports as
+// outlined in the dark tone; mapping it to the `solid` fallback would import
+// an outlined icon set as filled. Measured: both `/social-icos/outlined/` and
+// `/social-icos/outlinedbw/` appear across the reference exports.
+const STYLE_ALIASES: Record<
+  string,
+  { style: SocialIconStyle; tone: SocialIconTone }
+> = {
+  outlinedbw: { style: "outlined", tone: "dark" },
 };
 
 function normalizePlatform(raw: string): SocialPlatform | null {
@@ -83,13 +86,13 @@ function nearestSize(px: number): { size: SocialIconSize; exact: boolean } {
   return { size: best[1], exact: gap === 0 };
 }
 
-/** The style segment of `https://…/social-icos/<style>/`, when it names one. */
+/** The style (and tone) the segment of `https://…/social-icos/<style>/` names. */
 function styleFromBaseUrl(
   baseUrl: string | undefined,
-): SocialIconStyle | undefined {
+): { style: SocialIconStyle; tone?: SocialIconTone } | undefined {
   if (!baseUrl) return undefined;
   const segment = baseUrl.split("?")[0].split("/").filter(Boolean).at(-1) ?? "";
-  if (KNOWN_STYLES.has(segment)) return segment as SocialIconStyle;
+  if (KNOWN_STYLES.has(segment)) return { style: segment as SocialIconStyle };
   return STYLE_ALIASES[segment];
 }
 
@@ -129,7 +132,7 @@ export function convertSocial(
 
   if (icons.length === 0) return null;
 
-  const iconStyle = styleFromBaseUrl(attr(node, "base-url"));
+  const fromBaseUrl = styleFromBaseUrl(attr(node, "base-url"));
 
   const declaredSize = attr(node, "icon-size");
   let iconSize: SocialIconSize | undefined;
@@ -149,7 +152,8 @@ export function convertSocial(
       icons,
       align: parseAlignment(attr(node, "align"), "center"),
       ...(iconSize ? { iconSize } : {}),
-      ...(iconStyle ? { iconStyle } : {}),
+      ...(fromBaseUrl ? { iconStyle: fromBaseUrl.style } : {}),
+      ...(fromBaseUrl?.tone ? { iconTone: fromBaseUrl.tone } : {}),
       ...baseStyles(node),
     }),
     entry: {

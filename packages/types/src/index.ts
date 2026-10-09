@@ -26,6 +26,7 @@ export type {
   SectionWrapper,
   SlotBlock,
   SocialIcon,
+  SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
   SocialIconsBlock,
@@ -54,7 +55,15 @@ export {
 
 // Social icon glyphs (shared by the editor's inline SVG + the renderer's PNG rasterizer)
 export type { SocialIconGlyph } from "./social";
-export { SOCIAL_ICON_GLYPHS } from "./social";
+export {
+  SOCIAL_ICON_TONES,
+  SOCIAL_ICON_GLYPHS,
+  SOCIAL_ICON_STYLES,
+  SOCIAL_ICON_TONE_COLORS,
+  socialIconAssetDir,
+  socialIconColors,
+  socialIconGlyphScale,
+} from "./social";
 
 // Saved blocks (reusable user-authored block groups + the storage contract)
 export type {

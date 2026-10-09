@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { socialIcons, socialIconSizeMap } from "../../constants/socialIcons";
 import type {
+  SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
   SocialPlatform,
 } from "@templatical/types";
+import { socialIconColors, socialIconGlyphScale } from "@templatical/types";
 import { computed } from "vue";
 
 const props = defineProps<{
   platform: SocialPlatform;
   iconStyle: SocialIconStyle;
+  iconTone?: SocialIconTone;
   iconSize: SocialIconSize;
 }>();
 
 const iconDef = computed(() => socialIcons[props.platform]);
 const size = computed(() => socialIconSizeMap[props.iconSize]);
+// The same colors the renderer's PNGs are drawn in.
+const colors = computed(() => socialIconColors(props.platform, props.iconTone));
 
 const containerStyle = computed(() => {
   const baseStyles: Record<string, string> = {
@@ -24,37 +29,38 @@ const containerStyle = computed(() => {
     width: `${size.value}px`,
     height: `${size.value}px`,
   };
+  const fill = colors.value.fill;
 
   switch (props.iconStyle) {
     case "solid":
       return {
         ...baseStyles,
-        backgroundColor: iconDef.value.color,
+        backgroundColor: fill,
         borderRadius: "4px",
       };
     case "outlined":
       return {
         ...baseStyles,
         backgroundColor: "transparent",
-        border: `2px solid ${iconDef.value.color}`,
+        border: `2px solid ${fill}`,
         borderRadius: "4px",
       };
     case "rounded":
       return {
         ...baseStyles,
-        backgroundColor: iconDef.value.color,
+        backgroundColor: fill,
         borderRadius: "8px",
       };
     case "square":
       return {
         ...baseStyles,
-        backgroundColor: iconDef.value.color,
+        backgroundColor: fill,
         borderRadius: "0",
       };
     case "circle":
       return {
         ...baseStyles,
-        backgroundColor: iconDef.value.color,
+        backgroundColor: fill,
         borderRadius: "50%",
       };
     default:
@@ -62,14 +68,15 @@ const containerStyle = computed(() => {
   }
 });
 
-const svgSize = computed(() => Math.floor(size.value * 0.6));
+const svgSize = computed(() =>
+  Math.floor(size.value * socialIconGlyphScale(props.iconStyle)),
+);
 
-const svgColor = computed(() => {
-  if (props.iconStyle === "outlined") {
-    return iconDef.value.color;
-  }
-  return "#ffffff";
-});
+const svgColor = computed(() =>
+  props.iconStyle === "outlined" || props.iconStyle === "plain"
+    ? colors.value.fill
+    : colors.value.onFill,
+);
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 import type { SocialIconsBlock } from "@templatical/types";
+import { socialIconAssetDir } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
@@ -7,13 +8,14 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 /**
  * Render a social icons block to MJML markup.
  *
- * Icons are emitted as `<img src="…/{style}/{platform}.png">` rather than
+ * Icons are emitted as `<img src="…/{dir}/{platform}.png">` rather than
  * inline SVG or base64 data URIs. Outlook desktop (Word rendering engine)
  * does not support SVG and rejects base64 in `<img src>`, so hosted PNGs are
  * the only format that renders across every mainstream client. The base URL
  * is read from `context.socialIconsBaseUrl` (configurable via
  * `RenderOptions.socialIconsBaseUrl`; default is the version-pinned jsDelivr
- * mirror of this package).
+ * mirror of this package). `{dir}` is the style, plus `-{tone}` for a
+ * one-color tone (`socialIconAssetDir`).
  */
 export function renderSocialIcons(
   block: SocialIconsBlock,
@@ -37,6 +39,7 @@ export function renderSocialIcons(
   const align = block.align;
   const iconSize = block.iconSize;
   const iconStyle = block.iconStyle;
+  const assetDir = socialIconAssetDir(iconStyle, block.iconTone);
   const spacing = block.spacing;
 
   let iconSizePx: number;
@@ -65,7 +68,7 @@ export function renderSocialIcons(
       borderRadius = "0";
       break;
     default:
-      borderRadius = "4px"; // solid, outlined
+      borderRadius = "4px"; // solid, outlined, plain
       break;
   }
 
@@ -73,7 +76,7 @@ export function renderSocialIcons(
   const socialElements = icons.map((icon, index) => {
     const platform = icon.platform;
     const url = escapeAttr(icon.url);
-    const iconSrc = `${context.socialIconsBaseUrl}/${iconStyle}/${platform}.png`;
+    const iconSrc = `${context.socialIconsBaseUrl}/${assetDir}/${platform}.png`;
 
     // Apply spacing as right padding only (except last icon) to match CSS gap behavior
     const rightPad = index === iconCount - 1 ? 0 : spacing;
