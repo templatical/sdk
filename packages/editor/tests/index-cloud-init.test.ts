@@ -20,7 +20,10 @@
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import {
   createDefaultTemplateContent,
+  createParagraphBlock,
   createSlotBlock,
+  createWrapperBlock,
+  type TemplateContent,
 } from "@templatical/types";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
@@ -290,6 +293,49 @@ describe("initCloud — a thin wrapper over init()", () => {
         }),
       ),
     ).rejects.toThrow(/Container element not found/);
+    expect(bootstrapCalls).toEqual([]);
+  });
+
+  // `layout` and `content` are checked when `initCloud()` is called too, so an
+  // illegal one fails before any request goes out.
+  it.each([
+    {
+      name: "a layout with no slot",
+      seed: {
+        layout: {
+          blocks: [createParagraphBlock({ content: "<p>Header</p>" })],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] layout: must contain exactly one slot block",
+    },
+    {
+      name: "content holding a slot",
+      seed: {
+        content: {
+          blocks: [createSlotBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] slot is not a valid content block",
+    },
+    {
+      name: "content holding a wrapper",
+      seed: {
+        content: {
+          blocks: [createWrapperBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] wrapper is not a valid content block",
+    },
+  ])("rejects $name before bootstrapping", async ({ seed, error }) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    await expect(initCloudFn(cloudConfig(container, seed))).rejects.toThrow(
+      error,
+    );
     expect(bootstrapCalls).toEqual([]);
   });
 
@@ -652,6 +698,46 @@ describe("OSS init — instance methods", () => {
       const config = captured.props!.config as { content: unknown };
       expect(config.content).toEqual(content);
       expect(config.content).not.toBe(content);
+    });
+
+    // `init()` mounts on a copy of the config itself, as `initCloud()` does, so
+    // the prepared `layout` and `content` never land on the caller's object,
+    // which may be frozen.
+    it("init() leaves the caller's config untouched", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+      const config = { container, shadowDom: false, content, layout };
+
+      await initFn(config as unknown as Parameters<typeof initFn>[0]);
+
+      expect(config.content).toBe(content);
+      expect(config.layout).toBe(layout);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
+    });
+
+    it("init() mounts with a frozen config", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+
+      await initFn(
+        Object.freeze({
+          container,
+          shadowDom: false,
+          content,
+          layout,
+        }) as unknown as Parameters<typeof initFn>[0],
+      );
+
+      expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
     });
 
     it("setContent() hands the mounted editor a copy", async () => {
