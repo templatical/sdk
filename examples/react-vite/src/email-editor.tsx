@@ -39,14 +39,6 @@ export function EmailEditor() {
     let instance: TemplaticalEditor | null = null;
 
     (async () => {
-      // In development, React StrictMode runs this effect, its cleanup and this
-      // effect again in one synchronous pass. Two init() calls on one
-      // container can finish in either order, and each replaces whatever the
-      // container holds when it finishes, so a cancelled run that finishes
-      // last leaves the container empty. Yielding once lets that cleanup
-      // cancel the first run before it calls init().
-      await Promise.resolve();
-      if (cancelled) return;
       const ed = await init({
         container,
         content: storedContent(),

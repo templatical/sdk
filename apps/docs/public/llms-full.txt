@@ -14,7 +14,7 @@ The main entry point is the `init()` function from `@templatical/editor`.
 
 Creates and mounts the editor into a container element. Returns a promise that resolves when the editor is ready.
 
-A container holds one editor. A later `init()` on the same container replaces the editor there, and keeps the container even when an earlier call has not resolved yet: that earlier call resolves with an editor that never mounts.
+A container holds one editor. A later `init()` on the same container replaces the editor there, and keeps the container even when an earlier call has not resolved yet: that earlier call resolves with an editor that never mounts. A call whose `layout` or `content` is invalid rejects before it touches the container, so the editor there and any earlier call still pending are left as they were.
 
 ```ts
 import { init } from "@templatical/editor";
@@ -4990,14 +4990,6 @@ export function EmailEditor() {
     let instance: TemplaticalEditor | null = null;
 
     (async () => {
-      // In development, React StrictMode runs this effect, its cleanup and this
-      // effect again in one synchronous pass. Two init() calls on one
-      // container can finish in either order, and each replaces whatever the
-      // container holds when it finishes, so a cancelled run that finishes
-      // last leaves the container empty. Yielding once lets that cleanup
-      // cancel the first run before it calls init().
-      await Promise.resolve();
-      if (cancelled) return;
       const ed = await init({
         container,
         content: storedContent(),
