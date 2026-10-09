@@ -15,6 +15,42 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.44.3
+
+<time datetime="2026-10-09">2026-10-09</time>
+
+### Fixes and improvements
+
+**Keyboard focus stays in place in the saved blocks browser**
+
+`@templatical/editor`
+
+Arming a saved block's delete, confirming it, and closing an inline rename each replace the control that has focus. Focus used to fall back to the page, so a keyboard user had to start again from the top. Now focus moves to the delete confirm when it appears. After a delete, it goes to the entry that took the deleted one's place, or the one before it, or the search box once the library is empty. Enter or Escape in a rename hands it back to Rename. Escape on the delete confirm now backs out to the Delete button instead of closing the whole browser.
+
+**The saved-block delete confirm stays on one line**
+
+`@templatical/editor`
+
+A saved-block card's bottom row holds the entry's block-type icons, a "+N" count for any beyond five, the last-updated time and the row actions. Clicking Delete swaps the actions for an inline confirm, and its full question, "Delete this saved block?", didn't fit a crowded row: on an entry with five or more block types it wrapped onto two lines, made the card taller and squeezed the icons. German, French, Spanish, Catalan, Dutch and Japanese made it worse.
+
+The confirm now shows a short label ("Delete?" in English, and a short form in every locale) and keeps the full question as its accessible name, so screen readers still announce "Delete this saved block?" and tests that find the button by that name keep working. When the row is crowded, only the timestamp gives way: it truncates and still shows the full date in its tooltip, while the icons and the confirm keep their size.
+
+**`init()` and `initCloud()` now check `layout` and `content` when they are called, before they touch the container. A call whose layout or content the editor refuses (such as a layout without exactly one legal slot, or content holding a `slot` or `wrapper` block) rejects at once with the same error as before, and leaves the container and its editor exactly as they were. The check used to run after the call had taken the container over: the rejected call unmounted the editor already there and left the container blank, and an earlier call still loading on that container resolved with an editor that never mounted. A rejected `initCloud()` call now also makes no auth, health or plan request, and in shadow DOM mode a rejected call no longer attaches a shadow root.**
+
+`@templatical/editor`
+
+**`init()` now mounts on a copy of the config you pass and never writes to it, as `initCloud()` already did. It used to write the normalized `layout` and `content` back onto your object, so a frozen config that carried either one, such as Immer state or an `Object.freeze`d constant, threw `TypeError: Cannot assign to read only property`. Reassigning a key on that object after `init()`, such as `onChange`, no longer reaches the editor; for a handler that changes over time, pass a function that calls the current one.**
+
+`@templatical/editor`
+
+**Saved-block surfaces now have rounded corners**
+
+`@templatical/editor`
+
+The saved blocks browser's cards, their keyboard focus ring, the inline rename row and the loading skeleton, and the block previews in the save dialog all rendered with square corners. They read `--tpl-radius-md`, which is not one of the editor's radius tokens, so the radius resolved to nothing. They now use `--tpl-radius-sm` (7px by default), which matches the inputs and buttons around them, and they follow `--tpl-user-radius-sm` when you theme it. The focus ring follows the card's corners.
+
+The 0.7.0 notes gave `--tpl-user-radius-md` as an example theming hook. The editor has never read it. The radius hooks are `--tpl-user-radius-sm`, `--tpl-user-radius` and `--tpl-user-radius-lg`. The theming guide now lists every hook the editor reads, including `--tpl-user-on-primary`, and marks which ones have a `--tpl-user-dark-*` twin. The radius, size, font and transition hooks have no twin and apply in both modes.
+
 ## 0.44.2
 
 <time datetime="2026-10-09">2026-10-09</time>
