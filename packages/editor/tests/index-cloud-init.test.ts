@@ -20,7 +20,10 @@
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import {
   createDefaultTemplateContent,
+  createParagraphBlock,
   createSlotBlock,
+  createWrapperBlock,
+  type TemplateContent,
 } from "@templatical/types";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
@@ -290,6 +293,49 @@ describe("initCloud — a thin wrapper over init()", () => {
         }),
       ),
     ).rejects.toThrow(/Container element not found/);
+    expect(bootstrapCalls).toEqual([]);
+  });
+
+  // `layout` and `content` are checked when `initCloud()` is called too, so an
+  // illegal one fails before any request goes out.
+  it.each([
+    {
+      name: "a layout with no slot",
+      seed: {
+        layout: {
+          blocks: [createParagraphBlock({ content: "<p>Header</p>" })],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] layout: must contain exactly one slot block",
+    },
+    {
+      name: "content holding a slot",
+      seed: {
+        content: {
+          blocks: [createSlotBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] slot is not a valid content block",
+    },
+    {
+      name: "content holding a wrapper",
+      seed: {
+        content: {
+          blocks: [createWrapperBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] wrapper is not a valid content block",
+    },
+  ])("rejects $name before bootstrapping", async ({ seed, error }) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    await expect(initCloudFn(cloudConfig(container, seed))).rejects.toThrow(
+      error,
+    );
     expect(bootstrapCalls).toEqual([]);
   });
 

@@ -944,9 +944,10 @@ const ossEntries = new Map<Element, OssEntry>();
 // whatever was most recently mounted.
 let lastOssContainer: Element | null = null;
 
-// Which call may take a container over. Every `init()` / `initCloud()` claims
-// its container before its first await, and mounts only if its claim is still
-// the latest once its awaits settle. Calls on one container settle in whatever
+// Which call may take a container over. Every `init()` / `initCloud()` whose
+// `layout` and `content` pass `prepareLayoutAndContent` claims its container
+// before its first await, and mounts only if its claim is still the latest once
+// its awaits settle. Calls on one container settle in whatever
 // order their awaits finish (under React StrictMode's dev double effect, the
 // cancelled first call can settle after the second one mounted), so the order
 // the calls were made in decides which editor the container keeps. A WeakMap,
@@ -995,16 +996,57 @@ function unmountOssContainer(container: Element, onlyApp?: App): void {
   }
 }
 
+/**
+ * Normalize the merge tags in `layout` and `content`, then refuse an illegal
+ * tree. `init()` and `initCloud()` run this when they are called, before they
+ * claim the container. A call that throws here rejects at once: it supersedes
+ * no earlier call, and the container and the editor it shows stay exactly as
+ * they were.
+ *
+ * Merge tags reach us in one of two shapes, and only one of them behaves like
+ * a tag. Anything typed or pasted is already a `<span data-merge-tag>`, since
+ * `MergeTagNode`'s input rules convert it on the spot; content that arrived
+ * any other way — a consumer's stored JSON, an `@templatical/import-*`
+ * conversion — still holds bare `{{tokens}}` that render as plain text.
+ * Normalizing here, before the seed reaches `Editor.vue`, means core is
+ * handed content that is already correct and never observes a mutation, so
+ * nothing is marked dirty and no autosave tick fires for a load.
+ *
+ * This is one of four places content enters. The other three:
+ * `instance.setContent` and `instance.create` below, and the `templates`
+ * provider's `load`, wrapped in `Editor.vue` where it reaches core.
+ * Overlay chrome is not seed content: merge tags in the shell, then refuse
+ * an illegal tree.
+ */
+function prepareLayoutAndContent(
+  config: Pick<TemplaticalEditorConfig, "layout" | "content" | "mergeTags">,
+): void {
+  if (config.layout) {
+    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
+    validateLayout(config.layout);
+  }
+  if (config.content) {
+    config.content = normalizeContentForConfig(
+      config.content,
+      config.mergeTags,
+    );
+    assertNoSlotInContent(config.content);
+    assertNoWrapperInContent(config.content);
+  }
+}
+
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
+  prepareLayoutAndContent(config);
   return mountEditor(config, claimContainer(config.container));
 }
 
 /**
  * The one mount path. `init()` calls it with no runtime; `initCloud()` calls it
  * with Cloud's, having already resolved auth, the plan and every adapter. Both
- * claim the container when they are called, before this runs.
+ * prepare `layout` and `content` and claim the container when they are called,
+ * before this runs.
  */
 async function mountEditor(
   config: TemplaticalEditorConfig,
@@ -1057,33 +1099,6 @@ async function mountEditor(
 
   const mount = resolveMountTarget(container, config.shadowDom ?? true);
   const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
-
-  // Merge tags reach us in one of two shapes, and only one of them behaves like
-  // a tag. Anything typed or pasted is already a `<span data-merge-tag>`, since
-  // `MergeTagNode`'s input rules convert it on the spot; content that arrived
-  // any other way — a consumer's stored JSON, an `@templatical/import-*`
-  // conversion — still holds bare `{{tokens}}` that render as plain text.
-  // Normalizing here, before the seed reaches `Editor.vue`, means core is
-  // handed content that is already correct and never observes a mutation, so
-  // nothing is marked dirty and no autosave tick fires for a load.
-  //
-  // This is one of four places content enters. The other three:
-  // `instance.setContent` and `instance.create` below, and the `templates`
-  // provider's `load`, wrapped in `Editor.vue` where it reaches core.
-  // Overlay chrome is not seed content: merge tags in the shell, then refuse
-  // an illegal tree before mount.
-  if (config.layout) {
-    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
-    validateLayout(config.layout);
-  }
-  if (config.content) {
-    config.content = normalizeContentForConfig(
-      config.content,
-      config.mergeTags,
-    );
-    assertNoSlotInContent(config.content);
-    assertNoWrapperInContent(config.content);
-  }
 
   const app = createApp({
     setup() {
@@ -1324,6 +1339,17 @@ function createEditorInstance({
 export async function initCloud(
   config: TemplaticalCloudEditorConfig,
 ): Promise<TemplaticalCloudEditor> {
+  // Checked before the claim and the bootstrap, so an illegal `layout` or
+  // `content` rejects without touching the container or making any request.
+  // The three keys are copied first: unlike `init()`, this never writes to the
+  // caller's config.
+  const prepared = {
+    layout: config.layout,
+    content: config.content,
+    mergeTags: config.mergeTags,
+  };
+  prepareLayoutAndContent(prepared);
+
   // Claimed before the bootstrap's requests go out, so a later call on this
   // container wins even when this call's bootstrap answers last, and a
   // selector that matches nothing rejects without making any request.
@@ -1344,8 +1370,8 @@ export async function initCloud(
   return mountEditor(
     {
       container: config.container,
-      content: config.content,
-      layout: config.layout,
+      content: prepared.content,
+      layout: prepared.layout,
       sectionWrapper: config.sectionWrapper,
       shadowDom: config.shadowDom,
       locale: config.locale,

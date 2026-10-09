@@ -11,7 +11,7 @@ Der Haupteinstiegspunkt ist die `init()`-Funktion aus `@templatical/editor`.
 
 Erstellt und hängt den Editor in ein Container-Element ein. Gibt ein Promise zurück, das aufgelöst wird, sobald der Editor bereit ist.
 
-Ein Container enthält einen Editor. Ein späteres `init()` auf demselben Container ersetzt den Editor dort und behält den Container auch dann, wenn das Promise eines früheren Aufrufs noch aussteht: Dieser frühere Aufruf liefert dann einen Editor, der nie gemountet wird.
+Ein Container enthält einen Editor. Ein späteres `init()` auf demselben Container ersetzt den Editor dort und behält den Container auch dann, wenn das Promise eines früheren Aufrufs noch aussteht: Dieser frühere Aufruf liefert dann einen Editor, der nie gemountet wird. Ein Aufruf mit ungültigem `layout` oder `content` lehnt ab, bevor er den Container berührt: Der Editor dort und ein noch ausstehender früherer Aufruf bleiben unverändert.
 
 ```ts
 import { init } from "@templatical/editor";
