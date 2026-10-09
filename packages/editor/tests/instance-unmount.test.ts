@@ -50,6 +50,15 @@ function newContainer(): HTMLElement {
   return el;
 }
 
+/** A promise the test settles by hand, so two calls finish in a chosen order. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}
+
 let init: typeof import("../src/index").init;
 let initCloud: typeof import("../src/index").initCloud;
 let unmount: typeof import("../src/index").unmount;
@@ -266,6 +275,163 @@ describe.each([
     rightEditor.unmount();
 
     expect(editorLabels(right)).toEqual([]);
+  });
+});
+
+// Two calls on one container can settle in either order: on a cold load under
+// React StrictMode's dev double effect, the cancelled first `init()` can settle
+// last. The order calls were *made* in decides which editor the container
+// keeps, never the order they settle in.
+describe.each([
+  { mode: "shadow DOM", shadowDom: true },
+  { mode: "light DOM", shadowDom: false },
+])("concurrent init() on one container — $mode", ({ shadowDom }) => {
+  /** Holds each `init()`'s translations until the test settles them. */
+  async function holdTranslations() {
+    const { loadTranslations } = await import("../src/i18n");
+    const first = deferred<Record<string, unknown>>();
+    const second = deferred<Record<string, unknown>>();
+    vi.mocked(loadTranslations)
+      .mockReturnValueOnce(first.promise as never)
+      .mockReturnValueOnce(second.promise as never);
+    return { first, second };
+  }
+
+  // The reported failure, step for step: effect #1 starts `init()`, its
+  // cleanup flips `cancelled`, effect #2 starts `init()` again, and effect #1's
+  // call settles after effect #2's editor mounted, then calls `ed.unmount()`.
+  it("keeps the later call's editor when a cancelled earlier call settles after it mounted", async () => {
+    const { first, second } = await holdTranslations();
+    const container = newContainer();
+
+    let cancelled = false;
+    const firstEffect = (async () => {
+      const ed = await init({
+        container,
+        shadowDom,
+        content: contentFor("a"),
+      });
+      if (cancelled) {
+        ed.unmount();
+      }
+      return ed;
+    })();
+    cancelled = true;
+    const secondEffect = init({
+      container,
+      shadowDom,
+      content: contentFor("b"),
+    });
+
+    second.resolve({});
+    const b = await secondEffect;
+    mounted.push(b);
+    expect(editorLabels(container)).toEqual(["b"]);
+
+    first.resolve({});
+    mounted.push(await firstEffect);
+
+    expect(editorLabels(container)).toEqual(["b"]);
+    expect(firstBlockId(b.getContent())).toBe("live:b");
+  });
+
+  it("never mounts an earlier call that settles after a later one mounted, and leaves its handle inert", async () => {
+    const { first, second } = await holdTranslations();
+    const container = newContainer();
+
+    const pendingA = init({ container, shadowDom, content: contentFor("a") });
+    const pendingB = init({ container, shadowDom, content: contentFor("b") });
+
+    second.resolve({});
+    const b = await pendingB;
+    mounted.push(b);
+    first.resolve({});
+    const a = await pendingA;
+    mounted.push(a);
+
+    expect(editorLabels(container)).toEqual(["b"]);
+    // `a` never mounted, so it answers from its seed rather than a live editor.
+    expect(firstBlockId(a.getContent())).toBe("a");
+
+    a.unmount();
+
+    expect(editorLabels(container)).toEqual(["b"]);
+    expect(firstBlockId(b.getContent())).toBe("live:b");
+  });
+
+  // A superseded call that settles first neither mounts nor tears down the
+  // editor the container already shows; the latest call replaces it once it
+  // settles.
+  it("leaves the container's current editor alone when a superseded call settles before the latest one", async () => {
+    const container = newContainer();
+    mounted.push(
+      await init({ container, shadowDom, content: contentFor("current") }),
+    );
+    const { first, second } = await holdTranslations();
+
+    const pendingA = init({ container, shadowDom, content: contentFor("a") });
+    const pendingB = init({ container, shadowDom, content: contentFor("b") });
+
+    first.resolve({});
+    const a = await pendingA;
+    mounted.push(a);
+
+    expect(editorLabels(container)).toEqual(["current"]);
+    expect(firstBlockId(a.getContent())).toBe("a");
+
+    second.resolve({});
+    mounted.push(await pendingB);
+
+    expect(editorLabels(container)).toEqual(["b"]);
+  });
+
+  // `initCloud()` waits on the network before it mounts, so its calls settle in
+  // whatever order their bootstraps answer. The race is the one above, with a
+  // wider window.
+  it("keeps the later initCloud() editor when a cancelled earlier call's bootstrap settles after it mounted", async () => {
+    const { bootstrapCloud } = await import("../src/cloud/createCloudRuntime");
+    type Bootstrap = Awaited<ReturnType<typeof bootstrapCloud>>;
+    const first = deferred<Bootstrap>();
+    const second = deferred<Bootstrap>();
+    vi.mocked(bootstrapCloud)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    const bootstrap = { runtime: {}, providers: {} } as unknown as Bootstrap;
+
+    const container = newContainer();
+    const cloudConfig = (label: string) =>
+      ({
+        container,
+        shadowDom,
+        content: contentFor(label),
+      }) as unknown as Parameters<typeof initCloud>[0];
+
+    let cancelled = false;
+    const firstEffect = (async () => {
+      const ed = await initCloud(cloudConfig("a"));
+      if (cancelled) {
+        ed.unmount();
+      }
+      return ed;
+    })();
+    cancelled = true;
+    // Vitest hands the real module to the second of two `import()`s of a
+    // mocked module made in one tick, and each `initCloud()` imports
+    // `createCloudRuntime`. So the second call starts once the first is waiting
+    // on its bootstrap, which is still before that bootstrap settles.
+    await vi.waitFor(() => expect(bootstrapCloud).toHaveBeenCalledTimes(1));
+    const secondEffect = initCloud(cloudConfig("b"));
+
+    second.resolve(bootstrap);
+    const b = await secondEffect;
+    mounted.push(b);
+    expect(editorLabels(container)).toEqual(["b"]);
+
+    first.resolve(bootstrap);
+    mounted.push(await firstEffect);
+
+    expect(editorLabels(container)).toEqual(["b"]);
+    expect(firstBlockId(b.getContent())).toBe("live:b");
   });
 });
 

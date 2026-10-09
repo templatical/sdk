@@ -50,7 +50,7 @@ import {
   loadCloudTranslations,
 } from "./i18n";
 import { logger } from "./utils/logger";
-import { useFonts } from "./composables";
+import { useFonts, type UseFontsReturn } from "./composables";
 import { stripStylesheetImports } from "./utils/stripStylesheetImports";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
@@ -58,6 +58,7 @@ import {
   buildRenderPayload,
   createRenderMethods,
   resolveRenderFonts,
+  type RenderMethods,
 } from "./utils/renderProvider";
 import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // Compiled-CSS-as-string for shadow root adoption. The `virtual:editor-css`
@@ -669,9 +670,10 @@ interface TemplaticalEditorBase {
   setMergeTags(tags: MergeTag[]): void;
   /**
    * Tear this editor down. It unmounts only this instance: once a later
-   * `init()` on the same container has replaced it, calling `unmount()` here
-   * does nothing, so a stale handle never removes the editor that replaced it.
-   * Calling it again after the teardown is also a no-op.
+   * `init()` on the same container has replaced it, or kept it from mounting,
+   * calling `unmount()` here does nothing, so a stale handle never removes the
+   * editor that replaced it. Calling it again after the teardown is also a
+   * no-op.
    */
   unmount(): void;
   /**
@@ -942,6 +944,38 @@ const ossEntries = new Map<Element, OssEntry>();
 // whatever was most recently mounted.
 let lastOssContainer: Element | null = null;
 
+// Which call may take a container over. Every `init()` / `initCloud()` claims
+// its container before its first await, and mounts only if its claim is still
+// the latest once its awaits settle. Calls on one container settle in whatever
+// order their awaits finish (under React StrictMode's dev double effect, the
+// cancelled first call can settle after the second one mounted), so the order
+// the calls were made in decides which editor the container keeps. A WeakMap,
+// so a container that leaves the page takes its claim with it.
+let lastClaimToken = 0;
+const containerClaims = new WeakMap<Element, number>();
+
+interface ContainerClaim {
+  container: Element;
+  token: number;
+}
+
+/**
+ * Resolve the configured container and claim it for this call. Runs before
+ * the first await of `init()` and `initCloud()`, so claims follow call order.
+ */
+function claimContainer(target: string | HTMLElement): ContainerClaim {
+  const container =
+    typeof target === "string" ? document.querySelector(target) : target;
+
+  if (!container) {
+    throw new Error(`[Templatical] Container element not found: ${target}`);
+  }
+
+  const token = ++lastClaimToken;
+  containerClaims.set(container, token);
+  return { container, token };
+}
+
 // Tears down whatever app the container holds, or with `onlyApp` just that app:
 // an instance unmounts only itself. A StrictMode double-mount can call a
 // superseded instance's `unmount()` after its replacement mounted on the same
@@ -964,28 +998,19 @@ function unmountOssContainer(container: Element, onlyApp?: App): void {
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
-  return mountEditor(config);
+  return mountEditor(config, claimContainer(config.container));
 }
 
 /**
  * The one mount path. `init()` calls it with no runtime; `initCloud()` calls it
- * with Cloud's, having already resolved auth, the plan and every adapter.
+ * with Cloud's, having already resolved auth, the plan and every adapter. Both
+ * claim the container when they are called, before this runs.
  */
 async function mountEditor(
   config: TemplaticalEditorConfig,
+  { container, token }: ContainerClaim,
   cloud?: CloudRuntime,
 ): Promise<TemplaticalEditor> {
-  const container =
-    typeof config.container === "string"
-      ? document.querySelector(config.container)
-      : config.container;
-
-  if (!container) {
-    throw new Error(
-      `[Templatical] Container element not found: ${config.container}`,
-    );
-  }
-
   // An unusable `locale` fell back to English in silence, so a typo — "gr" for
   // Greek (the country code, not the language code "el"), or "english" — was
   // indistinguishable from the option being ignored. Regions and stray
@@ -1007,6 +1032,22 @@ async function mountEditor(
 
   // Create fonts manager to pass to Editor
   const fontsManager = useFonts(config.fonts);
+
+  // A later `init()` or `initCloud()` on this container was made while this
+  // one awaited, so the container is that call's. Mounting here would replace
+  // its editor whenever this call settles last: under React StrictMode, with a
+  // cancelled effect's editor, which that effect then unmounts, leaving the
+  // container empty. So this call leaves the container alone and resolves
+  // never mounted, like an instance a later `init()` replaced: its
+  // `unmount()` is a no-op.
+  if (containerClaims.get(container) !== token) {
+    return createEditorInstance({
+      config,
+      editorRef: ref(null),
+      fontsManager,
+      unmount: () => {},
+    }).instance;
+  }
 
   // Auto-unmount any prior instance on the SAME container *after* awaits
   // — checking before the await would let two concurrent init() calls
@@ -1069,6 +1110,35 @@ async function mountEditor(
   ossEntries.set(container, { app, editorRef, cleanup: mount.cleanup });
   lastOssContainer = container;
 
+  const { instance, render } = createEditorInstance({
+    config,
+    editorRef,
+    fontsManager,
+    // This instance's own app: once a later `init()` replaced it on the
+    // container, this call must leave the replacement mounted.
+    unmount: () => unmountOssContainer(container, app),
+  });
+
+  return instance;
+}
+
+/**
+ * The object `init()` and `initCloud()` resolve with. It reaches the editor
+ * through `editorRef`, which is `null` before the editor mounts and after it
+ * unmounts, and for good on a call a later one superseded; every method
+ * answers either way.
+ */
+function createEditorInstance({
+  config,
+  editorRef,
+  fontsManager,
+  unmount,
+}: {
+  config: TemplaticalEditorConfig;
+  editorRef: Ref<InstanceType<typeof Editor> | null>;
+  fontsManager: UseFontsReturn;
+  unmount: () => void;
+}): { instance: TemplaticalEditor; render: RenderMethods } {
   const instance: TemplaticalEditor = {
     getContent() {
       // safeClone (not a naked JSON.stringify): a drag inside a section can
@@ -1112,9 +1182,7 @@ async function mountEditor(
       // read, so the call is never silently lost.
       config.mergeTags = { ...config.mergeTags, tags };
     },
-    // This instance's own app: once a later `init()` replaced it on the
-    // container, this call must leave the replacement mounted.
-    unmount: () => unmountOssContainer(container, app),
+    unmount,
     create(input?: { name?: string; content?: TemplateContent }) {
       if (!editorRef.value) {
         return Promise.reject(new Error("[Templatical] Editor not ready"));
@@ -1198,7 +1266,7 @@ async function mountEditor(
       }),
   });
 
-  return instance;
+  return { instance, render };
 }
 
 // ---------------------------------------------------------------------------
@@ -1256,6 +1324,11 @@ async function mountEditor(
 export async function initCloud(
   config: TemplaticalCloudEditorConfig,
 ): Promise<TemplaticalCloudEditor> {
+  // Claimed before the bootstrap's requests go out, so a later call on this
+  // container wins even when this call's bootstrap answers last, and a
+  // selector that matches nothing rejects without making any request.
+  const claim = claimContainer(config.container);
+
   // Dynamic imports — every cloud module is tree-shaken from the OSS bundle, and
   // an OSS consumer who never calls this downloads none of it.
   const [{ bootstrapCloud }, cloudTranslations] = await Promise.all([
@@ -1321,6 +1394,7 @@ export async function initCloud(
       // which leaves comments unavailable rather than anonymous.
       user,
     },
+    claim,
     runtime,
   );
 }

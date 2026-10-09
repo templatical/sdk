@@ -14,6 +14,8 @@ The main entry point is the `init()` function from `@templatical/editor`.
 
 Creates and mounts the editor into a container element. Returns a promise that resolves when the editor is ready.
 
+A container holds one editor. A later `init()` on the same container replaces the editor there, and keeps the container even when an earlier call has not resolved yet: that earlier call resolves with an editor that never mounts.
+
 ```ts
 import { init } from "@templatical/editor";
 import "@templatical/editor/style.css";
@@ -243,7 +245,7 @@ Use it when tags are minted or renamed while the editor is open. Mutating the ar
 
 ### `unmount()`
 
-Destroys this editor instance and no other. Once another `init()` on the same container has replaced it, the old instance's `unmount()` does nothing.
+Destroys this editor instance and no other. Once a later `init()` on the same container has replaced it, or kept it from mounting, the old instance's `unmount()` does nothing.
 
 ### `create(input?)` / `load(id)` / `save()`
 
