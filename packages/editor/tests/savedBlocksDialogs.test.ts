@@ -785,14 +785,190 @@ describe('SavedBlocksBrowserModal', () => {
     expect(cards()).toHaveLength(2);
   });
 
+  /* A button may not contain interactive descendants: a screen reader announces
+     a control inside a control, and the tab order reads as if focus stepped
+     into the element it just landed on. A card holds Rename, Delete and the
+     inline confirm, so the card is a plain wrapper and only its select button
+     is a button — the rule #738 applied to merge-tag fields. */
+  describe('card structure', () => {
+    const CONTROL =
+      'button, [role="button"], a[href], input, select, textarea, [tabindex]';
+
+    const dated: SavedBlock = {
+      id: 'd',
+      name: 'Dated',
+      content: [createTitleBlock()],
+      category: 'Promos',
+      updatedAt: new Date(Date.now() - 5 * 60_000).toISOString(),
+    };
+
+    /** Every control found inside another, as "outer > inner" labels. */
+    function nestedControls(): string[] {
+      const name = (el: Element) =>
+        el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
+      return qAll('button, [role="button"]').flatMap((outer) =>
+        Array.from(outer.querySelectorAll(CONTROL)).map(
+          (inner) => `${name(outer)} > ${name(inner)}`,
+        ),
+      );
+    }
+
+    function cardEls(): HTMLElement[] {
+      return qAll('[data-testid="saved-block-card"]');
+    }
+
+    function selectControl(card: HTMLElement): HTMLButtonElement {
+      const controls =
+        card.querySelectorAll<HTMLButtonElement>('[aria-pressed]');
+      expect(controls).toHaveLength(1);
+      return controls[0];
+    }
+
+    it('nests no control inside another at rest', async () => {
+      mountBrowser();
+      await nextTick();
+
+      // The row actions the guard is about are really there.
+      expect(qAll('button[aria-label="savedBlocks.rename"]')).toHaveLength(2);
+      expect(qAll('button[aria-label="savedBlocks.delete"]')).toHaveLength(2);
+      expect(nestedControls()).toEqual([]);
+    });
+
+    it('nests no control inside another while a delete awaits confirmation', async () => {
+      mountBrowser();
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.delete"]'));
+
+      expect(
+        qAll('button[aria-label="savedBlocks.deleteConfirm"]'),
+      ).toHaveLength(1);
+      expect(nestedControls()).toEqual([]);
+    });
+
+    it('keeps the card wrapper itself out of the controls', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      const [card] = cardEls();
+      expect(card.tagName).toBe('DIV');
+      expect(card.getAttribute('role')).toBe(null);
+      // A focusable wrapper would add a tab stop that does nothing the select
+      // button doesn't already do.
+      expect(card.getAttribute('tabindex')).toBe(null);
+    });
+
+    it('gives each card one select button named by the entry alone', async () => {
+      // Real `en` strings: the count goes through `format()`, which the stub
+      // translations can't interpolate.
+      mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: makeHeadless([dated]),
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [TRANSLATIONS_KEY]: en,
+        },
+        global: { stubs: { BlockPreviewCanvas: true } },
+      } as never);
+      await nextTick();
+
+      const select = selectControl(cardEls()[0]);
+      expect(select.tagName).toBe('BUTTON');
+      expect(select.getAttribute('type')).toBe('button');
+      expect(select.getAttribute('aria-pressed')).toBe('false');
+      // Its text is its accessible name: name, count and category, and not the
+      // timestamp. (The actions staying out is the nesting guard's job.)
+      const texts = Array.from(select.querySelectorAll('span'))
+        .filter((span) => span.children.length === 0)
+        .map((span) => span.textContent?.trim());
+      expect(texts).toEqual(['Dated', '1 block(s)', 'Promos']);
+      expect(
+        cardEls()[0]
+          .querySelector('[data-testid="saved-block-updated"]')
+          ?.textContent?.trim(),
+      ).toBe('5m ago');
+    });
+
+    it('keeps rename, delete and the confirm inside the card, beside the select button', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      const card = cardEls()[0];
+      const select = selectControl(card);
+      const rename = get('button[aria-label="savedBlocks.rename"]');
+      const remove = get('button[aria-label="savedBlocks.delete"]');
+      expect(card.contains(rename)).toBe(true);
+      expect(card.contains(remove)).toBe(true);
+      expect(select.contains(rename)).toBe(false);
+      expect(select.contains(remove)).toBe(false);
+
+      await click(remove);
+      const confirm = get('button[aria-label="savedBlocks.deleteConfirm"]');
+      expect(card.contains(confirm)).toBe(true);
+      expect(select.contains(confirm)).toBe(false);
+    });
+
+    it('selects when the card is clicked outside its select button', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('[data-testid="saved-block-updated"]'));
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
+
+    it('selects through the select button itself, the keyboard route', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      // Enter and Space on a focused button dispatch exactly this click.
+      await click(selectControl(cardEls()[0]));
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
+
+    it('arms the delete confirm without selecting the card', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.delete"]'));
+
+      expect(
+        qAll('button[aria-label="savedBlocks.deleteConfirm"]'),
+      ).toHaveLength(1);
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+    });
+
+    it('opens rename without selecting the card', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      await keydown(get('input[aria-label="savedBlocks.rename"]'), 'Escape');
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+    });
+  });
+
   describe('provider order + timestamp label', () => {
     const iso = (min: number) =>
       new Date(Date.UTC(2026, 0, 1, 12, 0, 0) - min * 60_000).toISOString();
 
-    /** The name lives in the card's first <span>; later spans hold the badge. */
     function cardNames(): string[] {
       return cards().map(
-        (c) => c.querySelector('span')?.textContent?.trim() ?? '',
+        (c) =>
+          c.querySelector('[data-testid="saved-block-name"]')?.textContent?.trim() ??
+          '',
       );
     }
 
@@ -944,7 +1120,9 @@ describe('SavedBlocksBrowserModal', () => {
 
     function cardNames(): string[] {
       return cards().map(
-        (c) => c.querySelector('span')?.textContent?.trim() ?? '',
+        (c) =>
+          c.querySelector('[data-testid="saved-block-name"]')?.textContent?.trim() ??
+          '',
       );
     }
 
