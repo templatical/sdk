@@ -362,8 +362,10 @@ test.describe("saved blocks", () => {
         left: overlay.left,
         width: Math.round(parseFloat(overlay.width)),
         height: Math.round(parseFloat(overlay.height)),
+        radius: overlay.borderRadius,
         cardWidth: card.offsetWidth,
         cardHeight: card.offsetHeight,
+        cardRadius: getComputedStyle(card).borderRadius,
       };
     });
     // One ring, not two: the button's own is suppressed.
@@ -375,6 +377,10 @@ test.describe("saved blocks", () => {
     expect(ring.left).toBe("-1px");
     expect(ring.width).toBe(ring.cardWidth);
     expect(ring.height).toBe(ring.cardHeight);
+    // …and takes its corners: card and overlay both read --tpl-radius-sm, so
+    // the ring follows the card's outline. An unresolved token computes 0px.
+    expect(ring.cardRadius).toBe("7px");
+    expect(ring.radius).toBe("7px");
 
     await page.keyboard.press("Space");
     await expect(select).toHaveAttribute("aria-pressed", "true");
