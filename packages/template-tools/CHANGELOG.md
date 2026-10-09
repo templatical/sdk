@@ -1,5 +1,22 @@
 # @templatical/template-tools
 
+## 0.44.2
+
+### Patch Changes
+
+- Updated dependencies [efbe495]
+  - @templatical/renderer@0.44.2
+  - @templatical/import-html@0.44.2
+  - @templatical/import-mjml@0.44.2
+  - @templatical/import-beefree@0.44.2
+  - @templatical/import-chamaileon@0.44.2
+  - @templatical/import-easy-email-pro@0.44.2
+  - @templatical/import-stripo@0.44.2
+  - @templatical/import-topol@0.44.2
+  - @templatical/import-unlayer@0.44.2
+  - @templatical/quality@0.44.2
+  - @templatical/types@0.44.2
+
 ## 0.44.1
 
 ### Patch Changes
