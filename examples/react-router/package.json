@@ -15,7 +15,7 @@
     "@templatical/renderer": "^0.44.2",
     "@templatical/types": "^0.44.2",
     "isbot": "^5.2.2",
-    "mjml": "^5.4.0",
+    "mjml": "^5.4.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0"

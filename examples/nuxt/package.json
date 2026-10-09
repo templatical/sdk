@@ -13,7 +13,7 @@
     "@templatical/editor": "^0.44.2",
     "@templatical/renderer": "^0.44.2",
     "@templatical/types": "^0.44.2",
-    "mjml": "^5.4.0",
+    "mjml": "^5.4.1",
     "nuxt": "^4.6.0",
     "vue": "^3.5.0"
   },
