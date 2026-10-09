@@ -28,6 +28,19 @@ describe("bin dispatch", () => {
     expect(stderr.join("")).toContain("templatical <command>");
   });
 
+  it("lists each custom-block usage line exactly once", async () => {
+    await main(["help"]);
+    const out = stderr.join("");
+    for (const line of [
+      "custom-block validate <file>",
+      "custom-block render <file>",
+      "custom-block fetch <file>",
+      "live --custom-block <file>",
+    ]) {
+      expect(out.split(line).length - 1, line).toBe(1);
+    }
+  });
+
   // parseArgs strips leading dashes into flags, so this never reaches a
   // case "--help" — regression coverage for that dead-code trap.
   it("--help exits 0 and prints usage", async () => {
@@ -48,6 +61,12 @@ describe("bin dispatch", () => {
   it("an unknown command exits 2", async () => {
     expect(await main(["frobnicate"])).toBe(2);
     expect(stderr.join("")).toContain('Unknown command "frobnicate"');
+  });
+
+  it("dispatches custom-block through main, which needs a subcommand", async () => {
+    await expect(main(["custom-block"])).rejects.toThrow(
+      'Unknown "custom-block ". Use `custom-block validate <file>`, `custom-block render <file>` or `custom-block fetch <file>`.',
+    );
   });
 
   it("dispatches list through main", async () => {

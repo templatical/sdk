@@ -11,6 +11,10 @@ const VALUE_FLAGS = new Set([
   "file",
   "port",
   "cwd",
+  "state",
+  "values",
+  "custom-block",
+  "host",
 ]);
 
 export interface ParsedArgs {

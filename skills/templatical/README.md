@@ -43,6 +43,9 @@ npx skills update templatical
 - **Scaffold** — write a proposed integration into your repository,
   installed with your own package manager and checked against your running
   dev server.
+- **Custom block** — define a custom block type (fields and a Liquid
+  template), preview it live with real API data, and write it into your
+  codebase, or change one you already have.
 - **Diagnose** — fix an integration that misbehaves, checked against a table
   of verified traps.
 - **Docs** — answer a question about the SDK from the reference

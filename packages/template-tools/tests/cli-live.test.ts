@@ -125,6 +125,20 @@ describe("live reload / stop without a running server", () => {
       runLive(parseArgs(["live", "restart", "--cwd", dir])),
     ).rejects.toThrow(UsageError);
   });
+
+  it("rejects --file together with --custom-block", async () => {
+    await expect(
+      runLive(
+        parseArgs(["live", "--file", "a.json", "--custom-block", "b.json", "--cwd", dir]),
+      ),
+    ).rejects.toThrow(/either --file or --custom-block/);
+  });
+
+  it("rejects --host without --custom-block", async () => {
+    await expect(
+      runLive(parseArgs(["live", "--host", "a.json", "--cwd", dir])),
+    ).rejects.toThrow(/--host only applies with --custom-block/);
+  });
 });
 
 // `runLive`'s "start" path blocks forever (it resolves only on SIGINT/SIGTERM,

@@ -1,0 +1,238 @@
+// Email-client safety over a custom block's rendered HTML. Custom blocks are
+// raw HTML the SDK passes through untouched (inside <mj-text>), so nothing
+// downstream repairs a layout Outlook can't draw; this is the only check.
+// Rules run on every specimen state's output so both sides of each {% if %}
+// are seen, and an empty optional image surfaces as src="".
+
+import { Parser } from "htmlparser2";
+import type { RenderedState } from "./render";
+import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
+
+const FLEX_GRID = /(^|;)\s*display\s*:\s*(inline-)?(flex|grid)\b/i;
+const POSITION = /(^|;)\s*position\s*:\s*(absolute|fixed)\b/i;
+const DIV_LAYOUT = /(^|;)\s*(width|max-width|float)\s*:/i;
+const BG_IMAGE = /(^|;)\s*background(-image)?\s*:[^;]*url\(/i;
+const BG_COLOR = /(^|;)\s*background-color\s*:/i;
+
+// The same two layout rules over stylesheet text, where a declaration can
+// also follow `{` or a newline.
+const CSS_FLEX_GRID = /(^|[;{\s])display\s*:\s*(inline-)?(flex|grid)\b/i;
+const CSS_POSITION = /(^|[;{\s])position\s*:\s*(absolute|fixed)\b/i;
+
+const IMPORT_MESSAGE =
+  "`@import` is dropped by most email clients; inline the rules.";
+const FLEX_GRID_MESSAGE =
+  "`display: flex`/`grid` is ignored by Outlook and Gmail on many clients; use tables.";
+const POSITION_MESSAGE =
+  "`position: absolute/fixed` is unsupported in email clients.";
+
+/** Drops `/* … *\/` comments in one linear pass; an unterminated comment drops the rest. */
+export function stripCssComments(css: string): string {
+  let out = "";
+  let i = 0;
+  for (;;) {
+    const open = css.indexOf("/*", i);
+    if (open === -1) return out + css.slice(i);
+    out += css.slice(i, open);
+    const close = css.indexOf("*/", open + 2);
+    if (close === -1) return out;
+    i = close + 2;
+  }
+}
+
+/**
+ * Remove `url(...)` and quoted strings so the class scan can't read `.png` or
+ * `"x.y"` as a selector. Linear: each opener's next position is searched for
+ * again only once the cursor has passed it, so an opener that never closes
+ * costs one scan, not one per occurrence. An unterminated `url(` or quote
+ * drops the rest, as a CSS parser would.
+ */
+export function stripCssUrlsAndStrings(css: string): string {
+  const lower = css.toLowerCase();
+  const next = (needle: string, from: number) => {
+    const at = lower.indexOf(needle, from);
+    return at === -1 ? Infinity : at;
+  };
+  const closers: Record<string, string> = { "url(": ")", '"': '"', "'": "'" };
+  const pos: Record<string, number> = { "url(": 0, '"': 0, "'": 0 };
+  for (const k of Object.keys(pos)) pos[k] = next(k, 0);
+  let out = "";
+  let i = 0;
+  for (;;) {
+    let opener = "";
+    let open = Infinity;
+    for (const k of Object.keys(pos)) {
+      if (pos[k] < i) pos[k] = next(k, i);
+      if (pos[k] < open) {
+        open = pos[k];
+        opener = k;
+      }
+    }
+    if (open === Infinity) return out + css.slice(i);
+    out += css.slice(i, open);
+    const close = lower.indexOf(closers[opener], open + opener.length);
+    if (close === -1) return out;
+    i = close + 1;
+  }
+}
+
+/** Layout rules that hold for stylesheet text: the definition's and a `<style>`'s. */
+function cssLayoutIssues(css: string, path?: string): CustomBlockIssue[] {
+  const text = stripCssComments(css);
+  const issues: CustomBlockIssue[] = [];
+  const at = path === undefined ? {} : { path };
+  if (CSS_FLEX_GRID.test(text))
+    issues.push({
+      ruleId: "safety.flex-grid",
+      severity: "error",
+      ...at,
+      message: FLEX_GRID_MESSAGE,
+    });
+  if (CSS_POSITION.test(text))
+    issues.push({
+      ruleId: "safety.position",
+      severity: "error",
+      ...at,
+      message: POSITION_MESSAGE,
+    });
+  return issues;
+}
+
+function stylesheetIssues(
+  def: CustomBlockWorkingFile,
+  css: string,
+): CustomBlockIssue[] {
+  const issues: CustomBlockIssue[] = [];
+  if (/@import\b/i.test(css)) {
+    issues.push({
+      ruleId: "safety.import",
+      severity: "error",
+      path: "/stylesheet",
+      message: IMPORT_MESSAGE,
+    });
+  }
+  issues.push(...cssLayoutIssues(css, "/stylesheet"));
+  const stripped = stripCssUrlsAndStrings(stripCssComments(css));
+  const prefix = `tplc-${def.type}-`;
+  const unscoped = [
+    ...new Set(
+      [...stripped.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]),
+    ),
+  ].filter((cls) => !cls.startsWith(prefix));
+  if (unscoped.length > 0) {
+    issues.push({
+      ruleId: "safety.unscoped-class",
+      severity: "warning",
+      path: "/stylesheet",
+      message: `Classes ${unscoped.map((c) => `.${c}`).join(", ")} aren't prefixed \`${prefix}\`; the SDK doesn't scope them, so they can collide with other blocks.`,
+    });
+  }
+  return issues;
+}
+
+export function checkEmailSafety(
+  def: CustomBlockWorkingFile,
+  rendered: RenderedState[],
+): CustomBlockIssue[] {
+  const issues: CustomBlockIssue[] = [];
+  const add = (
+    ruleId: string,
+    severity: CustomBlockIssue["severity"],
+    message: string,
+  ) => issues.push({ ruleId, severity, message });
+
+  for (const { state, html } of rendered) {
+    let inStyle = false;
+    let styleText = "";
+    const parser = new Parser(
+      {
+        onopentag(name, attrs) {
+          const style = attrs.style ?? "";
+          if (FLEX_GRID.test(style))
+            add("safety.flex-grid", "error", FLEX_GRID_MESSAGE);
+          if (POSITION.test(style))
+            add("safety.position", "error", POSITION_MESSAGE);
+          if (BG_IMAGE.test(style) && !BG_COLOR.test(style))
+            add(
+              "safety.bg-image-fallback",
+              "warning",
+              "A background image needs a `background-color` fallback; many clients block images.",
+            );
+          if (name === "script")
+            add(
+              "safety.script",
+              "error",
+              "`<script>` is stripped by every email client.",
+            );
+          if (
+            name === "link" &&
+            (attrs.rel ?? "").toLowerCase() === "stylesheet"
+          )
+            add(
+              "safety.external-stylesheet",
+              "error",
+              "External stylesheets are not loaded by email clients; use inline styles or `stylesheet`.",
+            );
+          if (name === "style") {
+            inStyle = true;
+            styleText = "";
+            add(
+              "safety.style-tag",
+              "warning",
+              "Move `<style>` rules into the definition's `stylesheet`, which the renderer places in `<mj-head>`.",
+            );
+          }
+          if (name === "div" && DIV_LAYOUT.test(style))
+            add(
+              "safety.div-layout",
+              "warning",
+              "A `<div>` carrying width or float is unreliable in Outlook; lay out with tables.",
+            );
+          if (name === "img") {
+            if (!("alt" in attrs))
+              add(
+                "safety.img-alt",
+                "warning",
+                'Every `<img>` needs an `alt` attribute (`alt=""` for decorative images), ideally bound to a field.',
+              );
+            if (!("width" in attrs))
+              add(
+                "safety.img-width",
+                "warning",
+                "Give `<img>` a `width` attribute; Outlook ignores CSS widths on images.",
+              );
+            if ((attrs.src ?? "") === "")
+              add(
+                "safety.empty-img-src",
+                "warning",
+                `An \`<img>\` renders with an empty \`src\` in the "${state}" state; wrap it in \`{% if <field> != blank %}\` (Liquid treats an empty string as true, so a bare \`{% if <field> %}\` doesn't hide it).`,
+              );
+          }
+        },
+        ontext(text) {
+          if (inStyle) styleText += text;
+        },
+        onclosetag(name) {
+          if (name === "style") {
+            inStyle = false;
+            if (/@import\b/i.test(styleText))
+              add("safety.import", "error", IMPORT_MESSAGE);
+            issues.push(...cssLayoutIssues(styleText));
+          }
+        },
+      },
+      { decodeEntities: true },
+    );
+    parser.write(html);
+    parser.end();
+  }
+  if (def.stylesheet) issues.push(...stylesheetIssues(def, def.stylesheet));
+
+  const seen = new Set<string>();
+  return issues.filter((i) => {
+    const k = `${i.ruleId}\0${i.path ?? ""}\0${i.message}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}

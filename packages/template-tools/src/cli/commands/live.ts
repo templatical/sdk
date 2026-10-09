@@ -1,11 +1,13 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit, note } from "../output";
 import { EXIT, resolveFrom, UsageError } from "../io";
 import {
   DEFAULT_PORT,
   listWorkingFiles,
+  type LiveMode,
+  type PidfileInfo,
   openBrowser,
   pidfilePath,
   processAlive,
@@ -77,6 +79,17 @@ async function postTo(
   });
 }
 
+/** The reload-failure line, naming what to run next. */
+function reloadFailure(bridgeError: string | undefined): string {
+  if (bridgeError?.includes("--host")) {
+    return "The --host template is missing or invalid; nothing was pushed. Run `templatical validate` on it.";
+  }
+  if (bridgeError === undefined || bridgeError.includes("custom block")) {
+    return "The custom block definition is missing or invalid; nothing was pushed. Run `templatical custom-block validate`.";
+  }
+  return `${bridgeError} Nothing was pushed.`;
+}
+
 export async function runLive(args: ParsedArgs): Promise<number> {
   const sub = args.positional[0];
   const cwd = resolveFrom(flagValue(args, "cwd") ?? ".", process.cwd());
@@ -96,17 +109,26 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         consumeAnnotations ? { consumeAnnotations: true } : undefined,
       );
       const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
         clients?: number;
         consumed?: boolean;
+        mode?: LiveMode;
+        error?: string;
       };
-      emit(
-        {
-          reloaded: true,
-          clients: body.clients ?? 0,
-          consumed: body.consumed === true,
-        },
-        () =>
-          `Pushed the working file to ${body.clients ?? 0} connected page(s).`,
+      const clients = body.clients ?? 0;
+      const consumed = body.consumed === true;
+      if (body.ok === false) {
+        const error = reloadFailure(body.error);
+        emit(
+          { reloaded: false, ok: false, clients, consumed, error },
+          () => error,
+        );
+        return EXIT.invalid;
+      }
+      emit({ reloaded: true, ok: true, clients, consumed }, () =>
+        body.mode === "custom-block"
+          ? `Pushed the custom block to ${clients} page(s).`
+          : `Pushed the working file to ${clients} connected page(s).`,
       );
       return EXIT.ok;
     }
@@ -129,8 +151,37 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   // start
   const portFlag = flagValue(args, "port");
   const preferredPort = portFlag ? Number(portFlag) : DEFAULT_PORT;
+  const file = flagValue(args, "file");
+  const customBlock = flagValue(args, "custom-block");
+  const host = flagValue(args, "host");
+  if (customBlock && file) {
+    throw new UsageError("Pass either --file or --custom-block, not both.");
+  }
+  if (host && !customBlock) {
+    throw new UsageError("--host only applies with --custom-block.");
+  }
+  const abs = (p: string) => (isAbsolute(p) ? p : resolve(cwd, p));
+  const requested: Required<Pick<PidfileInfo, "mode" | "path">> &
+    Pick<PidfileInfo, "host"> = {
+    mode: customBlock ? "custom-block" : "template",
+    path: abs(customBlock ?? file ?? join(WORKING_DIR, "template.json")),
+    ...(host ? { host: abs(host) } : {}),
+  };
+
   const existing = readPidfile(cwd);
   if (existing && processAlive(existing.pid)) {
+    // A pidfile without `mode` came from a template-only bridge; one without
+    // `path` can't be compared, so only its mode is.
+    const mode = existing.mode ?? "template";
+    if (
+      mode !== requested.mode ||
+      (existing.path !== undefined && existing.path !== requested.path) ||
+      (mode === "custom-block" && existing.host !== requested.host)
+    ) {
+      throw new UsageError(
+        `A live server is already running for ${existing.path ?? "another file"} (${mode}). Run \`templatical live stop\` first.`,
+      );
+    }
     emit(
       {
         url: `http://localhost:${existing.port}/`,
@@ -144,13 +195,23 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   }
   if (existing) rmSync(pidfilePath(cwd), { force: true }); // stale
 
-  const file = flagValue(args, "file");
-  const handle = await startBridgePreferring({ cwd, preferredPort, file });
+  const handle = await startBridgePreferring({
+    cwd,
+    preferredPort,
+    file,
+    customBlock,
+    host,
+  });
 
   mkdirSync(dirname(pidfilePath(cwd)), { recursive: true });
   writeFileSync(
     pidfilePath(cwd),
-    JSON.stringify({ pid: process.pid, port: handle.port }),
+    JSON.stringify({
+      pid: process.pid,
+      port: handle.port,
+      ...requested,
+      path: handle.workingPath,
+    } satisfies PidfileInfo),
     "utf8",
   );
 
@@ -170,6 +231,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
       preferredPort,
       fellBack: handle.fellBack,
       workingFile: handle.workingPath,
+      customBlock: customBlock ? handle.workingPath : undefined,
     },
     () =>
       [
@@ -177,7 +239,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         handle.fellBack
           ? `(port ${preferredPort} was busy - using ${handle.port})`
           : "",
-        `Working file: ${handle.workingPath}`,
+        `${customBlock ? "Custom block" : "Working file"}: ${handle.workingPath}`,
       ]
         .filter(Boolean)
         .join("\n"),

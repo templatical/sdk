@@ -69,6 +69,7 @@ npx skills add templatical/sdk
 - **Sehen Sie sie live** im echten Templatical-Editor in Ihrem Browser an — sie bleibt synchron, während Sie weiter prompten, Änderungen von Hand eingeschlossen.
 - **Integrieren** Sie den Editor in eine Anwendung — Stack erkennen, die Änderung vorschlagen und abwarten, bevor irgendetwas geschrieben wird.
 - **Setzen Sie** eine vorgeschlagene Integration in Ihr Repository um, installiert mit Ihrem eigenen Paketmanager und geprüft gegen Ihren laufenden Dev-Server.
+- **Definieren Sie einen benutzerdefinierten Block** aus einer Beschreibung: Felder und ein Liquid-Template, geprüft gegen ein Schema und auf E-Mail-Client-Sicherheit, dann im Live-Editor in seinen Grenzfall-Zuständen dargestellt. Ein Block, der Daten lädt, lässt sich über ein Rezept mit echten Endpunktdaten füllen, dessen Zugangsdaten eine Umgebungsvariable sind, sodass das Geheimnis nicht auf die Seite gelangt. Der Skill schreibt den Block in Ihre Codebasis und ändert einen bestehenden.
 - **Diagnostizieren** Sie eine Integration, die nicht wie erwartet funktioniert, anhand einer Tabelle verifizierter Fallstricke.
 - **Beantworten Sie eine Frage** zur SDK, indem diese Dokumentationsseite direkt abgerufen wird.
 

@@ -112,7 +112,7 @@ describe("annotation channel", () => {
     const result = bridge.reload();
 
     const after = await getContent();
-    expect(result).toEqual({ ok: true, clients: 0, consumed: false });
+    expect(result).toEqual({ ok: true, clients: 0, consumed: false, mode: "template" });
     expect(after.annotations.map((a) => a.text)).toEqual(["note"]);
     expect(after.divergent).toBe(false);
   });
@@ -137,7 +137,7 @@ describe("annotation channel", () => {
         body: JSON.stringify({ text: "keep" }),
       });
       const result = missing.reload({ consumeAnnotations: true });
-      expect(result).toEqual({ ok: true, clients: 0, consumed: false });
+      expect(result).toEqual({ ok: true, clients: 0, consumed: false, mode: "template" });
       expect(missing.getEditorState().annotations.map((a) => a.text)).toEqual([
         "keep",
       ]);

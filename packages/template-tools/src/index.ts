@@ -17,3 +17,15 @@ export {
   getColumnCount,
   type OperationResult,
 } from "./operations";
+export {
+  checkCustomBlock,
+  validateCustomBlockDefinition,
+  SPECIMEN_STATES,
+  type CheckCustomBlockOptions,
+  type CustomBlockCheckResult,
+  type CustomBlockIssue,
+  type CustomBlockIssueSeverity,
+  type CustomBlockWorkingFile,
+  type DataSourcePreview,
+  type SpecimenState,
+} from "./custom-block";

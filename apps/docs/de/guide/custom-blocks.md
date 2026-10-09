@@ -51,7 +51,7 @@ const editor = await init({
                         color: #333; line-height: 1.5;">"{{ quote }}"</p>
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  {% if avatar %}
+                  {% if avatar != blank %}
                     <td style="vertical-align: middle; padding-right: 12px;">
                       <img src="{{ avatar }}" width="40" height="40"
                            style="border-radius: 50%; display: block;"
@@ -62,7 +62,7 @@ const editor = await init({
                     <p style="margin: 0; font-weight: 600; font-size: 14px;">
                       {{ authorName }}
                     </p>
-                    {% if authorTitle %}
+                    {% if authorTitle != blank %}
                       <p style="margin: 2px 0 0; font-size: 13px; color: #666;">
                         {{ authorTitle }}
                       </p>
@@ -384,6 +384,18 @@ Die Eigenschaft `template` verwendet die [Liquid](https://liquidjs.com/)-Syntax.
 {% endif %}
 ```
 
+**Optionale Text- und Bildfelder:**
+
+```liquid
+{% if avatar != blank %}
+  <img src="{{ avatar }}" alt="{{ authorName }}" width="40" />
+{% endif %}
+```
+
+::: tip
+Liquid wertet einen leeren String als wahr, und ein Feld, das der Nutzer geleert hat, enthält einen leeren String. Vergleichen Sie mit `blank`, damit die Bedingung auch ein geleertes Feld ausblendet: Ein bloßes `{% if avatar %}` rendert ein `<img>` mit leerem `src`.
+:::
+
 **Schleifen** (für wiederholbare Felder):
 
 ```liquid
@@ -504,8 +516,8 @@ const eventCard: CustomBlockDefinition = {
   template: `
     <div style="border-left: 4px solid {{ accentColor }}; padding: 16px 20px; font-family: sans-serif;">
       <h2 style="margin: 0 0 4px; font-size: 20px;">{{ eventName }}</h2>
-      <p style="color: #666; margin: 0 0 12px; font-size: 14px;">{{ date }}{% if venue %} &middot; {{ venue }}{% endif %}</p>
-      {% if venueAddress %}
+      <p style="color: #666; margin: 0 0 12px; font-size: 14px;">{{ date }}{% if venue != blank %} &middot; {{ venue }}{% endif %}</p>
+      {% if venueAddress != blank %}
         <p style="color: #999; margin: 0 0 16px; font-size: 13px;">{{ venueAddress }}</p>
       {% endif %}
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
@@ -516,7 +528,7 @@ const eventCard: CustomBlockDefinition = {
         </tr>
         {% endfor %}
       </table>
-      {% if rsvpUrl %}
+      {% if rsvpUrl != blank %}
         <a href="{{ rsvpUrl }}" style="display: inline-block; padding: 10px 24px; background: {{ accentColor }}; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px;">RSVP Now</a>
       {% endif %}
     </div>
@@ -563,7 +575,7 @@ const pricingTier: CustomBlockDefinition = {
         </tr>
         {% endfor %}
       </table>
-      {% if ctaUrl %}
+      {% if ctaUrl != blank %}
         <a href="{{ ctaUrl }}" style="display: inline-block; padding: 10px 24px; background: {{ accentColor }}; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px;">{{ ctaLabel }}</a>
       {% endif %}
     </div>
@@ -604,3 +616,7 @@ dataSource: {
 Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integrierten Blöcken in der Palette erscheint.
 
 [Im Playground öffnen](https://play.templatical.com/scenes/custom-blocks)
+
+## Mit dem Agent Skill
+
+Der [Agent Skill](/de/guide/agent-skill) definiert einen benutzerdefinierten Block aus einer Beschreibung, zeigt ihn live an und schreibt ihn in Ihre Codebasis.

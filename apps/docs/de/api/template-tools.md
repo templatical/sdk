@@ -1,13 +1,13 @@
 ---
 title: Template Tools
-description: API-Referenz für @templatical/template-tools — die CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templatical-Templates außerhalb des Editors.
+description: API-Referenz für @templatical/template-tools — die CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templatical-Templates und Custom Blocks außerhalb des Editors.
 ---
 
 # Template Tools
 
-`@templatical/template-tools` ist die CLI und Bibliothek hinter jeder mechanischen Operation auf einem Templatical-Template: sein JSON validieren, es zu MJML oder HTML rendern, eine gezielte Änderung anwenden, es aus dem Exportformat eines anderen Editors importieren, oder es live im echten Templatical-Editor anzeigen. MIT-lizenziert, auf npm veröffentlicht, und läuft über `npx`, ohne dass irgendetwas in Ihr Projekt installiert wird und ohne Templatical-Konto.
+`@templatical/template-tools` ist die CLI und Bibliothek hinter jeder mechanischen Operation auf einem Templatical-Template: sein JSON validieren, es zu MJML oder HTML rendern, eine gezielte Änderung anwenden, es aus dem Exportformat eines anderen Editors importieren, oder es live im echten Templatical-Editor anzeigen. Außerdem prüft, rendert und zeigt sie Definitionen von [Custom Blocks](/de/guide/custom-blocks) an. MIT-lizenziert, auf npm veröffentlicht, und läuft über `npx`, ohne dass irgendetwas in Ihr Projekt installiert wird und ohne Templatical-Konto.
 
-Der mitgelieferte [Agent Skill](/de/guide/agent-skill) steuert diese CLI intern — jeder Befehl, den ein KI-Coding-Agent beim Bauen oder Bearbeiten eines Templates mit dem Skill ausführt, ist einer der sieben unten dokumentierten. Die CLI selbst braucht keinen Agenten: Alles hier funktioniert genauso aus einer Shell, einem Skript oder einem CI-Job. Den Skill installieren Sie mit `npx skills add templatical/sdk`.
+Der mitgelieferte [Agent Skill](/de/guide/agent-skill) steuert diese CLI intern — jeder Befehl, den ein KI-Coding-Agent beim Bauen oder Bearbeiten eines Templates mit dem Skill ausführt, ist einer der unten dokumentierten Befehle. Die CLI selbst braucht keinen Agenten: Alles hier funktioniert genauso aus einer Shell, einem Skript oder einem CI-Job. Den Skill installieren Sie mit `npx skills add templatical/sdk`.
 
 ## Aufruf
 
@@ -31,6 +31,10 @@ Mit `--json` gibt jeder Befehl ein einzelnes, parsebares JSON-Dokument auf stdou
 | `edit <file> --op '<json>'` \| `--ops <file>` | Wendet eine Operation oder einen Batch an und schreibt das Ergebnis |
 | `import <file> [--format <fmt>]` \| `--list-formats` | Konvertiert ein Design aus einem anderen Tool in Templatical-JSON |
 | `live` \| `live reload` \| `live stop` | Zeigt das Template live im echten Editor an, inklusive Handbearbeitung |
+| `live --custom-block <file> [--host <file>]` | Zeigt eine Custom-Block-Definition live im echten Editor an |
+| `custom-block validate <file>` | Prüft eine Custom-Block-Definition: Schema, Liquid, E-Mail-Client-Sicherheit, MJML |
+| `custom-block render <file> [--state <name>] [--format mjml\|html] [-o <file>]` | Rendert das Specimen eines Custom Blocks zu MJML oder HTML |
+| `custom-block fetch <file> [--values '<json>']` | Führt das `dataSourcePreview`-Rezept der Definition einmal aus |
 | `list` | Listet die Arbeits-Templates in `.templatical/` |
 
 `--json` (siehe unten) ist ein globales Flag — es funktioniert bei jedem der obigen Befehle identisch, nicht nur bei einigen. Jeder Befehl, der eine Datei anfasst, akzeptiert außerdem `--cwd <dir>` und löst relative Pfade dagegen auf, statt gegen das eigene Arbeitsverzeichnis des Prozesses.
@@ -84,6 +88,36 @@ Führen Sie `import --list-formats` aus (optional mit `--json`), um zu sehen, we
 
 Startet einen lokalen Server, der den echten Templatical-Editor (von der CDN geladen) in Ihrem Browser öffnet und eine Arbeits-Template-Datei in `.templatical/` per Server-Sent Events synchron hält. `live reload` überträgt Ihre letzte Änderung auf die geöffnete Seite und lässt Notizen an Blöcken stehen. `live reload --consume-annotations` löscht diese Notizen, nachdem das Reload die Arbeitsdatei gelesen hat. `live stop` beendet den Server. `[--file <f>]` wählt die Arbeitsdatei, `[--port <n>]` wählt den Port (Standard `4747`, mit Rückfall auf einen zufälligen freien Port, falls belegt), `[--cwd <d>]` löst beides gegen ein anderes Verzeichnis als das aktuelle auf, und `--no-open` überspringt das automatische Öffnen eines Browsers. Das ist das Protokoll, auf dem der Live-Modus des [Agent Skill](/de/guide/agent-skill) aufbaut — dort steht, wie ein Agent es Zug um Zug steuert; der CLI-Befehl hier startet und stoppt nur den Server.
 
+`live --custom-block <file>` liefert statt eines Templates eine Custom-Block-Definition aus: Die Arbeitsfläche zeigt den Block einmal pro Specimen-Zustand (Standardwerte, leer, langer Text, Repeatables an ihren Grenzen, umgekehrte Booleans), und `--host <file>` hängt dieses Specimen an eines Ihrer Templates an. `--custom-block` und `--file` schließen sich aus, und `--host` gilt nur zusammen mit `--custom-block`. `live reload` endet mit `1` und überträgt nichts, wenn die Definition oder das Host-Template fehlt oder ungültig ist. Pro Verzeichnis läuft ein Server: Wer einen für eine andere Datei oder einen anderen Modus startet, während einer läuft, erhält einen Nutzungsfehler, der den laufenden benennt — führen Sie dann zuerst `live stop` aus.
+
+Die Bridge beantwortet nur Anfragen, deren `Host`-Header `localhost`, `127.0.0.1` oder `[::1]` auf ihrem eigenen Port ist, in beiden Modi. Ein Tunnel oder Proxy, der den Hostnamen umschreibt, erhält ein `403`.
+
+### `custom-block validate <file>`
+
+```bash
+npx -y @templatical/template-tools custom-block validate .templatical/custom-blocks/testimonial.json
+```
+
+Prüft eine Custom-Block-Arbeitsdatei: die Definition gegen `custom-block-schema.json`, ihr Liquid-`template` gegen ihre `fields` (undefinierte Variablen, ungenutzte Felder, Schleifen über ein Feld, das kein Repeatable ist, Item-Schlüssel, die ein Repeatable nicht definiert), das `dataSourcePreview`-Rezept, die E-Mail-Client-Sicherheit über das HTML jedes Specimen-Zustands und das `stylesheet` (Flex- und Grid-Layout, Positionierung, `<script>`, `@import`, fehlendes `alt` oder `width` an Bildern) und dass das Stylesheet `<mj-head>` erreicht. Ist `mjml` installiert, kompiliert der Befehl außerdem das gerenderte MJML und meldet Kompilierfehler als Warnungen; ohne `mjml` wird diese Prüfung mit einem Hinweis übersprungen. Endet mit `1` bei jedem Problem mit Schweregrad `error`. `--json` liefert `{ valid, issues }`, jedes Problem als `{ ruleId, severity, message, path? }`.
+
+Die Arbeitsdatei ist eine [`CustomBlockDefinition`](/de/guide/custom-blocks#customblockdefinition) ohne `dataSource` (eine Funktion), plus ein optionales `dataSourcePreview`-Rezept. Die URL eines Rezepts hält Schema und Host literal (Liquid erst nach dem ersten `/`, `?` oder `#`), jeder interpolierte Feldwert wird URL-kodiert, Feldwerte erreichen nur `url` und `body`, und `${env:NAME}` wird nur in Header-Werten aufgelöst.
+
+### `custom-block render <file> [--state <name>] [--format mjml|html] [--out <file> | -o <file>]`
+
+```bash
+npx -y @templatical/template-tools custom-block render .templatical/custom-blocks/testimonial.json --state empty -o empty.mjml
+```
+
+Rendert das Specimen — den Block einmal pro Zustand — zu MJML, oder mit `--format html` zu HTML, wofür das optionale Paket `mjml` nötig ist. `--state` rendert einen einzelnen Zustand: `defaults`, `empty`, `long`, `min-items`, `max-items` oder `flipped`. Die Definition wird zuerst strukturell geprüft. Ohne `--out`/`-o` erscheint das Ergebnis auf stdout.
+
+### `custom-block fetch <file> [--values '<json>']`
+
+```bash
+npx -y @templatical/template-tools custom-block fetch .templatical/custom-blocks/product.json --values '{"productId":"123"}' --json
+```
+
+Führt das `dataSourcePreview`-Rezept der Definition aus Node aus, mit den Standardwerten der Felder, überschrieben durch `--values` (ein JSON-Objekt), und gibt die gemappten Werte aus, plus `unmapped`: die `map`-Einträge, die in der Antwort fehlten. Header-Werte lösen `${env:NAME}` aus der Umgebung auf, und gemappte Werte und Fehler werden geschwärzt, wenn sie ein Secret wiedergeben. Weiterleitungen werden nicht verfolgt. Ein Rezept, das `custom-block validate` ablehnt, wird vor jeder Anfrage abgewiesen. Endet mit `1`, wenn die Anfrage fehlschlägt.
+
 ### `list`
 
 ```bash
@@ -97,7 +131,7 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 | Code | Bedeutung |
 |---|---|
 | `0` | Erfolg. `validate` kann trotzdem `warning`-/`info`-Probleme melden — siehe unten. |
-| `1` | Das Template ist ungültig: ein struktureller Fehler, oder ein Lint-Problem mit Schweregrad `error`. |
+| `1` | Das Template ist ungültig: ein struktureller Fehler, oder ein Lint-Problem mit Schweregrad `error`. Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
 | `2` | Fehlerhafte Nutzung — falsche Flags, ein fehlendes Argument, eine unlesbare oder nicht parsbare Eingabedatei. |
 | `3` | Eine optionale Abhängigkeit ist nicht installiert. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
@@ -144,10 +178,12 @@ Passen Sie das Glob-Muster an den Ort an, an dem Ihre Templates tatsächlich lie
 
 ## Optionale Abhängigkeiten
 
-Das Ausführen der CLI installiert von sich aus nie etwas in Ihr Projekt — `npx` löst nur das Paket selbst auf (aus npms Cache, oder durch einmaliges Abrufen beim ersten Mal), und das ist die einzige Netzwerk- oder Dateisystemaktivität, die ein einfacher Befehl auslöst. Zwei Befehle können jeweils genau ein weiteres Paket verlangen, und der Fehler nennt den Installationsbefehl, wenn es fehlt:
+Das Ausführen der CLI installiert von sich aus nie etwas in Ihr Projekt — `npx` löst nur das Paket selbst auf (aus npms Cache, oder durch einmaliges Abrufen beim ersten Mal), und das ist die einzige Netzwerk- oder Dateisystemaktivität, die ein einfacher Befehl auslöst. Diese Befehle können jeweils ein weiteres Paket verlangen, und der Fehler nennt den Installationsbefehl, wenn es fehlt:
 
-- **`render --format html`** braucht `mjml`. Der Renderer erzeugt ausschließlich MJML — dieses SDK bündelt keinen eigenen MJML-zu-HTML-Compiler —, sodass eine MJML-Implementierung nötig ist, um daraus versandfertiges HTML zu machen, und `mjml` ist diejenige, die dieser Befehl zu laden weiß.
+- **`render --format html`** und **`custom-block render --format html`** brauchen `mjml`. Der Renderer erzeugt ausschließlich MJML — dieses SDK bündelt keinen eigenen MJML-zu-HTML-Compiler —, sodass eine MJML-Implementierung nötig ist, um daraus versandfertiges HTML zu machen, und `mjml` ist diejenige, die dieser Befehl zu laden weiß.
 - **`import`** braucht das Konverter-Paket für das jeweilige Format, das Sie importieren.
+
+`custom-block validate` nutzt `mjml`, wenn es installiert ist, und überspringt die Kompilierprüfung sonst — der Befehl endet also nie mit `3`.
 
 Raten Sie bei `import` nicht, welche Konverter installiert sind — fragen Sie die CLI:
 
@@ -161,7 +197,7 @@ Installieren Sie jede Art optionaler Abhängigkeit in dem Projekt, aus dem herau
 
 ## Nutzung als Bibliothek
 
-Drei Einstiegspunkte für drei verschiedene Aufgaben.
+Jeder Einstiegspunkt dient einer anderen Aufgabe.
 
 ### `@templatical/template-tools` (Root)
 
@@ -172,9 +208,14 @@ import {
   runQualityLint,
   applyOperation,
   getColumnCount,
+  checkCustomBlock,
+  validateCustomBlockDefinition,
+  SPECIMEN_STATES,
   type ValidationResult,
   type QualityLintResult,
   type OperationResult,
+  type CustomBlockCheckResult,
+  type CustomBlockWorkingFile,
 } from "@templatical/template-tools";
 ```
 
@@ -183,6 +224,11 @@ import {
 - **`runQualityLint(data: unknown): QualityLintResult`** — der `lintTemplate` von `@templatical/quality`, darübergelegt, unter der Annahme strukturell gültiger Eingabe. In try/catch eingehüllt, sodass ein fehlerhaftes Template den Aufrufer nicht abstürzen lassen kann: `{ issues, error? }`, wobei `error` nur gesetzt ist, wenn der Linter selbst einen Fehler geworfen hat.
 - **`applyOperation(content: TemplateContent, payload: TemplateOperationPayload): OperationResult`** — der reine Reducer hinter `edit --op`. Verändert `content` nie; liefert `{ ok, content, error? }`, wobei `content` bei einer Ablehnung dasselbe Objekt ist, das übergeben wurde, nachweislich unangetastet.
 - **`getColumnCount(layout: ColumnLayout): number`** — Anzahl der Spalten, die ein Section-Layout deklariert: `'1'` → `1`, `'3'` → `3`, alles andere (`'2'`, `'2-1'`, `'1-2'`) → `2`. Spiegelt den identischen Helfer im eigenen Editor von `@templatical/core`, hier neu implementiert, weil dieses Paket core nie importiert — siehe „Verhältnis zu den anderen Paketen" unten.
+- **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — die Prüfungen, die `custom-block validate` ausführt, mit dem Ergebnis `{ valid, issues }`. Übergeben Sie `compileMjml` in `options`, um die MJML-Kompilierprüfung hinzuzufügen; ohne diese Option wird sie übersprungen.
+- **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — nur die Strukturprüfung, synchron. `checkCustomBlock` führt sie zuerst aus.
+- **`SPECIMEN_STATES`** — die Namen der Specimen-Zustände, die `custom-block render --state` akzeptiert.
+
+Die Custom-Block-Typen werden mit exportiert: `CustomBlockCheckResult`, `CustomBlockIssue`, `CustomBlockIssueSeverity`, `CustomBlockWorkingFile`, `DataSourcePreview`, `SpecimenState` und `CheckCustomBlockOptions`.
 
 ### `@templatical/template-tools/live`
 
@@ -197,6 +243,10 @@ Nur für Node (`node:http`, `node:fs`) — ein eigener Subpath, damit ein Bundle
 Das rohe, generierte JSON-Schema als `.json`-Datei — importierbar überall, wo Ihr Bundler oder Ihre Laufzeitumgebung JSON laden kann (`import schema from "@templatical/template-tools/schema.json"`, oder außerhalb eines Bundlers mit `fetch`/`fs.readFileSync` gelesen). Inhaltlich identisch mit dem `schema`-Export oben und mit dem, was der Befehl `schema` ausgibt.
 
 **Bauen Sie eine eigene „Mit KI generieren"-Funktion in Ihr Produkt?** Das ist, was Sie dafür brauchen. Der mitgelieferte [Agent Skill](/de/guide/agent-skill) durchläuft genau diese Schleife für einen Coding-Agenten: das Block-Schema als Grounding lesen, ein Template generieren, das Ergebnis validieren und etwaige Fehler an das Modell zurückgeben, bis es besteht. `schema.json` und `validateTemplate` sind die beiden Teile dieser Schleife, die dieses Paket Ihnen direkt an die Hand gibt — geben Sie das Schema an Ihr Modell weiter (ein System-Prompt, eine Tool-Definition, ein Structured-Output-Modus, was auch immer Ihr Anbieter unterstützt), und lassen Sie dessen Ausgabe dann durch `validateTemplate` laufen, bevor Sie ihr vertrauen. Alles andere in diesem Paket ist für diesen Weg irrelevant: `runQualityLint`, `applyOperation` und `./live` setzen alle bereits ein strukturell gültiges Template voraus.
+
+### `@templatical/template-tools/custom-block-schema.json`
+
+Das JSON-Schema für eine Custom-Block-Arbeitsdatei — eine `CustomBlockDefinition` ohne `dataSource`, plus `dataSourcePreview` — als `.json`-Datei. Es wird wie `schema.json` aus `@templatical/types` generiert, und `custom-block validate` prüft zuerst dagegen.
 
 ## Verhältnis zu den anderen Paketen
 

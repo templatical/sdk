@@ -923,9 +923,9 @@ See [How Rendering Works](/getting-started/how-rendering-works) for more on the 
 
 Source: https://docs.templatical.com/api/template-tools
 
-`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
+`@templatical/template-tools` is the CLI and library behind every mechanical operation on a Templatical template: validate its JSON, render it to MJML or HTML, apply a scoped edit, import it from another editor's export format, or preview it live in the real Templatical editor. It also checks, renders and previews [custom block](/guide/custom-blocks) definitions. MIT-licensed, published on npm, and runs via `npx` with nothing installed into your project and no Templatical account.
 
-The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the seven documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
+The bundled [Agent Skill](/guide/agent-skill) drives this CLI internally — every command an AI coding agent runs while building or editing a template with the skill is one of the commands documented below. The CLI itself needs no agent: everything here works the same from a shell, a script, or a CI job. Install the skill with `npx skills add templatical/sdk`.
 
 ## Invoking it
 
@@ -949,6 +949,10 @@ Add `--json` to any command for a single parseable JSON document on stdout. Inst
 | `edit <file> --op '<json>'` \| `--ops <file>` | Apply one operation, or a batch, and write the result |
 | `import <file> [--format <fmt>]` \| `--list-formats` | Convert a design from another tool into Templatical JSON |
 | `live` \| `live reload` \| `live stop` | Preview and hand-edit the template in the real editor |
+| `live --custom-block <file> [--host <file>]` | Preview a custom block definition in the real editor |
+| `custom-block validate <file>` | Check a custom block definition: schema, Liquid, email-client safety, MJML |
+| `custom-block render <file> [--state <name>] [--format mjml\|html] [-o <file>]` | Render a custom block's specimen to MJML or HTML |
+| `custom-block fetch <file> [--values '<json>']` | Run the definition's `dataSourcePreview` recipe once |
 | `list` | List the working templates in `.templatical/` |
 
 `--json` (see below) is a global flag — it works identically on every command above, not just some of them. Every command that touches a file also accepts `--cwd <dir>`, resolving relative paths against it instead of the process's own working directory.
@@ -1002,6 +1006,36 @@ Run `import --list-formats` (optionally with `--json`) to see which converter pa
 
 Starts a local server that opens the real Templatical editor (loaded from the CDN) in your browser and keeps one working template file in `.templatical/` synced to it over Server-Sent Events. `live reload` pushes your latest edit to the open page and leaves notes on blocks in place. `live reload --consume-annotations` clears those notes after the reload has read the working file. `live stop` shuts the server down. `[--file <f>]` picks the working file, `[--port <n>]` picks the port (default `4747`, falling back to a random free one if it's busy), `[--cwd <d>]` resolves both against a directory other than the current one, and `--no-open` skips launching a browser automatically. This is the protocol the [Agent Skill](/guide/agent-skill)'s live mode is built on — see that page for how an agent drives it turn by turn; the CLI command here only starts and stops the server.
 
+`live --custom-block <file>` serves a custom block definition instead of a template: the canvas shows the block once per specimen state (defaults, empty, long text, repeatables at their limits, booleans flipped), and `--host <file>` appends that specimen to one of your templates. `--custom-block` and `--file` are exclusive, and `--host` applies only with `--custom-block`. `live reload` exits `1` and pushes nothing when the definition or the host template is missing or invalid. One server runs per directory: starting one for a different file or mode while another runs is a usage error naming the running one, so run `live stop` first.
+
+The bridge answers only requests whose `Host` header is `localhost`, `127.0.0.1` or `[::1]` on its own port, in both modes. A tunnel or proxy that rewrites the hostname gets a `403`.
+
+### `custom-block validate <file>`
+
+```bash
+npx -y @templatical/template-tools custom-block validate .templatical/custom-blocks/testimonial.json
+```
+
+Checks a custom block working file: the definition against `custom-block-schema.json`, its Liquid `template` against its `fields` (undefined variables, unused fields, loops over a field that isn't a repeatable, item keys a repeatable doesn't define), the `dataSourcePreview` recipe, email-client safety over every specimen state's HTML and the `stylesheet` (flex and grid layout, positioning, `<script>`, `@import`, missing `alt` or `width` on images), and that the stylesheet reaches `<mj-head>`. With `mjml` installed it also compiles the rendered MJML and reports compile errors as warnings; without it, that check is skipped with a note. Exits `1` on any `error`-severity issue. `--json` emits `{ valid, issues }`, each issue `{ ruleId, severity, message, path? }`.
+
+The working file is a [`CustomBlockDefinition`](/guide/custom-blocks#customblockdefinition) without `dataSource` (a function), plus an optional `dataSourcePreview` recipe. A recipe's URL keeps its scheme and host literal (Liquid only after the first `/`, `?` or `#`), every field value it interpolates is URL-encoded, field values reach only `url` and `body`, and `${env:NAME}` resolves only in header values.
+
+### `custom-block render <file> [--state <name>] [--format mjml|html] [--out <file> | -o <file>]`
+
+```bash
+npx -y @templatical/template-tools custom-block render .templatical/custom-blocks/testimonial.json --state empty -o empty.mjml
+```
+
+Renders the specimen — the block once per state — to MJML, or to HTML with `--format html`, which needs the optional `mjml` package. `--state` renders one state: `defaults`, `empty`, `long`, `min-items`, `max-items` or `flipped`. The definition is checked structurally first. Without `--out`/`-o`, the result prints to stdout.
+
+### `custom-block fetch <file> [--values '<json>']`
+
+```bash
+npx -y @templatical/template-tools custom-block fetch .templatical/custom-blocks/product.json --values '{"productId":"123"}' --json
+```
+
+Runs the definition's `dataSourcePreview` recipe from Node with the field defaults, overridden by `--values` (a JSON object), and prints the mapped values plus `unmapped`, the `map` entries the response didn't contain. Header values resolve `${env:NAME}` from the environment, and mapped values and errors are redacted if they echo a secret. Redirects are not followed. A recipe `custom-block validate` rejects is refused before any request. Exits `1` when the request fails.
+
 ### `list`
 
 ```bash
@@ -1015,7 +1049,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Success. `validate` may still report `warning`/`info` lint findings — see below. |
-| `1` | The template is invalid: a structural error, or a quality-lint finding of severity `error`. |
+| `1` | The template is invalid: a structural error, or a quality-lint finding of severity `error`. For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
 | `2` | Usage error — bad flags, a missing argument, an unreadable or unparseable input file. |
 | `3` | An optional dependency isn't installed. The error message names the exact install command. |
 
@@ -1062,10 +1096,12 @@ Adjust the glob to wherever your templates actually live. GitHub Actions runs a 
 
 ## Optional dependencies
 
-Running the CLI never installs anything into your project on its own — `npx` resolves the package itself (from npm's cache, or by fetching it once, the first time), and that's the only network or filesystem activity a bare command performs. Two commands can each ask for exactly one more package, and the error names the install command when it's missing:
+Running the CLI never installs anything into your project on its own — `npx` resolves the package itself (from npm's cache, or by fetching it once, the first time), and that's the only network or filesystem activity a bare command performs. These commands can each ask for one more package, and the error names the install command when it's missing:
 
-- **`render --format html`** needs `mjml`. The renderer produces MJML only — by design, this SDK bundles no MJML-to-HTML compiler of its own — so turning that into sendable HTML needs an MJML implementation, and `mjml` is the one this command knows how to load.
+- **`render --format html`** and **`custom-block render --format html`** need `mjml`. The renderer produces MJML only — by design, this SDK bundles no MJML-to-HTML compiler of its own — so turning that into sendable HTML needs an MJML implementation, and `mjml` is the one this command knows how to load.
 - **`import`** needs the converter package for whatever format you're importing.
+
+`custom-block validate` uses `mjml` when it's installed and skips the compile check when it isn't, so it never exits `3`.
 
 For `import`, don't guess which converters are installed — ask the CLI:
 
@@ -1079,7 +1115,7 @@ Install either kind of optional dependency in whatever project the CLI is invoke
 
 ## Library use
 
-Three entry points, for three different jobs.
+Each entry point serves a different job.
 
 ### `@templatical/template-tools` (root)
 
@@ -1090,9 +1126,14 @@ import {
   runQualityLint,
   applyOperation,
   getColumnCount,
+  checkCustomBlock,
+  validateCustomBlockDefinition,
+  SPECIMEN_STATES,
   type ValidationResult,
   type QualityLintResult,
   type OperationResult,
+  type CustomBlockCheckResult,
+  type CustomBlockWorkingFile,
 } from "@templatical/template-tools";
 ```
 
@@ -1101,6 +1142,11 @@ import {
 - **`runQualityLint(data: unknown): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw.
 - **`applyOperation(content: TemplateContent, payload: TemplateOperationPayload): OperationResult`** — the pure reducer behind `edit --op`. Never mutates `content`; returns `{ ok, content, error? }`, where `content` on a rejection is the same object passed in, provably untouched.
 - **`getColumnCount(layout: ColumnLayout): number`** — columns a section layout declares: `'1'` → `1`, `'3'` → `3`, everything else (`'2'`, `'2-1'`, `'1-2'`) → `2`. Mirrors the identical helper in `@templatical/core`'s own editor, reimplemented here because this package never imports core — see "How it relates to the other packages" below.
+- **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — the checks `custom-block validate` runs, returning `{ valid, issues }`. Pass `compileMjml` in `options` to add the MJML compile check; without it that check is skipped.
+- **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — the structural check alone, synchronous. `checkCustomBlock` runs it first.
+- **`SPECIMEN_STATES`** — the specimen state names `custom-block render --state` accepts.
+
+The custom-block types are exported alongside: `CustomBlockCheckResult`, `CustomBlockIssue`, `CustomBlockIssueSeverity`, `CustomBlockWorkingFile`, `DataSourcePreview`, `SpecimenState` and `CheckCustomBlockOptions`.
 
 ### `@templatical/template-tools/live`
 
@@ -1115,6 +1161,10 @@ Node-only (`node:http`, `node:fs`) — a separate subpath so a bundler building 
 The raw generated JSON Schema as a `.json` file — importable anywhere your bundler or runtime can load JSON (`import schema from "@templatical/template-tools/schema.json"`, or read it with `fetch`/`fs.readFileSync` outside a bundler). Identical content to the `schema` export above and to what the `schema` command prints.
 
 **Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperation` and `./live` all assume you already have a structurally valid template to work with.
+
+### `@templatical/template-tools/custom-block-schema.json`
+
+The JSON Schema for a custom block working file — a `CustomBlockDefinition` without `dataSource`, plus `dataSourcePreview` — as a `.json` file. It is generated from `@templatical/types` like `schema.json`, and it is what `custom-block validate` checks against first.
 
 ## Related packages
 
@@ -6534,6 +6584,7 @@ npx skills add templatical/sdk
 - **Preview it live** in the real Templatical editor in your browser, kept in sync as you keep prompting — your own hand-edits included.
 - **Integrate** the editor into an application — detect the stack, propose the change, and wait before writing anything.
 - **Scaffold** a proposed integration into your repository, installed with your own package manager and checked against your running dev server.
+- **Define a custom block** from a description: fields and a Liquid template, checked against a schema and for email-client safety, then shown in the live editor in its edge-case states. A block that loads data can be filled from a real endpoint through a recipe whose credential is an environment variable, so the secret stays out of the page. The skill writes the block into your codebase, and changes one you already have.
 - **Diagnose** an integration that misbehaves, against a table of verified traps.
 - **Answer a question** about the SDK by fetching this documentation site directly.
 
@@ -6950,7 +7001,7 @@ const editor = await init({
                         color: #333; line-height: 1.5;">"{{ quote }}"</p>
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  {% if avatar %}
+                  {% if avatar != blank %}
                     <td style="vertical-align: middle; padding-right: 12px;">
                       <img src="{{ avatar }}" width="40" height="40"
                            style="border-radius: 50%; display: block;"
@@ -6961,7 +7012,7 @@ const editor = await init({
                     <p style="margin: 0; font-weight: 600; font-size: 14px;">
                       {{ authorName }}
                     </p>
-                    {% if authorTitle %}
+                    {% if authorTitle != blank %}
                       <p style="margin: 2px 0 0; font-size: 13px; color: #666;">
                         {{ authorTitle }}
                       </p>
@@ -7283,6 +7334,18 @@ The `template` property uses [Liquid](https://liquidjs.com/) syntax. Field value
 {% endif %}
 ```
 
+**Optional text and image fields:**
+
+```liquid
+{% if avatar != blank %}
+  <img src="{{ avatar }}" alt="{{ authorName }}" width="40" />
+{% endif %}
+```
+
+::: tip
+Liquid treats an empty string as true, and a field the user cleared holds an empty string. Compare against `blank` so the condition also hides a cleared field: a bare `{% if avatar %}` renders an `<img>` with an empty `src`.
+:::
+
 **Loops** (for repeatable fields):
 
 ```liquid
@@ -7403,8 +7466,8 @@ const eventCard: CustomBlockDefinition = {
   template: `
     <div style="border-left: 4px solid {{ accentColor }}; padding: 16px 20px; font-family: sans-serif;">
       <h2 style="margin: 0 0 4px; font-size: 20px;">{{ eventName }}</h2>
-      <p style="color: #666; margin: 0 0 12px; font-size: 14px;">{{ date }}{% if venue %} &middot; {{ venue }}{% endif %}</p>
-      {% if venueAddress %}
+      <p style="color: #666; margin: 0 0 12px; font-size: 14px;">{{ date }}{% if venue != blank %} &middot; {{ venue }}{% endif %}</p>
+      {% if venueAddress != blank %}
         <p style="color: #999; margin: 0 0 16px; font-size: 13px;">{{ venueAddress }}</p>
       {% endif %}
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
@@ -7415,7 +7478,7 @@ const eventCard: CustomBlockDefinition = {
         </tr>
         {% endfor %}
       </table>
-      {% if rsvpUrl %}
+      {% if rsvpUrl != blank %}
         <a href="{{ rsvpUrl }}" style="display: inline-block; padding: 10px 24px; background: {{ accentColor }}; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px;">RSVP Now</a>
       {% endif %}
     </div>
@@ -7462,7 +7525,7 @@ const pricingTier: CustomBlockDefinition = {
         </tr>
         {% endfor %}
       </table>
-      {% if ctaUrl %}
+      {% if ctaUrl != blank %}
         <a href="{{ ctaUrl }}" style="display: inline-block; padding: 10px 24px; background: {{ accentColor }}; color: #fff; text-decoration: none; border-radius: 6px; font-size: 14px;">{{ ctaLabel }}</a>
       {% endif %}
     </div>
@@ -7503,6 +7566,10 @@ dataSource: {
 The **Custom blocks** setup registers one block type, which appears on the palette next to the built-in ones.
 
 [Open in playground](https://play.templatical.com/scenes/custom-blocks)
+
+## With the Agent Skill
+
+The [Agent Skill](/guide/agent-skill) defines a custom block from a description, previews it live and writes it into your codebase.
 
 ---
 
