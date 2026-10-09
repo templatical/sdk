@@ -23,7 +23,7 @@
   "devDependencies": {
     "@react-router/dev": "^8.4.0",
     "@types/mjml": "^5.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3",
