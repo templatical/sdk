@@ -28,8 +28,10 @@ const BUILD_OUTPUT: Record<string, string> = {
 
 // The component that mounts the editor in each example. Each one must
 // unmount an editor whose init() resolves after its cleanup has already run:
-// React StrictMode does that to every effect in development, and agents copy
-// these files.
+// if the component unmounts while the editor is still loading, that init()
+// mounts anyway, and agents copy these files. React StrictMode's dev re-run
+// leaves nothing to unmount: the later init() keeps the container, and the
+// earlier one resolves never mounted.
 const EDITOR_COMPONENTS: Record<string, string> = {
   nextjs: "app/email-editor.tsx",
   nuxt: "app/components/EmailEditor.client.vue",
