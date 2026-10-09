@@ -304,7 +304,7 @@ describe("editor bundle topology", () => {
     // to `vue-draggable-plus`. `define.amd` is a property read on a global, so
     // no minifier can rename it — the marker survives every output mode.
     //
-    // `turbopack-consumer` covers this too, but only after a full `next build`;
+    // The `examples (nextjs)` CI job covers this too, but only after a full `next build`;
     // this fails in the `test` job in milliseconds and names the chunk.
     //
     // Scope is deliberately the npm `dist/` alone. The CDN build inlines every

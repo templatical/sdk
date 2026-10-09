@@ -4,7 +4,7 @@
   "public_key": "pk_GwdvZ2YYNH5Q55iJ7tAce",
   "projectTitle": "Templatical",
   "description": "Embeddable drag-and-drop email editor SDK: JSON templates in, MJML out, framework-agnostic, with your own backend behind every storage feature. Source-available (FSL-1.1-MIT).",
-  "folders": ["apps/docs"],
+  "folders": ["apps/docs", "examples"],
   "excludeFolders": [
     "apps/docs/de",
     "apps/docs/cloud",
@@ -16,12 +16,12 @@
   "excludeFiles": ["changelog.md"],
   "rules": [
     "Mount with `init({ container })` from `@templatical/editor`; `container` is a CSS selector or an element. It is framework-agnostic and ships no Vue or React component: call it from your framework's mount hook, in the browser only.",
-    "Import `@templatical/editor/style.css` next to `init()`. It loads the editor's font, and with `shadowDom: false` it is the editor's only stylesheet, so that mount is unstyled without it.",
-    "Give the container element a definite height, such as `height: 100vh`. The editor fills its container, and without a height parts of its sidebar, footer and panels clip.",
+    "Import `@templatical/editor/style.css` next to `init()`: it loads the editor's font, and with `shadowDom: false` it is the only stylesheet. Give the container a definite height, such as `height: 100vh`, or the editor's sidebar, footer and panels clip.",
     "Call `editor.unmount()` when the component is removed. In React, use the StrictMode-safe effect from the installation guide: when the effect was cleaned up before `init()` resolved, unmount the instance that arrives late.",
     "Templates are JSON: a `TemplateContent` object (`{ blocks, settings }`). Read it with `editor.getContent()`, restore it with `init({ content })` or `editor.setContent()`, and store it as JSON.",
     "Render a template to MJML with `await renderToMjml(content)` from `@templatical/renderer`, then compile the MJML to HTML on your server with the `mjml` package. The SDK bundles no MJML compiler, so `editor.toHtml()` needs a `render` provider.",
     "Storage features are providers: plain objects passed to `init()` as `templates`, `versionHistory`, `comments`, `savedBlocks`, `media` and `testEmail`. Each is off until its key is passed, and none needs Cloud; `initCloud()` is the hosted variant.",
-    "Install `@templatical/editor` alone: it bundles Vue and `@templatical/core`, so the app needs neither. Optional peers: `@templatical/renderer` (`editor.toMjml()`), `@templatical/quality` (Issues panel), `pusher-js` (`initCloud()`)."
+    "Install `@templatical/editor` alone: it bundles Vue and `@templatical/core`, so the app needs neither. Optional peers: `@templatical/renderer` (`editor.toMjml()`), `@templatical/quality` (Issues panel), `pusher-js` (`initCloud()`).",
+    "Working apps with full code: `https://docs.templatical.com/frameworks/<page>.md` for `nextjs`, `nuxt`, `sveltekit`, `react-router` (with server routes) and `react` (Vite, no backend). The apps are in the repo's `examples/` folder."
   ]
 }

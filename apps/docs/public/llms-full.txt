@@ -3735,6 +3735,1735 @@ The **Version history** setup adds a `versionHistory` provider next to `template
 
 ---
 
+# Next.js
+
+Source: https://docs.templatical.com/frameworks/nextjs
+
+[`examples/nextjs`](https://github.com/templatical/sdk/tree/main/examples/nextjs) is a Next.js 16 App Router app that embeds the editor and backs it with its own API routes. It stores templates and saved blocks as JSON files under `./data`, renders HTML export and test emails on the server with `@templatical/renderer` and `mjml`, and writes each test email to `./data/outbox` instead of sending it. CI builds the app and runs it in a browser against every change to the SDK.
+
+## Running the example
+
+Copy it into a new directory:
+
+```bash
+npx degit templatical/sdk/examples/nextjs my-app
+cd my-app
+npm install
+npm run dev
+```
+
+## The editor component
+
+A client component mounts the editor. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
+
+`app/email-editor.tsx`
+
+```tsx
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type { TemplaticalEditor } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import {
+  renderProvider,
+  savedBlocksProvider,
+  templatesProvider,
+  testEmailProvider,
+} from "../lib/templatical/providers";
+
+type Problem = { message: string; offerRestart: boolean };
+
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
+export function EmailEditor() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<TemplaticalEditor | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
+
+    (async () => {
+      // Imported inside the effect: the editor runs only in the browser.
+      const { init } = await import("@templatical/editor");
+      if (cancelled) return;
+      const ed = await init({
+        container,
+        templates: templatesProvider,
+        savedBlocks: savedBlocksProvider,
+        testEmail: testEmailProvider,
+        render: renderProvider,
+        onError: (error) => {
+          if (!cancelled) setProblem({ message: messageOf(error), offerRestart: false });
+        },
+      });
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
+
+      // ?id= picks the template; without one, create a template and put its
+      // id in the URL so a reload reopens the same template.
+      const id = new URLSearchParams(window.location.search).get("id");
+      if (id) {
+        await ed.load(id);
+      } else {
+        const template = await ed.create({ name: "Untitled" });
+        if (!cancelled) window.history.replaceState(null, "", `?id=${template.id}`);
+      }
+    })().catch((error: unknown) => {
+      // The providers throw the server's own message, such as "Template not found."
+      if (!cancelled) setProblem({ message: messageOf(error), offerRestart: true });
+    });
+
+    return () => {
+      cancelled = true;
+      instance?.unmount();
+      editorRef.current = null;
+    };
+  }, []);
+
+  async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    setProblem((current) => (current?.offerRestart ? current : null));
+    // Opened inside the click, so a popup blocker allows it, and filled once
+    // the HTML is ready.
+    const tab = window.open("", "_blank");
+    if (!tab) {
+      setProblem({ message: "Allow pop-ups for this page to see the export.", offerRestart: false });
+      return;
+    }
+    try {
+      const html = await editorRef.current?.toHtml();
+      if (!html) {
+        tab.close();
+        return;
+      }
+      // The HTML renders in a sandboxed frame: HTML blocks and rich text are
+      // author content, and in this tab they would run with the app's origin.
+      const frame = tab.document.createElement("iframe");
+      frame.setAttribute("sandbox", "");
+      frame.srcdoc = html;
+      frame.style.cssText = "border: 0; width: 100%; height: 100%";
+      tab.document.documentElement.style.height = "100%";
+      tab.document.body.style.cssText = "margin: 0; height: 100%";
+      tab.document.body.append(frame);
+    } catch (error) {
+      tab.close();
+      setProblem({ message: messageOf(error), offerRestart: false });
+    }
+  }
+
+  return (
+    <>
+      <div className="toolbar">
+        <button type="button" data-testid="export-html" onClick={exportHtml}>
+          Export HTML
+        </button>
+        {problem && (
+          <span role="alert">
+            {problem.message}
+            {problem.offerRestart && (
+              <>
+                {" "}
+                {/* A full page load, not a router <Link>: only a fresh mount creates the template. */}
+                <a href="/">Start a new template</a>.
+              </>
+            )}
+          </span>
+        )}
+      </div>
+      <div ref={containerRef} className="editor" />
+    </>
+  );
+}
+```
+
+## The providers {#providers}
+
+The editor reaches the backend only through these objects. Each method is one `fetch` to a route below. The file is the same in the Next.js, Nuxt, SvelteKit and React Router examples.
+
+`lib/templatical/providers.ts`
+
+```ts
+// The editor reaches the backend only through these four objects. Each method
+// is one fetch to an /api route of this app; point them at any backend that
+// implements the same routes, in any language.
+import type {
+  RenderProvider,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
+  TemplatesProvider,
+  TestEmailProvider,
+} from "@templatical/types";
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    // Every write declares JSON, the bodyless DELETE included: a framework's
+    // CSRF check (SvelteKit's, for one) treats a write without a content type
+    // as a form post and can reject it as cross-site.
+    headers: method === "GET" ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(error?.message ?? `${method} ${path} failed (${response.status})`);
+  }
+  return (response.status === 204 ? undefined : await response.json()) as T;
+}
+
+function listQuery(params: SavedBlocksListParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.category) query.set("category", params.category);
+  const text = query.toString();
+  return text ? `?${text}` : "";
+}
+
+export const templatesProvider: TemplatesProvider = {
+  load: (id) => request("GET", `/api/templates/${encodeURIComponent(id)}`),
+  create: (input) => request("POST", "/api/templates", input),
+  save: (id, patch) => request("PATCH", `/api/templates/${encodeURIComponent(id)}`, patch),
+  autoSave: true,
+};
+
+export const savedBlocksProvider: SavedBlocksProvider = {
+  list: (params) => request("GET", `/api/saved-blocks${listQuery(params)}`),
+  create: (input) => request("POST", "/api/saved-blocks", input),
+  update: (id, patch) => request("PATCH", `/api/saved-blocks/${encodeURIComponent(id)}`, patch),
+  delete: (id) => request("DELETE", `/api/saved-blocks/${encodeURIComponent(id)}`),
+};
+
+export const testEmailProvider: TestEmailProvider = {
+  defaultRecipient: "you@example.com",
+  send: ({ recipient, content }) => request("POST", "/api/test-email", { recipient, content }),
+};
+
+export const renderProvider: RenderProvider = {
+  toMjml: async ({ content }) =>
+    (await request<{ mjml: string }>("POST", "/api/render", { content })).mjml,
+  toHtml: async ({ content }) =>
+    (await request<{ html: string }>("POST", "/api/render", { content })).html,
+};
+```
+
+## The server routes
+
+Each route validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports.
+
+`app/api/templates/route.ts`
+
+```ts
+import { createTemplate, templateInputError, type TemplateInput } from "../../../lib/templatical/server/store";
+
+export async function POST(request: Request) {
+  const body: unknown = await request.json().catch(() => null);
+  const problem = templateInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createTemplate(body as TemplateInput), { status: 201 });
+}
+```
+
+`app/api/templates/[id]/route.ts`
+
+```ts
+import type { TemplatePatch } from "@templatical/types";
+import { getTemplate, templateInputError, updateTemplate } from "../../../../lib/templatical/server/store";
+
+type Context = { params: Promise<{ id: string }> };
+
+const notFound = () => Response.json({ message: "Template not found." }, { status: 404 });
+
+export async function GET(_request: Request, { params }: Context) {
+  const template = await getTemplate((await params).id);
+  return template ? Response.json(template) : notFound();
+}
+
+export async function PATCH(request: Request, { params }: Context) {
+  const body: unknown = await request.json().catch(() => null);
+  const problem = templateInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const template = await updateTemplate((await params).id, body as TemplatePatch);
+  return template ? Response.json(template) : notFound();
+}
+```
+
+`app/api/saved-blocks/route.ts`
+
+```ts
+import type { SavedBlockInput } from "@templatical/types";
+import { createSavedBlock, listSavedBlocks, savedBlockInputError } from "../../../lib/templatical/server/store";
+
+export async function GET(request: Request) {
+  const query = new URL(request.url).searchParams;
+  return Response.json(
+    await listSavedBlocks({
+      search: query.get("search") ?? undefined,
+      category: query.get("category") ?? undefined,
+    }),
+  );
+}
+
+export async function POST(request: Request) {
+  const body: unknown = await request.json().catch(() => null);
+  const problem = savedBlockInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createSavedBlock(body as SavedBlockInput), { status: 201 });
+}
+```
+
+`app/api/saved-blocks/[id]/route.ts`
+
+```ts
+import type { SavedBlockPatch } from "@templatical/types";
+import { deleteSavedBlock, savedBlockInputError, updateSavedBlock } from "../../../../lib/templatical/server/store";
+
+type Context = { params: Promise<{ id: string }> };
+
+const notFound = () => Response.json({ message: "Saved block not found." }, { status: 404 });
+
+export async function PATCH(request: Request, { params }: Context) {
+  const body: unknown = await request.json().catch(() => null);
+  const problem = savedBlockInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const block = await updateSavedBlock((await params).id, body as SavedBlockPatch);
+  return block ? Response.json(block) : notFound();
+}
+
+export async function DELETE(_request: Request, { params }: Context) {
+  return (await deleteSavedBlock((await params).id)) ? new Response(null, { status: 204 }) : notFound();
+}
+```
+
+`app/api/render/route.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import { renderTemplate } from "../../../lib/templatical/server/render";
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as { content?: unknown } | null;
+  if (!isRenderableTemplateContent(body?.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  return Response.json(await renderTemplate(body.content));
+}
+```
+
+`app/api/test-email/route.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import { deliver, isEmailAddress } from "../../../lib/templatical/server/outbox";
+import { renderTemplate } from "../../../lib/templatical/server/render";
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => null)) as { recipient?: unknown; content?: unknown } | null;
+  if (!isEmailAddress(body?.recipient)) {
+    return Response.json({ message: "Enter a valid email address." }, { status: 400 });
+  }
+  if (!isRenderableTemplateContent(body.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  const { html } = await renderTemplate(body.content);
+  await deliver({ to: body.recipient, subject: "Test email", html });
+  return new Response(null, { status: 204 });
+}
+```
+
+The render and test-email routes compile the template with `renderTemplate()` from `lib/templatical/server/render.ts`:
+
+```ts
+// Compiles a template to email HTML on the server: the renderer turns the
+// editor's JSON into MJML, and the mjml package turns MJML into HTML.
+import mjml2html from "mjml";
+import { renderToMjml } from "@templatical/renderer";
+import type { TemplateContent } from "@templatical/types";
+
+export async function renderTemplate(content: TemplateContent): Promise<{ mjml: string; html: string }> {
+  const mjml = await renderToMjml(content);
+  const { html } = await mjml2html(mjml);
+  return { mjml, html };
+}
+```
+
+## Moving to production
+
+- Replace the function bodies in [`lib/templatical/server/store.ts`](https://github.com/templatical/sdk/blob/main/examples/nextjs/lib/templatical/server/store.ts) with calls to your database. Every route that loads or saves templates or saved blocks goes through them.
+- Replace `deliver()` in [`lib/templatical/server/outbox.ts`](https://github.com/templatical/sdk/blob/main/examples/nextjs/lib/templatical/server/outbox.ts) with your email provider. It receives the recipient, the subject and the finished HTML.
+- Add authentication to the API routes. They are open in this example.
+- Sanitize HTML blocks on the server before you store or send them, or pass `allowHtmlBlocks: false` to `renderToMjml` in `render.ts`: the editor keeps author HTML as written.
+- Before you add cookie-based authentication, reject writes that don't send `content-type: application/json`, or add CSRF tokens: a cross-site page can send a `text/plain` body without a preflight, and these routes read any body as JSON.
+
+[Connect your backend](/backend/) covers the providers this example leaves out: version history, comments and media.
+
+---
+
+# Nuxt
+
+Source: https://docs.templatical.com/frameworks/nuxt
+
+[`examples/nuxt`](https://github.com/templatical/sdk/tree/main/examples/nuxt) is a Nuxt 4 app that embeds the editor and backs it with its own server routes. It stores templates and saved blocks as JSON files under `./data`, renders HTML export and test emails on the server with `@templatical/renderer` and `mjml`, and writes each test email to `./data/outbox` instead of sending it. CI builds the app and runs it in a browser against every change to the SDK.
+
+## Running the example
+
+Copy it into a new directory:
+
+```bash
+npx degit templatical/sdk/examples/nuxt my-app
+cd my-app
+npm install
+npm run dev
+```
+
+## The editor component
+
+A client-only component (`.client.vue`) mounts the editor in `onMounted` and unmounts it in `onBeforeUnmount`, including an editor that finishes loading after the component has gone. It waits one tick first, because Nuxt renders a client-only component's template after the component mounts. It imports `init()` inside `onMounted`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
+
+`app/components/EmailEditor.client.vue`
+
+```vue
+<script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import type { TemplaticalEditor } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import {
+  renderProvider,
+  savedBlocksProvider,
+  templatesProvider,
+  testEmailProvider,
+} from "../utils/templatical/providers";
+
+type Problem = { message: string; offerRestart: boolean };
+
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
+const container = ref<HTMLDivElement>();
+const problem = ref<Problem | null>(null);
+let editor: TemplaticalEditor | null = null;
+let unmounted = false;
+
+async function openEditor(el: HTMLDivElement) {
+  // Imported here, not at the top: the editor runs only in the browser.
+  const { init } = await import("@templatical/editor");
+  if (unmounted) return;
+  const instance = await init({
+    container: el,
+    templates: templatesProvider,
+    savedBlocks: savedBlocksProvider,
+    testEmail: testEmailProvider,
+    render: renderProvider,
+    onError: (error) => {
+      if (!unmounted) problem.value = { message: messageOf(error), offerRestart: false };
+    },
+  });
+  if (unmounted) {
+    instance.unmount();
+    return;
+  }
+  editor = instance;
+
+  // ?id= picks the template; without one, create a template and put its id in
+  // the URL so a reload reopens the same template.
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (id) {
+    await instance.load(id);
+  } else {
+    const template = await instance.create({ name: "Untitled" });
+    if (!unmounted) window.history.replaceState(window.history.state, "", `?id=${template.id}`);
+  }
+}
+
+onMounted(async () => {
+  // Nuxt renders a .client.vue component's template one tick after the
+  // component mounts, so the container does not exist until then.
+  await nextTick();
+  const el = container.value;
+  if (!el) return;
+  openEditor(el).catch((error: unknown) => {
+    // The providers throw the server's own message, such as "Template not found."
+    if (!unmounted) problem.value = { message: messageOf(error), offerRestart: true };
+  });
+});
+
+onBeforeUnmount(() => {
+  unmounted = true;
+  editor?.unmount();
+  editor = null;
+});
+
+async function exportHtml() {
+  // A new export replaces an earlier failure. A failed load keeps its message
+  // and restart link: the template it names never opened.
+  if (!problem.value?.offerRestart) problem.value = null;
+  // Opened inside the click, so a popup blocker allows it, and filled once
+  // the HTML is ready.
+  const tab = window.open("", "_blank");
+  if (!tab) {
+    problem.value = { message: "Allow pop-ups for this page to see the export.", offerRestart: false };
+    return;
+  }
+  try {
+    const html = await editor?.toHtml();
+    if (!html) {
+      tab.close();
+      return;
+    }
+    // The HTML renders in a sandboxed frame: HTML blocks and rich text are
+    // author content, and in this tab they would run with the app's origin.
+    const frame = tab.document.createElement("iframe");
+    frame.setAttribute("sandbox", "");
+    frame.srcdoc = html;
+    frame.style.cssText = "border: 0; width: 100%; height: 100%";
+    tab.document.documentElement.style.height = "100%";
+    tab.document.body.style.cssText = "margin: 0; height: 100%";
+    tab.document.body.append(frame);
+  } catch (error) {
+    tab.close();
+    problem.value = { message: messageOf(error), offerRestart: false };
+  }
+}
+</script>
+
+<template>
+  <div class="toolbar">
+    <button type="button" data-testid="export-html" @click="exportHtml">Export HTML</button>
+    <span v-if="problem" role="alert">
+      {{ problem.message }}
+      <template v-if="problem.offerRestart"><a href="/">Start a new template</a>.</template>
+    </span>
+  </div>
+  <div ref="container" class="editor" />
+</template>
+```
+
+## The providers {#providers}
+
+The editor reaches the backend only through these objects. Each method is one `fetch` to a route below. The file is the same in the Next.js, Nuxt, SvelteKit and React Router examples.
+
+`app/utils/templatical/providers.ts`
+
+```ts
+// The editor reaches the backend only through these four objects. Each method
+// is one fetch to an /api route of this app; point them at any backend that
+// implements the same routes, in any language.
+import type {
+  RenderProvider,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
+  TemplatesProvider,
+  TestEmailProvider,
+} from "@templatical/types";
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    // Every write declares JSON, the bodyless DELETE included: a framework's
+    // CSRF check (SvelteKit's, for one) treats a write without a content type
+    // as a form post and can reject it as cross-site.
+    headers: method === "GET" ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(error?.message ?? `${method} ${path} failed (${response.status})`);
+  }
+  return (response.status === 204 ? undefined : await response.json()) as T;
+}
+
+function listQuery(params: SavedBlocksListParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.category) query.set("category", params.category);
+  const text = query.toString();
+  return text ? `?${text}` : "";
+}
+
+export const templatesProvider: TemplatesProvider = {
+  load: (id) => request("GET", `/api/templates/${encodeURIComponent(id)}`),
+  create: (input) => request("POST", "/api/templates", input),
+  save: (id, patch) => request("PATCH", `/api/templates/${encodeURIComponent(id)}`, patch),
+  autoSave: true,
+};
+
+export const savedBlocksProvider: SavedBlocksProvider = {
+  list: (params) => request("GET", `/api/saved-blocks${listQuery(params)}`),
+  create: (input) => request("POST", "/api/saved-blocks", input),
+  update: (id, patch) => request("PATCH", `/api/saved-blocks/${encodeURIComponent(id)}`, patch),
+  delete: (id) => request("DELETE", `/api/saved-blocks/${encodeURIComponent(id)}`),
+};
+
+export const testEmailProvider: TestEmailProvider = {
+  defaultRecipient: "you@example.com",
+  send: ({ recipient, content }) => request("POST", "/api/test-email", { recipient, content }),
+};
+
+export const renderProvider: RenderProvider = {
+  toMjml: async ({ content }) =>
+    (await request<{ mjml: string }>("POST", "/api/render", { content })).mjml,
+  toHtml: async ({ content }) =>
+    (await request<{ html: string }>("POST", "/api/render", { content })).html,
+};
+```
+
+## The server routes
+
+Nuxt maps each file under `server/api/` to a route, and the method in its name (`.get`, `.post`, …) to the HTTP method. Each route validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports.
+
+`server/api/templates/index.post.ts`
+
+```ts
+import { createTemplate, templateInputError, type TemplateInput } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const body: unknown = await readBody(event).catch(() => null);
+  const problem = templateInputError(body, false);
+  if (problem) {
+    setResponseStatus(event, 400);
+    return { message: problem };
+  }
+  setResponseStatus(event, 201);
+  return createTemplate(body as TemplateInput);
+});
+```
+
+`server/api/templates/[id].get.ts`
+
+```ts
+import { getTemplate } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const template = await getTemplate(getRouterParam(event, "id") ?? "");
+  if (!template) {
+    setResponseStatus(event, 404);
+    return { message: "Template not found." };
+  }
+  return template;
+});
+```
+
+`server/api/templates/[id].patch.ts`
+
+```ts
+import type { TemplatePatch } from "@templatical/types";
+import { templateInputError, updateTemplate } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const body: unknown = await readBody(event).catch(() => null);
+  const problem = templateInputError(body, true);
+  if (problem) {
+    setResponseStatus(event, 400);
+    return { message: problem };
+  }
+  const template = await updateTemplate(getRouterParam(event, "id") ?? "", body as TemplatePatch);
+  if (!template) {
+    setResponseStatus(event, 404);
+    return { message: "Template not found." };
+  }
+  return template;
+});
+```
+
+`server/api/saved-blocks/index.get.ts`
+
+```ts
+import { listSavedBlocks } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  return listSavedBlocks({
+    search: typeof query.search === "string" ? query.search : undefined,
+    category: typeof query.category === "string" ? query.category : undefined,
+  });
+});
+```
+
+`server/api/saved-blocks/index.post.ts`
+
+```ts
+import type { SavedBlockInput } from "@templatical/types";
+import { createSavedBlock, savedBlockInputError } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const body: unknown = await readBody(event).catch(() => null);
+  const problem = savedBlockInputError(body, false);
+  if (problem) {
+    setResponseStatus(event, 400);
+    return { message: problem };
+  }
+  setResponseStatus(event, 201);
+  return createSavedBlock(body as SavedBlockInput);
+});
+```
+
+`server/api/saved-blocks/[id].patch.ts`
+
+```ts
+import type { SavedBlockPatch } from "@templatical/types";
+import { savedBlockInputError, updateSavedBlock } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  const body: unknown = await readBody(event).catch(() => null);
+  const problem = savedBlockInputError(body, true);
+  if (problem) {
+    setResponseStatus(event, 400);
+    return { message: problem };
+  }
+  const block = await updateSavedBlock(getRouterParam(event, "id") ?? "", body as SavedBlockPatch);
+  if (!block) {
+    setResponseStatus(event, 404);
+    return { message: "Saved block not found." };
+  }
+  return block;
+});
+```
+
+`server/api/saved-blocks/[id].delete.ts`
+
+```ts
+import { deleteSavedBlock } from "../../utils/templatical/store";
+
+export default defineEventHandler(async (event) => {
+  if (await deleteSavedBlock(getRouterParam(event, "id") ?? "")) return sendNoContent(event, 204);
+  setResponseStatus(event, 404);
+  return { message: "Saved block not found." };
+});
+```
+
+`server/api/render.post.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import { renderTemplate } from "../utils/templatical/render";
+
+export default defineEventHandler(async (event) => {
+  const body = (await readBody(event).catch(() => null)) as { content?: unknown } | null;
+  if (!isRenderableTemplateContent(body?.content)) {
+    setResponseStatus(event, 400);
+    return { message: "`content` must be a template with a `blocks` array." };
+  }
+  return renderTemplate(body.content);
+});
+```
+
+`server/api/test-email.post.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import { deliver, isEmailAddress } from "../utils/templatical/outbox";
+import { renderTemplate } from "../utils/templatical/render";
+
+export default defineEventHandler(async (event) => {
+  const body = (await readBody(event).catch(() => null)) as { recipient?: unknown; content?: unknown } | null;
+  if (!isEmailAddress(body?.recipient)) {
+    setResponseStatus(event, 400);
+    return { message: "Enter a valid email address." };
+  }
+  if (!isRenderableTemplateContent(body.content)) {
+    setResponseStatus(event, 400);
+    return { message: "`content` must be a template with a `blocks` array." };
+  }
+  const { html } = await renderTemplate(body.content);
+  await deliver({ to: body.recipient, subject: "Test email", html });
+  return sendNoContent(event, 204);
+});
+```
+
+The render and test-email routes compile the template with `renderTemplate()` from `server/utils/templatical/render.ts`:
+
+```ts
+// Compiles a template to email HTML on the server: the renderer turns the
+// editor's JSON into MJML, and the mjml package turns MJML into HTML.
+import mjml2html from "mjml";
+import { renderToMjml } from "@templatical/renderer";
+import type { TemplateContent } from "@templatical/types";
+
+export async function renderTemplate(content: TemplateContent): Promise<{ mjml: string; html: string }> {
+  const mjml = await renderToMjml(content);
+  const { html } = await mjml2html(mjml);
+  return { mjml, html };
+}
+```
+
+## Moving to production
+
+- Replace the function bodies in [`server/utils/templatical/store.ts`](https://github.com/templatical/sdk/blob/main/examples/nuxt/server/utils/templatical/store.ts) with calls to your database. Every route that loads or saves templates or saved blocks goes through them.
+- Replace `deliver()` in [`server/utils/templatical/outbox.ts`](https://github.com/templatical/sdk/blob/main/examples/nuxt/server/utils/templatical/outbox.ts) with your email provider. It receives the recipient, the subject and the finished HTML.
+- Add authentication to the server routes. They are open in this example.
+- Sanitize HTML blocks on the server before you store or send them, or pass `allowHtmlBlocks: false` to `renderToMjml` in `render.ts`: the editor keeps author HTML as written.
+- Before you add cookie-based authentication, reject writes that don't send `content-type: application/json`, or add CSRF tokens: a cross-site page can send a body with no `content-type`, or with `multipart/form-data`, without a preflight, and these routes parse either as JSON.
+
+[Connect your backend](/backend/) covers the providers this example leaves out: version history, comments and media.
+
+---
+
+# React Router
+
+Source: https://docs.templatical.com/frameworks/react-router
+
+[`examples/react-router`](https://github.com/templatical/sdk/tree/main/examples/react-router) is a React Router 8 app in framework mode, the successor to Remix and the base of Shopify's app template. It embeds the editor and backs it with resource routes: route modules with a `loader` or an `action` and no component. It stores templates and saved blocks as JSON files under `./data`, renders HTML export and test emails on the server with `@templatical/renderer` and `mjml`, and writes each test email to `./data/outbox` instead of sending it. CI builds the app and runs it in a browser against every change to the SDK.
+
+## Running the example
+
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-router)
+
+Or copy it into a new directory:
+
+```bash
+npx degit templatical/sdk/examples/react-router my-app
+cd my-app
+npm install
+npm run dev
+```
+
+## The editor component
+
+The component mounts the editor in an effect. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL with `navigate` from `useNavigate`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
+
+`app/components/email-editor.tsx`
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
+import type { TemplaticalEditor } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import {
+  renderProvider,
+  savedBlocksProvider,
+  templatesProvider,
+  testEmailProvider,
+} from "../lib/templatical/providers";
+
+type Problem = { message: string; offerRestart: boolean };
+
+// Every message ends as a sentence: the providers' fallback, such as
+// "GET /api/templates/… failed (500)", has no full stop and would run into the
+// restart link.
+const messageOf = (error: unknown) => {
+  const text = (error instanceof Error ? error.message : String(error)).trim();
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+};
+
+export function EmailEditor() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<TemplaticalEditor | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  // navigate, not useSearchParams' setter: the setter changes with the URL, so
+  // depending on it re-runs this effect and mounts a second editor.
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
+
+    (async () => {
+      // Imported inside the effect: the editor runs only in the browser.
+      const { init } = await import("@templatical/editor");
+      if (cancelled) return;
+      const ed = await init({
+        container,
+        templates: templatesProvider,
+        savedBlocks: savedBlocksProvider,
+        testEmail: testEmailProvider,
+        render: renderProvider,
+        onError: (error) => {
+          if (!cancelled) setProblem({ message: messageOf(error), offerRestart: false });
+        },
+      });
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
+
+      // ?id= picks the template; without one, create a template and put its
+      // id in the URL so a reload reopens the same template.
+      const id = new URLSearchParams(window.location.search).get("id");
+      if (id) {
+        await ed.load(id);
+      } else {
+        const template = await ed.create({ name: "Untitled" });
+        if (!cancelled) await navigate({ search: `?id=${template.id}` }, { replace: true });
+      }
+    })().catch((error: unknown) => {
+      // The providers throw the server's own message, such as "Template not found."
+      if (!cancelled) setProblem({ message: messageOf(error), offerRestart: true });
+    });
+
+    return () => {
+      cancelled = true;
+      instance?.unmount();
+      editorRef.current = null;
+    };
+  }, [navigate]);
+
+  async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    setProblem((current) => (current?.offerRestart ? current : null));
+    // Opened inside the click, so a popup blocker allows it, and filled once
+    // the HTML is ready.
+    const tab = window.open("", "_blank");
+    if (!tab) {
+      setProblem({ message: "Allow pop-ups for this page to see the export.", offerRestart: false });
+      return;
+    }
+    try {
+      const html = await editorRef.current?.toHtml();
+      if (!html) {
+        tab.close();
+        return;
+      }
+      // The HTML renders in a sandboxed frame: HTML blocks and rich text are
+      // author content, and in this tab they would run with the app's origin.
+      const frame = tab.document.createElement("iframe");
+      frame.setAttribute("sandbox", "");
+      frame.srcdoc = html;
+      frame.style.cssText = "border: 0; width: 100%; height: 100%";
+      tab.document.documentElement.style.height = "100%";
+      tab.document.body.style.cssText = "margin: 0; height: 100%";
+      tab.document.body.append(frame);
+    } catch (error) {
+      tab.close();
+      setProblem({ message: messageOf(error), offerRestart: false });
+    }
+  }
+
+  return (
+    <>
+      <div className="toolbar">
+        <button type="button" data-testid="export-html" onClick={exportHtml}>
+          Export HTML
+        </button>
+        {problem && (
+          <span role="alert">
+            {problem.message}
+            {problem.offerRestart && (
+              <>
+                {" "}
+                {/* A full page load, not a router <Link>: only a fresh mount creates the template. */}
+                <a href="/">Start a new template</a>.
+              </>
+            )}
+          </span>
+        )}
+      </div>
+      <div ref={containerRef} className="editor" />
+    </>
+  );
+}
+```
+
+## The providers {#providers}
+
+The editor reaches the backend only through these objects. Each method is one `fetch` to a route below. The file is the same in the Next.js, Nuxt, SvelteKit and React Router examples.
+
+`app/lib/templatical/providers.ts`
+
+```ts
+// The editor reaches the backend only through these four objects. Each method
+// is one fetch to an /api route of this app; point them at any backend that
+// implements the same routes, in any language.
+import type {
+  RenderProvider,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
+  TemplatesProvider,
+  TestEmailProvider,
+} from "@templatical/types";
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    // Every write declares JSON, the bodyless DELETE included: a framework's
+    // CSRF check (SvelteKit's, for one) treats a write without a content type
+    // as a form post and can reject it as cross-site.
+    headers: method === "GET" ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(error?.message ?? `${method} ${path} failed (${response.status})`);
+  }
+  return (response.status === 204 ? undefined : await response.json()) as T;
+}
+
+function listQuery(params: SavedBlocksListParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.category) query.set("category", params.category);
+  const text = query.toString();
+  return text ? `?${text}` : "";
+}
+
+export const templatesProvider: TemplatesProvider = {
+  load: (id) => request("GET", `/api/templates/${encodeURIComponent(id)}`),
+  create: (input) => request("POST", "/api/templates", input),
+  save: (id, patch) => request("PATCH", `/api/templates/${encodeURIComponent(id)}`, patch),
+  autoSave: true,
+};
+
+export const savedBlocksProvider: SavedBlocksProvider = {
+  list: (params) => request("GET", `/api/saved-blocks${listQuery(params)}`),
+  create: (input) => request("POST", "/api/saved-blocks", input),
+  update: (id, patch) => request("PATCH", `/api/saved-blocks/${encodeURIComponent(id)}`, patch),
+  delete: (id) => request("DELETE", `/api/saved-blocks/${encodeURIComponent(id)}`),
+};
+
+export const testEmailProvider: TestEmailProvider = {
+  defaultRecipient: "you@example.com",
+  send: ({ recipient, content }) => request("POST", "/api/test-email", { recipient, content }),
+};
+
+export const renderProvider: RenderProvider = {
+  toMjml: async ({ content }) =>
+    (await request<{ mjml: string }>("POST", "/api/render", { content })).mjml,
+  toHtml: async ({ content }) =>
+    (await request<{ html: string }>("POST", "/api/render", { content })).html,
+};
+```
+
+## The server routes
+
+`app/routes.ts` registers each resource route. Server-only modules end in `.server.ts`, which keeps them out of the client bundle. Each route validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports.
+
+`app/routes.ts`
+
+```ts
+import { type RouteConfig, index, route } from "@react-router/dev/routes";
+
+export default [
+  index("routes/home.tsx"),
+  route("api/templates", "routes/api.templates.ts"),
+  route("api/templates/:id", "routes/api.templates.$id.ts"),
+  route("api/saved-blocks", "routes/api.saved-blocks.ts"),
+  route("api/saved-blocks/:id", "routes/api.saved-blocks.$id.ts"),
+  route("api/render", "routes/api.render.ts"),
+  route("api/test-email", "routes/api.test-email.ts"),
+] satisfies RouteConfig;
+```
+
+`app/routes/api.templates.ts`
+
+```ts
+import type { ActionFunctionArgs } from "react-router";
+import { createTemplate, templateInputError, type TemplateInput } from "../lib/templatical/store.server";
+
+export async function action({ request }: ActionFunctionArgs) {
+  if (request.method !== "POST") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body: unknown = await request.json().catch(() => null);
+  const problem = templateInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createTemplate(body as TemplateInput), { status: 201 });
+}
+```
+
+`app/routes/api.templates.$id.ts`
+
+```ts
+import type { TemplatePatch } from "@templatical/types";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { getTemplate, templateInputError, updateTemplate } from "../lib/templatical/store.server";
+
+const notFound = () => Response.json({ message: "Template not found." }, { status: 404 });
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const template = await getTemplate(params.id ?? "");
+  return template ? Response.json(template) : notFound();
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  if (request.method !== "PATCH") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body: unknown = await request.json().catch(() => null);
+  const problem = templateInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const template = await updateTemplate(params.id ?? "", body as TemplatePatch);
+  return template ? Response.json(template) : notFound();
+}
+```
+
+`app/routes/api.saved-blocks.ts`
+
+```ts
+import type { SavedBlockInput } from "@templatical/types";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { createSavedBlock, listSavedBlocks, savedBlockInputError } from "../lib/templatical/store.server";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const query = new URL(request.url).searchParams;
+  return Response.json(
+    await listSavedBlocks({
+      search: query.get("search") ?? undefined,
+      category: query.get("category") ?? undefined,
+    }),
+  );
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  if (request.method !== "POST") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body: unknown = await request.json().catch(() => null);
+  const problem = savedBlockInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createSavedBlock(body as SavedBlockInput), { status: 201 });
+}
+```
+
+`app/routes/api.saved-blocks.$id.ts`
+
+```ts
+import type { SavedBlockPatch } from "@templatical/types";
+import type { ActionFunctionArgs } from "react-router";
+import { deleteSavedBlock, savedBlockInputError, updateSavedBlock } from "../lib/templatical/store.server";
+
+const notFound = () => Response.json({ message: "Saved block not found." }, { status: 404 });
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const id = params.id ?? "";
+  if (request.method === "DELETE") {
+    return (await deleteSavedBlock(id)) ? new Response(null, { status: 204 }) : notFound();
+  }
+  if (request.method !== "PATCH") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body: unknown = await request.json().catch(() => null);
+  const problem = savedBlockInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const block = await updateSavedBlock(id, body as SavedBlockPatch);
+  return block ? Response.json(block) : notFound();
+}
+```
+
+`app/routes/api.render.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import type { ActionFunctionArgs } from "react-router";
+import { renderTemplate } from "../lib/templatical/render.server";
+
+export async function action({ request }: ActionFunctionArgs) {
+  if (request.method !== "POST") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body = (await request.json().catch(() => null)) as { content?: unknown } | null;
+  if (!isRenderableTemplateContent(body?.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  return Response.json(await renderTemplate(body.content));
+}
+```
+
+`app/routes/api.test-email.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import type { ActionFunctionArgs } from "react-router";
+import { deliver, isEmailAddress } from "../lib/templatical/outbox.server";
+import { renderTemplate } from "../lib/templatical/render.server";
+
+export async function action({ request }: ActionFunctionArgs) {
+  if (request.method !== "POST") return Response.json({ message: "Method not allowed." }, { status: 405 });
+  const body = (await request.json().catch(() => null)) as { recipient?: unknown; content?: unknown } | null;
+  if (!isEmailAddress(body?.recipient)) {
+    return Response.json({ message: "Enter a valid email address." }, { status: 400 });
+  }
+  if (!isRenderableTemplateContent(body.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  const { html } = await renderTemplate(body.content);
+  await deliver({ to: body.recipient, subject: "Test email", html });
+  return new Response(null, { status: 204 });
+}
+```
+
+The render and test-email routes compile the template with `renderTemplate()` from `app/lib/templatical/render.server.ts`:
+
+```ts
+// Compiles a template to email HTML on the server: the renderer turns the
+// editor's JSON into MJML, and the mjml package turns MJML into HTML.
+import mjml2html from "mjml";
+import { renderToMjml } from "@templatical/renderer";
+import type { TemplateContent } from "@templatical/types";
+
+export async function renderTemplate(content: TemplateContent): Promise<{ mjml: string; html: string }> {
+  const mjml = await renderToMjml(content);
+  const { html } = await mjml2html(mjml);
+  return { mjml, html };
+}
+```
+
+## Moving to production
+
+- Replace the function bodies in [`app/lib/templatical/store.server.ts`](https://github.com/templatical/sdk/blob/main/examples/react-router/app/lib/templatical/store.server.ts) with calls to your database. Every route that loads or saves templates or saved blocks goes through them.
+- Replace `deliver()` in [`app/lib/templatical/outbox.server.ts`](https://github.com/templatical/sdk/blob/main/examples/react-router/app/lib/templatical/outbox.server.ts) with your email provider. It receives the recipient, the subject and the finished HTML.
+- Add authentication to the resource routes. They are open in this example.
+- Sanitize HTML blocks on the server before you store or send them, or pass `allowHtmlBlocks: false` to `renderToMjml` in `render.server.ts`: the editor keeps author HTML as written.
+- Before you add cookie-based authentication, reject writes that don't send `content-type: application/json`, or add CSRF tokens: a cross-site page can send a `text/plain` body without a preflight, and these routes read any body as JSON.
+
+[Connect your backend](/backend/) covers the providers this example leaves out: version history, comments and media.
+
+---
+
+# React (Vite)
+
+Source: https://docs.templatical.com/frameworks/react
+
+[`examples/react-vite`](https://github.com/templatical/sdk/tree/main/examples/react-vite) is a Vite and React 19 single-page app with the editor and no backend. It keeps the template in `localStorage`, stores saved blocks with the editor's `createLocalStorageSavedBlocksProvider()`, and renders MJML in the browser with `@templatical/renderer`. Use it as the starting point for a React front end whose backend is not JavaScript. CI builds the app and runs it in a browser against every change to the SDK.
+
+## Running the example
+
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/react-vite)
+
+Or copy it into a new directory:
+
+```bash
+npx degit templatical/sdk/examples/react-vite my-app
+cd my-app
+npm install
+npm run dev
+```
+
+## The editor component
+
+The component mounts the editor in an effect, and its cleanup unmounts it, including an editor that finishes loading after React StrictMode has cleaned the effect up. `onChange` writes every change to `localStorage`, and the next mount passes it back as `content`. If the editor fails to start, the toolbar shows the error message. It also shows errors the editor reports through `onError`, such as saved blocks it can't read from `localStorage`, and a failed export; the next export clears them.
+
+`src/email-editor.tsx`
+
+```tsx
+import { useEffect, useRef, useState } from "react";
+import {
+  createLocalStorageSavedBlocksProvider,
+  init,
+  type TemplaticalEditor,
+} from "@templatical/editor";
+import type { TemplateContent } from "@templatical/types";
+import "@templatical/editor/style.css";
+
+// Everything here runs in the browser: the template is kept in localStorage,
+// and saved blocks use the editor's own localStorage provider. To store them
+// on a server instead, use the fetch-based providers from any full-stack
+// example (lib/templatical/providers.ts in examples/nextjs).
+const CONTENT_KEY = "templatical-example:content";
+
+function storedContent(): TemplateContent | undefined {
+  try {
+    const raw = localStorage.getItem(CONTENT_KEY);
+    return raw ? (JSON.parse(raw) as TemplateContent) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+export function EmailEditor() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<TemplaticalEditor | null>(null);
+  const [mjml, setMjml] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
+
+    (async () => {
+      // In development, React StrictMode runs this effect, its cleanup and this
+      // effect again in one synchronous pass. Two init() calls on one
+      // container can finish in either order, and each replaces whatever the
+      // container holds when it finishes, so a cancelled run that finishes
+      // last leaves the container empty. Yielding once lets that cleanup
+      // cancel the first run before it calls init().
+      await Promise.resolve();
+      if (cancelled) return;
+      const ed = await init({
+        container,
+        content: storedContent(),
+        onChange(content) {
+          localStorage.setItem(CONTENT_KEY, JSON.stringify(content));
+        },
+        savedBlocks: createLocalStorageSavedBlocksProvider(),
+        onError: (error) => {
+          if (!cancelled) setProblem(error.message);
+        },
+      });
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
+    })().catch((error: unknown) => {
+      if (!cancelled) setProblem(messageOf(error));
+    });
+
+    return () => {
+      cancelled = true;
+      instance?.unmount();
+      editorRef.current = null;
+    };
+  }, []);
+
+  async function exportMjml() {
+    const ed = editorRef.current;
+    // No editor yet, or it failed to start: nothing to export, and a start
+    // failure keeps its alert.
+    if (!ed) return;
+    // A new export replaces an earlier failure.
+    setProblem(null);
+    try {
+      setMjml(await ed.toMjml());
+    } catch (error) {
+      setProblem(messageOf(error));
+    }
+  }
+
+  return (
+    <>
+      <div className="toolbar">
+        <button type="button" data-testid="export-mjml" onClick={exportMjml}>
+          Export MJML
+        </button>
+        {problem && <span role="alert">{problem}</span>}
+      </div>
+      <div className="workspace">
+        <div ref={containerRef} className="editor" />
+        {mjml && (
+          <pre data-testid="export-output" className="output">
+            {mjml}
+          </pre>
+        )}
+      </div>
+    </>
+  );
+}
+```
+
+## The providers {#providers}
+
+This example passes `savedBlocks`, from `createLocalStorageSavedBlocksProvider()`. To keep templates and saved blocks on a server, pass the `fetch`-based providers from the [Next.js example](/frameworks/nextjs#providers) and implement the routes they call, in any language.
+
+## Moving to production
+
+- Pass a `templates` provider so templates live on your server instead of in one browser's `localStorage`.
+- Replace `createLocalStorageSavedBlocksProvider()` with a provider backed by your server, so saved blocks follow the user across browsers.
+- Compile `editor.toMjml()`'s output to HTML on your server with the `mjml` package, or pass a `render` provider so `editor.toHtml()` calls your server. [Rendering & Export](/backend/render) covers both.
+
+---
+
+# SvelteKit
+
+Source: https://docs.templatical.com/frameworks/sveltekit
+
+[`examples/sveltekit`](https://github.com/templatical/sdk/tree/main/examples/sveltekit) is a SvelteKit 3 app (Svelte 5, adapter-node) that embeds the editor and backs it with its own `+server.ts` routes. SvelteKit 3 reads its configuration from `vite.config.ts`, and the example imports from `src/lib` through the `#lib/*` subpath import that `package.json` declares. It stores templates and saved blocks as JSON files under `./data`, renders HTML export and test emails on the server with `@templatical/renderer` and `mjml`, and writes each test email to `./data/outbox` instead of sending it. CI builds the app and runs it in a browser against every change to the SDK.
+
+## Running the example
+
+[Open in StackBlitz](https://stackblitz.com/github/templatical/sdk/tree/main/examples/sveltekit)
+
+Or copy it into a new directory:
+
+```bash
+npx degit templatical/sdk/examples/sveltekit my-app
+cd my-app
+npm install
+npm run dev
+```
+
+## The editor component
+
+The component mounts the editor in `onMount` and returns the cleanup that unmounts it, including an editor that finishes loading after the component has gone. It imports `init()` inside `onMount`, so the editor never runs on the server. Without `?id=` in the URL, it creates a template and writes the new id into the URL with SvelteKit's `goto`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The restart link carries `data-sveltekit-reload`, which makes it a full page load, so the component mounts again and creates a template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
+
+`src/lib/EmailEditor.svelte`
+
+```svelte
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import type { TemplaticalEditor } from "@templatical/editor";
+  import "@templatical/editor/style.css";
+  import {
+    renderProvider,
+    savedBlocksProvider,
+    templatesProvider,
+    testEmailProvider,
+  } from "#lib/templatical/providers.ts";
+
+  type Problem = { message: string; offerRestart: boolean };
+
+  // Every message ends as a sentence: the providers' fallback, such as
+  // "GET /api/templates/… failed (500)", has no full stop and would run into the
+  // restart link.
+  const messageOf = (error: unknown) => {
+    const text = (error instanceof Error ? error.message : String(error)).trim();
+    return /[.!?]$/.test(text) ? text : `${text}.`;
+  };
+
+  let container: HTMLDivElement;
+  let editor: TemplaticalEditor | null = null;
+  let problem = $state<Problem | null>(null);
+
+  onMount(() => {
+    let cancelled = false;
+
+    (async () => {
+      // Imported here, not at the top: the editor runs only in the browser.
+      const { init } = await import("@templatical/editor");
+      if (cancelled) return;
+      const instance = await init({
+        container,
+        templates: templatesProvider,
+        savedBlocks: savedBlocksProvider,
+        testEmail: testEmailProvider,
+        render: renderProvider,
+        onError: (error) => {
+          if (!cancelled) problem = { message: messageOf(error), offerRestart: false };
+        },
+      });
+      if (cancelled) {
+        instance.unmount();
+        return;
+      }
+      editor = instance;
+
+      // ?id= picks the template; without one, create a template and put its
+      // id in the URL so a reload reopens the same template.
+      const id = new URLSearchParams(window.location.search).get("id");
+      if (id) {
+        await instance.load(id);
+      } else {
+        const template = await instance.create({ name: "Untitled" });
+        if (!cancelled) await goto(`?id=${template.id}`, { replace: true, shallow: true });
+      }
+    })().catch((error: unknown) => {
+      // The providers throw the server's own message, such as "Template not found."
+      if (!cancelled) problem = { message: messageOf(error), offerRestart: true };
+    });
+
+    return () => {
+      cancelled = true;
+      editor?.unmount();
+      editor = null;
+    };
+  });
+
+  async function exportHtml() {
+    // A new export replaces an earlier failure. A failed load keeps its message
+    // and restart link: the template it names never opened.
+    if (!problem?.offerRestart) problem = null;
+    // Opened inside the click, so a popup blocker allows it, and filled once
+    // the HTML is ready.
+    const tab = window.open("", "_blank");
+    if (!tab) {
+      problem = { message: "Allow pop-ups for this page to see the export.", offerRestart: false };
+      return;
+    }
+    try {
+      const html = await editor?.toHtml();
+      if (!html) {
+        tab.close();
+        return;
+      }
+      // The HTML renders in a sandboxed frame: HTML blocks and rich text are
+      // author content, and in this tab they would run with the app's origin.
+      const frame = tab.document.createElement("iframe");
+      frame.setAttribute("sandbox", "");
+      frame.srcdoc = html;
+      frame.style.cssText = "border: 0; width: 100%; height: 100%";
+      tab.document.documentElement.style.height = "100%";
+      tab.document.body.style.cssText = "margin: 0; height: 100%";
+      tab.document.body.append(frame);
+    } catch (error) {
+      tab.close();
+      problem = { message: messageOf(error), offerRestart: false };
+    }
+  }
+</script>
+
+<div class="toolbar">
+  <button type="button" data-testid="export-html" onclick={exportHtml}>Export HTML</button>
+  {#if problem}
+    <!-- data-sveltekit-reload makes the restart a full page load: a client-side navigation to "/" keeps this component mounted, so onMount would not run and no template would be created. -->
+    <span role="alert">
+      {problem.message}
+      {#if problem.offerRestart}<a href="/" data-sveltekit-reload>Start a new template</a>.{/if}
+    </span>
+  {/if}
+</div>
+<div bind:this={container} class="editor"></div>
+```
+
+## The providers {#providers}
+
+The editor reaches the backend only through these objects. Each method is one `fetch` to a route below. The file is the same in the Next.js, Nuxt, SvelteKit and React Router examples.
+
+`src/lib/templatical/providers.ts`
+
+```ts
+// The editor reaches the backend only through these four objects. Each method
+// is one fetch to an /api route of this app; point them at any backend that
+// implements the same routes, in any language.
+import type {
+  RenderProvider,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
+  TemplatesProvider,
+  TestEmailProvider,
+} from "@templatical/types";
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method,
+    // Every write declares JSON, the bodyless DELETE included: a framework's
+    // CSRF check (SvelteKit's, for one) treats a write without a content type
+    // as a form post and can reject it as cross-site.
+    headers: method === "GET" ? undefined : { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(error?.message ?? `${method} ${path} failed (${response.status})`);
+  }
+  return (response.status === 204 ? undefined : await response.json()) as T;
+}
+
+function listQuery(params: SavedBlocksListParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.category) query.set("category", params.category);
+  const text = query.toString();
+  return text ? `?${text}` : "";
+}
+
+export const templatesProvider: TemplatesProvider = {
+  load: (id) => request("GET", `/api/templates/${encodeURIComponent(id)}`),
+  create: (input) => request("POST", "/api/templates", input),
+  save: (id, patch) => request("PATCH", `/api/templates/${encodeURIComponent(id)}`, patch),
+  autoSave: true,
+};
+
+export const savedBlocksProvider: SavedBlocksProvider = {
+  list: (params) => request("GET", `/api/saved-blocks${listQuery(params)}`),
+  create: (input) => request("POST", "/api/saved-blocks", input),
+  update: (id, patch) => request("PATCH", `/api/saved-blocks/${encodeURIComponent(id)}`, patch),
+  delete: (id) => request("DELETE", `/api/saved-blocks/${encodeURIComponent(id)}`),
+};
+
+export const testEmailProvider: TestEmailProvider = {
+  defaultRecipient: "you@example.com",
+  send: ({ recipient, content }) => request("POST", "/api/test-email", { recipient, content }),
+};
+
+export const renderProvider: RenderProvider = {
+  toMjml: async ({ content }) =>
+    (await request<{ mjml: string }>("POST", "/api/render", { content })).mjml,
+  toHtml: async ({ content }) =>
+    (await request<{ html: string }>("POST", "/api/render", { content })).html,
+};
+```
+
+## The server routes
+
+Each `+server.ts` file exports one handler per HTTP method. Each handler validates its input, calls the store or the renderer, and answers with JSON or an empty 204. A rejected request gets a 4xx status and `{ message }`, which the editor reports. The handlers read request bodies with `readJson`, which answers a body over adapter-node's `BODY_SIZE_LIMIT` with a 413 that names the setting.
+
+`src/lib/server/read-json.ts`
+
+```ts
+import { error } from "@sveltejs/kit";
+
+/**
+ * The request body as JSON, or null when it is not JSON. adapter-node fails the
+ * read of a body larger than BODY_SIZE_LIMIT (512K by default), and that
+ * answers 413 with a message naming the setting, not a 400 blaming the body.
+ */
+export async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch (cause) {
+    if (typeof cause === "object" && cause !== null && "status" in cause && cause.status === 413) {
+      error(413, "The request body is larger than BODY_SIZE_LIMIT allows (512K by default).");
+    }
+    return null;
+  }
+}
+```
+
+`src/routes/api/templates/+server.ts`
+
+```ts
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { createTemplate, templateInputError, type TemplateInput } from "#lib/server/templatical/store.ts";
+
+export const POST: RequestHandler = async ({ request }) => {
+  const body: unknown = await readJson(request);
+  const problem = templateInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createTemplate(body as TemplateInput), { status: 201 });
+};
+```
+
+`src/routes/api/templates/[id]/+server.ts`
+
+```ts
+import type { TemplatePatch } from "@templatical/types";
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { getTemplate, templateInputError, updateTemplate } from "#lib/server/templatical/store.ts";
+
+const notFound = () => Response.json({ message: "Template not found." }, { status: 404 });
+
+export const GET: RequestHandler = async ({ params }) => {
+  const template = await getTemplate(params.id);
+  return template ? Response.json(template) : notFound();
+};
+
+export const PATCH: RequestHandler = async ({ params, request }) => {
+  const body: unknown = await readJson(request);
+  const problem = templateInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const template = await updateTemplate(params.id, body as TemplatePatch);
+  return template ? Response.json(template) : notFound();
+};
+```
+
+`src/routes/api/saved-blocks/+server.ts`
+
+```ts
+import type { SavedBlockInput } from "@templatical/types";
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { createSavedBlock, listSavedBlocks, savedBlockInputError } from "#lib/server/templatical/store.ts";
+
+export const GET: RequestHandler = async ({ url }) =>
+  Response.json(
+    await listSavedBlocks({
+      search: url.searchParams.get("search") ?? undefined,
+      category: url.searchParams.get("category") ?? undefined,
+    }),
+  );
+
+export const POST: RequestHandler = async ({ request }) => {
+  const body: unknown = await readJson(request);
+  const problem = savedBlockInputError(body, false);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  return Response.json(await createSavedBlock(body as SavedBlockInput), { status: 201 });
+};
+```
+
+`src/routes/api/saved-blocks/[id]/+server.ts`
+
+```ts
+import type { SavedBlockPatch } from "@templatical/types";
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { deleteSavedBlock, savedBlockInputError, updateSavedBlock } from "#lib/server/templatical/store.ts";
+
+const notFound = () => Response.json({ message: "Saved block not found." }, { status: 404 });
+
+export const PATCH: RequestHandler = async ({ params, request }) => {
+  const body: unknown = await readJson(request);
+  const problem = savedBlockInputError(body, true);
+  if (problem) return Response.json({ message: problem }, { status: 400 });
+  const block = await updateSavedBlock(params.id, body as SavedBlockPatch);
+  return block ? Response.json(block) : notFound();
+};
+
+export const DELETE: RequestHandler = async ({ params }) =>
+  (await deleteSavedBlock(params.id)) ? new Response(null, { status: 204 }) : notFound();
+```
+
+`src/routes/api/render/+server.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { renderTemplate } from "#lib/server/templatical/render.ts";
+
+export const POST: RequestHandler = async ({ request }) => {
+  const body = (await readJson(request)) as { content?: unknown } | null;
+  if (!isRenderableTemplateContent(body?.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  return Response.json(await renderTemplate(body.content));
+};
+```
+
+`src/routes/api/test-email/+server.ts`
+
+```ts
+import { isRenderableTemplateContent } from "@templatical/types";
+import type { RequestHandler } from "./$types";
+import { readJson } from "#lib/server/read-json.ts";
+import { deliver, isEmailAddress } from "#lib/server/templatical/outbox.ts";
+import { renderTemplate } from "#lib/server/templatical/render.ts";
+
+export const POST: RequestHandler = async ({ request }) => {
+  const body = (await readJson(request)) as { recipient?: unknown; content?: unknown } | null;
+  if (!isEmailAddress(body?.recipient)) {
+    return Response.json({ message: "Enter a valid email address." }, { status: 400 });
+  }
+  if (!isRenderableTemplateContent(body.content)) {
+    return Response.json({ message: "`content` must be a template with a `blocks` array." }, { status: 400 });
+  }
+  const { html } = await renderTemplate(body.content);
+  await deliver({ to: body.recipient, subject: "Test email", html });
+  return new Response(null, { status: 204 });
+};
+```
+
+The render and test-email routes compile the template with `renderTemplate()` from `src/lib/server/templatical/render.ts`:
+
+```ts
+// Compiles a template to email HTML on the server: the renderer turns the
+// editor's JSON into MJML, and the mjml package turns MJML into HTML.
+import mjml2html from "mjml";
+import { renderToMjml } from "@templatical/renderer";
+import type { TemplateContent } from "@templatical/types";
+
+export async function renderTemplate(content: TemplateContent): Promise<{ mjml: string; html: string }> {
+  const mjml = await renderToMjml(content);
+  const { html } = await mjml2html(mjml);
+  return { mjml, html };
+}
+```
+
+## Moving to production
+
+- Replace the function bodies in [`src/lib/server/templatical/store.ts`](https://github.com/templatical/sdk/blob/main/examples/sveltekit/src/lib/server/templatical/store.ts) with calls to your database. Every route that loads or saves templates or saved blocks goes through them.
+- Replace `deliver()` in [`src/lib/server/templatical/outbox.ts`](https://github.com/templatical/sdk/blob/main/examples/sveltekit/src/lib/server/templatical/outbox.ts) with your email provider. It receives the recipient, the subject and the finished HTML.
+- Add authentication to the `+server.ts` routes. They are open in this example.
+- Keep the `content-type: application/json` header that `providers.ts` sends on every write. SvelteKit rejects a write with no content type as a cross-site form post when the browser's origin differs from the one adapter-node assumes, which is `https://` unless `PROTOCOL_HEADER` is set.
+- Sanitize HTML blocks on the server before you store or send them, or pass `allowHtmlBlocks: false` to `renderToMjml` in `render.ts`: the editor keeps author HTML as written.
+- adapter-node rejects request bodies over 512 KB by default. Set `BODY_SIZE_LIMIT` (for example `BODY_SIZE_LIMIT=10M`) if your templates are larger.
+
+[Connect your backend](/backend/) covers the providers this example leaves out: version history, comments and media.
+
+---
+
 # Author features
 
 Source: https://docs.templatical.com/getting-started/author-features
@@ -4353,6 +6082,8 @@ If the effect re-runs before `init()` resolves — React StrictMode does this in
 ::: warning Important
 Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
 :::
+
+Runnable example apps, tested in CI against every SDK change: [React (Vite)](/frameworks/react), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt) and [SvelteKit](/frameworks/sveltekit).
 
 ## TypeScript support
 

@@ -5,13 +5,10 @@ import { skillMarkdownFiles } from "../scripts/sync-pins.mjs";
 
 // This package owns both the CLI's own version and the script that syncs it
 // everywhere the pin shows up (scripts/sync-pins.mjs), so the test proving
-// every pin is correct lives here — apps/docs is a rendered site with no
-// version of its own to check against. Covers job 3 (both docs-site
-// locales); job 2 (every markdown file under skills/templatical/, including
-// SKILL.md itself) has its own guard below, since the router's pin doesn't
-// live in one file.
+// every pin is correct lives here. Covers job 2: every markdown file under
+// skills/templatical/, SKILL.md included. Job 3's guard, the examples'
+// @templatical ranges, is tests/examples-pin.test.ts.
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-
 
 // The router's pin no longer lives in one file — it's restated identically
 // across every markdown file under the skill that documents a command,
@@ -26,7 +23,10 @@ const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 describe("CLI pin across the skill's island tree", () => {
   it("names no template-tools version outside an npx invocation", () => {
     const version = JSON.parse(
-      readFileSync(resolve(REPO_ROOT, "packages/template-tools/package.json"), "utf8"),
+      readFileSync(
+        resolve(REPO_ROOT, "packages/template-tools/package.json"),
+        "utf8",
+      ),
     ).version;
     const offenders: string[] = [];
     for (const label of skillMarkdownFiles()) {
@@ -47,16 +47,25 @@ describe("CLI pin across the skill's island tree", () => {
 
   it("pins every markdown file under the skill identically to the package's own version", () => {
     const version = JSON.parse(
-      readFileSync(resolve(REPO_ROOT, "packages/template-tools/package.json"), "utf8"),
-    ).version;
-    const found = skillMarkdownFiles().flatMap((label) => [
-      ...readFileSync(resolve(REPO_ROOT, label), "utf8").matchAll(
-        /npx -y @templatical\/template-tools@(\S+)/g,
+      readFileSync(
+        resolve(REPO_ROOT, "packages/template-tools/package.json"),
+        "utf8",
       ),
-    ].map(([, v]) => ({ file: label, version: v })));
+    ).version;
+    const found = skillMarkdownFiles().flatMap((label) =>
+      [
+        ...readFileSync(resolve(REPO_ROOT, label), "utf8").matchAll(
+          /npx -y @templatical\/template-tools@(\S+)/g,
+        ),
+      ].map(([, v]) => ({ file: label, version: v })),
+    );
 
-    expect(found.length, "no file documents a CLI invocation").toBeGreaterThan(0);
+    expect(found.length, "no file documents a CLI invocation").toBeGreaterThan(
+      0,
+    );
     const wrong = found.filter((m) => m.version !== version);
-    expect(wrong, `files pinned to something other than ${version}`).toEqual([]);
+    expect(wrong, `files pinned to something other than ${version}`).toEqual(
+      [],
+    );
   });
 });

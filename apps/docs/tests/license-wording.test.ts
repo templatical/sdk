@@ -74,6 +74,10 @@ const COPY = [
   ...readdirSync(join(REPO, "packages"))
     .map((dir) => `packages/${dir}/README.md`)
     .filter((path) => existsSync(join(REPO, path))),
+  "examples/README.md",
+  ...readdirSync(join(REPO, "examples"))
+    .map((dir) => `examples/${dir}/README.md`)
+    .filter((path) => existsSync(join(REPO, path))),
   ...skillPages(),
   "apps/playground/src/i18n/en.ts",
   "apps/playground/src/i18n/de.ts",
@@ -85,6 +89,8 @@ describe("licence wording in user-facing copy", () => {
     expect(COPY).toContain("CONTRIBUTING.md");
     expect(COPY).toContain("skills/templatical/SKILL.md");
     expect(COPY).toContain("skills/templatical/reference/failure-modes.md");
+    expect(COPY).toContain("examples/README.md");
+    expect(COPY).toContain("examples/nextjs/README.md");
     expect(COPY.filter((path) => path.includes("node_modules"))).toEqual([]);
   });
 

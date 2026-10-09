@@ -324,6 +324,8 @@ Wenn der Effect erneut läuft, bevor `init()` auflöst — React StrictMode mach
 Rufen Sie immer `unmount()` auf, wenn Sie den Editor von der Seite entfernen. Dadurch werden Event-Listener, Timer und DOM-Elemente aufgeräumt. Dies ist besonders wichtig in Single-Page-Anwendungen, bei denen Komponenten während der Navigation ein- und ausgebunden werden.
 :::
 
+Lauffähige Beispiel-Apps, in CI bei jeder SDK-Änderung getestet: [React (Vite)](/de/frameworks/react), [Next.js](/de/frameworks/nextjs), [React Router](/de/frameworks/react-router), [Nuxt](/de/frameworks/nuxt) und [SvelteKit](/de/frameworks/sveltekit).
+
 ## TypeScript-Unterstützung
 
 Alle Pakete werden mit vollständigen TypeScript-Typdefinitionen ausgeliefert. Konfigurationsoptionen, Callback-Payloads, Blocktypen und Instanzmethoden sind vollständig typisiert:

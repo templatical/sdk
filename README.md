@@ -154,6 +154,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 ## Documentation
 
 - [Getting Started](https://docs.templatical.com/getting-started/quick-start) — install, mount, render
+- [Framework examples](https://docs.templatical.com/frameworks/nextjs) — runnable Next.js, Nuxt, SvelteKit, React Router and React (Vite) apps from [`examples/`](examples/), each tested in CI
 - [Block Reference](https://docs.templatical.com/guide/blocks) — every built-in block
 - [Theming](https://docs.templatical.com/guide/theming) — design tokens, dark mode, custom fonts
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks) — extend with your own

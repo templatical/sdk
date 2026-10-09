@@ -1,0 +1,26 @@
+{
+  "name": "templatical-example-nuxt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@templatical/editor": "^0.44.0",
+    "@templatical/renderer": "^0.44.0",
+    "@templatical/types": "^0.44.0",
+    "mjml": "^5.4.0",
+    "nuxt": "^4.6.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/mjml": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.0",
+    "vue-tsc": "^3.3.0"
+  }
+}
