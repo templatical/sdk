@@ -9,7 +9,7 @@ The visual editor for [Templatical](https://github.com/templatical/sdk) — a so
 
 - 🧩 **14 block types** — title, paragraph, image, button, section, divider, spacer, social icons, menu, table, HTML, video, countdown, custom
 - 🛡 **Shadow DOM isolated** — mounts inside an open shadow root by default so host page CSS cannot bleed in
-- 🎨 **27 design tokens** — full theming via `--tpl-user-*` CSS variables, dark mode, custom fonts
+- 🎨 **Full theming via design tokens** — `--tpl-user-*` CSS variables, dark mode, custom fonts
 - 🔌 **Framework-agnostic** — works in React, Vue, Svelte, Angular, vanilla
 - 📦 **JSON in, MJML out** — portable templates, render with any email provider
 - 🌍 **Multilingual** — English, German, Portuguese, Spanish, Catalan, French, Dutch & Japanese built in

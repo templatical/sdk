@@ -465,7 +465,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 v-for="n in 3"
                 :key="n"
                 aria-hidden="true"
-                class="tpl-saved-block-skeleton tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)]"
+                class="tpl-saved-block-skeleton tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)]"
               >
                 <div
                   class="tpl:h-3 tpl:w-1/2 tpl:rounded tpl:bg-[var(--tpl-bg-hover)]"
@@ -485,7 +485,7 @@ function handleKeydown(event: KeyboardEvent): void {
                      the name and category inputs. -->
                 <div
                   v-if="renamingId === item.id"
-                  class="tpl:flex tpl:w-full tpl:flex-col tpl:gap-1 tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
+                  class="tpl:flex tpl:w-full tpl:flex-col tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
                   style="background-color: var(--tpl-primary-light)"
                   @focusout="onEditFocusOut($event, item.id)"
                 >
@@ -522,7 +522,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 <div
                   v-else
                   data-testid="saved-block-card"
-                  class="tpl:group/card tpl:relative tpl:w-full tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:bg-transparent tpl:px-3 tpl:py-2 tpl:text-left tpl:transition-all tpl:duration-[120ms]"
+                  class="tpl:group/card tpl:relative tpl:w-full tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:bg-transparent tpl:px-3 tpl:py-2 tpl:text-left tpl:transition-all tpl:duration-[120ms]"
                   :style="{
                     borderColor:
                       selectedId === item.id
@@ -782,7 +782,8 @@ function handleKeydown(event: KeyboardEvent): void {
    the whole entry. So the button paints the ring on an overlay spanning the
    card instead of on itself: the card is `relative`, and `inset: -1px` reaches
    out over its 1px border. `pointer-events: none` keeps the overlay from taking
-   clicks meant for the actions under it. */
+   clicks meant for the actions under it. Its radius is the card's
+   `--tpl-radius-sm`, so the ring follows the card's corners. */
 .tpl-saved-block-select:focus-visible {
   box-shadow: none;
 }
@@ -791,7 +792,7 @@ function handleKeydown(event: KeyboardEvent): void {
   content: "";
   position: absolute;
   inset: -1px;
-  border-radius: var(--tpl-radius-md);
+  border-radius: var(--tpl-radius-sm);
   box-shadow: var(--tpl-ring);
   pointer-events: none;
 }
