@@ -610,7 +610,7 @@ const heading = createTitleBlock({
 // Create any block by type string
 const block = createBlock('button');
 
-// Deep clone with new ID
+// Deep clone with new IDs, nested rows, items and icons included
 const copy = cloneBlock(existingBlock);
 
 // Empty template

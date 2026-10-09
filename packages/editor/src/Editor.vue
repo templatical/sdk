@@ -9,7 +9,8 @@ import {
 } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
-import type { TemplateContent, UiTheme } from "@templatical/types";
+import type { Block, TemplateContent, UiTheme } from "@templatical/types";
+import { cloneBlock } from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
@@ -21,9 +22,11 @@ import { useTemplatesFeature } from "./composables/useTemplatesFeature";
 import { useTestEmailFeature } from "./composables/useTestEmailFeature";
 import { useVersionHistoryFeature } from "./composables/useVersionHistoryFeature";
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
+import { useScrollToBlock } from "./composables/useScrollToBlock";
 import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
+import { insertBlockAtSelection } from "./utils/insertBlockAtSelection";
 import { logger } from "./utils/logger";
 import {
   withNormalizedContentWrites,
@@ -492,9 +495,21 @@ onUnmounted(() => {
 // straight from core, whose own methods reject with the actionable error.
 const templateLifecycle = templates ?? editor;
 
+const scrollToBlock = useScrollToBlock(core.editorRoot);
+
 defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
+  insertBlock: (block: Block): string | null => {
+    // The palette is hidden in preview mode, and preview has no selection.
+    if (editor.state.previewMode) return null;
+    // A copy with fresh ids throughout, so inserting the same library item
+    // twice never puts two blocks, rows or items on the canvas with one id.
+    const copy = cloneBlock(block);
+    if (!insertBlockAtSelection(editor, copy)) return null;
+    scrollToBlock(copy.id);
+    return copy.id;
+  },
   setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
   setMergeTags: core.setMergeTags,
   isDirty: () => editor.state.isDirty,

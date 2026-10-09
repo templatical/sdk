@@ -16,10 +16,13 @@ import { useEditorRoot } from "./useEditorRoot";
  * Scrolling is deferred one tick so a block inserted in the same call has
  * rendered by the time it is looked up. `block: "nearest"` leaves an
  * already-visible block alone instead of yanking it to the top.
+ *
+ * `Editor.vue` passes `root` itself: it is the component that provides
+ * `EDITOR_ROOT_KEY`, and a component never sees its own provides.
  */
-export function useScrollToBlock(): (blockId: string) => void {
-  const root = useEditorRoot();
-
+export function useScrollToBlock(
+  root: Document | ShadowRoot = useEditorRoot(),
+): (blockId: string) => void {
   return (blockId: string) => {
     void nextTick(() => {
       const target = root.querySelector(`[data-block-id="${blockId}"]`);

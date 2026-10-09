@@ -216,6 +216,26 @@ import { createDefaultTemplateContent } from "@templatical/types";
 editor.setContent(createDefaultTemplateContent());
 ```
 
+### `insertBlock(block)`
+
+Inserts a block where a click on a palette item would put it: below the selected block, in the same column when the selection is inside a section (a section lands after that section instead), or at the end when nothing is selected. The new block is selected and scrolled into view, so the next call inserts below it. Use it to insert from your own UI, such as a library of ready-made sections.
+
+```ts
+import { createParagraphBlock } from "@templatical/types";
+
+insertButton.addEventListener("click", () => {
+  editor.insertBlock(
+    createParagraphBlock({ content: "<p>Thanks for reading!</p>" }),
+  );
+});
+```
+
+**Parameter:** `block: Block`
+
+**Returns:** `string | null`, the inserted block's id, or `null` before the editor has mounted, in preview mode, or when the block cannot be placed.
+
+The editor inserts a copy with fresh ids, section children included, so the same block can be inserted any number of times. Look the block up by the returned id, not by `block.id`. Bare merge tags in its text are converted the same way `setContent` converts them. A slot or wrapper block throws, as it does in `setContent`.
+
 ### `setTheme(theme)`
 
 Switches the UI color scheme at runtime without re-initializing the editor.
@@ -1733,7 +1753,7 @@ const heading = createTitleBlock({
 // Create any block by type string
 const block = createBlock('button');
 
-// Deep clone with new ID
+// Deep clone with new IDs, nested rows, items and icons included
 const copy = cloneBlock(existingBlock);
 
 // Empty template

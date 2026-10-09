@@ -315,6 +315,18 @@ export function normalizeContentForConfig(
   );
 }
 
+/** {@link normalizeContentForConfig} for a single block. */
+export function normalizeBlockForConfig(
+  block: Block,
+  mergeTags: MergeTagsConfig | undefined,
+): Block {
+  return normalizeBlock(
+    block,
+    mergeTags?.tags ?? [],
+    resolveSyntax(mergeTags?.syntax),
+  );
+}
+
 /**
  * A non-object passes through: `normalizeMergeTagMarkup` already hands back
  * whatever is not shaped like content, and `safeClone(undefined)` would throw.

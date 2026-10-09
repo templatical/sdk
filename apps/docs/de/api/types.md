@@ -610,7 +610,7 @@ const heading = createTitleBlock({
 // Beliebigen Block per Typ-String erstellen
 const block = createBlock('button');
 
-// Deep Clone mit neuer ID
+// Deep Clone mit neuen IDs, auch für verschachtelte Zeilen, Einträge und Icons
 const copy = cloneBlock(existingBlock);
 
 // Leeres Template

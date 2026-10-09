@@ -334,6 +334,21 @@ export function cloneBlock(block: Block): Block {
   const cloned = JSON.parse(JSON.stringify(block)) as Block;
   cloned.id = generateId();
 
+  if (cloned.type === "table") {
+    for (const row of cloned.rows) {
+      row.id = generateId();
+      for (const cell of row.cells) cell.id = generateId();
+    }
+  }
+
+  if (cloned.type === "menu") {
+    for (const item of cloned.items) item.id = generateId();
+  }
+
+  if (cloned.type === "social") {
+    for (const icon of cloned.icons) icon.id = generateId();
+  }
+
   if (cloned.type === "section") {
     cloned.children = cloned.children.map((column) =>
       column.map((child) => cloneBlock(child)),

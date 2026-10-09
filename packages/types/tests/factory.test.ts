@@ -135,7 +135,9 @@ describe("block factory functions", () => {
     expect(createSectionBlock({ stackOnMobile: false }).stackOnMobile).toBe(
       false,
     );
-    expect(createSectionBlock({ stackOnMobile: true }).stackOnMobile).toBe(true);
+    expect(createSectionBlock({ stackOnMobile: true }).stackOnMobile).toBe(
+      true,
+    );
   });
 
   it("applies a wrapper (outer frame) override on a section block", () => {
@@ -279,6 +281,56 @@ describe("cloneBlock", () => {
       expect(cloned.children[0][0].id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
       );
+    }
+  });
+
+  it("gives table rows and cells, menu items and social icons new IDs", () => {
+    const table = createTableBlock();
+    const menu = createMenuBlock({
+      items: [
+        {
+          id: "home",
+          text: "Home",
+          url: "https://example.com",
+          openInNewTab: false,
+          bold: false,
+          underline: false,
+        },
+      ],
+    });
+    const social = createSocialIconsBlock({
+      icons: [{ id: "x", platform: "twitter", url: "https://x.com" }],
+    });
+
+    const clonedTable = cloneBlock(table);
+    const clonedMenu = cloneBlock(menu);
+    const clonedSocial = cloneBlock(social);
+
+    if (
+      clonedTable.type !== "table" ||
+      clonedMenu.type !== "menu" ||
+      clonedSocial.type !== "social"
+    ) {
+      throw new Error("cloneBlock changed the block type");
+    }
+    const ids = (items: { id: string }[]) => items.map((item) => item.id);
+    const cellIds = (rows: { cells: { id: string }[] }[]) =>
+      rows.flatMap((row) => ids(row.cells));
+
+    expect(table.rows.length).toBeGreaterThan(0);
+    expect(menu.items.length).toBeGreaterThan(0);
+    expect(social.icons.length).toBeGreaterThan(0);
+    for (const id of ids(clonedTable.rows)) {
+      expect(ids(table.rows)).not.toContain(id);
+    }
+    for (const id of cellIds(clonedTable.rows)) {
+      expect(cellIds(table.rows)).not.toContain(id);
+    }
+    for (const id of ids(clonedMenu.items)) {
+      expect(ids(menu.items)).not.toContain(id);
+    }
+    for (const id of ids(clonedSocial.icons)) {
+      expect(ids(social.icons)).not.toContain(id);
     }
   });
 
@@ -775,7 +827,12 @@ describe("layout block factories", () => {
   it("createSlotBlock returns type slot with zero padding and a uuid", () => {
     const block = createSlotBlock();
     expect(block.type).toBe("slot");
-    expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(block.styles.padding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
     expect(block.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
@@ -785,7 +842,12 @@ describe("layout block factories", () => {
     const block = createWrapperBlock();
     expect(block.type).toBe("wrapper");
     expect(block.children).toEqual([]);
-    expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(block.styles.padding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
   });
 
   it("createBlock(slot) throws", () => {

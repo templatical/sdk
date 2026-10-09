@@ -3,6 +3,7 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
+  Block,
   BlockDefaults,
   ColorsConfig,
   CommentsProvider,
@@ -53,7 +54,10 @@ import { logger } from "./utils/logger";
 import { useFonts, type UseFontsReturn } from "./composables";
 import { stripStylesheetImports } from "./utils/stripStylesheetImports";
 import { toMjmlForInstance } from "./utils/toMjml";
-import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
+import {
+  normalizeBlockForConfig,
+  normalizeContentForConfig,
+} from "./utils/normalizeMergeTagMarkup";
 import {
   buildRenderPayload,
   createRenderMethods,
@@ -653,6 +657,20 @@ export type OnRequestMedia = (
 interface TemplaticalEditorBase {
   getContent(): TemplateContent;
   setContent(content: TemplateContent): void;
+  /**
+   * Insert a block where a click on a palette item would put it: below the
+   * selected block, in the same column when the selection is inside a section
+   * (a section lands after that section instead), or at the end when nothing
+   * usable is selected. The new block is selected and scrolled into view, so
+   * repeated calls stack in order.
+   *
+   * Inserts a copy with fresh ids, so the same block can be inserted twice.
+   * Bare merge tags are converted the same way `setContent` converts them.
+   * Returns the inserted copy's id, or `null` before mount, in preview mode,
+   * or when the block could not be placed. A slot or wrapper block throws, as
+   * it does in `setContent`.
+   */
+  insertBlock(block: Block): string | null;
   setTheme(theme: UiTheme): void;
   /**
    * Replace the configured merge tags after `init()`.
@@ -1186,6 +1204,19 @@ function createEditorInstance({
         editorRef.value.setContent(normalized);
       }
       config.content = normalized;
+    },
+    insertBlock(block: Block) {
+      // Before the mount and preview checks, so the mistake surfaces on every
+      // path, not only once core's `addBlock` is reached. The asserts read
+      // only `blocks`.
+      const candidate = { blocks: [block] } as TemplateContent;
+      assertNoSlotInContent(candidate);
+      assertNoWrapperInContent(candidate);
+      if (!editorRef.value) return null;
+      // Consumer content arriving in, so it is normalized like `setContent`.
+      return editorRef.value.insertBlock(
+        normalizeBlockForConfig(block, config.mergeTags),
+      );
     },
     setTheme(theme: UiTheme) {
       if (editorRef.value) {

@@ -213,6 +213,26 @@ import { createDefaultTemplateContent } from "@templatical/types";
 editor.setContent(createDefaultTemplateContent());
 ```
 
+### `insertBlock(block)`
+
+Fügt einen Block dort ein, wo ein Klick auf ein Element der Blockpalette ihn platzieren würde: unter dem ausgewählten Block, in derselben Spalte, wenn die Auswahl in einer Section liegt (eine Section landet stattdessen nach dieser Section), oder am Ende, wenn nichts ausgewählt ist. Der neue Block wird ausgewählt und in den sichtbaren Bereich gescrollt, sodass der nächste Aufruf darunter einfügt. Verwenden Sie die Methode, um aus Ihrer eigenen Oberfläche einzufügen, etwa aus einer Bibliothek fertiger Sections.
+
+```ts
+import { createParagraphBlock } from "@templatical/types";
+
+insertButton.addEventListener("click", () => {
+  editor.insertBlock(
+    createParagraphBlock({ content: "<p>Danke fürs Lesen!</p>" }),
+  );
+});
+```
+
+**Parameter:** `block: Block`
+
+**Rückgabewert:** `string | null`, die ID des eingefügten Blocks, oder `null`, wenn der Editor noch nicht gemountet ist, sich im Vorschaumodus befindet oder der Block nicht platziert werden kann.
+
+Der Editor fügt eine Kopie mit neuen IDs ein, auch für die Kinder einer Section, sodass derselbe Block beliebig oft eingefügt werden kann. Suchen Sie den Block über die zurückgegebene ID, nicht über `block.id`. Nackte Merge-Tags in seinem Text werden genauso umgewandelt wie bei `setContent`. Ein Slot- oder Wrapper-Block löst einen Fehler aus, wie bei `setContent`.
+
 ### `setTheme(theme)`
 
 Wechselt das UI-Farbschema zur Laufzeit, ohne den Editor neu zu initialisieren.
