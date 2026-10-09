@@ -468,24 +468,24 @@ onUnmounted(() => {
             <button
               type="button"
               data-testid="toolbar-share"
-              class="pg-toolbar-icon-btn"
+              class="pg-toolbar-btn pg-toolbar-btn-collapsible"
               :title="t.toolbar.share"
-              :aria-label="t.toolbar.share"
               :disabled="!editor"
               @click="shareOpen = true"
             >
               <Share2 :size="16" :stroke-width="1.5" aria-hidden="true" />
+              <span class="pg-toolbar-btn-label">{{ t.toolbar.share }}</span>
             </button>
             <button
               type="button"
               data-testid="toolbar-export"
-              class="pg-toolbar-icon-btn"
+              class="pg-toolbar-btn pg-toolbar-btn-collapsible"
               :title="t.toolbar.export"
-              :aria-label="t.toolbar.export"
               :disabled="!editor"
               @click="exportOpen = true"
             >
               <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
+              <span class="pg-toolbar-btn-label">{{ t.toolbar.export }}</span>
             </button>
             <button
               type="button"

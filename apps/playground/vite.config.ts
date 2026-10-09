@@ -3,10 +3,18 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style-css-plugin';
+import { readBuildInfo } from './scripts/build-info';
 
 const packagesDir = resolve(import.meta.dirname, '../../packages');
 
 export default defineConfig({
+    // The SDK version and commit this build runs, shown in the settings menu
+    // and the Export dialog (src/host/BuildInfo.vue).
+    define: {
+        __PG_BUILD_INFO__: JSON.stringify(
+            readBuildInfo(resolve(import.meta.dirname, '../..')),
+        ),
+    },
     plugins: [
         vue({
             template: {

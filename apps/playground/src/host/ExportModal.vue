@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
-import { LoaderCircle } from "@lucide/vue";
+import { LoaderCircle, Monitor, Smartphone } from "@lucide/vue";
 import type { TemplaticalEditor } from "@templatical/editor";
+import BuildInfo from "@/host/BuildInfo.vue";
 import { getLastMjmlWarnings } from "@/host/providers";
 import { useHostModal } from "@/host/useHostModal";
 import { usePlaygroundI18n } from "@/i18n";
@@ -17,9 +18,27 @@ const open = defineModel<boolean>("open", { required: true });
 
 const { t } = usePlaygroundI18n();
 
-type ExportTab = "mjml" | "html" | "json";
-const exportTabs: readonly ExportTab[] = ["mjml", "html", "json"] as const;
-const exportTab = ref<ExportTab>("mjml");
+type ExportTab = "preview" | "mjml" | "html" | "json";
+const exportTabs: readonly ExportTab[] = [
+  "preview",
+  "mjml",
+  "html",
+  "json",
+] as const;
+const exportTab = ref<ExportTab>("preview");
+
+// Mobile sits below MJML's 480px breakpoint, so columns stack the way they
+// do on a phone.
+const PREVIEW_WIDTHS = [
+  { value: "desktop", icon: Monitor, width: "100%" },
+  { value: "mobile", icon: Smartphone, width: "375px" },
+] as const;
+type PreviewWidth = (typeof PREVIEW_WIDTHS)[number]["value"];
+const previewWidth = ref<PreviewWidth>("desktop");
+const previewFrameWidth = computed(
+  () => PREVIEW_WIDTHS.find((w) => w.value === previewWidth.value)!.width,
+);
+
 const exportJson = ref("");
 const exportMjml = ref("");
 const exportHtml = ref("");
@@ -32,13 +51,25 @@ const { copy: copyExport, copied: exportCopied } = useClipboard({
   copiedDuring: 1500,
 });
 
+// Preview renders the HTML, so it shares the HTML tab's compile, states and
+// Copy/Download.
+const showsHtml = computed(
+  () => exportTab.value === "preview" || exportTab.value === "html",
+);
+// Pending until the compile settles, including the moment before it starts.
+const exportHtmlPending = computed(
+  () =>
+    exportHtmlLoading.value || (!exportHtml.value && !exportHtmlError.value),
+);
+
 const exportTabValue = computed<string>(() => {
-  if (exportTab.value === "html") return exportHtml.value;
+  if (showsHtml.value) return exportHtml.value;
   if (exportTab.value === "mjml") return exportMjml.value;
   return exportJson.value;
 });
 
 const exportFilename: Record<ExportTab, { name: string; mime: string }> = {
+  preview: { name: "email-template.html", mime: "text/html" },
   html: { name: "email-template.html", mime: "text/html" },
   mjml: { name: "email-template.mjml", mime: "text/plain" },
   json: { name: "email-template.json", mime: "application/json" },
@@ -80,7 +111,8 @@ function focusExportTab(delta: number): void {
 
 async function populate(): Promise<void> {
   if (!props.editor) return;
-  exportTab.value = "mjml";
+  exportTab.value = "preview";
+  previewWidth.value = "desktop";
   exportHtml.value = "";
   exportHtmlError.value = "";
   exportHtmlMjmlErrors.value = [];
@@ -93,8 +125,8 @@ watch(open, (isOpen) => {
   if (isOpen) void populate();
 });
 
-watch(exportTab, (tab) => {
-  if (tab === "html") void compileExportHtml();
+watch(showsHtml, (html) => {
+  if (html) void compileExportHtml();
 });
 
 function handleCopy(): void {
@@ -181,7 +213,7 @@ function close(): void {
             </p>
 
             <div
-              v-if="exportTab === 'html' && exportHtmlLoading"
+              v-if="showsHtml && exportHtmlPending"
               role="status"
               class="flex items-center gap-2 justify-center text-sm text-gray-500 h-[min(480px,60vh)] border border-gray-200 rounded-lg dark:text-gray-400 dark:border-gray-700"
             >
@@ -193,7 +225,7 @@ function close(): void {
             </div>
 
             <div
-              v-else-if="exportTab === 'html' && exportHtmlError"
+              v-else-if="showsHtml && exportHtmlError"
               data-testid="export-html-error"
               class="flex flex-col items-center justify-center gap-3 h-[min(480px,60vh)] border border-gray-200 rounded-lg dark:border-gray-700"
             >
@@ -214,6 +246,43 @@ function close(): void {
               </button>
             </div>
 
+            <template v-else-if="exportTab === 'preview'">
+              <fieldset class="pg-preview-widths">
+                <legend class="sr-only">
+                  {{ t.exportModal.previewWidth }}
+                </legend>
+                <label
+                  v-for="option in PREVIEW_WIDTHS"
+                  :key="option.value"
+                  class="pg-segment px-3"
+                  :data-testid="`export-preview-${option.value}`"
+                >
+                  <input
+                    v-model="previewWidth"
+                    type="radio"
+                    name="pg-preview-width"
+                    :value="option.value"
+                    class="sr-only"
+                  />
+                  <component :is="option.icon" :size="14" aria-hidden="true" />
+                  {{ t.exportModal[option.value] }}
+                </label>
+              </fieldset>
+              <div class="pg-preview-stage">
+                <!-- No allow-scripts: a template's HTML block must not run
+                     script, and the frame gets an opaque origin. Popups let
+                     a link in the email open in a new tab. -->
+                <iframe
+                  data-testid="export-preview-frame"
+                  :title="t.exportModal.previewFrame"
+                  :srcdoc="exportHtml"
+                  sandbox="allow-popups allow-popups-to-escape-sandbox"
+                  class="pg-preview-frame"
+                  :style="{ width: previewFrameWidth }"
+                />
+              </div>
+            </template>
+
             <CodeEditor
               v-else
               :model-value="exportTabValue"
@@ -222,9 +291,7 @@ function close(): void {
 
             <div
               v-if="
-                exportTab === 'html' &&
-                !exportHtmlError &&
-                exportHtmlMjmlErrors.length
+                showsHtml && !exportHtmlError && exportHtmlMjmlErrors.length
               "
               class="border border-gray-200 rounded-md p-3 dark:border-gray-700"
             >
@@ -246,6 +313,7 @@ function close(): void {
           <div
             class="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200 shrink-0 dark:border-gray-700"
           >
+            <BuildInfo class="mr-auto" />
             <button
               type="button"
               data-testid="export-copy"
