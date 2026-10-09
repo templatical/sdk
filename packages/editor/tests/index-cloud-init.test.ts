@@ -280,7 +280,9 @@ describe("initCloud — a thin wrapper over init()", () => {
     ).toBe(false);
   });
 
-  it("throws when the container selector matches nothing", async () => {
+  // The container is claimed when `initCloud()` is called, so a selector that
+  // matches nothing fails before any auth, health or plan request goes out.
+  it("throws when the container selector matches nothing, before bootstrapping", async () => {
     await expect(
       initCloudFn(
         cloudConfig(document.createElement("div"), {
@@ -288,6 +290,7 @@ describe("initCloud — a thin wrapper over init()", () => {
         }),
       ),
     ).rejects.toThrow(/Container element not found/);
+    expect(bootstrapCalls).toEqual([]);
   });
 
   it("rejects when the bootstrap fails, rather than mounting a dead editor", async () => {
