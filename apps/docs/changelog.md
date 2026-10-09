@@ -15,6 +15,24 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.44.1
+
+<time datetime="2026-10-09">2026-10-09</time>
+
+### Fixes and improvements
+
+**When `init()` or `initCloud()` is called again on a container before an earlier call on it has resolved, the later call now keeps the container, whichever call finishes first. The earlier call resolves with an editor that never mounts, and whose `unmount()` does nothing. The call that finished last used to replace the other's editor: under React StrictMode in development, the cancelled first call could finish last on a cold load, and the documented cleanup then unmounted it, leaving a blank editor. `initCloud()` now also rejects a container selector that matches nothing before it makes any request.**
+
+`@templatical/editor`
+
+**Saved-block cards no longer nest their actions inside a button**
+
+`@templatical/editor`
+
+Each entry in the saved blocks browser rendered as one `<button>` holding its own Rename, Delete and inline delete-confirm buttons. A button may not contain controls, so screen readers announced a control inside a control, the tab order read as if you stepped into the element you just landed on, and the card's accessible name absorbed its actions' names.
+
+The card is now a plain wrapper. A select button inside it carries the entry's name, block count and category, and Rename, Delete and the confirm sit beside it rather than inside it. Clicking anywhere on the card still selects it, the keyboard focus ring still surrounds the whole card, and the card looks the same as before.
+
 ## 0.44.0
 
 <time datetime="2026-10-08">2026-10-08</time>
