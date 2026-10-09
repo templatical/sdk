@@ -11,6 +11,8 @@ Der Haupteinstiegspunkt ist die `init()`-Funktion aus `@templatical/editor`.
 
 Erstellt und hängt den Editor in ein Container-Element ein. Gibt ein Promise zurück, das aufgelöst wird, sobald der Editor bereit ist.
 
+Ein Container enthält einen Editor. Ein späteres `init()` auf demselben Container ersetzt den Editor dort und behält den Container auch dann, wenn das Promise eines früheren Aufrufs noch aussteht: Dieser frühere Aufruf liefert dann einen Editor, der nie gemountet wird.
+
 ```ts
 import { init } from "@templatical/editor";
 import "@templatical/editor/style.css";
@@ -240,7 +242,7 @@ Verwenden Sie die Methode, wenn Tags erzeugt oder umbenannt werden, während der
 
 ### `unmount()`
 
-Zerstört diese Editor-Instanz und keine andere. Hat ein späteres `init()` auf demselben Container sie bereits ersetzt, bewirkt das `unmount()` der alten Instanz nichts.
+Zerstört diese Editor-Instanz und keine andere. Hat ein späteres `init()` auf demselben Container sie bereits ersetzt oder ihr Mounten verhindert, bewirkt das `unmount()` der alten Instanz nichts.
 
 ### `create(input?)` / `load(id)` / `save()`
 
