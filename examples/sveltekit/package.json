@@ -16,7 +16,7 @@
     "@templatical/editor": "^0.44.2",
     "@templatical/renderer": "^0.44.2",
     "@templatical/types": "^0.44.2",
-    "mjml": "^5.4.0"
+    "mjml": "^5.4.1"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^6.0.0",
