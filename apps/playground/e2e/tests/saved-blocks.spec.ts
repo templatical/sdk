@@ -255,21 +255,21 @@ test.describe("saved blocks", () => {
     await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
 
+    // Scoped and looked up the way an integrator's test would: the card by its
+    // text, its actions by role and exact name inside it.
+    const card = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+
     // First click arms the confirmation; only the second deletes.
-    await page
-      .locator(SELECTORS.savedBlocksBrowser)
-      .locator(SELECTORS.savedBlocksDeleteBtn)
-      .first()
-      .click();
+    await card.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
 
-    // Target the aria-label directly: the card's accessible name absorbs its
-    // child button text, so a role+name lookup would match the card too.
-    await page
-      .locator(SELECTORS.savedBlocksBrowser)
-      .locator('button[aria-label="Delete this saved block?"]')
+    await card
+      .getByRole("button", { name: "Delete this saved block?", exact: true })
       .click();
 
+    await expect(card).toHaveCount(0);
     await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(1);
     await expect
       .poll(async () => {
@@ -280,6 +280,104 @@ test.describe("saved blocks", () => {
         return stored.map((e: { id: string }) => e.id);
       })
       .toEqual(["seed-footer"]);
+  });
+
+  /**
+   * A card holds Rename, Delete and the inline confirm, so it cannot itself be
+   * a button: a button may not contain controls. A screen reader announces a
+   * control inside a control, and the button's accessible name absorbs theirs.
+   * The rule #738 applied to merge-tag fields.
+   */
+  test("a card nests no control inside another", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const card = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Hero Header",
+    });
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    await expect(card.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(1);
+    await expect(browser.locator("button button")).toHaveCount(0);
+
+    // The select button is named by the entry alone, not by its actions.
+    await expect(
+      card.getByRole("button", { name: "Hero Header 2 block(s)", exact: true }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    await card.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(
+      card.getByRole("button", {
+        name: "Delete this saved block?",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(browser.locator("button button")).toHaveCount(0);
+  });
+
+  /**
+   * The ring belongs to the entry, not to the select button inside it: that
+   * button covers only the name rows, so it paints the ring on an overlay
+   * spanning the card instead of on itself.
+   */
+  test("keyboard focus rings the whole card and Space selects it", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await scenePage.goto("saved-blocks");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    const select = page
+      .locator(SELECTORS.savedBlocksCard, { hasText: "Hero Header" })
+      .getByRole("button", { name: "Hero Header 2 block(s)", exact: true });
+
+    // Tab from the search box, so focus is keyboard focus (:focus-visible).
+    // SEEDED has no categories, so no filter sits between it and the card.
+    await browser.locator('input[type="text"]').focus();
+    await page.keyboard.press("Tab");
+    await expect(select).toBeFocused();
+
+    const ring = await select.evaluate((el) => {
+      const overlay = getComputedStyle(el, "::after");
+      const card = el.closest(
+        '[data-testid="saved-block-card"]',
+      ) as HTMLElement;
+      return {
+        own: getComputedStyle(el).boxShadow,
+        overlay: overlay.boxShadow,
+        top: overlay.top,
+        left: overlay.left,
+        width: Math.round(parseFloat(overlay.width)),
+        height: Math.round(parseFloat(overlay.height)),
+        cardWidth: card.offsetWidth,
+        cardHeight: card.offsetHeight,
+      };
+    });
+    // One ring, not two: the button's own is suppressed.
+    expect(ring.own).toBe("none");
+    expect(ring.overlay).toContain("0px 0px 0px 3px");
+    // The overlay spans the card's border box: its padding box, out by the
+    // 1px border on each side.
+    expect(ring.top).toBe("-1px");
+    expect(ring.left).toBe("-1px");
+    expect(ring.width).toBe(ring.cardWidth);
+    expect(ring.height).toBe(ring.cardHeight);
+
+    await page.keyboard.press("Space");
+    await expect(select).toHaveAttribute("aria-pressed", "true");
   });
 });
 
