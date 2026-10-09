@@ -64,7 +64,7 @@ test.describe("Host header", () => {
     await expect(page.locator(SELECTORS.hostSettingsPanel)).toHaveCount(0);
   });
 
-  test("Code is the one filled action; Share and Export are named icons", async ({
+  test("Code is the one filled action; Share and Export are labelled", async ({
     scenePage,
     editorPage,
     page,
@@ -77,13 +77,37 @@ test.describe("Host header", () => {
 
     await expect(code).toHaveText("Code");
     for (const name of ["Share", "Export"]) {
-      await expect(header.getByRole("button", { name })).toHaveText("");
+      await expect(header.getByRole("button", { name })).toHaveText(name);
     }
     const background = (el: Element) => getComputedStyle(el).backgroundColor;
     expect(await code.evaluate(background)).not.toBe(
       await exportButton.evaluate(background),
     );
   });
+
+  // Below lg the labels would push the scene title out of the header.
+  for (const [selector, name] of [
+    [SELECTORS.shareButton, "Share"],
+    [SELECTORS.exportButton, "Export"],
+  ] as const) {
+    test(`${name} collapses to a named icon below 1024px`, async ({
+      scenePage,
+      editorPage,
+      page,
+    }) => {
+      await scenePage.goto("fonts");
+      await editorPage.waitForReady();
+      const button = page.locator(selector);
+      const width = async () => (await button.boundingBox())?.width;
+
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await expect.poll(width).toBeGreaterThan(60);
+
+      await page.setViewportSize({ width: 900, height: 720 });
+      await expect.poll(width).toBe(32);
+      await expect(button).toHaveAccessibleName(name);
+    });
+  }
 
   test("the scene header draws no sun, so the editor's dark preview is the only one", async ({
     scenePage,

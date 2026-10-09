@@ -8,10 +8,11 @@ test.describe("Playground modals", () => {
     await editorPage.closeCodeDrawer();
   });
 
-  test("export modal shows MJML on open", async ({ editorPage, page }) => {
+  test("export modal shows MJML on its tab", async ({ editorPage, page }) => {
     await editorPage.openExport();
     const modal = page.locator(SELECTORS.exportModal);
     await expect(modal).toBeVisible();
+    await page.locator(SELECTORS.exportTabMjml).click();
     const cmEditor = modal.locator(".cm-editor");
     await expect(cmEditor).toBeVisible();
     const text = await cmEditor.innerText();

@@ -8,13 +8,13 @@ test.describe("Playground export", () => {
     await editorPage.closeCodeDrawer();
   });
 
-  test("export modal opens with MJML as default tab", async ({
+  test("export modal opens with Preview as default tab", async ({
     editorPage,
     page,
   }) => {
     await editorPage.openExport();
     await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
-    await expect(page.locator(SELECTORS.exportTabMjml)).toHaveAttribute(
+    await expect(page.locator(SELECTORS.exportTabPreview)).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -29,7 +29,7 @@ test.describe("Playground export", () => {
 
   test("MJML tab shows compiled MJML source", async ({ editorPage, page }) => {
     await editorPage.openExport();
-    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
+    await page.locator(SELECTORS.exportTabMjml).click();
     const content = await page.locator(".cm-content").first().textContent();
     expect(content).toContain("<mjml");
   });
@@ -63,6 +63,7 @@ test.describe("Playground export", () => {
     page,
   }) => {
     await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabMjml).click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.locator(SELECTORS.exportDownloadBtn).click(),
