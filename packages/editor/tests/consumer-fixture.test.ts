@@ -41,6 +41,16 @@ const fixtureNames = () =>
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
 
+const EXAMPLES_DIR = join(REPO_ROOT, "examples");
+
+const readExample = (name: string): Manifest =>
+  JSON.parse(readFileSync(join(EXAMPLES_DIR, name, "package.json"), "utf8"));
+
+const exampleNames = () =>
+  readdirSync(EXAMPLES_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
 describe("vanillaConsumerDir", () => {
   // A consumer inside the repo also resolves bare imports from the repo-root
   // node_modules, where pnpm links workspace packages; it then cannot model
@@ -212,13 +222,32 @@ describe("buildOrder", () => {
     ]);
   });
 
-  it("orders on peerDependencies too — the editor type-resolves the renderer's dist", () => {
-    expect(
-      buildOrder(
-        ["@templatical/editor", "@templatical/renderer"],
-        manifests,
-      ).indexOf("@templatical/renderer"),
-    ).toBe(0);
+  it("orders on peerDependencies too", () => {
+    const order = buildOrder(
+      ["@templatical/editor", "@templatical/renderer"],
+      manifests,
+    );
+    expect(order.indexOf("@templatical/renderer")).toBeLessThan(
+      order.indexOf("@templatical/editor"),
+    );
+  });
+
+  it("builds a member's workspace devDependencies, and what they depend on, before it", () => {
+    // The editor bundles core, and core needs types' dist/ to build.
+    const bundling = fake({
+      "@templatical/editor": {
+        devDependencies: { "@templatical/core": "workspace:*" },
+      },
+      "@templatical/core": {
+        dependencies: { "@templatical/types": "workspace:*" },
+      },
+      "@templatical/types": {},
+    });
+    expect(buildOrder(["@templatical/editor"], bundling)).toEqual([
+      "@templatical/types",
+      "@templatical/core",
+      "@templatical/editor",
+    ]);
   });
 
   it("throws rather than emitting an arbitrary order for a cycle", () => {
@@ -239,8 +268,7 @@ describe("buildOrder", () => {
  * pnpm 12+ refuses to run a recursive script whose selection contains a cycle
  * (`ERR_PNPM_TASK_CYCLE`), and it aborts before executing anything — so one
  * cycle among `packages/*` takes out `pnpm run typecheck` and `pnpm run test`
- * wholesale. Unlike `buildOrder`, this walks `devDependencies` too, because
- * pnpm's task graph does.
+ * wholesale. It walks `devDependencies` too, because pnpm's task graph does.
  */
 const findWorkspaceCycle = (
   manifests: Map<string, Manifest>,
@@ -278,7 +306,7 @@ const findWorkspaceCycle = (
   return null;
 };
 
-describe("the real workspace and fixtures", () => {
+describe("the real workspace, fixtures and examples", () => {
   const manifests = readWorkspacePackages(REPO_ROOT);
 
   it("reads every published package", () => {
@@ -301,7 +329,7 @@ describe("the real workspace and fixtures", () => {
     ]);
   });
 
-  it("keeps the publish-order graph acyclic, so any closure can be ordered", () => {
+  it("keeps the build graph acyclic, so any closure can be ordered", () => {
     expect(buildOrder([...manifests.keys()], manifests)[0]).toBe(
       "@templatical/types",
     );
@@ -382,6 +410,40 @@ describe("the real workspace and fixtures", () => {
       ).toEqual(["@templatical/types"]);
     }
   });
+
+  // The editor's build reads its four workspace devDependencies from their
+  // dist/: `vite build` bundles core and types, and `vue-tsc` type-resolves
+  // all four. A fresh checkout has none of them, so each is built first.
+  const EDITOR_BUILD = [
+    "@templatical/types",
+    "@templatical/core",
+    "@templatical/media-library",
+    "@templatical/quality",
+    "@templatical/renderer",
+    "@templatical/editor",
+  ];
+
+  it.each(fixtureNames())(
+    "%s builds every package the editor's build reads, ahead of the editor",
+    (name) => {
+      const { closure } = resolveWorkspaceClosure(
+        readFixtureRoots(readFixture(name)),
+        manifests,
+      );
+      expect(buildOrder(closure, manifests)).toEqual(EDITOR_BUILD);
+    },
+  );
+
+  it.each(exampleNames())(
+    "examples/%s builds every package the editor's build reads, ahead of the editor",
+    (name) => {
+      const { closure } = resolveWorkspaceClosure(
+        readExampleRoots(readExample(name), manifests),
+        manifests,
+      );
+      expect(buildOrder(closure, manifests)).toEqual(EDITOR_BUILD);
+    },
+  );
 });
 
 describe("example materialization helpers", () => {

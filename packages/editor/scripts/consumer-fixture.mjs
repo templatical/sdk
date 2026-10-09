@@ -122,30 +122,48 @@ export function resolveWorkspaceClosure(roots, manifests) {
 }
 
 /**
- * Build order for a closure. Edges are `dependencies` + `peerDependencies`,
- * because a package's `dist/` must exist before a dependent's `vue-tsc` /
- * api-extractor step resolves it through the workspace symlink — and the editor
- * reaches `renderer` and `quality` only as peers. That edge set is acyclic
- * across the whole workspace. `devDependencies` are excluded because they are
- * never a publish-time edge — a workspace devDep is either bundled into the
- * dependent's own output (the editor's core/types/quality) or pure tooling, so
- * it never needs a sibling's `dist/` on disk first.
+ * What to build for a closure, in order: the closure plus every workspace
+ * package their builds read from a sibling's `dist/`, each after the packages
+ * it reads.
+ *
+ * `dependencies` and `devDependencies` both extend the set, because a build
+ * reads both through the workspace symlinks: the editor's `vite build` bundles
+ * core and types from their `dist/` (only media-library is aliased to `src/`),
+ * and its `vue-tsc` step type-resolves all four of its devDependencies from
+ * theirs. The manifest cannot tell those from a devDependency only tests use
+ * (import-html's renderer), so that one is built too.
+ *
+ * `peerDependencies` only order: a peer already in the set goes first, but
+ * none is added, because no build reads a peer's `dist/` — the editor declares
+ * the renderer in `src/renderer.d.ts`, and quality is also one of its
+ * devDependencies. That edge set is acyclic across the whole workspace.
  */
 export function buildOrder(closure, manifests) {
-  const inClosure = new Set(closure);
+  const toBuild = new Set();
+  const queue = [...closure];
+  while (queue.length > 0) {
+    const name = queue.shift();
+    if (toBuild.has(name)) continue;
+    toBuild.add(name);
+    queue.push(
+      ...["dependencies", "devDependencies"].flatMap((field) =>
+        scopedKeys(manifests.get(name), field),
+      ),
+    );
+  }
   const deps = new Map(
-    closure.map((name) => [
+    [...toBuild].map((name) => [
       name,
       new Set(
-        ["dependencies", "peerDependencies"]
+        ["dependencies", "devDependencies", "peerDependencies"]
           .flatMap((field) => scopedKeys(manifests.get(name), field))
-          .filter((dep) => inClosure.has(dep)),
+          .filter((dep) => toBuild.has(dep)),
       ),
     ]),
   );
 
   const ordered = [];
-  const remaining = [...closure].sort();
+  const remaining = [...toBuild].sort();
   while (remaining.length > 0) {
     const next = remaining.filter((name) =>
       [...deps.get(name)].every((dep) => ordered.includes(dep)),
