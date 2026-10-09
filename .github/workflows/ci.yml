@@ -230,17 +230,11 @@ jobs:
         uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
-      # The prep script re-builds editor + renderer. The new dts pipeline
-      # (vue-tsc + api-extractor) needs every dependency's dist/index.d.ts
-      # already on disk for module resolution — they're not pulled in from
-      # source the way vite-plugin-dts used to allow. Download the build-job
-      # artifact so the rebuild has types/, core/, quality/, media-library/
-      # dists to read from.
-      - if: env.IS_VP != 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: packages/
+      # No dist download: the prep script builds what it packs, and every
+      # workspace package those builds read from dist/, from this checkout
+      # (`buildOrder` in packages/editor/scripts/consumer-fixture.mjs). A
+      # downloaded dist would hide a missing build edge until a fresh local
+      # checkout hit it.
       - if: env.IS_VP != 'true'
         run: pnpm run test:e2e:consumer
       - if: env.IS_VP != 'true' && failure()
@@ -267,12 +261,7 @@ jobs:
         uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
-      # See e2e-consumer comment — same reason.
-      - if: env.IS_VP != 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: packages/
+      # No dist download, for the same reason as e2e-consumer.
       - if: env.IS_VP != 'true'
         run: pnpm run test:webpack-consumer
 
