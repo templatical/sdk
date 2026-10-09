@@ -525,6 +525,7 @@ const translations: typeof en = {
     rename: "名前を変更",
     delete: "削除",
     deleteConfirm: "この保存済みブロックを削除しますか？",
+    deleteConfirmShort: "削除しますか？",
     blockCount: "{count} 個のブロック",
     browse: "保存済みブロックを参照",
     selectToPreview: "プレビューする保存済みブロックを選択",

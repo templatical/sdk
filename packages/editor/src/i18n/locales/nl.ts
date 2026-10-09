@@ -540,6 +540,7 @@ const nl: typeof en = {
     rename: "Hernoemen",
     delete: "Verwijderen",
     deleteConfirm: "Dit opgeslagen blok verwijderen?",
+    deleteConfirmShort: "Verwijderen?",
     blockCount: "{count} blok(ken)",
     browse: "Opgeslagen blokken bekijken",
     selectToPreview: "Selecteer een opgeslagen blok voor een voorbeeld",

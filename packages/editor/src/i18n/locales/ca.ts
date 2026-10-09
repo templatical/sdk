@@ -608,6 +608,7 @@ const ca: typeof en = {
     rename: "Canvia el nom",
     delete: "Elimina",
     deleteConfirm: "Vols eliminar aquest bloc desat?",
+    deleteConfirmShort: "Eliminar?",
     blockCount: "{count} bloc(s)",
     browse: "Explora els blocs desats",
     selectToPreview: "Selecciona un bloc desat per previsualitzar-lo",
