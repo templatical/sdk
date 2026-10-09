@@ -960,6 +960,61 @@ describe('SavedBlocksBrowserModal', () => {
     });
   });
 
+  /* The confirm shares a card's bottom row with up to five type icons, the
+     overflow count and the timestamp, where the full question can't fit. So
+     it shows a short label and keeps the full question as its accessible
+     name. The crowded row's geometry is measured by the playground e2e. */
+  describe('delete confirm label', () => {
+    it('shows the short label and keeps the full question as its name', async () => {
+      // Real `en` strings: the label and the name are two different keys.
+      mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: makeHeadless([savedA]),
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [TRANSLATIONS_KEY]: en,
+        },
+        global: { stubs: { BlockPreviewCanvas: true } },
+      } as never);
+      await nextTick();
+
+      await click(get('button[aria-label="Delete"]'));
+
+      const confirm = get('button[aria-label="Delete this saved block?"]');
+      expect(confirm.textContent?.trim()).toBe('Delete?');
+    });
+
+    /* WCAG 2.5.3, Label in Name: a speech-input user says what they see, so
+       the visible label must be part of the accessible name. Compared the way
+       assistive tech matches them, ignoring case and punctuation. */
+    const locales = import.meta.glob<{ default: typeof en }>(
+      '../src/i18n/locales/*.ts',
+      { eager: true },
+    );
+    const normalize = (text: string) =>
+      text
+        .toLocaleLowerCase()
+        .replace(/\p{P}/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    for (const [path, mod] of Object.entries(locales)) {
+      const locale = path.slice(path.lastIndexOf('/') + 1, -'.ts'.length);
+
+      it(`keeps the ${locale} label inside its accessible name`, () => {
+        const { deleteConfirm, deleteConfirmShort } = mod.default.savedBlocks;
+        expect(typeof deleteConfirmShort).toBe('string');
+        // Punctuation alone would be "contained" in any name.
+        expect(normalize(deleteConfirmShort)).not.toBe('');
+        expect(normalize(deleteConfirm)).toContain(
+          normalize(deleteConfirmShort),
+        );
+      });
+    }
+  });
+
   describe('provider order + timestamp label', () => {
     const iso = (min: number) =>
       new Date(Date.UTC(2026, 0, 1, 12, 0, 0) - min * 60_000).toISOString();

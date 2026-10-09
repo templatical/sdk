@@ -505,6 +505,8 @@ function handleKeydown(event: KeyboardEvent): void {
                       </span>
                     </span>
                   </button>
+                  <!-- When the row is crowded, only the timestamp gives way:
+                       the icons, the count and the confirm keep their size. -->
                   <div class="tpl:mt-1 tpl:flex tpl:items-center tpl:gap-1">
                     <component
                       :is="icon.icon"
@@ -512,11 +514,11 @@ function handleKeydown(event: KeyboardEvent): void {
                       :key="icon.type"
                       :size="14"
                       :stroke-width="1.5"
-                      class="tpl:text-[var(--tpl-text-dim)]"
+                      class="tpl:shrink-0 tpl:text-[var(--tpl-text-dim)]"
                     />
                     <span
                       v-if="getRemainingTypeCount(item) > 0"
-                      class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
+                      class="tpl:shrink-0 tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
                     >
                       +{{ getRemainingTypeCount(item) }}
                     </span>
@@ -528,14 +530,17 @@ function handleKeydown(event: KeyboardEvent): void {
                     >
                       {{ relativeLabel(item) }}
                     </span>
+                    <!-- The full question doesn't fit beside five icons, so
+                         the button shows a short label and the question is its
+                         accessible name, which contains the label. -->
                     <button
                       v-if="confirmDeleteId === item.id"
                       :aria-label="t.savedBlocks.deleteConfirm"
-                      class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
+                      class="tpl:ml-auto tpl:shrink-0 tpl:cursor-pointer tpl:whitespace-nowrap tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
                       style="background-color: transparent"
                       @click.stop="handleDelete(item.id)"
                     >
-                      {{ t.savedBlocks.deleteConfirm }}
+                      {{ t.savedBlocks.deleteConfirmShort }}
                     </button>
                     <!-- Hidden, not disabled: an action the user can't perform
                          is better absent than greyed out. `ml-auto` moves to

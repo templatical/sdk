@@ -605,6 +605,7 @@ const ptBR: typeof en = {
     rename: "Renomear",
     delete: "Excluir",
     deleteConfirm: "Excluir este bloco salvo?",
+    deleteConfirmShort: "Excluir?",
     blockCount: "{count} bloco(s)",
     browse: "Explorar Blocos Salvos",
     selectToPreview: "Selecione um bloco salvo para visualizar",
