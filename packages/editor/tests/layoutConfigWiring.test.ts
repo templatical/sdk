@@ -17,10 +17,13 @@ describe("layout config wiring", () => {
     expect(readSrc("Editor.vue")).toContain("layout: props.config.layout");
   });
 
-  // `initCloud()` forwards it by mapping its own config onto `init()`'s — there
-  // is one `useEditorCore` call site now, so this is the only hop left.
+  // `initCloud()` forwards it by mapping its own config onto `init()`'s, through
+  // the copy it prepares before its claim — there is one `useEditorCore` call
+  // site now, so this is the only hop left.
   it("initCloud forwards config.layout into the init() config", () => {
-    expect(readSrc("index.ts")).toContain("layout: config.layout");
+    const src = readSrc("index.ts");
+    expect(src).toContain("layout: config.layout");
+    expect(src).toContain("layout: prepared.layout");
   });
 
   it("useEditorCore provides LAYOUT_KEY from config.layout", () => {
@@ -42,7 +45,7 @@ describe("layout config wiring", () => {
     expect(readSrc("keys.ts")).toContain('Symbol("layout")');
   });
 
-  it("init/mountEditor normalizes layout then validateLayout, and refuses slot/wrapper in content", () => {
+  it("init/initCloud normalize layout then validateLayout, and refuse slot/wrapper in content", () => {
     const src = readSrc("index.ts");
     expect(src).toContain(
       "config.layout = normalizeContentForConfig(config.layout, config.mergeTags)",
