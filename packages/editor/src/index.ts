@@ -1038,8 +1038,12 @@ function prepareLayoutAndContent(
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
-  prepareLayoutAndContent(config);
-  return mountEditor(config, claimContainer(config.container));
+  // A copy, as `initCloud()` makes: the editor never writes to the caller's
+  // config, which may be frozen. A key reassigned on that object after this call
+  // does not reach the editor.
+  const prepared = { ...config };
+  prepareLayoutAndContent(prepared);
+  return mountEditor(prepared, claimContainer(prepared.container));
 }
 
 /**
@@ -1341,8 +1345,7 @@ export async function initCloud(
 ): Promise<TemplaticalCloudEditor> {
   // Checked before the claim and the bootstrap, so an illegal `layout` or
   // `content` rejects without touching the container or making any request.
-  // The three keys are copied first: unlike `init()`, this never writes to the
-  // caller's config.
+  // The three keys are copied first, so the caller's config is never written.
   const prepared = {
     layout: config.layout,
     content: config.content,

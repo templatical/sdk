@@ -700,6 +700,46 @@ describe("OSS init — instance methods", () => {
       expect(config.content).not.toBe(content);
     });
 
+    // `init()` mounts on a copy of the config itself, as `initCloud()` does, so
+    // the prepared `layout` and `content` never land on the caller's object,
+    // which may be frozen.
+    it("init() leaves the caller's config untouched", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+      const config = { container, shadowDom: false, content, layout };
+
+      await initFn(config as unknown as Parameters<typeof initFn>[0]);
+
+      expect(config.content).toBe(content);
+      expect(config.layout).toBe(layout);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
+    });
+
+    it("init() mounts with a frozen config", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+
+      await initFn(
+        Object.freeze({
+          container,
+          shadowDom: false,
+          content,
+          layout,
+        }) as unknown as Parameters<typeof initFn>[0],
+      );
+
+      expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
+    });
+
     it("setContent() hands the mounted editor a copy", async () => {
       const fakeEditor = fakeEditorWith();
       const { instance } = await mountOss(fakeEditor);
