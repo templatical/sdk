@@ -15,7 +15,12 @@
 // editor is gone, so "still mounted" is observable two independent ways.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TemplateContent } from "@templatical/types";
+import {
+  createParagraphBlock,
+  createSlotBlock,
+  createWrapperBlock,
+  type TemplateContent,
+} from "@templatical/types";
 
 const STUB_ROOT = "[data-testid='stub-editor']";
 
@@ -26,6 +31,40 @@ function contentFor(label: string): TemplateContent {
     settings: {},
   } as unknown as TemplateContent;
 }
+
+/** A layout shell with no slot, which `validateLayout` refuses. */
+function layoutWithoutSlot(): TemplateContent {
+  return {
+    blocks: [createParagraphBlock({ content: "<p>Header</p>" })],
+    settings: {},
+  } as TemplateContent;
+}
+
+/** One input per check the entry runs on `layout` and `content`, with its error. */
+const ILLEGAL_SEEDS = [
+  {
+    name: "a layout with no slot",
+    seed: () => ({ layout: layoutWithoutSlot() }),
+    error: "[Templatical] layout: must contain exactly one slot block",
+  },
+  {
+    name: "content holding a slot",
+    seed: () => ({
+      content: { blocks: [createSlotBlock()], settings: {} } as TemplateContent,
+    }),
+    error: "[Templatical] slot is not a valid content block",
+  },
+  {
+    name: "content holding a wrapper",
+    seed: () => ({
+      content: {
+        blocks: [createWrapperBlock()],
+        settings: {},
+      } as TemplateContent,
+    }),
+    error: "[Templatical] wrapper is not a valid content block",
+  },
+];
 
 /** The first block's id: `label` when seeded, `live:label` when the editor answers. */
 function firstBlockId(content: TemplateContent): string {
@@ -433,6 +472,95 @@ describe.each([
     expect(editorLabels(container)).toEqual(["b"]);
     expect(firstBlockId(b.getContent())).toBe("live:b");
   });
+});
+
+// `init()` and `initCloud()` check `layout` and `content` when they are called,
+// before they claim the container. A call that fails a check rejects at once:
+// it supersedes no earlier call, and the container and the editor it shows stay
+// exactly as they were.
+describe.each([
+  { mode: "shadow DOM", shadowDom: true },
+  { mode: "light DOM", shadowDom: false },
+])("an illegal layout or content — $mode", ({ shadowDom }) => {
+  it.each(ILLEGAL_SEEDS)(
+    "init() with $name rejects and leaves the container's editor mounted",
+    async ({ seed, error }) => {
+      const container = newContainer();
+      const a = await init({ container, shadowDom, content: contentFor("a") });
+      mounted.push(a);
+
+      await expect(
+        init({ container, shadowDom, content: contentFor("b"), ...seed() }),
+      ).rejects.toThrow(error);
+
+      expect(editorLabels(container)).toEqual(["a"]);
+      expect(firstBlockId(a.getContent())).toBe("live:a");
+    },
+  );
+
+  it.each([
+    {
+      entry: "init()",
+      call: (config: Parameters<typeof init>[0]) => init(config),
+    },
+    {
+      entry: "initCloud()",
+      call: (config: Parameters<typeof init>[0]) =>
+        initCloud(config as unknown as Parameters<typeof initCloud>[0]),
+    },
+  ])(
+    "$entry with an illegal layout does not supersede an earlier call still loading",
+    async ({ call }) => {
+      // Only the valid call's translations are held. If the illegal call ever
+      // reaches its own again, they still settle, so the test fails, not hangs.
+      const { loadTranslations } = await import("../src/i18n");
+      const loading = deferred<Record<string, unknown>>();
+      vi.mocked(loadTranslations).mockReturnValueOnce(loading.promise as never);
+      const container = newContainer();
+
+      const pending = init({ container, shadowDom, content: contentFor("a") });
+      await expect(
+        call({
+          container,
+          shadowDom,
+          content: contentFor("b"),
+          layout: layoutWithoutSlot(),
+        }),
+      ).rejects.toThrow(
+        "[Templatical] layout: must contain exactly one slot block",
+      );
+
+      loading.resolve({});
+      const a = await pending;
+      mounted.push(a);
+
+      expect(editorLabels(container)).toEqual(["a"]);
+      expect(firstBlockId(a.getContent())).toBe("live:a");
+    },
+  );
+});
+
+// Shadow mode only: a light-DOM mount writes nothing to the container before
+// Vue mounts. `attachShadow()` can't be undone, so a call that is going to
+// reject must not reach it.
+describe("an illegal layout or content — fresh container", () => {
+  it.each(ILLEGAL_SEEDS)(
+    "init() with $name rejects without attaching a shadow root",
+    async ({ seed, error }) => {
+      const container = newContainer();
+
+      await expect(
+        init({
+          container,
+          shadowDom: true,
+          content: contentFor("a"),
+          ...seed(),
+        }),
+      ).rejects.toThrow(error);
+
+      expect(container.shadowRoot).toBeNull();
+    },
+  );
 });
 
 // Shadow mode only: a light-DOM mount has no style mirror. In dev the live
