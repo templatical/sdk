@@ -1,5 +1,5 @@
 ---
-description: lintLinks flags dangerous javascript-protocol hrefs, malformed mailto and tel links, unsupported URL schemes, and staging URLs leaking into templates.
+description: lintLinks flags dangerous javascript-protocol hrefs, malformed mailto and tel links, unsupported URL schemes, relative URLs, and staging URLs leaking into templates.
 ---
 
 # Links linter
@@ -15,6 +15,7 @@ Email URLs are a long-tail bug source:
 - A malformed `mailto:` makes "Contact us" silently dead.
 - A `tel:` with letters in it doesn't dial anywhere.
 - A `data:` or app-deep-link `href` looks fine in JSON but no email client renders it.
+- A root-relative `/contact` copied from the website has no page to resolve against once the email is sent.
 
 These aren't content-quality issues (different audience from a11y) and they aren't tree-corruption issues (the JSON validates). They live in their own category.
 
@@ -22,7 +23,7 @@ These aren't content-quality issues (different audience from a11y) and they aren
 
 The editor already ships two URL-scheme defenses:
 
-- **`useRichTextLinkDialog.normalizeLinkUrl`** — the rich-text link dialog rejects URLs outside its safe-scheme allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) at insert time.
+- **`useRichTextLinkDialog.normalizeLinkUrl`** — the rich-text link dialog rejects URLs outside its safe-scheme allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) at insert time. A path (`/contact`, `./x`, `?ref=1`) is stored as typed and `//host` becomes `https://host`; `link.relative-url` then flags the path.
 - **`sanitizeRichTextHtml`** — a render-time scrubber strips `javascript:` / `vbscript:` / `file:` (and other unsafe-scheme) `href` / `src` / `formaction` values from `paragraph.content` / `title.content` / `html.content` before they reach `v-html`.
 
 Those are **security boundaries** — they prevent XSS by silently dropping dangerous values. `lintLinks` is an **authoring tool**: it surfaces the same values so the author can fix the JSON rather than have it stripped at render.

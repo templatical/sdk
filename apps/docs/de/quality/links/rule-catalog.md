@@ -1,6 +1,6 @@
 # Link-Regelkatalog
 
-Die 5 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/src/links/rules/`; der Schweregrad ist über [Optionen](../options) pro Konsument überschreibbar. Alle Regeln scannen jede URL-Quelle, die `walkUrls` liefert — Anker in Rich-Text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.
+Die 6 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/src/links/rules/`; der Schweregrad ist über [Optionen](../options) pro Konsument überschreibbar. Alle Regeln scannen jede URL-Quelle, die `walkUrls` liefert — Anker in Rich-Text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.
 
 ## Gefährliche Protokolle
 
@@ -12,7 +12,7 @@ Die 5 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/s
 
 | Regel | Standard-Schweregrad | Auto-Fix | Was sie prüft |
 |---|---|---|---|
-| `link.unsupported-protocol` | warning | — | Href verwendet ein explizites Protokoll außer `http`, `https`, `mailto`, `tel` oder `sms`. Eigene Protokolle (`ftp:`, `file:`, `data:`, App-Deep-Links) funktionieren typischerweise nicht aus E-Mail-Clients und deuten entweder auf einen Copy-Paste-Fehler oder eine nicht unterstützte Integration hin. Relative URLs und reine Pfade werden ignoriert. `javascript:` ist ausgenommen — dafür gibt es eine eigene Regel. |
+| `link.unsupported-protocol` | warning | — | Href verwendet ein explizites Protokoll außer `http`, `https`, `mailto`, `tel` oder `sms`. Eigene Protokolle (`ftp:`, `file:`, `data:`, App-Deep-Links) funktionieren typischerweise nicht aus E-Mail-Clients und deuten entweder auf einen Copy-Paste-Fehler oder eine nicht unterstützte Integration hin. Relative URLs und reine Pfade werden hier ignoriert — die pfadförmigen deckt `link.relative-url` ab. `javascript:` ist ausgenommen — dafür gibt es eine eigene Regel. |
 
 ## Fehlerhafte URIs
 
@@ -26,6 +26,12 @@ Die 5 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/s
 | Regel | Standard-Schweregrad | Auto-Fix | Was sie prüft |
 |---|---|---|---|
 | `link.localhost-or-staging` | warning | — | URL-Host matcht die konfigurierte Nicht-Produktions-Hostliste. Der Standard erfasst `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Konfigurierbar via `LintOptions.links.nonProductionHosts` — Standard-Erweiterungs- / Ersatz-Muster siehe [Übersicht](./). Feuert nur auf `http(s)`- und `ftp(s)`-URLs; mailto/tel/sms werden übersprungen. |
+
+## Relative URLs
+
+| Regel | Standard-Schweregrad | Auto-Fix | Was sie prüft |
+|---|---|---|---|
+| `link.relative-url` | warning | — | Href beginnt mit `/`, `./`, `../` oder `?` — eine wurzelrelative, relative, reine Query- oder protokollrelative (`//host`) URL. Eine versendete E-Mail hat keine Seitenadresse, gegen die sie aufgelöst werden kann, daher ist der Link im Postfach kaputt. Nur diese Präfixe zählen: Der Linter kennt keine Merge-Tag-Syntax, daher wird eine URL, die mit einem Tag beginnt (<code v-pre>{{ unsubscribe_url }}</code>), nicht gemeldet, ebenso wenig ein Host ohne Schema (`example.com/page`), ein reiner Pfad (`page.html`) oder ein `#anchor`. Der Rich-Text-Link-Dialog speichert einen solchen Pfad wie eingegeben und macht aus `//host` `https://host`. |
 
 ## Auto-Fixes
 

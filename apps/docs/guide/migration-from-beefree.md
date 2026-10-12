@@ -76,8 +76,8 @@ The function returns an `ImportResult` with:
 |---|---|
 | `converted` | Mapped to a Templatical block with no loss of fidelity. |
 | `approximated` | Mapped, with a clamp or flatten — `note` states what changed. |
-| `html-fallback` | No block equivalent; original markup is an `HtmlBlock`. |
-| `skipped` | No output (forms, and anything the converter refuses). |
+| `html-fallback` | No block equivalent — an unknown module type, forms included. Output is an `HtmlBlock`; see [Block Mapping](#block-mapping) for its content. |
+| `skipped` | No output. This converter does not emit it: every module produces a block. |
 
 The JSON BeeFree's editor persists (`page.rows`) is the input. A compiled HTML export is a different envelope — use [`@templatical/import-html`](/guide/migration-from-html).
 
@@ -101,7 +101,7 @@ BeeFree block types map to Templatical equivalents:
 | Video | `video` | Converted |
 | Table | `table` | Converted |
 
-Unknown module types are converted to HTML blocks as a fallback.
+Unknown module types — forms included — are converted to HTML blocks as a fallback, reported `html-fallback`. The block's content is the module's `descriptor.text.html`, `descriptor.html.html` or `descriptor.heading.text`, the first one set. With none of them, it is a `<!-- Unsupported BeeFree module: <type> -->` comment and renders nothing.
 
 ### Divider width
 
@@ -138,7 +138,7 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 Global template settings are converted where possible:
 
 - **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
-- **Background color** -- Row and body background colors are preserved
+- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` — the full-width band behind the row — is not read, so its background is dropped.
 - **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
 - **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
 - **Font family** -- The default font family carries over to `settings.fontFamily`. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
@@ -148,7 +148,7 @@ Global template settings are converted where possible:
 - **Custom fonts** -- BeeFree custom font declarations are not automatically imported. Add them manually via the `fonts` config option.
 - **Conditional display** -- BeeFree dynamic content rules do not have a direct equivalent and are dropped during conversion.
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
-- **Forms** -- BeeFree form blocks have no Templatical equivalent and are skipped.
+- **Forms** -- BeeFree form modules have no Templatical equivalent. Each becomes an `html-fallback` HTML block, and the form's fields and submit action are not reproduced.
 - **Per-block link colors** -- A text module's own link color (`computedStyle.linkColor`) is dropped; its links take `settings.linkColor`.
 - **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
 

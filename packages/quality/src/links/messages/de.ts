@@ -11,6 +11,8 @@ const de: typeof en = {
     "Der tel:-Link enthält Zeichen, die keine Ziffern, +, Leerzeichen, Bindestriche, Klammern oder Punkte sind.",
   "link.localhost-or-staging":
     'Der URL-Host „{host}" entspricht einem Nicht-Produktionsmuster. Ersetze ihn vor dem Versand durch die Produktions-URL.',
+  "link.relative-url":
+    'Die URL „{url}" ist relativ. Eine versendete E-Mail hat keine Seitenadresse, gegen die sie aufgelöst werden kann, daher funktioniert der Link nicht. Verwende eine absolute URL (https://…).',
 };
 
 export default de;

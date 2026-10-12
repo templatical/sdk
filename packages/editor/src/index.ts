@@ -369,10 +369,11 @@ export interface TemplaticalEditorConfig {
   customBlocks?: CustomBlockDefinition[];
 
   /**
-   * Allowlist + order for the block palette. When set, only the listed block
-   * types appear in the sidebar palette, in exactly this order — unlisted
-   * built-ins (e.g. `video`, `table`) are hidden. When omitted, the full
-   * default palette is shown.
+   * Allowlist + order for the block palette. When non-empty, only the listed
+   * block types appear in the sidebar palette, in exactly this order —
+   * unlisted built-ins (e.g. `video`, `table`) are hidden. When omitted or
+   * empty (`[]`), the full default palette is shown: an empty allowlist means
+   * "not configured", not "hide every block".
    *
    * Reference built-in blocks by their bare type (`'section'`, `'image'`, …)
    * and custom blocks by their `custom:`-prefixed type (`'custom:qrcode'`),

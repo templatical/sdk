@@ -41,7 +41,7 @@ Add `--json` to any command for a single parseable JSON document on stdout. Inst
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 31 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 32 rules) runs on top. No command-specific flags.
 
 ### `schema [--out <file> | -o <file>]`
 

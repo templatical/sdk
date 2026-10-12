@@ -80,6 +80,9 @@ export function useRichTextLinkDialog(
     "cid",
   ]);
 
+  // Root-relative, `./` / `../` relative, or query-only.
+  const RELATIVE_PATH = /^(?:\/|\.{1,2}\/|\?)/;
+
   // Anchored, non-global copy of the configured value syntax. A fresh RegExp
   // per call is required: `syntax.value` carries the `g` flag, and `.test()`
   // on a global regex advances `lastIndex` between calls.
@@ -91,6 +94,11 @@ export function useRichTextLinkDialog(
     const trimmed = raw.trim();
     if (!trimmed) return null;
     if (trimmed.startsWith("#")) return trimmed;
+    // Protocol-relative: email has no page scheme for `//host` to inherit.
+    if (trimmed.startsWith("//")) return `https:${trimmed}`;
+    // A path has no host to complete. It is stored as typed, like button and
+    // image URLs, and the quality linter's `link.relative-url` rule flags it.
+    if (RELATIVE_PATH.test(trimmed)) return trimmed;
     const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
     if (schemeMatch) {
       return SAFE_SCHEMES.has(schemeMatch[1].toLowerCase()) ? trimmed : null;
