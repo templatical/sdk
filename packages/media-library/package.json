@@ -10,7 +10,7 @@
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vue/test-utils": "^2.5.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
