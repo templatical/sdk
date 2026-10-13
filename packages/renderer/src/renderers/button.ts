@@ -8,6 +8,15 @@ import { bgAttr, borderAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
+ * Marks the `mj-button` of a full-width button. MJML gives the button's `<a>`
+ * a width only for a px `width`; for `100%` it widens the `<table>` and leaves
+ * the `<a>` at `display:inline-block`, so only the label is clickable.
+ * `renderToMjml` scopes the head rule that makes the `<a>` fill the button to
+ * this class.
+ */
+export const BUTTON_FULL_WIDTH_CSS_CLASS = "tpl-button-full";
+
+/**
  * Render a button block to MJML markup.
  */
 export function renderButton(
@@ -36,7 +45,10 @@ export function renderButton(
     : "";
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const widthAttr = renderWidthAttr(block.width);
-  const visibilityAttr = getCssClassAttr(block);
+  const cssClassAttr = getCssClassAttr(
+    block,
+    block.width === "full" ? [BUTTON_FULL_WIDTH_CSS_CLASS] : [],
+  );
   const borderAttrStr = borderAttr(block.border);
   // Templates stored before `align` existed have no value for it. Fall back to
   // MJML's own default so they keep rendering exactly as they did.
@@ -50,7 +62,7 @@ export function renderButton(
   border-radius="${borderRadius}"${borderAttrStr}
   inner-padding="${buttonPadding}"
   align="${align}"
-  padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${visibilityAttr}
+  padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${cssClassAttr}
 >${text}</mj-button>`;
 }
 
