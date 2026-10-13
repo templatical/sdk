@@ -17,8 +17,55 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.44.3",
+  "latest": "0.45.0",
   "versions": [
+    {
+      "version": "0.45.0",
+      "date": "2026-10-13",
+      "changes": [
+        {
+          "hash": "347c2b0",
+          "level": "minor",
+          "title": "Social icons take a tone, separate from their shape",
+          "body": "`SocialIconsBlock` gains an optional `iconTone`: `\"brand\"` (each platform's own color, the default and what an absent value means), `\"dark\"` or `\"light\"`. `iconStyle` stays the shape and gains `\"plain\"`, the glyph alone with no badge or outline. A filled shape draws the glyph white on the tone, or near-black on `\"light\"`; `outlined` and `plain` draw in the tone. The editor offers both as separate selects, Style and Color.\n\nThe renderer ships a PNG set for every style and tone: 6 × 3 sets of 17 platforms, rendered at 144×144, 3× the largest icon size, instead of 192×192, and compressed losslessly with oxipng. The packed package is 360 KB, against 411 KB before (573 KB unpacked, against 545 KB). A brand-colored icon keeps its URL, `{style}/{platform}.png`; a tone lives at `{style}-{tone}/{platform}.png`. If you self-host the icons through `socialIconsBaseUrl`, copy the new folders before using a tone or `plain`. A dark `plain` or `outlined` icon carries a faint white halo, barely visible on light backgrounds, so it stays visible as an outline when a dark-mode client darkens the background but not the image.\n\n`@templatical/types` exports `SocialIconTone`, `SOCIAL_ICON_STYLES`, `SOCIAL_ICON_TONES`, `SOCIAL_ICON_TONE_COLORS`, `socialIconColors()`, `socialIconAssetDir()`, `socialIconGlyphScale()` and `socialIconHalo()`, the rules the editor, the renderer and the PNG build share.\n\nThe MJML importer reads the style and tone back from a tone's folder, and the Topol importer maps its black-and-white `outlinedbw` set to `outlined` in `\"dark\"`.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/import-mjml",
+            "@templatical/import-topol",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "40c00b5",
+          "level": "patch",
+          "title": "A full-width button is now clickable across its whole fill in the compiled email, not only on its label. MJML gives a button's `<a>` a width only for a px `width`, so for `width: \"full\"` it widened the button's table and left the `<a>` at `display:inline-block`, the size of its label. A full-width button's `mj-button` now carries the class `tpl-button-full`, and every template's `<mj-style inline=\"inline\">` block ends with `.tpl-button-full a { display: block !important; }`: `mjml` inlines it onto the link, and MRML's default build keeps it as a `<style>` rule. That one line is new in every template's MJML. With `mjml`, juice drops the rule when nothing matches, so the compiled HTML of a template without a full-width button is unchanged. Outlook on Windows ignores `display:block`, so there the link stays the size of its label, as it does for every MJML button. `BUTTON_FULL_WIDTH_CSS_CLASS` is exported for `blockRenderers` overrides of the button. The MJML importer treats `tpl-button-full` as the renderer's own class, so importing a rendered template doesn't report it as dropped consumer CSS. Fixes #868.",
+          "body": "",
+          "packages": [
+            "@templatical/import-mjml",
+            "@templatical/renderer"
+          ]
+        },
+        {
+          "hash": "7585b84",
+          "level": "patch",
+          "title": "A section column with blocks in it is now as tall as its blocks on the canvas. Every column kept the 60px drop-zone minimum, so a short band, such as a one-line strip or a footer note, looked taller while editing than in the sent email. A column showing no blocks keeps the 60px drop target: an empty column, and one whose blocks the condition preview hides. A column keeps it for the whole drag of its last shown block. The whole visible column takes drops, including the space below a short column's blocks.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "b59b8b7",
+          "level": "patch",
+          "title": "The font pickers show the font in use when they don't offer it. A font the picker doesn't list, such as one from imported content or a built-in excluded by `builtIns`, or a stack written by the API or an agent, such as `Georgia, serif`, matched no option. The block toolbars' select showed blank, the paragraph toolbar's showed \"Default\", and Template Settings showed the default font while the email rendered another. A stack whose first family is listed now selects that family's option; any other font is listed first, labelled by its first family. A CSS-wide keyword such as `inherit`, or a blank value, shows as no font: the select's own option for that, such as \"Use template font\" or \"Default\".",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.44.3",
       "date": "2026-10-09",
