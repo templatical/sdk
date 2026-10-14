@@ -12,14 +12,22 @@ import {
   parseAlignment,
   parseBorderStyle,
   parseColor,
+  parseFontFamily,
   parsePaddingShorthand,
   parsePxValue,
 } from "./attribute-parser";
-import { resolveAttributes, tagOf, type Attrs } from "./attribute-resolver";
+import {
+  ownAttr,
+  resolveAttributes,
+  tagOf,
+  type Attrs,
+} from "./attribute-resolver";
 import {
   baseFields,
   convertHtmlFallback,
   isNewTab,
+  readBorder,
+  readBorderRadius,
   warnForeignClasses,
   type ConvertContext,
   type Converted,
@@ -60,32 +68,44 @@ function convertImage(
   $el: Cheerio<Element>,
   attrs: Attrs,
   ctx: ConvertContext,
-): Block | null {
+): Converted | null {
   const src = (attrs.src ?? "").trim();
   if (!src) return null;
 
   const decorative = (attrs.role ?? "").trim().toLowerCase() === "presentation";
   const pxWidth = parsePxValue(attrs.width);
   const height = parsePxValue(attrs.height);
-  const borderRadius = parsePxValue(attrs["border-radius"]);
   const href = (attrs.href ?? "").trim();
 
-  return createImageBlock({
-    src,
-    alt: decorative ? "" : (attrs.alt ?? ""),
-    // A px width equal to the container is how `width: "full"` renders
-    // (renderer/src/renderers/image.ts), so restore the flag rather than
-    // freezing the number — otherwise a full-width image stops resizing with
-    // the template.
-    width: pxWidth === ctx.containerWidth ? "full" : pxWidth || "full",
-    align: parseAlignment(attrs.align, "center"),
-    ...(height > 0 ? { height } : {}),
-    ...(borderRadius > 0 ? { borderRadius } : {}),
-    ...(href ? { linkUrl: href } : {}),
-    ...(href && isNewTab(attrs) ? { linkOpenInNewTab: true } : {}),
-    ...(decorative ? { decorative: true } : {}),
-    ...baseFields(attrs),
-  });
+  const notes: string[] = [];
+  const borderRadius = readBorderRadius(attrs, "Image", notes);
+  const border = readBorder(attrs, "Image", notes);
+
+  return {
+    block: createImageBlock({
+      src,
+      alt: decorative ? "" : (attrs.alt ?? ""),
+      // A px width equal to the container is how `width: "full"` renders
+      // (renderer/src/renderers/image.ts), so restore the flag rather than
+      // freezing the number — otherwise a full-width image stops resizing with
+      // the template.
+      width: pxWidth === ctx.containerWidth ? "full" : pxWidth || "full",
+      align: parseAlignment(attrs.align, "center"),
+      ...(height > 0 ? { height } : {}),
+      ...(borderRadius ? { borderRadius } : {}),
+      ...(border ? { border } : {}),
+      ...(href ? { linkUrl: href } : {}),
+      ...(href && isNewTab(attrs) ? { linkOpenInNewTab: true } : {}),
+      ...(decorative ? { decorative: true } : {}),
+      ...baseFields(attrs),
+    }),
+    entry: {
+      sourceTag: "mj-image",
+      templaticalBlockType: "image",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+    },
+  };
 }
 
 /**
@@ -139,6 +159,9 @@ function readButtonWidth(
 /**
  * A percentage `width` sizes the button against its column less the column's
  * side padding and its own, the same box an `mj-divider` line spans.
+ *
+ * `font-family` is read only when the button sets its own: the renderer
+ * writes the document font onto `mj-all`, which reaches every button.
  */
 function convertButton(
   $el: Cheerio<Element>,
@@ -151,6 +174,9 @@ function convertButton(
   const backgroundColor = parseColor(attrs["background-color"]);
   const textColor = parseColor(attrs.color);
   const fontSize = parsePxValue(attrs["font-size"]);
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-button", ctx.cascade),
+  );
   const base = baseFields(attrs);
   const { left, right } = base.styles.padding;
 
@@ -160,6 +186,8 @@ function convertButton(
     ctx.containerWidth - ctx.columnPadding - left - right,
     notes,
   );
+  const borderRadius = readBorderRadius(attrs, "Button", notes);
+  const border = readBorder(attrs, "Button", notes);
 
   return {
     block: createButtonBlock({
@@ -168,9 +196,9 @@ function convertButton(
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(textColor ? { textColor } : {}),
       ...(fontSize > 0 ? { fontSize } : {}),
-      ...(attrs["border-radius"] !== undefined
-        ? { borderRadius: parsePxValue(attrs["border-radius"]) }
-        : {}),
+      ...(fontFamily ? { fontFamily } : {}),
+      ...(borderRadius !== undefined ? { borderRadius } : {}),
+      ...(border ? { border } : {}),
       ...(attrs["inner-padding"] !== undefined
         ? { buttonPadding: parsePaddingShorthand(attrs["inner-padding"]) }
         : {}),
@@ -332,16 +360,7 @@ export function convertElement(
   }
 
   if (tag === "mj-image") {
-    const block = convertImage($el, attrs, ctx);
-    if (!block) return null;
-    return {
-      block,
-      entry: {
-        sourceTag: tag,
-        templaticalBlockType: "image",
-        status: "converted",
-      },
-    };
+    return convertImage($el, attrs, ctx);
   }
 
   if (tag === "mj-button") {

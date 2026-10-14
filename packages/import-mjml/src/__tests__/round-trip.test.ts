@@ -12,6 +12,7 @@ import {
   createTableBlock,
   createTitleBlock,
   generateId,
+  uniformBorder,
 } from "@templatical/types";
 import type {
   Block,
@@ -25,8 +26,9 @@ import { convertMjmlTemplate } from "../converter";
  * One of every round-trippable block type, across all five column layouts,
  * plus a wrapper, a grouped section, a single-viewport visibility, a display
  * condition on a top-level section, a display condition on a block nested
- * inside a section column, a paragraph carrying a hard `<br>` line break, and a
- * button at each width: fit to content, full and px.
+ * inside a section column, a paragraph carrying a hard `<br>` line break, a
+ * button at each width (fit to content, full and px), and per-corner radii and
+ * borders on a button, an image, a section and a wrapper.
  *
  * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
@@ -75,6 +77,22 @@ function buildFixtureTemplate(): TemplateContent {
               alt: "A",
               width: "full",
             }),
+            createImageBlock({
+              src: "https://cdn.test/b.png",
+              alt: "B",
+              width: 120,
+              borderRadius: {
+                topLeft: 8,
+                topRight: 8,
+                bottomRight: 0,
+                bottomLeft: 0,
+              },
+              border: uniformBorder({
+                width: 1,
+                style: "solid",
+                color: "#cccccc",
+              }),
+            }),
           ]),
           col([
             createButtonBlock({
@@ -91,6 +109,25 @@ function buildFixtureTemplate(): TemplateContent {
               text: "Fixed",
               url: "https://x.test",
               width: 240,
+            }),
+            createButtonBlock({
+              text: "Framed",
+              url: "https://x.test",
+              fontFamily: "Georgia",
+              borderRadius: {
+                topLeft: 12,
+                topRight: 0,
+                bottomRight: 12,
+                bottomLeft: 0,
+              },
+              // Only top and bottom drawn; the others are what the editor's
+              // border control holds for a side with no width.
+              border: {
+                top: { width: 2, style: "dashed", color: "#00aa00" },
+                right: { width: 0, style: "solid", color: "#000000" },
+                bottom: { width: 3, style: "dotted", color: "#0000ff" },
+                left: { width: 0, style: "solid", color: "#000000" },
+              },
             }),
           ]),
         ],
@@ -134,6 +171,13 @@ function buildFixtureTemplate(): TemplateContent {
       }),
       createSectionBlock({
         columns: "1-2",
+        borderRadius: {
+          topLeft: 16,
+          topRight: 16,
+          bottomRight: 0,
+          bottomLeft: 0,
+        },
+        border: uniformBorder({ width: 1, style: "solid", color: "#dddddd" }),
         children: [
           col([
             createMenuBlock({
@@ -183,6 +227,15 @@ function buildFixtureTemplate(): TemplateContent {
       createSectionBlock({
         columns: "2-1",
         stackOnMobile: false,
+        wrapper: {
+          padding: { top: 8, right: 8, bottom: 8, left: 8 },
+          borderRadius: {
+            topLeft: 0,
+            topRight: 20,
+            bottomRight: 0,
+            bottomLeft: 20,
+          },
+        },
         children: [
           col([
             createParagraphBlock({

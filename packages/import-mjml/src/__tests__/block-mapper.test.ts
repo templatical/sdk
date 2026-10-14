@@ -109,6 +109,54 @@ describe("mj-image", () => {
     expect("borderRadius" in result!.block!).toBe(false);
   });
 
+  it("reads a per-corner border-radius", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border-radius="8px 8px 0px 0px" />',
+      "mj-image",
+    );
+    expect((result!.block as ImageBlock).borderRadius).toEqual({
+      topLeft: 8,
+      topRight: 8,
+      bottomRight: 0,
+      bottomLeft: 0,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("reads a border-radius it cannot read as square corners and reports it approximated", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border-radius="50%" />',
+      "mj-image",
+    );
+    expect("borderRadius" in result!.block!).toBe(false);
+    expect(result!.entry).toEqual({
+      sourceTag: "mj-image",
+      templaticalBlockType: "image",
+      status: "approximated",
+      note: 'Image border-radius "50%" could not be read; imported as square corners.',
+    });
+  });
+
+  it("reads its border", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border="1px solid #cccccc" />',
+      "mj-image",
+    );
+    const side = { width: 1, style: "solid", color: "#cccccc" };
+    expect((result!.block as ImageBlock).border).toEqual({
+      top: side,
+      right: side,
+      bottom: side,
+      left: side,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("omits border when the attribute is absent", () => {
+    const { result } = convert('<mj-image src="a.png" />', "mj-image");
+    expect("border" in result!.block!).toBe(false);
+  });
+
   it("returns null for an image with no src", () => {
     const { result } = convert("<mj-image />", "mj-image");
     expect(result).toBe(null);
@@ -213,6 +261,207 @@ describe("mj-button", () => {
       "mj-button",
     );
     expect(result).toBe(null);
+  });
+});
+
+describe("mj-button border-radius", () => {
+  it("reads a per-corner border-radius", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" border-radius="8px 0px 8px 0px">Go</mj-button>',
+      "mj-button",
+    );
+    expect((result!.block as ButtonBlock).borderRadius).toEqual({
+      topLeft: 8,
+      topRight: 0,
+      bottomRight: 8,
+      bottomLeft: 0,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("reads a border-radius it cannot read as square corners and reports it approximated", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" border-radius="50%">Go</mj-button>',
+      "mj-button",
+    );
+    expect((result!.block as ButtonBlock).borderRadius).toBe(0);
+    expect(result!.entry).toEqual({
+      sourceTag: "mj-button",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note: 'Button border-radius "50%" could not be read; imported as square corners.',
+    });
+  });
+});
+
+describe("mj-button border", () => {
+  function borderOf(attributes: string) {
+    const { result } = convert(
+      `<mj-button href="https://x.test" ${attributes}>Go</mj-button>`,
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+    return {
+      border: "border" in block ? block.border : "absent",
+      entry: result!.entry,
+    };
+  }
+
+  const converted = {
+    sourceTag: "mj-button",
+    templaticalBlockType: "button",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return { ...converted, status: "approximated", note };
+  }
+
+  // What the editor's border control gives a side before a width is entered.
+  const undrawn = { width: 0, style: "solid", color: "#000000" };
+
+  it("reads border onto all four sides", () => {
+    const side = { width: 2, style: "dashed", color: "#00ff00" };
+    expect(borderOf('border="2px dashed #00ff00"')).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: converted,
+    });
+  });
+
+  it("reads each border-<side>, leaving the sides it does not name undrawn", () => {
+    expect(
+      borderOf(
+        'border-top="2px solid #ff0000" border-bottom="1px dotted #0000ff"',
+      ),
+    ).toEqual({
+      border: {
+        top: { width: 2, style: "solid", color: "#ff0000" },
+        right: undrawn,
+        bottom: { width: 1, style: "dotted", color: "#0000ff" },
+        left: undrawn,
+      },
+      entry: converted,
+    });
+  });
+
+  it("lets a border-<side> override border on that side", () => {
+    const base = { width: 1, style: "solid", color: "#000000" };
+    expect(
+      borderOf('border="1px solid #000000" border-left="3px dashed #ff0000"'),
+    ).toEqual({
+      border: {
+        top: base,
+        right: base,
+        bottom: base,
+        left: { width: 3, style: "dashed", color: "#ff0000" },
+      },
+      entry: converted,
+    });
+  });
+
+  it("omits border when nothing is drawn", () => {
+    expect(borderOf("")).toEqual({ border: "absent", entry: converted });
+    expect(borderOf('border="none"')).toEqual({
+      border: "absent",
+      entry: converted,
+    });
+  });
+
+  it("narrows a style the block model lacks to solid and reports it approximated", () => {
+    const side = { width: 3, style: "solid", color: "#000000" };
+    expect(borderOf('border="3px double #000000"')).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: approximated(
+        'Button border "3px double #000000" uses style double; imported as solid.',
+      ),
+    });
+  });
+
+  it("leaves a side it cannot read undrawn and reports it approximated", () => {
+    expect(
+      borderOf('border-top="2em solid red" border-bottom="1px solid #000000"'),
+    ).toEqual({
+      border: {
+        top: undrawn,
+        right: undrawn,
+        bottom: { width: 1, style: "solid", color: "#000000" },
+        left: undrawn,
+      },
+      entry: approximated(
+        'Button border-top "2em solid red" could not be read; imported without it.',
+      ),
+    });
+    expect(borderOf('border="thin solid red"')).toEqual({
+      border: "absent",
+      entry: approximated(
+        'Button border "thin solid red" could not be read; imported without it.',
+      ),
+    });
+  });
+
+  it("does not report a border that every border-<side> overrides", () => {
+    const side = { width: 1, style: "solid", color: "#000000" };
+    expect(
+      borderOf(
+        'border="3px double #000000" border-top="1px solid #000000" border-right="1px solid #000000" border-bottom="1px solid #000000" border-left="1px solid #000000"',
+      ),
+    ).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: converted,
+    });
+  });
+
+  it("joins notes from width, border-radius and border", () => {
+    expect(
+      borderOf('width="50%" border-radius="1em" border="3px ridge #000000"')
+        .entry,
+    ).toEqual(
+      approximated(
+        "Button width 50% was imported as 300px, which does not scale with its column. " +
+          'Button border-radius "1em" could not be read; imported as square corners. ' +
+          'Button border "3px ridge #000000" uses style ridge; imported as solid.',
+      ),
+    );
+  });
+});
+
+describe("mj-button font-family", () => {
+  function fontOf(mjml: string) {
+    const { ctx, $ } = ctxFor(mjml);
+    const $el = $("mj-button").first() as unknown as Cheerio<Element>;
+    const block = convertElement($el, ctx)!.block as ButtonBlock;
+    return "fontFamily" in block ? block.fontFamily : "absent";
+  }
+
+  it("reads the first family of its own font-family", () => {
+    expect(
+      fontOf(
+        `<mjml><mj-body><mj-button href="https://x.test" font-family="'Open Sans', Arial, sans-serif">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("Open Sans");
+  });
+
+  it("omits fontFamily when the attribute is absent", () => {
+    expect(
+      fontOf(
+        '<mjml><mj-body><mj-button href="https://x.test">Go</mj-button></mj-body></mjml>',
+      ),
+    ).toBe("absent");
+  });
+
+  it("does not read the document font that reaches it through mj-all", () => {
+    const head =
+      '<mj-head><mj-attributes><mj-all font-family="Inter, sans-serif" /></mj-attributes></mj-head>';
+    expect(
+      fontOf(
+        `<mjml>${head}<mj-body><mj-button href="https://x.test">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("absent");
+    expect(
+      fontOf(
+        `<mjml>${head}<mj-body><mj-button href="https://x.test" font-family="Georgia, serif">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("Georgia");
   });
 });
 

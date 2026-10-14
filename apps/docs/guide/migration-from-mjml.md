@@ -132,19 +132,19 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. |
+| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, padding, `width` (see [Button width](#button-width)). |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. Platform comes from `name`, the `src` filename (pack suffixes such as `-round-outlined` stripped), or `alt`. |
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
-| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. |
+| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `padding` and `border-radius` carry over; a `border` is dropped and reported. |
 | `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
@@ -179,6 +179,24 @@ Templatical centres every divider. A partial-width divider that MJML aligns left
 
 A percentage is measured against the width the button can fill: its column less the column's side padding and the button's own, which is the box `mj-button` sizes it against. `ButtonBlock.width` holds no percentage, so the px it comes to no longer scales with the column, and the entry's `note` says so. A px width stays px however wide it is, because Templatical's renderer writes `"full"` as `100%`.
 
+### Borders and corners
+
+`mj-section`, `mj-image` and `mj-button` keep their `border-radius` and border; `mj-wrapper` keeps its `border-radius`.
+
+| `border-radius` | Corner radius | Status |
+|---|---|---|
+| one to four px values, such as `8px` or `8px 8px 0 0` | the same corners, one number when all four match | `converted` |
+| any other value, such as `50%`, `1em` or `8px / 4px` | square corners | `approximated` |
+
+| `border` or `border-<side>` | That side | Status |
+|---|---|---|
+| a px width, `solid`, `dashed` or `dotted`, and a colour | the same | `converted` |
+| style `none` or `hidden`, no style, or a `0` width | not drawn | `converted` |
+| style `double`, `groove`, `ridge`, `inset` or `outset` | drawn `solid` | `approximated` |
+| a width that is not px, such as `2em` or `thin`, or no width | not drawn | `approximated` |
+
+A side's own `border-<side>` wins over `border`, as it does in MJML. A missing colour imports as unset, which draws in the inherited text colour (`currentColor`) as it did in MJML, and so does a colour the importer can't read. Templatical's wrapper has no border, so a `border` on `mj-wrapper` is dropped and its entry's `note` names it.
+
 ## Where the mapping is lossy
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
@@ -188,6 +206,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Heading levels** — an `<h5>` or `<h6>` inside `mj-text` clamps to heading level 4, the highest a `TitleBlock` supports.
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
 - **Button width** — an `mj-button` `width` given as a percentage other than `100%` becomes the px it comes to, one above `100%` becomes `"full"`, and one that is unreadable or comes to `0px` or less leaves the button fitting its label. See [Button width](#button-width).
+- **Borders and corners** — a `border-radius` that isn't in px imports as square corners, a border style other than solid, dashed or dotted is drawn solid, a border side with no px width is left undrawn, and a border on `mj-wrapper` is dropped. See [Borders and corners](#borders-and-corners).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
 - **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
 - **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
