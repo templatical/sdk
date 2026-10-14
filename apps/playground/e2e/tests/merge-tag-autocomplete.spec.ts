@@ -254,6 +254,58 @@ test.describe("Merge tag autocomplete", () => {
     await expect(items).toHaveCount(1);
   });
 
+  // `editor.setMergeTags()` replaces the list while a block is being edited.
+  // The suggestion extension reads it live, so type-ahead follows the
+  // replacement without the block being closed and reopened. The old tags must
+  // be gone too, not merely joined by the new one.
+  test("suggestions follow setMergeTags() called while the paragraph is open", async ({
+    editorPage,
+    page,
+  }) => {
+    const editable = await openParagraphEditor(editorPage);
+
+    await page.waitForFunction(
+      () =>
+        typeof (window as { __tplPlaygroundSetMergeTags?: unknown })
+          .__tplPlaygroundSetMergeTags === "function",
+    );
+    await page.evaluate(() =>
+      (
+        window as unknown as {
+          __tplPlaygroundSetMergeTags: (
+            tags: { label: string; value: string }[],
+          ) => void;
+        }
+      ).__tplPlaygroundSetMergeTags([
+        { label: "Given Name", value: "{{given_name}}" },
+      ]),
+    );
+
+    await page.keyboard.type(" {{");
+
+    const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
+    await expect(popup).toBeVisible();
+
+    const items = page.locator(
+      `${SELECTORS.mergeTagSuggestionList} [role="option"]`,
+    );
+    await expect(items).toHaveCount(1);
+    await expect(items.first()).toHaveAttribute(
+      "data-merge-tag-value",
+      "{{given_name}}",
+    );
+
+    await page.keyboard.press("Enter");
+
+    await expect(
+      editable
+        .locator('.tpl-merge-tag-node [data-tooltip="{{given_name}}"]')
+        .last(),
+    ).toBeVisible();
+    await expect(page.locator(SELECTORS.textToolbar)).toBeVisible();
+    await expect(popup).toHaveCount(0);
+  });
+
   test("popup positions near the caret in dark canvas mode (no transform/filter offset)", async ({
     editorPage,
     page,

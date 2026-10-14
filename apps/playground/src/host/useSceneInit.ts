@@ -1,5 +1,6 @@
 import { init, unmount as unmountEditor } from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
+import type { MergeTag } from "@templatical/types";
 import { overlayTemplateSettings } from "./hostOverlays";
 import { compileMjmlDemo } from "./providers";
 import { resolveShadowDom } from "./shadowMode";
@@ -51,11 +52,13 @@ export async function mountScene(
   const testHooks = window as {
     __tplPlaygroundGetMjml?: () => Promise<string>;
     __tplPlaygroundGetHtml?: () => Promise<string>;
+    __tplPlaygroundSetMergeTags?: (tags: MergeTag[]) => void;
   };
   testHooks.__tplPlaygroundGetMjml = () =>
     editor.toMjml?.() ?? Promise.resolve("");
   testHooks.__tplPlaygroundGetHtml = () =>
     editor.toHtml?.() ?? Promise.resolve("");
+  testHooks.__tplPlaygroundSetMergeTags = (tags) => editor.setMergeTags(tags);
   return editor;
 }
 
