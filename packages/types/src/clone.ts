@@ -13,9 +13,9 @@
  * The replacer tracks the ancestors of the value it is serializing and omits
  * only a reference back to one of them, which is what every cycle is. An
  * object reached by two paths is not a cycle and is copied into each place:
- * content can legitimately share one, e.g. the repeatable `default` array that
- * `createCustomBlock` hands every block of a type, and dropping the second
- * visit would lose that block's data from `getContent()` and undo.
+ * content can legitimately share one, e.g. content built by hand that puts one
+ * array into two blocks, and dropping the second visit would lose that block's
+ * data from `getContent()` and undo.
  */
 export function safeClone<T>(value: T): T {
   const ancestors: object[] = [];

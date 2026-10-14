@@ -462,6 +462,34 @@ describe('useBlockActions with blockDefaults', () => {
         if (second.type === 'button') expect(second.text).toBe('Hier klicken');
     });
 
+    // One defaults object seeds every insert, so each block must get its own
+    // copy of the nested values — editing one block's padding must not reach
+    // the config or the next block inserted.
+    it('gives every inserted block its own copy of nested defaults', () => {
+        const blockDefaults: BlockDefaults = {
+            button: { buttonPadding: { top: 20, right: 30, bottom: 20, left: 30 } },
+            section: { wrapper: { backgroundColor: '#f4f4f4' } },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: () => blockDefaults };
+        const actions = useBlockActions(opts);
+
+        const first = actions.createAndAddBlock('button');
+        const second = actions.createAndAddBlock('button');
+        const section = actions.createAndAddBlock('section');
+        if (first.type !== 'button' || second.type !== 'button') throw new Error('expected buttons');
+        if (section.type !== 'section') throw new Error('expected a section');
+
+        expect(first.buttonPadding).not.toBe(second.buttonPadding);
+        first.buttonPadding.top = 0;
+        section.wrapper!.backgroundColor = '#000000';
+
+        expect(second.buttonPadding).toEqual({ top: 20, right: 30, bottom: 20, left: 30 });
+        expect(blockDefaults).toEqual({
+            button: { buttonPadding: { top: 20, right: 30, bottom: 20, left: 30 } },
+            section: { wrapper: { backgroundColor: '#f4f4f4' } },
+        });
+    });
+
     it('ignores the getter when duplicating, same as a plain object', () => {
         const opts = {
             ...createMockOptions(),

@@ -73,9 +73,10 @@ Container that arranges blocks into columns.
 - `style` (inside each `border` side) is one of `"solid"`, `"dashed"`, `"dotted"`.
 - `stackOnMobile` — omit or `true` keeps the default responsive stacking
   (columns stack below 480px); `false` keeps them side by side.
-- `wrapper` is an outer full-width band: `{ backgroundColor?, padding?,
-borderRadius? }` (e.g. a white card on a colored band); its `borderRadius`
-  takes the same number-or-per-corner form.
+- `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius? }`
+  (e.g. a white card on a colored band); its `borderRadius` takes the same
+  number-or-per-corner form. The band is as wide as `settings.width`, not the
+  recipient's viewport.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.
