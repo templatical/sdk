@@ -76,7 +76,7 @@ const fonts: FontsConfig = {
 - `false` — keine integrierten Schriftarten; die Auswahl listet nur Ihre `customFonts`.
 - `string[]` — eine Zulassungsliste der zu behaltenden integrierten Schriftartnamen, ohne Beachtung der Groß-/Kleinschreibung abgeglichen. Ein Name, der keine integrierte Schriftart ist, wird mit einer Warnung protokolliert und übersprungen.
 
-Das Einschränken der Liste betrifft nur die Auswahl. Eine benutzerdefinierte Schriftart kann weiterhin die `defaultFont` sein, wenn alle integrierten Schriftarten ausgeschlossen sind, und Inhalte, die bereits eine ausgeblendete integrierte Schriftart verwenden, werden weiterhin mit ihrem korrekten Fallback-Stack gerendert.
+Das Einschränken der Liste ändert bestehende Inhalte nicht. Eine benutzerdefinierte Schriftart kann weiterhin die `defaultFont` sein, wenn alle integrierten Schriftarten ausgeschlossen sind, und Inhalte, die bereits eine ausgeblendete integrierte Schriftart verwenden, werden weiterhin mit ihrem korrekten Fallback-Stack gerendert. Auch ihre Auswahl zeigt diese Schriftart an, damit sie mit der gerenderten E-Mail übereinstimmt: Der Block, der markierte Text oder die Template-Einstellungen listen sie, bis der Autor eine angebotene Schriftart wählt. An anderer Stelle lässt sich die ausgeblendete Schriftart nicht auswählen.
 
 Wenn Sie die Schriftart ausschließen, mit der neue Templates beginnen — standardmäßig Arial oder die als `defaultFont` festgelegte —, protokolliert der Editor beim Start eine Entwicklungswarnung, da Autoren sonst auf einer Schriftart landen, die die Auswahl nicht erneut anbieten kann. Behalten Sie diese Schriftart entweder in `builtIns` oder setzen Sie `defaultFont` auf eine angebotene Schriftart.
 

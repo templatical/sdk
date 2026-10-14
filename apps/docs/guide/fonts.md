@@ -76,7 +76,7 @@ const fonts: FontsConfig = {
 - `false` — no built-ins; the picker lists only your `customFonts`.
 - `string[]` — an allowlist of built-in names to keep, matched case-insensitively. A name that isn't a built-in is logged with a warning and skipped.
 
-Restricting the list only affects the picker. A custom font can still be the `defaultFont` when every built-in is excluded, and content already using a hidden built-in still renders with its proper fallback stack.
+Restricting the list doesn't change existing content. A custom font can still be the `defaultFont` when every built-in is excluded, and content already using a hidden built-in still renders with its proper fallback stack. Its picker shows that font too, so the select matches what the email renders: the block, the selected text or Template Settings lists it until the author picks an offered font, and it can't be chosen anywhere else.
 
 If you exclude the family that new templates start on — Arial by default, or whatever you set as `defaultFont` — the editor logs a development warning at startup, because authors would land on a font the picker can't reselect. Either keep that family in `builtIns`, or set `defaultFont` to one you do offer.
 

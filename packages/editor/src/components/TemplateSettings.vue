@@ -17,6 +17,7 @@ import {
 } from "../constants/styleConstants";
 import { Circle, Eye, Globe, Info, Square } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { fontSelectValue, withCurrentFont } from "../utils/withCurrentFont";
 import {
   FONTS_MANAGER_KEY,
   TEMPLATE_SETTINGS_FIELDS_KEY,
@@ -42,17 +43,14 @@ const PREHEADER_MAX_LENGTH = 150;
 const { t } = useI18n();
 
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "TemplateSettings");
-const fontFamilies = computed(() => fontsManager.fonts.value);
-
-// If current font is not in available list (e.g., custom font when disabled), use default
-const displayedFontFamily = computed(() => {
-  const isAvailable = fontFamilies.value.some(
-    (font) => font.value === props.settings.fontFamily,
-  );
-  return isAvailable
-    ? props.settings.fontFamily
-    : fontsManager.defaultFont.value;
-});
+const displayedFontFamily = computed(
+  () =>
+    fontSelectValue(props.settings.fontFamily).trim() ||
+    fontsManager.defaultFont.value,
+);
+const fontFamilies = computed(() =>
+  withCurrentFont(fontsManager.fonts.value, displayedFontFamily.value),
+);
 
 const widthPresets = [
   { value: 480, label: "480px" },

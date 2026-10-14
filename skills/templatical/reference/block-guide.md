@@ -201,6 +201,7 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: social -->
 **Required** — `icons` (SocialIcon[]), `iconStyle` (SocialIconStyle), `iconSize` (SocialIconSize), `spacing` (int), `align` ("left" | "center" | "right").
+**Optional** — `iconTone` (SocialIconTone).
 <!-- END GENERATED FIELDS: social -->
 
 - `icons` — each is `{ id, platform, url }`.
@@ -208,7 +209,14 @@ underline: bool, color?: hex }`.
   `youtube`, `tiktok`, `pinterest`, `email`, `whatsapp`, `telegram`, `discord`,
   `snapchat`, `reddit`, `github`, `dribbble`, `behance`, `website`.
 - `iconStyle` is one of `"solid"`, `"outlined"`, `"rounded"`, `"square"`,
-  `"circle"`.
+  `"circle"`, `"plain"` (the glyph alone, no badge).
+- `iconTone` is one of `"brand"` (each platform's color, the default),
+  `"dark"`, `"light"`. Use `"light"` on a dark background. Dark-mode
+  clients change the background but not images, so a `"dark"` `"plain"` or
+  `"outlined"` icon carries a faint white halo, barely visible on light
+  backgrounds, that keeps it visible as an outline. A light icon has none and
+  can disappear where a client turns a dark background light. A filled shape
+  is the most reliable either way.
 - `iconSize` is one of `"small"`, `"medium"`, `"large"`.
 
 ### video

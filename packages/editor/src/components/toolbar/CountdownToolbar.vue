@@ -8,6 +8,7 @@ import { useI18n } from "../../composables/useI18n";
 import { inputClass } from "../../constants/styleConstants";
 import type { CountdownBlock } from "@templatical/types";
 import { computed } from "vue";
+import { fontSelectValue } from "../../utils/withCurrentFont";
 
 defineProps<{
   block: CountdownBlock;
@@ -110,7 +111,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
   <FieldRow :label="t.countdown.fontFamily">
     <select
       :class="inputClass"
-      :value="block.fontFamily || ''"
+      :value="fontSelectValue(block.fontFamily)"
       @change="
         updateField(
           'fontFamily',

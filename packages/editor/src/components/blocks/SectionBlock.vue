@@ -15,7 +15,7 @@ import type {
   SectionBlock as SectionBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { computed, inject, type Component } from "vue";
+import { computed, inject, ref, type Component } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import {
   EDITOR_KEY,
@@ -101,6 +101,32 @@ function getColumnBlocks(colIndex: number): Block[] {
   return columns.value[colIndex] || [];
 }
 
+function isChildShown(blockId: string): boolean {
+  return (
+    appliesConditionFilter?.value === false ||
+    !conditionPreview?.isHidden(blockId)
+  );
+}
+
+// A column showing no blocks keeps a drop target's height. One showing blocks
+// is exactly as tall as they are, as it will be in the sent email.
+function showsNoBlocks(colIndex: number): boolean {
+  return !getColumnBlocks(colIndex).some((child) => isChildShown(child.id));
+}
+
+// The column a drag started from keeps its drop height for the whole drag of
+// its last shown block, so it doesn't collapse under the pointer.
+const dragSourceCol = ref<number | null>(null);
+
+function holdsDropHeight(colIndex: number): boolean {
+  if (showsNoBlocks(colIndex)) return true;
+  if (dragSourceCol.value !== colIndex) return false;
+  return (
+    getColumnBlocks(colIndex).filter((child) => isChildShown(child.id))
+      .length <= 1
+  );
+}
+
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
   // Strip non-Block fields (e.g., a DOM `.el` back-reference Sortable
   // attaches to its list root expando) before the array lands in state.
@@ -148,7 +174,7 @@ function handleFetchData(
       <div
         v-for="(_, colIndex) in columns"
         :key="colIndex"
-        class="tpl:relative tpl:min-h-[60px] tpl:rounded"
+        class="tpl:relative tpl:flex tpl:flex-col tpl:rounded"
         :class="
           getColumnBlocks(colIndex).length === 0
             ? 'tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)]'
@@ -156,6 +182,8 @@ function handleFetchData(
         "
         :style="{ width: isMobileStacked ? '100%' : columnWidths[colIndex] }"
       >
+        <!-- The list grows to the column's full height, so the whole visible
+             column takes drops, not just the area its blocks cover. -->
         <VueDraggable
           :model-value="getColumnBlocks(colIndex)"
           :group="{
@@ -172,16 +200,16 @@ function handleFetchData(
           :inverted-swap-threshold="0.65"
           :empty-insert-threshold="20"
           :force-fallback="true"
-          class="tpl:min-h-[60px]"
+          class="tpl:grow"
+          :class="{ 'tpl:min-h-[60px]': holdsDropHeight(colIndex) }"
+          @start="dragSourceCol = colIndex"
+          @end="dragSourceCol = null"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >
           <div
             v-for="childBlock in getColumnBlocks(colIndex)"
             :key="childBlock.id"
-            v-show="
-              appliesConditionFilter === false ||
-              !conditionPreview?.isHidden(childBlock.id)
-            "
+            v-show="isChildShown(childBlock.id)"
           >
             <BlockWrapper
               :block="childBlock"
