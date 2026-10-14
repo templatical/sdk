@@ -25,7 +25,21 @@ While a text field or TipTap surface is focused, undo/redo and Delete/Backspace 
 
 Click, Enter, or Space on a sidebar palette item inserts that block **below the selection** (or at the end when nothing is selected). A nested column child cannot accept a section — MJML forbids `mj-section` in `mj-column` — so a section insert lands after the parent section. Same rule as `duplicateBlock`.
 
-Drag-and-drop is pointer-emulated (`force-fallback`). There is no keyboard drag. Palette insert is the pointer-free add path.
+Drag-and-drop is pointer-emulated (`force-fallback`), so a palette item cannot be dragged from the keyboard. Palette insert is the pointer-free add path.
+
+### Reordering blocks
+
+The grip at the start of a selected block's action bar is a keyboard reorder control. Canvas blocks are not focusable themselves; the action bar appears once a block is selected — by a click, or by a palette insert, which selects the new block.
+
+| Key (grip focused) | Action |
+|---|---|
+| `Space` / `Enter` | Lift the block. Press again to drop it |
+| `ArrowUp` / `ArrowDown` | Move the lifted block one position |
+| `Escape` | Cancel and return the block to where it was lifted |
+
+A block moves within its own container — the top level, or one column of a section. It does not cross into another column or out of its section. While a block is lifted, `Escape` cancels the move instead of deselecting.
+
+Each lift, move, drop and cancel is announced in an `aria-live="polite"` status region with the block name and its position, e.g. "Image moved to position 3 of 5." The grip carries `aria-pressed` while lifted and lists its keys in `aria-keyshortcuts`.
 
 ### Saved-blocks pick session
 

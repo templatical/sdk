@@ -1,13 +1,22 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
-import { createHtmlBlock } from "@templatical/types";
+import { BORDER_SIDES, createHtmlBlock } from "@templatical/types";
 import type {
   Block,
   BlockStyles,
   BlockVisibility,
+  BorderRadiusValue,
+  BorderSide,
+  BorderSideValue,
+  BorderValue,
   ContentDirection,
 } from "@templatical/types";
-import { parseColor, parsePaddingShorthand } from "./attribute-parser";
+import {
+  parseBorderDeclaration,
+  parseBorderRadius,
+  parseColor,
+  parsePaddingShorthand,
+} from "./attribute-parser";
 import {
   readForeignCssClasses,
   readVisibility,
@@ -84,6 +93,95 @@ export function baseFields(
       ...(backgroundColor ? { backgroundColor } : {}),
     },
     ...(visibility ? { visibility } : {}),
+  };
+}
+
+/**
+ * `border-radius` as a `BorderRadiusValue`, `undefined` when the attribute is
+ * absent. A value with no px reading is square corners, `0`, and pushes a
+ * note: `label` names the element in it.
+ */
+export function readBorderRadius(
+  attrs: Attrs,
+  label: string,
+  notes: string[],
+): BorderRadiusValue | undefined {
+  const raw = attrs["border-radius"];
+  if (raw === undefined) return undefined;
+
+  const radius = parseBorderRadius(raw);
+  if (radius === null) {
+    notes.push(
+      `${label} border-radius "${raw.trim()}" could not be read; imported as square corners.`,
+    );
+    return 0;
+  }
+  return radius;
+}
+
+/**
+ * What the editor's border control holds for a side with no width
+ * (`BorderControl.vue`), so a border drawn on some sides reads back the way
+ * the editor would have stored it.
+ */
+const UNDRAWN_SIDE: BorderSideValue = {
+  width: 0,
+  style: "solid",
+  color: "#000000",
+};
+
+/**
+ * `border` and `border-<side>` as a `BorderValue`, `undefined` when no side is
+ * drawn. A side takes its own `border-<side>` over `border`, since MJML writes
+ * the side after the shorthand. A declaration that a side actually uses pushes
+ * a note when its style narrows to solid or it cannot be read, in which case
+ * that side is left undrawn.
+ */
+export function readBorder(
+  attrs: Attrs,
+  label: string,
+  notes: string[],
+): BorderValue | undefined {
+  const read = new Map<string, BorderSideValue | null>();
+  const sides = {} as Record<BorderSide, BorderSideValue | null>;
+
+  for (const side of BORDER_SIDES) {
+    const name =
+      attrs[`border-${side}`] !== undefined
+        ? `border-${side}`
+        : attrs.border !== undefined
+          ? "border"
+          : null;
+    if (name === null) {
+      sides[side] = null;
+      continue;
+    }
+
+    if (!read.has(name)) {
+      const raw = attrs[name]!.trim();
+      const parsed = parseBorderDeclaration(raw);
+      if (parsed === null) {
+        notes.push(
+          `${label} ${name} "${raw}" could not be read; imported without it.`,
+        );
+      } else if (parsed.narrowedFrom) {
+        notes.push(
+          `${label} ${name} "${raw}" uses style ${parsed.narrowedFrom}; imported as solid.`,
+        );
+      }
+      read.set(name, parsed?.side ?? null);
+    }
+    const parsed = read.get(name)!;
+    sides[side] = parsed && { ...parsed };
+  }
+
+  if (BORDER_SIDES.every((side) => sides[side] === null)) return undefined;
+
+  return {
+    top: sides.top ?? { ...UNDRAWN_SIDE },
+    right: sides.right ?? { ...UNDRAWN_SIDE },
+    bottom: sides.bottom ?? { ...UNDRAWN_SIDE },
+    left: sides.left ?? { ...UNDRAWN_SIDE },
   };
 }
 

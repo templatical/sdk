@@ -213,12 +213,12 @@ export interface TemplaticalCloudEditorConfig {
   customBlocks?: CustomBlockDefinition[];
 
   /**
-   * Allowlist + order for the block palette. When set, only the listed block
-   * types appear in the sidebar palette, in this order; unlisted built-ins are
-   * hidden. Built-ins use their bare type (`'image'`), custom blocks the
-   * `custom:`-prefixed type (`'custom:qrcode'`). Unknown entries are warned and
-   * skipped. Omit for the full default palette. See `paletteBlocks` on the OSS
-   * editor config for details.
+   * Allowlist + order for the block palette. When non-empty, only the listed
+   * block types appear in the sidebar palette, in this order; unlisted
+   * built-ins are hidden. Built-ins use their bare type (`'image'`), custom
+   * blocks the `custom:`-prefixed type (`'custom:qrcode'`). Unknown entries are
+   * warned and skipped. Omit it or pass `[]` for the full default palette. See
+   * `paletteBlocks` on the OSS editor config for details.
    */
   paletteBlocks?: string[];
 

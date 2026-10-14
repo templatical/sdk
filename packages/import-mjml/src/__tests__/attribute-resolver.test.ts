@@ -287,6 +287,14 @@ describe("readForeignCssClasses", () => {
       [],
     );
   });
+
+  it("excludes the renderer's full-width button marker", () => {
+    expect(
+      readForeignCssClasses({
+        "css-class": "tpl-hide-mobile tpl-button-full promo",
+      }),
+    ).toEqual(["promo"]);
+  });
 });
 
 describe("readParagraphGap", () => {

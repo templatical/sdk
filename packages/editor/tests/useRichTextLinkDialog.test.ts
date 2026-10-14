@@ -243,6 +243,51 @@ describe("useRichTextLinkDialog", () => {
       });
     });
 
+    // A path has no host to complete: prefixing it ships `https:///contact`.
+    // It is stored as typed, the way button and image URLs are, and the
+    // quality linter's `link.relative-url` rule flags it instead.
+    it.each(["/contact", "./pricing", "../pricing", "?ref=footer"])(
+      "preserves the relative path %s without prefixing https://",
+      (path) => {
+        const editor = createMockEditor();
+        const result = useRichTextLinkDialog(editor);
+
+        result.linkUrl.value = path;
+        result.insertLink();
+
+        expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+          href: path,
+        });
+      },
+    );
+
+    // Email has no page scheme for `//host` to inherit.
+    it("upgrades a protocol-relative URL to https://", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "//cdn.example.com/x";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "https://cdn.example.com/x",
+      });
+    });
+
+    // Only path-shaped input counts as relative; a dot-less word is still a
+    // bare host.
+    it("still prepends https:// to a bare word with no path prefix", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "contact";
+      result.insertLink();
+
+      expect(editor.value._chain.setLink).toHaveBeenCalledWith({
+        href: "https://contact",
+      });
+    });
+
     it("does not call editor chain when URL is empty", () => {
       const editor = createMockEditor();
       const result = useRichTextLinkDialog(editor);

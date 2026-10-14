@@ -18,6 +18,7 @@ import type {
 import { generateId } from "@templatical/types";
 import { AlignCenter, AlignLeft, AlignRight, Minus, Plus } from "@lucide/vue";
 import { computed } from "vue";
+import { fontSelectValue } from "../../utils/withCurrentFont";
 
 const props = defineProps<{
   block: TableBlock;
@@ -198,7 +199,7 @@ function removeTableColumn(colIndex: number): void {
     <label :class="labelClass">{{ t.table.fontFamily }}</label>
     <select
       :class="inputClass"
-      :value="block.fontFamily || ''"
+      :value="fontSelectValue(block.fontFamily)"
       @change="
         updateField(
           'fontFamily',

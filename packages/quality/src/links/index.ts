@@ -7,6 +7,7 @@ import { unsupportedProtocol } from "./rules/unsupported-protocol";
 import { malformedMailto } from "./rules/malformed-mailto";
 import { malformedTel } from "./rules/malformed-tel";
 import { localhostOrStaging } from "./rules/localhost-or-staging";
+import { relativeUrl } from "./rules/relative-url";
 
 export const LINK_RULES: Rule[] = [
   javascriptProtocol,
@@ -14,6 +15,7 @@ export const LINK_RULES: Rule[] = [
   malformedMailto,
   malformedTel,
   localhostOrStaging,
+  relativeUrl,
 ];
 
 export function lintLinks(

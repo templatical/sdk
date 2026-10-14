@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createSocialIconsBlock } from "@templatical/types";
+import {
+  createSocialIconsBlock,
+  SOCIAL_ICON_TONES,
+  SOCIAL_ICON_STYLES,
+  type SocialIconTone,
+} from "@templatical/types";
 import {
   renderBlock,
   RenderContext,
@@ -150,7 +155,7 @@ describe("renderSocialIcons", () => {
     const result = renderBlock(block, ctx);
     expect(result).not.toMatch(/<svg[\s>]/i);
     expect(result).not.toContain("</svg>");
-    expect(result).not.toContain("xmlns=\"http://www.w3.org/2000/svg\"");
+    expect(result).not.toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(result).not.toContain("image/svg+xml");
   });
 
@@ -198,15 +203,7 @@ describe("renderSocialIcons", () => {
       "dribbble",
       "behance",
     ] as const;
-    const styles = [
-      "solid",
-      "outlined",
-      "rounded",
-      "square",
-      "circle",
-    ] as const;
-
-    for (const style of styles) {
+    for (const style of SOCIAL_ICON_STYLES) {
       for (const platform of platforms) {
         const block = createSocialIconsBlock({
           icons: [{ platform, url: `https://${platform}.example` }],
@@ -220,6 +217,34 @@ describe("renderSocialIcons", () => {
     }
   });
 
+  it("puts a one-tone color in its own folder and keeps brand URLs as they were", () => {
+    const srcFor = (iconTone: SocialIconTone | undefined) =>
+      renderBlock(
+        createSocialIconsBlock({
+          icons: [{ platform: "github", url: "https://github.com" }],
+          iconStyle: "circle",
+          iconTone,
+        }),
+        ctx,
+      ).match(/src="([^"]+)"/)![1];
+
+    expect(srcFor(undefined)).toBe(
+      `${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/github.png`,
+    );
+    for (const color of SOCIAL_ICON_TONES) {
+      const dir = color === "brand" ? "circle" : `circle-${color}`;
+      expect(srcFor(color)).toBe(
+        `${DEFAULT_SOCIAL_ICONS_BASE_URL}/${dir}/github.png`,
+      );
+    }
+    // A tampered value can't point at a folder the build never wrote.
+    for (const tampered of ["neon", "constructor", "__proto__"]) {
+      expect(srcFor(tampered as SocialIconTone)).toBe(
+        `${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/github.png`,
+      );
+    }
+  });
+
   it("escapes special characters in URL href", () => {
     const block = createSocialIconsBlock({
       icons: [
@@ -230,6 +255,6 @@ describe("renderSocialIcons", () => {
       ],
     });
     const result = renderBlock(block, ctx);
-    expect(result).toContain("href=\"https://example.com/path?a=1&amp;b=2\"");
+    expect(result).toContain('href="https://example.com/path?a=1&amp;b=2"');
   });
 });

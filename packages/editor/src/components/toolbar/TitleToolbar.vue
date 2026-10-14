@@ -5,6 +5,7 @@ import { useI18n } from "../../composables/useI18n";
 import { inputClass, labelClass } from "../../constants/styleConstants";
 import type { TitleBlock } from "@templatical/types";
 import { AlignCenter, AlignLeft, AlignRight } from "@lucide/vue";
+import { fontSelectValue } from "../../utils/withCurrentFont";
 
 defineProps<{
   block: TitleBlock;
@@ -42,7 +43,7 @@ function updateField(field: string, value: unknown): void {
     <label :class="labelClass">{{ t.title.fontFamily }}</label>
     <select
       :class="inputClass"
-      :value="block.fontFamily || ''"
+      :value="fontSelectValue(block.fontFamily)"
       @change="
         updateField(
           'fontFamily',

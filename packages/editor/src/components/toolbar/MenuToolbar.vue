@@ -16,6 +16,7 @@ import type { MenuBlock, MenuItemData } from "@templatical/types";
 import { generateId } from "@templatical/types";
 import { AlignCenter, AlignLeft, AlignRight, Plus, X } from "@lucide/vue";
 import { computed } from "vue";
+import { fontSelectValue } from "../../utils/withCurrentFont";
 
 const props = defineProps<{
   block: MenuBlock;
@@ -143,7 +144,7 @@ function removeMenuItem(itemId: string): void {
   <FieldRow :label="t.menu.fontFamily">
     <select
       :class="inputClass"
-      :value="block.fontFamily || ''"
+      :value="fontSelectValue(block.fontFamily)"
       @change="
         updateField(
           'fontFamily',

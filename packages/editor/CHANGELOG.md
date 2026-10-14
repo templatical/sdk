@@ -1,5 +1,28 @@
 # @templatical/editor
 
+## 0.45.0
+
+### Minor Changes
+
+- 347c2b0: Social icons take a tone, separate from their shape
+
+  `SocialIconsBlock` gains an optional `iconTone`: `"brand"` (each platform's own color, the default and what an absent value means), `"dark"` or `"light"`. `iconStyle` stays the shape and gains `"plain"`, the glyph alone with no badge or outline. A filled shape draws the glyph white on the tone, or near-black on `"light"`; `outlined` and `plain` draw in the tone. The editor offers both as separate selects, Style and Color.
+
+  The renderer ships a PNG set for every style and tone: 6 × 3 sets of 17 platforms, rendered at 144×144, 3× the largest icon size, instead of 192×192, and compressed losslessly with oxipng. The packed package is 360 KB, against 411 KB before (573 KB unpacked, against 545 KB). A brand-colored icon keeps its URL, `{style}/{platform}.png`; a tone lives at `{style}-{tone}/{platform}.png`. If you self-host the icons through `socialIconsBaseUrl`, copy the new folders before using a tone or `plain`. A dark `plain` or `outlined` icon carries a faint white halo, barely visible on light backgrounds, so it stays visible as an outline when a dark-mode client darkens the background but not the image.
+
+  `@templatical/types` exports `SocialIconTone`, `SOCIAL_ICON_STYLES`, `SOCIAL_ICON_TONES`, `SOCIAL_ICON_TONE_COLORS`, `socialIconColors()`, `socialIconAssetDir()`, `socialIconGlyphScale()` and `socialIconHalo()`, the rules the editor, the renderer and the PNG build share.
+
+  The MJML importer reads the style and tone back from a tone's folder, and the Topol importer maps its black-and-white `outlinedbw` set to `outlined` in `"dark"`.
+
+### Patch Changes
+
+- b59b8b7: The font pickers show the font in use when they don't offer it. A font the picker doesn't list, such as one from imported content or a built-in excluded by `builtIns`, or a stack written by the API or an agent, such as `Georgia, serif`, matched no option. The block toolbars' select showed blank, the paragraph toolbar's showed "Default", and Template Settings showed the default font while the email rendered another. A stack whose first family is listed now selects that family's option; any other font is listed first, labelled by its first family. A CSS-wide keyword such as `inherit`, or a blank value, shows as no font: the select's own option for that, such as "Use template font" or "Default".
+- 7585b84: A section column with blocks in it is now as tall as its blocks on the canvas. Every column kept the 60px drop-zone minimum, so a short band, such as a one-line strip or a footer note, looked taller while editing than in the sent email. A column showing no blocks keeps the 60px drop target: an empty column, and one whose blocks the condition preview hides. A column keeps it for the whole drag of its last shown block. The whole visible column takes drops, including the space below a short column's blocks.
+- Updated dependencies [40c00b5]
+- Updated dependencies [347c2b0]
+  - @templatical/renderer@0.45.0
+  - @templatical/quality@0.45.0
+
 ## 0.44.3
 
 ### Patch Changes

@@ -14,6 +14,7 @@ import {
   labelClass,
 } from "../../constants/styleConstants";
 import type { ButtonBlock } from "@templatical/types";
+import { fontSelectValue } from "../../utils/withCurrentFont";
 
 const props = defineProps<{
   block: ButtonBlock;
@@ -71,7 +72,7 @@ function updateCustomWidth(raw: string): void {
     <label :class="labelClass">{{ t.button.fontFamily }}</label>
     <select
       :class="inputClass"
-      :value="block.fontFamily || ''"
+      :value="fontSelectValue(block.fontFamily)"
       @change="
         updateField(
           'fontFamily',
