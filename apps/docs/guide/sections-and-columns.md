@@ -142,7 +142,7 @@ card.styles.backgroundColor = '#ffffff';
 
 ### Outer frame (wrapper)
 
-To frame a section in a full-width colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius:
+To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), not the recipient's whole window:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });

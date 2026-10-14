@@ -325,7 +325,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a full-width band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band."
+      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band. The band is as wide as the email body (`settings.width`), not the recipient's viewport."
     },
     "TitleBlock": {
       "type": "object",
