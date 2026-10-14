@@ -143,6 +143,120 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("Token references — every var(--tpl-*) names a declared token", () => {
+    /**
+     * `var(--tpl-radius-md)` rendered every saved-block surface square, and
+     * nothing could see it. It was never an SDK token: `prefix(tpl)` puts
+     * Tailwind's own theme variables in the same `--tpl-*` namespace, so the
+     * name meant Tailwind's `--radius-md`. Tailwind saw the reference and
+     * emitted `:root, :host { --tpl-radius-md: calc(.375 * var(--tpl-base-size)) }`,
+     * but `--tpl-base-size` is declared on `.tpl`, so at `:root` / `:host` that
+     * declaration is invalid at computed-value time. Every descendant inherits
+     * the invalid value and `border-radius` falls back to 0. The name is even in
+     * the built stylesheet, so it reads as defined everywhere except in the
+     * computed style.
+     *
+     * The rule: a `var(--tpl-*)` names a token declared in `styles/index.css`
+     * or one of the runtime tokens below. A `--tpl-user-*` hook is read only in
+     * `styles/index.css`, where the token layer resolves it; a component
+     * reading one directly would bypass the `theme` option and the
+     * `--tpl-user-dark-*` namespace.
+     */
+
+    /**
+     * Set from script rather than declared in a stylesheet, and read with a
+     * fallback for wherever they are not set. Each maps to the file that sets
+     * it, which the stale-entry case below holds to the source.
+     */
+    const RUNTIME_TOKENS: Record<string, string> = {
+      "--tpl-drop-text": "composables/useEditorCore.ts",
+      "--tpl-doc-link-color": "utils/blockComponentResolver.ts",
+      "--tpl-doc-link-underline": "utils/blockComponentResolver.ts",
+      "--tpl-doc-paragraph-spacing": "utils/blockComponentResolver.ts",
+    };
+
+    /** Every `--tpl-*` property `css` declares or registers, comments aside. */
+    function declaredTokens(css: string): Set<string> {
+      const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
+      return new Set(
+        [...code.matchAll(/(--tpl-[a-z0-9-]+)\s*[:{]/g)].map((m) => m[1]),
+      );
+    }
+
+    /** `path:line  name` for each `var()` read in `source` that resolves to nothing. */
+    function unresolvedReads(
+      relPath: string,
+      source: string,
+      declared: Set<string>,
+    ): string[] {
+      const hits: string[] = [];
+      source.split("\n").forEach((line, i) => {
+        for (const [, name] of line.matchAll(/var\(\s*(--tpl-[a-z0-9-]+)/g)) {
+          if (declared.has(name) || name in RUNTIME_TOKENS) continue;
+          if (name.startsWith("--tpl-user-") && relPath === "styles/index.css") {
+            continue;
+          }
+          hits.push(`${relPath}:${i + 1}  ${name}`);
+        }
+      });
+      return hits;
+    }
+
+    const DECLARED = declaredTokens(INDEX_CSS());
+
+    it("every read names a declared token, a runtime token, or (in index.css) a hook", () => {
+      const unresolved = FILES.flatMap((relPath) =>
+        unresolvedReads(
+          relPath,
+          readFileSync(join(SRC, relPath), "utf8"),
+          DECLARED,
+        ),
+      );
+      expect(unresolved).toEqual([]);
+    });
+
+    it("flags the shape that shipped, and a hook read outside index.css", () => {
+      const component = [
+        '<div class="tpl:rounded-[var(--tpl-radius-md)] tpl:border-[var(--tpl-border)]">',
+        ".tpl-x::after { border-radius: var(--tpl-radius-md); }",
+        '<span :style="{ color: \'var(--tpl-user-primary)\' }">',
+      ].join("\n");
+      expect(unresolvedReads("components/X.vue", component, DECLARED)).toEqual([
+        "components/X.vue:1  --tpl-radius-md",
+        "components/X.vue:2  --tpl-radius-md",
+        "components/X.vue:3  --tpl-user-primary",
+      ]);
+      // The same hook is the point of the token layer, where it belongs.
+      expect(
+        unresolvedReads(
+          "styles/index.css",
+          "--tpl-primary: var(--tpl-user-primary, red);",
+          DECLARED,
+        ),
+      ).toEqual([]);
+    });
+
+    it("the scan sees the whole token layer (positive control)", () => {
+      // Without this, the first case would also pass if the read pattern
+      // stopped matching or the declaration parse came back empty.
+      expect(offenders(/var\(\s*--tpl-[a-z0-9-]+/g).length).toBeGreaterThan(
+        1000,
+      );
+      expect(DECLARED.size).toBeGreaterThan(40);
+    });
+
+    it("the runtime-token list has no stale entries", () => {
+      for (const [token, setter] of Object.entries(RUNTIME_TOKENS)) {
+        // Still set where the entry says…
+        expect(readFileSync(join(SRC, setter), "utf8")).toContain(`"${token}"`);
+        // …and still read, or the entry would only excuse a typo.
+        expect(
+          offenders(new RegExp(`var\\(\\s*${token}(?![a-z0-9-])`, "g")).length,
+        ).toBeGreaterThan(0);
+      }
+    });
+  });
+
   describe("Shadow Vocabulary — the five --tpl-shadow-* steps", () => {
     /**
      * DESIGN.md §5 defines depth as five tokens. Tailwind's own shadow scale

@@ -4,10 +4,13 @@ import {
   createSocialIconsBlock,
   createTableBlock,
   generateId,
+  SOCIAL_ICON_TONES,
+  SOCIAL_ICON_STYLES,
 } from "@templatical/types";
 import type {
   MenuItemData,
   SocialIcon,
+  SocialIconTone,
   SocialIconSize,
   SocialIconStyle,
   SocialPlatform,
@@ -99,7 +102,7 @@ function normalizePlatform(raw: string): SocialPlatform | null {
   return null;
 }
 
-/** The `<style>/<platform>.png` tail of the URL `renderers/social.ts:76` builds. */
+/** The `<dir>/<platform>.png` tail of the URL `renderers/social.ts:79` builds. */
 function platformFromSrc(src: string): { platform: string; style: string } {
   const parts = src.split("?")[0].split("/").filter(Boolean);
   const file = parts.at(-1) ?? "";
@@ -135,13 +138,21 @@ const RADIUS_STYLES: Record<string, SocialIconStyle> = {
   "4px": "solid",
 };
 
-const KNOWN_ICON_STYLES = new Set<string>([
-  "solid",
-  "outlined",
-  "rounded",
-  "square",
-  "circle",
-]);
+/**
+ * The style and tone in an icon folder the renderer names: `circle` for a
+ * brand-colored circle, `circle-dark` for a dark one (`socialIconAssetDir`).
+ */
+function iconDirParts(
+  dir: string,
+): { style: SocialIconStyle; tone?: SocialIconTone } | null {
+  const [style, tone, ...rest] = dir.split("-");
+  if (rest.length > 0 || !SOCIAL_ICON_STYLES.includes(style as SocialIconStyle))
+    return null;
+  if (tone === undefined) return { style: style as SocialIconStyle };
+  return SOCIAL_ICON_TONES.includes(tone as SocialIconTone) && tone !== "brand"
+    ? { style: style as SocialIconStyle, tone: tone as SocialIconTone }
+    : null;
+}
 
 export function convertSocial(
   $el: Cheerio<Element>,
@@ -157,6 +168,7 @@ export function convertSocial(
   const icons: SocialIcon[] = [];
 
   let iconStyle: SocialIconStyle | null = null;
+  let iconTone: SocialIconTone | undefined;
   let iconSizePx = 0;
   let spacing = 0;
 
@@ -186,8 +198,10 @@ export function convertSocial(
       url: (childAttrs.href ?? "").trim(),
     });
 
-    if (!iconStyle && KNOWN_ICON_STYLES.has(fromSrc.style)) {
-      iconStyle = fromSrc.style as SocialIconStyle;
+    const fromDir = iconStyle ? null : iconDirParts(fromSrc.style);
+    if (fromDir) {
+      iconStyle = fromDir.style;
+      iconTone = fromDir.tone;
     }
 
     if (iconSizePx === 0) {
@@ -195,7 +209,7 @@ export function convertSocial(
     }
 
     // The final element emits `0` right-padding, so spacing is only readable
-    // from a non-final one (renderers/social.ts:79).
+    // from a non-final one (renderers/social.ts:82).
     if (spacing === 0 && index < elements.length - 1) {
       spacing = parsePxValue((childAttrs.padding ?? "").trim().split(/\s+/)[1]);
     }
@@ -231,6 +245,7 @@ export function convertSocial(
     align: parseAlignment(attrs.align, "center"),
     ...(iconSize ? { iconSize } : {}),
     ...(iconStyle ? { iconStyle } : {}),
+    ...(iconTone ? { iconTone } : {}),
     ...(spacing > 0 ? { spacing } : {}),
     ...baseFields(attrs),
   });

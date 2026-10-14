@@ -2,7 +2,6 @@ export default {
   // Footer (OSS only)
   footer: {
     poweredBy: "Powered by",
-    openSource: "Open Source",
   },
 
   // Header — template name + save state. Shown only when a templates provider
@@ -296,6 +295,11 @@ export default {
     styleRounded: "Rounded",
     styleSquare: "Square",
     styleCircle: "Circle",
+    stylePlain: "Plain",
+    color: "Color",
+    colorBrand: "Brand colors",
+    colorDark: "Dark",
+    colorLight: "Light",
     size: "Size",
     sizeSmall: "S",
     sizeMedium: "M",
@@ -602,7 +606,10 @@ export default {
     insert: "Insert",
     rename: "Rename",
     delete: "Delete",
+    // The delete confirm shows the short label and is named by the question,
+    // so the label must stay part of the question (WCAG 2.5.3).
     deleteConfirm: "Delete this saved block?",
+    deleteConfirmShort: "Delete?",
     blockCount: "{count} block(s)",
     browse: "Browse Saved Blocks",
     selectToPreview: "Select a saved block to preview",

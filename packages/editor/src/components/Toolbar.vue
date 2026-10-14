@@ -40,6 +40,7 @@ import { Code, Copy, Trash2 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { withCurrentFont } from "../utils/withCurrentFont";
 import {
   FONTS_MANAGER_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
@@ -85,8 +86,14 @@ const blockTypeLabel = computed(() => {
   return getBlockTypeLabel(blockType.value, t);
 });
 
-// Font families from shared fontsManager (provided by Editor.vue)
-const fontFamilies = fontsManager.fonts;
+// Font families from shared fontsManager (provided by Editor.vue), with the
+// block's own font when the list doesn't offer it.
+const fontFamilies = computed(() =>
+  withCurrentFont(
+    fontsManager.fonts.value,
+    "fontFamily" in props.block ? props.block.fontFamily : undefined,
+  ),
+);
 
 function handleUpdate(updates: Partial<Block>): void {
   emit("update", updates);

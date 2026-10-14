@@ -2,6 +2,7 @@
 import { Monitor, Moon, PencilLine, Settings2, Sun } from "@lucide/vue";
 import { onClickOutside } from "@vueuse/core";
 import { nextTick, ref, useId } from "vue";
+import BuildInfo from "@/host/BuildInfo.vue";
 import {
   supportedLocales,
   usePlaygroundI18n,
@@ -101,7 +102,7 @@ onClickOutside(root, () => close(false));
             <label
               v-for="option in THEMES"
               :key="option.value"
-              class="pg-theme-option"
+              class="pg-segment"
               :data-testid="`theme-option-${option.value}`"
             >
               <input
@@ -139,6 +140,9 @@ onClickOutside(root, () => close(false));
             <PencilLine :size="14" :stroke-width="1.75" aria-hidden="true" />
             {{ t.host.settings.showNotes }}
           </button>
+        </div>
+        <div class="pg-settings-divider px-2 pt-2.5">
+          <BuildInfo />
         </div>
       </div>
     </Transition>

@@ -205,6 +205,29 @@ describe("initCloud() normalizes content on the way in", () => {
   });
 });
 
+describe("initCloud() normalizes layout", () => {
+  it("converts a bare token in layout chrome before mount", async () => {
+    const layout: TemplateContent = {
+      blocks: [createParagraphBlock({ content: BARE }), createSlotBlock()],
+      settings: {},
+    } as TemplateContent;
+
+    await initCloudFn({
+      container: container(),
+      projectId: "p1",
+      token: "t1",
+      layout,
+      mergeTags: MERGE_TAGS,
+    } as unknown as Parameters<typeof initCloudFn>[0]);
+
+    const mounted = (captured.props as { config: { layout: TemplateContent } })
+      .config.layout;
+    expect((mounted.blocks[0] as ParagraphBlock).content).toBe(WRAPPED);
+    expect(mounted.blocks[1]?.type).toBe("slot");
+    expect((layout.blocks[0] as ParagraphBlock).content).toBe(BARE);
+  });
+});
+
 describe("instance.setContent() normalizes its argument", () => {
   it("forwards normalized content to the mounted editor", async () => {
     const instance = await initFn({

@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -7,10 +8,14 @@ import { describe, expect, it } from "vitest";
 // @ts-expect-error — plain .mjs build script, no declarations
 import {
   buildOrder,
+  readExampleRoots,
   readFixtureRoots,
   readWorkspacePackages,
   resolveWorkspaceClosure,
+  shouldCopyExampleEntry,
   tarballPlaceholder,
+  vanillaConsumerDir,
+  withTarballs,
 } from "../scripts/consumer-fixture.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +40,38 @@ const fixtureNames = () =>
   readdirSync(FIXTURES_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
+
+const EXAMPLES_DIR = join(REPO_ROOT, "examples");
+
+const readExample = (name: string): Manifest =>
+  JSON.parse(readFileSync(join(EXAMPLES_DIR, name, "package.json"), "utf8"));
+
+const exampleNames = () =>
+  readdirSync(EXAMPLES_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+describe("vanillaConsumerDir", () => {
+  // A consumer inside the repo also resolves bare imports from the repo-root
+  // node_modules, where pnpm links workspace packages; it then cannot model
+  // an optional peer the app did not install.
+  it("sits outside the repo, in the OS temp folder", () => {
+    const dir = vanillaConsumerDir(REPO_ROOT);
+    expect(relative(REPO_ROOT, dir).startsWith("..")).toBe(true);
+    expect(dir.startsWith(tmpdir())).toBe(true);
+  });
+
+  it("is stable for one checkout and differs between checkouts", () => {
+    // Playwright re-imports its config per process, so the path cannot be
+    // random; two worktrees running at once must not share one.
+    expect(vanillaConsumerDir("/work/sdk")).toBe(
+      vanillaConsumerDir("/work/sdk"),
+    );
+    expect(vanillaConsumerDir("/work/sdk")).not.toBe(
+      vanillaConsumerDir("/work/sdk-worktree"),
+    );
+  });
+});
 
 describe("tarballPlaceholder", () => {
   it("derives the token from the unscoped name", () => {
@@ -185,13 +222,32 @@ describe("buildOrder", () => {
     ]);
   });
 
-  it("orders on peerDependencies too — the editor type-resolves the renderer's dist", () => {
-    expect(
-      buildOrder(
-        ["@templatical/editor", "@templatical/renderer"],
-        manifests,
-      ).indexOf("@templatical/renderer"),
-    ).toBe(0);
+  it("orders on peerDependencies too", () => {
+    const order = buildOrder(
+      ["@templatical/editor", "@templatical/renderer"],
+      manifests,
+    );
+    expect(order.indexOf("@templatical/renderer")).toBeLessThan(
+      order.indexOf("@templatical/editor"),
+    );
+  });
+
+  it("builds a member's workspace devDependencies, and what they depend on, before it", () => {
+    // The editor bundles core, and core needs types' dist/ to build.
+    const bundling = fake({
+      "@templatical/editor": {
+        devDependencies: { "@templatical/core": "workspace:*" },
+      },
+      "@templatical/core": {
+        dependencies: { "@templatical/types": "workspace:*" },
+      },
+      "@templatical/types": {},
+    });
+    expect(buildOrder(["@templatical/editor"], bundling)).toEqual([
+      "@templatical/types",
+      "@templatical/core",
+      "@templatical/editor",
+    ]);
   });
 
   it("throws rather than emitting an arbitrary order for a cycle", () => {
@@ -212,10 +268,11 @@ describe("buildOrder", () => {
  * pnpm 12+ refuses to run a recursive script whose selection contains a cycle
  * (`ERR_PNPM_TASK_CYCLE`), and it aborts before executing anything — so one
  * cycle among `packages/*` takes out `pnpm run typecheck` and `pnpm run test`
- * wholesale. Unlike `buildOrder`, this walks `devDependencies` too, because
- * pnpm's task graph does.
+ * wholesale. It walks `devDependencies` too, because pnpm's task graph does.
  */
-const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => {
+const findWorkspaceCycle = (
+  manifests: Map<string, Manifest>,
+): string | null => {
   const DONE = 1;
   const VISITING = 0;
   const state = new Map<string, number>();
@@ -228,7 +285,9 @@ const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => 
     }
     state.set(name, VISITING);
     path.push(name);
-    const edges = (["dependencies", "devDependencies", "peerDependencies"] as const)
+    const edges = (
+      ["dependencies", "devDependencies", "peerDependencies"] as const
+    )
       .flatMap((field) => Object.keys(manifests.get(name)?.[field] ?? {}))
       .filter((dep) => manifests.has(dep));
     for (const dep of edges) {
@@ -247,7 +306,7 @@ const findWorkspaceCycle = (manifests: Map<string, Manifest>): string | null => 
   return null;
 };
 
-describe("the real workspace and fixtures", () => {
+describe("the real workspace, fixtures and examples", () => {
   const manifests = readWorkspacePackages(REPO_ROOT);
 
   it("reads every published package", () => {
@@ -270,7 +329,7 @@ describe("the real workspace and fixtures", () => {
     ]);
   });
 
-  it("keeps the publish-order graph acyclic, so any closure can be ordered", () => {
+  it("keeps the build graph acyclic, so any closure can be ordered", () => {
     expect(buildOrder([...manifests.keys()], manifests)[0]).toBe(
       "@templatical/types",
     );
@@ -352,12 +411,183 @@ describe("the real workspace and fixtures", () => {
     }
   });
 
-  it("pins nothing for the turbopack fixture, which installs the editor alone", () => {
-    expect(
-      resolveWorkspaceClosure(
-        readFixtureRoots(readFixture("turbopack-consumer")),
+  // The editor's build reads its four workspace devDependencies from their
+  // dist/: `vite build` bundles core and types, and `vue-tsc` type-resolves
+  // all four. A fresh checkout has none of them, so each is built first.
+  const EDITOR_BUILD = [
+    "@templatical/types",
+    "@templatical/core",
+    "@templatical/media-library",
+    "@templatical/quality",
+    "@templatical/renderer",
+    "@templatical/editor",
+  ];
+
+  it.each(fixtureNames())(
+    "%s builds every package the editor's build reads, ahead of the editor",
+    (name) => {
+      const { closure } = resolveWorkspaceClosure(
+        readFixtureRoots(readFixture(name)),
         manifests,
-      ).transitive,
-    ).toEqual([]);
+      );
+      expect(buildOrder(closure, manifests)).toEqual(EDITOR_BUILD);
+    },
+  );
+
+  it.each(exampleNames())(
+    "examples/%s builds every package the editor's build reads, ahead of the editor",
+    (name) => {
+      const { closure } = resolveWorkspaceClosure(
+        readExampleRoots(readExample(name), manifests),
+        manifests,
+      );
+      expect(buildOrder(closure, manifests)).toEqual(EDITOR_BUILD);
+    },
+  );
+});
+
+describe("example materialization helpers", () => {
+  const manifests = new Map<
+    string,
+    { name: string; version: string; dependencies?: Record<string, string> }
+  >([
+    ["@templatical/editor", { name: "@templatical/editor", version: "0.43.3" }],
+    [
+      "@templatical/renderer",
+      {
+        name: "@templatical/renderer",
+        version: "0.43.3",
+        dependencies: { "@templatical/types": "workspace:*" },
+      },
+    ],
+    ["@templatical/types", { name: "@templatical/types", version: "0.43.3" }],
+  ]);
+
+  it("accepts ranges equal to ^<workspace version> and returns the roots in declaration order", () => {
+    expect(
+      readExampleRoots(
+        {
+          dependencies: {
+            next: "^16.0.0",
+            "@templatical/editor": "^0.43.3",
+            "@templatical/renderer": "^0.43.3",
+          },
+        },
+        manifests,
+      ),
+    ).toEqual(["@templatical/editor", "@templatical/renderer"]);
+  });
+
+  it("rejects a stale range and names sync-pins", () => {
+    expect(() =>
+      readExampleRoots(
+        { dependencies: { "@templatical/editor": "^0.42.0" } },
+        manifests,
+      ),
+    ).toThrow(
+      'example declares @templatical/editor: "^0.42.0" — expected "^0.43.3" (run: pnpm --filter @templatical/template-tools run sync-pins)',
+    );
+  });
+
+  it("rejects a @templatical package that is not in the workspace", () => {
+    expect(() =>
+      readExampleRoots(
+        { dependencies: { "@templatical/nope": "^0.43.3" } },
+        manifests,
+      ),
+    ).toThrow("@templatical/nope is not a workspace package under packages/");
+  });
+
+  it("reads devDependencies after dependencies, with the same range rule", () => {
+    expect(
+      readExampleRoots(
+        {
+          dependencies: { "@templatical/editor": "^0.43.3" },
+          devDependencies: { "@templatical/types": "^0.43.3" },
+        },
+        manifests,
+      ),
+    ).toEqual(["@templatical/editor", "@templatical/types"]);
+    expect(() =>
+      readExampleRoots(
+        { devDependencies: { "@templatical/types": "^0.42.0" } },
+        manifests,
+      ),
+    ).toThrow(
+      'example declares @templatical/types: "^0.42.0" — expected "^0.43.3"',
+    );
+  });
+
+  it("rewrites direct @templatical deps to tarballs and pins only the transitive ones", () => {
+    const input = {
+      name: "x",
+      dependencies: { react: "^19.0.0", "@templatical/editor": "^0.43.3" },
+    };
+    const tarballs = new Map([
+      ["@templatical/editor", "file:/p/templatical-editor-0.43.3.tgz"],
+      ["@templatical/types", "file:/p/templatical-types-0.43.3.tgz"],
+    ]);
+    const out = withTarballs(input, tarballs, ["@templatical/types"]);
+    expect(out.dependencies).toEqual({
+      react: "^19.0.0",
+      "@templatical/editor": "file:/p/templatical-editor-0.43.3.tgz",
+    });
+    expect(out.overrides).toEqual({
+      "@templatical/types": "file:/p/templatical-types-0.43.3.tgz",
+    });
+    expect(typeof out["//overrides"]).toBe("string");
+    expect(input.dependencies["@templatical/editor"]).toBe("^0.43.3");
+  });
+
+  it("adds no overrides when nothing is transitive", () => {
+    const out = withTarballs(
+      { dependencies: { "@templatical/types": "^0.43.3" } },
+      new Map([["@templatical/types", "file:/p/t.tgz"]]),
+      [],
+    );
+    expect(out).toEqual({
+      dependencies: { "@templatical/types": "file:/p/t.tgz" },
+    });
+  });
+
+  it("rewrites @templatical devDependencies to tarballs as well", () => {
+    expect(
+      withTarballs(
+        {
+          devDependencies: {
+            "@templatical/types": "^0.43.3",
+            typescript: "^6.0.0",
+          },
+        },
+        new Map([["@templatical/types", "file:/p/t.tgz"]]),
+        [],
+      ),
+    ).toEqual({
+      devDependencies: {
+        "@templatical/types": "file:/p/t.tgz",
+        typescript: "^6.0.0",
+      },
+    });
+  });
+
+  it.each([
+    ["/x/examples/nextjs/node_modules", false],
+    ["/x/examples/nextjs/.next", false],
+    ["/x/examples/nuxt/.nuxt", false],
+    ["/x/examples/nuxt/.output", false],
+    ["/x/examples/sveltekit/.svelte-kit", false],
+    ["/x/examples/react-router/.react-router", false],
+    ["/x/examples/react-router/build", false],
+    ["/x/examples/react-vite/dist", false],
+    ["/x/examples/nextjs/data", false],
+    ["/x/examples/nextjs/package-lock.json", false],
+    ["/x/examples/nextjs/pnpm-lock.yaml", false],
+    ["/x/examples/nextjs/yarn.lock", false],
+    ["/x/examples/nextjs/bun.lock", false],
+    ["/x/examples/nextjs/bun.lockb", false],
+    ["/x/examples/nextjs/app/page.tsx", true],
+    ["/x/examples/nextjs/package.json", true],
+  ])("shouldCopyExampleEntry(%s) is %s", (path, expected) => {
+    expect(shouldCopyExampleEntry(path)).toBe(expected);
   });
 });

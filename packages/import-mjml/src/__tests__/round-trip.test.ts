@@ -114,6 +114,7 @@ function buildFixtureTemplate(): TemplateContent {
                 },
               ],
               iconStyle: "circle",
+              iconTone: "dark",
               iconSize: "medium",
               spacing: 14,
             }),
@@ -307,6 +308,21 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const withBreak = paragraphs.find((p) => p.content.includes("Line one"));
 
     expect(withBreak?.content).toBe("<p>Line one<br>Line two</p>");
+  });
+
+  it("does not report a full-width button's own class as dropped CSS", async () => {
+    // Kept out of the lossless fixture: the importer does not map `mj-button`
+    // `width` back to `ButtonBlock.width`, so the structural check would fail
+    // on the width rather than on the class.
+    const template = buildFixtureTemplate();
+    template.blocks = [
+      createButtonBlock({ text: "Wide", url: "https://x.test", width: "full" }),
+    ];
+    const mjml = await renderToMjml(template);
+    const { report } = convertMjmlTemplate(mjml);
+
+    expect(mjml).toContain('css-class="tpl-button-full"');
+    expect(report.warnings).toEqual([]);
   });
 });
 

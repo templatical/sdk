@@ -304,6 +304,7 @@ interface SocialIconsBlock extends BaseBlock {
   type: 'social';
   icons: SocialIcon[];
   iconStyle: SocialIconStyle;
+  iconTone?: SocialIconTone; // absent means 'brand'
   iconSize: SocialIconSize;
   spacing: number;
   align: 'left' | 'center' | 'right';
@@ -323,7 +324,9 @@ type SocialPlatform =
   | 'website';
 
 
-type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
+type SocialIconStyle =
+  | 'solid' | 'outlined' | 'rounded' | 'square' | 'circle' | 'plain';
+type SocialIconTone = 'brand' | 'dark' | 'light';
 type SocialIconSize = 'small' | 'medium' | 'large';
 ```
 

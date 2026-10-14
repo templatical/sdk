@@ -110,6 +110,8 @@ Empty vertical space.
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
 
+The editor and the renderer output this markup unchanged; neither sanitizes it. If the HTML can come from untrusted sources, sanitize `content` on your server before saving or sending. To leave HTML blocks out of the rendered email entirely, pass [`allowHtmlBlocks: false`](/api/renderer-typescript) to `renderToMjml`.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | Raw HTML markup |
@@ -121,10 +123,13 @@ A row of social media icons linking to platform profiles.
 | Property | Type | Description |
 |----------|------|-------------|
 | `icons` | `SocialIcon[]` | List of social icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visual style |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle' \| 'plain'` | Shape. `plain` is the glyph alone, with no badge or outline |
+| `iconTone` | `'brand' \| 'dark' \| 'light'` | Optional. Each platform's brand color (the default), or one tone for every icon. A filled shape draws the glyph in white on the tone, or near-black on `light` |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | Icon size |
 | `spacing` | `number` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+
+Email clients that switch to dark mode, such as the Gmail app and Outlook, change the background but leave images as they are. A dark `plain` or `outlined` icon therefore carries a faint white halo that is barely visible on light backgrounds and keeps the icon visible as an outline once the background turns dark. Light icons have no halo, so they stay clean on colored bands, but clients that turn a dark background light (the Gmail app on iOS, Outlook for Windows) can hide a light `plain` or `outlined` icon. A filled shape avoids both, since its badge brings its own contrast.
 
 17 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 

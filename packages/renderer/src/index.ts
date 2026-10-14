@@ -22,6 +22,7 @@ import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
 import { bgAttr, borderRadiusAttr } from "./utils";
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
+import { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 import { toPaddingString } from "./padding";
 
 export interface RenderOptions {
@@ -101,6 +102,20 @@ export interface RenderOptions {
    */
   layout?: TemplateContent;
 }
+
+/**
+ * Makes a full-width button's whole fill clickable. MJML sizes a button's `<a>`
+ * only for a px width, so without this rule the link of a `100%` button stays
+ * the size of its label.
+ *
+ * It sits in the inline `<mj-style>` so `mjml`'s juice pass writes it onto the
+ * `<a>`; MRML's default build emits that block as a plain `<style>` instead.
+ * `!important` lets it beat MJML's inline `display:inline-block` either way.
+ * Every template carries it, so nothing has to walk the tree for full-width
+ * buttons: juice drops a rule that matches nothing, so with `mjml` it costs
+ * nothing in the compiled HTML.
+ */
+const BUTTON_FULL_WIDTH_RULE = `.${BUTTON_FULL_WIDTH_CSS_CLASS} a { display: block !important; }`;
 
 /**
  * Render template content to an MJML string.
@@ -194,6 +209,7 @@ export async function renderToMjml(
     </mj-attributes>${fontDeclarations}
     <mj-style inline="inline">
       ${richTextStylesheet(collectParagraphGaps(blocks), contentDirection)}
+      ${BUTTON_FULL_WIDTH_RULE}
     </mj-style>
     <mj-style>
       a { color: ${linkColor}; text-decoration: ${linkDecoration}; }
@@ -222,11 +238,15 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
       .map((child) => renderTopLevelBlock(child, context))
       .filter((value) => value !== "")
       .join("\n");
-    const framed = renderMjWrapper(inner, {
-      backgroundColor: block.styles.backgroundColor,
-      padding: block.styles.padding,
-      borderRadius: block.borderRadius,
-    });
+    const framed = renderMjWrapper(
+      inner,
+      {
+        backgroundColor: block.styles.backgroundColor,
+        padding: block.styles.padding,
+        borderRadius: block.borderRadius,
+      },
+      context.contentDirection,
+    );
     return wrapWithDisplayCondition(block, framed);
   }
 
@@ -235,7 +255,7 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
     // An empty render (hidden section) stays empty — never emit a bare wrapper.
     const framed =
       block.wrapper && rendered !== ""
-        ? renderMjWrapper(rendered, block.wrapper)
+        ? renderMjWrapper(rendered, block.wrapper, context.contentDirection)
         : rendered;
     return wrapWithDisplayCondition(block, framed);
   }
@@ -248,15 +268,21 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
 /**
  * `mj-wrapper` attributes shared by a layout `wrapper` block and
  * `section.wrapper`. Padding is always explicit: MJML's wrapper default is
- * `20px 0`, ours is 0.
+ * `20px 0`, ours is 0. Direction is explicit for the same reason: MJML's
+ * default `ltr` would otherwise be inlined on the band of an RTL email.
  */
-function renderMjWrapper(inner: string, wrapper: SectionWrapper): string {
+function renderMjWrapper(
+  inner: string,
+  wrapper: SectionWrapper,
+  direction: ContentDirection,
+): string {
   const bg = bgAttr(wrapper.backgroundColor, "native");
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
   }"`;
   const radius = borderRadiusAttr(wrapper.borderRadius);
-  return `<mj-wrapper${bg}${padding}${radius}>
+  const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
+  return `<mj-wrapper${bg}${padding}${radius}${dirAttr}>
 ${inner}
 </mj-wrapper>`;
 }
@@ -271,7 +297,7 @@ function wrapInSection(content: string, direction: ContentDirection): string {
 
   const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
   return `<mj-section${dirAttr}>
-  <mj-column>
+  <mj-column${dirAttr}>
 ${content}
   </mj-column>
 </mj-section>`;
@@ -452,6 +478,10 @@ export {
   richTextGapClass,
   resolveParagraphGap,
 } from "./rich-text";
+// Exported for `blockRenderers` consumers replacing the button renderer: a
+// full-width button whose `mj-button` lacks this class is clickable only on
+// its label.
+export { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
 export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";

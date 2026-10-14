@@ -45,7 +45,7 @@ Add `--json` to any command for a single parseable JSON document on stdout. Inst
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 31 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 32 rules) runs on top. No command-specific flags.
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -252,4 +252,4 @@ The JSON Schema for a custom block working file — a `CustomBlockDefinition` wi
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
-It never imports `@templatical/core`, the one SDK package still under [FSL-1.1-MIT](/license-faq) rather than plain MIT. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
+It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.

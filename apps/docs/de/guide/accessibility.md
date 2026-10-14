@@ -25,7 +25,21 @@ Solange ein Textfeld oder eine TipTap-Fläche fokussiert ist, bleiben Undo/Redo 
 
 Klick, Enter oder Leertaste auf ein Paletten-Element fügt den Block **unter der Auswahl** ein (oder am Ende, wenn nichts ausgewählt ist). Ein verschachteltes Spaltenkind kann keine Sektion aufnehmen — MJML verbietet `mj-section` in `mj-column` — daher landet ein Sektions-Insert hinter der Elternsektion. Dieselbe Regel wie `duplicateBlock`.
 
-Drag-and-Drop ist zeigeremuliert (`force-fallback`). Es gibt keinen Tastatur-Drag. Paletten-Insert ist der zeigerfreie Weg zum Hinzufügen.
+Drag-and-Drop ist zeigeremuliert (`force-fallback`), daher lässt sich ein Paletten-Element nicht per Tastatur ziehen. Paletten-Insert ist der zeigerfreie Weg zum Hinzufügen.
+
+### Blöcke umsortieren
+
+Der Griff am Anfang der Aktionsleiste eines ausgewählten Blocks ist eine Tastatur-Sortiersteuerung. Canvas-Blöcke selbst sind nicht fokussierbar; die Aktionsleiste erscheint, sobald ein Block ausgewählt ist — per Klick oder per Paletten-Insert, der den neuen Block auswählt.
+
+| Taste (Griff fokussiert) | Aktion |
+|---|---|
+| `Space` / `Enter` | Block anheben. Erneut drücken legt ihn ab |
+| `ArrowUp` / `ArrowDown` | Angehobenen Block um eine Position verschieben |
+| `Escape` | Abbrechen und den Block an seine Ausgangsposition zurücksetzen |
+
+Ein Block bewegt sich innerhalb seines eigenen Containers — der obersten Ebene oder einer Spalte einer Sektion. Er wechselt weder in eine andere Spalte noch aus seiner Sektion heraus. Solange ein Block angehoben ist, bricht `Escape` die Verschiebung ab, statt den Block abzuwählen.
+
+Jedes Anheben, Verschieben, Ablegen und Abbrechen wird in einer Statusregion mit `aria-live="polite"` mit Blockname und Position angesagt, z. B. „Bild auf Position 3 von 5 verschoben." Der Griff trägt im angehobenen Zustand `aria-pressed` und nennt seine Tasten in `aria-keyshortcuts`.
 
 ### Auswahl gespeicherter Blöcke
 

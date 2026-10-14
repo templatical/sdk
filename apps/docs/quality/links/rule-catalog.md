@@ -1,10 +1,10 @@
 ---
-description: All 5 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, and localhost-or-staging hosts — with default severities.
+description: All 6 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, localhost-or-staging hosts, and relative URLs — with default severities.
 ---
 
 # Link rule catalog
 
-The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/rules/`; severity is user-overridable per [Options](../options). All rules scan every URL source returned by `walkUrls` — anchors inside rich text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.
+The 6 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/rules/`; severity is user-overridable per [Options](../options). All rules scan every URL source returned by `walkUrls` — anchors inside rich text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.
 
 ## Dangerous protocols
 
@@ -16,7 +16,7 @@ The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `link.unsupported-protocol` | warning | — | Href uses an explicit protocol other than `http`, `https`, `mailto`, `tel`, or `sms`. Custom protocols (`ftp:`, `file:`, `data:`, app deep-links) typically don't work from email clients and indicate either a copy-paste mistake or an unsupported integration. Relative URLs and bare paths are ignored. `javascript:` is excluded — its own rule covers that. |
+| `link.unsupported-protocol` | warning | — | Href uses an explicit protocol other than `http`, `https`, `mailto`, `tel`, or `sms`. Custom protocols (`ftp:`, `file:`, `data:`, app deep-links) typically don't work from email clients and indicate either a copy-paste mistake or an unsupported integration. Relative URLs and bare paths are ignored here — `link.relative-url` covers the path-shaped ones. `javascript:` is excluded — its own rule covers that. |
 
 ## Malformed URIs
 
@@ -30,6 +30,12 @@ The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/ru
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
 | `link.localhost-or-staging` | warning | — | URL host matches the configured non-production host list. Default list catches `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Configurable via `LintOptions.links.nonProductionHosts` — see the [overview](./) for default extension / replacement patterns. Only fires on `http(s)` and `ftp(s)` URLs; mailto/tel/sms are skipped. |
+
+## Relative URLs
+
+| Rule | Default severity | Auto-fix | What it checks |
+|---|---|---|---|
+| `link.relative-url` | warning | — | Href starts with `/`, `./`, `../` or `?` — a root-relative, relative, query-only or protocol-relative (`//host`) URL. A sent email has no page address to resolve it against, so the link breaks in the inbox. Keyed on those prefixes only: the linter has no merge-tag syntax, so a URL that opens with a tag (<code v-pre>{{ unsubscribe_url }}</code>) is not flagged, and neither is a scheme-less host (`example.com/page`), a bare path (`page.html`) or an `#anchor`. The rich-text link dialog stores such a path as typed and upgrades `//host` to `https://host`. |
 
 ## Auto-fixes
 

@@ -2,6 +2,7 @@
 import './dom-stubs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { computed, ref, nextTick } from 'vue';
+import { flushPromises } from '@vue/test-utils';
 import SaveBlockDialog from '../src/components/SaveBlockDialog.vue';
 import SavedBlocksBrowserModal from '../src/components/SavedBlocksBrowserModal.vue';
 import { mountEditor } from './helpers/mount';
@@ -785,14 +786,440 @@ describe('SavedBlocksBrowserModal', () => {
     expect(cards()).toHaveLength(2);
   });
 
+  /* A button may not contain interactive descendants: a screen reader announces
+     a control inside a control, and the tab order reads as if focus stepped
+     into the element it just landed on. A card holds Rename, Delete and the
+     inline confirm, so the card is a plain wrapper and only its select button
+     is a button — the rule #738 applied to merge-tag fields. */
+  describe('card structure', () => {
+    const CONTROL =
+      'button, [role="button"], a[href], input, select, textarea, [tabindex]';
+
+    const dated: SavedBlock = {
+      id: 'd',
+      name: 'Dated',
+      content: [createTitleBlock()],
+      category: 'Promos',
+      updatedAt: new Date(Date.now() - 5 * 60_000).toISOString(),
+    };
+
+    /** Every control found inside another, as "outer > inner" labels. */
+    function nestedControls(): string[] {
+      const name = (el: Element) =>
+        el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
+      return qAll('button, [role="button"]').flatMap((outer) =>
+        Array.from(outer.querySelectorAll(CONTROL)).map(
+          (inner) => `${name(outer)} > ${name(inner)}`,
+        ),
+      );
+    }
+
+    function cardEls(): HTMLElement[] {
+      return qAll('[data-testid="saved-block-card"]');
+    }
+
+    function selectControl(card: HTMLElement): HTMLButtonElement {
+      const controls =
+        card.querySelectorAll<HTMLButtonElement>('[aria-pressed]');
+      expect(controls).toHaveLength(1);
+      return controls[0];
+    }
+
+    it('nests no control inside another at rest', async () => {
+      mountBrowser();
+      await nextTick();
+
+      // The row actions the guard is about are really there.
+      expect(qAll('button[aria-label="savedBlocks.rename"]')).toHaveLength(2);
+      expect(qAll('button[aria-label="savedBlocks.delete"]')).toHaveLength(2);
+      expect(nestedControls()).toEqual([]);
+    });
+
+    it('nests no control inside another while a delete awaits confirmation', async () => {
+      mountBrowser();
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.delete"]'));
+
+      expect(
+        qAll('button[aria-label="savedBlocks.deleteConfirm"]'),
+      ).toHaveLength(1);
+      expect(nestedControls()).toEqual([]);
+    });
+
+    it('keeps the card wrapper itself out of the controls', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      const [card] = cardEls();
+      expect(card.tagName).toBe('DIV');
+      expect(card.getAttribute('role')).toBe(null);
+      // A focusable wrapper would add a tab stop that does nothing the select
+      // button doesn't already do.
+      expect(card.getAttribute('tabindex')).toBe(null);
+    });
+
+    it('gives each card one select button named by the entry alone', async () => {
+      // Real `en` strings: the count goes through `format()`, which the stub
+      // translations can't interpolate.
+      mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: makeHeadless([dated]),
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [TRANSLATIONS_KEY]: en,
+        },
+        global: { stubs: { BlockPreviewCanvas: true } },
+      } as never);
+      await nextTick();
+
+      const select = selectControl(cardEls()[0]);
+      expect(select.tagName).toBe('BUTTON');
+      expect(select.getAttribute('type')).toBe('button');
+      expect(select.getAttribute('aria-pressed')).toBe('false');
+      // Its text is its accessible name: name, count and category, and not the
+      // timestamp. (The actions staying out is the nesting guard's job.)
+      const texts = Array.from(select.querySelectorAll('span'))
+        .filter((span) => span.children.length === 0)
+        .map((span) => span.textContent?.trim());
+      expect(texts).toEqual(['Dated', '1 block(s)', 'Promos']);
+      expect(
+        cardEls()[0]
+          .querySelector('[data-testid="saved-block-updated"]')
+          ?.textContent?.trim(),
+      ).toBe('5m ago');
+    });
+
+    it('keeps rename, delete and the confirm inside the card, beside the select button', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      const card = cardEls()[0];
+      const select = selectControl(card);
+      const rename = get('button[aria-label="savedBlocks.rename"]');
+      const remove = get('button[aria-label="savedBlocks.delete"]');
+      expect(card.contains(rename)).toBe(true);
+      expect(card.contains(remove)).toBe(true);
+      expect(select.contains(rename)).toBe(false);
+      expect(select.contains(remove)).toBe(false);
+
+      await click(remove);
+      const confirm = get('button[aria-label="savedBlocks.deleteConfirm"]');
+      expect(card.contains(confirm)).toBe(true);
+      expect(select.contains(confirm)).toBe(false);
+    });
+
+    it('selects when the card is clicked outside its select button', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('[data-testid="saved-block-updated"]'));
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
+
+    it('selects through the select button itself, the keyboard route', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      // Enter and Space on a focused button dispatch exactly this click.
+      await click(selectControl(cardEls()[0]));
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
+
+    it('arms the delete confirm without selecting the card', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.delete"]'));
+
+      expect(
+        qAll('button[aria-label="savedBlocks.deleteConfirm"]'),
+      ).toHaveLength(1);
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+    });
+
+    it('opens rename without selecting the card', async () => {
+      mountBrowser([dated]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      await keydown(get('input[aria-label="savedBlocks.rename"]'), 'Escape');
+
+      expect(selectControl(cardEls()[0]).getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+    });
+  });
+
+  /* The confirm shares a card's bottom row with up to five type icons, the
+     overflow count and the timestamp, where the full question can't fit. So
+     it shows a short label and keeps the full question as its accessible
+     name. The crowded row's geometry is measured by the playground e2e. */
+  describe('delete confirm label', () => {
+    it('shows the short label and keeps the full question as its name', async () => {
+      // Real `en` strings: the label and the name are two different keys.
+      mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: makeHeadless([savedA]),
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [TRANSLATIONS_KEY]: en,
+        },
+        global: { stubs: { BlockPreviewCanvas: true } },
+      } as never);
+      await nextTick();
+
+      await click(get('button[aria-label="Delete"]'));
+
+      const confirm = get('button[aria-label="Delete this saved block?"]');
+      expect(confirm.textContent?.trim()).toBe('Delete?');
+    });
+
+    /* WCAG 2.5.3, Label in Name: a speech-input user says what they see, so
+       the visible label must be part of the accessible name. Compared the way
+       assistive tech matches them, ignoring case and punctuation. */
+    const locales = import.meta.glob<{ default: typeof en }>(
+      '../src/i18n/locales/*.ts',
+      { eager: true },
+    );
+    const normalize = (text: string) =>
+      text
+        .toLocaleLowerCase()
+        .replace(/\p{P}/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    for (const [path, mod] of Object.entries(locales)) {
+      const locale = path.slice(path.lastIndexOf('/') + 1, -'.ts'.length);
+
+      it(`keeps the ${locale} label inside its accessible name`, () => {
+        const { deleteConfirm, deleteConfirmShort } = mod.default.savedBlocks;
+        expect(typeof deleteConfirmShort).toBe('string');
+        // Punctuation alone would be "contained" in any name.
+        expect(normalize(deleteConfirmShort)).not.toBe('');
+        expect(normalize(deleteConfirm)).toContain(
+          normalize(deleteConfirmShort),
+        );
+      });
+    }
+  });
+
+  /* Each of these unmounts the element holding focus: arming swaps the trash
+     for the confirm, a delete removes the card, and closing an inline rename
+     removes its edit row. Without a hand-off, focus falls to the page and a
+     keyboard user starts over from the top. */
+  describe('keyboard focus', () => {
+    const savedC: SavedBlock = {
+      id: 'c',
+      name: 'Promo',
+      content: [createTitleBlock()],
+    };
+
+    /** A remove() that drops the entry, as the real composable does. */
+    function removeForReal(headless: ReturnType<typeof makeHeadless>) {
+      headless.remove.mockImplementation(async (id: string) => {
+        headless.savedBlocks.value = headless.savedBlocks.value.filter(
+          (b) => b.id !== id,
+        );
+      });
+    }
+
+    /**
+     * The modal's focus trap moves focus to the search box a frame after it
+     * opens, and schedules that frame only once the open has rendered. Let
+     * both land before a test moves focus itself.
+     */
+    async function settleOpen(): Promise<void> {
+      await nextTick();
+      await flushPromises();
+    }
+
+    async function mountWithFocus(saved = [savedA, savedB, savedC]) {
+      const mounted = mountBrowser(saved);
+      removeForReal(mounted.headless);
+      await settleOpen();
+      return mounted;
+    }
+
+    /** Activates a control the way a keyboard user does: focused, then pressed. */
+    async function activate(el: HTMLElement): Promise<void> {
+      el.focus();
+      await click(el);
+      await flushPromises();
+    }
+
+    function cardOf(name: string): HTMLElement {
+      const card = qAll('[data-testid="saved-block-card"]').find((el) =>
+        el.textContent?.includes(name),
+      );
+      if (!card) throw new Error(`No card for "${name}"`);
+      return card;
+    }
+
+    /** A control in a card, by its stubbed (key-path) aria-label. */
+    function control(name: string, label: string): HTMLElement {
+      const el = cardOf(name).querySelector<HTMLElement>(
+        `button[aria-label="savedBlocks.${label}"]`,
+      );
+      if (!el) throw new Error(`No ${label} control on "${name}"`);
+      return el;
+    }
+
+    function selectOf(name: string): HTMLElement {
+      return cardOf(name).querySelector<HTMLElement>('[aria-pressed]')!;
+    }
+
+    async function arm(name: string): Promise<void> {
+      await activate(control(name, 'delete'));
+    }
+
+    it('moves focus to the confirm when a delete is armed', async () => {
+      await mountWithFocus();
+
+      await arm('Footer');
+
+      expect(document.activeElement).toBe(control('Footer', 'deleteConfirm'));
+    });
+
+    it('disarms on Escape at the confirm, keeps the browser open and refocuses Delete', async () => {
+      const { wrapper } = await mountWithFocus();
+      await arm('Footer');
+      const confirm = control('Footer', 'deleteConfirm');
+      confirm.focus();
+
+      await keydown(confirm, 'Escape');
+      await flushPromises();
+
+      expect(
+        qAll('button[aria-label="savedBlocks.deleteConfirm"]'),
+      ).toHaveLength(0);
+      expect(wrapper.emitted('close')).toBeUndefined();
+      expect(document.activeElement).toBe(control('Footer', 'delete'));
+    });
+
+    it("hands focus to the entry that takes a deleted one's place", async () => {
+      const { headless } = await mountWithFocus();
+      await arm('Footer');
+
+      await activate(control('Footer', 'deleteConfirm'));
+
+      expect(headless.remove).toHaveBeenCalledWith('b');
+      expect(document.activeElement).toBe(selectOf('Promo'));
+    });
+
+    it('hands focus to the previous entry when the last one is deleted', async () => {
+      await mountWithFocus();
+      await arm('Promo');
+
+      await activate(control('Promo', 'deleteConfirm'));
+
+      expect(document.activeElement).toBe(selectOf('Footer'));
+    });
+
+    it('hands focus to the search box when the library empties', async () => {
+      await mountWithFocus([savedA]);
+      await arm('Header');
+
+      await activate(control('Header', 'deleteConfirm'));
+
+      expect(cards()).toHaveLength(0);
+      expect(document.activeElement).toBe(get('input[type="text"]'));
+    });
+
+    it('hands focus back to Delete when the delete fails', async () => {
+      const errors: unknown[] = [];
+      const headless = makeHeadless([savedA, savedB]);
+      headless.remove.mockRejectedValueOnce(new Error('offline'));
+      mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: headless,
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+        },
+        global: {
+          stubs: { BlockPreviewCanvas: true },
+          // The rejection still reaches Vue; collect it instead of failing.
+          config: { errorHandler: (error: unknown) => errors.push(error) },
+        },
+      } as never);
+      await settleOpen();
+      await arm('Footer');
+
+      await activate(control('Footer', 'deleteConfirm'));
+
+      expect(errors).toEqual([new Error('offline')]);
+      expect(cards()).toHaveLength(2);
+      expect(document.activeElement).toBe(control('Footer', 'delete'));
+    });
+
+    it('returns focus to Rename after Enter commits a rename', async () => {
+      const { headless } = await mountWithFocus();
+      await activate(control('Footer', 'rename'));
+
+      const input = get<HTMLInputElement>(
+        'input[aria-label="savedBlocks.rename"]',
+      );
+      expect(document.activeElement).toBe(input);
+      await setValue(input, 'Footer 2');
+      await keydown(input, 'Enter');
+      await flushPromises();
+
+      expect(headless.update).toHaveBeenCalledWith('b', { name: 'Footer 2' });
+      expect(document.activeElement).toBe(control('Footer', 'rename'));
+    });
+
+    it('returns focus to Rename after Escape cancels a rename', async () => {
+      const { headless } = await mountWithFocus();
+      await activate(control('Footer', 'rename'));
+
+      await keydown(
+        get('input[aria-label="savedBlocks.rename"]'),
+        'Escape',
+      );
+      await flushPromises();
+
+      expect(headless.update).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(control('Footer', 'rename'));
+    });
+
+    it('leaves focus where it went when a rename commits on focusout', async () => {
+      await mountWithFocus();
+      await activate(control('Footer', 'rename'));
+
+      // Focus leaves the row for the search box, which fires the row's
+      // focusout and commits.
+      const search = get<HTMLInputElement>('input[type="text"]');
+      search.focus();
+      await flushPromises();
+
+      expect(q('input[aria-label="savedBlocks.rename"]')).toBe(null);
+      expect(document.activeElement).toBe(search);
+    });
+  });
+
   describe('provider order + timestamp label', () => {
     const iso = (min: number) =>
       new Date(Date.UTC(2026, 0, 1, 12, 0, 0) - min * 60_000).toISOString();
 
-    /** The name lives in the card's first <span>; later spans hold the badge. */
     function cardNames(): string[] {
       return cards().map(
-        (c) => c.querySelector('span')?.textContent?.trim() ?? '',
+        (c) =>
+          c.querySelector('[data-testid="saved-block-name"]')?.textContent?.trim() ??
+          '',
       );
     }
 
@@ -944,7 +1371,9 @@ describe('SavedBlocksBrowserModal', () => {
 
     function cardNames(): string[] {
       return cards().map(
-        (c) => c.querySelector('span')?.textContent?.trim() ?? '',
+        (c) =>
+          c.querySelector('[data-testid="saved-block-name"]')?.textContent?.trim() ??
+          '',
       );
     }
 

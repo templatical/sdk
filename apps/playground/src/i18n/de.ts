@@ -317,11 +317,14 @@ export default {
   exportModal: {
     title: "Vorlage exportieren",
     tabs: {
+      preview: "Vorschau",
       html: "HTML",
       mjml: "MJML",
       json: "JSON",
     },
     description: {
+      preview:
+        "Die fertige E-Mail, in Ihrem Browser von MJML zu HTML kompiliert. Kopieren und Herunterladen liefern ihr HTML.",
       html: "Versandfertiges HTML. In Ihren ESP einfügen oder als finale E-Mail senden.",
       mjml: "MJML-Quelle. Mit dem MJML-Compiler oder kompatiblen Tools verwenden.",
       json: "Templatical Block-JSON. Zum erneuten Import oder Speichern der Vorlage.",
@@ -333,6 +336,14 @@ export default {
     compileError: "HTML-Kompilierung fehlgeschlagen.",
     compileErrorDetails: "Fehler:",
     retry: "Erneut versuchen",
+    previewWidth: "Vorschaubreite",
+    desktop: "Desktop",
+    mobile: "Mobil",
+    previewFrame: "E-Mail-Vorschau",
+  },
+  buildInfo: {
+    label: "SDK {version}",
+    compare: "Commit {commit}: Änderungen seit v{version} auf GitHub",
   },
   shareModal: {
     title: "Vorlage teilen",
@@ -400,7 +411,8 @@ export default {
   },
   cloud: {
     title: "Templatical Cloud",
-    subtitle: "Alles aus dem OSS-Editor, plus Cloud-basierte Funktionen.",
+    subtitle:
+      "Alles aus dem selbst gehosteten Editor, plus Cloud-basierte Funktionen.",
     auth: {
       apiCredentials: "API-Zugangsdaten",
       authProxy: "Auth-Proxy",
@@ -451,7 +463,7 @@ export default {
       whiteLabel: "White Label",
       andMore: "und mehr \u2192",
     },
-    backToOss: "\u2190 Zur\u00fcck zum OSS Playground",
+    backToOss: "\u2190 Zur\u00fcck zum Playground",
     editor: {
       back: "Zur\u00fcck",
       cloud: "Cloud",

@@ -20,7 +20,10 @@
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import {
   createDefaultTemplateContent,
+  createParagraphBlock,
   createSlotBlock,
+  createWrapperBlock,
+  type TemplateContent,
 } from "@templatical/types";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
@@ -280,7 +283,9 @@ describe("initCloud — a thin wrapper over init()", () => {
     ).toBe(false);
   });
 
-  it("throws when the container selector matches nothing", async () => {
+  // The container is claimed when `initCloud()` is called, so a selector that
+  // matches nothing fails before any auth, health or plan request goes out.
+  it("throws when the container selector matches nothing, before bootstrapping", async () => {
     await expect(
       initCloudFn(
         cloudConfig(document.createElement("div"), {
@@ -288,6 +293,50 @@ describe("initCloud — a thin wrapper over init()", () => {
         }),
       ),
     ).rejects.toThrow(/Container element not found/);
+    expect(bootstrapCalls).toEqual([]);
+  });
+
+  // `layout` and `content` are checked when `initCloud()` is called too, so an
+  // illegal one fails before any request goes out.
+  it.each([
+    {
+      name: "a layout with no slot",
+      seed: {
+        layout: {
+          blocks: [createParagraphBlock({ content: "<p>Header</p>" })],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] layout: must contain exactly one slot block",
+    },
+    {
+      name: "content holding a slot",
+      seed: {
+        content: {
+          blocks: [createSlotBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] slot is not a valid content block",
+    },
+    {
+      name: "content holding a wrapper",
+      seed: {
+        content: {
+          blocks: [createWrapperBlock()],
+          settings: {},
+        } as TemplateContent,
+      },
+      error: "[Templatical] wrapper is not a valid content block",
+    },
+  ])("rejects $name before bootstrapping", async ({ seed, error }) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    await expect(initCloudFn(cloudConfig(container, seed))).rejects.toThrow(
+      error,
+    );
+    expect(bootstrapCalls).toEqual([]);
   });
 
   it("rejects when the bootstrap fails, rather than mounting a dead editor", async () => {
@@ -537,7 +586,9 @@ describe("OSS init — instance methods", () => {
 
     const { toMjmlForInstance } = await import("../src/utils/toMjml");
     const source = vi.mocked(toMjmlForInstance).mock.calls.at(-1)![0];
-    expect(source.getLayout?.()).toBe(layout);
+    // A copy: the layout enters through the same normalization as content,
+    // which never hands the editor the caller's own object.
+    expect(source.getLayout?.()).toEqual(layout);
   });
 
   describe("render provider", () => {
@@ -623,6 +674,98 @@ describe("OSS init — instance methods", () => {
       await expect(instance.toHtml()).rejects.toThrow(
         /no local HTML path|toHtml\(\) requires a `render` provider/,
       );
+    });
+  });
+
+  describe("content entry points hand the editor a copy", () => {
+    // The editor edits the object it holds in place. Holding the caller's own
+    // object leaks every edit into it, and one another Vue made reactive, or
+    // froze, would hide edits from the editor's own Vue or throw on them.
+    function fakeEditorWith(extra: Record<string, unknown> = {}) {
+      return {
+        getContent: vi.fn(() => ({})),
+        setContent: vi.fn(),
+        setTheme: vi.fn(),
+        renderCustomBlock: vi.fn(),
+        getCustomBlockStylesheet: vi.fn(),
+        ...extra,
+      };
+    }
+
+    it("init() mounts the editor on a copy of `content`", async () => {
+      const { content } = await mountOss(null);
+
+      const config = captured.props!.config as { content: unknown };
+      expect(config.content).toEqual(content);
+      expect(config.content).not.toBe(content);
+    });
+
+    // `init()` mounts on a copy of the config itself, as `initCloud()` does, so
+    // the prepared `layout` and `content` never land on the caller's object,
+    // which may be frozen.
+    it("init() leaves the caller's config untouched", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+      const config = { container, shadowDom: false, content, layout };
+
+      await initFn(config as unknown as Parameters<typeof initFn>[0]);
+
+      expect(config.content).toBe(content);
+      expect(config.layout).toBe(layout);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
+    });
+
+    it("init() mounts with a frozen config", async () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const content = { blocks: [{ id: "seed" }] };
+      const layout = { blocks: [createSlotBlock()], settings: {} };
+
+      await initFn(
+        Object.freeze({
+          container,
+          shadowDom: false,
+          content,
+          layout,
+        }) as unknown as Parameters<typeof initFn>[0],
+      );
+
+      expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
+      const mounted = captured.props!.config as Record<string, unknown>;
+      expect(mounted.content).toEqual(content);
+      expect(mounted.layout).toEqual(layout);
+    });
+
+    it("setContent() hands the mounted editor a copy", async () => {
+      const fakeEditor = fakeEditorWith();
+      const { instance } = await mountOss(fakeEditor);
+      const next = { blocks: [{ id: "next" }] } as never;
+
+      instance.setContent(next);
+
+      const handed = fakeEditor.setContent.mock.calls[0][0];
+      expect(handed).toEqual(next);
+      expect(handed).not.toBe(next);
+    });
+
+    it("create({ content }) hands the mounted editor a copy", async () => {
+      const fakeEditor = fakeEditorWith({
+        create: vi.fn(() => Promise.resolve({ id: "t1", content: {} })),
+      });
+      const { instance } = await mountOss(fakeEditor);
+      const content = { blocks: [{ id: "fresh" }] } as never;
+
+      await instance.create({ name: "Fresh", content });
+
+      const handed = (fakeEditor.create as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as { name: string; content: unknown };
+      expect(handed.name).toBe("Fresh");
+      expect(handed.content).toEqual(content);
+      expect(handed.content).not.toBe(content);
     });
   });
 

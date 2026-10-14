@@ -43,7 +43,7 @@ Bei `true`:
 - Der Issues-Sidebar-Tab wird **nicht registriert**.
 - Die Canvas-Badges erzeugen **kein DOM**.
 
-Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-OSS-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
+Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-Editor-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
 
 ::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
 Der Editor behandelt `{ accessibility: false, structure: false, links: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.

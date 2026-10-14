@@ -178,3 +178,17 @@ test("editor.toMjml() includes custom blocks in the output", async ({ page }) =>
   expect(mjml).toContain("Annual Gala 2026");
   expect(mjml).toContain('class="event"');
 });
+
+// The fixture installs no `@templatical/quality`, and the consumer lives
+// outside the repo, so the editor's lazy import of it fails exactly as in an
+// app that leaves the optional peer out. The installation guide promises the
+// Issues tab stays off then.
+test("renders no Issues tab without @templatical/quality installed", async ({
+  page,
+}) => {
+  // networkidle: the lazy import of the missing peer has settled by now.
+  await page.goto("/", { waitUntil: "networkidle" });
+  const editor = page.locator("#editor");
+  await expect(editor.locator("#tpl-tab-content")).toBeVisible();
+  await expect(editor.locator("#tpl-tab-issues")).toHaveCount(0);
+});

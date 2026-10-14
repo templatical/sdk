@@ -195,9 +195,9 @@ const HIDE_MOBILE = "tpl-hide-mobile";
 /**
  * Marks a rendered title or paragraph's rich-text spacing — mirrors
  * `RICH_TEXT_CSS_CLASS` in `packages/renderer/src/rich-text.ts`. `title.ts`
- * and `paragraph.ts` are the only two renderers that pass a second argument
- * to `getCssClassAttr`, so every rendered title and paragraph carries this
- * class on `css-class` alongside any visibility markers.
+ * and `paragraph.ts` pass it as a second argument to `getCssClassAttr`, so
+ * every rendered title and paragraph carries this class on `css-class`
+ * alongside any visibility markers.
  */
 const RICH_TEXT_CSS_CLASS = "tpl-rich-text";
 
@@ -216,15 +216,23 @@ const RICH_TEXT_CSS_CLASS = "tpl-rich-text";
  */
 const RICH_TEXT_GAP_CLASS = /^tpl-rich-text-(\d+(?:\.\d+)?)$/;
 
+/**
+ * Marks a rendered full-width button — mirrors `BUTTON_FULL_WIDTH_CSS_CLASS`
+ * in `packages/renderer/src/renderers/button.ts`. It carries no meaning of its
+ * own: `width="100%"` on the same `mj-button` already says the button is
+ * full-width.
+ */
+const BUTTON_FULL_WIDTH_CSS_CLASS = "tpl-button-full";
+
 function cssClasses(attrs: Attrs): string[] {
   return (attrs["css-class"] ?? "").trim().split(/\s+/).filter(Boolean);
 }
 
 /**
  * Reverse of the renderer's `getCssClassAttr` (`packages/renderer/src/visibility.ts`).
- * `css-class` also carries the rich-text markers below (`RICH_TEXT_CSS_CLASS`,
- * `RICH_TEXT_GAP_CLASS`) — this function reads only the two visibility
- * classes off it and leaves those alone.
+ * `css-class` also carries the renderer's other markers (`RICH_TEXT_CSS_CLASS`,
+ * `RICH_TEXT_GAP_CLASS`, `BUTTON_FULL_WIDTH_CSS_CLASS`) — this function reads
+ * only the two visibility classes off it and leaves those alone.
  *
  * Returns `undefined` when neither class is present — absence means visible
  * everywhere, and writing `{ desktop: true, mobile: true }` instead would put a
@@ -262,10 +270,11 @@ export function readParagraphGap(attrs: Attrs): number | null {
  * home in the block model, and a template that relies on them will render
  * differently after import.
  *
- * Excludes the renderer's own rich-text markers alongside the two visibility
- * classes, so importing a template the renderer itself produced does not
- * report a title or paragraph's own spacing class as foreign. A consumer's
- * own `tpl-`-prefixed class is not one of these markers and is still reported.
+ * Excludes the renderer's own rich-text and full-width button markers
+ * alongside the two visibility classes, so importing a template the renderer
+ * itself produced does not report one of its own classes as foreign. A
+ * consumer's own `tpl-`-prefixed class is not one of these markers and is
+ * still reported.
  */
 export function readForeignCssClasses(attrs: Attrs): string[] {
   return cssClasses(attrs).filter(
@@ -273,6 +282,7 @@ export function readForeignCssClasses(attrs: Attrs): string[] {
       name !== HIDE_DESKTOP &&
       name !== HIDE_MOBILE &&
       name !== RICH_TEXT_CSS_CLASS &&
+      name !== BUTTON_FULL_WIDTH_CSS_CLASS &&
       !RICH_TEXT_GAP_CLASS.test(name),
   );
 }

@@ -14,6 +14,10 @@ This page answers the questions teams ask most often when evaluating Templatical
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
 - **Only the editor, core and media library are FSL-licensed** — every other package is pure MIT today.
 
+## Is Templatical open source?
+
+The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
+
 ## What is FSL-1.1-MIT?
 
 FSL stands for [**Functional Source License**](https://fsl.software/). It's a modern source-available license designed by Sentry to balance two things teams care about:
@@ -43,8 +47,9 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-stripo` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers) is permissive MIT and free of any future-license consideration.
+The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI) is permissive MIT and free of any future-license consideration.
 
 ## Can I use Templatical commercially?
 
@@ -111,7 +116,7 @@ The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://ww
 
 **Yes, please.** Community contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
 
-By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`, `import-easy-email-pro`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
+By contributing, you agree your contribution is licensed under the same license as the package you're contributing to: FSL-1.1-MIT for `editor`, `core` and `media-library`, MIT for every other package.
 
 There is currently **no separate Contributor License Agreement (CLA)** to sign — your PR alone is enough.
 
@@ -136,7 +141,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 ## Is using the Cloud tier required?
 
-**No.** The Cloud tier is optional. The OSS SDK works completely standalone — every feature in `@templatical/editor` (the OSS init path) runs without any backend.
+**No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
 
 Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 

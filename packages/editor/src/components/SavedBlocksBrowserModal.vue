@@ -49,8 +49,31 @@ const renamingId = ref<string | null>(null);
 const renameDraft = ref("");
 const renameCategoryDraft = ref("");
 const renameInput = ref<HTMLInputElement | null>(null);
+const searchInput = ref<HTMLInputElement | null>(null);
+const confirmButton = ref<HTMLButtonElement | null>(null);
 // 'end' = append, 'beginning' = index 0, or block id = after that block
 const insertPosition = ref<string>("end");
+
+// Arming a delete, deleting and closing a rename each unmount the element that
+// holds focus, which would drop it to the page and send a keyboard user back
+// to the top. So focus is handed to a control in an entry's card, found by
+// these class hooks (each also carries its control's styles).
+const SELECT_CONTROL = ".tpl-saved-block-select";
+const RENAME_CONTROL = ".tpl-saved-block-rename-btn";
+const DELETE_CONTROL = ".tpl-saved-block-delete-btn";
+
+const cardEls = new Map<string, HTMLElement>();
+
+function setCardEl(id: string, el: HTMLElement | null): void {
+  if (el) cardEls.set(id, el);
+  else cardEls.delete(id);
+}
+
+/** Focuses a control in an entry's card, once the card has re-rendered. */
+async function focusCardControl(id: string, selector: string): Promise<void> {
+  await nextTick();
+  cardEls.get(id)?.querySelector<HTMLElement>(selector)?.focus();
+}
 
 // Order is the provider's to decide — the editor never re-sorts. Whatever
 // `list()` returns is what the user sees (the bundled localStorage adapter, for
@@ -195,14 +218,41 @@ function absoluteLabel(saved: SavedBlock): string {
   return formatAbsoluteDateTime(raw, uiLocale);
 }
 
+/** The confirm replaces the trash it came from, so it takes the focus too. */
+async function armDelete(id: string): Promise<void> {
+  confirmDeleteId.value = id;
+  await nextTick();
+  confirmButton.value?.focus();
+}
+
+/** Escape at the confirm backs out to the trash and leaves the browser open. */
+function disarmDelete(id: string): Promise<void> {
+  confirmDeleteId.value = null;
+  return focusCardControl(id, DELETE_CONTROL);
+}
+
 async function handleDelete(id: string): Promise<void> {
+  const index = filtered.value.findIndex((b) => b.id === id);
   try {
     await savedBlocks.remove(id);
-    if (selectedId.value === id) {
-      selectedId.value = null;
-    }
-  } finally {
-    confirmDeleteId.value = null;
+  } catch (error) {
+    // The entry is still listed, so focus goes back to its own trash.
+    await disarmDelete(id);
+    throw error;
+  }
+  confirmDeleteId.value = null;
+  if (selectedId.value === id) {
+    selectedId.value = null;
+  }
+  // The entry that moved into the deleted one's place takes focus, else the
+  // one before it, else the search box once nothing is left to list.
+  const list = filtered.value;
+  const next = list[Math.min(index, list.length - 1)];
+  if (next) {
+    await focusCardControl(next.id, SELECT_CONTROL);
+  } else {
+    await nextTick();
+    searchInput.value?.focus();
   }
 }
 
@@ -251,6 +301,22 @@ async function commitRename(id: string): Promise<void> {
   } finally {
     cancelRename();
   }
+}
+
+// Enter and Escape close the edit row from inside it, so focus goes back to the
+// Rename that opened it. A commit because focus left the row keeps focus
+// wherever it went.
+async function commitRenameByKey(id: string): Promise<void> {
+  try {
+    await commitRename(id);
+  } finally {
+    await focusCardControl(id, RENAME_CONTROL);
+  }
+}
+
+function cancelRenameByKey(id: string): Promise<void> {
+  cancelRename();
+  return focusCardControl(id, RENAME_CONTROL);
 }
 
 /**
@@ -346,6 +412,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 class="tpl:pointer-events-none tpl:absolute tpl:left-3 tpl:top-1/2 tpl:-translate-y-1/2 tpl:text-[var(--tpl-text-dim)]"
               />
               <input
+                ref="searchInput"
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t.savedBlocks.search"
@@ -398,7 +465,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 v-for="n in 3"
                 :key="n"
                 aria-hidden="true"
-                class="tpl-saved-block-skeleton tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)]"
+                class="tpl-saved-block-skeleton tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)]"
               >
                 <div
                   class="tpl:h-3 tpl:w-1/2 tpl:rounded tpl:bg-[var(--tpl-bg-hover)]"
@@ -414,12 +481,11 @@ function handleKeydown(event: KeyboardEvent): void {
               class="tpl:flex tpl:flex-col tpl:gap-1"
             >
               <template v-for="item in filtered" :key="item.id">
-                <!-- Inline rename replaces the whole row: an <input> nested
-                     inside the card <button> would be invalid markup and
-                     wouldn't focus reliably. -->
+                <!-- Inline rename swaps the whole card for an edit row holding
+                     the name and category inputs. -->
                 <div
                   v-if="renamingId === item.id"
-                  class="tpl:flex tpl:w-full tpl:flex-col tpl:gap-1 tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
+                  class="tpl:flex tpl:w-full tpl:flex-col tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
                   style="background-color: var(--tpl-primary-light)"
                   @focusout="onEditFocusOut($event, item.id)"
                 >
@@ -429,8 +495,8 @@ function handleKeydown(event: KeyboardEvent): void {
                     type="text"
                     :aria-label="t.savedBlocks.rename"
                     class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
-                    @keydown.enter.prevent.stop="commitRename(item.id)"
-                    @keydown.esc.prevent.stop="cancelRename()"
+                    @keydown.enter.prevent.stop="commitRenameByKey(item.id)"
+                    @keydown.esc.prevent.stop="cancelRenameByKey(item.id)"
                   />
                   <input
                     v-model="renameCategoryDraft"
@@ -440,17 +506,23 @@ function handleKeydown(event: KeyboardEvent): void {
                     :placeholder="t.savedBlocks.categoryPlaceholder"
                     list="tpl-saved-block-browser-categories"
                     class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
-                    @keydown.enter.prevent.stop="commitRename(item.id)"
-                    @keydown.esc.prevent.stop="cancelRename()"
+                    @keydown.enter.prevent.stop="commitRenameByKey(item.id)"
+                    @keydown.esc.prevent.stop="cancelRenameByKey(item.id)"
                   />
                 </div>
 
-                <button
+                <!-- A wrapper, never a button: the card holds Rename, Delete
+                     and the inline confirm, and a button may not contain
+                     controls — it announces as a control inside a control, and
+                     its accessible name absorbs theirs (#738 fixed the same
+                     defect for merge-tag fields). The select button is the
+                     real, keyboard-reachable control; the wrapper's click is a
+                     redundant mouse convenience that keeps the whole card a
+                     click target. -->
+                <div
                   v-else
-                  type="button"
                   data-testid="saved-block-card"
-                  :aria-pressed="selectedId === item.id"
-                  class="tpl:group/card tpl:w-full tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:bg-transparent tpl:px-3 tpl:py-2 tpl:text-left tpl:transition-all tpl:duration-[120ms]"
+                  class="tpl:group/card tpl:relative tpl:w-full tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:bg-transparent tpl:px-3 tpl:py-2 tpl:text-left tpl:transition-all tpl:duration-[120ms]"
                   :style="{
                     borderColor:
                       selectedId === item.id
@@ -462,34 +534,47 @@ function handleKeydown(event: KeyboardEvent): void {
                         : 'transparent',
                   }"
                   @click="selectedId = item.id"
+                  :ref="(el) => setCardEl(item.id, el as HTMLElement | null)"
                 >
-                  <div class="tpl:flex tpl:items-center tpl:gap-2">
-                    <span
-                      class="tpl:flex-1 tpl:truncate tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
-                    >
-                      {{ item.name }}
-                    </span>
-                    <span
-                      class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
-                    >
-                      {{
-                        format(t.savedBlocks.blockCount, {
-                          count: item.content.length,
-                        })
-                      }}
-                    </span>
-                  </div>
-                  <div
-                    v-if="item.category"
-                    class="tpl:mt-1 tpl:flex tpl:items-center"
+                  <!-- Its text is its accessible name, so it holds the entry
+                       — name, count, category — and nothing else. Spans, not
+                       divs: a button takes phrasing content only. -->
+                  <button
+                    type="button"
+                    :aria-pressed="selectedId === item.id"
+                    class="tpl-saved-block-select tpl:block tpl:w-full tpl:text-left"
                   >
-                    <span
-                      data-testid="saved-block-category"
-                      class="tpl:max-w-full tpl:truncate tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
-                    >
-                      {{ item.category }}
+                    <span class="tpl:flex tpl:items-center tpl:gap-2">
+                      <span
+                        data-testid="saved-block-name"
+                        class="tpl:flex-1 tpl:truncate tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
+                      >
+                        {{ item.name }}
+                      </span>
+                      <span
+                        class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
+                      >
+                        {{
+                          format(t.savedBlocks.blockCount, {
+                            count: item.content.length,
+                          })
+                        }}
+                      </span>
                     </span>
-                  </div>
+                    <span
+                      v-if="item.category"
+                      class="tpl:mt-1 tpl:flex tpl:items-center"
+                    >
+                      <span
+                        data-testid="saved-block-category"
+                        class="tpl:max-w-full tpl:truncate tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
+                      >
+                        {{ item.category }}
+                      </span>
+                    </span>
+                  </button>
+                  <!-- When the row is crowded, only the timestamp gives way:
+                       the icons, the count and the confirm keep their size. -->
                   <div class="tpl:mt-1 tpl:flex tpl:items-center tpl:gap-1">
                     <component
                       :is="icon.icon"
@@ -497,11 +582,11 @@ function handleKeydown(event: KeyboardEvent): void {
                       :key="icon.type"
                       :size="14"
                       :stroke-width="1.5"
-                      class="tpl:text-[var(--tpl-text-dim)]"
+                      class="tpl:shrink-0 tpl:text-[var(--tpl-text-dim)]"
                     />
                     <span
                       v-if="getRemainingTypeCount(item) > 0"
-                      class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
+                      class="tpl:shrink-0 tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
                     >
                       +{{ getRemainingTypeCount(item) }}
                     </span>
@@ -513,14 +598,21 @@ function handleKeydown(event: KeyboardEvent): void {
                     >
                       {{ relativeLabel(item) }}
                     </span>
+                    <!-- The full question doesn't fit beside five icons, so
+                         the button shows a short label and the question is its
+                         accessible name, which contains the label. -->
                     <button
                       v-if="confirmDeleteId === item.id"
+                      :ref="
+                        (el) => (confirmButton = el as HTMLButtonElement | null)
+                      "
                       :aria-label="t.savedBlocks.deleteConfirm"
-                      class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
+                      class="tpl:ml-auto tpl:shrink-0 tpl:cursor-pointer tpl:whitespace-nowrap tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
                       style="background-color: transparent"
                       @click.stop="handleDelete(item.id)"
+                      @keydown.esc.prevent.stop="disarmDelete(item.id)"
                     >
-                      {{ t.savedBlocks.deleteConfirm }}
+                      {{ t.savedBlocks.deleteConfirmShort }}
                     </button>
                     <!-- Hidden, not disabled: an action the user can't perform
                          is better absent than greyed out. `ml-auto` moves to
@@ -543,13 +635,13 @@ function handleKeydown(event: KeyboardEvent): void {
                         }"
                         :aria-label="t.savedBlocks.delete"
                         :title="t.savedBlocks.delete"
-                        @click.stop="confirmDeleteId = item.id"
+                        @click.stop="armDelete(item.id)"
                       >
                         <Trash2 :size="12" :stroke-width="1.5" />
                       </button>
                     </template>
                   </div>
-                </button>
+                </div>
               </template>
             </div>
 
@@ -684,6 +776,25 @@ function handleKeydown(event: KeyboardEvent): void {
   .tpl-saved-block-skeleton {
     animation: none;
   }
+}
+
+/* The select button covers only the card's name rows, but keyboard focus rings
+   the whole entry. So the button paints the ring on an overlay spanning the
+   card instead of on itself: the card is `relative`, and `inset: -1px` reaches
+   out over its 1px border. `pointer-events: none` keeps the overlay from taking
+   clicks meant for the actions under it. Its radius is the card's
+   `--tpl-radius-sm`, so the ring follows the card's corners. */
+.tpl-saved-block-select:focus-visible {
+  box-shadow: none;
+}
+
+.tpl-saved-block-select:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--tpl-radius-sm);
+  box-shadow: var(--tpl-ring);
+  pointer-events: none;
 }
 
 .tpl-saved-block-delete-btn:hover {

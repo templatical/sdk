@@ -60,11 +60,13 @@
 }
 
 /*
- * A playground link alone in its paragraph reads as a quiet pill: neutral
- * label, amber play mark. The markdown stays a plain link, so agents reading
- * llms-full.txt still get the URL; inline mentions keep the normal link style.
+ * A playground or StackBlitz link alone in its paragraph reads as a quiet
+ * pill: neutral label, amber play mark. Both run the code the page describes.
+ * The markdown stays a plain link, so agents reading llms-full.txt still get
+ * the URL; inline mentions keep the normal link style.
  */
-.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child {
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child,
+.vp-doc p > a[href^="https://stackblitz.com/github/templatical/sdk/"]:only-child {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -82,7 +84,8 @@
         background-color 0.2s;
 }
 
-.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child::before {
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child::before,
+.vp-doc p > a[href^="https://stackblitz.com/github/templatical/sdk/"]:only-child::before {
     content: "";
     width: 8px;
     height: 10px;
@@ -93,13 +96,15 @@
         center / contain no-repeat;
 }
 
-.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:hover {
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:hover,
+.vp-doc p > a[href^="https://stackblitz.com/github/templatical/sdk/"]:only-child:hover {
     border-color: var(--vp-c-brand-1);
     background-color: var(--vp-c-brand-soft);
     color: var(--vp-c-text-1);
 }
 
-.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:focus-visible {
+.vp-doc p > a[href^="https://play.templatical.com/scenes/"]:only-child:focus-visible,
+.vp-doc p > a[href^="https://stackblitz.com/github/templatical/sdk/"]:only-child:focus-visible {
     outline: 2px solid var(--vp-c-brand-1);
     outline-offset: 2px;
 }

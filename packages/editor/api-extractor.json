@@ -2,7 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
   "projectFolder": ".",
   "mainEntryPointFilePath": "<projectFolder>/dist/types/index.d.ts",
-  "bundledPackages": [],
+  "bundledPackages": [
+    "@templatical/types",
+    "@templatical/core",
+    "@templatical/quality"
+  ],
   "compiler": {
     "tsconfigFilePath": "<projectFolder>/tsconfig.api-extractor.json"
   },

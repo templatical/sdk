@@ -67,7 +67,7 @@ await initCloud({
 `toMjml()`, `toHtml()` und der Versand einer Test-E-Mail speichern die Vorlage jeweils zuerst, sodass `onSaved` mit `trigger: "api"` auch für eine Aktion ausgelöst wird, die der Nutzer nicht als Speichern wahrgenommen hat. Binden Sie die Navigation an `trigger === "manual"`, statt an das Fehlen von `"autosave"`.
 :::
 
-Einen vollständigen Provider zu übergeben ist unproblematisch: `load`, `create` und `save` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während der Rest des Objekts den Editor trotzdem erreicht. Ein `templates`-Provider aus einer OSS-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
+Einen vollständigen Provider zu übergeben ist unproblematisch: `load`, `create` und `save` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während der Rest des Objekts den Editor trotzdem erreicht. Ein `templates`-Provider aus einer `init()`-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
 
 Bringen Sie Ihren eigenen Speicher mit [`init()`](/de/backend/templates) mit — dort gehört Ihnen der ganze Satz: Templates, Versionsverlauf, Kommentare, Rendering.
 

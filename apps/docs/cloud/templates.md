@@ -67,7 +67,7 @@ await initCloud({
 `toMjml()`, `toHtml()` and sending a test email each save the template first, so `onSaved` fires with `trigger: "api"` for an action the user did not experience as a save. Gate navigation on `trigger === "manual"` rather than on the absence of `"autosave"`.
 :::
 
-Passing a full provider is fine: `load`, `create` and `save` are ignored with a console warning naming them, while the rest of the object reaches the editor regardless. An OSS `templates` provider moving to Cloud needs no change — leave the key exactly as it is.
+Passing a full provider is fine: `load`, `create` and `save` are ignored with a console warning naming them, while the rest of the object reaches the editor regardless. A `templates` provider moving from `init()` to Cloud needs no change — leave the key exactly as it is.
 
 Bring your own storage with [`init()`](/backend/templates), where the whole set — templates, version history, comments, rendering — is yours.
 

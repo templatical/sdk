@@ -3,7 +3,6 @@ import type en from "./en";
 const fr: typeof en = {
   footer: {
     poweredBy: "Propulsé par",
-    openSource: "Open Source",
   },
 
   header: {
@@ -264,6 +263,11 @@ const fr: typeof en = {
     styleRounded: "Arrondi",
     styleSquare: "Carré",
     styleCircle: "Cercle",
+    stylePlain: "Simple",
+    color: "Couleur",
+    colorBrand: "Couleurs de marque",
+    colorDark: "Sombre",
+    colorLight: "Clair",
     size: "Taille",
     sizeSmall: "S",
     sizeMedium: "M",
@@ -541,6 +545,7 @@ const fr: typeof en = {
     rename: "Renommer",
     delete: "Supprimer",
     deleteConfirm: "Supprimer ce bloc enregistré ?",
+    deleteConfirmShort: "Supprimer ?",
     blockCount: "{count} bloc(s)",
     browse: "Parcourir les blocs enregistrés",
     selectToPreview: "Sélectionnez un bloc enregistré pour l'afficher",

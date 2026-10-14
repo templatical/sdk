@@ -33,6 +33,11 @@ export function renderSection(
   const visibilityAttr = getCssClassAttr(block);
   const borderRadiusAttrStr = borderRadiusAttr(block.borderRadius);
   const borderAttrStr = borderAttr(block.border);
+  // MJML's `mj-section`, `mj-group` and `mj-column` each default to
+  // `direction="ltr"` and inline it on their own element, so an RTL email
+  // needs it on all three — the column's inline style otherwise resets the
+  // text inside to LTR under a section that reverses the column order.
+  const dirAttr = context.contentDirection === "rtl" ? ' direction="rtl"' : "";
 
   const children = block.children;
   const columnsContent: string[] = [];
@@ -64,7 +69,7 @@ export function renderSection(
     const content =
       columnBlocks === "" ? "<mj-text>&nbsp;</mj-text>" : columnBlocks;
 
-    columnsContent.push(`<mj-column width="${width}">
+    columnsContent.push(`<mj-column width="${width}"${dirAttr}>
 ${content}
 </mj-column>`);
   }
@@ -75,8 +80,6 @@ ${content}
   // keeps them side-by-side below 480px instead of stacking (MJML's default).
   // `mj-group` requires percentage column widths — `getWidthPercentages`
   // already guarantees that. Only meaningful with 2+ columns.
-  const dirAttr = context.contentDirection === "rtl" ? ' direction="rtl"' : "";
-
   const body =
     block.stackOnMobile === false && columnsContent.length > 1
       ? `<mj-group${dirAttr}>

@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
-    "@microsoft/api-extractor": "^7.59.3",
+    "@microsoft/api-extractor": "^7.59.4",
     "@playwright/mcp": "^0.0.83",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
@@ -25,25 +25,25 @@
     "@tiptap/extension-color": "^3.31.4",
     "@tiptap/extension-font-family": "^3.31.4",
     "@tiptap/extension-text-style": "^3.31.4",
-    "@vitejs/plugin-vue": "^6.0.9",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vitest/coverage-v8": "^5.0.3",
     "@vue/reactivity": "^3.5.43",
-    "eslint": "^10.11.0",
+    "eslint": "^10.12.0",
     "eslint-plugin-vue": "^10.11.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "prettier": "^3.9.9",
+    "prettier": "^3.9.10",
     "syncpack": "^15.3.3",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.0",
-    "vite": "^8.3.2",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.4",
     "vue-eslint-parser": "^10.4.1"
   },
   "engines": {
     "node": ">=24.21.0"
   },
-  "packageManager": "pnpm@12.8.2+sha512.a5941679663d952c5f0ecc38ba98af98b4dc01b95780354f6894f2f873973cef2f7e2989d7db3ee5393938ae21f62fe06bcdf685d475ddad829a62095d2b8b11",
+  "packageManager": "pnpm@12.11.2+sha512.25a51652a196785af5f28bda6dfe8dc582ebefa4ac1d180221ce1390231c5fb76637822ea4b6e4633ce74acdcb0a77f725af11bad38177fdeddaee818a955cb9",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html --filter @templatical/import-mjml --filter @templatical/import-topol --filter @templatical/import-stripo --filter @templatical/import-chamaileon --filter @templatical/import-easy-email-pro run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/template-tools run build && pnpm --filter @templatical/editor run build:all",
@@ -65,7 +65,7 @@
     "test:e2e:consumer": "playwright test --config playwright.consumer.config.ts",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "test:turbopack-consumer": "node packages/editor/scripts/turbopack-consumer-verify.mjs",
+    "test:examples": "node packages/editor/scripts/examples-verify.mjs",
     "test:webpack-consumer": "node packages/editor/scripts/webpack-consumer-verify.mjs",
     "typecheck": "pnpm --filter \"./packages/*\" run typecheck && pnpm --filter @templatical/playground run typecheck"
   }

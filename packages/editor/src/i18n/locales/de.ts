@@ -4,7 +4,6 @@ const de: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",
-    openSource: "Open Source",
   },
 
   // Header — Vorlagenname + Speicherstatus. Nur sichtbar, wenn ein
@@ -301,6 +300,11 @@ const de: typeof en = {
     styleRounded: "Abgerundet",
     styleSquare: "Eckig",
     styleCircle: "Rund",
+    stylePlain: "Schlicht",
+    color: "Farbe",
+    colorBrand: "Markenfarben",
+    colorDark: "Dunkel",
+    colorLight: "Hell",
     size: "Größe",
     sizeSmall: "K",
     sizeMedium: "M",
@@ -611,6 +615,7 @@ const de: typeof en = {
     rename: "Umbenennen",
     delete: "Löschen",
     deleteConfirm: "Diesen gespeicherten Block löschen?",
+    deleteConfirmShort: "Löschen?",
     blockCount: "{count} Block/Blöcke",
     browse: "Gespeicherte Blöcke durchsuchen",
     selectToPreview: "Gespeicherten Block für Vorschau auswählen",

@@ -66,7 +66,7 @@ await initCloud({
 });
 ```
 
-Einen vollständigen Provider zu übergeben ist unproblematisch: `list`, `create`, `update`, `delete`, `setResolved` und `subscribe` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved` den Editor trotzdem erreichen. Ein `comments`-Provider aus einer OSS-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
+Einen vollständigen Provider zu übergeben ist unproblematisch: `list`, `create`, `update`, `delete`, `setResolved` und `subscribe` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved` den Editor trotzdem erreichen. Ein `comments`-Provider aus einer `init()`-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
 
 Bringen Sie Ihren eigenen Speicher mit [`init()`](/de/backend/comments) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Kommentare, Rendering.
 

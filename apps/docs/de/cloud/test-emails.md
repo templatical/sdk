@@ -7,7 +7,7 @@ description: Wie Templatical Cloud Test-E-Mails versendet — und wie Sie sie st
 
 Senden Sie Test-E-Mails direkt aus dem Editor, um die Darstellung in einem echten Postfach vor dem Go-Live zu prüfen.
 
-Test-E-Mail ist eine **gemeinsame Funktion**: Auslöser, Dialog, Empfängerprüfung und alle Versandzustände sind im OSS- und im Cloud-Editor dieselben Komponenten. Nur der Versand unterscheidet sich. Der [Leitfaden Test-E-Mails](/de/backend/test-email) behandelt die Funktion selbst — diese Seite beschreibt, was Cloud ergänzt und wie Sie es überschreiben.
+Test-E-Mail ist eine **gemeinsame Funktion**: Auslöser, Dialog, Empfängerprüfung und alle Versandzustände sind im `init()`- und im `initCloud()`-Editor dieselben Komponenten. Nur der Versand unterscheidet sich. Der [Leitfaden Test-E-Mails](/de/backend/test-email) behandelt die Funktion selbst — diese Seite beschreibt, was Cloud ergänzt und wie Sie es überschreiben.
 
 ## Wie Cloud versendet
 
@@ -81,7 +81,7 @@ await initCloud({
 
 Cloud unterscheidet sie an `send`, nie daran, ob der Wert ein Objekt ist: Alles mit einem funktionierenden `send` ersetzt Clouds Versand, und alles andere — auch diese schmalere Form — behält Clouds eigenen Versand und bleibt plangebunden.
 
-Da die vollständige Provider-Form des Schlüssels auf beiden Einstiegspunkten identisch ist, bedeutet der Wechsel einer OSS-Integration zu Cloud: diesen Schlüssel löschen oder unverändert lassen — nie umschreiben.
+Da die vollständige Provider-Form des Schlüssels auf beiden Einstiegspunkten identisch ist, bedeutet der Wechsel einer `init()`-Integration zu Cloud: diesen Schlüssel löschen oder unverändert lassen — nie umschreiben.
 
 ## Events
 

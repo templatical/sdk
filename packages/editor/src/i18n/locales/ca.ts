@@ -4,7 +4,6 @@ const ca: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",
-    openSource: "Codi obert",
   },
 
   // Header — nom de la plantilla + estat de desat. Només es mostra quan hi ha un
@@ -299,6 +298,11 @@ const ca: typeof en = {
     styleRounded: "Arrodonit",
     styleSquare: "Quadrat",
     styleCircle: "Cercle",
+    stylePlain: "Simple",
+    color: "Color",
+    colorBrand: "Colors de marca",
+    colorDark: "Fosc",
+    colorLight: "Clar",
     size: "Mida",
     sizeSmall: "S",
     sizeMedium: "M",
@@ -609,6 +613,7 @@ const ca: typeof en = {
     rename: "Canvia el nom",
     delete: "Elimina",
     deleteConfirm: "Vols eliminar aquest bloc desat?",
+    deleteConfirmShort: "Eliminar?",
     blockCount: "{count} bloc(s)",
     browse: "Explora els blocs desats",
     selectToPreview: "Selecciona un bloc desat per previsualitzar-lo",

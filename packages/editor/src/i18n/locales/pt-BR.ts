@@ -4,7 +4,6 @@ const ptBR: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Desenvolvido por",
-    openSource: "Código Aberto",
   },
 
   // Header — nome do template + estado de salvamento. Exibido apenas quando um
@@ -298,6 +297,11 @@ const ptBR: typeof en = {
     styleRounded: "Arredondado",
     styleSquare: "Quadrado",
     styleCircle: "Circular",
+    stylePlain: "Simples",
+    color: "Cor",
+    colorBrand: "Cores da marca",
+    colorDark: "Escura",
+    colorLight: "Clara",
     size: "Tamanho",
     sizeSmall: "P",
     sizeMedium: "M",
@@ -606,6 +610,7 @@ const ptBR: typeof en = {
     rename: "Renomear",
     delete: "Excluir",
     deleteConfirm: "Excluir este bloco salvo?",
+    deleteConfirmShort: "Excluir?",
     blockCount: "{count} bloco(s)",
     browse: "Explorar Blocos Salvos",
     selectToPreview: "Selecione um bloco salvo para visualizar",

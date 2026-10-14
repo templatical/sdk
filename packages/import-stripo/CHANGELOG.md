@@ -1,5 +1,49 @@
 # @templatical/import-stripo
 
+## 0.45.0
+
+### Patch Changes
+
+- Updated dependencies [347c2b0]
+  - @templatical/types@0.45.0
+  - @templatical/import-html@0.45.0
+
+## 0.44.3
+
+### Patch Changes
+
+- @templatical/import-html@0.44.3
+  - @templatical/types@0.44.3
+
+## 0.44.2
+
+### Patch Changes
+
+- @templatical/import-html@0.44.2
+  - @templatical/types@0.44.2
+
+## 0.44.1
+
+### Patch Changes
+
+- @templatical/import-html@0.44.1
+  - @templatical/types@0.44.1
+
+## 0.44.0
+
+### Patch Changes
+
+- Updated dependencies [841cb38]
+  - @templatical/types@0.44.0
+  - @templatical/import-html@0.44.0
+
+## 0.43.3
+
+### Patch Changes
+
+- @templatical/import-html@0.43.3
+  - @templatical/types@0.43.3
+
 ## 0.43.2
 
 ### Patch Changes

@@ -1,5 +1,105 @@
 # @templatical/template-tools
 
+## 0.45.0
+
+### Patch Changes
+
+- Updated dependencies [40c00b5]
+- Updated dependencies [347c2b0]
+  - @templatical/renderer@0.45.0
+  - @templatical/import-mjml@0.45.0
+  - @templatical/types@0.45.0
+  - @templatical/import-topol@0.45.0
+  - @templatical/import-html@0.45.0
+  - @templatical/import-beefree@0.45.0
+  - @templatical/import-chamaileon@0.45.0
+  - @templatical/import-easy-email-pro@0.45.0
+  - @templatical/import-stripo@0.45.0
+  - @templatical/import-unlayer@0.45.0
+  - @templatical/quality@0.45.0
+
+## 0.44.3
+
+### Patch Changes
+
+- @templatical/import-beefree@0.44.3
+  - @templatical/import-chamaileon@0.44.3
+  - @templatical/import-easy-email-pro@0.44.3
+  - @templatical/import-html@0.44.3
+  - @templatical/import-mjml@0.44.3
+  - @templatical/import-stripo@0.44.3
+  - @templatical/import-topol@0.44.3
+  - @templatical/import-unlayer@0.44.3
+  - @templatical/quality@0.44.3
+  - @templatical/renderer@0.44.3
+  - @templatical/types@0.44.3
+
+## 0.44.2
+
+### Patch Changes
+
+- Updated dependencies [efbe495]
+  - @templatical/renderer@0.44.2
+  - @templatical/import-html@0.44.2
+  - @templatical/import-mjml@0.44.2
+  - @templatical/import-beefree@0.44.2
+  - @templatical/import-chamaileon@0.44.2
+  - @templatical/import-easy-email-pro@0.44.2
+  - @templatical/import-stripo@0.44.2
+  - @templatical/import-topol@0.44.2
+  - @templatical/import-unlayer@0.44.2
+  - @templatical/quality@0.44.2
+  - @templatical/types@0.44.2
+
+## 0.44.1
+
+### Patch Changes
+
+- @templatical/import-beefree@0.44.1
+  - @templatical/import-chamaileon@0.44.1
+  - @templatical/import-easy-email-pro@0.44.1
+  - @templatical/import-html@0.44.1
+  - @templatical/import-mjml@0.44.1
+  - @templatical/import-stripo@0.44.1
+  - @templatical/import-topol@0.44.1
+  - @templatical/import-unlayer@0.44.1
+  - @templatical/quality@0.44.1
+  - @templatical/renderer@0.44.1
+  - @templatical/types@0.44.1
+
+## 0.44.0
+
+### Patch Changes
+
+- Updated dependencies [841cb38]
+  - @templatical/types@0.44.0
+  - @templatical/import-beefree@0.44.0
+  - @templatical/import-chamaileon@0.44.0
+  - @templatical/import-easy-email-pro@0.44.0
+  - @templatical/import-html@0.44.0
+  - @templatical/import-mjml@0.44.0
+  - @templatical/import-stripo@0.44.0
+  - @templatical/import-topol@0.44.0
+  - @templatical/import-unlayer@0.44.0
+  - @templatical/quality@0.44.0
+  - @templatical/renderer@0.44.0
+
+## 0.43.3
+
+### Patch Changes
+
+- @templatical/import-beefree@0.43.3
+  - @templatical/import-chamaileon@0.43.3
+  - @templatical/import-easy-email-pro@0.43.3
+  - @templatical/import-html@0.43.3
+  - @templatical/import-mjml@0.43.3
+  - @templatical/import-stripo@0.43.3
+  - @templatical/import-topol@0.43.3
+  - @templatical/import-unlayer@0.43.3
+  - @templatical/quality@0.43.3
+  - @templatical/renderer@0.43.3
+  - @templatical/types@0.43.3
+
 ## 0.43.2
 
 ### Patch Changes

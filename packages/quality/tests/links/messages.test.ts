@@ -52,6 +52,15 @@ describe("link rule messages", () => {
     expect(out).toContain('"localhost"');
   });
 
+  it("interpolates {url} for relative-url", () => {
+    expect(
+      formatLinkMessage("en", "link.relative-url", { url: "/contact" }),
+    ).toContain('"/contact"');
+    expect(
+      formatLinkMessage("de", "link.relative-url", { url: "/contact" }),
+    ).toContain('„/contact"');
+  });
+
   it("uses the German template when locale=de", () => {
     const out = formatLinkMessage("de", "link.javascript-protocol", {
       protocol: "javascript",

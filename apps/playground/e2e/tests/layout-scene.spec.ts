@@ -45,6 +45,7 @@ test.describe("Layout scene", () => {
     page,
   }) => {
     await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabMjml).click();
     await expect(page.locator(SELECTORS.exportTabMjml)).toHaveAttribute(
       "aria-selected",
       "true",

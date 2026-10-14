@@ -135,12 +135,23 @@ textarea {
     @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
 }
 
-/* Host header: one primary action (Code), icon buttons for the secondary
-   ones, a text link for Docs. The primary is a neutral fill rather than
-   amber, because the editor toolbar right below uses amber for its active
-   states. */
+/* Host header: one primary action (Code), labelled secondary buttons
+   (Share, Export: .pg-toolbar-btn), a text link for Docs. The primary is a
+   neutral fill rather than amber, because the editor toolbar right below
+   uses amber for its active states. */
 .pg-toolbar-icon-btn {
     @apply inline-flex items-center justify-center size-8 rounded-md border border-gray-200 bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700 dark:disabled:hover:text-gray-400 dark:disabled:hover:bg-gray-800;
+}
+
+/* Below lg the labels would push the scene title out of the header, so
+   Share and Export fall back to icon squares. The label stays in the DOM as
+   the button's accessible name. */
+.pg-toolbar-btn-collapsible {
+    @apply max-lg:size-8 max-lg:justify-center max-lg:px-0;
+}
+
+.pg-toolbar-btn-label {
+    @apply max-lg:sr-only;
 }
 
 .pg-toolbar-primary {
@@ -250,8 +261,33 @@ textarea {
     @apply grid grid-cols-3 gap-1 rounded-md bg-gray-100 p-1 dark:bg-gray-900;
 }
 
-.pg-theme-option {
+/* One option of a segmented radio group: a label around a visually hidden
+   radio. The theme switch and the Export preview's width switch use it. */
+.pg-segment {
     @apply flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded text-[12px] font-medium text-gray-600 transition-colors duration-150 hover:text-gray-900 has-[:checked]:bg-white has-[:checked]:text-gray-900 has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary dark:text-gray-400 dark:hover:text-gray-100 dark:has-[:checked]:bg-gray-700 dark:has-[:checked]:text-gray-100;
+}
+
+.pg-preview-widths {
+    @apply m-0 inline-flex self-start gap-1 rounded-md border-0 bg-gray-100 p-1 dark:bg-gray-900;
+}
+
+/* The frame fills the stage on Desktop and narrows to a centred phone width
+   on Mobile, so the stage's ground shows either side of it. */
+.pg-preview-stage {
+    @apply flex h-[min(480px,60vh)] justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900;
+}
+
+/* White whatever the theme: an email with no body colour renders on white in
+   a mail client, and the iframe would otherwise show the stage through it. */
+.pg-preview-frame {
+    @apply block h-full max-w-full border-0 bg-white;
+    transition: width 280ms var(--ease-out-quint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-preview-frame {
+        transition: none;
+    }
 }
 
 @media (pointer: coarse) {

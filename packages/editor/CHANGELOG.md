@@ -1,5 +1,101 @@
 # @templatical/editor
 
+## 0.45.0
+
+### Minor Changes
+
+- 347c2b0: Social icons take a tone, separate from their shape
+
+  `SocialIconsBlock` gains an optional `iconTone`: `"brand"` (each platform's own color, the default and what an absent value means), `"dark"` or `"light"`. `iconStyle` stays the shape and gains `"plain"`, the glyph alone with no badge or outline. A filled shape draws the glyph white on the tone, or near-black on `"light"`; `outlined` and `plain` draw in the tone. The editor offers both as separate selects, Style and Color.
+
+  The renderer ships a PNG set for every style and tone: 6 × 3 sets of 17 platforms, rendered at 144×144, 3× the largest icon size, instead of 192×192, and compressed losslessly with oxipng. The packed package is 360 KB, against 411 KB before (573 KB unpacked, against 545 KB). A brand-colored icon keeps its URL, `{style}/{platform}.png`; a tone lives at `{style}-{tone}/{platform}.png`. If you self-host the icons through `socialIconsBaseUrl`, copy the new folders before using a tone or `plain`. A dark `plain` or `outlined` icon carries a faint white halo, barely visible on light backgrounds, so it stays visible as an outline when a dark-mode client darkens the background but not the image.
+
+  `@templatical/types` exports `SocialIconTone`, `SOCIAL_ICON_STYLES`, `SOCIAL_ICON_TONES`, `SOCIAL_ICON_TONE_COLORS`, `socialIconColors()`, `socialIconAssetDir()`, `socialIconGlyphScale()` and `socialIconHalo()`, the rules the editor, the renderer and the PNG build share.
+
+  The MJML importer reads the style and tone back from a tone's folder, and the Topol importer maps its black-and-white `outlinedbw` set to `outlined` in `"dark"`.
+
+### Patch Changes
+
+- b59b8b7: The font pickers show the font in use when they don't offer it. A font the picker doesn't list, such as one from imported content or a built-in excluded by `builtIns`, or a stack written by the API or an agent, such as `Georgia, serif`, matched no option. The block toolbars' select showed blank, the paragraph toolbar's showed "Default", and Template Settings showed the default font while the email rendered another. A stack whose first family is listed now selects that family's option; any other font is listed first, labelled by its first family. A CSS-wide keyword such as `inherit`, or a blank value, shows as no font: the select's own option for that, such as "Use template font" or "Default".
+- 7585b84: A section column with blocks in it is now as tall as its blocks on the canvas. Every column kept the 60px drop-zone minimum, so a short band, such as a one-line strip or a footer note, looked taller while editing than in the sent email. A column showing no blocks keeps the 60px drop target: an empty column, and one whose blocks the condition preview hides. A column keeps it for the whole drag of its last shown block. The whole visible column takes drops, including the space below a short column's blocks.
+- Updated dependencies [40c00b5]
+- Updated dependencies [347c2b0]
+  - @templatical/renderer@0.45.0
+  - @templatical/quality@0.45.0
+
+## 0.44.3
+
+### Patch Changes
+
+- b063149: `init()` now mounts on a copy of the config you pass and never writes to it, as `initCloud()` already did. It used to write the normalized `layout` and `content` back onto your object, so a frozen config that carried either one, such as Immer state or an `Object.freeze`d constant, threw `TypeError: Cannot assign to read only property`. Reassigning a key on that object after `init()`, such as `onChange`, no longer reaches the editor; for a handler that changes over time, pass a function that calls the current one.
+- b063149: `init()` and `initCloud()` now check `layout` and `content` when they are called, before they touch the container. A call whose layout or content the editor refuses (such as a layout without exactly one legal slot, or content holding a `slot` or `wrapper` block) rejects at once with the same error as before, and leaves the container and its editor exactly as they were. The check used to run after the call had taken the container over: the rejected call unmounted the editor already there and left the container blank, and an earlier call still loading on that container resolved with an editor that never mounted. A rejected `initCloud()` call now also makes no auth, health or plan request, and in shadow DOM mode a rejected call no longer attaches a shadow root.
+- 96ae215: The saved-block delete confirm stays on one line
+
+  A saved-block card's bottom row holds the entry's block-type icons, a "+N" count for any beyond five, the last-updated time and the row actions. Clicking Delete swaps the actions for an inline confirm, and its full question, "Delete this saved block?", didn't fit a crowded row: on an entry with five or more block types it wrapped onto two lines, made the card taller and squeezed the icons. German, French, Spanish, Catalan, Dutch and Japanese made it worse.
+
+  The confirm now shows a short label ("Delete?" in English, and a short form in every locale) and keeps the full question as its accessible name, so screen readers still announce "Delete this saved block?" and tests that find the button by that name keep working. When the row is crowded, only the timestamp gives way: it truncates and still shows the full date in its tooltip, while the icons and the confirm keep their size.
+
+- 96ae215: Keyboard focus stays in place in the saved blocks browser
+
+  Arming a saved block's delete, confirming it, and closing an inline rename each replace the control that has focus. Focus used to fall back to the page, so a keyboard user had to start again from the top. Now focus moves to the delete confirm when it appears. After a delete, it goes to the entry that took the deleted one's place, or the one before it, or the search box once the library is empty. Enter or Escape in a rename hands it back to Rename. Escape on the delete confirm now backs out to the Delete button instead of closing the whole browser.
+
+- c8152c0: Saved-block surfaces now have rounded corners
+
+  The saved blocks browser's cards, their keyboard focus ring, the inline rename row and the loading skeleton, and the block previews in the save dialog all rendered with square corners. They read `--tpl-radius-md`, which is not one of the editor's radius tokens, so the radius resolved to nothing. They now use `--tpl-radius-sm` (7px by default), which matches the inputs and buttons around them, and they follow `--tpl-user-radius-sm` when you theme it. The focus ring follows the card's corners.
+
+  The 0.7.0 notes gave `--tpl-user-radius-md` as an example theming hook. The editor has never read it. The radius hooks are `--tpl-user-radius-sm`, `--tpl-user-radius` and `--tpl-user-radius-lg`. The theming guide now lists every hook the editor reads, including `--tpl-user-on-primary`, and marks which ones have a `--tpl-user-dark-*` twin. The radius, size, font and transition hooks have no twin and apply in both modes.
+
+- @templatical/quality@0.44.3
+  - @templatical/renderer@0.44.3
+
+## 0.44.2
+
+### Patch Changes
+
+- Updated dependencies [efbe495]
+  - @templatical/renderer@0.44.2
+  - @templatical/quality@0.44.2
+
+## 0.44.1
+
+### Patch Changes
+
+- 114d72e: When `init()` or `initCloud()` is called again on a container before an earlier call on it has resolved, the later call now keeps the container, whichever call finishes first. The earlier call resolves with an editor that never mounts, and whose `unmount()` does nothing. The call that finished last used to replace the other's editor: under React StrictMode in development, the cancelled first call could finish last on a cold load, and the documented cleanup then unmounted it, leaving a blank editor. `initCloud()` now also rejects a container selector that matches nothing before it makes any request.
+- 781ca8c: Saved-block cards no longer nest their actions inside a button
+
+  Each entry in the saved blocks browser rendered as one `<button>` holding its own Rename, Delete and inline delete-confirm buttons. A button may not contain controls, so screen readers announced a control inside a control, the tab order read as if you stepped into the element you just landed on, and the card's accessible name absorbed its actions' names.
+
+  The card is now a plain wrapper. A select button inside it carries the entry's name, block count and category, and Rename, Delete and the confirm sit beside it rather than inside it. Clicking anywhere on the card still selects it, the keyboard focus ring still surrounds the whole card, and the card looks the same as before.
+
+- @templatical/quality@0.44.1
+  - @templatical/renderer@0.44.1
+
+## 0.44.0
+
+### Minor Changes
+
+- 841cb38: The editor's type declarations no longer import any package. They imported `@templatical/types`, `@templatical/core`, `@templatical/quality` and `vue`, none of which the editor declares, so with only the editor installed TypeScript reported `Cannot find module` under `skipLibCheck: false` and typed those parts as `any` otherwise, letting a call like `init({ content: 42 })` compile. The types they reference are now part of the editor's own declarations.
+
+  **Removed exports:** `EditorCapabilities`, `useFonts` and `UseFontsReturn`. They described the editor's internals and only worked inside its own Vue instance. `FontOption` is still exported.
+
+### Patch Changes
+
+- 841cb38: The editor works on a copy of the content it receives: `init({ content })`, `setContent()`, `create({ content })`, a `templates.load` result and version-history content. Edits never change the caller's object, and content from another Vue's `reactive()`, a `ref()`'s `.value` or `markRaw()`, or frozen store state, now edits normally. The editor held the object it was given before: an app's own reactive object kept text and settings edits off the canvas and the properties panel, and frozen state threw on the first edit.
+- 841cb38: The Issues tab goes away when `@templatical/quality` isn't installed: the editor removes it once the package's import fails, and switches to the Content tab if Issues was open. Without the package the tab used to stay and open onto an empty panel.
+- 841cb38: `pusher-js` is now declared as an optional peer. The editor imports it for `initCloud()` realtime, and without the declaration a production `vite build` of an app that doesn't install it failed with `failed to resolve import "pusher-js"`, while the dev server ran normally.
+- 841cb38: `safeClone` drops only a reference back to an ancestor, so an object reached by two paths is copied into both places. It dropped the second visit before, which lost data from `editor.getContent()` and undo snapshots whenever two blocks shared an object, such as two custom blocks of a type whose repeatable field has a `default`.
+- @templatical/quality@0.44.0
+  - @templatical/renderer@0.44.0
+
+## 0.43.3
+
+### Patch Changes
+
+- 4396cd8: The editor footer draws the Templatical mark inline instead of loading `https://templatical.com/logo.svg`, so `init()` makes no requests to Templatical. The footer no longer carries an "Open Source" link: the editor is source-available under FSL-1.1-MIT. `branding: false` still hides the footer.
+- 4396cd8: An editor instance's `unmount()` now tears down only that instance. Once another `init()` on the same container has replaced it, calling the old instance's `unmount()` does nothing instead of unmounting the replacement — which left a blank editor under React StrictMode when a bundler settled both mounts in the same tick, as webpack's shared chunk loading can. The top-level `unmount()` export still tears down the most recently mounted editor.
+- @templatical/quality@0.43.3
+  - @templatical/renderer@0.43.3
+
 ## 0.43.2
 
 ### Patch Changes

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { init as initLexer, parse } from "es-module-lexer";
+import ts from "typescript";
 
 /**
  * These tests guard the editor's bundle topology — specifically the constraints
@@ -65,6 +66,18 @@ function extractImports(source: string): string[] {
   const [imports] = parse(source);
   return imports
     .filter((i) => i.type === "static" && !i.typeOnly)
+    .map((i) => i.specifier)
+    .filter((n): n is string => typeof n === "string");
+}
+
+/**
+ * Static and dynamic specifiers alike. Every optional peer is reached through
+ * `import()`, which `extractImports` leaves out.
+ */
+function extractAllImports(source: string): string[] {
+  const [imports] = parse(source);
+  return imports
+    .filter((i) => (i.type === "static" || i.type === "dynamic") && !i.typeOnly)
     .map((i) => i.specifier)
     .filter((n): n is string => typeof n === "string");
 }
@@ -194,6 +207,63 @@ describe("editor bundle topology", () => {
     expect(peers).not.toContain("@templatical/media-library");
   });
 
+  it("ships type declarations that import no package", () => {
+    // The editor has no runtime dependencies, so nothing a declaration file
+    // imports is guaranteed to be installed. An unresolved import is a TS2307
+    // under `skipLibCheck: false`, and with the usual `skipLibCheck: true` it
+    // silently types everything it carries as `any` — `init({ content: 42 })`
+    // compiled. api-extractor's `bundledPackages` inlines what the editor's
+    // types use instead.
+    // Parsed, not grepped: the doc comments carry `import … from
+    // "@templatical/editor"` examples that are not imports.
+    const file = ts.createSourceFile(
+      "index.d.ts",
+      readFileSync(join(DIST, "index.d.ts"), "utf8"),
+      ts.ScriptTarget.Latest,
+    );
+    const imported: string[] = [];
+    const visit = (node: ts.Node): void => {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      ) {
+        imported.push(node.moduleSpecifier.text);
+      }
+      if (
+        ts.isImportTypeNode(node) &&
+        ts.isLiteralTypeNode(node.argument) &&
+        ts.isStringLiteral(node.argument.literal)
+      ) {
+        imported.push(node.argument.literal.text);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+    expect(imported.filter(isBareSpecifier)).toEqual([]);
+  });
+
+  it("declares exactly its bare imports, dynamic ones included, as optional peers", () => {
+    // A consumer's production build resolves every `import()` it can see. Vite
+    // stubs a missing package only when the importer declares it as an
+    // optional peer; an undeclared one fails `vite build` with "failed to
+    // resolve import" while the dev server runs. The reverse direction keeps a
+    // declared peer from outliving the import that needed it.
+    const pkg = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"),
+    );
+    const optionalPeers = Object.keys(pkg.peerDependenciesMeta ?? {})
+      .filter((k) => pkg.peerDependenciesMeta[k]?.optional === true)
+      .sort();
+    const bare = new Set<string>();
+    for (const file of allFiles) {
+      for (const spec of extractAllImports(readFileSync(file, "utf8"))) {
+        if (isBareSpecifier(spec)) bare.add(getEntrypointSpecifier(spec));
+      }
+    }
+    expect([...bare].sort()).toEqual(optionalPeers);
+  });
+
   it("ships the media library modal in an npm chunk", () => {
     // Browse UI is compiled into the editor, not left as a consumer peer.
     // The testid is the stable marker; Vite may split the chunk as it likes.
@@ -234,7 +304,7 @@ describe("editor bundle topology", () => {
     // to `vue-draggable-plus`. `define.amd` is a property read on a global, so
     // no minifier can rename it — the marker survives every output mode.
     //
-    // `turbopack-consumer` covers this too, but only after a full `next build`;
+    // The `examples (nextjs)` CI job covers this too, but only after a full `next build`;
     // this fails in the `test` job in milliseconds and names the chunk.
     //
     // Scope is deliberately the npm `dist/` alone. The CDN build inlines every

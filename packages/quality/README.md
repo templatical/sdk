@@ -74,8 +74,10 @@ walkBlocks(content, (block, ctx) => {
 
 ## Docs
 
-- [Overview](https://docs.templatical.com/quality/accessibility/)
-- [Rule catalog](https://docs.templatical.com/quality/accessibility/rule-catalog)
-- [Options](https://docs.templatical.com/quality/accessibility/options)
-- [Headless usage](https://docs.templatical.com/quality/accessibility/headless-usage)
-- [Contributing locales](https://docs.templatical.com/quality/accessibility/contributing-locales)
+- [Overview](https://docs.templatical.com/quality/)
+- [Accessibility rules](https://docs.templatical.com/quality/accessibility/rule-catalog)
+- [Structure rules](https://docs.templatical.com/quality/structure/rule-catalog)
+- [Link rules](https://docs.templatical.com/quality/links/rule-catalog)
+- [Options](https://docs.templatical.com/quality/options)
+- [Headless usage](https://docs.templatical.com/quality/headless-usage)
+- [Contributing locales](https://docs.templatical.com/quality/contributing-locales)

@@ -4,7 +4,6 @@ const es: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",
-    openSource: "Código abierto",
   },
 
   // Header — nombre de la plantilla + estado de guardado. Solo se muestra cuando
@@ -299,6 +298,11 @@ const es: typeof en = {
     styleRounded: "Redondeado",
     styleSquare: "Cuadrado",
     styleCircle: "Círculo",
+    stylePlain: "Simple",
+    color: "Color",
+    colorBrand: "Colores de marca",
+    colorDark: "Oscuro",
+    colorLight: "Claro",
     size: "Tamaño",
     sizeSmall: "S",
     sizeMedium: "M",
@@ -607,6 +611,7 @@ const es: typeof en = {
     rename: "Cambiar nombre",
     delete: "Eliminar",
     deleteConfirm: "¿Eliminar este bloque guardado?",
+    deleteConfirmShort: "¿Eliminar?",
     blockCount: "{count} bloque(s)",
     browse: "Explorar bloques guardados",
     selectToPreview: "Selecciona un bloque guardado para previsualizarlo",

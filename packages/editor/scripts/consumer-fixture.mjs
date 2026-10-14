@@ -1,11 +1,12 @@
 /**
- * Materialize an `e2e-fixtures/*` consumer project: build and pack every
- * workspace `@templatical/*` package the fixture pulls in, install the tarballs,
+ * Materialize an `e2e-fixtures/*` consumer project or an `examples/*` app:
+ * pack every workspace `@templatical/*` package it pulls in (a fixture builds
+ * them first; an example builds them only when asked), install the tarballs,
  * and pin the transitive ones so nothing is resolved from the registry.
  *
  * Every published package except the editor leaves `@templatical/types`
- * external — `core`, `quality`, `media-library`, `renderer` and the three
- * `import-*` converters all declare it as a runtime dependency, and only the
+ * external — `core`, `quality`, `media-library`, `renderer`, `template-tools`
+ * and the `import-*` converters all declare it as a runtime dependency, and only the
  * editor bundles it. So any fixture that installs one of them resolves types
  * itself, and `pnpm pack` rewrites the `workspace:*` spec to the current
  * version, which npm then fetches from the registry. A symbol added to types in
@@ -23,6 +24,7 @@
  */
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   cpSync,
   existsSync,
@@ -32,7 +34,8 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, join, resolve } from "node:path";
 
 const SCOPE = "@templatical/";
 
@@ -119,30 +122,48 @@ export function resolveWorkspaceClosure(roots, manifests) {
 }
 
 /**
- * Build order for a closure. Edges are `dependencies` + `peerDependencies`,
- * because a package's `dist/` must exist before a dependent's `vue-tsc` /
- * api-extractor step resolves it through the workspace symlink — and the editor
- * reaches `renderer` and `quality` only as peers. That edge set is acyclic
- * across the whole workspace. `devDependencies` are excluded because they are
- * never a publish-time edge — a workspace devDep is either bundled into the
- * dependent's own output (the editor's core/types/quality) or pure tooling, so
- * it never needs a sibling's `dist/` on disk first.
+ * What to build for a closure, in order: the closure plus every workspace
+ * package their builds read from a sibling's `dist/`, each after the packages
+ * it reads.
+ *
+ * `dependencies` and `devDependencies` both extend the set, because a build
+ * reads both through the workspace symlinks: the editor's `vite build` bundles
+ * core and types from their `dist/` (only media-library is aliased to `src/`),
+ * and its `vue-tsc` step type-resolves all four of its devDependencies from
+ * theirs. The manifest cannot tell those from a devDependency only tests use
+ * (import-html's renderer), so that one is built too.
+ *
+ * `peerDependencies` only order: a peer already in the set goes first, but
+ * none is added, because no build reads a peer's `dist/` — the editor declares
+ * the renderer in `src/renderer.d.ts`, and quality is also one of its
+ * devDependencies. That edge set is acyclic across the whole workspace.
  */
 export function buildOrder(closure, manifests) {
-  const inClosure = new Set(closure);
+  const toBuild = new Set();
+  const queue = [...closure];
+  while (queue.length > 0) {
+    const name = queue.shift();
+    if (toBuild.has(name)) continue;
+    toBuild.add(name);
+    queue.push(
+      ...["dependencies", "devDependencies"].flatMap((field) =>
+        scopedKeys(manifests.get(name), field),
+      ),
+    );
+  }
   const deps = new Map(
-    closure.map((name) => [
+    [...toBuild].map((name) => [
       name,
       new Set(
-        ["dependencies", "peerDependencies"]
+        ["dependencies", "devDependencies", "peerDependencies"]
           .flatMap((field) => scopedKeys(manifests.get(name), field))
-          .filter((dep) => inClosure.has(dep)),
+          .filter((dep) => toBuild.has(dep)),
       ),
     ]),
   );
 
   const ordered = [];
-  const remaining = [...closure].sort();
+  const remaining = [...toBuild].sort();
   while (remaining.length > 0) {
     const next = remaining.filter((name) =>
       [...deps.get(name)].every((dep) => ordered.includes(dep)),
@@ -158,6 +179,156 @@ export function buildOrder(closure, manifests) {
     }
   }
   return ordered;
+}
+
+/**
+ * The `@templatical/*` packages an example declares directly. An example is a
+ * real consumer project, so its specs are real ranges, and each must equal
+ * `^<workspace version>`: sync-pins writes exactly that at release, and any
+ * other range would install a different version than the one this PR builds.
+ */
+export function readExampleRoots(exampleManifest, manifests) {
+  const roots = [];
+  for (const field of ["dependencies", "devDependencies"]) {
+    for (const name of scopedKeys(exampleManifest, field)) {
+      const workspace = manifests.get(name);
+      if (!workspace) {
+        throw new Error(`${name} is not a workspace package under packages/`);
+      }
+      const spec = exampleManifest[field][name];
+      const expected = `^${workspace.version}`;
+      if (spec !== expected) {
+        throw new Error(
+          `example declares ${name}: "${spec}" — expected "${expected}" (run: pnpm --filter @templatical/template-tools run sync-pins)`,
+        );
+      }
+      roots.push(name);
+    }
+  }
+  return roots;
+}
+
+/**
+ * A copy of `manifest` with each direct `@templatical/*` dependency pointed at
+ * its tarball, plus `overrides` pinning every transitive one (see the header).
+ * Pure: the input is not mutated.
+ */
+export function withTarballs(manifest, tarballs, transitive) {
+  const out = structuredClone(manifest);
+  for (const field of ["dependencies", "devDependencies"]) {
+    for (const name of scopedKeys(out, field)) {
+      out[field][name] = tarballs.get(name);
+    }
+  }
+  if (transitive.length === 0) return out;
+  return {
+    ...out,
+    "//overrides": OVERRIDES_NOTE,
+    overrides: Object.fromEntries(
+      transitive.map((name) => [name, tarballs.get(name)]),
+    ),
+  };
+}
+
+/** Build output, installs, local data and lockfiles never leave the example. */
+const EXAMPLE_SKIPPED = new Set([
+  "node_modules",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".svelte-kit",
+  ".react-router",
+  "build",
+  "dist",
+  "data",
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+  "bun.lock",
+  "bun.lockb",
+]);
+
+export function shouldCopyExampleEntry(path) {
+  return !EXAMPLE_SKIPPED.has(basename(path));
+}
+
+/**
+ * Pack every package in `closure` into `packDir` and return name -> `file:`
+ * spec. Always packs fresh: a reused tarball of the same version could carry
+ * code from an earlier checkout.
+ */
+export function packClosure({
+  repoRoot,
+  closure,
+  manifests,
+  packDir,
+  build = false,
+  log = () => {},
+}) {
+  if (build) {
+    for (const name of buildOrder(closure, manifests)) {
+      run(`pnpm --filter ${name} run build`, { cwd: repoRoot }, log);
+    }
+  }
+  mkdirSync(packDir, { recursive: true });
+  const tarballs = new Map();
+  for (const name of closure) {
+    const { dir, version } = manifests.get(name);
+    const file = `${name.replace("@", "").replace("/", "-")}-${version}.tgz`;
+    run(`pnpm pack --pack-destination "${packDir}"`, { cwd: dir }, log);
+    if (!existsSync(join(packDir, file))) {
+      throw new Error(`pnpm pack did not produce ${file}`);
+    }
+    tarballs.set(name, `file:${join(packDir, file)}`);
+  }
+  return tarballs;
+}
+
+/**
+ * Materialize `examples/<name>` against packed workspace builds: copy it to
+ * `consumerDir` (keep that outside the repo so resolution cannot walk into the
+ * workspace), point its `@templatical/*` dependencies at the tarballs, then
+ * `npm install`.
+ */
+export function materializeExample({
+  repoRoot,
+  exampleDir,
+  consumerDir,
+  packDir,
+  build = false,
+  log = () => {},
+}) {
+  const manifestPath = join(exampleDir, "package.json");
+  if (!existsSync(manifestPath)) {
+    throw new Error(`example has no package.json: ${exampleDir}`);
+  }
+  const manifests = readWorkspacePackages(repoRoot);
+  const exampleManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const roots = readExampleRoots(exampleManifest, manifests);
+  const { closure, transitive } = resolveWorkspaceClosure(roots, manifests);
+  log(`closure: ${closure.join(", ")}`);
+
+  const tarballs = packClosure({
+    repoRoot,
+    closure,
+    manifests,
+    packDir,
+    build,
+    log,
+  });
+
+  rmSync(consumerDir, { recursive: true, force: true });
+  mkdirSync(consumerDir, { recursive: true });
+  cpSync(exampleDir, consumerDir, {
+    recursive: true,
+    filter: shouldCopyExampleEntry,
+  });
+  writeFileSync(
+    join(consumerDir, "package.json"),
+    `${JSON.stringify(withTarballs(exampleManifest, tarballs, transitive), null, 2)}\n`,
+  );
+  run(`npm install --no-fund --no-audit`, { cwd: consumerDir }, log);
+  return { closure, transitive, consumerDir };
 }
 
 const OVERRIDES_NOTE =
@@ -194,21 +365,14 @@ export function materializeConsumer({
   if (transitive.length > 0)
     log(`pinned transitively: ${transitive.join(", ")}`);
 
-  for (const name of buildOrder(closure, manifests)) {
-    run(`pnpm --filter ${name} run build`, { cwd: repoRoot }, log);
-  }
-
-  const tarballs = new Map();
-  for (const name of closure) {
-    const { dir } = manifests.get(name);
-    run(`pnpm pack --pack-destination "${packDir}"`, { cwd: dir }, log);
-    const prefix = `${name.replace("@", "").replace("/", "-")}-`;
-    const tarball = readdirSync(packDir).find(
-      (file) => file.startsWith(prefix) && file.endsWith(".tgz"),
-    );
-    if (!tarball) throw new Error(`pnpm pack did not produce a ${name} .tgz`);
-    tarballs.set(name, `file:${join(packDir, tarball)}`);
-  }
+  const tarballs = packClosure({
+    repoRoot,
+    closure,
+    manifests,
+    packDir,
+    build: true,
+    log,
+  });
 
   rmSync(consumerDir, { recursive: true, force: true });
   mkdirSync(consumerDir, { recursive: true });
@@ -217,21 +381,11 @@ export function materializeConsumer({
   // The fixture ships its manifest as `package.json.tpl` so syncpack and pnpm
   // don't treat it as a workspace package.
   rmSync(join(consumerDir, "package.json.tpl"));
-  let manifest = JSON.parse(fixtureManifestText);
-  for (const field of ["dependencies", "devDependencies"]) {
-    for (const name of scopedKeys(manifest, field)) {
-      manifest[field][name] = tarballs.get(name);
-    }
-  }
-  if (transitive.length > 0) {
-    manifest = {
-      ...manifest,
-      "//overrides": OVERRIDES_NOTE,
-      overrides: Object.fromEntries(
-        transitive.map((name) => [name, tarballs.get(name)]),
-      ),
-    };
-  }
+  const manifest = withTarballs(
+    JSON.parse(fixtureManifestText),
+    tarballs,
+    transitive,
+  );
   const consumerPkgPath = join(consumerDir, "package.json");
   writeFileSync(consumerPkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -243,6 +397,19 @@ export function materializeConsumer({
 function run(cmd, opts, log) {
   log(`$ ${cmd}`);
   execSync(cmd, { stdio: "inherit", ...opts });
+}
+
+/**
+ * Where the vanilla consumer is materialized: outside the repo, because a
+ * consumer inside it also resolves bare imports from the repo-root
+ * node_modules, where pnpm links workspace packages, and then cannot model an
+ * optional peer the app did not install. Derived from the checkout path, not
+ * random: Playwright re-imports its config in each process, the prepare step
+ * and that config must agree, and two worktrees must not share one folder.
+ */
+export function vanillaConsumerDir(repoRoot) {
+  const id = createHash("sha256").update(repoRoot).digest("hex").slice(0, 12);
+  return join(tmpdir(), `templatical-e2e-consumer-${id}`);
 }
 
 /** Resolve the repo root from a script in `packages/editor/scripts/`. */

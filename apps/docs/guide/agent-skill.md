@@ -23,6 +23,42 @@ npx skills update templatical
 
 If your agent doesn't pick the skill up afterwards, check that it is enabled in the agent's own skill list.
 
+## The previous `templatical-email` skill {#previous-skill}
+
+The skill shipped earlier as `templatical-email`. These install commands for it no longer work:
+
+```text
+/plugin marketplace add templatical/sdk
+/plugin install templatical-email@templatical
+cp -r skills/templatical-email ~/.agents/skills/
+npx claudepluginhub templatical/sdk --plugin templatical-email
+```
+
+The skill was renamed to `templatical`, and `npx skills add templatical/sdk` is its only install command.
+
+Remove the old copy first, so agents do not load it alongside `templatical`:
+
+- If you installed through Claude Code's plugin commands or `npx claudepluginhub`, run these in Claude Code:
+
+  ```text
+  /plugin uninstall templatical-email@templatical
+  /plugin marketplace remove templatical
+  ```
+
+  The repo no longer serves a marketplace, so the `templatical` marketplace entry points at nothing.
+
+- If you copied or symlinked the `templatical-email` folder into a skills directory (`~/.agents/skills/`, `~/.claude/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/`, or a project's `.agents/skills/`, `.claude/skills/` or `.cursor/skills/`), delete it from each one. For `~/.agents/skills/`:
+
+  ```bash
+  rm -rf ~/.agents/skills/templatical-email
+  ```
+
+Then install the renamed skill:
+
+```bash
+npx skills add templatical/sdk
+```
+
 ## Capabilities
 
 - **Build** a template from a brief — "make a product-launch email", "design a welcome email".
@@ -90,7 +126,7 @@ Ask it to scaffold a brand-new integration, add a save/load provider to an exist
 4. **Verifies by running your dev server** and reading its console and network output — not by asking you to check yourself.
 5. **Reports** what changed, what was left alone, and what's still needed — a provider, an optional peer, a Cloud auth endpoint.
 
-Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — duplicate Vue reactivity, a missing `style.css` import, a trapped `position: fixed` ancestor, and more.
+Diagnosing an existing integration runs the same steps backwards: it reads your `init()`/`initCloud()` call, bundler config and CSS setup, and checks each against a table of verified traps — a missing `style.css` import, a trapped `position: fixed` ancestor, a container with no height, and more.
 
 ## Good to know
 

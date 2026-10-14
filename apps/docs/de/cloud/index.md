@@ -44,7 +44,7 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 
 ## Eigene Implementierung
 
-Cloud ist eine Erstanbieter-Implementierung genau der [Provider-Verträge](/de/backend/), die auch der Open-Source-Editor bereitstellt — eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten. Gespeicherte Blöcke, Test-E-Mails und Medien dürfen weiterhin Ihre sein, während Cloud den Rest übernimmt:
+Cloud ist eine Erstanbieter-Implementierung genau der [Provider-Verträge](/de/backend/), die auch der selbst gehostete Editor bereitstellt — eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten. Gespeicherte Blöcke, Test-E-Mails und Medien dürfen weiterhin Ihre sein, während Cloud den Rest übernimmt:
 
 ```ts
 await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, media: mine });
@@ -68,4 +68,4 @@ Wenn Ihnen der ganze Satz gehören soll, nutzen Sie [`init()`](/de/backend/).
 
 Pläne starten bei 99 $/Monat. Alle Pläne enthalten den vollständigen Editor, KI-Funktionen und Zusammenarbeit.
 
-[Kostenlose Testversion starten](https://templatical.com) &nbsp;·&nbsp; [Preise ansehen](https://templatical.com/pricing) &nbsp;·&nbsp; [Vertrieb kontaktieren](mailto:hi@templatical.com)
+[Kostenlose Testversion starten](https://templatical.com) &nbsp;·&nbsp; [Vertrieb kontaktieren](mailto:hi@templatical.com)

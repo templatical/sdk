@@ -2,7 +2,7 @@
 
 > Drag-and-drop email editor for modern apps — source-available, MIT after two years.
 
-Documentation for SDK version 0.43.2. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
+Documentation for SDK version 0.45.0. Every page below is also available as raw markdown: append `.md` to its URL, or `index.md` when the URL ends in `/`.
 
 ## Overview
 
@@ -19,7 +19,15 @@ Documentation for SDK version 0.43.2. Every page below is also available as raw 
 - [Installation](https://docs.templatical.com/getting-started/installation): Install the Templatical email editor with a package manager or from a CDN.
 - [Starting points](https://docs.templatical.com/getting-started/paths): Which docs page to open first — embed the editor, connect your backend, generate a template from a prompt, or compile JSON to sendable HTML.
 - [Quick Start](https://docs.templatical.com/getting-started/quick-start): Get the Templatical email editor running in under 5 minutes.
-- [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — duplicate Vue, missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
+- [Troubleshooting](https://docs.templatical.com/getting-started/troubleshooting): Symptom → cause for a Templatical editor mount — missing stylesheet, trapped dialogs, height chain, StrictMode unmount.
+
+## Frameworks
+
+- [Next.js](https://docs.templatical.com/frameworks/nextjs): A runnable Next.js 16 App Router app with the Templatical editor, backed by API routes for templates, saved blocks, HTML export and test emails.
+- [Nuxt](https://docs.templatical.com/frameworks/nuxt): A runnable Nuxt 4 app with the Templatical editor, backed by server routes for templates, saved blocks, HTML export and test emails.
+- [React Router](https://docs.templatical.com/frameworks/react-router): A runnable React Router 8 framework-mode app with the Templatical editor, backed by resource routes for templates, saved blocks, HTML export and test emails.
+- [React (Vite)](https://docs.templatical.com/frameworks/react): A runnable Vite and React 19 single-page app with the Templatical editor and no backend, the starting point for a React front end on any server.
+- [SvelteKit](https://docs.templatical.com/frameworks/sveltekit): A runnable SvelteKit 3 app with the Templatical editor, backed by +server.ts routes for templates, saved blocks, HTML export and test emails.
 
 ## Guide
 
@@ -76,9 +84,9 @@ Documentation for SDK version 0.43.2. Every page below is also available as raw 
 - [Accessibility rule catalog](https://docs.templatical.com/quality/accessibility/rule-catalog): All 21 lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, and preheader text — with default severities.
 - [Contributing locales](https://docs.templatical.com/quality/contributing-locales): Add a new locale's rule messages for accessibility, structure, and link rules, plus the vague-text dictionaries the accessibility linter alone uses.
 - [Headless usage](https://docs.templatical.com/quality/headless-usage): Run the quality linters headless in Node.js — CI guards, save-time validation, ruleId filtering, and custom rules built with walkBlocks and walkUrls.
-- [Quality](https://docs.templatical.com/quality/): MIT-licensed linter for Templatical templates — accessibility, structure, and link rules, 31 in total, run via lintTemplate() in the editor or in CI.
-- [Links linter](https://docs.templatical.com/quality/links/): lintLinks flags dangerous javascript-protocol hrefs, malformed mailto and tel links, unsupported URL schemes, and staging URLs leaking into templates.
-- [Link rule catalog](https://docs.templatical.com/quality/links/rule-catalog): All 5 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, and localhost-or-staging hosts — with default severities.
+- [Quality](https://docs.templatical.com/quality/): MIT-licensed linter for Templatical templates — accessibility, structure, and link rules, 32 in total, run via lintTemplate() in the editor or in CI.
+- [Links linter](https://docs.templatical.com/quality/links/): lintLinks flags dangerous javascript-protocol hrefs, malformed mailto and tel links, unsupported URL schemes, relative URLs, and staging URLs leaking into templates.
+- [Link rule catalog](https://docs.templatical.com/quality/links/rule-catalog): All 6 lintLinks rules — javascript-protocol hrefs, unsupported protocols, malformed mailto/tel URIs, localhost-or-staging hosts, and relative URLs — with default severities.
 - [Options](https://docs.templatical.com/quality/options): Reference for LintOptions — the disabled, locale, accessibility, structure, and links fields accepted by lintTemplate and the editor's lint config.
 - [Severity & fixes](https://docs.templatical.com/quality/severity-and-fixes): The four-level severity model (error, warning, info, off) shared by every linter, and how auto-fix LintPatch objects apply as undoable edits.
 - [Structure linter](https://docs.templatical.com/quality/structure/): lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, and empty sections or columns.

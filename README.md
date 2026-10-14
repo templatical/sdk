@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/dm/@templatical/editor?label=downloads&color=cb3837" alt="npm downloads" /></a>
   <a href="https://github.com/templatical/sdk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--MIT-blue" alt="License" /></a>
   <a href="https://github.com/templatical/sdk/actions"><img src="https://img.shields.io/github/actions/workflow/status/templatical/sdk/ci.yml?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/templatical/sdk"><img src="https://codecov.io/gh/templatical/sdk/branch/main/graph/badge.svg" alt="Coverage" /></a>
@@ -36,13 +37,15 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, and media are OSS — you pass providers to `init()`. An optional Cloud tier adds AI rewrite, real-time collaboration, and hosted/managed storage.
+**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, and media need no Cloud — you pass providers to `init()`. An optional Cloud tier adds AI rewrite, real-time collaboration, and hosted/managed storage.
 
 ## Design a complete email from a prompt
 
-Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
+Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source Agent Skill, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
 The [`templatical` Agent Skill](./skills/templatical) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+
+Installed the earlier `templatical-email` skill? Remove it before installing this one: [The previous `templatical-email` skill](https://docs.templatical.com/guide/agent-skill#previous-skill).
 
 One command and you're done:
 
@@ -144,13 +147,14 @@ Editor packages (`@templatical/editor`, `@templatical/core`, `@templatical/media
 - ✅ Self-host, modify, fork for internal use
 - ✅ Use it commercially without paying anything
 
-The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality and the import-* converters — are pure MIT.
+The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality, the import-* converters and the `@templatical/template-tools` CLI — are pure MIT.
 
 [Full license FAQ →](https://docs.templatical.com/license-faq)
 
 ## Documentation
 
 - [Getting Started](https://docs.templatical.com/getting-started/quick-start) — install, mount, render
+- [Framework examples](https://docs.templatical.com/frameworks/nextjs) — runnable Next.js, Nuxt, SvelteKit, React Router and React (Vite) apps from [`examples/`](examples/), each tested in CI
 - [Block Reference](https://docs.templatical.com/guide/blocks) — every built-in block
 - [Theming](https://docs.templatical.com/guide/theming) — design tokens, dark mode, custom fonts
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks) — extend with your own
@@ -193,4 +197,4 @@ Templatical is built and maintained by a solo developer. If your company uses it
 ## License
 
 - **Editor packages** (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`) — [FSL-1.1-MIT](./LICENSE)
-- **Types, renderer, quality, importers** — [MIT](./LICENSE-MIT)
+- **Types, renderer, quality, importers and the `@templatical/template-tools` CLI** — [MIT](./LICENSE-MIT)

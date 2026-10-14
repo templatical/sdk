@@ -30,7 +30,7 @@ Sie bauen ein Mailchimp-ähnliches Produkt, ein Automatisierungs-Tool oder eine 
 - Der Drop-in-Editor wird mit einem Funktionsaufruf gemountet — kein Umbau Ihres bestehenden Dashboards.
 - Theming über Design-Tokens sorgt dafür, dass die E-Mails Ihrer Kunden sich nativ in Ihre Marke einfügen, nicht in Templaticals.
 - Anzeigebedingungen und Merge-Tags sind eingebaut — wichtig für personalisierungslastige Newsletter-Nutzung.
-- Cloud ist der gemanagte Adapter für KI-Umschreibung und Echtzeit-Zusammenarbeit sowie gehosteten Speicher — Kommentare, Versionsverlauf und gespeicherte Blöcke sind OSS-BYO-Provider an `init()` (oder selbst hostbarer Source-Available-Code).
+- Cloud ist der gemanagte Adapter für KI-Umschreibung und Echtzeit-Zusammenarbeit sowie gehosteten Speicher — Kommentare, Versionsverlauf und gespeicherte Blöcke sind Provider, die Sie an `init()` übergeben, gestützt auf Ihren eigenen Speicher.
 
 **Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) im Kunden-Dashboard eingebettet, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) für MJML und danach jede MJML-Bibliothek für HTML, optional Cloud-Tarif für KI/Collab.
 
@@ -50,7 +50,7 @@ Sie bauen ein CRM, ein Sales-Engagement-Tool oder eine Marketing-Automation-Plat
 Sie bauen kein kundenfacings Produkt — Sie brauchen ein kontrolliertes Werkzeug, mit dem Ihr Team Transactional- und Marketing-E-Mails designt, mit dem JSON-Output gespeichert in Ihren eigenen Systemen.
 
 **Templatical passt, weil:**
-- Vollständig selbst hostbar. Das OSS-SDK hat keine zwingende Cloud-Abhängigkeit.
+- Vollständig selbst hostbar. Das SDK hat keine zwingende Cloud-Abhängigkeit.
 - Mehrsprachig (Englisch, Deutsch, Portugiesisch, Spanisch, Katalanisch, Französisch, Niederländisch, Japanisch) out of the box, mit einem klaren Weg, weitere Locales für internationale Teams hinzuzufügen.
 - TypeScript-strict end-to-end, was die Anbindung an bestehende interne Tools und Codegen-Pipelines vereinfacht.
 

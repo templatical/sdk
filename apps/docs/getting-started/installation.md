@@ -139,7 +139,7 @@ If you don't install them, the editor still mounts. Quality's Issues tab and Pus
 
 ### A note on bundler output
 
-The editor works out of the box with every modern bundler — no consumer configuration is required regardless of which optional peers you install. Vite, esbuild, Rollup, and Rolldown handle the optional dynamic imports silently. Webpack 5 is slightly more verbose: it statically analyzes every `import()` and prints a harmless `Module not found` **warning** for each uninstalled optional peer. The build still succeeds and the editor runs correctly — these warnings are cosmetic only.
+The editor works out of the box with every modern bundler — no consumer configuration is required regardless of which optional peers you install. Vite, esbuild, and Rolldown handle the optional dynamic imports silently. Rollup prints an `Unresolved dependencies` warning naming each uninstalled optional peer and leaves it external. Webpack 5 is slightly more verbose: it statically analyzes every `import()` and prints a harmless `Module not found` **warning** for each uninstalled optional peer. The build still succeeds and the editor runs correctly — these warnings are cosmetic only.
 
 If you'd prefer a clean Webpack log, you can opt into silencing them with `ignoreWarnings`:
 
@@ -188,14 +188,15 @@ export function EmailEditor() {
   const editorRef = useRef<TemplaticalEditor | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     let cancelled = false;
     let instance: TemplaticalEditor | null = null;
 
     (async () => {
       const ed = await init({
-        container: containerRef.current,
+        container,
         onChange(content) {
           console.log("Content changed", content);
         },
@@ -322,6 +323,8 @@ If the effect re-runs before `init()` resolves — React StrictMode does this in
 ::: warning Important
 Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
 :::
+
+Runnable example apps, tested in CI against every SDK change: [React (Vite)](/frameworks/react), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt) and [SvelteKit](/frameworks/sveltekit).
 
 ## TypeScript support
 

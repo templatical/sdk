@@ -34,23 +34,72 @@ const { t } = useI18n();
         class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:hover:opacity-80 tpl:text-[var(--tpl-text-muted)]"
         style="text-decoration: none"
       >
-        <img
-          width="14"
-          height="14"
-          src="https://templatical.com/logo.svg"
-          alt=""
-        />
+        <!-- An inline mark, not an image loaded from templatical.com: the docs promise init() makes no requests to Templatical, and editorFooter.test.ts holds that. -->
+        <svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true">
+          <rect
+            x="10"
+            y="1"
+            width="18"
+            height="22"
+            rx="3"
+            fill="oklch(85% 0.08 55)"
+            transform="rotate(8 19 12)"
+          />
+          <rect
+            x="6"
+            y="2"
+            width="18"
+            height="22"
+            rx="3"
+            fill="oklch(77% 0.12 55)"
+            transform="rotate(-4 15 13)"
+          />
+          <rect
+            x="2"
+            y="4"
+            width="18"
+            height="22"
+            rx="3"
+            fill="oklch(70% 0.16 55)"
+          />
+          <rect
+            x="6"
+            y="9"
+            width="10"
+            height="1.8"
+            rx="0.9"
+            fill="white"
+            opacity="0.9"
+          />
+          <rect
+            x="6"
+            y="13.5"
+            width="7"
+            height="1.5"
+            rx="0.75"
+            fill="white"
+            opacity="0.6"
+          />
+          <rect
+            x="6"
+            y="17"
+            width="9"
+            height="1.5"
+            rx="0.75"
+            fill="white"
+            opacity="0.6"
+          />
+          <rect
+            x="6"
+            y="20.5"
+            width="5"
+            height="1.5"
+            rx="0.75"
+            fill="white"
+            opacity="0.4"
+          />
+        </svg>
         Templatical
-      </a>
-      <span class="tpl:text-[var(--tpl-border)]">·</span>
-      <a
-        href="https://github.com/templatical/sdk"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="tpl:transition-colors tpl:hover:opacity-80 tpl:text-[var(--tpl-text-dim)]"
-        style="text-decoration: none"
-      >
-        {{ t.footer.openSource }}
       </a>
     </div>
   </footer>

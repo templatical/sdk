@@ -14,6 +14,7 @@ import {
   getLogicMergeTagKeyword,
   getMergeTagLabel,
   resolveSyntax,
+  safeClone,
 } from "@templatical/types";
 
 /**
@@ -297,16 +298,31 @@ export function normalizeMergeTagMarkup(
  * unconditionally with the same default, so a consumer who configured nothing
  * already gets a node the instant a user types `{{x}}`. Loading the same text
  * and leaving it inert would be the inconsistency.
+ *
+ * It always returns a copy. Every content-in path runs through here, and the
+ * editor edits the object it holds in place, so holding the caller's own one
+ * leaks each edit into it, and one that another Vue made reactive or that a
+ * store froze hides edits from the editor's bundled Vue or throws on the first.
  */
 export function normalizeContentForConfig(
   content: TemplateContent,
   mergeTags: MergeTagsConfig | undefined,
 ): TemplateContent {
   return normalizeMergeTagMarkup(
-    content,
+    copyIncomingContent(content),
     mergeTags?.tags ?? [],
     resolveSyntax(mergeTags?.syntax),
   );
+}
+
+/**
+ * A non-object passes through: `normalizeMergeTagMarkup` already hands back
+ * whatever is not shaped like content, and `safeClone(undefined)` would throw.
+ */
+function copyIncomingContent(content: TemplateContent): TemplateContent {
+  return typeof content === "object" && content !== null
+    ? safeClone(content)
+    : content;
 }
 
 /**
@@ -385,8 +401,10 @@ export function withNormalizedTemplateLoads(
     ...provider,
     async load(id: string) {
       const template = await provider.load(id);
-      const content = normalizeContentForConfig(template.content, mergeTags);
-      return content === template.content ? template : { ...template, content };
+      return {
+        ...template,
+        content: normalizeContentForConfig(template.content, mergeTags),
+      };
     },
   };
 }

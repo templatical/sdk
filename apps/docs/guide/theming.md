@@ -43,45 +43,48 @@ CSS-custom-property inheritance crosses shadow roots, so the variables you set i
 
 ### Light-mode tokens
 
-Every token follows the same shape: declare `--tpl-user-<name>` on the container to override the SDK default.
+Every token follows the same shape: declare `--tpl-user-<name>` on the container to override the SDK default. A ✓ in the **Dark** column means the token also has a dark-mode twin (see below). The others apply in both modes.
 
-| Override variable            | Purpose                               |
-| ---------------------------- | ------------------------------------- |
-| `--tpl-user-bg`              | Main background                       |
-| `--tpl-user-bg-elevated`     | Elevated surfaces (panels, dropdowns) |
-| `--tpl-user-bg-hover`        | Hover state background                |
-| `--tpl-user-bg-active`       | Active/pressed state background       |
-| `--tpl-user-border`          | Default border color                  |
-| `--tpl-user-border-light`    | Subtle border (dividers, separators)  |
-| `--tpl-user-text`            | Primary text                          |
-| `--tpl-user-text-muted`      | Secondary text                        |
-| `--tpl-user-text-dim`        | Disabled or hint text                 |
-| `--tpl-user-primary`         | Primary brand color (buttons, links)  |
-| `--tpl-user-primary-hover`   | Primary hover state                   |
-| `--tpl-user-primary-light`   | Primary tinted background             |
-| `--tpl-user-secondary`       | Secondary accent color                |
-| `--tpl-user-secondary-hover` | Secondary hover state                 |
-| `--tpl-user-secondary-light` | Secondary tinted background           |
-| `--tpl-user-success`         | Success state color                   |
-| `--tpl-user-success-light`   | Success tinted background             |
-| `--tpl-user-warning`         | Warning state color                   |
-| `--tpl-user-warning-light`   | Warning tinted background             |
-| `--tpl-user-danger`          | Danger/error state color              |
-| `--tpl-user-danger-light`    | Danger tinted background              |
-| `--tpl-user-canvas-bg`       | Canvas area behind the email template |
-| `--tpl-user-base-size`       | Editor UI sizing unit (`16px`) — see [Editor size](#editor-size-and-the-host-root-font-size) |
-| `--tpl-user-radius`          | Default border radius (`10px`)        |
-| `--tpl-user-radius-sm`       | Small border radius (`7px`)           |
-| `--tpl-user-radius-lg`       | Large border radius (`14px`)          |
-| `--tpl-user-font-family`     | UI font stack                         |
-| `--tpl-user-shadow-sm`       | Subtle shadow                         |
-| `--tpl-user-shadow`          | Default shadow                        |
-| `--tpl-user-shadow-md`       | Medium shadow                         |
-| `--tpl-user-shadow-lg`       | Large shadow                          |
-| `--tpl-user-shadow-xl`       | Extra-large shadow                    |
-| `--tpl-user-overlay`         | Modal backdrop overlay                |
-| `--tpl-user-ring`            | Focus ring                            |
-| `--tpl-user-transition`      | Spring easing transition              |
+| Override variable            | Purpose                               | Dark |
+| ---------------------------- | ------------------------------------- | ---- |
+| `--tpl-user-bg`              | Main background                       | ✓    |
+| `--tpl-user-bg-elevated`     | Elevated surfaces (panels, dropdowns) | ✓    |
+| `--tpl-user-bg-hover`        | Hover state background                | ✓    |
+| `--tpl-user-bg-active`       | Active/pressed state background       | ✓    |
+| `--tpl-user-border`          | Default border color                  | ✓    |
+| `--tpl-user-border-light`    | Subtle border (dividers, separators)  | ✓    |
+| `--tpl-user-text`            | Primary text                          | ✓    |
+| `--tpl-user-text-muted`      | Secondary text                        | ✓    |
+| `--tpl-user-text-dim`        | Disabled or hint text                 | ✓    |
+| `--tpl-user-primary`         | Primary brand color (buttons, links)  | ✓    |
+| `--tpl-user-primary-hover`   | Primary hover state                   | ✓    |
+| `--tpl-user-primary-light`   | Primary tinted background             | ✓    |
+| `--tpl-user-on-primary`      | Text and icons on primary surfaces    |      |
+| `--tpl-user-secondary`       | Secondary accent color                | ✓    |
+| `--tpl-user-secondary-hover` | Secondary hover state                 | ✓    |
+| `--tpl-user-secondary-light` | Secondary tinted background           | ✓    |
+| `--tpl-user-success`         | Success state color                   | ✓    |
+| `--tpl-user-success-light`   | Success tinted background             | ✓    |
+| `--tpl-user-warning`         | Warning state color                   | ✓    |
+| `--tpl-user-warning-light`   | Warning tinted background             | ✓    |
+| `--tpl-user-danger`          | Danger/error state color              | ✓    |
+| `--tpl-user-danger-light`    | Danger tinted background              | ✓    |
+| `--tpl-user-canvas-bg`       | Canvas area behind the email template | ✓    |
+| `--tpl-user-base-size`       | UI sizing unit (`16px`), see [below](#editor-size-and-the-host-root-font-size) |      |
+| `--tpl-user-radius`          | Default border radius (`10px`)        |      |
+| `--tpl-user-radius-sm`       | Small border radius (`7px`)           |      |
+| `--tpl-user-radius-lg`       | Large border radius (`14px`)          |      |
+| `--tpl-user-font-family`     | UI font stack                         |      |
+| `--tpl-user-shadow-sm`       | Subtle shadow                         | ✓    |
+| `--tpl-user-shadow`          | Default shadow                        | ✓    |
+| `--tpl-user-shadow-md`       | Medium shadow                         | ✓    |
+| `--tpl-user-shadow-lg`       | Large shadow                          | ✓    |
+| `--tpl-user-shadow-xl`       | Extra-large shadow                    | ✓    |
+| `--tpl-user-overlay`         | Modal backdrop overlay                | ✓    |
+| `--tpl-user-ring`            | Focus ring                            | ✓    |
+| `--tpl-user-transition`      | Spring easing transition              |      |
+
+`--tpl-user-on-primary` needs no twin. Left unset, it follows the active background, so text on primary surfaces is near-white in light mode and near-black in dark mode. Setting it fixes one color for both modes, and a near-white label fails contrast on the default dark-mode primary, which is lighter.
 
 ### Dark-mode tokens
 
@@ -99,7 +102,7 @@ Dark mode uses a parallel `--tpl-user-dark-*` namespace, so you can theme light 
 }
 ```
 
-Replace `--tpl-user-` with `--tpl-user-dark-` in any token name from the table above to target dark mode. The editor activates dark mode via `data-tpl-theme="dark"` on its root and reads the dark-namespace defaults; your `--tpl-user-dark-*` overrides plug in there.
+Replace `--tpl-user-` with `--tpl-user-dark-` in any token marked ✓ in the table above to target dark mode. The editor activates dark mode via `data-tpl-theme="dark"` on its root and reads the dark-namespace defaults; your `--tpl-user-dark-*` overrides plug in there.
 
 Dark mode is opt-in via the `uiTheme` config — set `'dark'` or `'auto'` to enable. See [Dark mode](#dark-mode) below.
 

@@ -138,7 +138,7 @@ const toggleLabel = computed(() =>
   <div
     data-testid="saved-blocks-reorder-row"
     :data-block-id="block.id"
-    class="tpl:flex tpl:items-start tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:p-1.5 tpl:border-[var(--tpl-border)]"
+    class="tpl:flex tpl:items-start tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:p-1.5 tpl:border-[var(--tpl-border)]"
     style="background-color: var(--tpl-bg)"
   >
     <!-- Sortable's `handle` selector points here, so a pointer-drag can only

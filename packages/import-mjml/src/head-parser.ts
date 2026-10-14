@@ -141,9 +141,10 @@ export function extractSettings(
 
   // Every <mj-style> block in the document is pooled into one stylesheet before
   // the anchor rule is read, so a bare `a { … }` rule in any of them contributes.
-  // Against the renderer's own output that is unambiguous: richTextStylesheet()
-  // scopes every rule it emits to `p`, `ul`, `ol` and `li`, so the one bare
-  // `a { … }` rule present is the document-level rule this function reads back.
+  // Against the renderer's own output that is unambiguous: every other rule it
+  // emits is scoped under a class (`.tpl-rich-text-8 p`, `.tpl-button-full a`),
+  // so the one bare `a { … }` rule present is the document-level rule this
+  // function reads back.
   const styleCss = findByTag($, "mj-style")
     .toArray()
     .map((el) => $(el).text())

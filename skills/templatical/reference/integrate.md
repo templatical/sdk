@@ -20,9 +20,9 @@ idiomatically, not a missing-component workaround.
 npm install @templatical/editor
 ```
 
-`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`
-and `pusher-js` are optional peers, each gated by a specific feature — install
-only the ones actually used (see [failure-modes.md](failure-modes.md)).
+`@templatical/renderer`, `@templatical/quality` and `pusher-js` are optional
+peers, each gated by a specific feature — install only the ones actually used
+(see [failure-modes.md](failure-modes.md)).
 
 ## Vanilla
 
@@ -79,21 +79,57 @@ export function EmailEditor() {
   const editorRef = useRef<TemplaticalEditor | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
     let cancelled = false;
+    let instance: TemplaticalEditor | null = null;
     (async () => {
-      const ed = await init({ container: containerRef.current });
-      if (!cancelled) editorRef.current = ed;
+      const ed = await init({ container });
+      if (cancelled) {
+        ed.unmount();
+        return;
+      }
+      instance = ed;
+      editorRef.current = ed;
     })();
     return () => {
       cancelled = true;
-      editorRef.current?.unmount();
+      instance?.unmount();
+      editorRef.current = null;
     };
   }, []);
 
   return <div ref={containerRef} style={{ height: "100vh" }} />;
 }
 ```
+
+If the effect re-runs before `init()` resolves (React StrictMode does this in
+development), `cancelled` unmounts the editor that arrives late and `instance`
+is what the cleanup unmounts once one has settled; unmounting only the ref
+leaks an editor.
+
+## Working examples
+
+Complete apps, built and run in CI against every SDK change. To start a
+project from one, copy it:
+`npx degit templatical/sdk/examples/<name> my-app`. To read one, fetch its
+docs page as raw markdown, which inlines every file the page shows.
+
+| Example | Stack | Code | Docs page |
+| --- | --- | --- | --- |
+| `nextjs` | Next.js 16 App Router, API routes | https://github.com/templatical/sdk/tree/main/examples/nextjs | https://docs.templatical.com/frameworks/nextjs.md |
+| `nuxt` | Nuxt 4, server routes | https://github.com/templatical/sdk/tree/main/examples/nuxt | https://docs.templatical.com/frameworks/nuxt.md |
+| `sveltekit` | SvelteKit 3, `+server.ts` routes | https://github.com/templatical/sdk/tree/main/examples/sveltekit | https://docs.templatical.com/frameworks/sveltekit.md |
+| `react-router` | React Router 8 framework mode, resource routes | https://github.com/templatical/sdk/tree/main/examples/react-router | https://docs.templatical.com/frameworks/react-router.md |
+| `react-vite` | Vite + React, no backend (`localStorage`) | https://github.com/templatical/sdk/tree/main/examples/react-vite | https://docs.templatical.com/frameworks/react.md |
+
+The full-stack examples share these files byte for byte (React Router names the server-side ones `*.server.ts`):
+- `store.ts`, the storage to replace
+- `render.ts`, which turns a template into MJML and HTML
+- `outbox.ts`, holding `deliver()`, the email sender to replace
+- `providers.ts`, the editor's `fetch`-based providers
+
+Only the framework glue differs. When a consumer's repository uses one of these frameworks, follow that example's file layout. The provider contracts are in [providers.md](providers.md).
 
 ## Cloud
 

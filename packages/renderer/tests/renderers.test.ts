@@ -128,6 +128,31 @@ describe('renderBlock', () => {
     expect(result).toContain('width="240px"');
   });
 
+  it('marks a full-width button with the tpl-button-full class', () => {
+    const block = createButtonBlock({ text: 'Click Me', width: 'full' });
+    expect(renderBlock(block, ctx)).toContain('css-class="tpl-button-full"');
+  });
+
+  it('merges tpl-button-full into the visibility css-class', () => {
+    const block = createButtonBlock({
+      text: 'Click Me',
+      width: 'full',
+      visibility: { desktop: true, mobile: false },
+    });
+    const result = renderBlock(block, ctx);
+    // MJML keeps only one `css-class` per element — so visibility shares it.
+    expect(result).toContain('css-class="tpl-hide-mobile tpl-button-full"');
+    expect(result.match(/css-class=/g)).toHaveLength(1);
+  });
+
+  it.each([
+    ['a px width', 240],
+    ['no width', undefined],
+  ] as const)('gives a button with %s no tpl-button-full class', (_label, width) => {
+    const block = createButtonBlock({ text: 'Click Me', width });
+    expect(renderBlock(block, ctx)).not.toContain('tpl-button-full');
+  });
+
   it('renders button alignment', () => {
     for (const align of ['left', 'center', 'right'] as const) {
       const block = createButtonBlock({ text: 'Click Me', align });

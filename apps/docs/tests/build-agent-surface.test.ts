@@ -19,21 +19,27 @@ import {
   collectPages,
   copyMarkdownSources,
   groupOf,
+  inlineSnippetIncludes,
   renderIndex,
   SITE_URL,
+  snippetIncludes,
 } from "../scripts/build-agent-surface.mjs";
 
 const DOCS = join(import.meta.dirname, "..");
 
 /**
  * The head entries the config's own transformHead hook emits for one page.
- * Only `pageData.filePath` is read, so the rest of the build context is left
- * out rather than faked.
+ * The hook reads `pageData.filePath` (where the markdown twin lives) and
+ * `pageData.relativePath` (the page's own URL). With no `rewrites` configured
+ * the two are the same path, so one argument supplies both and the rest of the
+ * build context is left out rather than faked.
  */
 async function headEntriesFor(filePath: string): Promise<HeadConfig[] | void> {
   const { transformHead } = config;
   if (!transformHead) throw new Error(".vitepress/config.ts has no transformHead hook");
-  return transformHead({ pageData: { filePath } } as unknown as TransformContext);
+  return transformHead({
+    pageData: { filePath, relativePath: filePath },
+  } as unknown as TransformContext);
 }
 
 /** The head entry that advertises a page's raw-markdown twin. */
@@ -285,8 +291,10 @@ describe("the committed artifacts", () => {
     const { full } = buildOutputs();
     // The changelog is ~27% of the English tree and answers no "how do I"
     // question; public/changelog.json already serves it machine-readably.
+    // The cap sits between the corpus without the changelog, which carries the
+    // inlined example code, and the corpus with it.
     expect(full).not.toContain("Version Packages");
-    expect(full.length).toBeLessThan(600_000);
+    expect(full.length).toBeLessThan(750_000);
   });
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {
@@ -341,35 +349,42 @@ describe("the transformHead hook", () => {
     // check passes for a hook that is wired and emits nothing, which is the
     // failure this case exists to catch. A root-level page, the one shape the
     // four cases below do not cover.
-    expect(await headEntriesFor("license-faq.md")).toEqual([alternate("/license-faq.md")]);
+    expect(await headEntriesFor("license-faq.md")).toContainEqual(alternate("/license-faq.md"));
   });
 
-  it("advertises the twin as a text/markdown alternate, and emits nothing else", async () => {
+  it("advertises the twin beside the page's own canonical and og:url, and emits nothing else", async () => {
+    // The one case that pins the hook's whole output, so an unexpected head
+    // entry fails here. The other cases pin only the twin's href;
+    // docs-seo.test.ts owns the canonical and og:url values.
+    const url = "https://docs.templatical.com/getting-started/installation";
     expect(await headEntriesFor("getting-started/installation.md")).toEqual([
       alternate("/getting-started/installation.md"),
+      ["link", { rel: "canonical", href: url }],
+      ["meta", { property: "og:url", content: url }],
     ]);
   });
 
   it("points a directory index at its own index.md, not at the url it is served from", async () => {
-    // copyMarkdownSources is a plain file copy, so this page's twin keeps its
-    // index.md basename while cleanUrls serves the page at /guide/widgets/.
+    // copyMarkdownSources writes each twin at its source path, so this page's
+    // twin keeps its index.md basename while cleanUrls serves the page at
+    // /guide/widgets/.
     // Deriving the href from the url instead of the source path yields
     // /guide/widgets/.md, which is nothing.
-    expect(await headEntriesFor("guide/widgets/index.md")).toEqual([
+    expect(await headEntriesFor("guide/widgets/index.md")).toContainEqual(
       alternate("/guide/widgets/index.md"),
-    ]);
+    );
   });
 
   it("points the home page at /index.md, not at the site root", async () => {
-    expect(await headEntriesFor("index.md")).toEqual([alternate("/index.md")]);
+    expect(await headEntriesFor("index.md")).toContainEqual(alternate("/index.md"));
   });
 
   it("keeps the locale prefix, so a German page points at the German source", async () => {
     // copyMarkdownSources covers de/ — it is the generated index that is
     // English-only — so the German tree has twins of its own.
-    expect(await headEntriesFor("de/guide/theming.md")).toEqual([
+    expect(await headEntriesFor("de/guide/theming.md")).toContainEqual(
       alternate("/de/guide/theming.md"),
-    ]);
+    );
   });
 
   it("emits nothing for a virtual page, which has no markdown source to point at", async () => {
@@ -424,7 +439,8 @@ describe("the visible index link", () => {
 
 describe("copyMarkdownSources", () => {
   // A page with frontmatter and a merge-tag token, used to prove the copy is
-  // byte-for-byte — this function must never transform content.
+  // byte-for-byte — this function must not transform content other than
+  // inlining `<<<` includes.
   const NESTED_FIXTURE = `---
 title: Nested
 description: A nested fixture page with frontmatter and a merge-tag token.
@@ -620,5 +636,91 @@ describe("build wiring", () => {
     // freshness test only catches it on the next test run.
     const pkg = JSON.parse(readFileSync(join(DOCS, "package.json"), "utf8"));
     expect(pkg.scripts.build).toContain("build:agent-surface");
+  });
+});
+
+describe("snippet includes", () => {
+  let docsDir: string;
+  const page = (rel: string) => join(docsDir, rel);
+
+  beforeEach(() => {
+    docsDir = mkdtempSync(join(tmpdir(), "agent-surface-snippets-"));
+    writeFixtureFile(docsDir, "snippets/hello.ts", "export const hello = 1;\n");
+    writeFixtureFile(docsDir, "snippets/ticks.txt", "Use ```` for fences.\n");
+    writeFixtureFile(docsDir, "snippets/[id]/route.ts", "export {};\n");
+    writeFixtureFile(docsDir, "guide/local.vue", "<template><p>Hi</p></template>\n");
+  });
+
+  afterEach(() => {
+    rmSync(docsDir, { recursive: true, force: true });
+  });
+
+  it("replaces an @/ include with a fence holding the file, typed by its extension", () => {
+    expect(
+      inlineSnippetIncludes("Before\n\n<<< @/snippets/hello.ts\n\nAfter", page("guide/page.md"), docsDir),
+    ).toBe("Before\n\n```ts\nexport const hello = 1;\n```\n\nAfter");
+  });
+
+  it("resolves a relative include from the including page's directory", () => {
+    expect(inlineSnippetIncludes("<<< ./local.vue", page("guide/page.md"), docsDir)).toBe(
+      "```vue\n<template><p>Hi</p></template>\n```",
+    );
+  });
+
+  it("keeps a bracketed path segment, which is part of the file's path", () => {
+    expect(snippetIncludes("<<< @/snippets/[id]/route.ts")).toEqual(["@/snippets/[id]/route.ts"]);
+    expect(inlineSnippetIncludes("<<< @/snippets/[id]/route.ts", page("guide/page.md"), docsDir)).toBe(
+      "```ts\nexport {};\n```",
+    );
+  });
+
+  it("leaves an include inside a fenced code block alone", () => {
+    const source = "```md\n<<< @/snippets/hello.ts\n```";
+    expect(snippetIncludes(source)).toEqual([]);
+    expect(inlineSnippetIncludes(source, page("guide/page.md"), docsDir)).toBe(source);
+  });
+
+  it("fences a file with a longer run than any backtick run inside it", () => {
+    expect(inlineSnippetIncludes("<<< @/snippets/ticks.txt", page("guide/page.md"), docsDir)).toBe(
+      "`````txt\nUse ```` for fences.\n`````",
+    );
+  });
+
+  it("throws, naming the page, when the included file does not exist", () => {
+    expect(() =>
+      inlineSnippetIncludes("<<< @/snippets/missing.ts", page("guide/page.md"), docsDir),
+    ).toThrow('guide/page.md: "<<< @/snippets/missing.ts" names a file that does not exist');
+  });
+
+  it.each(["@/snippets/hello.ts [Title]", "@/snippets/hello.ts{2}", "@/snippets/hello.ts#part"])(
+    "throws on a snippet option it would drop: %s",
+    (raw) => {
+      expect(() => inlineSnippetIncludes(`<<< ${raw}`, page("guide/page.md"), docsDir)).toThrow(
+        "Include a bare path.",
+      );
+    },
+  );
+
+  it("inlines includes in the page bodies llms-full.txt is built from", () => {
+    writeFixtureFile(
+      docsDir,
+      "guide/page.md",
+      "---\ndescription: A page.\n---\n\n# Page\n\n<<< @/snippets/hello.ts\n",
+    );
+    const [entry] = collectPages(docsDir);
+    expect(entry.body).toBe("# Page\n\n```ts\nexport const hello = 1;\n```");
+  });
+
+  it("inlines includes in the raw-markdown twins", () => {
+    writeFixtureFile(docsDir, "guide/page.md", "# Page\n\n<<< @/snippets/hello.ts\n");
+    const out = mkdtempSync(join(tmpdir(), "agent-surface-twins-"));
+    try {
+      copyMarkdownSources(out, docsDir);
+      expect(readFileSync(join(out, "guide/page.md"), "utf8")).toBe(
+        "# Page\n\n```ts\nexport const hello = 1;\n```\n",
+      );
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
   });
 });

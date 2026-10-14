@@ -214,13 +214,19 @@ describe("OSS docs house style", () => {
 
     const transform = config.sitemap?.transformItems;
     expect(typeof transform).toBe("function");
+    // VitePress passes relative URLs here (generateSitemap: the page path with
+    // `.md` dropped and `index.md` reduced to its directory), never absolute
+    // ones, so the fixture must use that shape or the filter goes untested.
     expect(
       transform!([
-        { url: "https://docs.templatical.com/guide/theming" },
-        { url: "https://docs.templatical.com/cloud/ai" },
-        { url: "https://docs.templatical.com/de/cloud/" },
+        { url: "guide/theming" },
+        { url: "cloud/ai" },
+        { url: "cloud/" },
+        { url: "de/cloud/ai" },
+        { url: "de/guide/theming" },
+        { url: "" },
       ]),
-    ).toEqual([{ url: "https://docs.templatical.com/guide/theming" }]);
+    ).toEqual([{ url: "guide/theming" }, { url: "de/guide/theming" }, { url: "" }]);
 
     const src = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
     expect(src).not.toMatch(/link:\s*"\/(?:de\/)?cloud/);
@@ -264,6 +270,14 @@ describe("OSS docs house style", () => {
     expect(src).not.toMatch(/all 14 block types/i);
     expect(src).not.toMatch(/\*\*14 block types\*\*/);
     expect(src).not.toMatch(/Cloud tier \(below\)/);
+  });
+
+  it("does not put a design-token count in either README", () => {
+    // The count goes stale whenever a hook is added or removed, and the
+    // theming guide's table is the list that is kept accurate.
+    for (const rel of ["README.md", "packages/editor/README.md"]) {
+      expect(readRepo(rel)).not.toMatch(/\b\d+ design tokens\b/i);
+    }
   });
 
   it("points the editor README saved-blocks link at the backend page", () => {

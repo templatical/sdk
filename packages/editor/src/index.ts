@@ -50,7 +50,7 @@ import {
   loadCloudTranslations,
 } from "./i18n";
 import { logger } from "./utils/logger";
-import { useFonts } from "./composables";
+import { useFonts, type UseFontsReturn } from "./composables";
 import { stripStylesheetImports } from "./utils/stripStylesheetImports";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
@@ -58,6 +58,7 @@ import {
   buildRenderPayload,
   createRenderMethods,
   resolveRenderFonts,
+  type RenderMethods,
 } from "./utils/renderProvider";
 import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // Compiled-CSS-as-string for shadow root adoption. The `virtual:editor-css`
@@ -368,10 +369,11 @@ export interface TemplaticalEditorConfig {
   customBlocks?: CustomBlockDefinition[];
 
   /**
-   * Allowlist + order for the block palette. When set, only the listed block
-   * types appear in the sidebar palette, in exactly this order — unlisted
-   * built-ins (e.g. `video`, `table`) are hidden. When omitted, the full
-   * default palette is shown.
+   * Allowlist + order for the block palette. When non-empty, only the listed
+   * block types appear in the sidebar palette, in exactly this order —
+   * unlisted built-ins (e.g. `video`, `table`) are hidden. When omitted or
+   * empty (`[]`), the full default palette is shown: an empty allowlist means
+   * "not configured", not "hide every block".
    *
    * Reference built-in blocks by their bare type (`'section'`, `'image'`, …)
    * and custom blocks by their `custom:`-prefixed type (`'custom:qrcode'`),
@@ -667,6 +669,13 @@ interface TemplaticalEditorBase {
    * enables it for the next block opened, not one already being edited.
    */
   setMergeTags(tags: MergeTag[]): void;
+  /**
+   * Tear this editor down. It unmounts only this instance: once a later
+   * `init()` on the same container has replaced it, or kept it from mounting,
+   * calling `unmount()` here does nothing, so a stale handle never removes the
+   * editor that replaced it. Calling it again after the teardown is also a
+   * no-op.
+   */
   unmount(): void;
   /**
    * Render the current template to MJML.
@@ -936,9 +945,50 @@ const ossEntries = new Map<Element, OssEntry>();
 // whatever was most recently mounted.
 let lastOssContainer: Element | null = null;
 
-function unmountOssContainer(container: Element): void {
+// Which call may take a container over. Every `init()` / `initCloud()` whose
+// `layout` and `content` pass `prepareLayoutAndContent` claims its container
+// before its first await, and mounts only if its claim is still the latest once
+// its awaits settle. Calls on one container settle in whatever
+// order their awaits finish (under React StrictMode's dev double effect, the
+// cancelled first call can settle after the second one mounted), so the order
+// the calls were made in decides which editor the container keeps. A WeakMap,
+// so a container that leaves the page takes its claim with it.
+let lastClaimToken = 0;
+const containerClaims = new WeakMap<Element, number>();
+
+interface ContainerClaim {
+  container: Element;
+  token: number;
+}
+
+/**
+ * Resolve the configured container and claim it for this call. Runs before
+ * the first await of `init()` and `initCloud()`, so claims follow call order.
+ */
+function claimContainer(target: string | HTMLElement): ContainerClaim {
+  const container =
+    typeof target === "string" ? document.querySelector(target) : target;
+
+  if (!container) {
+    throw new Error(`[Templatical] Container element not found: ${target}`);
+  }
+
+  const token = ++lastClaimToken;
+  containerClaims.set(container, token);
+  return { container, token };
+}
+
+// Tears down whatever app the container holds, or with `onlyApp` just that app:
+// an instance unmounts only itself. A StrictMode double-mount can call a
+// superseded instance's `unmount()` after its replacement mounted on the same
+// container, and a container-scoped teardown there removes the replacement and
+// leaves a blank editor. `mountEditor`'s auto-unmount and the top-level
+// `unmount()` export pass no `onlyApp`: they mean "whatever this container
+// holds now".
+function unmountOssContainer(container: Element, onlyApp?: App): void {
   const entry = ossEntries.get(container);
   if (!entry) return;
+  if (onlyApp && entry.app !== onlyApp) return;
   entry.cleanup();
   entry.app.unmount();
   ossEntries.delete(container);
@@ -947,31 +997,67 @@ function unmountOssContainer(container: Element): void {
   }
 }
 
+/**
+ * Normalize the merge tags in `layout` and `content`, then refuse an illegal
+ * tree. `init()` and `initCloud()` run this when they are called, before they
+ * claim the container. A call that throws here rejects at once: it supersedes
+ * no earlier call, and the container and the editor it shows stay exactly as
+ * they were.
+ *
+ * Merge tags reach us in one of two shapes, and only one of them behaves like
+ * a tag. Anything typed or pasted is already a `<span data-merge-tag>`, since
+ * `MergeTagNode`'s input rules convert it on the spot; content that arrived
+ * any other way — a consumer's stored JSON, an `@templatical/import-*`
+ * conversion — still holds bare `{{tokens}}` that render as plain text.
+ * Normalizing here, before the seed reaches `Editor.vue`, means core is
+ * handed content that is already correct and never observes a mutation, so
+ * nothing is marked dirty and no autosave tick fires for a load.
+ *
+ * This is one of four places content enters. The other three:
+ * `instance.setContent` and `instance.create` below, and the `templates`
+ * provider's `load`, wrapped in `Editor.vue` where it reaches core.
+ * Overlay chrome is not seed content: merge tags in the shell, then refuse
+ * an illegal tree.
+ */
+function prepareLayoutAndContent(
+  config: Pick<TemplaticalEditorConfig, "layout" | "content" | "mergeTags">,
+): void {
+  if (config.layout) {
+    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
+    validateLayout(config.layout);
+  }
+  if (config.content) {
+    config.content = normalizeContentForConfig(
+      config.content,
+      config.mergeTags,
+    );
+    assertNoSlotInContent(config.content);
+    assertNoWrapperInContent(config.content);
+  }
+}
+
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
-  return mountEditor(config);
+  // A copy, as `initCloud()` makes: the editor never writes to the caller's
+  // config, which may be frozen. A key reassigned on that object after this call
+  // does not reach the editor.
+  const prepared = { ...config };
+  prepareLayoutAndContent(prepared);
+  return mountEditor(prepared, claimContainer(prepared.container));
 }
 
 /**
  * The one mount path. `init()` calls it with no runtime; `initCloud()` calls it
- * with Cloud's, having already resolved auth, the plan and every adapter.
+ * with Cloud's, having already resolved auth, the plan and every adapter. Both
+ * prepare `layout` and `content` and claim the container when they are called,
+ * before this runs.
  */
 async function mountEditor(
   config: TemplaticalEditorConfig,
+  { container, token }: ContainerClaim,
   cloud?: CloudRuntime,
 ): Promise<TemplaticalEditor> {
-  const container =
-    typeof config.container === "string"
-      ? document.querySelector(config.container)
-      : config.container;
-
-  if (!container) {
-    throw new Error(
-      `[Templatical] Container element not found: ${config.container}`,
-    );
-  }
-
   // An unusable `locale` fell back to English in silence, so a typo — "gr" for
   // Greek (the country code, not the language code "el"), or "english" — was
   // indistinguishable from the option being ignored. Regions and stray
@@ -994,6 +1080,22 @@ async function mountEditor(
   // Create fonts manager to pass to Editor
   const fontsManager = useFonts(config.fonts);
 
+  // A later `init()` or `initCloud()` on this container was made while this
+  // one awaited, so the container is that call's. Mounting here would replace
+  // its editor whenever this call settles last: under React StrictMode, with a
+  // cancelled effect's editor, which that effect then unmounts, leaving the
+  // container empty. So this call leaves the container alone and resolves
+  // never mounted, like an instance a later `init()` replaced: its
+  // `unmount()` is a no-op.
+  if (containerClaims.get(container) !== token) {
+    return createEditorInstance({
+      config,
+      editorRef: ref(null),
+      fontsManager,
+      unmount: () => {},
+    }).instance;
+  }
+
   // Auto-unmount any prior instance on the SAME container *after* awaits
   // — checking before the await would let two concurrent init() calls
   // both pass the guard and orphan the first-mounted app on this
@@ -1002,33 +1104,6 @@ async function mountEditor(
 
   const mount = resolveMountTarget(container, config.shadowDom ?? true);
   const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
-
-  // Merge tags reach us in one of two shapes, and only one of them behaves like
-  // a tag. Anything typed or pasted is already a `<span data-merge-tag>`, since
-  // `MergeTagNode`'s input rules convert it on the spot; content that arrived
-  // any other way — a consumer's stored JSON, an `@templatical/import-*`
-  // conversion — still holds bare `{{tokens}}` that render as plain text.
-  // Normalizing here, before the seed reaches `Editor.vue`, means core is
-  // handed content that is already correct and never observes a mutation, so
-  // nothing is marked dirty and no autosave tick fires for a load.
-  //
-  // This is one of four places content enters. The other three:
-  // `instance.setContent` and `instance.create` below, and the `templates`
-  // provider's `load`, wrapped in `Editor.vue` where it reaches core.
-  // Overlay chrome is not seed content: merge tags in the shell, then refuse
-  // an illegal tree before mount.
-  if (config.layout) {
-    config.layout = normalizeContentForConfig(config.layout, config.mergeTags);
-    validateLayout(config.layout);
-  }
-  if (config.content) {
-    config.content = normalizeContentForConfig(
-      config.content,
-      config.mergeTags,
-    );
-    assertNoSlotInContent(config.content);
-    assertNoWrapperInContent(config.content);
-  }
 
   const app = createApp({
     setup() {
@@ -1055,6 +1130,35 @@ async function mountEditor(
   ossEntries.set(container, { app, editorRef, cleanup: mount.cleanup });
   lastOssContainer = container;
 
+  const { instance, render } = createEditorInstance({
+    config,
+    editorRef,
+    fontsManager,
+    // This instance's own app: once a later `init()` replaced it on the
+    // container, this call must leave the replacement mounted.
+    unmount: () => unmountOssContainer(container, app),
+  });
+
+  return instance;
+}
+
+/**
+ * The object `init()` and `initCloud()` resolve with. It reaches the editor
+ * through `editorRef`, which is `null` before the editor mounts and after it
+ * unmounts, and for good on a call a later one superseded; every method
+ * answers either way.
+ */
+function createEditorInstance({
+  config,
+  editorRef,
+  fontsManager,
+  unmount,
+}: {
+  config: TemplaticalEditorConfig;
+  editorRef: Ref<InstanceType<typeof Editor> | null>;
+  fontsManager: UseFontsReturn;
+  unmount: () => void;
+}): { instance: TemplaticalEditor; render: RenderMethods } {
   const instance: TemplaticalEditor = {
     getContent() {
       // safeClone (not a naked JSON.stringify): a drag inside a section can
@@ -1098,7 +1202,7 @@ async function mountEditor(
       // read, so the call is never silently lost.
       config.mergeTags = { ...config.mergeTags, tags };
     },
-    unmount: () => unmountOssContainer(container),
+    unmount,
     create(input?: { name?: string; content?: TemplateContent }) {
       if (!editorRef.value) {
         return Promise.reject(new Error("[Templatical] Editor not ready"));
@@ -1182,7 +1286,7 @@ async function mountEditor(
       }),
   });
 
-  return instance;
+  return { instance, render };
 }
 
 // ---------------------------------------------------------------------------
@@ -1240,6 +1344,21 @@ async function mountEditor(
 export async function initCloud(
   config: TemplaticalCloudEditorConfig,
 ): Promise<TemplaticalCloudEditor> {
+  // Checked before the claim and the bootstrap, so an illegal `layout` or
+  // `content` rejects without touching the container or making any request.
+  // The three keys are copied first, so the caller's config is never written.
+  const prepared = {
+    layout: config.layout,
+    content: config.content,
+    mergeTags: config.mergeTags,
+  };
+  prepareLayoutAndContent(prepared);
+
+  // Claimed before the bootstrap's requests go out, so a later call on this
+  // container wins even when this call's bootstrap answers last, and a
+  // selector that matches nothing rejects without making any request.
+  const claim = claimContainer(config.container);
+
   // Dynamic imports — every cloud module is tree-shaken from the OSS bundle, and
   // an OSS consumer who never calls this downloads none of it.
   const [{ bootstrapCloud }, cloudTranslations] = await Promise.all([
@@ -1255,8 +1374,8 @@ export async function initCloud(
   return mountEditor(
     {
       container: config.container,
-      content: config.content,
-      layout: config.layout,
+      content: prepared.content,
+      layout: prepared.layout,
       sectionWrapper: config.sectionWrapper,
       shadowDom: config.shadowDom,
       locale: config.locale,
@@ -1305,6 +1424,7 @@ export async function initCloud(
       // which leaves comments unavailable rather than anonymous.
       user,
     },
+    claim,
     runtime,
   );
 }
@@ -1316,7 +1436,7 @@ export async function initCloud(
 /**
  * Unmount the most-recently-created OSS editor. Single-instance legacy
  * API — callers managing multiple editors should use `instance.unmount()`
- * from each returned object, which targets the specific container.
+ * from each returned object, which tears down only that instance.
  */
 export function unmount(): void {
   if (lastOssContainer) {
@@ -1379,9 +1499,7 @@ export { createLocalStorageMediaProvider } from "@templatical/core";
 export type { LocalStorageMediaProviderOptions } from "@templatical/core";
 
 export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
-export type { UseFontsReturn, FontOption } from "./composables/useFonts";
-export { useFonts } from "./composables/useFonts";
-export type { EditorCapabilities } from "./types/editor-capabilities";
+export type { FontOption } from "./composables/useFonts";
 export type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 
 export {

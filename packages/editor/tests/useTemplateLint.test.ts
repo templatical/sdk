@@ -93,6 +93,28 @@ describe("useTemplateLint", () => {
     expect(mock.lintTemplate).not.toHaveBeenCalled();
   });
 
+  it("keeps ready false and sets unavailable when the package cannot be imported", async () => {
+    // RightSidebar hides the Issues tab on `unavailable`, so a failed import
+    // must set it, and must not report the linter as ready.
+    const mock = await setupQualityMock();
+    const useTemplateLint = await loadComposable();
+
+    const result = useTemplateLint({
+      content: ref(createContent()),
+      options: {},
+      updateBlock: vi.fn(),
+      updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
+    });
+    expect(result.ready.value).toBe(false);
+    expect(result.unavailable.value).toBe(false);
+
+    mock.rejectImport(new Error("Cannot find module '@templatical/quality'"));
+    await vi.waitFor(() => expect(result.unavailable.value).toBe(true));
+    expect(result.ready.value).toBe(false);
+    expect(mock.lintTemplate).not.toHaveBeenCalled();
+  });
+
   it("runs lintTemplate on content changes when alive", async () => {
     const mock = await setupQualityMock();
     const useTemplateLint = await loadComposable();

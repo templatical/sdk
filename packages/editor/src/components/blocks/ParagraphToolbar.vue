@@ -4,6 +4,7 @@ import EmojiPickerDropdown from "./EmojiPickerDropdown.vue";
 import ToolbarIconButton from "../toolbar/ToolbarIconButton.vue";
 import ToolbarSeparator from "../toolbar/ToolbarSeparator.vue";
 import ToolbarSelect from "../toolbar/ToolbarSelect.vue";
+import { fontSelectValue, withCurrentFont } from "../../utils/withCurrentFont";
 import { useI18n } from "../../composables";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { Editor } from "@tiptap/core";
@@ -210,8 +211,10 @@ function setHighlight(color: string): void {
         <!-- Row 1: Font family, Font size, Text color, Bold/Italic/Underline/Strikethrough -->
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <ToolbarSelect
-            :model-value="textStyleAttr('fontFamily')"
-            :options="fontFamilies"
+            :model-value="fontSelectValue(textStyleAttr('fontFamily'))"
+            :options="
+              withCurrentFont(fontFamilies, textStyleAttr('fontFamily'))
+            "
             :label="t.paragraphEditor.fontFamily"
             :placeholder="t.paragraphEditor.defaultFont"
             width-class="tpl:w-32"

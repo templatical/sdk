@@ -66,7 +66,7 @@ await initCloud({
 });
 ```
 
-Passing a full provider is fine: `list`, `create`, `update`, `delete`, `setResolved` and `subscribe` are ignored with a console warning naming them, while `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` reach the editor regardless. An OSS `comments` provider moving to Cloud needs no change — leave the key exactly as it is.
+Passing a full provider is fine: `list`, `create`, `update`, `delete`, `setResolved` and `subscribe` are ignored with a console warning naming them, while `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` reach the editor regardless. A `comments` provider moving from `init()` to Cloud needs no change — leave the key exactly as it is.
 
 Bring your own storage with [`init()`](/backend/comments), where the whole set — templates, version history, comments, rendering — is yours.
 

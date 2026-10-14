@@ -1,5 +1,5 @@
 import "./dom-stubs";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 
 // Mock heavy/component dependencies before importing the entry.
 vi.mock("vue", async () => {
@@ -57,7 +57,10 @@ describe("editor entry — concurrent init does not orphan first app", () => {
     initFn = mod.init;
   });
 
-  it("OSS: concurrent init() unmounts first app before mounting second", async () => {
+  // An orphan is an app still mounted that nothing can unmount. Asserted by
+  // outcome rather than mechanism: whatever the first call does, exactly one
+  // app stays mounted, and only the later call's handle reaches it.
+  it("OSS: concurrent init() leaves one app mounted, the later call's", async () => {
     const { loadTranslations } = await import("../src/i18n");
     let resolveFirst!: (v: any) => void;
     let resolveSecond!: (v: any) => void;
@@ -70,12 +73,16 @@ describe("editor entry — concurrent init does not orphan first app", () => {
       );
 
     const { createApp } = await import("vue");
-    const firstApp = { mount: vi.fn(), unmount: vi.fn() };
-    const secondApp = { mount: vi.fn(), unmount: vi.fn() };
-    let createCount = 0;
-    vi.mocked(createApp).mockImplementation(
-      () => ((createCount++ === 0 ? firstApp : secondApp) as any),
-    );
+    const apps: Array<{ mount: Mock; unmount: Mock }> = [];
+    vi.mocked(createApp).mockImplementation(() => {
+      const app = { mount: vi.fn(), unmount: vi.fn() };
+      apps.push(app);
+      return app as any;
+    });
+    const stillMounted = () =>
+      apps.filter(
+        (app) => app.mount.mock.calls.length > app.unmount.mock.calls.length,
+      );
 
     const container = document.createElement("div");
 
@@ -88,18 +95,18 @@ describe("editor entry — concurrent init does not orphan first app", () => {
     resolveFirst({});
     await new Promise((r) => setTimeout(r, 10));
     resolveSecond({});
-    await new Promise((r) => setTimeout(r, 10));
+    const [first, second] = await Promise.all([firstInit, secondInit]);
 
-    firstInit.catch(() => {});
-    secondInit.catch(() => {});
+    expect(stillMounted()).toHaveLength(1);
+    expect(stillMounted()[0].mount).toHaveBeenCalledWith(container);
 
-    expect(firstApp.unmount).toHaveBeenCalled();
-    expect(secondApp.mount).toHaveBeenCalledWith(container);
+    first.unmount();
+    expect(stillMounted()).toHaveLength(1);
+
+    second.unmount();
+    expect(stillMounted()).toEqual([]);
   });
 
-  // Cloud equivalent: initCloud has the same race shape (guard checked
-  // before awaits). Not unit-tested here because the dynamic
-  // `createCloudRuntime` import reaches vue-draggable-plus/sortablejs, which
-  // needs a real DOM. Fix mirrors the OSS one — guard moved after awaits in
-  // src/index.ts.
+  // `initCloud()` mounts through the same path. Its concurrency is covered
+  // with real Vue in `instance-unmount.test.ts`.
 });

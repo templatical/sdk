@@ -8,7 +8,7 @@ Not sure what to pick up?
 
 - 🟢 **Issues labeled [`good first issue`](https://github.com/templatical/sdk/labels/good%20first%20issue)** — small, well-scoped, no deep architecture knowledge required.
 - 📝 **Improve docs** — fix typos, clarify confusing sections, add missing examples. Docs live in `apps/docs/`. See the [bilingual docs](#bilingual-docs) section before submitting.
-- 🌍 **Add a locale** — copy `packages/editor/src/i18n/en.ts` to `packages/editor/src/i18n/<locale>.ts` and translate every key. Same for `packages/media-library/src/i18n/`. Tests verify key parity, so missing keys will fail CI.
+- 🌍 **Add a locale** — copy `packages/editor/src/i18n/locales/en.ts` to `packages/editor/src/i18n/locales/<locale>.ts` and translate every key. Same for `packages/media-library/src/i18n/locales/`. Tests verify key parity, so missing keys will fail CI.
 - 🧩 **Build a custom block example** — see the [custom blocks guide](https://docs.templatical.com/guide/custom-blocks).
 - 💡 **Propose a feature** — open a [Discussion](https://github.com/templatical/sdk/discussions) first if it's substantial. We can talk through design before you write code.
 
@@ -17,7 +17,7 @@ Not sure what to pick up?
 A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and declares **no runtime dependencies at all** — it bundles Vue, `core`, `types` and every transitive Vue library inline, so consumers get a single drop-in ESM file. A few things that surprise people:
 
 - **`types` builds first, and nothing needs building before it** — the media types it references resolve through its tsconfig `paths` to media-library's *source*, so no `dist/` need exist. A workspace dependency there is forbidden: it would close `types → media-library → core → types`, which pnpm rejects with `ERR_PNPM_TASK_CYCLE` before running anything, and the cycle guard in `packages/editor/tests/consumer-fixture.test.ts` keeps it out.
-- **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the OSS entry.
+- **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the `init()` entry.
 - **Typecheck needs no build** — each package's tsconfig `paths` map sibling `@templatical/*` imports straight to source, so `pnpm run typecheck` works on a clean checkout.
 - **The editor mounts in shadow DOM by default** (`shadowDom ?? true`); the `tpl:` Tailwind prefix and `.tpl-*` class prefix are collision protection for the `shadowDom: false` opt-out path.
 - **`@templatical/core/cloud` is a separate subpath export** — importing `@templatical/core` never pulls it in.
@@ -28,8 +28,8 @@ For block-level concerns, the docs are usually the right reference: [block refer
 
 ### Prerequisites
 
-- Node.js >= 22 (the engine requirement)
-- [pnpm](https://pnpm.io/) >= 9 (run `corepack enable` once and the repo's pinned version is used automatically)
+- Node.js >= 24.21.0 (the engine requirement)
+- [pnpm](https://pnpm.io/) (run `corepack enable` once and the version pinned in `packageManager` is used automatically)
 - A modern browser for the playground / E2E tests
 
 ### One-time setup
@@ -53,8 +53,10 @@ pnpm run lint         # ESLint
 pnpm run format       # Prettier auto-fix
 pnpm run format:check # Prettier check (CI uses this)
 pnpm run typecheck    # tsc / vue-tsc per package, no build needed
-pnpm run ci           # all of the above sequentially (matches CI)
+pnpm run ci           # format (rewrites files), lint, typecheck, test
 ```
+
+`pnpm run ci` is a local shortcut, not a copy of CI: CI also runs `format:check`, the build, the docs build, the E2E suite and the consumer smokes.
 
 Run the playground while iterating on editor code:
 
@@ -74,7 +76,7 @@ The monorepo deliberately uses **two** build tools, split by package shape:
 
 | Packages | Tool | Why |
 |----------|------|-----|
-| `types`, `core`, `renderer`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon` | **tsdown** (Rolldown + Oxc) | Pure-TS libraries. tsdown bundles JS **and** rolls up `.d.ts` in one ~8-line config. Migrated off tsup → dropped `rollup` / `rollup-plugin-dts` from the build path. |
+| Every package with a `tsdown.config.ts` (`ls packages/*/tsdown.config.ts`) | **tsdown** (Rolldown + Oxc) | Pure-TS libraries. tsdown bundles JS **and** rolls up `.d.ts` in one ~8-line config. Migrated off tsup → dropped `rollup` / `rollup-plugin-dts` from the build path. |
 | `editor`, `media-library`, `quality` | **Vite** (+ `vue-tsc`/`tsc` + `@microsoft/api-extractor` for `.d.ts`) | Need SFC compilation, the Tailwind/CSS pipeline, `import.meta.glob`, `import.meta.env` replacement, and shared dev-server config — all batteries Vite includes and tsdown would require manual wiring for. |
 | `editor` + `media-library` CDN bundles | **Vite** (`vite.cdn.config.ts`) | Self-contained, code-split, `window`-global app-style bundles. |
 
@@ -89,7 +91,7 @@ The monorepo deliberately uses **two** build tools, split by package shape:
 Test conventions:
 
 - **Location:** `tests/**/*.test.ts` per package, except the `@templatical/import-*` packages, which use `src/__tests__/`.
-- **Framework:** Vitest 3 for unit tests, Playwright for E2E.
+- **Framework:** Vitest for unit tests, Playwright for E2E.
 - **Regression sensitivity:** every test must assert on **concrete values or state**. Never use `.toBeDefined()`, `.toBeTruthy()`, or `.not.toThrow()` as the only assertion — pair with a value check or a state check.
 - **Coverage:** test happy path, unhappy path (error branches), and edge cases. Test every `if/else` branch, every `try/catch`, every early `return`.
 - **Mocking:** follow the patterns already established in the existing suites — API clients, AuthManager, WebSocket, SSE streaming, inject-dependent composables, fake timers.
@@ -102,7 +104,7 @@ Templatical's docs are published in **English and German**. When you change docs
 - Edit `apps/docs/de/<page>.md` for German (same path under `de/`).
 - If you don't speak German, English-only PRs are fine — flag the missing translation in the PR description and someone will follow up.
 
-The same rule applies to i18n keys in `packages/editor/src/i18n/` and `packages/media-library/src/i18n/`. Tests fail if `en.ts` and `de.ts` keys diverge.
+The same rule applies to i18n keys in `packages/editor/src/i18n/` and `packages/media-library/src/i18n/`, except that CI enforces it: tests fail if any locale's keys diverge from `en.ts`, so a new string needs a translation in every locale file.
 
 ## Changesets
 
@@ -126,7 +128,7 @@ PRs that touch only docs, tests, or internal tooling don't need a changeset.
 Before opening a PR:
 
 - [ ] Tests added or updated (and they fail without your change)
-- [ ] `pnpm run ci` passes locally (lint + typecheck + build + test)
+- [ ] `pnpm run ci` passes locally (format + lint + typecheck + test)
 - [ ] E2E still passes (`pnpm run test:e2e`) — if your change touches the editor UI
 - [ ] Docs updated (en + de if user-facing)
 - [ ] Changeset added (`pnpm exec changeset`)
@@ -168,7 +170,7 @@ const tplUiTheme = inject(UI_THEME_KEY);
 
 - 💬 **[GitHub Discussions](https://github.com/templatical/sdk/discussions)** — design questions, "how do I…?", showcase what you've built.
 - 🐛 **[Issues](https://github.com/templatical/sdk/issues)** — concrete bug reports and feature requests.
-- 🔐 **[Security advisories](https://github.com/templatical/sdk/security)** — private disclosure for vulnerabilities (see [`SECURITY.md`](./SECURITY.md) when present).
+- 🔐 **[Security advisories](https://github.com/templatical/sdk/security)** — private disclosure for vulnerabilities (see [`SECURITY.md`](./SECURITY.md)).
 
 Avoid discussing design decisions in inline PR comments before opening the PR — Discussions are easier to find later.
 
@@ -176,7 +178,7 @@ Avoid discussing design decisions in inline PR comments before opening the PR �
 
 By contributing, you agree that your contributions will be licensed under the same license as the package you're contributing to:
 
-- **MIT** for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`, `import-stripo`, `import-chamaileon`
 - **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `editor`, `core`, `media-library`
+- **MIT** for every other package
 
 See [`LICENSE`](./LICENSE) and [`LICENSE-MIT`](./LICENSE-MIT) for full terms, and [the license FAQ](https://docs.templatical.com/license-faq) for plain-English answers.

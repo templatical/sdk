@@ -11,6 +11,7 @@ E-Mail-URLs sind eine Langschwanz-Fehlerquelle:
 - Ein fehlerhafter `mailto:` macht „Contact us" stillschweigend tot.
 - Ein `tel:` mit Buchstaben drin wählt nirgendwohin.
 - Ein `data:` oder App-Deep-Link sieht im JSON in Ordnung aus, aber kein E-Mail-Client rendert ihn.
+- Ein wurzelrelatives `/contact`, von der Website kopiert, hat nach dem Versand keine Seite, gegen die es aufgelöst werden kann.
 
 Das sind keine Inhalts-Qualitätsprobleme (andere Zielgruppe als a11y) und keine Baum-Korruptions-Probleme (das JSON validiert). Sie bilden ihre eigene Kategorie.
 
@@ -18,7 +19,7 @@ Das sind keine Inhalts-Qualitätsprobleme (andere Zielgruppe als a11y) und keine
 
 Der Editor liefert bereits zwei URL-Schema-Verteidigungen:
 
-- **`useRichTextLinkDialog.normalizeLinkUrl`** — der Rich-Text-Link-Dialog weist URLs außerhalb seiner Safe-Scheme-Allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) beim Einfügen zurück.
+- **`useRichTextLinkDialog.normalizeLinkUrl`** — der Rich-Text-Link-Dialog weist URLs außerhalb seiner Safe-Scheme-Allowlist (`http`, `https`, `mailto`, `tel`, `ftp`, `ftps`, `sms`, `xmpp`, `cid`) beim Einfügen zurück. Ein Pfad (`/contact`, `./x`, `?ref=1`) wird wie eingegeben gespeichert und `//host` wird zu `https://host`; `link.relative-url` meldet den Pfad anschließend.
 - **`sanitizeRichTextHtml`** — ein Render-Scrubber entfernt `javascript:` / `vbscript:` / `file:` (und weitere unsichere) `href` / `src` / `formaction`-Werte aus `paragraph.content` / `title.content` / `html.content`, bevor sie `v-html` erreichen.
 
 Das sind **Sicherheitsgrenzen** — sie verhindern XSS, indem sie gefährliche Werte stillschweigend entfernen. `lintLinks` ist ein **Authoring-Werkzeug**: es macht dieselben Werte sichtbar, damit der Autor das JSON korrigieren kann statt nur den Render-Pfad zu reparieren.

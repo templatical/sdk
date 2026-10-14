@@ -913,6 +913,10 @@
         "iconStyle": {
           "$ref": "#/definitions/SocialIconStyle"
         },
+        "iconTone": {
+          "$ref": "#/definitions/SocialIconTone",
+          "description": "Absent means `\"brand\"`."
+        },
         "iconSize": {
           "$ref": "#/definitions/SocialIconSize"
         },
@@ -989,8 +993,19 @@
         "outlined",
         "rounded",
         "square",
-        "circle"
-      ]
+        "circle",
+        "plain"
+      ],
+      "description": "The icon's shape. `plain` is the glyph alone, with no badge or outline."
+    },
+    "SocialIconTone": {
+      "type": "string",
+      "enum": [
+        "brand",
+        "dark",
+        "light"
+      ],
+      "description": "The colors an icon is drawn in: each platform's own brand color, or one tone (dark or light) for every icon."
     },
     "SocialIconSize": {
       "type": "string",

@@ -232,12 +232,18 @@ export const SELECTORS = {
   // Export modal
   exportModal: '[data-testid="export-modal"]',
   exportModalClose: '[data-testid="export-modal-close"]',
+  exportTabPreview: '[data-testid="export-tab-preview"]',
   exportTabMjml: '[data-testid="export-tab-mjml"]',
   exportTabHtml: '[data-testid="export-tab-html"]',
   exportTabJson: '[data-testid="export-tab-json"]',
   exportCopyBtn: '[data-testid="export-copy"]',
   exportDownloadBtn: '[data-testid="export-download"]',
   exportHtmlError: '[data-testid="export-html-error"]',
+  exportPreviewFrame: '[data-testid="export-preview-frame"]',
+  exportPreviewDesktop: '[data-testid="export-preview-desktop"]',
+  exportPreviewMobile: '[data-testid="export-preview-mobile"]',
+  buildInfo: '[data-testid="build-info"]',
+  buildInfoCommit: '[data-testid="build-info-commit"]',
 
   // Feature overlay
   featureOverlay: '[data-testid="feature-overlay"]',

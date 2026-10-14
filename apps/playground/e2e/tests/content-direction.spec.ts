@@ -72,6 +72,31 @@ test.describe("content direction", () => {
     expect(mjml).toContain('direction="rtl"');
   });
 
+  test("the exported Preview lays out text inside columns rtl", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await openArabicInvitation(scenePage, editorPage);
+    await editorPage.closeCodeDrawer();
+    await editorPage.openExport();
+    const frame = page.frameLocator(SELECTORS.exportPreviewFrame);
+
+    // A date with digits and punctuation inside a column: laid out ltr, the
+    // year and the trailing period land on the wrong side of the Arabic (#872).
+    const columnText = frame.getByText("15 أبريل 2026", { exact: false });
+    await expect(columnText).toBeVisible();
+    expect(
+      await columnText.evaluate((el) => getComputedStyle(el).direction),
+    ).toBe("rtl");
+
+    const directions = await frame
+      .locator("body p")
+      .evaluateAll((ps) => ps.map((p) => getComputedStyle(p).direction));
+    expect(directions.length).toBeGreaterThan(0);
+    expect(new Set(directions)).toEqual(new Set(["rtl"]));
+  });
+
   test("the settings toggle writes ltr and the canvas follows", async ({
     page,
     scenePage,

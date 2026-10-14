@@ -309,11 +309,14 @@ export default {
   exportModal: {
     title: "Export Template",
     tabs: {
+      preview: "Preview",
       html: "HTML",
       mjml: "MJML",
       json: "JSON",
     },
     description: {
+      preview:
+        "The final email, compiled from MJML to HTML in your browser. Copy and Download give its HTML.",
       html: "Compiled email-ready HTML. Paste into your ESP or send as the final email.",
       mjml: "MJML source. Use with the MJML compiler or any MJML-compatible tool.",
       json: "Templatical block JSON. Use to re-import or store the template.",
@@ -325,6 +328,14 @@ export default {
     compileError: "Failed to compile HTML.",
     compileErrorDetails: "Errors:",
     retry: "Try Again",
+    previewWidth: "Preview width",
+    desktop: "Desktop",
+    mobile: "Mobile",
+    previewFrame: "Email preview",
+  },
+  buildInfo: {
+    label: "SDK {version}",
+    compare: "Commit {commit}: changes since v{version} on GitHub",
   },
   shareModal: {
     title: "Share Template",
@@ -391,7 +402,8 @@ export default {
   },
   cloud: {
     title: "Templatical Cloud",
-    subtitle: "Everything in the OSS editor, plus cloud-powered features.",
+    subtitle:
+      "Everything in the self-hosted editor, plus cloud-powered features.",
     auth: {
       apiCredentials: "API Credentials",
       authProxy: "Auth Proxy",
@@ -442,7 +454,7 @@ export default {
       whiteLabel: "White Label",
       andMore: "and more \u2192",
     },
-    backToOss: "\u2190 Back to OSS Playground",
+    backToOss: "\u2190 Back to Playground",
     editor: {
       back: "Back",
       cloud: "Cloud",

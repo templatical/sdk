@@ -3,7 +3,6 @@ import type en from "./en";
 const translations: typeof en = {
   footer: {
     poweredBy: "提供元:",
-    openSource: "オープンソース",
   },
   header: {
     save: "保存",
@@ -250,6 +249,11 @@ const translations: typeof en = {
     styleRounded: "角丸",
     styleSquare: "四角",
     styleCircle: "丸",
+    stylePlain: "アイコンのみ",
+    color: "色",
+    colorBrand: "ブランドカラー",
+    colorDark: "ダーク",
+    colorLight: "ライト",
     size: "サイズ",
     sizeSmall: "小",
     sizeMedium: "中",
@@ -526,6 +530,7 @@ const translations: typeof en = {
     rename: "名前を変更",
     delete: "削除",
     deleteConfirm: "この保存済みブロックを削除しますか？",
+    deleteConfirmShort: "削除しますか？",
     blockCount: "{count} 個のブロック",
     browse: "保存済みブロックを参照",
     selectToPreview: "プレビューする保存済みブロックを選択",

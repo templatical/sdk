@@ -110,6 +110,8 @@ Leerer vertikaler Raum.
 
 Fügt rohes HTML in das Template ein. Verwenden Sie dies für Inhalte, die mit anderen Blocktypen nicht ausgedrückt werden können.
 
+Editor und Renderer geben dieses Markup unverändert aus; keiner von beiden bereinigt es. Kann das HTML aus nicht vertrauenswürdigen Quellen stammen, bereinigen Sie `content` auf Ihrem Server, bevor Sie es speichern oder versenden. Um HTML-Blöcke ganz aus der gerenderten E-Mail zu entfernen, übergeben Sie [`allowHtmlBlocks: false`](/de/api/renderer-typescript) an `renderToMjml`.
+
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `content` | `string` | Rohes HTML-Markup |
@@ -121,10 +123,13 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `icons` | `SocialIcon[]` | Liste der Social Icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visueller Stil |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle' \| 'plain'` | Form. `plain` ist das Symbol allein, ohne Fläche oder Umriss |
+| `iconTone` | `'brand' \| 'dark' \| 'light'` | Optional. Die Markenfarbe jeder Plattform (Standard) oder ein Farbton für alle Icons. Eine gefüllte Form zeigt das Symbol weiß auf dem Farbton, bei `light` fast schwarz |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | Icon-Größe |
 | `spacing` | `number` | Abstand zwischen Icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
+
+E-Mail-Clients, die in den Dunkelmodus wechseln, etwa die Gmail-App und Outlook, ändern den Hintergrund, lassen Bilder aber unverändert. Ein dunkles `plain`- oder `outlined`-Icon trägt deshalb einen dezenten weißen Rand, der auf hellen Hintergründen kaum zu sehen ist und das Icon als Umriss sichtbar hält, sobald der Hintergrund dunkel wird. Helle Icons haben keinen Rand, damit sie auf farbigen Flächen sauber bleiben. Clients, die einen dunklen Hintergrund hell machen (die Gmail-App unter iOS, Outlook für Windows), können ein helles `plain`- oder `outlined`-Icon aber verschwinden lassen. Eine gefüllte Form vermeidet beides, da ihr Hintergrund für den Kontrast sorgt.
 
 17 Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createButtonBlock,
   createDefaultTemplateContent,
   createParagraphBlock,
   createTitleBlock,
@@ -8,10 +9,16 @@ import {
   createSocialIconsBlock,
   createSlotBlock,
   createWrapperBlock,
+  RICH_TEXT_SPACING,
   type Block,
   type TemplateContent,
 } from "@templatical/types";
-import { renderToMjml, DEFAULT_SOCIAL_ICONS_BASE_URL } from "../src";
+import {
+  renderToMjml,
+  DEFAULT_SOCIAL_ICONS_BASE_URL,
+  BUTTON_FULL_WIDTH_CSS_CLASS,
+} from "../src";
+import { richTextStylesheet } from "../src/rich-text";
 
 const SLOT_IN_CONTENT = "[Templatical] slot is not a valid content block";
 const WRAPPER_IN_CONTENT = "[Templatical] wrapper is not a valid content block";
@@ -569,6 +576,50 @@ describe("content direction", () => {
     expect(mjml).toMatch(/<mj-group[^>]*direction="rtl"/);
   });
 
+  it("puts direction=rtl on every mj-column when the template is RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createParagraphBlock({ content: "<p>مرحبا</p>" }),
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [createParagraphBlock({ content: "<p>A</p>" })],
+          [createParagraphBlock({ content: "<p>B</p>" })],
+        ],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml.match(/<mj-column[^>]*direction="rtl"/g)).toHaveLength(3);
+    expect(mjml.match(/<mj-column\b(?![^>]*direction="rtl")[^/>]*>/g)).toBe(
+      null,
+    );
+  });
+
+  it("puts direction=rtl on a section.wrapper mj-wrapper when the template is RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createSectionBlock({
+        wrapper: { backgroundColor: "#eeeeee" },
+        children: [[createParagraphBlock({ content: "<p>A</p>" })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-wrapper[^>]*direction="rtl"/);
+  });
+
+  it("puts direction=rtl on a layout wrapper mj-wrapper when the template is RTL", async () => {
+    const content = withBlocks(
+      [createParagraphBlock({ content: "<p>A</p>" })],
+      {
+        direction: "rtl",
+      },
+    );
+    const mjml = await renderToMjml(content, { layout: cardLayout() });
+    expect(mjml).toMatch(/<mj-wrapper[^>]*direction="rtl"/);
+  });
+
   it("aligns an RTL paragraph mj-text to the start edge", async () => {
     const content = createDefaultTemplateContent();
     content.settings.direction = "rtl";
@@ -693,4 +744,45 @@ describe("renderToMjml layout option", () => {
     ]);
     await expect(renderToMjml(content)).rejects.toThrow(WRAPPER_IN_CONTENT);
   });
+});
+
+describe("full-width button rule", () => {
+  const RULE = ".tpl-button-full a { display: block !important; }";
+
+  const cases: [string, Block[]][] = [
+    ["no blocks", []],
+    [
+      "only fit-to-content and px-width buttons",
+      [
+        createButtonBlock({ text: "Fit" }),
+        createButtonBlock({ text: "Fixed", width: 240 }),
+      ],
+    ],
+    [
+      "two full-width buttons",
+      [
+        createButtonBlock({ text: "One", width: "full" }),
+        createButtonBlock({ text: "Two", width: "full" }),
+      ],
+    ],
+  ];
+
+  it("exports the class the button renderer marks a full-width button with", () => {
+    expect(BUTTON_FULL_WIDTH_CSS_CLASS).toBe("tpl-button-full");
+  });
+
+  it.each(cases)(
+    "ends the inline style block with the rule, once, for a template with %s",
+    async (_label, blocks) => {
+      const mjml = await renderToMjml(withBlocks(blocks));
+
+      expect(mjml).toContain(
+        `<mj-style inline="inline">
+      ${richTextStylesheet([RICH_TEXT_SPACING.paragraphGap])}
+      ${RULE}
+    </mj-style>`,
+      );
+      expect(mjml.split(RULE)).toHaveLength(2);
+    },
+  );
 });

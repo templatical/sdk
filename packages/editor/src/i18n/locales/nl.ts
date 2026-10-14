@@ -3,7 +3,6 @@ import type en from "./en";
 const nl: typeof en = {
   footer: {
     poweredBy: "Mogelijk gemaakt door",
-    openSource: "Open Source",
   },
 
   header: {
@@ -265,6 +264,11 @@ const nl: typeof en = {
     styleRounded: "Afgerond",
     styleSquare: "Vierkant",
     styleCircle: "Cirkel",
+    stylePlain: "Eenvoudig",
+    color: "Kleur",
+    colorBrand: "Merkkleuren",
+    colorDark: "Donker",
+    colorLight: "Licht",
     size: "Grootte",
     sizeSmall: "S",
     sizeMedium: "M",
@@ -541,6 +545,7 @@ const nl: typeof en = {
     rename: "Hernoemen",
     delete: "Verwijderen",
     deleteConfirm: "Dit opgeslagen blok verwijderen?",
+    deleteConfirmShort: "Verwijderen?",
     blockCount: "{count} blok(ken)",
     browse: "Opgeslagen blokken bekijken",
     selectToPreview: "Selecteer een opgeslagen blok voor een voorbeeld",
