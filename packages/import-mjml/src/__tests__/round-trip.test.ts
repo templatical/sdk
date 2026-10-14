@@ -25,7 +25,8 @@ import { convertMjmlTemplate } from "../converter";
  * One of every round-trippable block type, across all five column layouts,
  * plus a wrapper, a grouped section, a single-viewport visibility, a display
  * condition on a top-level section, a display condition on a block nested
- * inside a section column, and a paragraph carrying a hard `<br>` line break.
+ * inside a section column, a paragraph carrying a hard `<br>` line break, and a
+ * button at each width: fit to content, full and px.
  *
  * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
@@ -80,6 +81,16 @@ function buildFixtureTemplate(): TemplateContent {
               text: "Buy",
               url: "https://x.test",
               openInNewTab: true,
+            }),
+            createButtonBlock({
+              text: "Wide",
+              url: "https://x.test",
+              width: "full",
+            }),
+            createButtonBlock({
+              text: "Fixed",
+              url: "https://x.test",
+              width: 240,
             }),
           ]),
         ],
@@ -263,6 +274,9 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { report } = convertMjmlTemplate(mjml);
 
+    // The full-width button's own class must not come back as a dropped one,
+    // so this case cannot pass because the renderer stopped emitting it.
+    expect(mjml).toContain('css-class="tpl-button-full"');
     expect(report.summary.approximated).toBe(0);
     expect(report.summary.htmlFallback).toBe(0);
     expect(report.summary.skipped).toBe(0);
@@ -308,21 +322,6 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const withBreak = paragraphs.find((p) => p.content.includes("Line one"));
 
     expect(withBreak?.content).toBe("<p>Line one<br>Line two</p>");
-  });
-
-  it("does not report a full-width button's own class as dropped CSS", async () => {
-    // Kept out of the lossless fixture: the importer does not map `mj-button`
-    // `width` back to `ButtonBlock.width`, so the structural check would fail
-    // on the width rather than on the class.
-    const template = buildFixtureTemplate();
-    template.blocks = [
-      createButtonBlock({ text: "Wide", url: "https://x.test", width: "full" }),
-    ];
-    const mjml = await renderToMjml(template);
-    const { report } = convertMjmlTemplate(mjml);
-
-    expect(mjml).toContain('css-class="tpl-button-full"');
-    expect(report.warnings).toEqual([]);
   });
 });
 

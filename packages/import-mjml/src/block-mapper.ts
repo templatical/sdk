@@ -7,7 +7,7 @@ import {
   createImageBlock,
   createSpacerBlock,
 } from "@templatical/types";
-import type { Block, DividerBlock } from "@templatical/types";
+import type { Block, ButtonBlock, DividerBlock } from "@templatical/types";
 import {
   parseAlignment,
   parseBorderStyle,
@@ -88,30 +88,104 @@ function convertImage(
   });
 }
 
-function convertButton($el: Cheerio<Element>, attrs: Attrs): Block | null {
+/**
+ * `mj-button`'s `width` as `ButtonBlock.width`, where no width is a button
+ * that fits its label. `100%` is `"full"` and a px width stays px, as the
+ * renderer writes them. Any other percentage becomes px of `fillWidth`, the
+ * box MJML sizes it against, since the block holds no percentage. A width
+ * with no size fits the label, which is what MJML draws for it. Anything but
+ * `100%` or a positive px width pushes a note.
+ */
+function readButtonWidth(
+  value: string | undefined,
+  fillWidth: number,
+  notes: string[],
+): ButtonBlock["width"] {
+  const raw = (value ?? "").trim();
+  if (!raw) return undefined;
+
+  const match = /^(-?\d+(?:\.\d+)?)\s*(px|%)?$/i.exec(raw);
+  if (!match) {
+    notes.push(
+      `Button width "${raw}" could not be read; imported as fit to content.`,
+    );
+    return undefined;
+  }
+  const parsed = parseFloat(match[1]);
+  const isPercent = match[2] === "%";
+
+  if (isPercent && parsed >= 100) {
+    if (parsed > 100) {
+      notes.push(`Button width ${raw} was clamped to 100%.`);
+    }
+    return "full";
+  }
+
+  const px = Math.round(isPercent ? (parsed / 100) * fillWidth : parsed);
+  if (px <= 0) {
+    notes.push(
+      `Button width ${raw} has no usable size; imported as fit to content.`,
+    );
+    return undefined;
+  }
+  if (isPercent) {
+    notes.push(
+      `Button width ${raw} was imported as ${px}px, which does not scale with its column.`,
+    );
+  }
+  return px;
+}
+
+/**
+ * A percentage `width` sizes the button against its column less the column's
+ * side padding and its own, the same box an `mj-divider` line spans.
+ */
+function convertButton(
+  $el: Cheerio<Element>,
+  attrs: Attrs,
+  ctx: ConvertContext,
+): Converted | null {
   const text = ($el.text() ?? "").trim();
   if (!text) return null;
 
   const backgroundColor = parseColor(attrs["background-color"]);
   const textColor = parseColor(attrs.color);
   const fontSize = parsePxValue(attrs["font-size"]);
+  const base = baseFields(attrs);
+  const { left, right } = base.styles.padding;
 
-  return createButtonBlock({
-    text,
-    url: (attrs.href ?? "").trim(),
-    ...(backgroundColor ? { backgroundColor } : {}),
-    ...(textColor ? { textColor } : {}),
-    ...(fontSize > 0 ? { fontSize } : {}),
-    ...(attrs["border-radius"] !== undefined
-      ? { borderRadius: parsePxValue(attrs["border-radius"]) }
-      : {}),
-    ...(attrs["inner-padding"] !== undefined
-      ? { buttonPadding: parsePaddingShorthand(attrs["inner-padding"]) }
-      : {}),
-    align: parseAlignment(attrs.align, "center"),
-    ...(isNewTab(attrs) ? { openInNewTab: true } : {}),
-    ...baseFields(attrs),
-  });
+  const notes: string[] = [];
+  const width = readButtonWidth(
+    attrs.width,
+    ctx.containerWidth - ctx.columnPadding - left - right,
+    notes,
+  );
+
+  return {
+    block: createButtonBlock({
+      text,
+      url: (attrs.href ?? "").trim(),
+      ...(backgroundColor ? { backgroundColor } : {}),
+      ...(textColor ? { textColor } : {}),
+      ...(fontSize > 0 ? { fontSize } : {}),
+      ...(attrs["border-radius"] !== undefined
+        ? { borderRadius: parsePxValue(attrs["border-radius"]) }
+        : {}),
+      ...(attrs["inner-padding"] !== undefined
+        ? { buttonPadding: parsePaddingShorthand(attrs["inner-padding"]) }
+        : {}),
+      ...(width !== undefined ? { width } : {}),
+      align: parseAlignment(attrs.align, "center"),
+      ...(isNewTab(attrs) ? { openInNewTab: true } : {}),
+      ...base,
+    }),
+    entry: {
+      sourceTag: "mj-button",
+      templaticalBlockType: "button",
+      status: notes.length > 0 ? "approximated" : "converted",
+      ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+    },
+  };
 }
 
 /**
@@ -271,16 +345,7 @@ export function convertElement(
   }
 
   if (tag === "mj-button") {
-    const block = convertButton($el, attrs);
-    if (!block) return null;
-    return {
-      block,
-      entry: {
-        sourceTag: tag,
-        templaticalBlockType: "button",
-        status: "converted",
-      },
-    };
+    return convertButton($el, attrs, ctx);
   }
 
   if (tag === "mj-divider") {

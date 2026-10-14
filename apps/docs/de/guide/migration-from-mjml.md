@@ -137,7 +137,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding. |
+| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding, `width` (siehe [Button-Breite](#button-breite)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
@@ -165,6 +165,20 @@ Die Linie reicht über ihre Spalte abzüglich des seitlichen Paddings der Spalte
 
 Templatical zentriert jeden Divider. Ein Divider mit Teilbreite, den MJML links oder rechts ausrichtet (`align`), ist `approximated`; seine `note` nennt die Ausrichtung.
 
+### Button-Breite
+
+| `width` am `mj-button` | `ButtonBlock.width` | Status |
+|---|---|---|
+| fehlt | keine, der Button passt sich seiner Beschriftung an | `converted` |
+| `100%` | `"full"` | `converted` |
+| px, über `0` | die px-Zahl | `converted` |
+| ein Prozentwert unter `100%`, etwa `50%` | der px-Wert, den er ergibt | `approximated` |
+| über `100%` | `"full"` | `approximated` |
+| px oder ein Prozentwert, der `0px` oder weniger ergibt | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+| jeder andere Wert | keine, der Button passt sich seiner Beschriftung an | `approximated` |
+
+Ein Prozentwert bemisst sich an der Breite, die der Button füllen kann: seiner Spalte abzüglich des seitlichen Paddings der Spalte und seines eigenen; an dieser Box bemisst `mj-button` ihn. `ButtonBlock.width` kennt keine Prozentwerte, daher skaliert der resultierende px-Wert nicht mehr mit der Spalte, und die `note` des Eintrags weist darauf hin. Eine px-Breite bleibt px, gleich wie breit sie ist, weil Templaticals Renderer `"full"` als `100%` schreibt.
+
 ## Wo das Mapping verlustbehaftet ist
 
 MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne Näherungen bei Layout, Styling oder Anzeigebedingungen. Die einzige Lücke betrifft den Blocktyp: Ein `VideoBlock` und ein `HtmlBlock` rendern beide als reines MJML ohne Kennzeichnung ihrer Herkunft, sodass beim erneuten Import jeweils ein anderer Blocktyp entsteht (siehe unten). Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
@@ -173,6 +187,7 @@ MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer oh
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
 - **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
 - **Divider-Breite und -Ausrichtung** — eine `width` an einem `mj-divider` außerhalb von 0–100 % oder unter 0px wird in den gültigen Bereich begrenzt, eine nicht lesbare wird zu `"full"`, und ein links oder rechts ausgerichteter Divider mit Teilbreite wird zentriert. Siehe [Divider-Breite](#divider-breite).
+- **Button-Breite** — eine `width` an einem `mj-button` als Prozentwert außer `100%` wird zum px-Wert, den sie ergibt, eine über `100%` wird zu `"full"`, und eine nicht lesbare oder eine, die `0px` oder weniger ergibt, lässt den Button sich seiner Beschriftung anpassen. Siehe [Button-Breite](#button-breite).
 - **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.
 - **HTML-Blöcke** — aus demselben Grund rendert der Inhalt eines `HtmlBlock` als reines `mj-text`-Markup ohne jede Kennzeichnung als HTML. Beim Import daraus entsteht ein `ParagraphBlock` mit demselben Markup.
 - **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Durchlauf durch Export und Re-Import.

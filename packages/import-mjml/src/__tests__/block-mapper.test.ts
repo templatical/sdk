@@ -27,8 +27,13 @@ function ctxFor(mjml: string): { ctx: ConvertContext; $: CheerioAPI } {
   };
 }
 
-function convert(mjml: string, selector: string) {
-  const { ctx, $ } = ctxFor(`<mjml><mj-body>${mjml}</mj-body></mjml>`);
+function convert(
+  mjml: string,
+  selector: string,
+  overrides: Partial<ConvertContext> = {},
+) {
+  const { ctx: base, $ } = ctxFor(`<mjml><mj-body>${mjml}</mj-body></mjml>`);
+  const ctx = { ...base, ...overrides };
   const $el = $(selector).first() as unknown as Cheerio<Element>;
   return { result: convertElement($el, ctx), warnings: ctx.warnings };
 }
@@ -208,6 +213,114 @@ describe("mj-button", () => {
       "mj-button",
     );
     expect(result).toBe(null);
+  });
+});
+
+describe("mj-button width", () => {
+  /** `"absent"` when the block has no `width` key — a fit-to-content button. */
+  function buttonWith(
+    width: string | null,
+    extra = "",
+    overrides: Partial<ConvertContext> = {},
+  ) {
+    const markup =
+      width === null
+        ? `<mj-button href="https://x.test" ${extra}>Go</mj-button>`
+        : `<mj-button href="https://x.test" width="${width}" ${extra}>Go</mj-button>`;
+    const { result } = convert(markup, "mj-button", overrides);
+    const block = result!.block as ButtonBlock;
+    return {
+      width: "width" in block ? block.width : "absent",
+      entry: result!.entry,
+    };
+  }
+
+  const converted = {
+    sourceTag: "mj-button",
+    templaticalBlockType: "button",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return {
+      sourceTag: "mj-button",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note,
+    };
+  }
+
+  it("reads a missing width as fit to content", () => {
+    expect(buttonWith(null)).toEqual({ width: "absent", entry: converted });
+  });
+
+  it('reads 100% as "full"', () => {
+    expect(buttonWith("100%")).toEqual({ width: "full", entry: converted });
+    expect(buttonWith("100.0%").width).toBe("full");
+  });
+
+  it("reads a px width as that many px", () => {
+    expect(buttonWith("240px")).toEqual({ width: 240, entry: converted });
+    expect(buttonWith("240").width).toBe(240);
+    expect(buttonWith("240.4px").width).toBe(240);
+  });
+
+  it("keeps a px width that reaches or passes the column as px", () => {
+    // The renderer writes "full" as 100% and a number as px, so a px width
+    // never stands for "full".
+    expect(buttonWith("600px")).toEqual({ width: 600, entry: converted });
+    expect(buttonWith("700px")).toEqual({ width: 700, entry: converted });
+  });
+
+  it("converts any other percentage to px of the width the button can fill and reports it approximated", () => {
+    expect(buttonWith("50%")).toEqual({
+      width: 300,
+      entry: approximated(
+        "Button width 50% was imported as 300px, which does not scale with its column.",
+      ),
+    });
+    expect(buttonWith("33.3%").width).toBe(200);
+  });
+
+  it("measures a percentage against the column less the column's and the button's side padding", () => {
+    expect(buttonWith("50%", 'padding="10px 50px"').width).toBe(250);
+    expect(buttonWith("50%", "", { columnPadding: 40 }).width).toBe(280);
+    expect(
+      buttonWith("50%", 'padding="10px 50px"', { containerWidth: 300 }).width,
+    ).toBe(100);
+  });
+
+  it('clamps a percentage above 100 to "full" and reports it approximated', () => {
+    expect(buttonWith("150%")).toEqual({
+      width: "full",
+      entry: approximated("Button width 150% was clamped to 100%."),
+    });
+  });
+
+  it("reads a width it cannot read as fit to content and reports it approximated", () => {
+    expect(buttonWith("auto")).toEqual({
+      width: "absent",
+      entry: approximated(
+        'Button width "auto" could not be read; imported as fit to content.',
+      ),
+    });
+    expect(buttonWith("2em")).toEqual({
+      width: "absent",
+      entry: approximated(
+        'Button width "2em" could not be read; imported as fit to content.',
+      ),
+    });
+  });
+
+  it("reads a width with no usable size as fit to content and reports it approximated", () => {
+    for (const raw of ["0px", "0", "-10px", "0.4px", "0%", "-10%", "0.05%"]) {
+      expect(buttonWith(raw)).toEqual({
+        width: "absent",
+        entry: approximated(
+          `Button width ${raw} has no usable size; imported as fit to content.`,
+        ),
+      });
+    }
   });
 });
 
