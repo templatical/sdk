@@ -8,8 +8,10 @@ import {
 import { duplicateBlockId } from "./rules/duplicate-block-id";
 import { emptyColumn } from "./rules/empty-column";
 import { emptySection } from "./rules/empty-section";
+import { nestedBackgroundImage } from "./rules/nested-background-image";
 import { nestedSection } from "./rules/nested-section";
 import { sectionColumnMismatch } from "./rules/section-column-mismatch";
+import { wrapperColorOverBackgroundImage } from "./rules/wrapper-color-over-background-image";
 
 export const STRUCTURE_RULES: Rule[] = [
   duplicateBlockId,
@@ -17,6 +19,8 @@ export const STRUCTURE_RULES: Rule[] = [
   emptyColumn,
   nestedSection,
   sectionColumnMismatch,
+  wrapperColorOverBackgroundImage,
+  nestedBackgroundImage,
 ];
 
 export function lintStructure(

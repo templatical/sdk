@@ -14,6 +14,10 @@ const en = {
   "structure.empty-section": "Section has no blocks. Remove it or add content.",
   "structure.empty-column":
     "Column {columnIndex} of this section is empty. Add content or reduce the column count.",
+  "structure.wrapper-color-over-background-image":
+    "Outlook for Windows paints the wrapper's background color over this section's background image. Remove the wrapper color or put the image on the wrapper.",
+  "structure.nested-background-image":
+    "This section and its wrapper both have a background image. Outlook for Windows can't layer them and breaks the layout. Keep the image on one of them.",
 };
 
 export default en;

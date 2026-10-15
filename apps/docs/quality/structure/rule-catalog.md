@@ -1,10 +1,10 @@
 ---
-description: All 5 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, and empty sections or columns — with severities and fixes.
+description: All 7 lintStructure rules — duplicate block IDs, nested sections, section-column mismatches, empty sections or columns, and background images Outlook can't layer — with severities and fixes.
 ---
 
 # Structure rule catalog
 
-The 5 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
+The 7 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
 
@@ -25,3 +25,10 @@ The 5 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 |---|---|---|---|
 | `structure.empty-section` | warning | yes | A section has no columns, or every column is empty. Renders as a blank table row in most clients — wasted whitespace and an occasional visible padding gap. Auto-fix removes the section. |
 | `structure.empty-column` | warning | — | A multi-column section has at least one column with no blocks. Renders awkwardly (uneven gaps, collapsed columns on mobile) and almost always means the author intended fewer columns. No auto-fix because the right answer (merge into a sibling vs. drop the section vs. change the `columns` layout) depends on intent. |
+
+## Email client compatibility
+
+| Rule | Default severity | Auto-fix | What it checks |
+|---|---|---|---|
+| `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook for Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
+| `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook for Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
