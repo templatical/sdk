@@ -1,3 +1,4 @@
+import { canonicalFontStack } from "@templatical/types";
 import type { SpacingValue } from "@templatical/types";
 import type { UnlayerBorder, UnlayerFontFamily } from "./types";
 
@@ -140,14 +141,15 @@ export function parseDividerWidth(
   return { unit: match[2] === "%" ? "%" : "px", value: parseFloat(match[1]) };
 }
 
+/**
+ * The font stack to store for an Unlayer `fontFamily`, which is either a CSS
+ * string or a `{ label, value }` pick from Unlayer's font list. The label is
+ * read only when `value` sets no font.
+ */
 export function parseFontFamily(
   value: UnlayerFontFamily | string | undefined,
 ): string {
   if (!value) return "";
-  if (typeof value === "string") {
-    return value.split(",")[0].trim().replace(/['"]/g, "");
-  }
-  if (value.value) return value.value.split(",")[0].trim().replace(/['"]/g, "");
-  if (value.label) return value.label;
-  return "";
+  if (typeof value === "string") return canonicalFontStack(value);
+  return canonicalFontStack(value.value) || canonicalFontStack(value.label);
 }

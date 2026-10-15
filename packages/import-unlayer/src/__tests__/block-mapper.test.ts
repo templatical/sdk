@@ -137,7 +137,7 @@ describe("convertContent", () => {
         expect(block.level).toBe(1);
         expect(block.color).toBe("#111111");
         expect(block.textAlign).toBe("center");
-        expect(block.fontFamily).toBe("Helvetica");
+        expect(block.fontFamily).toBe("Helvetica, Arial, sans-serif");
         expect(block.content).toContain("Big Title");
       }
       expect(entry.status).toBe("converted");
