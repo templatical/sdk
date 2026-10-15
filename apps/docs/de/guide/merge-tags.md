@@ -370,6 +370,7 @@ Sie müssen nichts aufrufen und nichts aktivieren. Das geschieht überall dort, 
 |---|---|
 | `init({ content })` / `initCloud({ content })` | vor dem Mounten |
 | `editor.setContent(content)` | bevor der Inhalt die Arbeitsfläche erreicht |
+| `editor.insertBlock(block)` | bevor der Block die Arbeitsfläche erreicht |
 | `editor.create({ content })` | bevor der Inhalt zum Editor-Status wird |
 | `editor.load(id)` | sobald das Ergebnis des [`templates`](/de/backend/templates)-Providers zurückkommt |
 | Vorschau und Wiederherstellung der [Versionshistorie](/de/backend/version-history) | sobald eine Version die Arbeitsfläche erreicht |

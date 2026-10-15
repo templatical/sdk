@@ -284,6 +284,56 @@ describe("cloneBlock", () => {
     }
   });
 
+  it("gives table rows and cells, menu items and social icons new IDs", () => {
+    const table = createTableBlock();
+    const menu = createMenuBlock({
+      items: [
+        {
+          id: "home",
+          text: "Home",
+          url: "https://example.com",
+          openInNewTab: false,
+          bold: false,
+          underline: false,
+        },
+      ],
+    });
+    const social = createSocialIconsBlock({
+      icons: [{ id: "x", platform: "twitter", url: "https://x.com" }],
+    });
+
+    const clonedTable = cloneBlock(table);
+    const clonedMenu = cloneBlock(menu);
+    const clonedSocial = cloneBlock(social);
+
+    if (
+      clonedTable.type !== "table" ||
+      clonedMenu.type !== "menu" ||
+      clonedSocial.type !== "social"
+    ) {
+      throw new Error("cloneBlock changed the block type");
+    }
+    const ids = (items: { id: string }[]) => items.map((item) => item.id);
+    const cellIds = (rows: { cells: { id: string }[] }[]) =>
+      rows.flatMap((row) => ids(row.cells));
+
+    expect(table.rows.length).toBeGreaterThan(0);
+    expect(menu.items.length).toBeGreaterThan(0);
+    expect(social.icons.length).toBeGreaterThan(0);
+    for (const id of ids(clonedTable.rows)) {
+      expect(ids(table.rows)).not.toContain(id);
+    }
+    for (const id of cellIds(clonedTable.rows)) {
+      expect(cellIds(table.rows)).not.toContain(id);
+    }
+    for (const id of ids(clonedMenu.items)) {
+      expect(ids(menu.items)).not.toContain(id);
+    }
+    for (const id of ids(clonedSocial.icons)) {
+      expect(ids(social.icons)).not.toContain(id);
+    }
+  });
+
   it("does not mutate the original", () => {
     const original = createButtonBlock({ text: "Original" });
     const cloned = cloneBlock(original);

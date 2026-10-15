@@ -304,6 +304,8 @@ export interface UseEditorCoreOptions {
 }
 
 export interface UseEditorCoreReturn {
+  /** The root `EDITOR_ROOT_KEY` provides, for the component that provides it. */
+  editorRoot: Document | ShadowRoot;
   t: Translations;
   format: UseI18nReturn["format"];
   history: UseHistoryReturn;
@@ -624,7 +626,8 @@ export function useEditorCore(
   const popoverRoot = ref<HTMLElement | null>(null);
 
   // --- Provides (19 shared keys) ---
-  provide(EDITOR_ROOT_KEY, options.editorRoot ?? document);
+  const editorRoot = options.editorRoot ?? document;
+  provide(EDITOR_ROOT_KEY, editorRoot);
   provide(POPOVER_ROOT_KEY, popoverRoot);
   provide(TRANSLATIONS_KEY, translations);
   provide(EDITOR_KEY, editor);
@@ -827,6 +830,7 @@ export function useEditorCore(
   return {
     t,
     format,
+    editorRoot,
     history,
     blockActions,
     conditionPreview,

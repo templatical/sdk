@@ -370,6 +370,7 @@ There is nothing to call and nothing to enable. It runs wherever content arrives
 |---|---|
 | `init({ content })` / `initCloud({ content })` | before mount |
 | `editor.setContent(content)` | before the content reaches the canvas |
+| `editor.insertBlock(block)` | before the block reaches the canvas |
 | `editor.create({ content })` | before the content becomes editor state |
 | `editor.load(id)` | as the [`templates`](/backend/templates) provider's result returns |
 | [Version history](/backend/version-history) preview and restore | as each version reaches the canvas |
