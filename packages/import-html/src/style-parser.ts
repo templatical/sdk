@@ -232,17 +232,6 @@ export function readPaddingFromStyles(
 }
 
 /**
- * Strips quotes and returns the first font in a font-family stack.
- */
-export function parseFontFamily(value: string | undefined): string {
-  if (!value) return "";
-  return value
-    .split(",")[0]
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-}
-
-/**
  * Normalizes a font-weight value to a string CSS keyword/number that
  * the editor accepts. Returns "" when the value is the default (normal/400).
  */

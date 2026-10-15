@@ -3,7 +3,6 @@ import {
   parseAlignment,
   parseBorderShorthand,
   parseColor,
-  parseFontFamily,
   parseFontWeight,
   parsePaddingShorthand,
   parsePxValue,
@@ -183,20 +182,6 @@ describe("readPaddingFromStyles", () => {
       bottom: 10,
       left: 10,
     });
-  });
-});
-
-describe("parseFontFamily", () => {
-  it("returns first font in stack and strips quotes", () => {
-    expect(parseFontFamily('"Helvetica Neue", Arial, sans-serif')).toBe(
-      "Helvetica Neue",
-    );
-    expect(parseFontFamily("'Open Sans', sans-serif")).toBe("Open Sans");
-  });
-
-  it("returns empty for missing input", () => {
-    expect(parseFontFamily(undefined)).toBe("");
-    expect(parseFontFamily("")).toBe("");
   });
 });
 
