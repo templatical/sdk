@@ -1,7 +1,7 @@
 /**
  * `background-size` keywords. In Outlook on Windows (VML), `cover` and
  * `contain` draw a single frame when `repeat` is off and tile when it is on;
- * `auto` always tiles from the top centre, whatever `position` and `repeat`
+ * `auto` always tiles from the top center, whatever `position` and `repeat`
  * say.
  */
 export type BackgroundSize = "cover" | "contain" | "auto";

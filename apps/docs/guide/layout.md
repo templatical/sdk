@@ -88,7 +88,7 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 **`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
 
-**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
+**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to `mj-wrapper`. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
 
 Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 

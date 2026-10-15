@@ -7,7 +7,7 @@
 | Linter | Was er erkennt | Standard-Schweregrade |
 |---|---|---|
 | **[Barrierefreiheit](./accessibility/)** | Fehlender Alt-Text, niedriger Kontrast, vage CTAs, übersprungene Überschriftenebenen, zu kleine Touch-Ziele, lange GROSSBUCHSTABEN, target=_blank ohne rel, fehlender Preheader, … | überwiegend error/warning |
-| **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten, Hintergrundbilder, die Outlook für Windows nicht übereinanderlegen kann | überwiegend error; einige warning |
+| **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten, Hintergrundbilder, die Outlook unter Windows nicht übereinanderlegen kann | überwiegend error; einige warning |
 | **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, relative URLs, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 
 Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.

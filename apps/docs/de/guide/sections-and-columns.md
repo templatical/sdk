@@ -140,6 +140,10 @@ const card = createSectionBlock({ columns: '1', borderRadius: 12 });
 card.styles.backgroundColor = '#ffffff';
 ```
 
+### Hintergrundbild
+
+Das `backgroundImage` einer Sektion legt ein Bild hinter ihre Spalten. Setzen Sie zusätzlich `styles.backgroundColor` als Fallback, solange das Bild lädt und in Clients, die keine Hintergrundbilder anzeigen. Im **Hintergrund**-Panel des Editors wählen Sie außerdem die Größe (Füllen, Einpassen oder Original), eine Position auf einem Neun-Punkte-Raster und ob sich das Bild wiederholt. Die Hinweise zu E-Mail-Clients finden Sie beim [Sektionsblock](/de/guide/blocks#section).
+
 ### Äußerer Rahmen (Wrapper)
 
 Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), nicht wie das gesamte Fenster des Empfängers:

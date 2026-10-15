@@ -140,6 +140,10 @@ const card = createSectionBlock({ columns: '1', borderRadius: 12 });
 card.styles.backgroundColor = '#ffffff';
 ```
 
+### Background image
+
+A section's `backgroundImage` paints an image behind its columns. Set `styles.backgroundColor` as well, as the fallback while the image loads and in clients that don't show background images. In the editor's **Background** panel you also choose the size (Fill, Fit or Original), a nine-point position and whether the image repeats. See the [Section block](/guide/blocks#section) for the email client notes on background images.
+
 ### Outer frame (wrapper)
 
 To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), not the recipient's whole window:

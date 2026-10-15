@@ -30,5 +30,5 @@ The 7 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook for Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
-| `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook for Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
+| `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook on Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
+| `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook on Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |

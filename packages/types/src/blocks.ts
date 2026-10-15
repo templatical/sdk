@@ -542,7 +542,7 @@ export interface SlotBlock extends BaseBlock {
 /**
  * Layout-only band rendered as `mj-wrapper`. The block is the band:
  * `styles.backgroundColor` / `styles.padding` / `borderRadius` /
- * `backgroundImage` map to the wrapper. Legal in layout only this ship.
+ * `backgroundImage` map to the wrapper. Legal in layout only.
  */
 export interface WrapperBlock extends BaseBlock {
   type: "wrapper";

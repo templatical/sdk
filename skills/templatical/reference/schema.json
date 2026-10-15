@@ -360,7 +360,7 @@
         "contain",
         "auto"
       ],
-      "description": "`background-size` keywords. In Outlook on Windows (VML), `cover` and `contain` draw a single frame when `repeat` is off and tile when it is on; `auto` always tiles from the top centre, whatever `position` and `repeat` say."
+      "description": "`background-size` keywords. In Outlook on Windows (VML), `cover` and `contain` draw a single frame when `repeat` is off and tile when it is on; `auto` always tiles from the top center, whatever `position` and `repeat` say."
     },
     "BackgroundPositionX": {
       "type": "string",
@@ -1770,7 +1770,7 @@
         "type"
       ],
       "additionalProperties": false,
-      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. Legal in layout only this ship."
+      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. Legal in layout only."
     },
     "TemplateSettings": {
       "type": "object",

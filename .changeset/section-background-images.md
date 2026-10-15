@@ -18,4 +18,4 @@ The editor's Background panel gets an image control for sections, and the sectio
 
 `lintStructure` gains two warnings for Outlook on Windows: `structure.wrapper-color-over-background-image` (a wrapper colour paints over the section's image there) and `structure.nested-background-image` (an image on both the wrapper and its section breaks the layout there).
 
-Outlook on Windows tiles an image at its original size (`auto`) from the top center, whatever the position and repeat settings. Importers don't read background images yet.
+Outlook on Windows tiles an image at its original size (`auto`) from the top center, whatever the position and repeat settings. Importers don't map background images onto `backgroundImage` yet.

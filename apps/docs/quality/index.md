@@ -11,7 +11,7 @@ description: MIT-licensed linter for Templatical templates — accessibility, st
 | Linter | What it catches | Default severities |
 |---|---|---|
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
-| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook for Windows can't layer | mostly error; some warning |
+| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook on Windows can't layer | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
 All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.

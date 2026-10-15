@@ -120,7 +120,7 @@ How the editor calls it:
 - **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src. Note this also holds for *transient* failures: a src that failed to resolve stays unresolved until the editor is re-initialized. A hook to re-trigger resolution may be added in a future release.
 - **Merge-tag srcs are skipped.** A src like <code v-pre>{{product.image}}</code> is never passed to the resolver; its `placeholderUrl` (if set) is resolved instead.
 - **Video thumbnails are covered too.** An explicit video `thumbnailUrl` (and a video block's `placeholderUrl`) resolves the same way. Thumbnails auto-derived from a YouTube/Vimeo URL are already real URLs and are never passed to the resolver.
-- **Background images are covered too.** The `backgroundImage.url` of a section or a section wrapper resolves the same way, for the canvas only. A merge-tag background URL is never passed to the resolver, and the canvas shows the element's fallback color for it.
+- **Background images are covered too.** The `backgroundImage.url` of a section, a section wrapper or a layout wrapper band resolves the same way, for the canvas only. A merge-tag background URL is never passed to the resolver, and the canvas shows the element's fallback color for it.
 - **Display-only, by design.** Unlike returning a `blob:` URL from `onRequestMedia` (which would end up in the export — see above), a URL from `resolveImageUrl` never enters the template content.
 
 ## Image Block Properties

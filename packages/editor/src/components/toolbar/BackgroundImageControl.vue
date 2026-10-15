@@ -40,7 +40,10 @@ const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const aliveFlag = useAliveFlag();
 
-const url = computed(() => props.modelValue?.url ?? "");
+// Loaded JSON isn't schema-checked, so a non-string url reads as empty.
+const url = computed(() =>
+  typeof props.modelValue?.url === "string" ? props.modelValue.url : "",
+);
 const hasImage = computed(() => url.value.trim() !== "");
 
 /** A blank url removes the image; the first url creates one with defaults. */
@@ -103,8 +106,8 @@ const positionCells = computed<PositionCell[]>(() =>
 
 function isCurrentPosition(cell: PositionCell): boolean {
   return (
-    props.modelValue?.position.x === cell.x &&
-    props.modelValue?.position.y === cell.y
+    props.modelValue?.position?.x === cell.x &&
+    props.modelValue?.position?.y === cell.y
   );
 }
 

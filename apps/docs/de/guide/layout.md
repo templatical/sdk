@@ -88,7 +88,7 @@ mj-body                         ← grauer Untergrund (layout.settings.backgroun
 
 **`slot`** ist die Stelle, an der `content.blocks` landen. Genau eines im Layout-Baum. Zulässig als Kind von `layout.blocks` (oberste Ebene) oder von `wrapper.children`. Unzulässig in einer Sektionsspalte, in einem verschachtelten Wrapper und im Editor-Inhalt. Die Palette lässt ihn aus. Ein `slot`, der `renderToMjml` ohne `layout` erreicht, wirft.
 
-**`wrapper`** ist die Layout-Karte: `styles.backgroundColor` / `styles.padding` / `borderRadius` werden zu `mj-wrapper`. Nur im Layout. Im Editor-Inhalt abgelehnt (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Autorinnen nutzen weiterhin `section.wrapper` als Kurzform pro Sektion.
+**`wrapper`** ist die Layout-Karte: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` werden zu `mj-wrapper`. In Outlook unter Windows überdeckt die Hintergrundfarbe eines Bands das Hintergrundbild einer darin liegenden Sektion — setzen Sie das Bild auf das Band, oder lassen Sie das Band ohne Farbe. Der Linter des Editors sieht das Layout nicht und kann deshalb nicht davor warnen. Nur im Layout. Im Editor-Inhalt abgelehnt (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Autorinnen nutzen weiterhin `section.wrapper` als Kurzform pro Sektion.
 
 Layout-Factories und -Helfer (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) werden aus `@templatical/editor` exportiert. Headless-Rendering kann `applyLayout` aus `@templatical/types` ohne den Editor importieren.
 

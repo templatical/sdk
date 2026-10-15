@@ -97,7 +97,7 @@ describe("BlockWrapper background images", () => {
     });
     await flushPromises();
 
-    const box =wrapper.get(".tpl-block-content").attributes("style");
+    const box = wrapper.get(".tpl-block-content").attributes("style");
     expect(box).not.toContain("background-image");
     // The fallback colour still shows.
     expect(box).toContain("background-color: #0f172a");

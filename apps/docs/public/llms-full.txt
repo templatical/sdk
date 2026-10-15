@@ -60,7 +60,7 @@ unmount();
 | `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
-| `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for section and section-wrapper background image URLs: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                                                                             |
+| `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for the background image URLs of sections, section wrappers and layout wrapper bands (never for a merge-tag URL): maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                  |
 | `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                       |
 | `resolvePreview`     | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering)                                                                                                                                                                                                                                                                                                  |
 | `displayConditions`  | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -8538,7 +8538,7 @@ How the editor calls it:
 - **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src. Note this also holds for *transient* failures: a src that failed to resolve stays unresolved until the editor is re-initialized. A hook to re-trigger resolution may be added in a future release.
 - **Merge-tag srcs are skipped.** A src like <code v-pre>{{product.image}}</code> is never passed to the resolver; its `placeholderUrl` (if set) is resolved instead.
 - **Video thumbnails are covered too.** An explicit video `thumbnailUrl` (and a video block's `placeholderUrl`) resolves the same way. Thumbnails auto-derived from a YouTube/Vimeo URL are already real URLs and are never passed to the resolver.
-- **Background images are covered too.** The `backgroundImage.url` of a section or a section wrapper resolves the same way, for the canvas only. A merge-tag background URL is never passed to the resolver, and the canvas shows the element's fallback color for it.
+- **Background images are covered too.** The `backgroundImage.url` of a section, a section wrapper or a layout wrapper band resolves the same way, for the canvas only. A merge-tag background URL is never passed to the resolver, and the canvas shows the element's fallback color for it.
 - **Display-only, by design.** Unlike returning a `blob:` URL from `onRequestMedia` (which would end up in the export — see above), a URL from `resolveImageUrl` never enters the template content.
 
 ## Image Block Properties
@@ -8674,7 +8674,7 @@ mj-body                         ← grey mat (layout.settings.backgroundColor)
 
 **`slot`** is where authored `content.blocks` land. Exactly one in the layout tree. Legal as a top-level `layout.blocks` child or as a `wrapper.children` child. Illegal in a section column, in a nested wrapper, and in editor content. The palette omits it. A `slot` that reaches `renderToMjml` without `layout` throws.
 
-**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to `mj-wrapper`. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
+**`wrapper`** is the layout card: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to `mj-wrapper`. In Outlook on Windows, a band's background color paints over the background image of a section inside it — set the image on the band, or leave the band without a color. The editor's linter doesn't see the layout, so it can't warn about this. Layout-only. Refused in editor content (`setContent` / `load` / `addBlock` / `createBlock('wrapper')`). Authors still use `section.wrapper` as the per-section shorthand.
 
 Layout factories and helpers (`createSlotBlock`, `createWrapperBlock`, `createParagraphBlock`, `createDefaultTemplateContent`, `applyLayout`, `validateLayout`, `isSlot`, `isWrapper`, `layoutWrapsSlot`) are exported from `@templatical/editor`. Headless rendering can import `applyLayout` from `@templatical/types` without the editor.
 
@@ -10843,7 +10843,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 
 ## Things that don't map automatically
 
-- **Section background images** — Templatical sections take a `backgroundImage`, but the Topol importer doesn't read `background-url` yet. A Topol section's photo is never read, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
+- **Section background images** — Templatical sections take a `backgroundImage`, but the Topol importer doesn't read `background-url` yet, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
 - **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
 - **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
 - **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.
@@ -11688,6 +11688,10 @@ const card = createSectionBlock({ columns: '1', borderRadius: 12 });
 
 card.styles.backgroundColor = '#ffffff';
 ```
+
+### Background image
+
+A section's `backgroundImage` paints an image behind its columns. Set `styles.backgroundColor` as well, as the fallback while the image loads and in clients that don't show background images. In the editor's **Background** panel you also choose the size (Fill, Fit or Original), a nine-point position and whether the image repeats. See the [Section block](/guide/blocks#section) for the email client notes on background images.
 
 ### Outer frame (wrapper)
 
@@ -12901,7 +12905,7 @@ Source: https://docs.templatical.com/quality/
 | Linter | What it catches | Default severities |
 |---|---|---|
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
-| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook for Windows can't layer | mostly error; some warning |
+| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook on Windows can't layer | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
 All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
@@ -13475,7 +13479,7 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, and background images Outlook for Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, and background images Outlook on Windows can't layer.
 
 ## Purpose
 
@@ -13488,7 +13492,7 @@ The structure linter catches these before save / before send:
 - **Nested section.** The renderer rejects sections inside columns. If one ends up there, MJML output silently drops it.
 - **Empty section.** A section with no blocks renders as a blank table row — wasted whitespace, sometimes a visible padding gap.
 - **Empty column.** A multi-column section with one empty column renders awkwardly in most clients and almost always means the author intended fewer columns.
-- **Background images Outlook can't layer.** Outlook for Windows paints a wrapper's background color over its section's background image, and can't nest a wrapper image inside a section image. Both are warnings: every other client renders these combinations correctly.
+- **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
 
@@ -13552,8 +13556,8 @@ The 7 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook for Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
-| `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook for Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
+| `structure.wrapper-color-over-background-image` | warning | — | A section has a background image, and its wrapper (its own `wrapper`, or the layout band it sits in when the linted tree includes the layout) has a background color. Outlook on Windows paints the wrapper color over the section's image, so the image disappears there. Every other client layers them correctly. Remove the wrapper color, or move the image to the wrapper. |
+| `structure.nested-background-image` | warning | — | A section and its wrapper both have a background image. Outlook on Windows can't nest the two VML fills MJML generates for them, and the layout breaks. Keep the image on one of them. |
 
 ---
 

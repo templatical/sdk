@@ -256,8 +256,8 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 
 ::: tip Hinweis zu E-Mail-Clients: Hintergrundbilder
 - Legen Sie zusätzlich eine Hintergrundfarbe fest. Sie erscheint, solange das Bild lädt, wenn Bilder deaktiviert sind, und in Clients ohne Unterstützung für Hintergrundbilder.
-- Ein Merge-Tag funktioniert als URL (zum Beispiel <code v-pre>{{ hero_url }}</code>). Die Arbeitsfläche zeigt dafür die Fallback-Farbe, da noch kein Bild geladen werden kann. Anführungszeichen im Tag werden prozentkodiert, vermeiden Sie daher Argumente in Anführungszeichen (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
-- Outlook unter Windows zeichnet das Bild mit VML; ein Bild in Originalgröße (`auto`) wird dort ab oben mittig gekachelt, unabhängig von `position` und `repeat`.
+- Ein Merge-Tag funktioniert als URL (zum Beispiel <code v-pre>{{ hero_url }}</code>). Die Arbeitsfläche zeigt dafür die Fallback-Farbe, da noch kein Bild geladen werden kann. Anführungszeichen im Tag werden URL-kodiert; vermeiden Sie daher Argumente in Anführungszeichen (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
+- Outlook unter Windows zeichnet das Bild mit VML; ein Bild in Originalgröße (`auto`) wird dort von oben mittig aus gekachelt, unabhängig von `position` und `repeat`.
 - In Outlook unter Windows überdeckt die Hintergrundfarbe eines Wrappers das Hintergrundbild der Sektion, und ein Bild auf Wrapper und Sektion zugleich zerstört das Layout. Der `structure`-Linter warnt vor beidem.
 :::
 

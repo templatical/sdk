@@ -84,7 +84,7 @@ Container that arranges blocks into columns.
   takes the same number-or-per-corner form. The band is as wide as
   `settings.width`, not the recipient's viewport. Don't give both the wrapper
   and its section a `backgroundImage`, and don't put a wrapper `backgroundColor`
-  behind a section image — Outlook for Windows breaks both.
+  behind a section image — Outlook on Windows breaks both.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.

@@ -164,8 +164,8 @@ function toggleVisibility(key: VisibilityKey): void {
         allow-transparent
         @update:model-value="updateStyle('backgroundColor', $event)"
       />
-      <!-- Only sections (and wrapper bands) take an image: MJML has no
-           background-url on columns or content elements. -->
+      <!-- Only sections take an image here: MJML has no background-url on
+           columns or content elements. -->
       <BackgroundImageControl
         v-if="block.type === 'section'"
         class="tpl:mt-3.5"

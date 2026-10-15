@@ -211,8 +211,10 @@ function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, previewComponentMap);
 }
 
-// A preview never starts an image lookup of its own; a section's background
-// image paints whatever the canvas has already resolved.
+// This loop reads the resolver cache and never starts a lookup itself, so a
+// section's background image paints whatever the canvas has already resolved;
+// nested components (e.g. `ImageBlock`, a layout `WrapperBlock`) may resolve
+// their own images.
 function previewBlockStyle(block: Block): Record<string, string> {
   return getCachedBlockWrapperStyle(block, imageUrlResolver, mergeTagSyntax);
 }

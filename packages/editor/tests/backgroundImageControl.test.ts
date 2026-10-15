@@ -126,4 +126,97 @@ describe("BackgroundImageControl", () => {
     expect(onRequestMedia).toHaveBeenCalledWith({ accept: ["images"] });
     expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(HERO));
   });
+
+  describe("malformed JSON", () => {
+    it("renders an image without a position and presses no cell", () => {
+      const malformed = {
+        ...createBackgroundImage(HERO),
+        position: undefined,
+      } as unknown as BackgroundImage;
+      const wrapper = mountIt(malformed);
+      const cells = wrapper.findAll('[data-testid^="t-bg-position-"]');
+      expect(cells).toHaveLength(9);
+      expect(cells.map((c) => c.attributes("aria-pressed"))).toEqual(
+        Array(9).fill("false"),
+      );
+    });
+
+    it("renders an image with a null position and presses no cell", () => {
+      const malformed = {
+        ...createBackgroundImage(HERO),
+        position: null,
+      } as unknown as BackgroundImage;
+      const wrapper = mountIt(malformed);
+      const cells = wrapper.findAll('[data-testid^="t-bg-position-"]');
+      expect(cells.map((c) => c.attributes("aria-pressed"))).toEqual(
+        Array(9).fill("false"),
+      );
+    });
+
+    it("renders a non-string url as an empty field", () => {
+      const malformed = {
+        ...createBackgroundImage(HERO),
+        url: 123,
+      } as unknown as BackgroundImage;
+      const wrapper = mountIt(malformed);
+      expect(
+        (
+          wrapper.get('[data-testid="t-bg-url"] input')
+            .element as HTMLInputElement
+        ).value,
+      ).toBe("");
+      expect(wrapper.find('[data-testid="t-bg-size"]').exists()).toBe(false);
+    });
+  });
+
+  describe("drop upload", () => {
+    // The drop listener attaches once the zone's template ref resolves, a
+    // tick after mount.
+    async function dropOn(
+      wrapper: ReturnType<typeof mountIt>,
+      file: File,
+    ): Promise<void> {
+      await flushPromises();
+      const zone = wrapper.get('[data-testid="t-bg-url"]').element;
+      const event = new Event("drop", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "dataTransfer", {
+        value: { files: [file], items: [{ type: file.type }] },
+      });
+      zone.dispatchEvent(event);
+    }
+
+    it("uploads a dropped image and sets it with the defaults", async () => {
+      const onRequestMedia = vi.fn(async () => ({ url: HERO }));
+      const wrapper = mountIt(undefined, {
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      });
+      const file = new File(["data"], "hero.png", { type: "image/png" });
+
+      await dropOn(wrapper, file);
+      await flushPromises();
+
+      expect(onRequestMedia).toHaveBeenCalledTimes(1);
+      expect(onRequestMedia).toHaveBeenCalledWith({
+        accept: ["images"],
+        files: [file],
+      });
+      expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(HERO));
+    });
+
+    it("ignores a drop while a merge-tag url is set", async () => {
+      const onRequestMedia = vi.fn(async () => ({ url: HERO }));
+      const wrapper = mountIt(createBackgroundImage("{{ hero_url }}"), {
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      });
+
+      await dropOn(
+        wrapper,
+        new File(["data"], "hero.png", { type: "image/png" }),
+      );
+      await flushPromises();
+
+      expect(onRequestMedia).toHaveBeenCalledTimes(0);
+      expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+  });
 });
