@@ -22,7 +22,7 @@ export function enclosingBand(
 
   if (ctx.parent && isWrapper(ctx.parent)) {
     return {
-      backgroundColor: ctx.parent.styles.backgroundColor,
+      backgroundColor: ctx.parent.styles?.backgroundColor,
       backgroundImage: ctx.parent.backgroundImage,
     };
   }
@@ -30,8 +30,12 @@ export function enclosingBand(
   return null;
 }
 
-/** A color that actually paints — not unset, empty or `transparent`. */
+/**
+ * A color that actually paints — not unset, empty, `transparent` or a
+ * non-string value from hand-edited JSON.
+ */
 export function isPaintedColor(color: string | undefined): boolean {
-  const value = color?.trim().toLowerCase();
-  return !!value && value !== "transparent";
+  if (typeof color !== "string") return false;
+  const value = color.trim().toLowerCase();
+  return value !== "" && value !== "transparent";
 }

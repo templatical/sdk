@@ -987,7 +987,7 @@ Add `--json` to any command for a single parseable JSON document on stdout. Inst
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 32 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 34 rules) runs on top. No command-specific flags.
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -12880,7 +12880,7 @@ Source: https://docs.templatical.com/quality/
 | Linter | What it catches | Default severities |
 |---|---|---|
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
-| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns | mostly error; some warning |
+| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook for Windows can't layer | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
 All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
@@ -13454,7 +13454,7 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), and empty sections / columns.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, and background images Outlook for Windows can't layer.
 
 ## Purpose
 
@@ -13467,6 +13467,7 @@ The structure linter catches these before save / before send:
 - **Nested section.** The renderer rejects sections inside columns. If one ends up there, MJML output silently drops it.
 - **Empty section.** A section with no blocks renders as a blank table row — wasted whitespace, sometimes a visible padding gap.
 - **Empty column.** A multi-column section with one empty column renders awkwardly in most clients and almost always means the author intended fewer columns.
+- **Background images Outlook can't layer.** Outlook for Windows paints a wrapper's background color over its section's background image, and can't nest a wrapper image inside a section image. Both are warnings: every other client renders these combinations correctly.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
 

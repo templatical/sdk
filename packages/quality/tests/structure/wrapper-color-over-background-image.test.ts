@@ -42,6 +42,14 @@ describe(RULE, () => {
     },
   );
 
+  it("does not throw or fire for a non-string wrapper color", () => {
+    const section = createSectionBlock({
+      backgroundImage: IMAGE,
+      wrapper: { backgroundColor: 0 as unknown as string },
+    });
+    expect(hits([section])).toEqual([]);
+  });
+
   it("does not fire when the section has no usable image", () => {
     const section = createSectionBlock({
       backgroundImage: { ...IMAGE, url: "  " },
@@ -74,6 +82,13 @@ describe(RULE, () => {
     const issues = hits([band]);
     expect(issues).toHaveLength(1);
     expect(issues[0].blockId).toBe(section.id);
+  });
+
+  it("does not throw for a layout band without styles", () => {
+    const section = createSectionBlock({ backgroundImage: IMAGE });
+    const band = createWrapperBlock({ children: [section] });
+    delete (band as { styles?: unknown }).styles;
+    expect(hits([band])).toEqual([]);
   });
 
   it("checks the section's own wrapper before the layout band", () => {
