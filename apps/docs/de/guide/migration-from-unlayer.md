@@ -158,7 +158,7 @@ Globale Template-Einstellungen werden übertragen, wo möglich:
 - **Textfarbe** — `body.values.textColor` wird auf `settings.textColor` abgebildet. Überschriften, Menüs und Absätze ohne eigene Farbe übernehmen sie.
 - **Links** — `body.values.linkStyle.linkColor` wird auf `settings.linkColor` abgebildet, `linkStyle.linkUnderline` auf `settings.linkUnderline`. Setzt `linkStyle` kein `linkUnderline`, werden Links unterstrichen, wie in Unlayer.
 - **Preheader** — `body.values.preheaderText` wird auf `settings.preheaderText` abgebildet und entfällt, wenn er leer ist
-- **Schriftfamilie** — `body.values.fontFamily.value` wird auf `settings.fontFamily` übertragen
+- **Schriftfamilie** — `body.values.fontFamily.value` wird auf `settings.fontFamily` übertragen. Der gesamte Stack wird übernommen, sodass seine Fallbacks erhalten bleiben; ein Stack, der genau dem einer eingebauten Schriftart entspricht (`Arial, sans-serif`), wird als bloßer Name gespeichert.
 
 ## Bekannte Einschränkungen
 

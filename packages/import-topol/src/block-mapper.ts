@@ -1,4 +1,5 @@
 import {
+  canonicalFontStack,
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
@@ -14,7 +15,6 @@ import {
   parseAlignment,
   parseBorderStyle,
   parseColor,
-  parseFontFamily,
   parsePadding,
   parsePxValue,
 } from "./attribute-parser";
@@ -94,7 +94,7 @@ function convertText(node: TopolNode, ctx: MapContext): Converted {
 
   const selector = `h${inferred.level}`;
   const color = parseColor(resolved(node, "color", ctx, selector));
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     resolved(node, "font-family", ctx, selector),
   );
 
@@ -130,7 +130,7 @@ function convertButton(node: TopolNode, ctx: MapContext): Converted | null {
     resolved(node, "background-color", ctx, "button"),
   );
   const textColor = parseColor(resolved(node, "color", ctx, "button"));
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     resolved(node, "font-family", ctx, "button"),
   );
   const fontSizeRaw = resolved(node, "font-size", ctx);

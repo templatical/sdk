@@ -1,3 +1,4 @@
+import { canonicalFontStack } from "@templatical/types";
 import type { SpacingValue } from "@templatical/types";
 import { isUnset, styleValue } from "./normalize";
 
@@ -170,12 +171,8 @@ export function parseLineStyle(value: unknown):
   };
 }
 
-/** Strip quotes and return the first family in a stack. */
-export function firstFamily(value: unknown): string | undefined {
-  if (isUnset(value) || typeof value !== "string") return undefined;
-  const family = value
-    .split(",")[0]
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-  return family === "" ? undefined : family;
+/** The font stack to store, or `undefined` when `value` sets no font. */
+export function fontStack(value: unknown): string | undefined {
+  if (isUnset(value)) return undefined;
+  return canonicalFontStack(value) || undefined;
 }

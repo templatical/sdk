@@ -37,9 +37,13 @@ function makeEditor(
     lockedIds?: string[];
   } = {},
 ) {
-  const addBlock = vi.fn();
+  const locations = { ...options.locations };
+  // Records where the block went: the sidebar selects a block only once
+  // `findBlockLocation` can see it landed.
+  const addBlock = vi.fn((block: { id: string }) => {
+    locations[block.id] = { index: 0 };
+  });
   const selectBlock = vi.fn();
-  const locations = options.locations ?? {};
   const locked = new Set(options.lockedIds ?? []);
   const findBlockLocation = vi.fn(
     (blockId: string) => locations[blockId] ?? null,

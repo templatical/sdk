@@ -220,12 +220,21 @@ describe("section drag + cycle defenses", () => {
       /<VueDraggable[\s\S]*?handle="\.tpl-block-btn"[\s\S]*?<\/VueDraggable>/,
     );
 
-    // Canvas restricts sortable items to `.tpl-block-item` so the
-    // empty-state placeholder rendered inside the VueDraggable isn't
-    // treated as a drag item. SectionBlock doesn't need this — its
+    // Canvas's sortable items are its direct children except the
+    // empty-state placeholder rendered inside the VueDraggable. The
+    // selector names what to leave out rather than the canvas's own item
+    // class: Sortable computes a cross-list drop's index in the receiving
+    // list with the SENDING list's `draggable`, so a canvas-only class
+    // matches nothing in a section column and every canvas→column drop
+    // lands at the column's top. The `>` keeps the canvas's hit-testing on
+    // its direct children. SectionBlock doesn't need this — its
     // VueDraggable has only sortable children.
-    expect(canvas).toMatch(/:draggable="'\.tpl-block-item'"/);
-    expect(canvas).toMatch(/v-for=[\s\S]*?class="tpl-block-item"/);
+    expect(canvas).toMatch(
+      /:draggable="'>:not\(\.tpl-canvas-empty-content\)'"/,
+    );
+    expect(canvas).toMatch(
+      /v-if="isEmptyCanvas"\s+class="tpl-canvas-empty-content /,
+    );
 
     // No `draggable="false"` anywhere on BlockWrapper. With fallback
     // mode in use this attribute has no effect on Sortable drag
@@ -904,7 +913,7 @@ describe("the email background band comes from one constant", () => {
       resolver.indexOf("export function resolveBlockComponent"),
     );
     // Guard the slice itself, so a rename can't empty it and pass vacuously.
-    expect(body).toContain("fontFamily: settings.fontFamily");
+    expect(body).toContain("fontFamily: resolveFontFamily(settings.fontFamily)");
     expect(body).not.toMatch(/backgroundColor/);
   });
 });

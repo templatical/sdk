@@ -7,6 +7,7 @@ import type { RenderContext } from "../render-context";
 import {
   escapeAttr,
   escapeCssValue,
+  escapeFontFamily,
   escapeHtml,
   convertMergeTagsToValues,
 } from "../escape";
@@ -127,5 +128,5 @@ function renderFontFamilyAttr(
 
   const resolved = context.resolveFontFamily(fontFamily);
 
-  return ` font-family="${resolved}"`;
+  return ` font-family="${escapeFontFamily(resolved)}"`;
 }

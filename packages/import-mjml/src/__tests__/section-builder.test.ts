@@ -168,6 +168,65 @@ describe("buildSection", () => {
     expect("borderRadius" in blocks[0]).toBe(false);
   });
 
+  it("reads a per-corner border radius", () => {
+    const { blocks, entries } = build(
+      '<mj-section border-radius="12px 12px 0px 0px"><mj-column /></mj-section>',
+    );
+    expect((blocks[0] as SectionBlock).borderRadius).toEqual({
+      topLeft: 12,
+      topRight: 12,
+      bottomRight: 0,
+      bottomLeft: 0,
+    });
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("reads a border radius it cannot read as square corners and reports it approximated", () => {
+    const { blocks, entries } = build(
+      '<mj-section border-radius="5%"><mj-column /></mj-section>',
+    );
+    expect("borderRadius" in blocks[0]).toBe(false);
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Section border-radius "5%" could not be read; imported as square corners.',
+    });
+  });
+
+  it("reads its border, each border-<side> overriding border", () => {
+    const { blocks, entries } = build(
+      '<mj-section border="1px solid #cccccc" border-bottom="4px dashed #ff0000"><mj-column /></mj-section>',
+    );
+    const side = { width: 1, style: "solid", color: "#cccccc" };
+    expect((blocks[0] as SectionBlock).border).toEqual({
+      top: side,
+      right: side,
+      bottom: { width: 4, style: "dashed", color: "#ff0000" },
+      left: side,
+    });
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("omits border when the attribute is absent", () => {
+    const { blocks } = build("<mj-section><mj-column /></mj-section>");
+    expect("border" in blocks[0]).toBe(false);
+  });
+
+  it("joins a border note to the column-width note", () => {
+    const { entries } = build(
+      '<mj-section border="2px inset #000000"><mj-column width="40%" /><mj-column width="60%" /></mj-section>',
+    );
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note:
+        'Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2". ' +
+        'Section border "2px inset #000000" uses style inset; imported as solid.',
+    });
+  });
+
   it("reads stackOnMobile false from an mj-group", () => {
     const { blocks } = build(
       '<mj-section><mj-group><mj-column width="50%" /><mj-column width="50%" /></mj-group></mj-section>',
@@ -515,6 +574,74 @@ describe("buildWrapper", () => {
       "mj-wrapper",
       "mj-section",
       "mj-section",
+    ]);
+  });
+
+  it("reads a per-corner border radius", () => {
+    const { blocks, entries } = build(
+      '<mj-wrapper border-radius="0 16px"><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    expect((blocks[0] as SectionBlock).wrapper?.borderRadius).toEqual({
+      topLeft: 0,
+      topRight: 16,
+      bottomRight: 0,
+      bottomLeft: 16,
+    });
+    expect(entries.some((e) => e.sourceTag === "mj-wrapper")).toBe(false);
+  });
+
+  it("reports a border radius it cannot read in an entry of its own", () => {
+    const { blocks, entries } = build(
+      '<mj-wrapper background-color="#111111" border-radius="2em"><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    expect((blocks[0] as SectionBlock).wrapper).toEqual({
+      backgroundColor: "#111111",
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+    expect(entries.map((e) => e.sourceTag)).toEqual([
+      "mj-wrapper",
+      "mj-section",
+    ]);
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-wrapper",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Wrapper border-radius "2em" could not be read; imported as square corners.',
+    });
+  });
+
+  it("reports a border, which a wrapper has no field for, as dropped", () => {
+    const { blocks, entries } = build(
+      '<mj-wrapper border="1px solid #000000" border-top="2px dashed #ff0000"><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    expect("border" in (blocks[0] as SectionBlock).wrapper!).toBe(false);
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-wrapper",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note:
+        'Wrapper border "1px solid #000000" has no Templatical equivalent; dropped. ' +
+        'Wrapper border-top "2px dashed #ff0000" has no Templatical equivalent; dropped.',
+    });
+  });
+
+  it("joins its own notes to the multi-section note", () => {
+    const { entries } = build(
+      '<mj-wrapper border-radius="50%"><mj-section><mj-column /></mj-section><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+    expect(entries.filter((e) => e.sourceTag === "mj-wrapper")).toEqual([
+      {
+        sourceTag: "mj-wrapper",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note:
+          "An <mj-wrapper> holding 2 sections was applied to each of them — Templatical has no multi-section band. " +
+          'Wrapper border-radius "50%" could not be read; imported as square corners.',
+      },
     ]);
   });
 });

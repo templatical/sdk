@@ -69,9 +69,9 @@ describe('safeClone', () => {
         expect(clone.blocks[0].styles).not.toBe(clone.blocks[1].styles);
     });
 
-    it('keeps the repeatable default two custom blocks of one type share', () => {
-        // createCustomBlock hands every block the definition's own `default`
-        // array, so `getContent()` and undo meet it once per block.
+    it('keeps a repeatable value two custom blocks share', () => {
+        // Content built by hand can put one array into two blocks, so
+        // `getContent()` and undo meet it once per block.
         const definition: CustomBlockDefinition = {
             type: 'list',
             name: 'List',
@@ -88,6 +88,7 @@ describe('safeClone', () => {
         };
         const first = createCustomBlock(definition);
         const second = createCustomBlock(definition);
+        second.fieldValues.items = first.fieldValues.items;
 
         const clone = safeClone({ blocks: [first, second] });
 

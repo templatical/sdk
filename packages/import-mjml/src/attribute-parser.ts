@@ -1,4 +1,8 @@
-import type { SpacingValue } from "@templatical/types";
+import type {
+  BorderRadiusValue,
+  BorderSideValue,
+  SpacingValue,
+} from "@templatical/types";
 
 /**
  * Parses a px-like MJML attribute value (`"12px"`, `"12"`, `12`) into a rounded
@@ -126,17 +130,6 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
 }
 
 /**
- * Strips quotes and returns the first font in a font-family stack.
- */
-export function parseFontFamily(value: string | undefined): string {
-  if (!value) return "";
-  return value
-    .split(",")[0]
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-}
-
-/**
  * Parses an alignment to one of the three the block model accepts.
  */
 export function parseAlignment(
@@ -174,6 +167,134 @@ export function parseDefinitePx(value: string | undefined): number | null {
   if (!value) return null;
   const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?$/);
   return match ? parseFloat(match[1]) : null;
+}
+
+const PX_LENGTH = /^(\d+(?:\.\d+)?)(?:px)?$/i;
+
+/**
+ * Reads a `border-radius` value: one px length, or the two- to four-value
+ * shorthand (top-left, top-right, bottom-right, bottom-left), expanded the way
+ * CSS expands it. Four matching corners come back as one number, the form the
+ * renderer writes them in. `null` when any part is not a non-negative px
+ * length (`50%`, `1em`, an elliptical `8px / 4px`), which CSS either reads
+ * against the box or discards.
+ */
+export function parseBorderRadius(value: string): BorderRadiusValue | null {
+  const parts = value.trim().split(/\s+/);
+  if (parts.length > 4) return null;
+
+  const px: number[] = [];
+  for (const part of parts) {
+    const match = PX_LENGTH.exec(part);
+    if (!match) return null;
+    px.push(Math.round(parseFloat(match[1])));
+  }
+
+  const [
+    topLeft,
+    topRight = topLeft,
+    bottomRight = topLeft,
+    bottomLeft = topRight,
+  ] = px;
+  if (
+    topRight === topLeft &&
+    bottomRight === topLeft &&
+    bottomLeft === topLeft
+  ) {
+    return topLeft;
+  }
+  return { topLeft, topRight, bottomRight, bottomLeft };
+}
+
+const DRAWN_STYLES = new Set(["solid", "dashed", "dotted"]);
+const NARROWED_STYLES = new Set([
+  "double",
+  "groove",
+  "ridge",
+  "inset",
+  "outset",
+]);
+const UNDRAWN_STYLES = new Set(["none", "hidden"]);
+
+/**
+ * Splits a CSS value on whitespace outside parentheses, so `rgb(0, 0, 0)` stays
+ * one token. A linear scan rather than a regex, which would backtrack on a long
+ * run of spaces.
+ */
+function splitCssTokens(value: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let depth = 0;
+  for (const ch of value) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && /\s/.test(ch)) {
+      if (current) tokens.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+/**
+ * Reads one CSS `border` declaration, its width, style and colour in any
+ * order, as a `BorderSideValue`.
+ *
+ * `side` is `null` when CSS draws nothing: style `none` or `hidden`, no style
+ * at all (CSS's initial style is `none`), or a `0` width. A style the block
+ * model lacks narrows to solid and is named in `narrowedFrom`. A missing or
+ * unknown colour is `""`, which the renderer writes back as no colour, so CSS
+ * draws `currentColor` both times.
+ *
+ * Returns `null` for a drawn border it cannot hold: a width that is not px
+ * (`2em`, `thin`), no width at all (CSS draws `medium`), or a value with two
+ * of any part.
+ */
+export function parseBorderDeclaration(
+  value: string,
+): { side: BorderSideValue | null; narrowedFrom?: string } | null {
+  let width: number | undefined;
+  let style: string | undefined;
+  let color: string | undefined;
+
+  for (const token of splitCssTokens(value.trim())) {
+    const lower = token.toLowerCase();
+    const px = PX_LENGTH.exec(lower);
+    const isStyle =
+      DRAWN_STYLES.has(lower) ||
+      NARROWED_STYLES.has(lower) ||
+      UNDRAWN_STYLES.has(lower);
+
+    if (px) {
+      if (width !== undefined) return null;
+      width = Math.round(parseFloat(px[1]));
+    } else if (isStyle) {
+      if (style !== undefined) return null;
+      style = lower;
+    } else if (/^[-+.\d]/.test(lower) || /^(thin|medium|thick)$/.test(lower)) {
+      return null;
+    } else {
+      if (color !== undefined) return null;
+      color = token;
+    }
+  }
+
+  if (style === undefined || UNDRAWN_STYLES.has(style) || width === 0) {
+    return { side: null };
+  }
+  if (width === undefined) return null;
+
+  const side: BorderSideValue = {
+    width,
+    style: NARROWED_STYLES.has(style)
+      ? "solid"
+      : (style as BorderSideValue["style"]),
+    color: parseColor(color),
+  };
+  return NARROWED_STYLES.has(style) ? { side, narrowedFrom: style } : { side };
 }
 
 /**

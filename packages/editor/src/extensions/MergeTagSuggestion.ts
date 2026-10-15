@@ -94,7 +94,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
   },
 
   addProseMirrorPlugins() {
-    const tags = this.options.mergeTags();
+    const getMergeTags = this.options.mergeTags;
     const emptyText = this.options.emptyText;
     const popoverRootRef = this.options.popoverRoot;
 
@@ -105,7 +105,8 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
       // Default is [" "] which requires whitespace/line-start before the
       // trigger char — so `.{{` would not fire. Allow any preceding char.
       allowedPrefixes: null,
-      items: ({ query }: { query: string }) => filterMergeTags(tags, query),
+      items: ({ query }: { query: string }) =>
+        filterMergeTags(getMergeTags(), query),
       command: ({
         editor,
         range,

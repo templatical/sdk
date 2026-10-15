@@ -1,6 +1,11 @@
 import type { MenuBlock, MenuItemData } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { escapeHtml, escapeAttr, escapeCssValue } from "../escape";
+import {
+  escapeHtml,
+  escapeAttr,
+  escapeCssValue,
+  escapeFontFamily,
+} from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
@@ -101,5 +106,5 @@ function renderFontFamilyAttr(
 
   const resolved = context.resolveFontFamily(fontFamily);
 
-  return ` font-family="${resolved}"`;
+  return ` font-family="${escapeFontFamily(resolved)}"`;
 }

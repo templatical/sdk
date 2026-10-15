@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   parseAlignment,
+  parseBorderDeclaration,
+  parseBorderRadius,
   parseBorderStyle,
   parseColor,
   parseDefinitePx,
-  parseFontFamily,
   parsePaddingShorthand,
   parsePercent,
   parsePxValue,
@@ -147,18 +148,6 @@ describe("parsePaddingShorthand", () => {
   });
 });
 
-describe("parseFontFamily", () => {
-  it("returns the first family in a stack, unquoted", () => {
-    expect(parseFontFamily("'Helvetica Neue', Helvetica, sans-serif")).toBe(
-      "Helvetica Neue",
-    );
-  });
-
-  it("returns an empty string for a missing value", () => {
-    expect(parseFontFamily(undefined)).toBe("");
-  });
-});
-
 describe("parseAlignment", () => {
   it("passes through a supported alignment", () => {
     expect(parseAlignment("right")).toBe("right");
@@ -198,5 +187,127 @@ describe("parseBorderStyle", () => {
 
   it("falls back to solid for a missing value", () => {
     expect(parseBorderStyle(undefined)).toBe("solid");
+  });
+});
+
+describe("parseBorderRadius", () => {
+  it("reads one px length as a single radius", () => {
+    expect(parseBorderRadius("8px")).toBe(8);
+    expect(parseBorderRadius("8")).toBe(8);
+    expect(parseBorderRadius("0px")).toBe(0);
+  });
+
+  it("rounds a fractional px length", () => {
+    expect(parseBorderRadius("4.6px")).toBe(5);
+  });
+
+  it("reads four values as top-left, top-right, bottom-right, bottom-left", () => {
+    expect(parseBorderRadius("8px 0px 4px 2px")).toEqual({
+      topLeft: 8,
+      topRight: 0,
+      bottomRight: 4,
+      bottomLeft: 2,
+    });
+  });
+
+  it("expands two and three values the way CSS does", () => {
+    expect(parseBorderRadius("8px 0")).toEqual({
+      topLeft: 8,
+      topRight: 0,
+      bottomRight: 8,
+      bottomLeft: 0,
+    });
+    expect(parseBorderRadius("8px 0 4px")).toEqual({
+      topLeft: 8,
+      topRight: 0,
+      bottomRight: 4,
+      bottomLeft: 0,
+    });
+  });
+
+  it("collapses four matching corners to a single radius", () => {
+    expect(parseBorderRadius("6px 6px 6px 6px")).toBe(6);
+    expect(parseBorderRadius("0 0")).toBe(0);
+  });
+
+  it("returns null for a value with no px reading", () => {
+    for (const raw of [
+      "50%",
+      "1em",
+      "8px / 4px",
+      "-4px",
+      "8px -4px",
+      "1px 2px 3px 4px 5px",
+      "",
+    ]) {
+      expect(parseBorderRadius(raw)).toBe(null);
+    }
+  });
+});
+
+describe("parseBorderDeclaration", () => {
+  it("reads width, style and colour", () => {
+    expect(parseBorderDeclaration("2px dashed #00ff00")).toEqual({
+      side: { width: 2, style: "dashed", color: "#00ff00" },
+    });
+  });
+
+  it("reads the three parts in any order", () => {
+    expect(parseBorderDeclaration("#00FF00 dotted 3")).toEqual({
+      side: { width: 3, style: "dotted", color: "#00ff00" },
+    });
+  });
+
+  it("reads a colour function that holds spaces", () => {
+    expect(parseBorderDeclaration("1px solid rgb(255, 0, 0)")).toEqual({
+      side: { width: 1, style: "solid", color: "#ff0000" },
+    });
+  });
+
+  it("reads a missing or unknown colour as unset", () => {
+    expect(parseBorderDeclaration("2px solid")).toEqual({
+      side: { width: 2, style: "solid", color: "" },
+    });
+    expect(parseBorderDeclaration("2px solid currentColor")).toEqual({
+      side: { width: 2, style: "solid", color: "" },
+    });
+  });
+
+  it("narrows a style the block model lacks to solid and names it", () => {
+    expect(parseBorderDeclaration("3px double #000000")).toEqual({
+      side: { width: 3, style: "solid", color: "#000000" },
+      narrowedFrom: "double",
+    });
+    expect(parseBorderDeclaration("3px GROOVE #000000")).toEqual({
+      side: { width: 3, style: "solid", color: "#000000" },
+      narrowedFrom: "groove",
+    });
+  });
+
+  it("reads a border CSS does not draw as undrawn", () => {
+    for (const raw of [
+      "none",
+      "0",
+      "0px solid #000000",
+      "2px hidden #000000",
+      "2px #000000",
+      "",
+    ]) {
+      expect(parseBorderDeclaration(raw)).toEqual({ side: null });
+    }
+  });
+
+  it("returns null for a drawn border it cannot read as one px width, style and colour", () => {
+    for (const raw of [
+      "2em solid red",
+      "thin solid red",
+      "solid red",
+      "-2px solid red",
+      "2px solid red blue",
+      "2px 3px solid",
+      "2px solid dashed",
+    ]) {
+      expect(parseBorderDeclaration(raw)).toBe(null);
+    }
   });
 });

@@ -143,3 +143,116 @@ describe("section column minimum height", () => {
     expect(source.classes()).not.toContain(DROP_HEIGHT);
   });
 });
+
+/**
+ * Preview shows the email as it will be sent, so a column carries none of the
+ * drop chrome there. A column with no blocks is exactly as tall as the
+ * renderer's placeholder for it; one whose blocks the condition filter hides
+ * holds nothing in the email and is no taller in the preview.
+ */
+describe("section column chrome in preview", () => {
+  const DASHED_BORDER = [
+    "tpl:border",
+    "tpl:border-dashed",
+    "tpl:border-[var(--tpl-border)]",
+  ];
+  const PLACEHOLDER_HEIGHT = "tpl:min-h-[34px]";
+
+  function previewEditor() {
+    const editor = useEditor({ content: createDefaultTemplateContent() });
+    editor.setPreviewMode(true);
+    return editor;
+  }
+
+  function columnParts(wrapper: ReturnType<typeof mountSection>) {
+    const row = wrapper.element.firstElementChild as HTMLElement;
+    return Array.from(row.children).map((column) => ({
+      column: column as HTMLElement,
+      list: column.firstElementChild as HTMLElement,
+      hint: column.querySelector('[data-testid="section-drop-hint"]'),
+    }));
+  }
+
+  it("gives an empty column the dashed border, drop height and hint while editing", () => {
+    const [empty, filled] = columnParts(
+      mountSection([[], [createSpacerBlock({ height: 8 })]]),
+    );
+
+    expect([...empty.column.classList]).toEqual(
+      expect.arrayContaining(DASHED_BORDER),
+    );
+    expect(empty.list.classList.contains(DROP_HEIGHT)).toBe(true);
+    expect(empty.list.classList.contains(PLACEHOLDER_HEIGHT)).toBe(false);
+    expect(empty.hint?.textContent?.trim()).toBe(
+      enTranslations.section.dropHere,
+    );
+
+    for (const cls of DASHED_BORDER) {
+      expect(filled.column.classList.contains(cls)).toBe(false);
+    }
+    expect(filled.hint).toBeNull();
+  });
+
+  it("renders an empty column as the email's placeholder, with no drop chrome", () => {
+    const [empty] = columnParts(
+      mountSection([[], [createSpacerBlock({ height: 8 })]], {
+        [EDITOR_KEY]: previewEditor(),
+      }),
+    );
+
+    for (const cls of DASHED_BORDER) {
+      expect(empty.column.classList.contains(cls)).toBe(false);
+    }
+    expect(empty.list.classList.contains(DROP_HEIGHT)).toBe(false);
+    expect(empty.list.classList.contains(PLACEHOLDER_HEIGHT)).toBe(true);
+    expect(empty.hint).toBeNull();
+  });
+
+  it("gives a filled column neither height", () => {
+    const [, filled] = columnParts(
+      mountSection([[], [createSpacerBlock({ height: 8 })]], {
+        [EDITOR_KEY]: previewEditor(),
+      }),
+    );
+
+    expect(filled.list.classList.contains(DROP_HEIGHT)).toBe(false);
+    expect(filled.list.classList.contains(PLACEHOLDER_HEIGHT)).toBe(false);
+  });
+
+  it("collapses a column whose blocks the condition filter hides", () => {
+    const hidden = createSpacerBlock({ height: 8 });
+    const [, conditionHidden] = columnParts(
+      mountSection([[], [hidden]], {
+        [EDITOR_KEY]: previewEditor(),
+        [APPLIES_CONDITION_FILTER_KEY]: computed(() => true),
+        [CONDITION_PREVIEW_KEY]: { isHidden: (id: string) => id === hidden.id },
+      }),
+    );
+
+    expect(conditionHidden.list.classList.contains(DROP_HEIGHT)).toBe(false);
+    expect(conditionHidden.list.classList.contains(PLACEHOLDER_HEIGHT)).toBe(
+      false,
+    );
+    for (const cls of DASHED_BORDER) {
+      expect(conditionHidden.column.classList.contains(cls)).toBe(false);
+    }
+    expect(conditionHidden.hint).toBeNull();
+  });
+
+  it("restores the drop chrome when the preview closes", async () => {
+    const editor = previewEditor();
+    const wrapper = mountSection([[], []], { [EDITOR_KEY]: editor });
+    expect(columnParts(wrapper)[0].hint).toBeNull();
+
+    editor.setPreviewMode(false);
+    await nextTick();
+
+    const [empty] = columnParts(wrapper);
+    expect([...empty.column.classList]).toEqual(
+      expect.arrayContaining(DASHED_BORDER),
+    );
+    expect(empty.list.classList.contains(DROP_HEIGHT)).toBe(true);
+    expect(empty.list.classList.contains(PLACEHOLDER_HEIGHT)).toBe(false);
+    expect(empty.hint).not.toBeNull();
+  });
+});

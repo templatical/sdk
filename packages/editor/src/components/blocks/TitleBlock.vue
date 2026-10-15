@@ -7,6 +7,7 @@ import type {
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import { computed, defineAsyncComponent } from "vue";
 import { unwrapParagraph } from "../../utils/unwrapParagraph";
+import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
   block: TitleBlockType;
@@ -14,6 +15,8 @@ const props = defineProps<{
 }>();
 
 const TitleEditor = defineAsyncComponent(() => import("./TitleEditor.vue"));
+
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "TitleBlock");
 
 const {
   isEditing,
@@ -35,7 +38,7 @@ const titleStyle = computed(() => {
     style.color = props.block.color;
   }
   if (props.block.fontFamily) {
-    style.fontFamily = props.block.fontFamily;
+    style.fontFamily = fontsManager.resolveFontFamily(props.block.fontFamily);
   }
   return style;
 });

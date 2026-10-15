@@ -157,7 +157,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 
 | Easy Email Pro | Templatical-Block | Hinweise |
 |---|---|---|
-| `page` | Template-`settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` nach `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` / `textColor`; `link-color` → `linkColor`, wenn gesetzt; `preheader` → `settings.preheaderText`, wenn nicht leer. `content-background-color` ist die Standard-Sektionsfüllung, nicht der Seitenhintergrund. |
+| `page` | Template-`settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` nach `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (der gesamte Stack, sodass seine Fallbacks erhalten bleiben) / `textColor`; `link-color` → `linkColor`, wenn gesetzt; `preheader` → `settings.preheaderText`, wenn nicht leer. `content-background-color` ist die Standard-Sektionsfüllung, nicht der Seitenhintergrund. |
 | `standard-section` | `SectionBlock` | Eigenes `background-color` → `section.styles.backgroundColor`; sonst das Seiten-`content-background-color`. `padding-*` → Padding. Direkte `standard-column`-Kinder, oder die Spalten in einem einzelnen `standard-group`. |
 | `standard-column` | Section-`columns` / `children[i]` | Prozentbreiten (`"50%"`, `"33.33%"`) werden auf Templaticals fünf Layouts gematcht. Kein eigener Berichtseintrag. |
 | `standard-group` | Abgeflachte Spalten; `stackOnMobile: false` | Eine Group aus Spalten auf einer Sektion ist die Spaltenstruktur dieser Sektion. Eine verschachtelte Group in einer Spalte wird abgeflacht, `approximated`. |

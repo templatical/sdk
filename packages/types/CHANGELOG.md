@@ -1,5 +1,33 @@
 # @templatical/types
 
+## 0.46.0
+
+### Minor Changes
+
+- f24888a: Imported templates keep their font fallbacks. Every importer used to cut a `font-family` stack down to its first family, so `Montserrat, Trebuchet MS, sans-serif` became `Montserrat`, and a mail client without Montserrat fell back to its own default (Times New Roman in Outlook on Windows). This included paragraph text, which the importers style with an inline span. The whole stack is now kept, with double-quoted names re-quoted in single quotes. A stack that is exactly a built-in font's own, such as `Arial, sans-serif`, is still stored as the bare name, since the renderer expands it back the same way. Easy Email Pro's page font used to be kept as written, so a value such as `inherit` became the template font; a value a browser would ignore now falls back to the default font.
+
+  The renderer now adds `defaultFallbackFont` after a single font it doesn't know, such as `Helvetica Neue` or `Inter` without a matching custom font, in the template font and in title, button, menu and table blocks: `'Helvetica Neue', Arial, sans-serif` instead of a bare `Helvetica Neue`. A full stack is emitted as written, and built-in and custom fonts are unchanged.
+
+  `@templatical/types` exports the font-stack helpers the renderer, editor and importers now share: `parseFontFamilies`, `normalizeFontStack`, `canonicalFontStack`, `firstFontFamily`, `quoteFontFamily`, `formatFontFamilies`, `isGenericFontFamily` and `BUILT_IN_FONT_STACKS`. The editor's font selects use them, so a quoted family containing a comma is labelled by its full name, and an invalid value such as `inherit, Arial` shows as no font.
+
+### Patch Changes
+
+- 9d97f4d: Add `editor.insertBlock(block)` for inserting a block from outside the editor
+
+  A host app with its own library of ready-made content had no way to insert a block on click. The only route was splicing the block into `getContent()` and writing the whole document back with `setContent()`, re-implementing the palette's placement rules without access to the selection.
+
+  `insertBlock(block)` places the block where a palette click would: below the selected block, inside its column when the selection is in a section, beside the parent section when a section is inserted from inside a column, and at the end when nothing usable is selected. The new block is selected and scrolled into view, so repeated calls stack in order. The palette and the method share one implementation, so they cannot place a block differently.
+
+  The block is inserted as given, without the defaults a palette block is built with (`blockDefaults`, localized placeholder text, RTL alignment), which suits ready-made content. The editor inserts a copy with fresh ids and converts bare merge tags the way `setContent()` does. It returns the copy's id, or `null` once the instance is unmounted or replaced by a later `init()`, in preview mode (with a console warning), or when the block cannot be placed. A slot or wrapper block throws, as it does in `setContent()`. Available on both `init()` and `initCloud()`.
+
+  `cloneBlock()` now gives table rows and cells, menu items and social icons new ids too, as duplicating a block in the editor already did. Duplicate, saved blocks and `insertBlock()` all copy through it.
+
+- c395ecf: Blocks no longer share nested objects with their defaults or with each other
+
+  Every button from `createButtonBlock()` or `createBlock("button")` held the same `buttonPadding` object as `BUTTON_BLOCK_DEFAULTS`, so changing one button's padding in place changed the built-in default and every other button made from it. Nested values in a `blockDefaults` entry, such as `section.wrapper`, `social.icons`, `menu.items` or `table.rows`, were shared the same way by every block `createBlock` made from them, which is how the editor inserts blocks. Every custom block of a type also shared its definition's repeatable `default` array. Each block now gets its own copy of these defaults. Values you pass to a factory directly are still used as given, so a block you place in a section's `children` is still the same object inside the section.
+
+  The `SectionWrapper` JSDoc no longer calls the wrapper a full-width band. It renders as an `mj-wrapper` without MJML's `full-width` attribute, so the band is as wide as the email body (`settings.width`), not the recipient's viewport.
+
 ## 0.45.0
 
 ### Minor Changes

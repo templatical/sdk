@@ -213,6 +213,30 @@ import { createDefaultTemplateContent } from "@templatical/types";
 editor.setContent(createDefaultTemplateContent());
 ```
 
+### `insertBlock(block)`
+
+Fügt einen Block dort ein, wo ein Klick auf ein Element der Block-Palette ihn platzieren würde: unter dem ausgewählten Block, in derselben Spalte, wenn die Auswahl in einer Section liegt (eine Section landet stattdessen nach dieser Section), oder am Ende, wenn nichts ausgewählt ist. Der neue Block wird ausgewählt und in den sichtbaren Bereich gescrollt, sodass der nächste Aufruf darunter einfügt. Verwenden Sie die Methode, um aus Ihrer eigenen Oberfläche einzufügen, etwa aus einer Bibliothek fertiger Sections.
+
+```ts
+import type { Block } from "@templatical/types";
+
+// Eine Section aus Ihrer eigenen Bibliothek, zuvor als Editor-JSON gespeichert
+// (zum Beispiel ein Block aus `editor.getContent().blocks`).
+const footer: Block = librarySections.footer;
+
+footerButton.addEventListener("click", () => {
+  editor.insertBlock(footer);
+});
+```
+
+**Parameter:** `block: Block`
+
+**Rückgabewert:** `string | null`, die ID des eingefügten Blocks, oder `null`, wenn die Instanz mit `unmount()` abgebaut oder durch einen späteren `init()`-Aufruf auf demselben Container ersetzt wurde, im Vorschaumodus (mit einer Warnung in der Konsole) oder wenn der Block nicht platziert werden kann.
+
+Der Block wird so eingefügt, wie er übergeben wird. Ein Block aus der Block-Palette wird mit den Standardwerten des Editors erstellt: Ihren `blockDefaults`, lokalisierten Platzhaltertexten und rechtsbündigen Titeln und Tabellen in RTL-Templates. Diese werden hier nicht angewendet. Für fertige Inhalte ist das richtig, ein frisch mit `createTitleBlock()` erstellter Block kann aber anders aussehen als einer aus der Block-Palette.
+
+Der Editor fügt eine Kopie mit neuen IDs ein, auch für die Kinder einer Section, sodass derselbe Block beliebig oft eingefügt werden kann. Suchen Sie den Block über die zurückgegebene ID, nicht über `block.id`. Merge-Tags, die als reine Tokens im Text stehen, werden genauso umgewandelt wie bei `setContent`. Ein Slot- oder Wrapper-Block löst einen Fehler aus, wie bei `setContent`.
+
 ### `setTheme(theme)`
 
 Wechselt das UI-Farbschema zur Laufzeit, ohne den Editor neu zu initialisieren.

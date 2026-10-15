@@ -46,7 +46,7 @@ describe("extractSettings", () => {
         <mj-text font-family="Georgia, serif" />
       </mj-attributes></mj-head><mj-body /></mjml>`);
 
-    expect(settings.fontFamily).toBe("Inter");
+    expect(settings.fontFamily).toBe("Inter, sans-serif");
   });
 
   it("falls back to mj-text font-family when mj-all sets none", () => {
@@ -56,6 +56,17 @@ describe("extractSettings", () => {
       </mj-attributes></mj-head><mj-body /></mjml>`);
 
     expect(settings.fontFamily).toBe("Georgia");
+  });
+
+  it("keeps a double-quoted fallback stack, re-quoted", () => {
+    const { settings } = settingsOf(`
+      <mjml><mj-head><mj-attributes>
+        <mj-all font-family="&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif" />
+      </mj-attributes></mj-head><mj-body /></mjml>`);
+
+    expect(settings.fontFamily).toBe(
+      "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    );
   });
 
   it("falls back to an mj-font declaration when mj-attributes sets none", () => {

@@ -15,7 +15,7 @@ import type {
   HeadingLevel,
 } from "@templatical/types";
 import {
-  firstFamily,
+  fontStack,
   parseAlignment,
   parseColor,
   parseLineStyle,
@@ -186,7 +186,7 @@ function convertTypedText(node: ChamaileonNode, ctx: MapContext): Converted {
   if (titleLevel !== undefined) {
     const level = inferred.kind === "title" ? inferred.level : titleLevel;
     const color = parseColor(styleValue(style, "color"));
-    const fontFamily = firstFamily(styleValue(style, "fontFamily"));
+    const fontFamily = fontStack(styleValue(style, "fontFamily"));
     return finish(
       createTitleBlock({
         content: inferred.kind === "title" ? inferred.inner : stripTags(raw),
@@ -231,7 +231,7 @@ function convertButton(node: ChamaileonNode, ctx: MapContext): Converted {
   const textColor = parseColor(styleValue(style, "color"));
   const borderRadius = parsePx(styleValue(style, "borderRadius"));
   const fontSize = parsePx(styleValue(style, "fontSize"));
-  const fontFamily = firstFamily(styleValue(style, "fontFamily"));
+  const fontFamily = fontStack(styleValue(style, "fontFamily"));
 
   const block: ButtonBlock = createButtonBlock({
     text: stripTags(asString(attrs.text)),
@@ -471,7 +471,7 @@ function headingLooks(
 ): { color?: string; fontFamily?: string } {
   const nested = readNested(style[`h${level}`], ctx);
   const color = parseColor(style[`h${level}Color`] ?? nested.color);
-  const fontFamily = firstFamily(
+  const fontFamily = fontStack(
     style[`h${level}FontFamily`] ?? nested.fontFamily,
   );
   return {

@@ -1,4 +1,5 @@
 import {
+  canonicalFontStack,
   createSectionBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
@@ -16,7 +17,7 @@ import {
   FALLBACK_TEXT_COLOR,
   type ModuleContext,
 } from "./block-mapper";
-import { parsePxValue, parseColor, parseFontFamily } from "./style-parser";
+import { parsePxValue, parseColor } from "./style-parser";
 
 /**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
@@ -189,7 +190,7 @@ function extractSettings(
     parseColor(contentStyle["background-color"]) ||
     parseColor(containerStyle["background-color"]) ||
     "#ffffff";
-  const fontFamily = parseFontFamily(contentStyle["font-family"]) || "Arial";
+  const fontFamily = canonicalFontStack(contentStyle["font-family"]) || "Arial";
   const linkColor = parseColor(computedStyle.linkColor);
 
   return {

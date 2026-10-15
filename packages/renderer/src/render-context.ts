@@ -4,6 +4,7 @@ import type {
   ContentDirection,
   CustomFont,
 } from "@templatical/types";
+import { resolveFontStack } from "@templatical/types";
 import pkg from "../package.json" with { type: "json" };
 
 /**
@@ -27,17 +28,6 @@ export type BlockRenderer = (block: Block, context: RenderContext) => string;
 export type BlockRendererMap = Partial<Record<BlockType, BlockRenderer>>;
 
 export const DEFAULT_SOCIAL_ICONS_BASE_URL = `https://cdn.jsdelivr.net/npm/@templatical/renderer@${pkg.version}/assets/social`;
-
-const BUILT_IN_FONT_FALLBACKS: Record<string, string> = {
-  arial: "Arial, sans-serif",
-  helvetica: "Helvetica, sans-serif",
-  georgia: "Georgia, serif",
-  "times new roman": "'Times New Roman', serif",
-  verdana: "Verdana, sans-serif",
-  "trebuchet ms": "'Trebuchet MS', sans-serif",
-  "courier new": "'Courier New', monospace",
-  tahoma: "Tahoma, sans-serif",
-};
 
 /**
  * Immutable context passed through the block rendering chain.
@@ -93,26 +83,21 @@ export class RenderContext {
   }
 
   /**
-   * Resolve a font family name to include custom font fallbacks.
-   * If the font matches a custom font, returns `'FontName', fallback`.
-   * Otherwise returns the original font family string.
+   * The stack to emit for a block's or the template's `fontFamily`. A stack is
+   * the author's own fallback chain and is emitted as written, as is anything
+   * that doesn't parse as a font. A lone family gets a fallback: a custom
+   * font's own `fallback` (or `defaultFallbackFont`), a built-in's fixed stack,
+   * or, for any other family, `defaultFallbackFont`, so a client without the
+   * face falls back to it rather than to its own default (Times New Roman in
+   * Outlook on Windows). A generic family needs nothing appended.
+   *
+   * The rule is {@link resolveFontStack}, shared with the editor canvas so a
+   * font previews with the fallbacks the recipient gets.
    */
   resolveFontFamily(fontFamily: string): string {
-    // Check custom fonts first
-    for (const customFont of this.customFonts) {
-      if (customFont.name.toLowerCase() === fontFamily.toLowerCase()) {
-        const fallback = customFont.fallback ?? this.defaultFallbackFont;
-
-        return `'${customFont.name}', ${fallback}`;
-      }
-    }
-
-    // Resolve built-in fonts to include fallback stacks
-    const builtIn = BUILT_IN_FONT_FALLBACKS[fontFamily.toLowerCase()];
-    if (builtIn) {
-      return builtIn;
-    }
-
-    return fontFamily;
+    return resolveFontStack(fontFamily, {
+      customFonts: this.customFonts,
+      defaultFallback: this.defaultFallbackFont,
+    });
   }
 }

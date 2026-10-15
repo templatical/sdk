@@ -1432,3 +1432,31 @@ describe("convertElement — a container it must not unwrap", () => {
     expect(r.block.content).toContain("<h3>Title</h3>");
   });
 });
+
+describe("font stacks", () => {
+  it("keeps a non-built-in font stack on a title, re-quoted with single quotes", () => {
+    const { $, $el } = firstEl(
+      '<h1 style="font-family:&quot;Helvetica Neue&quot;, Arial, sans-serif">Hi</h1>',
+      "h1",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.fontFamily).toBe("'Helvetica Neue', Arial, sans-serif");
+  });
+
+  it("carries the whole stack into a paragraph run's font span", () => {
+    // The source's `"` comes out as `'`, so the stack can't end the span's
+    // double-quoted style attribute.
+    const { $, $cell, nodes } = cellNodes(
+      "Body copy",
+      'style="font-family:&quot;Helvetica Neue&quot;, Montserrat, sans-serif;font-size:22px"',
+    );
+    const r = convertInlineRun(nodes, $cell, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe(
+      "<p><span style=\"font-size: 22px; font-family: 'Helvetica Neue', Montserrat, sans-serif\">" +
+        "Body copy</span></p>",
+    );
+  });
+});

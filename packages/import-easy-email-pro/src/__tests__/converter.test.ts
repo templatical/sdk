@@ -251,14 +251,40 @@ describe("settings and walk", () => {
     ).toBe("#ffffff");
   });
 
-  it("reads globalAttributes font-family", () => {
+  it("reads globalAttributes font-family, a built-in's own stack as the bare name", () => {
     const { content } = convertEasyEmailProTemplate({
       type: "page",
       data: { globalAttributes: { "font-family": "Georgia, serif" } },
       attributes: {},
       children: [],
     });
-    expect(content.settings.fontFamily).toBe("Georgia, serif");
+    expect(content.settings.fontFamily).toBe("Georgia");
+  });
+
+  it("re-quotes a double-quoted page font stack", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {
+        globalAttributes: {
+          "font-family": '"Helvetica Neue", Arial, sans-serif',
+        },
+      },
+      attributes: {},
+      children: [],
+    });
+    expect(content.settings.fontFamily).toBe(
+      "'Helvetica Neue', Arial, sans-serif",
+    );
+  });
+
+  it("falls back to the default font for a page font a browser would drop", () => {
+    const { content } = convertEasyEmailProTemplate({
+      type: "page",
+      data: { globalAttributes: { "font-family": "inherit" } },
+      attributes: {},
+      children: [],
+    });
+    expect(content.settings.fontFamily).toBe("Arial");
   });
 
   it("warns once when headStyles is a non-empty array", () => {

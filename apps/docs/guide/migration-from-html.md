@@ -214,7 +214,7 @@ Global template settings are extracted from the document:
 
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
 - **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
-- **Font family** — `<body>` `font-family` style. Defaults to `Arial`.
+- **Font family** — `<body>` `font-family` style. Defaults to `Arial`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 - **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.
 

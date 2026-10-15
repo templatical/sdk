@@ -141,7 +141,9 @@ describe("convertTopolTemplate end to end", () => {
     expect(content.settings.width).toBe(600);
     expect(content.settings.backgroundColor).toBe("#f4f4f4");
     expect(content.settings.textColor).toBe("#222222");
-    expect(content.settings.fontFamily).toBe("Ubuntu");
+    expect(content.settings.fontFamily).toBe(
+      "Ubuntu, Helvetica, Arial, sans-serif",
+    );
     expect(content.settings.linkColor).toBe("#0055ff");
   });
 

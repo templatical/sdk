@@ -165,13 +165,21 @@ describe("parseDividerWidth", () => {
 });
 
 describe("parseFontFamily", () => {
-  it("reads .value from object form", () => {
+  it("reads the whole stack from .value in object form", () => {
     expect(parseFontFamily({ label: "Sans", value: "Helvetica, Arial" })).toBe(
-      "Helvetica",
+      "Helvetica, Arial",
     );
   });
-  it("reads first family from string", () => {
-    expect(parseFontFamily("'Open Sans', sans-serif")).toBe("Open Sans");
+  it("keeps the whole stack from a string", () => {
+    expect(parseFontFamily("'Open Sans', sans-serif")).toBe(
+      "'Open Sans', sans-serif",
+    );
+  });
+  it("stores a built-in's own stack as the bare name", () => {
+    expect(parseFontFamily({ value: "Arial, sans-serif" })).toBe("Arial");
+  });
+  it("falls back to the label when .value sets no font", () => {
+    expect(parseFontFamily({ label: "Sans", value: "inherit" })).toBe("Sans");
   });
   it("returns empty for undefined", () => {
     expect(parseFontFamily(undefined)).toBe("");

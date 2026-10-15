@@ -1,6 +1,6 @@
 import type { ButtonBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { escapeAttr, escapeHtml } from "../escape";
+import { escapeAttr, escapeFontFamily, escapeHtml } from "../escape";
 import { toPaddingString } from "../padding";
 import type { BorderRadiusValue } from "@templatical/types";
 import { toBorderRadiusCss } from "@templatical/types";
@@ -85,7 +85,7 @@ function renderFontFamilyAttr(
 
   const resolved = context.resolveFontFamily(fontFamily);
 
-  return ` font-family="${resolved}"`;
+  return ` font-family="${escapeFontFamily(resolved)}"`;
 }
 
 /**

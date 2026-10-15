@@ -2,6 +2,7 @@ import type { CheerioAPI, Cheerio } from "cheerio";
 import { isTag, isText } from "domhandler";
 import type { Element, AnyNode } from "domhandler";
 import {
+  canonicalFontStack,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -20,7 +21,6 @@ import {
   parseAlignment,
   parseBorderShorthand,
   parseColor,
-  parseFontFamily,
   parseFontWeight,
   parseImageBorderRadius,
   parsePxValue,
@@ -378,7 +378,7 @@ function convertHeading(
     level,
     color: parseColor(styles.color) || "#1a1a1a",
     textAlign: parseAlignment(styles["text-align"]),
-    fontFamily: parseFontFamily(styles["font-family"]) || undefined,
+    fontFamily: canonicalFontStack(styles["font-family"]) || undefined,
     styles: {
       padding: readPaddingFromStyles(styles),
     },
@@ -445,7 +445,7 @@ function buildParagraph(
   if (color && color !== "#1a1a1a") fontParts.push(`color: ${color}`);
   const fontWeight = parseFontWeight(styles["font-weight"]);
   if (fontWeight) fontParts.push(`font-weight: ${fontWeight}`);
-  const fontFamily = parseFontFamily(styles["font-family"]);
+  const fontFamily = canonicalFontStack(styles["font-family"]);
   if (fontFamily) fontParts.push(`font-family: ${fontFamily}`);
   const textAlign = styles["text-align"];
 
@@ -807,7 +807,7 @@ function convertButton($el: Cheerio<Element>): Block {
     textColor: parseColor(styles.color) || "#ffffff",
     borderRadius: parsePxValue(styles["border-radius"]),
     fontSize: parsePxValue(styles["font-size"]) || 16,
-    fontFamily: parseFontFamily(styles["font-family"]) || undefined,
+    fontFamily: canonicalFontStack(styles["font-family"]) || undefined,
     align: readButtonAlign($el),
     buttonPadding: readPaddingFromStyles(styles),
     styles: {

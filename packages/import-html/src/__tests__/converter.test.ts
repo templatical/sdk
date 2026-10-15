@@ -1089,3 +1089,21 @@ describe("convertHtmlTemplate — what a bare-text walk must NOT create", () => 
     ).toEqual([["<p>Left copy</p>"], ["<p>Right copy</p>"]]);
   });
 });
+
+describe("convertHtmlTemplate — font stacks", () => {
+  it("keeps the body's fallback stack as the template font", () => {
+    const { content } = convertHtmlTemplate(
+      '<html><body style="font-family:Montserrat, Trebuchet MS, sans-serif"><p>x</p></body></html>',
+    );
+    expect(content.settings.fontFamily).toBe(
+      "Montserrat, Trebuchet MS, sans-serif",
+    );
+  });
+
+  it("stores a built-in's own stack as the bare name", () => {
+    const { content } = convertHtmlTemplate(
+      '<html><body style="font-family:Georgia, serif"><p>x</p></body></html>',
+    );
+    expect(content.settings.fontFamily).toBe("Georgia");
+  });
+});

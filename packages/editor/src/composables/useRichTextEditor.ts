@@ -140,6 +140,13 @@ export function useRichTextEditor(
 
   let destroyed = false;
 
+  // The block content this editor last emitted or applied. The content watcher
+  // can run mid-transaction: TipTap applies an input rule in two dispatches,
+  // and mounting the new node's Vue view between them flushes pending watchers
+  // before the second `update`. A watcher run carrying this value is the
+  // editor's own echo and must not overwrite the newer document.
+  let lastSyncedContent: string | null = null;
+
   async function initEditor(): Promise<void> {
     initError.value = null;
     isLoading.value = true;
@@ -180,8 +187,9 @@ export function useRichTextEditor(
         onUpdate: ({ editor: e }) => {
           if (destroyed) return;
           if (emailEditor) {
+            lastSyncedContent = e.getHTML();
             emailEditor.updateBlock(options.blockId(), {
-              content: e.getHTML(),
+              content: lastSyncedContent,
             });
           }
         },
@@ -220,11 +228,13 @@ export function useRichTextEditor(
   const stopContentWatch = watch(
     () => options.blockContent(),
     (newContent) => {
-      if (editor.value) {
-        const currentContent = editor.value.getHTML();
-        if (currentContent !== newContent) {
-          editor.value.commands.setContent(newContent, { emitUpdate: false });
-        }
+      if (!editor.value || newContent === lastSyncedContent) return;
+      // The editor now matches this content, so a later change back to what it
+      // last emitted (a redo after an undo) is a real change, not an echo.
+      lastSyncedContent = newContent;
+      const currentContent = editor.value.getHTML();
+      if (currentContent !== newContent) {
+        editor.value.commands.setContent(newContent, { emitUpdate: false });
       }
     },
   );

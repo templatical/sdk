@@ -6,7 +6,7 @@ import type {
 } from "@templatical/types";
 import { Table } from "@lucide/vue";
 import { computed, type Directive } from "vue";
-import { EDITOR_KEY, requireInject } from "../../keys";
+import { EDITOR_KEY, FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 // Hydrate a contenteditable cell's text imperatively. v-text would re-apply
 // on every prop update and overwrite the user's keystrokes mid-edit when
@@ -38,6 +38,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const editor = requireInject(EDITOR_KEY, "TableBlock");
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "TableBlock");
 
 const hasRows = computed(() => props.block.rows.length > 0);
 
@@ -47,7 +48,9 @@ const tableStyle = computed((): Record<string, string> => {
     borderCollapse: "collapse",
     fontSize: `${props.block.fontSize}px`,
     textAlign: props.block.textAlign,
-    fontFamily: props.block.fontFamily || "inherit",
+    fontFamily: props.block.fontFamily
+      ? fontsManager.resolveFontFamily(props.block.fontFamily)
+      : "inherit",
   };
   // Unset color = inherit the canvas text color (the document `textColor`).
   if (props.block.color) {

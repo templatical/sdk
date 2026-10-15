@@ -17,8 +17,10 @@ import {
   BLOCK_REGISTRY_KEY,
   CONDITION_PREVIEW_KEY,
   EDITOR_KEY,
+  FONTS_MANAGER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
+  requireInject,
 } from "../keys";
 import {
   resolveBlockComponent,
@@ -73,6 +75,7 @@ const props = withDefaults(
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 const editor = inject(EDITOR_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "BlockPreviewCanvas");
 
 /**
  * This canvas is only ever a preview — nothing here is editable — so it honours
@@ -129,7 +132,9 @@ const frameWidth = computed(() =>
  * and the current settings are what it will actually look like once inserted.
  */
 const documentStyle = computed(() =>
-  previewSettings.value ? getDocumentStyle(previewSettings.value) : {},
+  previewSettings.value
+    ? getDocumentStyle(previewSettings.value, fontsManager.resolveFontFamily)
+    : {},
 );
 
 /**

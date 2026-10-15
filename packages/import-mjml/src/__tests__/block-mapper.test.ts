@@ -27,8 +27,13 @@ function ctxFor(mjml: string): { ctx: ConvertContext; $: CheerioAPI } {
   };
 }
 
-function convert(mjml: string, selector: string) {
-  const { ctx, $ } = ctxFor(`<mjml><mj-body>${mjml}</mj-body></mjml>`);
+function convert(
+  mjml: string,
+  selector: string,
+  overrides: Partial<ConvertContext> = {},
+) {
+  const { ctx: base, $ } = ctxFor(`<mjml><mj-body>${mjml}</mj-body></mjml>`);
+  const ctx = { ...base, ...overrides };
   const $el = $(selector).first() as unknown as Cheerio<Element>;
   return { result: convertElement($el, ctx), warnings: ctx.warnings };
 }
@@ -102,6 +107,54 @@ describe("mj-image", () => {
   it("omits borderRadius when the attribute is absent", () => {
     const { result } = convert('<mj-image src="a.png" />', "mj-image");
     expect("borderRadius" in result!.block!).toBe(false);
+  });
+
+  it("reads a per-corner border-radius", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border-radius="8px 8px 0px 0px" />',
+      "mj-image",
+    );
+    expect((result!.block as ImageBlock).borderRadius).toEqual({
+      topLeft: 8,
+      topRight: 8,
+      bottomRight: 0,
+      bottomLeft: 0,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("reads a border-radius it cannot read as square corners and reports it approximated", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border-radius="50%" />',
+      "mj-image",
+    );
+    expect("borderRadius" in result!.block!).toBe(false);
+    expect(result!.entry).toEqual({
+      sourceTag: "mj-image",
+      templaticalBlockType: "image",
+      status: "approximated",
+      note: 'Image border-radius "50%" could not be read; imported as square corners.',
+    });
+  });
+
+  it("reads its border", () => {
+    const { result } = convert(
+      '<mj-image src="a.png" border="1px solid #cccccc" />',
+      "mj-image",
+    );
+    const side = { width: 1, style: "solid", color: "#cccccc" };
+    expect((result!.block as ImageBlock).border).toEqual({
+      top: side,
+      right: side,
+      bottom: side,
+      left: side,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("omits border when the attribute is absent", () => {
+    const { result } = convert('<mj-image src="a.png" />', "mj-image");
+    expect("border" in result!.block!).toBe(false);
   });
 
   it("returns null for an image with no src", () => {
@@ -208,6 +261,315 @@ describe("mj-button", () => {
       "mj-button",
     );
     expect(result).toBe(null);
+  });
+});
+
+describe("mj-button border-radius", () => {
+  it("reads a per-corner border-radius", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" border-radius="8px 0px 8px 0px">Go</mj-button>',
+      "mj-button",
+    );
+    expect((result!.block as ButtonBlock).borderRadius).toEqual({
+      topLeft: 8,
+      topRight: 0,
+      bottomRight: 8,
+      bottomLeft: 0,
+    });
+    expect(result!.entry.status).toBe("converted");
+  });
+
+  it("reads a border-radius it cannot read as square corners and reports it approximated", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" border-radius="50%">Go</mj-button>',
+      "mj-button",
+    );
+    expect((result!.block as ButtonBlock).borderRadius).toBe(0);
+    expect(result!.entry).toEqual({
+      sourceTag: "mj-button",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note: 'Button border-radius "50%" could not be read; imported as square corners.',
+    });
+  });
+});
+
+describe("mj-button border", () => {
+  function borderOf(attributes: string) {
+    const { result } = convert(
+      `<mj-button href="https://x.test" ${attributes}>Go</mj-button>`,
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+    return {
+      border: "border" in block ? block.border : "absent",
+      entry: result!.entry,
+    };
+  }
+
+  const converted = {
+    sourceTag: "mj-button",
+    templaticalBlockType: "button",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return { ...converted, status: "approximated", note };
+  }
+
+  // What the editor's border control gives a side before a width is entered.
+  const undrawn = { width: 0, style: "solid", color: "#000000" };
+
+  it("reads border onto all four sides", () => {
+    const side = { width: 2, style: "dashed", color: "#00ff00" };
+    expect(borderOf('border="2px dashed #00ff00"')).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: converted,
+    });
+  });
+
+  it("reads each border-<side>, leaving the sides it does not name undrawn", () => {
+    expect(
+      borderOf(
+        'border-top="2px solid #ff0000" border-bottom="1px dotted #0000ff"',
+      ),
+    ).toEqual({
+      border: {
+        top: { width: 2, style: "solid", color: "#ff0000" },
+        right: undrawn,
+        bottom: { width: 1, style: "dotted", color: "#0000ff" },
+        left: undrawn,
+      },
+      entry: converted,
+    });
+  });
+
+  it("lets a border-<side> override border on that side", () => {
+    const base = { width: 1, style: "solid", color: "#000000" };
+    expect(
+      borderOf('border="1px solid #000000" border-left="3px dashed #ff0000"'),
+    ).toEqual({
+      border: {
+        top: base,
+        right: base,
+        bottom: base,
+        left: { width: 3, style: "dashed", color: "#ff0000" },
+      },
+      entry: converted,
+    });
+  });
+
+  it("omits border when nothing is drawn", () => {
+    expect(borderOf("")).toEqual({ border: "absent", entry: converted });
+    expect(borderOf('border="none"')).toEqual({
+      border: "absent",
+      entry: converted,
+    });
+  });
+
+  it("narrows a style the block model lacks to solid and reports it approximated", () => {
+    const side = { width: 3, style: "solid", color: "#000000" };
+    expect(borderOf('border="3px double #000000"')).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: approximated(
+        'Button border "3px double #000000" uses style double; imported as solid.',
+      ),
+    });
+  });
+
+  it("leaves a side it cannot read undrawn and reports it approximated", () => {
+    expect(
+      borderOf('border-top="2em solid red" border-bottom="1px solid #000000"'),
+    ).toEqual({
+      border: {
+        top: undrawn,
+        right: undrawn,
+        bottom: { width: 1, style: "solid", color: "#000000" },
+        left: undrawn,
+      },
+      entry: approximated(
+        'Button border-top "2em solid red" could not be read; imported without it.',
+      ),
+    });
+    expect(borderOf('border="thin solid red"')).toEqual({
+      border: "absent",
+      entry: approximated(
+        'Button border "thin solid red" could not be read; imported without it.',
+      ),
+    });
+  });
+
+  it("does not report a border that every border-<side> overrides", () => {
+    const side = { width: 1, style: "solid", color: "#000000" };
+    expect(
+      borderOf(
+        'border="3px double #000000" border-top="1px solid #000000" border-right="1px solid #000000" border-bottom="1px solid #000000" border-left="1px solid #000000"',
+      ),
+    ).toEqual({
+      border: { top: side, right: side, bottom: side, left: side },
+      entry: converted,
+    });
+  });
+
+  it("joins notes from width, border-radius and border", () => {
+    expect(
+      borderOf('width="50%" border-radius="1em" border="3px ridge #000000"')
+        .entry,
+    ).toEqual(
+      approximated(
+        "Button width 50% was imported as 300px, which does not scale with its column. " +
+          'Button border-radius "1em" could not be read; imported as square corners. ' +
+          'Button border "3px ridge #000000" uses style ridge; imported as solid.',
+      ),
+    );
+  });
+});
+
+describe("mj-button font-family", () => {
+  function fontOf(mjml: string) {
+    const { ctx, $ } = ctxFor(mjml);
+    const $el = $("mj-button").first() as unknown as Cheerio<Element>;
+    const block = convertElement($el, ctx)!.block as ButtonBlock;
+    return "fontFamily" in block ? block.fontFamily : "absent";
+  }
+
+  it("keeps its own font-family stack", () => {
+    expect(
+      fontOf(
+        `<mjml><mj-body><mj-button href="https://x.test" font-family="'Open Sans', Arial, sans-serif">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("'Open Sans', Arial, sans-serif");
+  });
+
+  it("omits fontFamily when the attribute is absent", () => {
+    expect(
+      fontOf(
+        '<mjml><mj-body><mj-button href="https://x.test">Go</mj-button></mj-body></mjml>',
+      ),
+    ).toBe("absent");
+  });
+
+  it("does not read the document font that reaches it through mj-all", () => {
+    const head =
+      '<mj-head><mj-attributes><mj-all font-family="Inter, sans-serif" /></mj-attributes></mj-head>';
+    expect(
+      fontOf(
+        `<mjml>${head}<mj-body><mj-button href="https://x.test">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("absent");
+    expect(
+      fontOf(
+        `<mjml>${head}<mj-body><mj-button href="https://x.test" font-family="Georgia, serif">Go</mj-button></mj-body></mjml>`,
+      ),
+    ).toBe("Georgia");
+  });
+});
+
+describe("mj-button width", () => {
+  /** `"absent"` when the block has no `width` key — a fit-to-content button. */
+  function buttonWith(
+    width: string | null,
+    extra = "",
+    overrides: Partial<ConvertContext> = {},
+  ) {
+    const markup =
+      width === null
+        ? `<mj-button href="https://x.test" ${extra}>Go</mj-button>`
+        : `<mj-button href="https://x.test" width="${width}" ${extra}>Go</mj-button>`;
+    const { result } = convert(markup, "mj-button", overrides);
+    const block = result!.block as ButtonBlock;
+    return {
+      width: "width" in block ? block.width : "absent",
+      entry: result!.entry,
+    };
+  }
+
+  const converted = {
+    sourceTag: "mj-button",
+    templaticalBlockType: "button",
+    status: "converted",
+  };
+
+  function approximated(note: string) {
+    return {
+      sourceTag: "mj-button",
+      templaticalBlockType: "button",
+      status: "approximated",
+      note,
+    };
+  }
+
+  it("reads a missing width as fit to content", () => {
+    expect(buttonWith(null)).toEqual({ width: "absent", entry: converted });
+  });
+
+  it('reads 100% as "full"', () => {
+    expect(buttonWith("100%")).toEqual({ width: "full", entry: converted });
+    expect(buttonWith("100.0%").width).toBe("full");
+  });
+
+  it("reads a px width as that many px", () => {
+    expect(buttonWith("240px")).toEqual({ width: 240, entry: converted });
+    expect(buttonWith("240").width).toBe(240);
+    expect(buttonWith("240.4px").width).toBe(240);
+  });
+
+  it("keeps a px width that reaches or passes the column as px", () => {
+    // The renderer writes "full" as 100% and a number as px, so a px width
+    // never stands for "full".
+    expect(buttonWith("600px")).toEqual({ width: 600, entry: converted });
+    expect(buttonWith("700px")).toEqual({ width: 700, entry: converted });
+  });
+
+  it("converts any other percentage to px of the width the button can fill and reports it approximated", () => {
+    expect(buttonWith("50%")).toEqual({
+      width: 300,
+      entry: approximated(
+        "Button width 50% was imported as 300px, which does not scale with its column.",
+      ),
+    });
+    expect(buttonWith("33.3%").width).toBe(200);
+  });
+
+  it("measures a percentage against the column less the column's and the button's side padding", () => {
+    expect(buttonWith("50%", 'padding="10px 50px"').width).toBe(250);
+    expect(buttonWith("50%", "", { columnPadding: 40 }).width).toBe(280);
+    expect(
+      buttonWith("50%", 'padding="10px 50px"', { containerWidth: 300 }).width,
+    ).toBe(100);
+  });
+
+  it('clamps a percentage above 100 to "full" and reports it approximated', () => {
+    expect(buttonWith("150%")).toEqual({
+      width: "full",
+      entry: approximated("Button width 150% was clamped to 100%."),
+    });
+  });
+
+  it("reads a width it cannot read as fit to content and reports it approximated", () => {
+    expect(buttonWith("auto")).toEqual({
+      width: "absent",
+      entry: approximated(
+        'Button width "auto" could not be read; imported as fit to content.',
+      ),
+    });
+    expect(buttonWith("2em")).toEqual({
+      width: "absent",
+      entry: approximated(
+        'Button width "2em" could not be read; imported as fit to content.',
+      ),
+    });
+  });
+
+  it("reads a width with no usable size as fit to content and reports it approximated", () => {
+    for (const raw of ["0px", "0", "-10px", "0.4px", "0%", "-10%", "0.05%"]) {
+      expect(buttonWith(raw)).toEqual({
+        width: "absent",
+        entry: approximated(
+          `Button width ${raw} has no usable size; imported as fit to content.`,
+        ),
+      });
+    }
   });
 });
 

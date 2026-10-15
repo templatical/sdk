@@ -71,6 +71,19 @@ describe("withCurrentFont", () => {
     expect(withCurrentFont(FONTS, "")).toBe(FONTS);
     expect(withCurrentFont(FONTS, undefined)).toBe(FONTS);
   });
+
+  it("labels a quoted family that contains a comma by its whole name", () => {
+    const value = '"Foo, Bar", serif';
+    expect(withCurrentFont(FONTS, value)[0]).toEqual({
+      value,
+      label: "Foo, Bar",
+    });
+  });
+
+  it("treats a CSS-wide keyword mixed into a list as no font", () => {
+    expect(fontSelectValue("inherit, Arial")).toBe("");
+    expect(withCurrentFont(FONTS, "inherit, Arial")).toBe(FONTS);
+  });
 });
 
 describe("fontSelectValue", () => {

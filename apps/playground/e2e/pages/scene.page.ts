@@ -49,6 +49,8 @@ export async function showNotes(page: Page): Promise<void> {
   await expect(page.locator(SELECTORS.sceneNotes)).toBeVisible();
 }
 
+const SCENE_READY = '[data-testid="scene-host"][data-scene-ready="true"]';
+
 export class ScenePage {
   constructor(
     private page: Page,
@@ -60,8 +62,38 @@ export class ScenePage {
     const params = new URLSearchParams(query);
     params.set("shadowDom", this.options.shadowDom ? "1" : "0");
     await this.page.goto(`/scenes/${id}?${params.toString()}`);
-    await this.page.waitForSelector(
-      '[data-testid="scene-host"][data-scene-ready="true"]',
-    );
+    await this.page.waitForSelector(SCENE_READY);
+  }
+
+  /**
+   * Opens `content` the way a share link does, at `/?s=<id>`, with the share
+   * service mocked to return it. The share records the Minimum scene, so the
+   * canvas holds `content` and nothing else.
+   */
+  async openShare(id: string, content: unknown) {
+    await skipNotes(this.page);
+    await this.page.route(`**/api/shares/${id}`, async (route) => {
+      // Answers the load only; anything else at this URL reaches the network.
+      if (route.request().method() !== "GET") {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id,
+          sceneId: "minimum",
+          content,
+          createdAt: "2026-10-15T00:00:00.000Z",
+        }),
+      });
+    });
+    const params = new URLSearchParams({
+      s: id,
+      shadowDom: this.options.shadowDom ? "1" : "0",
+    });
+    await this.page.goto(`/?${params.toString()}`);
+    await this.page.waitForSelector(SCENE_READY);
   }
 }

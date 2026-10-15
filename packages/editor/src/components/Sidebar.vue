@@ -9,7 +9,7 @@ import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
 import { resolvePaletteBlocks } from "../utils/resolvePaletteBlocks";
-import { resolveInsertPosition } from "../utils/resolveInsertPosition";
+import { insertBlockAtSelection } from "../utils/insertBlockAtSelection";
 import { useScrollToBlock } from "../composables/useScrollToBlock";
 import { logger } from "../utils/logger";
 import {
@@ -272,17 +272,9 @@ function insertBlockFromItem(item: BlockTypeItem): void {
   // Land below the selection, not at the end: on a template taller than the
   // viewport an appended block is below the fold, and the canvas does not
   // follow on its own, so the click reads as a no-op (issue #568).
-  const { targetSectionId, columnIndex, index } = resolveInsertPosition({
-    blockType: item.type,
-    selectedBlockId: editor.state.selectedBlockId,
-    findBlockLocation: editor.findBlockLocation,
-    isBlockLocked: editor.isBlockLocked,
-  });
-  editor.addBlock(block, targetSectionId, columnIndex, index);
-  editor.selectBlock(block.id);
-  // Selecting is not visible by itself, and the append fallback above still
-  // lands off-screen — the canvas has to follow either way.
-  scrollToBlock(block.id);
+  // Selecting is not visible by itself, and the append fallback still lands
+  // off-screen — the canvas has to follow either way.
+  if (insertBlockAtSelection(editor, block)) scrollToBlock(block.id);
 }
 
 function handlePaletteClick(item: BlockTypeItem): void {

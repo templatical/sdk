@@ -6,6 +6,7 @@ import type {
 import { useIntervalFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { useI18n } from "../../composables/useI18n";
+import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
   block: CountdownBlockType;
@@ -73,9 +74,17 @@ const segments = computed(() => {
   return result;
 });
 
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "CountdownBlock");
+
+const fontFamily = computed(() =>
+  props.block.fontFamily
+    ? fontsManager.resolveFontFamily(props.block.fontFamily)
+    : "inherit",
+);
+
 const containerStyle = computed(() => ({
   backgroundColor: props.block.backgroundColor,
-  fontFamily: props.block.fontFamily || "inherit",
+  fontFamily: fontFamily.value,
 }));
 
 const digitStyle = computed(() => ({
@@ -94,7 +103,7 @@ const labelStyle = computed(() => ({
 const separatorStyle = computed(() => ({
   fontSize: `${props.block.digitFontSize}px`,
   color: props.block.digitColor,
-  fontFamily: props.block.fontFamily || "inherit",
+  fontFamily: fontFamily.value,
 }));
 </script>
 

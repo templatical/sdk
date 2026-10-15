@@ -160,7 +160,7 @@ Global template settings are converted where possible:
 - **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
 - **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
 - **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty
-- **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`
+- **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 
 ## Known Limitations
 

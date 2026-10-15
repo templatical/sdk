@@ -19,6 +19,8 @@ import {
   createCustomBlock,
   createBlock,
   cloneBlock,
+  BUTTON_BLOCK_DEFAULTS,
+  DEFAULT_BLOCK_DEFAULTS,
   type CustomBlockDefinition,
   type BlockDefaults,
 } from "../src";
@@ -279,6 +281,56 @@ describe("cloneBlock", () => {
       expect(cloned.children[0][0].id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
       );
+    }
+  });
+
+  it("gives table rows and cells, menu items and social icons new IDs", () => {
+    const table = createTableBlock();
+    const menu = createMenuBlock({
+      items: [
+        {
+          id: "home",
+          text: "Home",
+          url: "https://example.com",
+          openInNewTab: false,
+          bold: false,
+          underline: false,
+        },
+      ],
+    });
+    const social = createSocialIconsBlock({
+      icons: [{ id: "x", platform: "twitter", url: "https://x.com" }],
+    });
+
+    const clonedTable = cloneBlock(table);
+    const clonedMenu = cloneBlock(menu);
+    const clonedSocial = cloneBlock(social);
+
+    if (
+      clonedTable.type !== "table" ||
+      clonedMenu.type !== "menu" ||
+      clonedSocial.type !== "social"
+    ) {
+      throw new Error("cloneBlock changed the block type");
+    }
+    const ids = (items: { id: string }[]) => items.map((item) => item.id);
+    const cellIds = (rows: { cells: { id: string }[] }[]) =>
+      rows.flatMap((row) => ids(row.cells));
+
+    expect(table.rows.length).toBeGreaterThan(0);
+    expect(menu.items.length).toBeGreaterThan(0);
+    expect(social.icons.length).toBeGreaterThan(0);
+    for (const id of ids(clonedTable.rows)) {
+      expect(ids(table.rows)).not.toContain(id);
+    }
+    for (const id of cellIds(clonedTable.rows)) {
+      expect(cellIds(table.rows)).not.toContain(id);
+    }
+    for (const id of ids(clonedMenu.items)) {
+      expect(ids(menu.items)).not.toContain(id);
+    }
+    for (const id of ids(clonedSocial.icons)) {
+      expect(ids(social.icons)).not.toContain(id);
     }
   });
 
@@ -808,5 +860,170 @@ describe("layout block factories", () => {
     expect(cloned.id).not.toBe(createWrapperBlock().id);
     expect(cloned.children[0].id).not.toBe(originalChildId);
     expect(cloned.children[0].type).toBe("title");
+  });
+});
+
+/** Every object and array reachable from `value`, `value` itself included. */
+function objectsIn(value: unknown, found = new Set<object>()): Set<object> {
+  if (typeof value !== "object" || value === null || found.has(value)) {
+    return found;
+  }
+  found.add(value);
+  for (const child of Object.values(value)) {
+    objectsIn(child, found);
+  }
+  return found;
+}
+
+/** The objects and arrays reachable from both `a` and `b`. */
+function sharedObjects(a: unknown, b: unknown): object[] {
+  const inB = objectsIn(b);
+  return [...objectsIn(a)].filter((object) => inB.has(object));
+}
+
+describe("factories never share nested objects", () => {
+  const INSERTABLE_TYPES = Object.keys(DEFAULT_BLOCK_DEFAULTS) as Array<
+    keyof typeof DEFAULT_BLOCK_DEFAULTS
+  >;
+
+  it.each(INSERTABLE_TYPES)(
+    "%s: two blocks share nothing with each other or the built-in defaults",
+    (type) => {
+      const first = createBlock(type);
+      const second = createBlock(type);
+
+      expect(sharedObjects(first, second)).toEqual([]);
+      expect(sharedObjects(first, DEFAULT_BLOCK_DEFAULTS)).toEqual([]);
+    },
+  );
+
+  it("mutating one button's padding leaves the defaults and other buttons intact", () => {
+    const first = createButtonBlock();
+    const second = createButtonBlock({ text: "Buy now" });
+
+    first.buttonPadding.top = 99;
+    second.buttonPadding.left = 0;
+
+    expect(BUTTON_BLOCK_DEFAULTS.buttonPadding).toEqual({
+      top: 12,
+      right: 24,
+      bottom: 12,
+      left: 24,
+    });
+    expect(first.buttonPadding).toEqual({
+      top: 99,
+      right: 24,
+      bottom: 12,
+      left: 24,
+    });
+    expect(second.buttonPadding).toEqual({
+      top: 12,
+      right: 24,
+      bottom: 12,
+      left: 0,
+    });
+    expect(createButtonBlock().buttonPadding).toEqual({
+      top: 12,
+      right: 24,
+      bottom: 12,
+      left: 24,
+    });
+  });
+
+  it("gives every block created from one blockDefaults its own copy", () => {
+    const blockDefaults: BlockDefaults = {
+      button: { buttonPadding: { top: 20, right: 30, bottom: 20, left: 30 } },
+      section: {
+        wrapper: {
+          backgroundColor: "#f4f4f4",
+          padding: { top: 16, right: 16, bottom: 16, left: 16 },
+        },
+      },
+      social: {
+        icons: [{ id: "s1", platform: "facebook", url: "https://f.example" }],
+      },
+      menu: {
+        items: [
+          {
+            id: "m1",
+            text: "Shop",
+            url: "https://shop.example",
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+          },
+        ],
+      },
+      table: { rows: [{ id: "r1", cells: [{ id: "c1", content: "Cell" }] }] },
+    };
+    const before = JSON.parse(JSON.stringify(blockDefaults)) as BlockDefaults;
+
+    for (const type of ["button", "section", "social", "menu", "table"] as const) {
+      const first = createBlock(type, blockDefaults);
+      const second = createBlock(type, blockDefaults);
+
+      expect(sharedObjects(first, second)).toEqual([]);
+      expect(sharedObjects(first, blockDefaults)).toEqual([]);
+    }
+
+    const button = createBlock("button", blockDefaults);
+    const section = createBlock("section", blockDefaults);
+    const social = createBlock("social", blockDefaults);
+    if (button.type === "button") button.buttonPadding.top = 0;
+    if (section.type === "section") section.wrapper!.padding!.left = 0;
+    if (social.type === "social") social.icons[0].url = "https://changed.example";
+
+    expect(blockDefaults).toEqual(before);
+    const next = createBlock("section", blockDefaults);
+    expect(next.type === "section" && next.wrapper).toEqual({
+      backgroundColor: "#f4f4f4",
+      padding: { top: 16, right: 16, bottom: 16, left: 16 },
+    });
+  });
+
+  // The boundary: defaults are copied, a caller's own values are not. Code
+  // that builds a section around a block it keeps a reference to — and reads
+  // that block back after the editor updates it — relies on this.
+  it("keeps the objects a caller passes directly", () => {
+    const image = createImageBlock({ src: "https://cdn.example/a.png" });
+    const column = [image];
+    const section = createSectionBlock({ children: [column] });
+
+    expect(section.children[0]).toBe(column);
+    expect(section.children[0][0]).toBe(image);
+  });
+
+  it("gives each custom block its own copy of a repeatable default", () => {
+    const definition: CustomBlockDefinition = {
+      type: "list",
+      name: "List",
+      template: "",
+      fields: [
+        {
+          key: "items",
+          type: "repeatable",
+          label: "Items",
+          fields: [{ key: "t", type: "text", label: "T" }],
+          default: [{ t: "one" }],
+        },
+      ],
+      defaultStyles: { padding: { top: 4, right: 4, bottom: 4, left: 4 } },
+    };
+
+    const first = createCustomBlock(definition);
+    const second = createCustomBlock(definition);
+
+    expect(sharedObjects(first, second)).toEqual([]);
+    expect(sharedObjects(first, definition)).toEqual([]);
+
+    const items = first.fieldValues.items as Array<{ t: string }>;
+    items[0].t = "changed";
+    items.push({ t: "two" });
+
+    expect(definition.fields[0]).toMatchObject({ default: [{ t: "one" }] });
+    expect(second.fieldValues.items).toEqual([{ t: "one" }]);
+    expect(createCustomBlock(definition).fieldValues.items).toEqual([
+      { t: "one" },
+    ]);
   });
 });

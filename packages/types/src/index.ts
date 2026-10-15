@@ -247,6 +247,18 @@ export { EventEmitter } from "./events";
 // Utilities
 export { safeClone } from "./clone";
 export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+export type { FontFamily } from "./fonts";
+export {
+  BUILT_IN_FONT_STACKS,
+  canonicalFontStack,
+  firstFontFamily,
+  formatFontFamilies,
+  isGenericFontFamily,
+  normalizeFontStack,
+  parseFontFamilies,
+  quoteFontFamily,
+  resolveFontStack,
+} from "./fonts";
 
 // Merge tags
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";

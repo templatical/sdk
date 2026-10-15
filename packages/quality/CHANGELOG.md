@@ -1,5 +1,18 @@
 # @templatical/quality
 
+## 0.46.0
+
+### Minor Changes
+
+- 1045b2c: New `link.relative-url` rule (warning). It flags a link whose URL starts with `/`, `./`, `../` or `?`, or is protocol-relative (`//host`). A sent email has no page address to resolve such a URL against, so the link breaks in the inbox. Only these path-shaped prefixes count, so a URL that opens with a merge tag (`{{ unsubscribe_url }}`) is never flagged. Lower it, raise it or turn it off through `links.rules`.
+
+### Patch Changes
+
+- Updated dependencies [9d97f4d]
+- Updated dependencies [c395ecf]
+- Updated dependencies [f24888a]
+  - @templatical/types@0.46.0
+
 ## 0.45.0
 
 ### Patch Changes

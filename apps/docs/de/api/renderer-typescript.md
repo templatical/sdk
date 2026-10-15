@@ -65,7 +65,7 @@ interface RenderOptions {
 | Option | Default | Beschreibung |
 |--------|---------|-------------|
 | `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
-| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
+| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Stack, der an eine benutzerdefinierte Schriftart ohne eigenen `fallback` oder an eine einzelne, nicht eingebaute Schriftfamilie angehängt wird. Ein vollständiger Stack wird unverändert ausgegeben. |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |

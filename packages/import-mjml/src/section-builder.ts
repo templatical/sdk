@@ -12,7 +12,6 @@ import {
   parseDefinitePx,
   parsePaddingShorthand,
   parsePercent,
-  parsePxValue,
 } from "./attribute-parser";
 import {
   childElements,
@@ -24,6 +23,8 @@ import { convertElement } from "./block-mapper";
 import {
   baseFields,
   convertHtmlFallback,
+  readBorder,
+  readBorderRadius,
   type ConvertContext,
 } from "./block-base";
 import { planSiblings } from "./display-condition";
@@ -274,15 +275,18 @@ export function buildSection(
   // width would otherwise show as a repeating-decimal percentage of the
   // container instead of the value the author actually wrote.
   const shown = rawWidths.map((w) => w || "auto").join(", ");
+  const notes: string[] = exact
+    ? []
+    : [
+        `Column widths ${shown} have no exact Templatical layout; resolved to "${layout}".`,
+      ];
+  const borderRadius = readBorderRadius(attrs, "Section", notes);
+  const border = readBorder(attrs, "Section", notes);
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
-    status: exact ? "converted" : "approximated",
-    ...(exact
-      ? {}
-      : {
-          note: `Column widths ${shown} have no exact Templatical layout; resolved to "${layout}".`,
-        }),
+    status: notes.length > 0 ? "approximated" : "converted",
+    ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
   });
 
   const children: Block[][] = Array.from({ length: slots }, () => []);
@@ -300,13 +304,12 @@ export function buildSection(
     children[slot].push(...convertColumnChildren($column, columnCtx, entries));
   });
 
-  const borderRadius = parsePxValue(attrs["border-radius"]);
-
   const section = createSectionBlock({
     columns: layout,
     children,
     ...(grouped ? { stackOnMobile: false } : {}),
-    ...(borderRadius > 0 ? { borderRadius } : {}),
+    ...(borderRadius ? { borderRadius } : {}),
+    ...(border ? { border } : {}),
     ...(wrapper ? { wrapper } : {}),
     // "native": mj-section is the one element whose own background-color
     // attribute is its container fill (renderers/section.ts:32) — every other
@@ -317,15 +320,35 @@ export function buildSection(
   return [section];
 }
 
-function readWrapper(attrs: Attrs): SectionWrapper {
+const WRAPPER_BORDER_ATTRIBUTES = [
+  "border",
+  "border-top",
+  "border-right",
+  "border-bottom",
+  "border-left",
+];
+
+/**
+ * `SectionWrapper` has no border, so each `border` or `border-<side>` the
+ * wrapper sets pushes a note instead.
+ */
+function readWrapper(attrs: Attrs, notes: string[]): SectionWrapper {
   const backgroundColor = parseColor(attrs["background-color"]);
   const padding: SpacingValue = parsePaddingShorthand(attrs.padding);
-  const borderRadius = parsePxValue(attrs["border-radius"]);
+  const borderRadius = readBorderRadius(attrs, "Wrapper", notes);
+
+  for (const name of WRAPPER_BORDER_ATTRIBUTES) {
+    const raw = attrs[name];
+    if (raw === undefined) continue;
+    notes.push(
+      `Wrapper ${name} "${raw.trim()}" has no Templatical equivalent; dropped.`,
+    );
+  }
 
   return {
     ...(backgroundColor ? { backgroundColor } : {}),
     padding,
-    ...(borderRadius > 0 ? { borderRadius } : {}),
+    ...(borderRadius ? { borderRadius } : {}),
   };
 }
 
@@ -342,7 +365,8 @@ export function buildWrapper(
   entries: ImportReportEntry[],
 ): Block[] {
   const attrs = resolveAttributes($el, ctx.cascade);
-  const wrapper = readWrapper(attrs);
+  const notes: string[] = [];
+  const wrapper = readWrapper(attrs, notes);
 
   const sections = childElements($el, ctx.$).filter(
     ($k) => tagOf($k[0]) === "mj-section",
@@ -359,11 +383,19 @@ export function buildWrapper(
   }
 
   if (sections.length > 1) {
+    notes.unshift(
+      `An <mj-wrapper> holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`,
+    );
+  }
+
+  // A wrapper is not a block of its own, so it gets an entry only when it has
+  // something to report.
+  if (notes.length > 0) {
     entries.push({
       sourceTag: "mj-wrapper",
       templaticalBlockType: "section",
       status: "approximated",
-      note: `An <mj-wrapper> holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`,
+      note: notes.join(" "),
     });
   }
 

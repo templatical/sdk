@@ -1,5 +1,49 @@
+import type { Locator } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
-import { blockByType } from "../helpers/selectors";
+import { SELECTORS, blockByType } from "../helpers/selectors";
+
+const PADDING = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
+
+/** A one-column section whose only block carries a display condition. */
+const CONDITIONAL_COLUMN = {
+  settings: {
+    width: 600,
+    backgroundColor: "#ffffff",
+    textColor: "#1a1a1a",
+    fontFamily: "Arial",
+    locale: "en",
+  },
+  blocks: [
+    {
+      id: "section",
+      type: "section",
+      columns: "1",
+      styles: PADDING,
+      children: [
+        [
+          {
+            id: "vip-note",
+            type: "paragraph",
+            content: "<p>VIP only</p>",
+            styles: PADDING,
+            displayCondition: {
+              label: "VIP Partners",
+              before: "{% if vip %}",
+              after: "{% endif %}",
+            },
+          },
+        ],
+      ],
+    },
+  ],
+};
+
+const heightOf = async (el: Locator) => (await el.boundingBox())!.height;
+const borderOf = (el: Locator) =>
+  el.evaluate((node) => {
+    const { borderTopWidth, borderTopStyle } = getComputedStyle(node);
+    return `${borderTopWidth} ${borderTopStyle}`;
+  });
 
 test.describe("Section columns", () => {
   test("section block renders with columns", async ({
@@ -79,6 +123,58 @@ test.describe("Section columns", () => {
     await expect(dropHint).toBeVisible();
     const hintText = (await dropHint.textContent())?.trim() ?? "";
     expect(hintText.length).toBeGreaterThan(0);
+  });
+
+  test("empty section column drops its chrome in preview", async ({
+    blankEditorReady: { editorPage },
+  }) => {
+    await editorPage.dragBlockFromSidebar("section");
+
+    const column = editorPage.getSectionColumn(0, 0);
+    const dropHint = column.locator('[data-testid="section-drop-hint"]');
+
+    // The 60px drop height inside a 1px dashed border.
+    await expect(dropHint).toBeVisible();
+    await expect.poll(() => heightOf(column)).toBe(62);
+    expect(await borderOf(column)).toBe("1px dashed");
+
+    await editorPage.togglePreview();
+
+    // The email fills an empty column with a one-line placeholder, 34px tall.
+    await expect(dropHint).toHaveCount(0);
+    await expect.poll(() => heightOf(column)).toBe(34);
+    // Preflight's `border: 0 solid` is what's left once the class goes.
+    expect(await borderOf(column)).toBe("0px solid");
+
+    await editorPage.togglePreview();
+
+    await expect(dropHint).toBeVisible();
+    await expect.poll(() => heightOf(column)).toBe(62);
+    expect(await borderOf(column)).toBe("1px dashed");
+  });
+
+  test("a column whose blocks the condition filter hides collapses in preview", async ({
+    editorPage,
+    openSharedContent,
+    page,
+  }) => {
+    await openSharedContent("conditional-column", CONDITIONAL_COLUMN);
+
+    const column = editorPage.getSectionColumn(0, 0);
+    const block = page.locator('[data-block-id="vip-note"]');
+    await block.locator(SELECTORS.conditionToggle).click();
+    await expect(block).toBeHidden();
+
+    // Editing keeps the drop height, so the column still takes drops.
+    await expect.poll(() => heightOf(column)).toBe(60);
+
+    await editorPage.togglePreview();
+
+    // With the condition false, the email's column holds only its raw tags.
+    await expect.poll(() => heightOf(column)).toBe(0);
+    await expect(
+      column.locator('[data-testid="section-drop-hint"]'),
+    ).toHaveCount(0);
   });
 
   test("drag block into second column of section", async ({

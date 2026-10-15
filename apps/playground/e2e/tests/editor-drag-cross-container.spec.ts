@@ -1,5 +1,6 @@
+import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
-import { blockByType } from "../helpers/selectors";
+import type { EditorPage } from "../pages/editor.page";
 
 /**
  * Cross-container and intra-section drag-and-drop coverage.
@@ -9,279 +10,191 @@ import { blockByType } from "../helpers/selectors";
  * exercise mid-template moves between containers — the riskiest path
  * during draggable-library swaps or Sortable.js upgrades, since group
  * semantics and pull/put callbacks are where behavior tends to drift.
+ *
+ * Every move drops between two blocks, never at a list's end, so the
+ * asserted layout proves the insertion index and not only the container.
  */
+
+const PADDING = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
+
+const paragraph = (id: string) => ({
+  id,
+  type: "paragraph",
+  content: `<p>${id}</p>`,
+  styles: PADDING,
+});
+
+const section = (id: string, columns: string, children: unknown[][]) => ({
+  id,
+  type: "section",
+  columns,
+  styles: PADDING,
+  children,
+});
+
+/**
+ * head
+ * two:  [left]  [upper, lower]
+ * one:  [solo]
+ * trio: [first, second, third]
+ * tail
+ */
+const CONTENT = {
+  settings: {
+    width: 600,
+    backgroundColor: "#ffffff",
+    textColor: "#1a1a1a",
+    fontFamily: "Arial",
+    locale: "en",
+  },
+  blocks: [
+    paragraph("head"),
+    section("two", "2", [
+      [paragraph("left")],
+      [paragraph("upper"), paragraph("lower")],
+    ]),
+    section("one", "1", [[paragraph("solo")]]),
+    section("trio", "1", [
+      [paragraph("first"), paragraph("second"), paragraph("third")],
+    ]),
+    paragraph("tail"),
+  ],
+};
+
+const START = {
+  canvas: ["head", "two", "one", "trio", "tail"],
+  two: [["left"], ["upper", "lower"]],
+  one: [["solo"]],
+  trio: [["first", "second", "third"]],
+};
+
+/** Top-level block ids, and each section's column block ids. */
+async function layout(editorPage: EditorPage) {
+  return {
+    canvas: await editorPage.getTopLevelBlockIds(),
+    two: [
+      await editorPage.getSectionColumnBlockIds(0, 0),
+      await editorPage.getSectionColumnBlockIds(0, 1),
+    ],
+    one: [await editorPage.getSectionColumnBlockIds(1, 0)],
+    trio: [await editorPage.getSectionColumnBlockIds(2, 0)],
+  };
+}
+
+const block = (page: Page, id: string) =>
+  page.locator(`[data-block-id="${id}"]`);
+
+/**
+ * A column whose last block has been dragged out keeps its 60px drop height
+ * for the rest of the drag, rather than collapsing under the pointer. Only a
+ * one-column section shows it: in a multi-column section the row's other
+ * columns stretch the source column whatever its own height.
+ */
+async function expectHoldsDropHeight(column: Locator) {
+  // The drop line has left the column. All that stays inside is Sortable's
+  // floating copy of the block, which takes no space.
+  await expect(column.locator(".tpl-ghost")).toHaveCount(0);
+  expect((await column.boundingBox())!.height).toBeGreaterThanOrEqual(60);
+}
+
 test.describe("Editor cross-container drag-and-drop", () => {
-  // Several tests below need to plant a child into a section column via
-  // `dragBlockFromSidebarToSection`. The section's inner Sortable uses
-  // `force-fallback: true` (Chrome-strict-native-drag fix — see
-  // `block-chrome-structure.test.ts`), so Sortable doesn't bind
-  // `dragover` listeners on its element. Playwright's `dragTo` emits
-  // HTML5 drag events only, which the force-fallback target never sees,
-  // so the plant step silently fails. Real users hit the same code path
-  // via pointer events, which the target DOES listen for — so this is a
-  // Playwright/Sortable interop limitation, not a production bug.
-  //
-  // Where these tests can use existing-template children for setup, they
-  // do; where they require planting OR they explicitly test the
-  // sidebar→section drop, they're marked `fixme`. Production behavior is
-  // verified manually + by `block-chrome-structure.test.ts` (config) +
-  // by the `section-clone-cycle` e2e (uses existing children only).
+  test.beforeEach(async ({ editorPage, openSharedContent }) => {
+    await openSharedContent("cross-container", CONTENT);
+    await expect.poll(() => layout(editorPage)).toEqual(START);
+  });
+
   test("reorder blocks within a single section column", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
-    const sections = page.locator(blockByType("section"));
-    if ((await sections.count()) === 0) {
-      test.skip();
-      return;
-    }
-
-    // Find a section column with at least 2 children to swap. Default to (0, 0)
-    // if it qualifies; otherwise scan columns of the first section.
-    const sectionIndex = 0;
-    let colIndex = 0;
-    const children = await editorPage
-      .getSectionColumnBlocks(sectionIndex, colIndex)
-      .count();
-    if (children < 2) {
-      const cols = await sections
-        .first()
-        .locator('[class*="tpl:min-h-"]')
-        .count();
-      let found = false;
-      for (let c = 0; c < cols; c++) {
-        const n = await editorPage
-          .getSectionColumnBlocks(0, c)
-          .count();
-        if (n >= 2) {
-          colIndex = c;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        // Need to plant 2 children — see test.describe header comment.
-        // Skipping rather than relying on cross-mode HTML5→fallback drag.
-        test.skip();
-        return;
-      }
-    }
-
-    const idsBefore = await editorPage.getSectionColumnBlockIds(
-      sectionIndex,
-      colIndex,
-    );
-    expect(idsBefore.length).toBeGreaterThanOrEqual(2);
-
-    await editorPage.reorderBlockWithinSection(
-      sectionIndex,
-      colIndex,
-      0,
-      1,
-    );
-
-    const idsAfter = await editorPage.getSectionColumnBlockIds(
-      sectionIndex,
-      colIndex,
-    );
-    expect(idsAfter[0]).toBe(idsBefore[1]);
-    expect(idsAfter[1]).toBe(idsBefore[0]);
-    // Block set unchanged — only order moved.
-    expect(new Set(idsAfter)).toEqual(new Set(idsBefore));
-  });
-
-  // Known limitation: Sortable.js's `_onDragOver` hit-test for a target
-  // column nested inside a sibling canvas item doesn't fire under
-  // Playwright's synthetic pointer events when the source is a canvas-level
-  // handle (.tpl-block-btn). Real-user drag works; manual mouse driving
-  // does not. Exercise via manual QA; revisit if Playwright gains a more
-  // native pointer-event mode.
-  test.fixme("move block from canvas top-level into a section column", async ({
-    blankEditorReady: { editorPage },
-  }) => {
-    // Build a minimal layout: a section at canvas[1], a title at canvas[0].
-    // Drop the section first (lands as top-level on empty canvas), then
-    // drop the title BEFORE it via the position helper so the title is
-    // clearly top-level and not absorbed into the section's empty column.
-    await editorPage.dragBlockFromSidebar("section");
-    await editorPage.dragBlockFromSidebarToPosition("title", 0, "before");
-
-    const topLevelIdsBefore = await editorPage.getTopLevelBlockIds();
-    expect(topLevelIdsBefore).toHaveLength(2);
-    const movedId = topLevelIdsBefore[0];
-    expect((await editorPage.getTopLevelBlockTypes())[0]).toBe("title");
-
-    const topLevelCountBefore = topLevelIdsBefore.length;
-    const sectionColCountBefore = await editorPage
-      .getSectionColumnBlocks(0, 0)
-      .count();
-
-    await editorPage.moveBlockFromCanvasToSection(0, 0, 0);
-
-    expect(
-      await editorPage.getSectionColumnBlocks(0, 0).count(),
-    ).toBe(sectionColCountBefore + 1);
-    expect(
-      await editorPage.getSectionColumnBlockIds(0, 0),
-    ).toContain(movedId);
-    expect(await editorPage.getTopLevelBlocks().count()).toBe(
-      topLevelCountBefore - 1,
-    );
-    expect(await editorPage.getTopLevelBlockIds()).not.toContain(movedId);
-  });
-
-  test("move child block from section column out to canvas top-level", async ({
-    blankEditorReady: { editorPage },
-  }) => {
-    // Known limitation: Sortable's `_emulateDragOver` poll uses
-    // `document.elementFromPoint` to find the target Sortable under the
-    // cursor. With pointer-event-driven drag from a SECTION-nested
-    // child to the CANVAS top-level, the hit-test occasionally lands
-    // on the source section's element rather than the canvas's
-    // top-level Sortable, and the drop doesn't promote the block out.
-    // Real-user drag works (mouse events emit faster + more often).
-    // Production verified manually + by the structure audit.
-    test.fixme(true, "Playwright/Sortable cross-container hit-test gap");
-    // Layout: a section at canvas[0], a title at canvas[1]. Plant a divider
-    // inside section column 0; drag it OUT so it lands as a top-level block
-    // after the title. Source (section child) and target (title's bottom
-    // edge) sit adjacent in the viewport.
-    await editorPage.dragBlockFromSidebar("section");
-    await editorPage.dragBlockFromSidebarToPosition("title", 0, "after");
-    await editorPage.dragBlockFromSidebarToSection("divider", 0, 0);
-
-    const colIds = await editorPage.getSectionColumnBlockIds(0, 0);
-    const movedId = colIds[colIds.length - 1];
-    expect(movedId).toBeTruthy();
-
-    const childIndex = colIds.length - 1;
-    const topLevelCountBefore = await editorPage.getTopLevelBlocks().count();
-    const targetCanvasIndex = topLevelCountBefore - 1;
-
-    await editorPage.moveBlockFromSectionToCanvas(
-      0,
-      0,
-      childIndex,
-      targetCanvasIndex,
+    await editorPage.dragBlockByGrip(
+      block(page, "first"),
+      block(page, "second"),
       "after",
     );
 
-    expect(await editorPage.getTopLevelBlockIds()).toContain(movedId);
-    expect(
-      await editorPage.getSectionColumnBlockIds(0, 0),
-    ).not.toContain(movedId);
-    expect(await editorPage.getTopLevelBlocks().count()).toBe(
-      topLevelCountBefore + 1,
-    );
+    await expect
+      .poll(() => layout(editorPage))
+      .toEqual({ ...START, trio: [["second", "first", "third"]] });
   });
 
-  // Known limitation: drop into a SIBLING column of the same section
-  // doesn't register under Playwright's synthetic pointer events even
-  // though cross-section moves (test below) do. Manual QA covers it.
-  test.fixme("move block between two columns of the same section", async ({
-    editorReady: { editorPage },
+  test("move block from canvas top-level into a section column", async ({
+    editorPage,
     page,
   }) => {
-    const sections = page.locator(blockByType("section"));
-    if ((await sections.count()) === 0) {
-      test.skip();
-      return;
-    }
-
-    // Find a section that actually has 2+ direct columns. The first section
-    // in the loaded template may be 1-column (e.g. a header band).
-    let sectionNth = -1;
-    const sectionTotal = await sections.count();
-    for (let s = 0; s < sectionTotal; s++) {
-      const directCols = await sections
-        .nth(s)
-        .locator('div[class*="tpl:flex"][class*="tpl:gap-0"] > div')
-        .count();
-      if (directCols >= 2) {
-        sectionNth = s;
-        break;
-      }
-    }
-    if (sectionNth < 0) {
-      test.skip();
-      return;
-    }
-
-    // Plant a divider in column 0 so the test is order-independent.
-    await editorPage.dragBlockFromSidebarToSection("divider", sectionNth, 0);
-    const col0Ids = await editorPage.getSectionColumnBlockIds(sectionNth, 0);
-    const movedId = col0Ids[col0Ids.length - 1];
-    expect(movedId).toBeTruthy();
-
-    const col1CountBefore = await editorPage
-      .getSectionColumnBlocks(sectionNth, 1)
-      .count();
-
-    await editorPage.moveBlockBetweenColumns(
-      sectionNth,
-      0,
-      col0Ids.length - 1,
-      1,
+    await editorPage.dragBlockByGrip(
+      block(page, "head"),
+      block(page, "first"),
+      "after",
     );
 
-    expect(
-      await editorPage.getSectionColumnBlockIds(sectionNth, 1),
-    ).toContain(movedId);
-    expect(
-      await editorPage.getSectionColumnBlocks(sectionNth, 1).count(),
-    ).toBe(col1CountBefore + 1);
-    expect(
-      await editorPage.getSectionColumnBlockIds(sectionNth, 0),
-    ).not.toContain(movedId);
+    await expect
+      .poll(() => layout(editorPage))
+      .toEqual({
+        ...START,
+        canvas: ["two", "one", "trio", "tail"],
+        trio: [["first", "head", "second", "third"]],
+      });
+  });
+
+  test("move child block from section column out to canvas top-level", async ({
+    editorPage,
+    page,
+  }) => {
+    await editorPage.dragBlockByGrip(
+      block(page, "solo"),
+      block(page, "head"),
+      "after",
+      {
+        beforeDrop: () =>
+          expectHoldsDropHeight(editorPage.getSectionColumn(1, 0)),
+      },
+    );
+
+    await expect
+      .poll(() => layout(editorPage))
+      .toEqual({
+        ...START,
+        canvas: ["head", "solo", "two", "one", "trio", "tail"],
+        one: [[]],
+      });
+  });
+
+  test("move block between two columns of the same section", async ({
+    editorPage,
+    page,
+  }) => {
+    await editorPage.dragBlockByGrip(
+      block(page, "left"),
+      block(page, "upper"),
+      "after",
+    );
+
+    await expect
+      .poll(() => layout(editorPage))
+      .toEqual({ ...START, two: [[], ["upper", "left", "lower"]] });
   });
 
   test("move block between two different section components", async ({
-    editorReady: { editorPage },
+    editorPage,
     page,
   }) => {
-    // Known limitation: same root cause as "section column out to canvas
-    // top-level" above — Sortable's `_emulateDragOver` poll using
-    // `document.elementFromPoint` doesn't reliably land on the
-    // destination section's column under Playwright synthetic pointer
-    // events for this geometry. Setup (sidebar→section drag) now works,
-    // but the actual section-to-section move drops on the source
-    // section's column instead of moving across. Production verified
-    // manually + by the structure audit.
-    test.fixme(true, "Playwright/Sortable cross-container hit-test gap");
-
-    const sections = page.locator(blockByType("section"));
-    if ((await sections.count()) < 2) {
-      // Plant a second section so cross-section move has a target.
-      await editorPage.dragBlockFromSidebar("section");
-    }
-    expect(await sections.count()).toBeGreaterThanOrEqual(2);
-
-    // Plant a divider in section 0, column 0 so we have a known mover.
-    await editorPage.dragBlockFromSidebarToSection("divider", 0, 0);
-    const fromColIds = await editorPage.getSectionColumnBlockIds(0, 0);
-    const movedId = fromColIds[fromColIds.length - 1];
-    expect(movedId).toBeTruthy();
-
-    const toCountBefore = await editorPage
-      .getSectionColumnBlocks(1, 0)
-      .count();
-
-    await editorPage.moveBlockBetweenSections(
-      0,
-      0,
-      fromColIds.length - 1,
-      1,
-      0,
+    await editorPage.dragBlockByGrip(
+      block(page, "solo"),
+      block(page, "second"),
+      "before",
+      {
+        beforeDrop: () =>
+          expectHoldsDropHeight(editorPage.getSectionColumn(1, 0)),
+      },
     );
 
-    expect(
-      await editorPage.getSectionColumnBlockIds(1, 0),
-    ).toContain(movedId);
-    expect(
-      await editorPage.getSectionColumnBlocks(1, 0).count(),
-    ).toBe(toCountBefore + 1);
-    expect(
-      await editorPage.getSectionColumnBlockIds(0, 0),
-    ).not.toContain(movedId);
+    await expect
+      .poll(() => layout(editorPage))
+      .toEqual({
+        ...START,
+        one: [[]],
+        trio: [["first", "solo", "second", "third"]],
+      });
   });
 });

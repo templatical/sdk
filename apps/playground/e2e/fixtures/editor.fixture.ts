@@ -15,6 +15,12 @@ type EditorFixtures = {
   scenePage: ScenePage;
   editorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
   blankEditorReady: { chooserPage: ChooserPage; editorPage: EditorPage };
+  /**
+   * Opens the editor on `content` through a mocked share link
+   * (`ScenePage.openShare`), ready to drive like `editorReady`. `id` names the
+   * share in the URL.
+   */
+  openSharedContent: (id: string, content: unknown) => Promise<void>;
 };
 
 export const test = base.extend<EditorFixtures>({
@@ -45,6 +51,13 @@ export const test = base.extend<EditorFixtures>({
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
     await use({ chooserPage, editorPage });
+  },
+  openSharedContent: async ({ scenePage, editorPage }, use) => {
+    await use(async (id, content) => {
+      await scenePage.openShare(id, content);
+      await editorPage.waitForReady();
+      await editorPage.dismissOverlays();
+    });
   },
 });
 

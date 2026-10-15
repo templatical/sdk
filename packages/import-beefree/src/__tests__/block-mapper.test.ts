@@ -1272,7 +1272,7 @@ describe("convertModule", () => {
         },
       );
 
-      it("still carries a named font on a title", () => {
+      it("still carries a named font on a title, with its fallbacks", () => {
         const { block } = convertModule(
           makeModule("mailup-bee-newsletter-modules-heading", {
             heading: {
@@ -1283,7 +1283,24 @@ describe("convertModule", () => {
           [],
         );
         if (block.type !== "title") throw new Error("expected a title block");
-        expect(block.fontFamily).toBe("Open Sans");
+        expect(block.fontFamily).toBe("'Open Sans', sans-serif");
+      });
+
+      it("carries a paragraph's whole font stack into its span", () => {
+        const stack =
+          "Montserrat, Trebuchet MS, Lucida Grande, Lucida Sans Unicode, Lucida Sans, Tahoma, sans-serif";
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-paragraph", {
+            paragraph: {
+              html: "<p>Hi</p>",
+              style: { "font-family": stack },
+            },
+          }),
+          [],
+        );
+        if (block.type !== "paragraph")
+          throw new Error("expected a paragraph block");
+        expect(block.content).toContain(`font-family: ${stack}`);
       });
 
       it("adds no color span to a paragraph whose color is inherit", () => {

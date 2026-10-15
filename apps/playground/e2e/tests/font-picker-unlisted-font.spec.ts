@@ -1,7 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
-import { EditorPage } from "../pages/editor.page";
 
 /**
  * A block or text whose font the picker doesn't offer: the select shows that
@@ -44,29 +43,6 @@ const CONTENT = {
   ],
 };
 
-async function openWithContent(page: Page, shadowDom: boolean) {
-  await page.route("**/api/shares/unlisted-font", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "unlisted-font",
-        sceneId: "minimum",
-        content: CONTENT,
-        createdAt: "2026-10-12T00:00:00.000Z",
-      }),
-    }),
-  );
-  await page.goto(`/?s=unlisted-font&shadowDom=${shadowDom ? "1" : "0"}`);
-  await page.waitForSelector(
-    '[data-testid="scene-host"][data-scene-ready="true"]',
-  );
-  const editorPage = new EditorPage(page);
-  await editorPage.waitForReady();
-  await editorPage.dismissOverlays();
-  return editorPage;
-}
-
 const selectedLabel = (select: Locator) =>
   select.evaluate((el: HTMLSelectElement) =>
     el.options[el.selectedIndex]?.text.trim(),
@@ -81,10 +57,10 @@ function titleFontSelect(page: Page): Locator {
 
 test.describe("font picker with an unlisted font", () => {
   test("the title toolbar shows the block's font until another is chosen", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("unlisted-font", CONTENT);
     await page.locator('[data-block-id="unlisted-title"]').click();
 
     const select = titleFontSelect(page);
@@ -98,10 +74,10 @@ test.describe("font picker with an unlisted font", () => {
   });
 
   test("the title toolbar shows a CSS-wide keyword as the template font option", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("unlisted-font", CONTENT);
     await page.locator('[data-block-id="inherit-title"]').click();
 
     const select = titleFontSelect(page);
@@ -112,10 +88,10 @@ test.describe("font picker with an unlisted font", () => {
   });
 
   test("the paragraph toolbar shows the selected text's font until another is chosen", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("unlisted-font", CONTENT);
     await page.locator('[data-block-id="unlisted-paragraph"]').dblclick();
     await page.keyboard.press("ControlOrMeta+a");
 

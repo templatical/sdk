@@ -150,7 +150,7 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` | `SocialIconsBlock` | Jede Plattform, die in der `display`-Liste des Knotens genannt ist und ein passendes `<platform>-href` hat, wird zu einem `SocialIcon`. Topol packt jedes Icon auf die Attribute dieses einen Knotens, statt wie bei handgeschriebenem MJML `mj-social-element`-Kindelemente zu verschachteln. |
-| Wurzel-`attributes` (plus `background-color` von `mj-container`) | Template-`settings` | Ein bloßes `:color` / `a:color` setzt die Text-/Link-Farbe des Dokuments; Selektor-Defaults (`h1:font-family` und Ähnliches) setzen die Schriftart einer Überschrift, wenn diese selbst keine festlegt. Ein eigenes Attribut des Knotens gewinnt immer gegen diese Defaults. |
+| Wurzel-`attributes` (plus `background-color` von `mj-container`) | Template-`settings` | Ein bloßes `:color` / `a:color` setzt die Text-/Link-Farbe des Dokuments; Selektor-Defaults (`h1:font-family` und Ähnliches) setzen die Schriftart einer Überschrift, wenn diese selbst keine festlegt. Ein eigenes Attribut des Knotens gewinnt immer gegen diese Defaults. Ein Schriftart-Stack wird vollständig übernommen, sodass seine Fallbacks erhalten bleiben. |
 | Alles andere | `HtmlBlock` | Für das Tag existiert kein Templatical-Block; der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
 
 ## Wo das Mapping verlustbehaftet ist

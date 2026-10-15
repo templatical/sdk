@@ -2,6 +2,7 @@ import { load } from "cheerio";
 import type { CheerioAPI, Cheerio } from "cheerio";
 import type { Element } from "domhandler";
 import {
+  canonicalFontStack,
   createDefaultTemplateContent,
   createSectionBlock,
 } from "@templatical/types";
@@ -13,12 +14,7 @@ import {
   walkContentNodes,
 } from "./block-mapper";
 import { processTable } from "./section-builder";
-import {
-  parseColor,
-  parseFontFamily,
-  parsePxValue,
-  parseStyleAttribute,
-} from "./style-parser";
+import { parseColor, parsePxValue, parseStyleAttribute } from "./style-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
 function emptyPadding() {
@@ -51,7 +47,7 @@ function extractSettings(
 ): TemplateContent["settings"] {
   const $body = $("body");
   const bodyStyles = parseStyleAttribute($body.attr("style"));
-  const fontFamily = parseFontFamily(bodyStyles["font-family"]) || "Arial";
+  const fontFamily = canonicalFontStack(bodyStyles["font-family"]) || "Arial";
   const backgroundColor =
     parseColor(bodyStyles["background-color"]) ||
     parseColor(bodyStyles.background) ||

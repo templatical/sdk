@@ -4,7 +4,7 @@ import {
   type VueWrapper,
 } from '@vue/test-utils';
 import { shallowRef, ref, computed, type Component } from 'vue';
-import { SYNTAX_PRESETS } from '@templatical/types';
+import { SYNTAX_PRESETS, resolveFontStack } from '@templatical/types';
 import {
   TRANSLATIONS_KEY,
   FONTS_MANAGER_KEY,
@@ -27,7 +27,13 @@ function stubFontsManager() {
     fonts: ref([{ label: 'Default', value: '' }]),
     loadCustomFonts: async () => {},
     cleanupFontLinks: () => {},
-    setCustomFontsEnabled: () => {},
+    // The real rule with no custom fonts, so a block's canvas font still
+    // resolves the way the email emits it.
+    resolveFontFamily: (fontFamily: string) =>
+      resolveFontStack(fontFamily, {
+        customFonts: [],
+        defaultFallback: 'Arial, sans-serif',
+      }),
   };
 }
 

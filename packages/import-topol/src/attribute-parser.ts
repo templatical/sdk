@@ -152,15 +152,6 @@ export function parsePercent(
   return match ? parseFloat(match[1]) : null;
 }
 
-/** Strip quotes and return the first family in a stack. */
-export function parseFontFamily(value: string | undefined): string {
-  if (!value) return "";
-  return value
-    .split(",")[0]
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-}
-
 /** Narrow an alignment to the three the block model accepts. */
 export function parseAlignment(
   value: string | undefined,

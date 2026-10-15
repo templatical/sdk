@@ -659,10 +659,8 @@ export class EditorPage {
   }
 
   /**
-   * Locate the column containers of a section block. Each column is the
-   * direct flex child of `tpl:flex tpl:gap-0` inside the section and is sized
-   * by an inline `width` style; matching the `tpl:min-h-` class lets us pick
-   * the column without depending on Tailwind's escaped width classes.
+   * Locate a column container of a section block: a direct flex child of the
+   * section's `tpl:flex tpl:gap-0` row, sized by an inline `width` style.
    */
   getSectionColumn(sectionIndex: number, colIndex: number): Locator {
     // Columns are direct flex grandchildren of the section root: the
@@ -700,311 +698,98 @@ export class EditorPage {
   }
 
   /**
-   * Manual-mouse pointer drive between two locators. Sortable.js listens to
-   * pointer events, not native HTML5 drag, and needs multiple intermediate
-   * mousemove events to register the swap — `dragTo` only emits two and is
-   * insufficient for in-editor moves (canvas reorder, section reorder,
-   * cross-container drops).
+   * Drag `block` by its grip and drop it before or after `target`, a block in
+   * any list: the canvas, a section column, or the block's own list.
    *
-   * `targetEdge` aims past a target's center so Sortable swaps in the
-   * intended direction; `"center"` is the right default for empty/cross
-   * container drops.
+   * The canvas and every section column start a drag only from
+   * `.tpl-block-btn`, the grip on a selected block's action bar, so the block
+   * is selected first. Pressing anywhere else on a block starts no drag.
+   *
+   * The aim is closed-loop. Once the drag starts, the source becomes the drop
+   * line (`.tpl-ghost`: zero height, 12px margins and a 2px border), and every
+   * list the line enters or leaves grows or shrinks by its 26px. Blocks shift
+   * under the pointer mid-drag, so a point measured once can land on the
+   * wrong side of the target. Instead the pointer re-aims at the target's
+   * current box until the drop line sits on the requested side of it, which is
+   * where Sortable inserts the block on mouseup.
+   *
+   * `beforeDrop` runs at that moment, with the block still held: the place to
+   * measure mid-drag layout.
    */
-  private async pointerDrive(
-    sourceBox: { x: number; y: number; width: number; height: number },
-    targetBox: { x: number; y: number; width: number; height: number },
-    targetEdge: "top" | "bottom" | "center" = "center",
+  async dragBlockByGrip(
+    block: Locator,
+    target: Locator,
+    position: "before" | "after",
+    options: { beforeDrop?: () => Promise<void> } = {},
   ): Promise<void> {
-    const startX = sourceBox.x + sourceBox.width / 2;
-    const startY = sourceBox.y + sourceBox.height / 2;
-    const endX = targetBox.x + targetBox.width / 2;
-    // Section's and canvas's draggables both run with `invertSwap: true` +
-    // `invertedSwapThreshold: 0.65`, so the swap zone is the outer ~17.5%
-    // of each edge (inner 65% is a dead zone). Aiming at 10% / 90% lands
-    // squarely in the active zone and lets Sortable fire the swap reliably.
-    const endY =
-      targetEdge === "top"
-        ? targetBox.y + targetBox.height * 0.1
-        : targetEdge === "bottom"
-          ? targetBox.y + targetBox.height * 0.9
-          : targetBox.y + targetBox.height / 2;
+    await block.click();
+    const grip = block.locator(SELECTORS.blockDragHandle).first();
+    await grip.waitFor();
+    const gripBox = await grip.boundingBox();
+    if (!gripBox) throw new Error("Drag grip bounds unavailable");
+    const startX = gripBox.x + gripBox.width / 2;
+    const startY = gripBox.y + gripBox.height / 2;
 
-    // Sortable.js gates drag-start on a small initial movement (>1px) and
-    // wires its `_onDragOver` hit-test to `pointermove`. Driving with
-    // `mouse.move({ steps: N })` interpolates Playwright's native event
-    // emission across N intermediate moves, giving Sortable enough frames
-    // to register drag-start, evaluate target containers (including nested
-    // section columns), and animate the swap before mouseup commits.
+    // The canvas and section columns both run `invertSwap` with
+    // `invertedSwapThreshold: 0.65`, which makes the outer 32.5% at each end
+    // of a block its insertion zones. 10% and 90% sit well inside them.
+    const aim = async () => {
+      const box = await target.boundingBox();
+      if (!box) throw new Error("Drop target bounds unavailable");
+      return {
+        x: box.x + box.width / 2,
+        y: box.y + box.height * (position === "before" ? 0.1 : 0.9),
+      };
+    };
+
     await this.page.mouse.move(startX, startY);
     await this.page.mouse.down();
-    // Tiny initial nudge so Sortable.js's threshold check fires before the
-    // long-distance interpolated move.
+    // Clears Sortable's drag-start threshold.
     await this.page.mouse.move(startX + 4, startY + 4);
-    await this.page.mouse.move(endX, endY, { steps: 30 });
-    // Settle frames at the destination — Sortable's animation needs a
-    // couple ticks to land the dropped item before mouseup.
-    await this.page.mouse.move(endX, endY);
-    await this.page.mouse.move(endX, endY);
+    const first = await aim();
+    await this.page.mouse.move(first.x, first.y, { steps: 30 });
+    await expect(async () => {
+      const point = await aim();
+      await this.page.mouse.move(point.x, point.y, { steps: 5 });
+      expect(
+        await this.dropLineSide(target),
+        "drop line beside the target",
+      ).toBe(position);
+    }).toPass({ timeout: 5000 });
+
+    await options.beforeDrop?.();
     await this.page.mouse.up();
   }
 
   /**
-   * Reorder a block WITHIN a single section column by dragging child N onto
-   * child M. Section's draggable has no `handle` attribute, so any pointerdown
-   * on the child block initiates the drag.
+   * Which side of `target` the drop line is on, or null while the line is in
+   * a different list. The line's own list sets the level: each of its items is
+   * named by the first block inside it, so a section item reads as the section,
+   * never as one of its column children.
    */
-  async reorderBlockWithinSection(
-    sectionIndex: number,
-    colIndex: number,
-    fromChildIndex: number,
-    toChildIndex: number,
-  ): Promise<void> {
-    const blocks = this.getSectionColumnBlocks(sectionIndex, colIndex);
-    const fromBlock = blocks.nth(fromChildIndex);
-    const toBlock = blocks.nth(toChildIndex);
-    const fromId = await fromBlock.getAttribute("data-block-id");
-    if (!fromId)
-      throw new Error(
-        `Section ${sectionIndex} col ${colIndex} child ${fromChildIndex} has no data-block-id`,
-      );
-    await fromBlock.scrollIntoViewIfNeeded();
-    await toBlock.scrollIntoViewIfNeeded();
-    const fromBox = await fromBlock.boundingBox();
-    if (!fromBox) throw new Error("Section reorder source bounds unavailable");
-
-    // Sortable replaces the dragged element with a zero-height ghost
-    // (`.tpl-ghost { height: 0 }`), so once the drag starts, the column
-    // collapses and the target block shifts up by the source's height.
-    // Pre-drag `toBox` coordinates would aim past the target's new position
-    // — drive the mouse to drag-start first, re-query `toBox`, then
-    // interpolate to the up-to-date target location.
-    const targetEdge = toChildIndex > fromChildIndex ? "bottom" : "top";
-    const startX = fromBox.x + fromBox.width / 2;
-    const startY = fromBox.y + fromBox.height / 2;
-    await this.page.mouse.move(startX, startY);
-    await this.page.mouse.down();
-    // Tiny nudge so Sortable's drag-start threshold fires and the ghost
-    // is inserted into the DOM, collapsing the column.
-    await this.page.mouse.move(startX + 4, startY + 4);
-
-    const toBox = await toBlock.boundingBox();
-    if (!toBox) {
-      await this.page.mouse.up();
-      throw new Error(
-        "Section reorder target bounds unavailable after drag start",
-      );
-    }
-    const endX = toBox.x + toBox.width / 2;
-    const endY =
-      targetEdge === "top"
-        ? toBox.y + toBox.height * 0.1
-        : toBox.y + toBox.height * 0.9;
-
-    await this.page.mouse.move(endX, endY, { steps: 30 });
-    await this.page.mouse.move(endX, endY);
-    await this.page.mouse.move(endX, endY);
-    await this.page.mouse.up();
-
-    await expect
-      .poll(
-        async () =>
-          (await this.getSectionColumnBlockIds(sectionIndex, colIndex)).indexOf(
-            fromId,
-          ),
-        { timeout: 5000 },
-      )
-      .toBe(toChildIndex);
-  }
-
-  /**
-   * Move a top-level canvas block INTO a section column. Canvas-level
-   * draggable requires `handle=".tpl-block-btn"`, which only renders on the
-   * floating action bar of a selected block (see BlockWrapper.vue) — so the
-   * helper selects first to materialize the handle, then drives the pointer
-   * from that handle to the section column drop area.
-   */
-  async moveBlockFromCanvasToSection(
-    canvasBlockIndex: number,
-    sectionIndex: number,
-    colIndex: number = 0,
-  ): Promise<void> {
-    const canvasBlock = this.getTopLevelBlocks().nth(canvasBlockIndex);
-    const blockId = await canvasBlock.getAttribute("data-block-id");
-    if (!blockId)
-      throw new Error(`Canvas block #${canvasBlockIndex} has no data-block-id`);
-
-    await canvasBlock.scrollIntoViewIfNeeded();
-    await canvasBlock.click();
-    await this.page.locator(SELECTORS.blockSelected).waitFor();
-    const handle = canvasBlock.locator(SELECTORS.blockDragHandle).first();
-    await handle.waitFor();
-
-    const targetCol = this.getSectionColumn(sectionIndex, colIndex);
-    await targetCol.scrollIntoViewIfNeeded();
-    // Target scroll may have shifted source out of view. Re-scroll source so
-    // both endpoints lie inside the viewport for the manual mouse drive.
-    await canvasBlock.scrollIntoViewIfNeeded();
-    const handleBox = await handle.boundingBox();
-    const targetBox = await targetCol.boundingBox();
-    if (!handleBox || !targetBox)
-      throw new Error("Canvas→section drag bounds unavailable");
-
-    const sectionColCountBefore = await this.getSectionColumnBlocks(
-      sectionIndex,
-      colIndex,
-    ).count();
-
-    // Aim near the top of the column. SectionBlock.vue's draggable is
-    // configured with `:empty-insert-threshold="20"`, so the drop is more
-    // reliable when the cursor settles near a column edge than dead-center.
-    await this.pointerDrive(handleBox, targetBox, "top");
-
-    await expect
-      .poll(
-        async () =>
-          (
-            await this.getSectionColumnBlockIds(sectionIndex, colIndex)
-          ).includes(blockId),
-        { timeout: 5000 },
-      )
-      .toBe(true);
-    expect(
-      await this.getSectionColumnBlocks(sectionIndex, colIndex).count(),
-    ).toBe(sectionColCountBefore + 1);
-  }
-
-  /**
-   * Move a child block OUT of a section column to the canvas top-level,
-   * landing before/after a specific top-level block. Section's draggable
-   * has no `handle`, so pointerdown on the child block element starts the
-   * drag.
-   */
-  async moveBlockFromSectionToCanvas(
-    sectionIndex: number,
-    colIndex: number,
-    childIndex: number,
-    targetCanvasIndex: number,
-    position: "before" | "after" = "after",
-  ): Promise<void> {
-    const fromBlock = this.getSectionColumnBlocks(sectionIndex, colIndex).nth(
-      childIndex,
-    );
-    const blockId = await fromBlock.getAttribute("data-block-id");
-    if (!blockId)
-      throw new Error(
-        `Section ${sectionIndex} col ${colIndex} child ${childIndex} has no data-block-id`,
-      );
-    await fromBlock.scrollIntoViewIfNeeded();
-    const targetBlock = this.getTopLevelBlocks().nth(targetCanvasIndex);
-    await targetBlock.scrollIntoViewIfNeeded();
-    await fromBlock.scrollIntoViewIfNeeded();
-    const fromBox = await fromBlock.boundingBox();
-    const targetBox = await targetBlock.boundingBox();
-    if (!fromBox || !targetBox)
-      throw new Error("Section→canvas drag bounds unavailable");
-
-    await this.pointerDrive(
-      fromBox,
-      targetBox,
-      position === "before" ? "top" : "bottom",
-    );
-
-    await expect
-      .poll(async () => (await this.getTopLevelBlockIds()).includes(blockId), {
-        timeout: 5000,
-      })
-      .toBe(true);
-  }
-
-  /**
-   * Move a child block between two columns of the SAME section. Pointerdown
-   * on the child block element starts the drag (no handle on section's
-   * draggable). Asserts the block's id leaves the source column and lands in
-   * the target column.
-   */
-  async moveBlockBetweenColumns(
-    sectionIndex: number,
-    fromColIndex: number,
-    fromChildIndex: number,
-    toColIndex: number,
-  ): Promise<void> {
-    const fromBlock = this.getSectionColumnBlocks(
-      sectionIndex,
-      fromColIndex,
-    ).nth(fromChildIndex);
-    const blockId = await fromBlock.getAttribute("data-block-id");
-    if (!blockId)
-      throw new Error(
-        `Section ${sectionIndex} col ${fromColIndex} child ${fromChildIndex} has no data-block-id`,
-      );
-    const toCol = this.getSectionColumn(sectionIndex, toColIndex);
-    await fromBlock.scrollIntoViewIfNeeded();
-    await toCol.scrollIntoViewIfNeeded();
-    await fromBlock.scrollIntoViewIfNeeded();
-    const fromBox = await fromBlock.boundingBox();
-    const toBox = await toCol.boundingBox();
-    if (!fromBox || !toBox)
-      throw new Error("Cross-column drag bounds unavailable");
-
-    await this.pointerDrive(fromBox, toBox, "top");
-
-    await expect
-      .poll(
-        async () =>
-          (
-            await this.getSectionColumnBlockIds(sectionIndex, toColIndex)
-          ).includes(blockId),
-        { timeout: 5000 },
-      )
-      .toBe(true);
-    expect(
-      await this.getSectionColumnBlockIds(sectionIndex, fromColIndex),
-    ).not.toContain(blockId);
-  }
-
-  /**
-   * Move a child block from one section's column into a DIFFERENT section's
-   * column. Same source mechanics as cross-column move.
-   */
-  async moveBlockBetweenSections(
-    fromSectionIndex: number,
-    fromColIndex: number,
-    fromChildIndex: number,
-    toSectionIndex: number,
-    toColIndex: number = 0,
-  ): Promise<void> {
-    const fromBlock = this.getSectionColumnBlocks(
-      fromSectionIndex,
-      fromColIndex,
-    ).nth(fromChildIndex);
-    const blockId = await fromBlock.getAttribute("data-block-id");
-    if (!blockId)
-      throw new Error(
-        `Section ${fromSectionIndex} col ${fromColIndex} child ${fromChildIndex} has no data-block-id`,
-      );
-    const toCol = this.getSectionColumn(toSectionIndex, toColIndex);
-    await fromBlock.scrollIntoViewIfNeeded();
-    await toCol.scrollIntoViewIfNeeded();
-    await fromBlock.scrollIntoViewIfNeeded();
-    const fromBox = await fromBlock.boundingBox();
-    const toBox = await toCol.boundingBox();
-    if (!fromBox || !toBox)
-      throw new Error("Cross-section drag bounds unavailable");
-
-    await this.pointerDrive(fromBox, toBox, "top");
-
-    await expect
-      .poll(
-        async () =>
-          (
-            await this.getSectionColumnBlockIds(toSectionIndex, toColIndex)
-          ).includes(blockId),
-        { timeout: 5000 },
-      )
-      .toBe(true);
-    expect(
-      await this.getSectionColumnBlockIds(fromSectionIndex, fromColIndex),
-    ).not.toContain(blockId);
+  private async dropLineSide(
+    target: Locator,
+  ): Promise<"before" | "after" | null> {
+    return target.evaluate((el) => {
+      const line = (el.getRootNode() as ParentNode).querySelector(".tpl-ghost");
+      if (!line?.parentElement) return null;
+      const LINE = Symbol("drop line");
+      const order = Array.from(line.parentElement.children)
+        // Sortable's floating copy of the dragged block, not a list item.
+        .filter((item) => !item.classList.contains("sortable-fallback"))
+        .map((item) =>
+          item === line
+            ? LINE
+            : item
+                .querySelector("[data-block-id]")
+                ?.getAttribute("data-block-id"),
+        );
+      const at = order.indexOf(el.getAttribute("data-block-id"));
+      if (at < 0) return null;
+      if (order[at - 1] === LINE) return "before";
+      if (order[at + 1] === LINE) return "after";
+      return null;
+    });
   }
 
   /** Ordered list of block types currently on the canvas. */

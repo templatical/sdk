@@ -178,8 +178,9 @@ export type ColumnLayout = "1" | "2" | "3" | "2-1" | "1-2";
 
 /**
  * Optional outer frame for a section. When present, the section is rendered
- * inside an `mj-wrapper` — a full-width band (its own background + padding)
- * that frames the section, e.g. a white card sitting on a colored band.
+ * inside an `mj-wrapper` — a band (its own background + padding) that frames
+ * the section, e.g. a white card sitting on a colored band. The band is as
+ * wide as the email body (`settings.width`), not the recipient's viewport.
  */
 export interface SectionWrapper {
   backgroundColor?: string;

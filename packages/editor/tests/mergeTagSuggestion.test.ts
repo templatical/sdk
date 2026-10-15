@@ -4,11 +4,20 @@ import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import { ref, shallowRef } from "vue";
 import type { MergeTag } from "@templatical/types";
+import type { Editor } from "@tiptap/core";
+import Suggestion, { type SuggestionOptions } from "@tiptap/suggestion";
 import { MergeTagSuggestion } from "../src/extensions/MergeTagSuggestion";
 import {
   filterMergeTags,
   handleSuggestionKeyDown,
 } from "../src/utils/mergeTagPopup";
+
+// Wraps (does not replace) the real plugin factory so the config the extension
+// hands to it can be read back. `items` is the seam under test.
+vi.mock("@tiptap/suggestion", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tiptap/suggestion")>();
+  return { ...actual, default: vi.fn(actual.default) };
+});
 
 const sampleTags: MergeTag[] = [
   { label: "First Name", value: "{{first_name}}" },
@@ -367,5 +376,61 @@ describe("MergeTagSuggestion popoverRoot wiring", () => {
       src.indexOf("MergeTagSuggestion.configure") + 300,
     );
     expect(configureBlock).toContain("popoverRoot");
+  });
+});
+
+describe("MergeTagSuggestion live merge tags", () => {
+  // `editor.setMergeTags()` replaces the list while a paragraph or title is
+  // open. The option is documented as read live; `items` runs on every
+  // keystroke after the trigger, so it is where a captured list goes stale.
+  function suggestionConfig(
+    mergeTags: () => MergeTag[],
+  ): SuggestionOptions<MergeTag> {
+    const ext = MergeTagSuggestion.configure({ mergeTags });
+    vi.mocked(Suggestion).mockClear();
+    ext.config.addProseMirrorPlugins!.call({
+      options: ext.options,
+      editor: {} as Editor,
+    } as never);
+    return vi.mocked(Suggestion).mock
+      .calls[0][0] as SuggestionOptions<MergeTag>;
+  }
+
+  function itemsFor(config: SuggestionOptions<MergeTag>, query: string) {
+    return config.items!({ query, editor: {} as Editor });
+  }
+
+  it("suggests the replacement list after the getter's source changes", async () => {
+    let current: MergeTag[] = [
+      { label: "First Name", value: "{{first_name}}" },
+    ];
+    const config = suggestionConfig(() => current);
+
+    expect(await itemsFor(config, "")).toEqual([
+      { label: "First Name", value: "{{first_name}}" },
+    ]);
+
+    current = [{ label: "Given Name", value: "{{given_name}}" }];
+
+    expect(await itemsFor(config, "")).toEqual([
+      { label: "Given Name", value: "{{given_name}}" },
+    ]);
+  });
+
+  it("filters the replacement list by the typed query", async () => {
+    let current: MergeTag[] = [
+      { label: "First Name", value: "{{first_name}}" },
+    ];
+    const config = suggestionConfig(() => current);
+
+    current = [
+      { label: "Given Name", value: "{{given_name}}" },
+      { label: "City", value: "{{city}}" },
+    ];
+
+    expect(await itemsFor(config, "given")).toEqual([
+      { label: "Given Name", value: "{{given_name}}" },
+    ]);
+    expect(await itemsFor(config, "first")).toEqual([]);
   });
 });
