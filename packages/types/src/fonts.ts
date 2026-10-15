@@ -215,7 +215,9 @@ export function resolveFontStack(
   const withFallback = (font: CustomFont): string =>
     `${quoteFontFamily(font.name)}, ${font.fallback ?? fonts.defaultFallback}`;
 
-  const bareName = value.trim().toLowerCase();
+  // `value` is typed, but untyped template JSON can omit it; like
+  // `parseFontFamilies`, a non-string then passes through as written.
+  const bareName = typeof value === "string" ? value.trim().toLowerCase() : "";
   const namedFont = fonts.customFonts.find(
     (font) => font.name.toLowerCase() === bareName,
   );

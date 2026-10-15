@@ -7,6 +7,7 @@ import type {
 import { Navigation } from "@lucide/vue";
 import { computed } from "vue";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
+import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
   block: MenuBlockType;
@@ -14,6 +15,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "MenuBlock");
 
 const containerStyle = computed(() => ({
   display: "flex",
@@ -26,7 +28,9 @@ const containerStyle = computed(() => ({
         ? "flex-end"
         : "center",
   fontSize: `${props.block.fontSize}px`,
-  fontFamily: props.block.fontFamily || "inherit",
+  fontFamily: props.block.fontFamily
+    ? fontsManager.resolveFontFamily(props.block.fontFamily)
+    : "inherit",
   alignItems: "center",
 }));
 

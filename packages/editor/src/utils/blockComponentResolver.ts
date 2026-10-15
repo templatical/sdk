@@ -25,12 +25,16 @@ import type { UseBlockRegistryReturn } from "../composables/useBlockRegistry";
  * invertible `.tpl-canvas-bg` layer beneath it shows through; a background here
  * would double-paint and defeat the dark-mode preview. Each surface paints the
  * body colour on its own stage instead.
+ *
+ * `resolveFontFamily` is the fonts manager's, so the template font gets the
+ * same fallbacks the renderer gives `<mj-all>`.
  */
 export function getDocumentStyle(
   settings: TemplateSettings,
+  resolveFontFamily: (fontFamily: string) => string,
 ): Record<string, string> {
   const style: Record<string, string> = {
-    fontFamily: settings.fontFamily,
+    fontFamily: resolveFontFamily(settings.fontFamily),
   };
   // Titles carry their own inline color and override this, same as in export.
   if (settings.textColor) {

@@ -904,7 +904,7 @@ describe("the email background band comes from one constant", () => {
       resolver.indexOf("export function resolveBlockComponent"),
     );
     // Guard the slice itself, so a rename can't empty it and pass vacuously.
-    expect(body).toContain("fontFamily: settings.fontFamily");
+    expect(body).toContain("fontFamily: resolveFontFamily(settings.fontFamily)");
     expect(body).not.toMatch(/backgroundColor/);
   });
 });

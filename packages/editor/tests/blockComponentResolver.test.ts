@@ -7,6 +7,7 @@ import {
   getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
 import type { TemplateSettings } from "@templatical/types";
+import { resolveFontStack } from "@templatical/types";
 import {
   createTitleBlock,
   createImageBlock,
@@ -312,6 +313,22 @@ describe("getDocumentStyle", () => {
     } as TemplateSettings;
   }
 
+  // The real rule, with the editor's default fonts config.
+  const resolve = (fontFamily: string) =>
+    resolveFontStack(fontFamily, {
+      customFonts: [],
+      defaultFallback: "Arial, sans-serif",
+    });
+
+  it("resolves the template font the way the email does", () => {
+    expect(getDocumentStyle(settings({ fontFamily: "Roboto" }), resolve).fontFamily).toBe(
+      "'Roboto', Arial, sans-serif",
+    );
+    expect(getDocumentStyle(settings({ fontFamily: "georgia" }), resolve).fontFamily).toBe(
+      "Georgia, serif",
+    );
+  });
+
   it("carries the template font family and nothing else when unconfigured", () => {
     expect(
       getDocumentStyle(
@@ -321,36 +338,37 @@ describe("getDocumentStyle", () => {
           linkColor: "",
           linkUnderline: false,
         }),
+        resolve,
       ),
     ).toEqual({ fontFamily: "Georgia, serif" });
   });
 
   it("sets the link underline variable only when enabled", () => {
-    const on = getDocumentStyle(settings({ linkUnderline: true }));
+    const on = getDocumentStyle(settings({ linkUnderline: true }), resolve);
     expect(on["--tpl-doc-link-underline"]).toBe("underline");
 
     // Unset, NOT "none": the CSS fallback supplies `none`, and emitting it here
     // would also override an inherited value.
-    const off = getDocumentStyle(settings({ linkUnderline: false }));
+    const off = getDocumentStyle(settings({ linkUnderline: false }), resolve);
     expect(off).not.toHaveProperty("--tpl-doc-link-underline");
   });
 
   it("sets the link colour variable only when configured", () => {
     expect(
-      getDocumentStyle(settings({ linkColor: "#ff0000" }))[
+      getDocumentStyle(settings({ linkColor: "#ff0000" }), resolve)[
         "--tpl-doc-link-color"
       ],
     ).toBe("#ff0000");
-    expect(getDocumentStyle(settings({ linkColor: "" }))).not.toHaveProperty(
+    expect(getDocumentStyle(settings({ linkColor: "" }), resolve)).not.toHaveProperty(
       "--tpl-doc-link-color",
     );
   });
 
   it("sets the text colour only when configured", () => {
-    expect(getDocumentStyle(settings({ textColor: "#123456" })).color).toBe(
+    expect(getDocumentStyle(settings({ textColor: "#123456" }), resolve).color).toBe(
       "#123456",
     );
-    expect(getDocumentStyle(settings({ textColor: "" }))).not.toHaveProperty(
+    expect(getDocumentStyle(settings({ textColor: "" }), resolve)).not.toHaveProperty(
       "color",
     );
   });
@@ -364,6 +382,7 @@ describe("getDocumentStyle", () => {
           linkColor: "#c0392b",
           linkUnderline: true,
         }),
+        resolve,
       ),
     ).toEqual({
       fontFamily: "Georgia, serif",

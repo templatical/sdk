@@ -155,9 +155,9 @@ describe('useFonts', () => {
     });
 
     it('still resolves an excluded built-in to its fallback stack (rendering is unaffected)', () => {
-      const { getFontWithFallback } = useFonts({ builtIns: ['Arial'] });
+      const { resolveFontFamily } = useFonts({ builtIns: ['Arial'] });
       // Filtering the picker never breaks content already using the family.
-      expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
+      expect(resolveFontFamily('Georgia')).toBe('Georgia, serif');
     });
   });
 
@@ -320,53 +320,45 @@ describe('useFonts', () => {
     });
   });
 
-  describe('getFontWithFallback', () => {
-    it('returns built-in font with its fallback stack', () => {
-      const { getFontWithFallback } = useFonts();
-      expect(getFontWithFallback('Arial')).toBe('Arial, sans-serif');
-      expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
-      expect(getFontWithFallback('Courier New')).toBe("'Courier New', monospace");
+  describe('resolveFontFamily', () => {
+    it('expands a built-in to its fallback stack, whatever its case', () => {
+      const { resolveFontFamily } = useFonts();
+      expect(resolveFontFamily('Arial')).toBe('Arial, sans-serif');
+      expect(resolveFontFamily('GEORGIA')).toBe('Georgia, serif');
+      expect(resolveFontFamily('Courier New')).toBe("'Courier New', monospace");
     });
 
-    it('returns custom font with quotes and fallback', () => {
-      const { getFontWithFallback } = useFonts({
+    it('quotes a custom font and appends the default fallback', () => {
+      const { resolveFontFamily } = useFonts({
         customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
       });
 
-      expect(getFontWithFallback('Roboto')).toBe("'Roboto', Arial, sans-serif");
+      expect(resolveFontFamily('Roboto')).toBe("'Roboto', Arial, sans-serif");
     });
 
-    it('uses custom font fallback when specified', () => {
-      const { getFontWithFallback } = useFonts({
+    it("uses a custom font's own fallback when specified", () => {
+      const { resolveFontFamily } = useFonts({
         customFonts: [
           { name: 'Roboto', url: 'https://fonts.com/roboto.css', fallback: 'Helvetica, sans-serif' },
         ],
       });
 
-      expect(getFontWithFallback('Roboto')).toBe("'Roboto', Helvetica, sans-serif");
+      expect(resolveFontFamily('Roboto')).toBe("'Roboto', Helvetica, sans-serif");
     });
 
-    it('returns unknown font with default fallback appended', () => {
-      const { getFontWithFallback } = useFonts();
-      expect(getFontWithFallback('UnknownFont')).toBe('UnknownFont, Arial, sans-serif');
+    it('quotes an unknown family and appends the configured default fallback', () => {
+      expect(useFonts().resolveFontFamily('UnknownFont')).toBe("'UnknownFont', Arial, sans-serif");
+      expect(
+        useFonts({ defaultFallback: 'Georgia, serif' }).resolveFontFamily('UnknownFont'),
+      ).toBe("'UnknownFont', Georgia, serif");
     });
 
-    it('returns value as-is if it already contains a comma', () => {
-      const { getFontWithFallback } = useFonts();
-      expect(getFontWithFallback('Custom, serif')).toBe('Custom, serif');
-    });
-
-    it('handles empty string font name', () => {
-      const { getFontWithFallback } = useFonts();
-      const result = getFontWithFallback('');
-      // Empty string is falsy, so falls back to default
-      expect(result).toBe('Arial, sans-serif');
-    });
-
-    it('is case-insensitive', () => {
-      const { getFontWithFallback } = useFonts();
-      expect(getFontWithFallback('arial')).toBe('Arial, sans-serif');
-      expect(getFontWithFallback('GEORGIA')).toBe('Georgia, serif');
+    it('returns a stack, a generic family or no font as written', () => {
+      const { resolveFontFamily } = useFonts();
+      expect(resolveFontFamily('Custom, serif')).toBe('Custom, serif');
+      expect(resolveFontFamily('sans-serif')).toBe('sans-serif');
+      expect(resolveFontFamily('inherit')).toBe('inherit');
+      expect(resolveFontFamily('')).toBe('');
     });
   });
 

@@ -17,6 +17,7 @@ import {
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
+  FONTS_MANAGER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
@@ -93,6 +94,7 @@ const { t } = useI18n();
 const { t: cloudT } = useCloudI18n();
 
 const editor = requireInject(EDITOR_KEY, "Canvas");
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "Canvas");
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
@@ -176,7 +178,9 @@ const stageWidth = computed(() => viewportWidth.value + EMAIL_GUTTER * 2);
 // the `.tpl-canvas` itself stays transparent so the bg layer shows through.
 // Shared with every other surface that renders blocks (the saved-block
 // previews), so a block looks the same wherever it is drawn.
-const canvasStyle = computed(() => getDocumentStyle(props.content.settings));
+const canvasStyle = computed(() =>
+  getDocumentStyle(props.content.settings, fontsManager.resolveFontFamily),
+);
 // The email's own language, for the browser's spellchecker and hyphenation.
 // Without it the canvas inherits the HOST page's `lang`, so German copy is
 // spellchecked by English rules — every word underlined. `settings.locale`,

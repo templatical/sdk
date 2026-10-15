@@ -11,10 +11,12 @@ import {
 import type { ButtonBlock as ButtonBlockType } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
+  FONTS_MANAGER_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
+import { useFonts } from "../src/composables/useFonts";
 import ButtonBlock from "../src/components/blocks/ButtonBlock.vue";
 
 function mountButton(block: ButtonBlockType) {
@@ -25,6 +27,7 @@ function mountButton(block: ButtonBlockType) {
         [TRANSLATIONS_KEY as symbol]: enTranslations,
         [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
         [MERGE_TAGS_KEY as symbol]: shallowRef([]),
+        [FONTS_MANAGER_KEY as symbol]: useFonts(),
       },
     },
   });

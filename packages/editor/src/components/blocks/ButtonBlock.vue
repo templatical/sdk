@@ -7,11 +7,14 @@ import { toBorderRadiusCss } from "@templatical/types";
 import { computed } from "vue";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
+import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
   block: ButtonBlockType;
   viewport: ViewportSize;
 }>();
+
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "ButtonBlock");
 
 const buttonStyle = computed(() => {
   const style: Record<string, string> = {
@@ -32,7 +35,7 @@ const buttonStyle = computed(() => {
   };
   Object.assign(style, getBorderStyle(props.block.border));
   if (props.block.fontFamily) {
-    style.fontFamily = props.block.fontFamily;
+    style.fontFamily = fontsManager.resolveFontFamily(props.block.fontFamily);
   }
   if (props.block.width === "full") {
     style.display = "block";

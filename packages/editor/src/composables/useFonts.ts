@@ -1,5 +1,5 @@
 import type { CustomFont, FontsConfig } from "@templatical/types";
-import { BUILT_IN_FONT_STACKS } from "@templatical/types";
+import { resolveFontStack } from "@templatical/types";
 import {
   computed,
   getCurrentScope,
@@ -24,7 +24,7 @@ export interface UseFontsReturn {
   isLoaded: Ref<boolean>;
   loadCustomFonts: () => Promise<void>;
   cleanupFontLinks: () => void;
-  getFontWithFallback: (fontName: string) => string;
+  resolveFontFamily: (fontFamily: string) => string;
   getDefaultFont: () => string;
 }
 
@@ -167,28 +167,14 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
 
   const defaultFont = computed(() => getDefaultFont());
 
-  function getFontWithFallback(fontName: string): string {
-    if (!fontName) {
-      return defaultFallback.value;
-    }
-
-    const customFont = customFonts.value.find(
-      (font) => font.name.toLowerCase() === fontName.toLowerCase(),
-    );
-
-    if (customFont) {
-      const fallback = customFont.fallback ?? defaultFallback.value;
-      return `'${customFont.name}', ${fallback}`;
-    }
-
-    const builtInStack = BUILT_IN_FONT_STACKS[fontName.toLowerCase()];
-    if (builtInStack) {
-      return builtInStack;
-    }
-
-    return fontName.includes(",")
-      ? fontName
-      : `${fontName}, ${defaultFallback.value}`;
+  // The `font-family` the email sets for a stored value. The canvas applies
+  // it, so a font previews with the fallbacks the recipient gets: same rule as
+  // the renderer, over the same fonts `resolveRenderFonts` sends it.
+  function resolveFontFamily(fontFamily: string): string {
+    return resolveFontStack(fontFamily, {
+      customFonts: customFonts.value,
+      defaultFallback: defaultFallback.value,
+    });
   }
 
   const createdLinks: HTMLLinkElement[] = [];
@@ -258,7 +244,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     isLoaded,
     loadCustomFonts,
     cleanupFontLinks,
-    getFontWithFallback,
+    resolveFontFamily,
     getDefaultFont,
   };
 }

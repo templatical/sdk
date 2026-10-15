@@ -234,4 +234,10 @@ describe("resolveFontStack", () => {
     expect(resolveFontStack("inherit, Arial", defaults)).toBe("inherit, Arial");
     expect(resolveFontStack("", defaults)).toBe("");
   });
+
+  it("passes a missing value through instead of throwing", () => {
+    // Untyped template JSON can omit `settings.fontFamily`.
+    const missing = undefined as unknown as string;
+    expect(resolveFontStack(missing, defaults)).toBeUndefined();
+  });
 });
