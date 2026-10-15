@@ -1,4 +1,5 @@
 import {
+  canonicalFontStack,
   createDefaultTemplateContent,
   createSectionBlock,
   DEFAULT_TEMPLATE_DEFAULTS,
@@ -197,9 +198,9 @@ function readSettings(
     REQUIRED_DEFAULTS.backgroundColor;
   const fontFamilyRaw = readAttr(page, "font-family", resolve);
   const fontFamily =
-    typeof fontFamilyRaw === "string" && !isUnset(fontFamilyRaw)
-      ? fontFamilyRaw
-      : REQUIRED_DEFAULTS.fontFamily;
+    (typeof fontFamilyRaw === "string" && !isUnset(fontFamilyRaw)
+      ? canonicalFontStack(fontFamilyRaw)
+      : "") || REQUIRED_DEFAULTS.fontFamily;
   const textColor =
     parseColor(readAttr(page, "color", resolve)) ?? REQUIRED_DEFAULTS.textColor;
   const linkColor = parseColor(readAttr(page, "link-color", resolve));
