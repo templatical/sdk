@@ -17,8 +17,124 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.45.0",
+  "latest": "0.46.0",
   "versions": [
+    {
+      "version": "0.46.0",
+      "date": "2026-10-15",
+      "changes": [
+        {
+          "hash": "1045b2c",
+          "level": "minor",
+          "title": "New `link.relative-url` rule (warning). It flags a link whose URL starts with `/`, `./`, `../` or `?`, or is protocol-relative (`//host`). A sent email has no page address to resolve such a URL against, so the link breaks in the inbox. Only these path-shaped prefixes count, so a URL that opens with a merge tag (`{{ unsubscribe_url }}`) is never flagged. Lower it, raise it or turn it off through `links.rules`.",
+          "body": "",
+          "packages": [
+            "@templatical/quality"
+          ]
+        },
+        {
+          "hash": "9d97f4d",
+          "level": "minor",
+          "title": "Add `editor.insertBlock(block)` for inserting a block from outside the editor",
+          "body": "A host app with its own library of ready-made content had no way to insert a block on click. The only route was splicing the block into `getContent()` and writing the whole document back with `setContent()`, re-implementing the palette's placement rules without access to the selection.\n\n`insertBlock(block)` places the block where a palette click would: below the selected block, inside its column when the selection is in a section, beside the parent section when a section is inserted from inside a column, and at the end when nothing usable is selected. The new block is selected and scrolled into view, so repeated calls stack in order. The palette and the method share one implementation, so they cannot place a block differently.\n\nThe block is inserted as given, without the defaults a palette block is built with (`blockDefaults`, localized placeholder text, RTL alignment), which suits ready-made content. The editor inserts a copy with fresh ids and converts bare merge tags the way `setContent()` does. It returns the copy's id, or `null` once the instance is unmounted or replaced by a later `init()`, in preview mode (with a console warning), or when the block cannot be placed. A slot or wrapper block throws, as it does in `setContent()`. Available on both `init()` and `initCloud()`.\n\n`cloneBlock()` now gives table rows and cells, menu items and social icons new ids too, as duplicating a block in the editor already did. Duplicate, saved blocks and `insertBlock()` all copy through it.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "f24888a",
+          "level": "minor",
+          "title": "Imported templates keep their font fallbacks. Every importer used to cut a `font-family` stack down to its first family, so `Montserrat, Trebuchet MS, sans-serif` became `Montserrat`, and a mail client without Montserrat fell back to its own default (Times New Roman in Outlook on Windows). This included paragraph text, which the importers style with an inline span. The whole stack is now kept, with double-quoted names re-quoted in single quotes. A stack that is exactly a built-in font's own, such as `Arial, sans-serif`, is still stored as the bare name, since the renderer expands it back the same way. Easy Email Pro's page font used to be kept as written, so a value such as `inherit` became the template font; a value a browser would ignore now falls back to the default font.",
+          "body": "The renderer now adds `defaultFallbackFont` after a single font it doesn't know, such as `Helvetica Neue` or `Inter` without a matching custom font, in the template font and in title, button, menu and table blocks: `'Helvetica Neue', Arial, sans-serif` instead of a bare `Helvetica Neue`. A full stack is emitted as written, and built-in and custom fonts are unchanged.\n\n`@templatical/types` exports the font-stack helpers the renderer, editor and importers now share: `parseFontFamilies`, `normalizeFontStack`, `canonicalFontStack`, `firstFontFamily`, `quoteFontFamily`, `formatFontFamilies`, `isGenericFontFamily` and `BUILT_IN_FONT_STACKS`. The editor's font selects use them, so a quoted family containing a comma is labelled by its full name, and an invalid value such as `inherit, Arial` shows as no font.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/import-beefree",
+            "@templatical/import-chamaileon",
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-html",
+            "@templatical/import-mjml",
+            "@templatical/import-stripo",
+            "@templatical/import-topol",
+            "@templatical/import-unlayer",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "04573be",
+          "level": "patch",
+          "title": "Preview mode no longer shows a section column's drop chrome. An empty column kept the dashed border, the \"Drop here\" hint and the 60px drop height there, though preview shows the email as it will be sent. In preview an empty column is now a blank 34px, the height of the placeholder the renderer gives it in the sent email. A column whose blocks the condition preview hides collapses to nothing, as the email's column does when the condition is false. Editing is unchanged.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "1045b2c",
+          "level": "patch",
+          "title": "The rich-text link dialog no longer turns a relative path into a broken URL. `/contact`, `./pricing`, `../pricing` and `?ref=footer` are stored as typed (where they used to become `https:///contact`), matching what the button and image URL fields already did, and the new `link.relative-url` quality rule flags them. A protocol-relative `//cdn.example.com/x` becomes `https://cdn.example.com/x` (it used to become `https:////cdn.example.com/x`). The `paletteBlocks` JSDoc now says that an empty array shows the full default palette, as omitting the option does.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "192c8ab",
+          "level": "patch",
+          "title": "A font stack that quotes a family with double quotes, such as `\"Helvetica Neue\", Arial, sans-serif`, no longer drops the font from the email. The renderer wrote `font-family` into its MJML attribute unescaped, so the first `\"` ended the attribute. MJML then reported invalid attributes and compiled the font as `font-family:;`. For the template font, that meant every text block fell back to the mail client's default. These values come from imported templates (Easy Email Pro keeps the page's stack as written) and from hand-written or generated JSON. The template font and the title, button, menu and table fonts now escape `&`, `<`, `>` and `\"`. Single quotes are left as they are, so stacks like `'Times New Roman', serif` and custom fonts render byte-for-byte as before.",
+          "body": "",
+          "packages": [
+            "@templatical/renderer"
+          ]
+        },
+        {
+          "hash": "474e33a",
+          "level": "patch",
+          "title": "A merge tag or logic tag typed out in full in a paragraph or title, such as `{{first_name}}`, `{{ first_name}}` or `{% if vip %}`, turns into a chip again as its closing character is typed. Since 0.43.3 it stayed as plain text and the suggestion list stayed open. Picking a tag from the suggestion list or the picker was not affected.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "58c7694",
+          "level": "patch",
+          "title": "The MJML importer now reads back the button width, the per-corner radii, the borders and the button font that the renderer writes, so a rendered template survives a re-import with all of them.",
+          "body": "An `mj-button`'s `width` used to be dropped, so every imported button fitted its label. `100%` now imports as `width: \"full\"` and a px width as that number. `ButtonBlock.width` holds no percentage, so any other percentage imports as the px it comes to in its column, less the column's side padding and the button's own, and the report entry is `approximated` with a note that the width no longer scales. A percentage above `100%` imports as `\"full\"`, and a width that is unreadable or comes to `0px` or less leaves the button fitting its label, both `approximated` with a note.\n\nA `border-radius` with two to four values, such as `8px 8px 0 0`, used to import as square corners on `mj-section`, `mj-wrapper`, `mj-image` and `mj-button`. It now imports as the same corners. One that isn't in px, such as `50%` or `1em`, still imports as square corners but is now reported `approximated`.\n\n`border` and `border-top`, `-right`, `-bottom` and `-left` on `mj-section`, `mj-image` and `mj-button` used to be dropped. They now import as the block's `border`, each side taking its own declaration over `border`. A style other than solid, dashed or dotted is drawn solid, and a side whose width isn't in px is left undrawn, both reported `approximated`. Templatical's wrapper has no border, so a border on `mj-wrapper` is dropped and reported.\n\nAn `mj-button`'s own `font-family` used to be dropped. It now imports as `fontFamily`. The document font that the renderer writes onto every element through `mj-all` is not read as the button's own.",
+          "packages": [
+            "@templatical/import-mjml"
+          ]
+        },
+        {
+          "hash": "a898fa2",
+          "level": "patch",
+          "title": "Merge-tag type-ahead now follows `editor.setMergeTags()` in a paragraph or title that is already open. The suggestion list was read once when the block opened for editing, so typing `{{` kept offering the previous tags — including ones you had just removed — until the block was closed and reopened.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "c395ecf",
+          "level": "patch",
+          "title": "Blocks no longer share nested objects with their defaults or with each other",
+          "body": "Every button from `createButtonBlock()` or `createBlock(\"button\")` held the same `buttonPadding` object as `BUTTON_BLOCK_DEFAULTS`, so changing one button's padding in place changed the built-in default and every other button made from it. Nested values in a `blockDefaults` entry, such as `section.wrapper`, `social.icons`, `menu.items` or `table.rows`, were shared the same way by every block `createBlock` made from them, which is how the editor inserts blocks. Every custom block of a type also shared its definition's repeatable `default` array. Each block now gets its own copy of these defaults. Values you pass to a factory directly are still used as given, so a block you place in a section's `children` is still the same object inside the section.\n\nThe `SectionWrapper` JSDoc no longer calls the wrapper a full-width band. It renders as an `mj-wrapper` without MJML's `full-width` attribute, so the band is as wide as the email body (`settings.width`), not the recipient's viewport.",
+          "packages": [
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "c395ecf",
+          "level": "patch",
+          "title": "The `SectionWrapper` description in `schema.json` no longer calls the wrapper a full-width band",
+          "body": "The wrapper renders as an `mj-wrapper` without MJML's `full-width` attribute, so its band is as wide as the email body (`settings.width`), not the recipient's viewport. The description in the published schema now says so.",
+          "packages": [
+            "@templatical/template-tools"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.45.0",
       "date": "2026-10-13",
