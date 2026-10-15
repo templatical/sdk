@@ -171,10 +171,3 @@ export function parseDividerWidth(
   if (!match) return undefined;
   return { value: parseFloat(match[1]), unit: match[2] === "%" ? "%" : "px" };
 }
-
-export function parseFontFamily(value: string | undefined): string {
-  if (!value) return "";
-  // Take the first font in the stack
-  const family = value.split(",")[0].trim().replace(/['"]/g, "");
-  return isCssWideKeyword(family) ? "" : family;
-}

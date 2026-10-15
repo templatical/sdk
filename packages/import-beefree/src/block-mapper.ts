@@ -1,4 +1,5 @@
 import {
+  canonicalFontStack,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
@@ -34,7 +35,6 @@ import {
   parseBorderTop,
   extractPadding,
   parseDividerWidth,
-  parseFontFamily,
 } from "./style-parser";
 
 /**
@@ -176,7 +176,7 @@ function inlineStylesToHtml(
   // span (matches the import-unlayer importer).
   if (fontWeight && fontWeight !== "normal" && fontWeight !== "400")
     spanParts.push(`font-weight: ${fontWeight}`);
-  const fontFamily = parseFontFamily(style["font-family"]);
+  const fontFamily = canonicalFontStack(style["font-family"]);
   if (fontFamily) spanParts.push(`font-family: ${fontFamily}`);
 
   const textAlign = style["text-align"];
@@ -298,7 +298,7 @@ function convertHeading(
     level: parseHeadingLevel(tag),
     color: parseColor(style.color) || undefined,
     textAlign: toAlign(style["text-align"]),
-    fontFamily: parseFontFamily(style["font-family"]) || undefined,
+    fontFamily: canonicalFontStack(style["font-family"]) || undefined,
     styles: makeStyles(descriptor),
   });
 }
@@ -348,7 +348,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): Block {
     textColor: parseColor(style.color) || "#ffffff",
     borderRadius: parsePxValue(style["border-radius"]),
     fontSize: parsePxValue(style["font-size"]) || 16,
-    fontFamily: parseFontFamily(style["font-family"]) || undefined,
+    fontFamily: canonicalFontStack(style["font-family"]) || undefined,
     align: toAlign(style["text-align"], "center"),
     buttonPadding: {
       top: parsePxValue(style["padding-top"]) || 12,
@@ -543,7 +543,7 @@ function convertMenu(descriptor: BeeFreeeModuleDescriptor): Block {
     separatorColor: parseColor(menu.separatorColor) || "#999999",
     fontSize: parsePxValue(style["font-size"]) || 14,
     color: parseColor(style.color) || undefined,
-    fontFamily: parseFontFamily(style["font-family"]) || undefined,
+    fontFamily: canonicalFontStack(style["font-family"]) || undefined,
     textAlign: toAlign(style["text-align"], "center"),
     styles: makeStyles(descriptor),
   });

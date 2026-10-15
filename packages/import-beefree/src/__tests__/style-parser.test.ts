@@ -5,7 +5,6 @@ import {
   parseBorderTop,
   extractPadding,
   parseDividerWidth,
-  parseFontFamily,
 } from "../style-parser";
 
 describe("parsePxValue", () => {
@@ -148,30 +147,4 @@ describe("parseDividerWidth", () => {
     expect(parseDividerWidth("50em")).toBeUndefined();
     expect(parseDividerWidth("")).toBeUndefined();
   });
-});
-
-describe("parseFontFamily", () => {
-  it("extracts first font from stack", () => {
-    expect(
-      parseFontFamily("Montserrat, Trebuchet MS, Lucida Grande, sans-serif"),
-    ).toBe("Montserrat");
-  });
-
-  it("strips quotes", () => {
-    expect(parseFontFamily("'Open Sans', sans-serif")).toBe("Open Sans");
-  });
-
-  it("returns empty for undefined", () => {
-    expect(parseFontFamily(undefined)).toBe("");
-  });
-
-  // A CSS-wide keyword names no font. Returned as is it would become a
-  // block's own font, and the sent email would fall back to the client's
-  // default face instead of the template's font.
-  it.each(["inherit", "initial", "unset", "revert", "Inherit"])(
-    "returns empty for the CSS-wide keyword %s",
-    (keyword) => {
-      expect(parseFontFamily(keyword)).toBe("");
-    },
-  );
 });
