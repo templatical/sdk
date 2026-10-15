@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import './dom-stubs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { nextTick, ref } from 'vue';
 import { flushPromises } from '@vue/test-utils';
 import BlockPreviewCanvas from '../src/components/BlockPreviewCanvas.vue';
@@ -10,9 +10,11 @@ import {
   CONDITION_PREVIEW_KEY,
   EDITOR_KEY,
   IMAGE_URL_RESOLVER_KEY,
+  MERGE_TAG_SYNTAX_KEY,
 } from '../src/keys';
 import { createImageUrlResolver } from '../src/composables/useImageUrlResolver';
 import {
+  SYNTAX_PRESETS,
   createBackgroundImage,
   createDefaultTemplateContent,
   createParagraphBlock,
@@ -338,22 +340,70 @@ describe('content language', () => {
 });
 
 describe('BlockPreviewCanvas background images', () => {
+  /** Style of a section's box — the loop element wrapping its block. */
+  function sectionBoxStyle(wrapper: ReturnType<typeof mountEditor>): string {
+    return (
+      wrapper
+        .get('[data-testid="block-preview-canvas"] > div')
+        .attributes('style') ?? ''
+    );
+  }
+
+  function mountSection(
+    src: string,
+    resolver: ReturnType<typeof createImageUrlResolver>,
+    provides: Record<symbol, unknown> = {},
+  ) {
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage(src),
+      styles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        backgroundColor: '#0f172a',
+      },
+    });
+    return mountEditor(BlockPreviewCanvas, {
+      props: { blocks: [section] },
+      provides: { [IMAGE_URL_RESOLVER_KEY]: resolver, ...provides },
+    } as never);
+  }
+
   it('paints a section image from the resolver cache', async () => {
     const resolver = createImageUrlResolver((src) => `blob:${src}`);
     resolver.lookup('hero.jpg');
     await flushPromises();
-    const section = createSectionBlock({
-      backgroundImage: createBackgroundImage('hero.jpg'),
+
+    const wrapper = mountSection('hero.jpg', resolver);
+
+    expect(sectionBoxStyle(wrapper)).toContain(
+      'background-image: url("blob:hero.jpg")',
+    );
+  });
+
+  it('never starts a lookup, painting the stored url for an uncached src', async () => {
+    const resolve = vi.fn((src: string) => `blob:${src}`);
+
+    const wrapper = mountSection('hero.jpg', createImageUrlResolver(resolve));
+    await flushPromises();
+
+    expect(resolve).not.toHaveBeenCalled();
+    expect(sectionBoxStyle(wrapper)).toContain(
+      'background-image: url("hero.jpg")',
+    );
+  });
+
+  it('paints no image for a merge-tag url, keeping the fallback colour', async () => {
+    const resolve = vi.fn((src: string) => `blob:${src}`);
+
+    // Mailchimp tags: happy-dom discards a `url("{{ … }}")` declaration on its
+    // own, which would make the absence assertion below vacuous for liquid.
+    const wrapper = mountSection('*|HERO|*', createImageUrlResolver(resolve), {
+      [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.mailchimp,
     });
+    await flushPromises();
 
-    const wrapper = mountEditor(BlockPreviewCanvas, {
-      props: { blocks: [section] },
-      provides: { [IMAGE_URL_RESOLVER_KEY]: resolver },
-    } as never);
-
-    const styles = wrapper
-      .findAll('div[style]')
-      .map((d) => d.attributes('style') ?? '');
-    expect(styles.some((s) => s.includes('url("blob:hero.jpg")'))).toBe(true);
+    const style = sectionBoxStyle(wrapper);
+    expect(style).not.toContain('background-image');
+    expect(style).toContain('background-color: #0f172a');
+    expect(resolve).not.toHaveBeenCalled();
   });
 });

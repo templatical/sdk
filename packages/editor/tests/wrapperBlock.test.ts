@@ -3,6 +3,7 @@ import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
 import {
+  SYNTAX_PRESETS,
   createBackgroundImage,
   createSectionBlock,
   createTitleBlock,
@@ -11,7 +12,11 @@ import {
 } from "@templatical/types";
 import WrapperBlock from "../src/components/blocks/WrapperBlock.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
-import { BLOCK_REGISTRY_KEY, IMAGE_URL_RESOLVER_KEY } from "../src/keys";
+import {
+  BLOCK_REGISTRY_KEY,
+  IMAGE_URL_RESOLVER_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+} from "../src/keys";
 import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
 import { mountEditor } from "./helpers/mount";
 import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry";
@@ -78,10 +83,9 @@ describe("WrapperBlock background images", () => {
     ).toContain('background-image: url("blob:band.jpg")');
   });
 
-  it("paints a child section's image from the resolver cache", async () => {
-    const resolver = createImageUrlResolver((src) => `blob:${src}`);
-    resolver.lookup("hero.jpg");
-    await flushPromises();
+  it("looks up a child section's image itself and paints the resolved url", async () => {
+    const resolve = vi.fn(async (src: string) => `blob:${src}`);
+    const resolver = createImageUrlResolver(resolve);
     const section = createSectionBlock({
       backgroundImage: createBackgroundImage("hero.jpg"),
     });
@@ -94,9 +98,99 @@ describe("WrapperBlock background images", () => {
         [IMAGE_URL_RESOLVER_KEY]: resolver,
       },
     });
+    await flushPromises();
 
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith("hero.jpg");
     expect(
       wrapper.get(`[data-block-id="${section.id}"]`).attributes("style"),
     ).toContain('background-image: url("blob:hero.jpg")');
+  });
+
+  it("looks up the image of a section added to the band later", async () => {
+    const resolve = vi.fn(async (src: string) => `blob:${src}`);
+    const resolver = createImageUrlResolver(resolve);
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block: createWrapperBlock({ children: [] }), viewport: "desktop" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [IMAGE_URL_RESOLVER_KEY]: resolver,
+      },
+    });
+    await flushPromises();
+    expect(resolve).not.toHaveBeenCalled();
+
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage("late.jpg"),
+    });
+    await wrapper.setProps({
+      block: createWrapperBlock({ children: [section] }),
+    });
+    await flushPromises();
+
+    expect(resolve).toHaveBeenCalledWith("late.jpg");
+    expect(
+      wrapper.get(`[data-block-id="${section.id}"]`).attributes("style"),
+    ).toContain('background-image: url("blob:late.jpg")');
+  });
+
+  // Mailchimp tags below: happy-dom discards a `url("{{ … }}")` declaration on
+  // its own, which would make the absence assertions vacuous for liquid.
+  it("never resolves nor paints a merge-tag band image", async () => {
+    const resolve = vi.fn((src: string) => `blob:${src}`);
+    const block = createWrapperBlock({
+      styles: {
+        backgroundColor: "#0f172a",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+      backgroundImage: createBackgroundImage("*|HERO|*"),
+      children: [],
+    });
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block, viewport: "desktop" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [IMAGE_URL_RESOLVER_KEY]: createImageUrlResolver(resolve),
+        [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.mailchimp,
+      },
+    });
+    await flushPromises();
+
+    const style = wrapper
+      .get('[data-testid="layout-wrapper"]')
+      .attributes("style");
+    expect(style).not.toContain("background-image");
+    expect(style).toContain("background-color: #0f172a");
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it("never resolves nor paints a child section's merge-tag image", async () => {
+    const resolve = vi.fn((src: string) => `blob:${src}`);
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage("*|HERO|*"),
+      styles: {
+        backgroundColor: "#0f172a",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+    });
+    const block = createWrapperBlock({ children: [section] });
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block, viewport: "desktop" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [IMAGE_URL_RESOLVER_KEY]: createImageUrlResolver(resolve),
+        [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.mailchimp,
+      },
+    });
+    await flushPromises();
+
+    const style = wrapper
+      .get(`[data-block-id="${section.id}"]`)
+      .attributes("style");
+    expect(style).not.toContain("background-image");
+    expect(style).toContain("background-color: #0f172a");
+    expect(resolve).not.toHaveBeenCalled();
   });
 });

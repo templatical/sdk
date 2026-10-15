@@ -3,12 +3,14 @@ import {
   resolveBlockComponent,
   getBackgroundImageStyle,
   getBlockWrapperStyle,
+  getCachedBlockWrapperStyle,
   getSectionWrapperStyle,
   getWrapperStyle,
   getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
 import type { TemplateSettings } from "@templatical/types";
-import { resolveFontStack } from "@templatical/types";
+import { SYNTAX_PRESETS, resolveFontStack } from "@templatical/types";
+import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
 import {
   createBackgroundImage,
   createTitleBlock,
@@ -453,5 +455,82 @@ describe("background images on the canvas", () => {
       backgroundImage: createBackgroundImage("https://cdn.test/band.jpg"),
     });
     expect(getWrapperStyle(band)?.backgroundSize).toBe("cover");
+  });
+});
+
+describe("background images and merge tags", () => {
+  const image = createBackgroundImage("https://cdn.test/hero.jpg");
+  const mergeTagImage = createBackgroundImage("{{ hero_url }}");
+  const syntax = SYNTAX_PRESETS.liquid;
+
+  it("getBackgroundImageStyle paints nothing for a null display url", () => {
+    expect(getBackgroundImageStyle(image, null)).toEqual({});
+  });
+
+  it("a null display url drops the image and keeps the section's color", () => {
+    const section = createSectionBlock({
+      backgroundImage: image,
+      styles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        backgroundColor: "#0f172a",
+      },
+    });
+    const style = getBlockWrapperStyle(section, { backgroundImageUrl: null });
+    expect(style.backgroundColor).toBe("#0f172a");
+    expect(style).not.toHaveProperty("backgroundImage");
+    expect(style).not.toHaveProperty("backgroundSize");
+  });
+
+  describe("getCachedBlockWrapperStyle", () => {
+    it("paints the cached display url", () => {
+      const resolver = createImageUrlResolver((src) => `blob:${src}`);
+      resolver.lookup("hero.jpg");
+      const section = createSectionBlock({
+        backgroundImage: createBackgroundImage("hero.jpg"),
+      });
+      expect(
+        getCachedBlockWrapperStyle(section, resolver, syntax).backgroundImage,
+      ).toBe('url("blob:hero.jpg")');
+    });
+
+    it("paints the stored url for an uncached src and starts no lookup", () => {
+      const resolve = vi.fn((src: string) => `blob:${src}`);
+      const section = createSectionBlock({
+        backgroundImage: createBackgroundImage("hero.jpg"),
+      });
+      const style = getCachedBlockWrapperStyle(
+        section,
+        createImageUrlResolver(resolve),
+        syntax,
+      );
+      expect(style.backgroundImage).toBe('url("hero.jpg")');
+      expect(resolve).not.toHaveBeenCalled();
+    });
+
+    it("paints no image for a merge-tag url", () => {
+      const resolve = vi.fn((src: string) => `blob:${src}`);
+      const section = createSectionBlock({
+        backgroundImage: mergeTagImage,
+        styles: {
+          padding: { top: 0, right: 0, bottom: 0, left: 0 },
+          backgroundColor: "#0f172a",
+        },
+      });
+      const style = getCachedBlockWrapperStyle(
+        section,
+        createImageUrlResolver(resolve),
+        syntax,
+      );
+      expect(style).not.toHaveProperty("backgroundImage");
+      expect(style.backgroundColor).toBe("#0f172a");
+      expect(resolve).not.toHaveBeenCalled();
+    });
+
+    it("leaves blocks other than sections as getBlockWrapperStyle has them", () => {
+      const title = createTitleBlock();
+      expect(getCachedBlockWrapperStyle(title, null, syntax)).toEqual(
+        getBlockWrapperStyle(title),
+      );
+    });
   });
 });

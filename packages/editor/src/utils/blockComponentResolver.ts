@@ -2,6 +2,7 @@ import type {
   BackgroundImage,
   Block,
   BorderValue,
+  SyntaxPreset,
   TemplateSettings,
 } from "@templatical/types";
 import {
@@ -13,6 +14,10 @@ import {
 } from "@templatical/types";
 import type { Component } from "vue";
 import type { UseBlockRegistryReturn } from "../composables/useBlockRegistry";
+import {
+  readCachedBackgroundUrl,
+  type ImageUrlResolver,
+} from "../composables/useImageUrlResolver";
 
 /**
  * Document-level style the blocks inherit — the canvas equivalent of the
@@ -84,19 +89,23 @@ export interface CanvasStyleOptions {
   /**
    * URL to paint instead of the stored background image URL — the
    * `config.resolveImageUrl` result. Never enters the content model.
+   * `null` paints no image at all: a merge-tag URL isn't displayable (the
+   * browser would request the literal token), so the fallback colour shows.
    */
-  backgroundImageUrl?: string;
+  backgroundImageUrl?: string | null;
 }
 
 /**
  * Canvas declarations for a background image — the same size, position and
  * repeat the renderer emits on `mj-section` / `mj-wrapper`
- * (`resolveBackgroundImage` backs both). Empty when there is no image.
+ * (`resolveBackgroundImage` backs both). Empty when there is no image, or when
+ * `displayUrl` is `null` (see {@link CanvasStyleOptions.backgroundImageUrl}).
  */
 export function getBackgroundImageStyle(
   bg: BackgroundImage | undefined,
-  displayUrl?: string,
+  displayUrl?: string | null,
 ): Record<string, string> {
+  if (displayUrl === null) return {};
   const resolved = resolveBackgroundImage(bg);
   if (resolved === null) return {};
   const shown = displayUrl?.trim();
@@ -160,6 +169,28 @@ export function getBlockWrapperStyle(
     );
   }
   return style;
+}
+
+/**
+ * {@link getBlockWrapperStyle} for a surface that only reads the image
+ * resolver's cache and never starts a lookup — block previews, and the children
+ * of a layout wrapper (which start their own lookups). A section's background
+ * image paints the cached display URL, or the stored one while uncached; a
+ * merge-tag URL paints nothing.
+ */
+export function getCachedBlockWrapperStyle(
+  block: Block,
+  resolver: ImageUrlResolver | null,
+  syntax: SyntaxPreset,
+): Record<string, string> {
+  if (block.type !== "section") return getBlockWrapperStyle(block);
+  return getBlockWrapperStyle(block, {
+    backgroundImageUrl: readCachedBackgroundUrl(
+      resolver,
+      block.backgroundImage,
+      syntax,
+    ),
+  });
 }
 
 /**

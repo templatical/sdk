@@ -1,4 +1,10 @@
 import {
+  SYNTAX_PRESETS,
+  containsMergeTag,
+  type BackgroundImage,
+  type SyntaxPreset,
+} from "@templatical/types";
+import {
   computed,
   getCurrentScope,
   inject,
@@ -7,7 +13,7 @@ import {
   watch,
   type ComputedRef,
 } from "vue";
-import { IMAGE_URL_RESOLVER_KEY } from "../keys";
+import { IMAGE_URL_RESOLVER_KEY, MERGE_TAG_SYNTAX_KEY } from "../keys";
 import { RESOLVE_IMAGE_DEBOUNCE_MS } from "../constants/timeouts";
 
 /**
@@ -166,4 +172,61 @@ export function readCachedImageUrl(
   if (!resolver || !src) return src;
   const resolved = resolver.get(src);
   return typeof resolved === "string" && resolved.length > 0 ? resolved : src;
+}
+
+/**
+ * Whether a background image's URL holds a merge tag. Such a URL is never
+ * displayable — painting it makes the browser request the literal token — so,
+ * like an image block's merge-tag `src`, the canvas neither resolves nor paints
+ * it and the fallback colour shows instead.
+ */
+export function hasMergeTagBackground(
+  bg: BackgroundImage | undefined,
+  syntax: SyntaxPreset,
+): boolean {
+  return typeof bg?.url === "string" && containsMergeTag(bg.url, syntax);
+}
+
+/**
+ * The URL to look up for a background image: its own, or `undefined` when
+ * there is nothing displayable to resolve (no image, a blank URL, a merge tag).
+ */
+export function getBackgroundLookupUrl(
+  bg: BackgroundImage | undefined,
+  syntax: SyntaxPreset,
+): string | undefined {
+  const url = bg?.url;
+  if (typeof url !== "string" || url.trim() === "") return undefined;
+  return containsMergeTag(url, syntax) ? undefined : url;
+}
+
+/**
+ * Display value for a background image in the shape the canvas style helpers
+ * take as `backgroundImageUrl`: the resolved URL, `null` for a merge-tag URL
+ * (paint nothing, start no lookup), `undefined` when there is no image.
+ * Same lookup cadence as {@link useResolvedImageSrc}.
+ */
+export function useResolvedBackgroundUrl(
+  bg: () => BackgroundImage | undefined,
+): ComputedRef<string | null | undefined> {
+  const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+  const display = useResolvedImageSrc(() =>
+    getBackgroundLookupUrl(bg(), syntax),
+  );
+  return computed(() =>
+    hasMergeTagBackground(bg(), syntax) ? null : display.value,
+  );
+}
+
+/**
+ * {@link readCachedImageUrl} for a background image, in the same shape as
+ * {@link useResolvedBackgroundUrl}: cache-only, never starts a lookup.
+ */
+export function readCachedBackgroundUrl(
+  resolver: ImageUrlResolver | null,
+  bg: BackgroundImage | undefined,
+  syntax: SyntaxPreset,
+): string | null | undefined {
+  if (hasMergeTagBackground(bg, syntax)) return null;
+  return readCachedImageUrl(resolver, getBackgroundLookupUrl(bg, syntax));
 }

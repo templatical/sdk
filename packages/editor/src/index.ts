@@ -355,9 +355,11 @@ export interface TemplaticalEditorConfig {
    * fall back to displaying the src verbatim. Note the caching applies to
    * transient failures too: a src that failed to resolve stays unresolved
    * until the editor is re-initialized (a re-resolve hook may be added
-   * later). Applies to image srcs, design-time placeholder previews, and
-   * explicit video thumbnails; auto-derived provider thumbnails (YouTube/
-   * Vimeo) are already real URLs and are never resolved.
+   * later). Applies to image srcs, design-time placeholder previews, explicit
+   * video thumbnails, and section and wrapper background images;
+   * auto-derived provider thumbnails (YouTube/Vimeo) are already real URLs and
+   * are never resolved, and a background image whose URL holds a merge tag is
+   * neither resolved nor painted.
    */
   resolveImageUrl?: ResolveImageUrl;
 

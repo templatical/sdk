@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
-import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
+import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
   getBlockWrapperStyle,
   getSectionWrapperStyle,
@@ -166,12 +166,13 @@ const blockCommentCount = computed(
 
 // Background images paint through `config.resolveImageUrl`, like ImageBlock's
 // `src`; the resolved URL is display-only and never enters the content model.
-const sectionBackgroundUrl = useResolvedImageSrc(() =>
-  props.block.type === "section" ? props.block.backgroundImage?.url : undefined,
+// A merge-tag URL is neither resolved nor painted (`null`), as on ImageBlock.
+const sectionBackgroundUrl = useResolvedBackgroundUrl(() =>
+  props.block.type === "section" ? props.block.backgroundImage : undefined,
 );
-const wrapperBackgroundUrl = useResolvedImageSrc(() =>
+const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
   props.block.type === "section"
-    ? props.block.wrapper?.backgroundImage?.url
+    ? props.block.wrapper?.backgroundImage
     : undefined,
 );
 

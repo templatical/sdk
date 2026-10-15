@@ -20,13 +20,13 @@ import {
   FONTS_MANAGER_KEY,
   IMAGE_URL_RESOLVER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
+  MERGE_TAG_SYNTAX_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
-import { readCachedImageUrl } from "../composables/useImageUrlResolver";
 import {
   resolveBlockComponent,
-  getBlockWrapperStyle,
+  getCachedBlockWrapperStyle,
   getDocumentStyle,
 } from "../utils/blockComponentResolver";
 import {
@@ -35,6 +35,7 @@ import {
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
 import {
+  SYNTAX_PRESETS,
   resolveContentDirection,
   type Block,
   type TemplateSettings,
@@ -79,6 +80,7 @@ const editor = inject(EDITOR_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "BlockPreviewCanvas");
 const imageUrlResolver = inject(IMAGE_URL_RESOLVER_KEY, null);
+const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 
 /**
  * This canvas is only ever a preview — nothing here is editable — so it honours
@@ -209,14 +211,10 @@ function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, previewComponentMap);
 }
 
-/** A top-level block's box style; a section's image reads the resolver cache. */
+// A preview never starts an image lookup of its own; a section's background
+// image paints whatever the canvas has already resolved.
 function previewBlockStyle(block: Block): Record<string, string> {
-  return getBlockWrapperStyle(block, {
-    backgroundImageUrl:
-      block.type === "section"
-        ? readCachedImageUrl(imageUrlResolver, block.backgroundImage?.url)
-        : undefined,
-  });
+  return getCachedBlockWrapperStyle(block, imageUrlResolver, mergeTagSyntax);
 }
 </script>
 

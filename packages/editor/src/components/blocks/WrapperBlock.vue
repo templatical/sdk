@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  getBlockWrapperStyle,
+  getCachedBlockWrapperStyle,
   getWrapperStyle,
   resolveBlockComponent,
 } from "../../utils/blockComponentResolver";
@@ -9,11 +9,16 @@ import type {
   ViewportSize,
   WrapperBlock as WrapperBlockType,
 } from "@templatical/types";
-import { computed, inject } from "vue";
-import { BLOCK_REGISTRY_KEY, IMAGE_URL_RESOLVER_KEY } from "../../keys";
+import { SYNTAX_PRESETS } from "@templatical/types";
+import { computed, inject, watch } from "vue";
 import {
-  readCachedImageUrl,
-  useResolvedImageSrc,
+  BLOCK_REGISTRY_KEY,
+  IMAGE_URL_RESOLVER_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+} from "../../keys";
+import {
+  getBackgroundLookupUrl,
+  useResolvedBackgroundUrl,
 } from "../../composables/useImageUrlResolver";
 
 defineOptions({ name: "WrapperBlock" });
@@ -24,10 +29,11 @@ const props = defineProps<{
 }>();
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
-
 const imageUrlResolver = inject(IMAGE_URL_RESOLVER_KEY, null);
-const bandBackgroundUrl = useResolvedImageSrc(
-  () => props.block.backgroundImage?.url,
+const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+
+const bandBackgroundUrl = useResolvedBackgroundUrl(
+  () => props.block.backgroundImage,
 );
 
 const wrapperStyle = computed(
@@ -37,14 +43,27 @@ const wrapperStyle = computed(
     }) ?? {},
 );
 
-/** A child's box style; a child section's image reads the resolver cache. */
-function childStyle(child: Block): Record<string, string> {
-  return getBlockWrapperStyle(child, {
-    backgroundImageUrl:
+// A child section sits in a plain box here, not a BlockWrapper, so nothing else
+// resolves its background image. The lookups start from this band; each box
+// then paints the cached result (`getCachedBlockWrapperStyle`). Layout content
+// is configuration rather than typed input, so there is no debounce.
+const childBackgroundUrls = computed(() =>
+  props.block.children.flatMap((child) => {
+    const url =
       child.type === "section"
-        ? readCachedImageUrl(imageUrlResolver, child.backgroundImage?.url)
-        : undefined,
-  });
+        ? getBackgroundLookupUrl(child.backgroundImage, syntax)
+        : undefined;
+    return url ? [url] : [];
+  }),
+);
+if (imageUrlResolver) {
+  watch(
+    childBackgroundUrls,
+    (urls) => {
+      for (const url of urls) imageUrlResolver.lookup(url);
+    },
+    { immediate: true },
+  );
 }
 
 function getBlockComponent(block: Block) {
@@ -61,7 +80,7 @@ function getBlockComponent(block: Block) {
       v-for="child in block.children"
       :key="child.id"
       :data-block-id="child.id"
-      :style="childStyle(child)"
+      :style="getCachedBlockWrapperStyle(child, imageUrlResolver, syntax)"
     >
       <component
         :is="getBlockComponent(child)"
