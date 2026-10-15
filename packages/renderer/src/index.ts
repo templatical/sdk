@@ -25,7 +25,7 @@ import {
   escapeFontFamily,
 } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
-import { bgAttr, borderRadiusAttr } from "./utils";
+import { backgroundImageAttrs, bgAttr, borderRadiusAttr } from "./utils";
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
 import { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 import { toPaddingString } from "./padding";
@@ -254,6 +254,7 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
         backgroundColor: block.styles.backgroundColor,
         padding: block.styles.padding,
         borderRadius: block.borderRadius,
+        backgroundImage: block.backgroundImage,
       },
       context.contentDirection,
     );
@@ -287,12 +288,13 @@ function renderMjWrapper(
   direction: ContentDirection,
 ): string {
   const bg = bgAttr(wrapper.backgroundColor, "native");
+  const bgImage = backgroundImageAttrs(wrapper.backgroundImage);
   const padding = ` padding="${
     wrapper.padding ? toPaddingString(wrapper.padding) : "0"
   }"`;
   const radius = borderRadiusAttr(wrapper.borderRadius);
   const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
-  return `<mj-wrapper${bg}${padding}${radius}${dirAttr}>
+  return `<mj-wrapper${bg}${bgImage}${padding}${radius}${dirAttr}>
 ${inner}
 </mj-wrapper>`;
 }

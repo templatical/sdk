@@ -13,9 +13,17 @@
  * https://documentation.mjml.io/
  */
 
-import type { BorderRadiusValue, BorderValue } from "@templatical/types";
-import { toBorderDeclarations, toBorderRadiusCss } from "@templatical/types";
-import { escapeCssValue } from "./escape";
+import type {
+  BackgroundImage,
+  BorderRadiusValue,
+  BorderValue,
+} from "@templatical/types";
+import {
+  resolveBackgroundImage,
+  toBorderDeclarations,
+  toBorderRadiusCss,
+} from "@templatical/types";
+import { escapeAttr, escapeCssValue } from "./escape";
 
 /**
  * Where the MJML element accepts a background-color attribute.
@@ -95,4 +103,23 @@ export function borderRadiusAttr(
   }
 
   return ` border-radius="${css}"`;
+}
+
+/**
+ * Render the background-image attributes `mj-section` and `mj-wrapper` accept.
+ * All four are emitted together, so MJML's own defaults (`auto`, `top center`,
+ * `repeat`) never apply. Returns an empty string when there is no image.
+ *
+ * MJML pastes `background-url` verbatim into `url('…')` and the Outlook VML
+ * `src`; `resolveBackgroundImage` has already percent-encoded the characters
+ * that could end the CSS string, and `escapeAttr` keeps the attribute closed.
+ */
+export function backgroundImageAttrs(bg: BackgroundImage | undefined): string {
+  const resolved = resolveBackgroundImage(bg);
+
+  if (resolved === null) {
+    return "";
+  }
+
+  return ` background-url="${escapeAttr(resolved.url)}" background-size="${resolved.size}" background-position="${resolved.position}" background-repeat="${resolved.repeat}"`;
 }
