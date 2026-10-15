@@ -18,10 +18,12 @@ import {
   CONDITION_PREVIEW_KEY,
   EDITOR_KEY,
   FONTS_MANAGER_KEY,
+  IMAGE_URL_RESOLVER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
+import { readCachedImageUrl } from "../composables/useImageUrlResolver";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
@@ -76,6 +78,7 @@ const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 const editor = inject(EDITOR_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "BlockPreviewCanvas");
+const imageUrlResolver = inject(IMAGE_URL_RESOLVER_KEY, null);
 
 /**
  * This canvas is only ever a preview — nothing here is editable — so it honours
@@ -205,6 +208,16 @@ const previewComponentMap: Record<string, Component> = {
 function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, previewComponentMap);
 }
+
+/** A top-level block's box style; a section's image reads the resolver cache. */
+function previewBlockStyle(block: Block): Record<string, string> {
+  return getBlockWrapperStyle(block, {
+    backgroundImageUrl:
+      block.type === "section"
+        ? readCachedImageUrl(imageUrlResolver, block.backgroundImage?.url)
+        : undefined,
+  });
+}
 </script>
 
 <template>
@@ -242,7 +255,7 @@ function getBlockComponent(block: Block): Component | null {
       <div
         v-for="block in visibleBlocks"
         :key="block.id"
-        :style="getBlockWrapperStyle(block)"
+        :style="previewBlockStyle(block)"
       >
         <component
           :is="getBlockComponent(block)"

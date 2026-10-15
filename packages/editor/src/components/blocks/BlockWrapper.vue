@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
+import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
 import {
   getBlockWrapperStyle,
   getSectionWrapperStyle,
@@ -163,6 +164,17 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
+// Background images paint through `config.resolveImageUrl`, like ImageBlock's
+// `src`; the resolved URL is display-only and never enters the content model.
+const sectionBackgroundUrl = useResolvedImageSrc(() =>
+  props.block.type === "section" ? props.block.backgroundImage?.url : undefined,
+);
+const wrapperBackgroundUrl = useResolvedImageSrc(() =>
+  props.block.type === "section"
+    ? props.block.wrapper?.backgroundImage?.url
+    : undefined,
+);
+
 // Everything `getBlockWrapperStyle` computes lives on `.tpl-block-content`
 // (not `.tpl-block`): filter-based dark-mode preview targets
 // `.tpl-block-content` so the bg inverts together with its content, the
@@ -175,12 +187,20 @@ const blockCommentCount = computed(
 // across, which silently dropped the paragraph-spacing variable — the control
 // moved the number and the canvas never changed, while a unit test on
 // `getBlockWrapperStyle` still passed.
-const contentStyle = computed(() => getBlockWrapperStyle(props.block));
+const contentStyle = computed(() =>
+  getBlockWrapperStyle(props.block, {
+    backgroundImageUrl: sectionBackgroundUrl.value,
+  }),
+);
 
 // Section outer frame — the canvas equivalent of the exported `mj-wrapper`:
 // a band with its own background + padding + radius framing the section's box.
 // `null` for non-wrapped blocks keeps the DOM unchanged (no extra element).
-const sectionWrapperStyle = computed(() => getSectionWrapperStyle(props.block));
+const sectionWrapperStyle = computed(() =>
+  getSectionWrapperStyle(props.block, {
+    backgroundImageUrl: wrapperBackgroundUrl.value,
+  }),
+);
 
 function handleClick(event: MouseEvent): void {
   if (props.previewMode) {

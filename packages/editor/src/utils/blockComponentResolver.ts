@@ -1,6 +1,13 @@
-import type { Block, BorderValue, TemplateSettings } from "@templatical/types";
+import type {
+  BackgroundImage,
+  Block,
+  BorderValue,
+  TemplateSettings,
+} from "@templatical/types";
 import {
   RICH_TEXT_SPACING,
+  encodeCssUrl,
+  resolveBackgroundImage,
   toBorderDeclarations,
   toBorderRadiusCss,
 } from "@templatical/types";
@@ -72,10 +79,43 @@ export function resolveBlockComponent(
   return componentMap[block.type] ?? null;
 }
 
+/** Display-only inputs to the canvas style helpers. */
+export interface CanvasStyleOptions {
+  /**
+   * URL to paint instead of the stored background image URL — the
+   * `config.resolveImageUrl` result. Never enters the content model.
+   */
+  backgroundImageUrl?: string;
+}
+
+/**
+ * Canvas declarations for a background image — the same size, position and
+ * repeat the renderer emits on `mj-section` / `mj-wrapper`
+ * (`resolveBackgroundImage` backs both). Empty when there is no image.
+ */
+export function getBackgroundImageStyle(
+  bg: BackgroundImage | undefined,
+  displayUrl?: string,
+): Record<string, string> {
+  const resolved = resolveBackgroundImage(bg);
+  if (resolved === null) return {};
+  const shown = displayUrl?.trim();
+  const url = shown ? encodeCssUrl(shown) : resolved.url;
+  return {
+    backgroundImage: `url("${url}")`,
+    backgroundSize: resolved.size,
+    backgroundPosition: resolved.position,
+    backgroundRepeat: resolved.repeat,
+  };
+}
+
 /**
  * Computes inline styles for a block wrapper from its styles config.
  */
-export function getBlockWrapperStyle(block: Block): Record<string, string> {
+export function getBlockWrapperStyle(
+  block: Block,
+  options: CanvasStyleOptions = {},
+): Record<string, string> {
   // Layout wrapper bands paint through getWrapperStyle on WrapperBlock's root.
   // Padding/background here would double-apply against that band.
   if (block.type === "wrapper") {
@@ -103,13 +143,21 @@ export function getBlockWrapperStyle(block: Block): Record<string, string> {
   // Mirror it into the editor box style so the canvas/preview match the
   // exported MJML, which renders it as `border-radius` on the `mj-section`.
   // Same for the section border, which exports as `border` (or per-side
-  // `border-<side>`) on the `mj-section`.
+  // `border-<side>`) on the `mj-section`. The background image follows the
+  // same rule, painted with the resolved display URL when the caller has one.
   if (block.type === "section") {
     const radius = toBorderRadiusCss(block.borderRadius);
     if (radius !== null) {
       style.borderRadius = radius;
     }
     Object.assign(style, getBorderStyle(block.border));
+    Object.assign(
+      style,
+      getBackgroundImageStyle(
+        block.backgroundImage,
+        options.backgroundImageUrl,
+      ),
+    );
   }
   return style;
 }
@@ -137,6 +185,7 @@ export function getBorderStyle(
  */
 export function getSectionWrapperStyle(
   block: Block,
+  options: CanvasStyleOptions = {},
 ): Record<string, string> | null {
   if (block.type !== "section" || !block.wrapper) return null;
   const w = block.wrapper;
@@ -149,6 +198,10 @@ export function getSectionWrapperStyle(
   if (radius !== null) {
     style.borderRadius = radius;
   }
+  Object.assign(
+    style,
+    getBackgroundImageStyle(w.backgroundImage, options.backgroundImageUrl),
+  );
   return style;
 }
 
@@ -158,7 +211,10 @@ export function getSectionWrapperStyle(
  * block *is* the band: values come from `styles` / `borderRadius`, not
  * `section.wrapper`.
  */
-export function getWrapperStyle(block: Block): Record<string, string> | null {
+export function getWrapperStyle(
+  block: Block,
+  options: CanvasStyleOptions = {},
+): Record<string, string> | null {
   if (block.type !== "wrapper") return null;
   const style: Record<string, string> = {};
   if (block.styles.backgroundColor) {
@@ -171,5 +227,9 @@ export function getWrapperStyle(block: Block): Record<string, string> | null {
   if (block.borderRadius && block.borderRadius > 0) {
     style.borderRadius = `${block.borderRadius}px`;
   }
+  Object.assign(
+    style,
+    getBackgroundImageStyle(block.backgroundImage, options.backgroundImageUrl),
+  );
   return style;
 }

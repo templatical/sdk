@@ -152,3 +152,18 @@ export function useResolvedImageSrc(
       : value;
   });
 }
+
+/**
+ * Synchronous cache read for surfaces that render blocks in a loop and can't
+ * hold a per-item `useResolvedImageSrc` (block previews). Returns the resolved
+ * URL when the canvas has already looked this src up, otherwise the src
+ * itself. Never starts a lookup.
+ */
+export function readCachedImageUrl(
+  resolver: ImageUrlResolver | null,
+  src: string | undefined,
+): string | undefined {
+  if (!resolver || !src) return src;
+  const resolved = resolver.get(src);
+  return typeof resolved === "string" && resolved.length > 0 ? resolved : src;
+}

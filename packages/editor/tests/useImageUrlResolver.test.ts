@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, ref, type Ref } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 import {
   createImageUrlResolver,
+  readCachedImageUrl,
   useResolvedImageSrc,
   type ResolveImageUrl,
 } from "../src/composables/useImageUrlResolver";
@@ -262,5 +263,23 @@ describe("useResolvedImageSrc", () => {
     settle("blob:late");
     await flushPromises();
     expect(result.display.value).toBe("blob:late");
+  });
+});
+
+describe("readCachedImageUrl", () => {
+  it("returns the src when there is no resolver or no src", () => {
+    expect(readCachedImageUrl(null, "logo.png")).toBe("logo.png");
+    expect(readCachedImageUrl(null, undefined)).toBeUndefined();
+  });
+
+  it("returns the cached result without starting a lookup", async () => {
+    const resolve = vi.fn((src: string) => `blob:${src}`);
+    const resolver = createImageUrlResolver(resolve);
+    expect(readCachedImageUrl(resolver, "logo.png")).toBe("logo.png");
+    expect(resolve).not.toHaveBeenCalled();
+
+    resolver.lookup("logo.png");
+    await flushPromises();
+    expect(readCachedImageUrl(resolver, "logo.png")).toBe("blob:logo.png");
   });
 });

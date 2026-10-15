@@ -2,13 +2,21 @@
 import './dom-stubs';
 import { describe, expect, it } from 'vitest';
 import { nextTick, ref } from 'vue';
+import { flushPromises } from '@vue/test-utils';
 import BlockPreviewCanvas from '../src/components/BlockPreviewCanvas.vue';
 import { mountEditor } from './helpers/mount';
 import { EMAIL_FRAME_WIDTH_TRANSITION } from '../src/utils/emailFrameWidth';
-import { CONDITION_PREVIEW_KEY, EDITOR_KEY } from '../src/keys';
 import {
+  CONDITION_PREVIEW_KEY,
+  EDITOR_KEY,
+  IMAGE_URL_RESOLVER_KEY,
+} from '../src/keys';
+import { createImageUrlResolver } from '../src/composables/useImageUrlResolver';
+import {
+  createBackgroundImage,
   createDefaultTemplateContent,
   createParagraphBlock,
+  createSectionBlock,
 } from '@templatical/types';
 import type { TemplateSettings } from '@templatical/types';
 
@@ -326,5 +334,26 @@ describe('content language', () => {
 
   it('omits the attribute when there is no editor to read settings from', () => {
     expect(lang(mountCanvas())).toBeUndefined();
+  });
+});
+
+describe('BlockPreviewCanvas background images', () => {
+  it('paints a section image from the resolver cache', async () => {
+    const resolver = createImageUrlResolver((src) => `blob:${src}`);
+    resolver.lookup('hero.jpg');
+    await flushPromises();
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage('hero.jpg'),
+    });
+
+    const wrapper = mountEditor(BlockPreviewCanvas, {
+      props: { blocks: [section] },
+      provides: { [IMAGE_URL_RESOLVER_KEY]: resolver },
+    } as never);
+
+    const styles = wrapper
+      .findAll('div[style]')
+      .map((d) => d.attributes('style') ?? '');
+    expect(styles.some((s) => s.includes('url("blob:hero.jpg")'))).toBe(true);
   });
 });

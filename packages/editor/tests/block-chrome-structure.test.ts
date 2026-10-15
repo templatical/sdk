@@ -43,8 +43,10 @@ describe("block chrome structure", () => {
     // inverted (white) text on an un-inverted (white) section bg = invisible.
     // `getBlockWrapperStyle` is what produces padding + backgroundColor (see
     // blockComponentResolver.test.ts); this is the binding that delivers them.
+    // It may pass display-only options (the resolved background image URL) as
+    // a second argument, but the whole result is still what `contentStyle` is.
     expect(blockWrapper).toMatch(
-      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(props\.block\)\)/,
+      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(\s*props\.block\s*[,)]/,
     );
     expect(blockWrapper).toMatch(
       /class="tpl-block-content"\s+:style="contentStyle"/,
