@@ -380,6 +380,12 @@ function handleFetchData(
           {{ t.previewResolution.failed }}
         </p>
 
+        <!-- `draggable` names what to leave out, the empty-state content, not
+             the canvas's own item class: Sortable indexes a cross-list drop in
+             the receiving list with the sending list's `draggable`, and a
+             canvas-only class matches nothing in a section column, which
+             would drop every canvas block at the column's top. The `>` keeps
+             hit-testing on the canvas's direct children. -->
         <VueDraggable
           v-show="!previewResolution?.isInitialResolve.value"
           v-model="blocks"
@@ -391,7 +397,7 @@ function handleFetchData(
           :invert-swap="true"
           :inverted-swap-threshold="0.65"
           :disabled="previewMode"
-          :draggable="'.tpl-block-item'"
+          :draggable="'>:not(.tpl-canvas-empty-content)'"
           :force-fallback="true"
           :class="[
             'tpl-canvas-blocks',
@@ -410,9 +416,8 @@ function handleFetchData(
           @drop="handleEmptyDrop"
         >
           <!-- Empty-state content: rendered INSIDE the draggable so the whole
-             dashed box is the drop zone, but excluded from sortable items via
-             the `:draggable="'.tpl-block-item'"` selector above — only
-             `.tpl-block-item` children are sortable, this isn't. -->
+             dashed box is the drop zone, but excluded from sortable items by
+             the `draggable` selector above. -->
           <div
             v-if="isEmptyCanvas"
             class="tpl-canvas-empty-content tpl:flex tpl:flex-col tpl:items-center"
