@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import {
+  createBackgroundImage,
   createParagraphBlock,
   createSectionBlock,
   uniformBorder,
@@ -244,5 +245,37 @@ describe("SectionToolbar stack-on-mobile toggle", () => {
 
     await toggle.trigger("click");
     expect(wrapper.emitted("update")![0][0]).toEqual({ stackOnMobile: true });
+  });
+});
+
+describe("SectionToolbar wrapper background image", () => {
+  it("writes the image into the wrapper, keeping its other fields", async () => {
+    const section = createSectionBlock({
+      wrapper: {
+        backgroundColor: "#f1f5f9",
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+      },
+    });
+    const wrapper = mountToolbar(section);
+
+    await wrapper
+      .get('[data-testid="section-wrapper-bg-url"] input')
+      .setValue("https://cdn.test/band.jpg");
+
+    const emits = wrapper.emitted("update")!;
+    expect(emits[emits.length - 1][0]).toEqual({
+      wrapper: {
+        backgroundColor: "#f1f5f9",
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+        backgroundImage: createBackgroundImage("https://cdn.test/band.jpg"),
+      },
+    });
+  });
+
+  it("has no wrapper image control while the wrapper is off", () => {
+    const wrapper = mountToolbar(createSectionBlock());
+    expect(
+      wrapper.find('[data-testid="section-wrapper-bg-url"]').exists(),
+    ).toBe(false);
   });
 });

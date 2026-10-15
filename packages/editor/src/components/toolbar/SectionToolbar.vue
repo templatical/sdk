@@ -4,6 +4,7 @@ import { inputClass, labelClass } from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
+import BackgroundImageControl from "./BackgroundImageControl.vue";
 import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
 import {
@@ -145,6 +146,11 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
           @update:model-value="updateWrapper({ backgroundColor: $event })"
         />
       </div>
+      <BackgroundImageControl
+        :model-value="block.wrapper.backgroundImage"
+        testid-prefix="section-wrapper"
+        @update:model-value="updateWrapper({ backgroundImage: $event })"
+      />
       <SpacingControl
         :label="t.blockSettings.padding"
         :model-value="

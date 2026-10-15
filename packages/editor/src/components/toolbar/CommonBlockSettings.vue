@@ -2,6 +2,7 @@
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
+import BackgroundImageControl from "./BackgroundImageControl.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
@@ -154,6 +155,7 @@ function toggleVisibility(key: VisibilityKey): void {
     <CollapsibleSection
       :title="t.blockSettings.background"
       :open="openSections.has('bg')"
+      header-test-id="block-settings-background"
       @toggle="toggleSection('bg')"
     >
       <label :class="labelClass">{{ t.blockSettings.color }}</label>
@@ -161,6 +163,15 @@ function toggleVisibility(key: VisibilityKey): void {
         :model-value="block.styles.backgroundColor ?? ''"
         allow-transparent
         @update:model-value="updateStyle('backgroundColor', $event)"
+      />
+      <!-- Only sections (and wrapper bands) take an image: MJML has no
+           background-url on columns or content elements. -->
+      <BackgroundImageControl
+        v-if="block.type === 'section'"
+        class="tpl:mt-3.5"
+        :model-value="block.backgroundImage"
+        testid-prefix="section"
+        @update:model-value="emit('update', { backgroundImage: $event })"
       />
     </CollapsibleSection>
 

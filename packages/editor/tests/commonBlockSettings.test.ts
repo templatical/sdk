@@ -2,7 +2,11 @@
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
-import { createTitleBlock } from "@templatical/types";
+import {
+  createBackgroundImage,
+  createSectionBlock,
+  createTitleBlock,
+} from "@templatical/types";
 import type { DisplayCondition } from "@templatical/types";
 import CommonBlockSettings from "../src/components/toolbar/CommonBlockSettings.vue";
 import {
@@ -192,5 +196,38 @@ describe("CommonBlockSettings", () => {
         after: "{% endif %}",
       },
     });
+  });
+});
+
+describe("CommonBlockSettings background image", () => {
+  it("offers a background image for sections", async () => {
+    const section = createSectionBlock();
+    const wrapper = mountEditor(CommonBlockSettings, {
+      props: { block: section },
+      provides: { [TRANSLATIONS_KEY]: en },
+      global: { stubs: pickerStubs },
+    });
+    await wrapper
+      .get('[data-testid="block-settings-background"]')
+      .trigger("click");
+
+    await wrapper
+      .get('[data-testid="section-bg-url"] input')
+      .setValue("https://cdn.test/hero.jpg");
+
+    const emitted = wrapper.emitted("update")!;
+    expect(emitted[emitted.length - 1][0]).toEqual({
+      backgroundImage: createBackgroundImage("https://cdn.test/hero.jpg"),
+    });
+  });
+
+  it("does not offer a background image for other blocks", async () => {
+    const wrapper = mountSettings(createTitleBlock());
+    await wrapper
+      .get('[data-testid="block-settings-background"]')
+      .trigger("click");
+    expect(wrapper.find('[data-testid="section-bg-url"]').exists()).toBe(
+      false,
+    );
   });
 });
