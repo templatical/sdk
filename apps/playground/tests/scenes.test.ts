@@ -93,6 +93,7 @@ const BACKEND_IDS = [
   "comments",
   "saved-blocks",
   "media",
+  "media-on-request",
   "test-email",
   "render",
 ] as const;
@@ -176,6 +177,9 @@ describe("registry", () => {
     expect(getScene("version-history")?.docs).toBe("/backend/version-history");
     expect(getScene("comments")?.docs).toBe("/backend/comments");
     expect(getScene("media")?.docs).toBe("/backend/media");
+    expect(getScene("media-on-request")?.docs).toBe(
+      "/guide/images#browse-and-pick",
+    );
     expect(getScene("test-email")?.docs).toBe("/backend/test-email");
     expect(getScene("render")?.docs).toBe("/backend/render");
     for (const id of CONFIGURE_IDS) {

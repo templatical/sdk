@@ -31,6 +31,7 @@ import { importUnlayer } from "./import/import-unlayer";
 import { minimum } from "./minimum";
 import { comments } from "./storage/comments";
 import { media } from "./storage/media";
+import { mediaOnRequest } from "./storage/media-on-request";
 import { render } from "./storage/render";
 import { savedBlocks } from "./storage/saved-blocks";
 import { templates } from "./storage/templates";
@@ -69,6 +70,7 @@ export const SCENES: readonly Scene[] = [
   comments,
   savedBlocks,
   media,
+  mediaOnRequest,
   testEmail,
   render,
   // Importers follow the docs sidebar (tests/scenes.test.ts reads it).

@@ -210,6 +210,12 @@ export default {
         "Drag an Image in and click Browse Media: pick from the gallery or drop a file.",
       note: "drag an Image",
     },
+    "media-on-request": {
+      title: "Media on request",
+      seeIt:
+        "Drag an Image in and click Browse Media: your own picker opens instead of the library, and a dropped file goes straight in.",
+      note: "drag an Image",
+    },
     "test-email": {
       title: "Test email",
       seeIt:

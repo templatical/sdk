@@ -35,6 +35,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Comments](https://play.templatical.com/scenes/comments): Thread a note on a block
 - [Saved blocks](https://play.templatical.com/scenes/saved-blocks): Bookmark a reusable group
 - [Media](https://play.templatical.com/scenes/media): Upload and pick an image
+- [Media on request](https://play.templatical.com/scenes/media-on-request): Pick images in your own UI
 - [Test email](https://play.templatical.com/scenes/test-email): Send this to an inbox
 - [Render](https://play.templatical.com/scenes/render): Export MJML and HTML
 

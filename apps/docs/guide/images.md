@@ -9,7 +9,7 @@ When a user adds an image block, the editor shows a text field where they can pa
 
 <img src="/images/image-fields.png" alt="Image block fields" style="max-width: 360px;" />
 
-## Browse and pick
+## Browse and pick {#browse-and-pick}
 
 A browse button appears alongside the URL input when **either** a [`media`](/backend/media) provider **or** `onRequestMedia` is configured.
 
@@ -33,6 +33,8 @@ const editor = await init({
 ```
 
 A gallery of your own is the `media` key — see [Media](/backend/media).
+
+[Open in playground](https://play.templatical.com/scenes/media-on-request)
 
 The type signature:
 

@@ -209,6 +209,12 @@ export default {
         "Ziehen Sie ein „Image“ hinein und klicken Sie auf „Browse Media“: Wählen Sie aus der Galerie oder legen Sie eine Datei ab.",
       note: "Bild hineinziehen",
     },
+    "media-on-request": {
+      title: "Medien auf Anfrage",
+      seeIt:
+        "Ziehen Sie ein „Image“ hinein und klicken Sie auf „Browse Media“: Statt der Mediathek öffnet sich Ihre eigene Auswahl, und eine abgelegte Datei wird direkt übernommen.",
+      note: "Bild hineinziehen",
+    },
     "test-email": {
       title: "Test-E-Mail",
       seeIt:
