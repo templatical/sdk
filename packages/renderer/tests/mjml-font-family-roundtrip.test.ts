@@ -159,6 +159,28 @@ describe("font-family — round-trip through MJML compiler", () => {
     expect(html).toContain('href="https://fonts.example.com/inter.css"');
   });
 
+  // The font picker stores a custom font by its bare name, which CSS can't
+  // parse unquoted when it holds an apostrophe. MJML never links such a font's
+  // stylesheet (it looks for the literal name in the declaration), so what the
+  // renderer can guarantee is a valid declaration that reaches the fallback.
+  it("quotes a custom font name that contains an apostrophe", async () => {
+    const html = await renderHtml(
+      makeContent([createParagraphBlock({ content: "<p>Body</p>" })], "Ma'am Sans"),
+      {
+        customFonts: [
+          { name: "Ma'am Sans", url: "https://fonts.example.com/maam.css" },
+        ],
+      },
+    );
+
+    expect(styleFontFamilies(html)).toContain(
+      "'Ma\\'am Sans', Arial, sans-serif",
+    );
+    expect(styleFontFamilies(html)).not.toContain(
+      "'Ma'am Sans', Arial, sans-serif",
+    );
+  });
+
   it("gives a lone unknown family the default fallback in the compiled HTML", async () => {
     const html = await renderHtml(
       makeContent(

@@ -1,6 +1,7 @@
 /**
- * Font-stack primitives shared by the renderer, the editor's font selects and
- * every importer, so all of them read a CSS `font-family` value the same way.
+ * Font-stack primitives shared by the renderer, the editor's canvas and font
+ * selects, and every importer, so all of them read a CSS `font-family` value
+ * the same way.
  *
  * A value is a comma-separated list of families, each either quoted
  * (`'Times New Roman'`, `"Helvetica Neue"`) or a run of identifiers
@@ -8,6 +9,8 @@
  * a regex: a quoted family may contain a comma (`"Foo, Bar"`), and an
  * unterminated quote must fail fast rather than backtrack.
  */
+
+import type { CustomFont } from "./config";
 
 export interface FontFamily {
   /** The family name, quotes removed and backslash escapes resolved. */
@@ -190,4 +193,58 @@ export function canonicalFontStack(value: unknown): string {
     }
   }
   return formatFontFamilies(families);
+}
+
+/**
+ * The `font-family` an email sets for a stored value, given the fonts the
+ * template renders with. The renderer emits it, and the editor canvas applies
+ * it, so a font previews with the same fallbacks the recipient gets.
+ *
+ * Only a lone family is resolved: a built-in expands to its stack, a custom
+ * font is followed by its own fallback (or `defaultFallback`), and any other
+ * named family by `defaultFallback`. A stack, a generic family, a CSS-wide
+ * keyword or an invalid value is returned as written.
+ *
+ * A custom font also matches by its bare name, which is how the font picker
+ * stores it, even when that name isn't valid CSS unquoted (`Ma'am Sans`).
+ */
+export function resolveFontStack(
+  value: string,
+  fonts: { customFonts: readonly CustomFont[]; defaultFallback: string },
+): string {
+  const withFallback = (font: CustomFont): string =>
+    `${quoteFontFamily(font.name)}, ${font.fallback ?? fonts.defaultFallback}`;
+
+  const bareName = value.trim().toLowerCase();
+  const namedFont = fonts.customFonts.find(
+    (font) => font.name.toLowerCase() === bareName,
+  );
+  if (namedFont) {
+    return withFallback(namedFont);
+  }
+
+  const families = parseFontFamilies(value);
+  if (families.length !== 1) {
+    return value;
+  }
+  const [family] = families;
+  const key = family.name.toLowerCase();
+
+  const customFont = fonts.customFonts.find(
+    (font) => font.name.toLowerCase() === key,
+  );
+  if (customFont) {
+    return withFallback(customFont);
+  }
+
+  const builtIn = BUILT_IN_FONT_STACKS[key];
+  if (builtIn) {
+    return builtIn;
+  }
+
+  if (isGenericFontFamily(family)) {
+    return value;
+  }
+
+  return `${quoteFontFamily(family.name)}, ${fonts.defaultFallback}`;
 }

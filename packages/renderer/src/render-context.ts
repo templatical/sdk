@@ -4,12 +4,7 @@ import type {
   ContentDirection,
   CustomFont,
 } from "@templatical/types";
-import {
-  BUILT_IN_FONT_STACKS,
-  isGenericFontFamily,
-  parseFontFamilies,
-  quoteFontFamily,
-} from "@templatical/types";
+import { resolveFontStack } from "@templatical/types";
 import pkg from "../package.json" with { type: "json" };
 
 /**
@@ -95,32 +90,14 @@ export class RenderContext {
    * or, for any other family, `defaultFallbackFont`, so a client without the
    * face falls back to it rather than to its own default (Times New Roman in
    * Outlook on Windows). A generic family needs nothing appended.
+   *
+   * The rule is {@link resolveFontStack}, shared with the editor canvas so a
+   * font previews with the fallbacks the recipient gets.
    */
   resolveFontFamily(fontFamily: string): string {
-    const families = parseFontFamilies(fontFamily);
-    if (families.length !== 1) {
-      return fontFamily;
-    }
-    const [family] = families;
-    const key = family.name.toLowerCase();
-
-    for (const customFont of this.customFonts) {
-      if (customFont.name.toLowerCase() === key) {
-        const fallback = customFont.fallback ?? this.defaultFallbackFont;
-
-        return `'${customFont.name}', ${fallback}`;
-      }
-    }
-
-    const builtIn = BUILT_IN_FONT_STACKS[key];
-    if (builtIn) {
-      return builtIn;
-    }
-
-    if (isGenericFontFamily(family)) {
-      return fontFamily;
-    }
-
-    return `${quoteFontFamily(family.name)}, ${this.defaultFallbackFont}`;
+    return resolveFontStack(fontFamily, {
+      customFonts: this.customFonts,
+      defaultFallback: this.defaultFallbackFont,
+    });
   }
 }

@@ -257,6 +257,7 @@ export {
   normalizeFontStack,
   parseFontFamilies,
   quoteFontFamily,
+  resolveFontStack,
 } from "./fonts";
 
 // Merge tags
