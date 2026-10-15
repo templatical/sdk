@@ -1,4 +1,5 @@
 import type { CustomFont, FontsConfig } from "@templatical/types";
+import { BUILT_IN_FONT_STACKS } from "@templatical/types";
 import {
   computed,
   getCurrentScope,
@@ -36,16 +37,6 @@ const BUILT_IN_FONTS: FontOption[] = [
   { value: "Trebuchet MS", label: "Trebuchet MS" },
   { value: "Courier New", label: "Courier New" },
 ];
-
-const BUILT_IN_FONT_STACKS: Record<string, string> = {
-  arial: "Arial, sans-serif",
-  helvetica: "Helvetica, sans-serif",
-  georgia: "Georgia, serif",
-  "times new roman": "'Times New Roman', serif",
-  verdana: "Verdana, sans-serif",
-  "trebuchet ms": "'Trebuchet MS', sans-serif",
-  "courier new": "'Courier New', monospace",
-};
 
 const DEFAULT_FALLBACK = "Arial, sans-serif";
 

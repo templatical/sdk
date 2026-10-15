@@ -1,28 +1,13 @@
+import { firstFontFamily, parseFontFamilies } from "@templatical/types";
 import type { FontOption } from "../composables/useFonts";
-
-const CSS_WIDE_KEYWORDS = new Set([
-  "inherit",
-  "initial",
-  "unset",
-  "revert",
-  "revert-layer",
-]);
-
-function withoutImportant(value: string): string {
-  return value.replace(/!\s*important\s*$/i, "").trim();
-}
 
 /**
  * The value a font select binds: "" (its placeholder) for no font. TipTap
- * keeps raw inline values, so a CSS-wide keyword or a blank value counts as
- * no font.
+ * keeps raw inline values, so anything a browser would drop (blank, a CSS-wide
+ * keyword, an invalid list) counts as no font.
  */
 export function fontSelectValue(value: string | undefined): string {
-  if (!value) return "";
-  const stack = withoutImportant(value);
-  return stack === "" || CSS_WIDE_KEYWORDS.has(stack.toLowerCase())
-    ? ""
-    : value;
+  return value && parseFontFamilies(value).length > 0 ? value : "";
 }
 
 /**
@@ -39,11 +24,7 @@ export function withCurrentFont(
   if (value === "" || fonts.some((font) => font.value === value)) {
     return fonts;
   }
-  const firstFamily = withoutImportant(value)
-    .split(",")[0]
-    .trim()
-    .replace(/^["']|["']$/g, "")
-    .trim();
+  const firstFamily = firstFontFamily(value);
   const family = firstFamily.toLowerCase();
   const matchIndex = fonts.findIndex(
     (font) =>
