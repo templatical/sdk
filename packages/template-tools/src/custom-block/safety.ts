@@ -67,7 +67,7 @@ function backgroundIssue(
     ([prop, value]) =>
       prop === "background-color" ||
       (prop === "background" &&
-        COLOR_VALUE.test(value.replace(/url\([^)]*\)/gi, ""))),
+        COLOR_VALUE.test(stripCssUrlsAndStrings(value))),
   );
 }
 

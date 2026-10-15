@@ -15,7 +15,7 @@ import {
   createParagraphBlock,
 } from "@templatical/types";
 import type { RenderedState } from "./render";
-import { declarations } from "./safety";
+import { declarations, stripCssUrlsAndStrings } from "./safety";
 import type { CustomBlockIssue } from "./types";
 
 const HEX = /#[0-9a-f]{3,8}\b/i;
@@ -38,7 +38,7 @@ function frameFor(attrs: Record<string, string>, parent: Frame): Frame {
     if (prop === "background-color" && isOpaqueHex(value))
       frame.background = value;
     if (prop === "background") {
-      const hex = value.replace(/url\([^)]*\)/gi, "").match(HEX)?.[0];
+      const hex = stripCssUrlsAndStrings(value).match(HEX)?.[0];
       if (hex && isOpaqueHex(hex)) frame.background = hex;
     }
     if (prop === "font-size") {

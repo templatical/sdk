@@ -56,6 +56,12 @@ describe("checkAccessibility", () => {
     expect(ids('<p style="color:#eeeeee">No background known</p>')).toEqual([]);
   });
 
+  it("reads a background colour in linear time", () => {
+    const t = performance.now();
+    expect(ids(`<td style="background: #ffffff ${"url(".repeat(50000)}"><p style="color:#cccccc">x</p></td>`)).toEqual(["warning:a11y.contrast"]);
+    expect(performance.now() - t).toBeLessThan(1000);
+  });
+
   it("pops a void element's frame, so a later sibling doesn't inherit its parent's background", () => {
     expect(ids('<div style="background-color:#000000"><img src="a.png" alt="a" width="1"></div><p style="color:#111111">x</p>')).toEqual([]);
   });

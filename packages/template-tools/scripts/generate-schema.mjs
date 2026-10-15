@@ -254,7 +254,7 @@ const REPEATABLE_REF = "#/definitions/CustomBlockRepeatableField";
  * Throws when the output stops having the shape it patches, so the patch
  * can't silently stop applying.
  */
-function forbidNestedRepeatables(schema) {
+export function forbidNestedRepeatables(schema) {
   const defs = schema.definitions;
   const union = defs.CustomBlockField?.anyOf;
   const items = defs.CustomBlockRepeatableField?.properties?.fields?.items;

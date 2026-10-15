@@ -34,6 +34,11 @@ describe("checkEmailSafety", () => {
   ])("accepts a background image with a fallback colour: %s", (html) => {
     expect(lint(html)).toEqual([]);
   });
+  it("checks a background's fallback colour in linear time", () => {
+    const t = performance.now();
+    expect(lint(`<td style="background: ${"url(".repeat(50000)}">x</td>`)).toEqual(["warning:safety.bg-image-fallback"]);
+    expect(performance.now() - t).toBeLessThan(1000);
+  });
   it("ignores @import inside a comment, in the stylesheet and in <style>", () => {
     expect(lint("<p>x</p>", "/* no @import here */ .tplc-promo-a { color: red; }")).toEqual([]);
     expect(lint("<style>/* @import x */ .a{}</style>")).toEqual(["warning:safety.style-tag"]);
