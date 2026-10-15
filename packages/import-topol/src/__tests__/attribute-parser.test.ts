@@ -5,7 +5,6 @@ import {
   parseAlignment,
   parseBorderStyle,
   parseColor,
-  parseFontFamily,
   parsePadding,
   parsePercent,
   parsePxValue,
@@ -226,17 +225,6 @@ describe("parsePercent", () => {
   });
   it("returns 0 for a zero numeric value", () => {
     expect(parsePercent(0)).toBe(0);
-  });
-});
-
-describe("parseFontFamily", () => {
-  it("returns the first family unquoted", () => {
-    expect(parseFontFamily("'Helvetica Neue', Helvetica, sans-serif")).toBe(
-      "Helvetica Neue",
-    );
-  });
-  it("returns empty for a missing value", () => {
-    expect(parseFontFamily(undefined)).toBe("");
   });
 });
 

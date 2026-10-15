@@ -1,11 +1,9 @@
-import { DEFAULT_TEMPLATE_DEFAULTS } from "@templatical/types";
-import type { TemplateContent, TemplateSettings } from "@templatical/types";
 import {
-  attr,
-  parseColor,
-  parseFontFamily,
-  parsePxValue,
-} from "./attribute-parser";
+  canonicalFontStack,
+  DEFAULT_TEMPLATE_DEFAULTS,
+} from "@templatical/types";
+import type { TemplateContent, TemplateSettings } from "@templatical/types";
+import { attr, parseColor, parsePxValue } from "./attribute-parser";
 import type { TopolDesign, TopolNode } from "./types";
 
 /**
@@ -110,8 +108,8 @@ export function readGlobalStyle(
     parseColor(selectorDefaults[""]?.color) || REQUIRED_DEFAULTS.textColor;
 
   const fontFamily =
-    parseFontFamily(selectorDefaults[""]?.["font-family"]) ||
-    parseFontFamily(attr(root, "fonts")) ||
+    canonicalFontStack(selectorDefaults[""]?.["font-family"]) ||
+    canonicalFontStack(attr(root, "fonts")) ||
     REQUIRED_DEFAULTS.fontFamily;
 
   const linkColor = parseColor(selectorDefaults["a"]?.color);

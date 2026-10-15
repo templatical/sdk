@@ -43,13 +43,15 @@ describe("settings", () => {
       ":font-family": "Ubuntu, Helvetica, Arial, sans-serif",
     });
     expect(style.settings.textColor).toBe("#222222");
-    expect(style.settings.fontFamily).toBe("Ubuntu");
+    expect(style.settings.fontFamily).toBe(
+      "Ubuntu, Helvetica, Arial, sans-serif",
+    );
   });
 
-  it("falls back to the fonts list when no bare font-family is set", () => {
+  it("falls back to the fonts list, as a stack, when no bare font-family is set", () => {
     expect(
       read({ fonts: "Helvetica,sans-serif,Ubuntu" }).style.settings.fontFamily,
-    ).toBe("Helvetica");
+    ).toBe("Helvetica, sans-serif, Ubuntu");
   });
 
   it("reads linkColor from the anchor selector", () => {
