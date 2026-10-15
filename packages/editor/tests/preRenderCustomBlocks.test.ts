@@ -11,7 +11,7 @@ import {
   createWrapperBlock,
 } from '@templatical/types';
 import { preRenderCustomBlocks } from '../src/utils/preRenderCustomBlocks';
-import type { UseBlockRegistryReturn } from '../src/composables/useBlockRegistry';
+import type { CustomBlockResolver } from '../src/utils/preRenderCustomBlocks';
 
 function createCustom(customType: string, id = 'c1'): CustomBlock {
   return {
@@ -30,12 +30,44 @@ function content(blocks: any[]): TemplateContent {
 }
 
 function registry(
-  renderFn: UseBlockRegistryReturn['renderCustomBlock'],
-): UseBlockRegistryReturn {
-  return { renderCustomBlock: renderFn } as UseBlockRegistryReturn;
+  renderFn: CustomBlockResolver['renderCustomBlock'],
+  stylesheets: Record<string, string> = {},
+): CustomBlockResolver {
+  return {
+    renderCustomBlock: renderFn,
+    getCustomBlockStylesheet: (customType) => stylesheets[customType],
+  };
 }
 
 describe('preRenderCustomBlocks', () => {
+  it("copies the definition's stylesheet onto each custom block, nested ones included", async () => {
+    const top = createCustom('banner', 'top');
+    const nested = createCustom('banner', 'nested');
+    const plain = createCustom('plain', 'plain');
+    const section = createSectionBlock({ columns: '1', children: [[nested, plain]] });
+    const render = vi.fn().mockResolvedValue('<p>x</p>');
+
+    await preRenderCustomBlocks(
+      content([top, section]),
+      registry(render, { banner: '.tplc-banner-a { color: red; }' }),
+    );
+
+    expect(top.renderedStylesheet).toBe('.tplc-banner-a { color: red; }');
+    expect(nested.renderedStylesheet).toBe('.tplc-banner-a { color: red; }');
+    expect('renderedStylesheet' in plain).toBe(false);
+  });
+
+  it('removes a stale copy when the definition has none, and skips whitespace-only CSS', async () => {
+    const stale = { ...createCustom('banner', 'stale'), renderedStylesheet: '.old {}' };
+    const blank = createCustom('blank', 'blank');
+    const render = vi.fn().mockResolvedValue('<p>x</p>');
+
+    await preRenderCustomBlocks(content([stale, blank]), registry(render, { blank: '  \n ' }));
+
+    expect('renderedStylesheet' in stale).toBe(false);
+    expect('renderedStylesheet' in blank).toBe(false);
+  });
+
   it('populates renderedHtml on top-level custom blocks', async () => {
     const custom = createCustom('banner');
     const render = vi.fn().mockResolvedValue('<div>banner html</div>');

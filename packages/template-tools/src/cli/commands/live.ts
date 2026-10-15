@@ -3,9 +3,11 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit, note } from "../output";
 import { EXIT, resolveFrom, UsageError } from "../io";
+import { parseValuesFlag } from "./custom-block";
 import {
   DEFAULT_PORT,
   listWorkingFiles,
+  type FetchSummary,
   type LiveMode,
   type PidfileInfo,
   openBrowser,
@@ -79,15 +81,12 @@ async function postTo(
   });
 }
 
-/** The reload-failure line, naming what to run next. */
-function reloadFailure(bridgeError: string | undefined): string {
-  if (bridgeError?.includes("--host")) {
-    return "The --host template is missing or invalid; nothing was pushed. Run `templatical validate` on it.";
-  }
-  if (bridgeError === undefined || bridgeError.includes("custom block")) {
-    return "The custom block definition is missing or invalid; nothing was pushed. Run `templatical custom-block validate`.";
-  }
-  return `${bridgeError} Nothing was pushed.`;
+/** The fetched state's outcome, as one line of reload or start output. */
+function fetchLine(fetch: FetchSummary): string {
+  if (!fetch.ok) return `Fetched state: the request failed. ${fetch.error}`;
+  return fetch.unmapped.length > 0
+    ? `Fetched state: filled from the API; not in the response: ${fetch.unmapped.join(", ")}.`
+    : "Fetched state: filled from the API.";
 }
 
 export async function runLive(args: ParsedArgs): Promise<number> {
@@ -114,21 +113,43 @@ export async function runLive(args: ParsedArgs): Promise<number> {
         consumed?: boolean;
         mode?: LiveMode;
         error?: string;
+        fetch?: FetchSummary;
       };
       const clients = body.clients ?? 0;
       const consumed = body.consumed === true;
-      if (body.ok === false) {
-        const error = reloadFailure(body.error);
+      // The bridge's error already names what failed and what to run; a
+      // refused request (a 403 from a rewritten Host, say) has no body at all.
+      if (res.status >= 400 || body.ok === false) {
+        const reason =
+          body.error ??
+          (res.status >= 400
+            ? `The live server refused the reload (${res.status}).`
+            : "The live server reported a failed reload.");
+        const error = `${reason} Nothing was pushed.`;
         emit(
           { reloaded: false, ok: false, clients, consumed, error },
           () => error,
         );
         return EXIT.invalid;
       }
-      emit({ reloaded: true, ok: true, clients, consumed }, () =>
-        body.mode === "custom-block"
-          ? `Pushed the custom block to ${clients} page(s).`
-          : `Pushed the working file to ${clients} connected page(s).`,
+      const fetch = body.fetch;
+      emit(
+        {
+          reloaded: true,
+          ok: true,
+          clients,
+          consumed,
+          ...(fetch ? { fetch } : {}),
+        },
+        () =>
+          [
+            body.mode === "custom-block"
+              ? `Pushed the custom block to ${clients} page(s).`
+              : `Pushed the working file to ${clients} connected page(s).`,
+            fetch ? fetchLine(fetch) : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
       );
       return EXIT.ok;
     }
@@ -160,12 +181,22 @@ export async function runLive(args: ParsedArgs): Promise<number> {
   if (host && !customBlock) {
     throw new UsageError("--host only applies with --custom-block.");
   }
+  const fetchOn = args.flags.fetch === true;
+  if (fetchOn && !customBlock) {
+    throw new UsageError("--fetch only applies with --custom-block.");
+  }
+  const valuesRaw = flagValue(args, "values");
+  if (valuesRaw !== undefined && !fetchOn) {
+    throw new UsageError("--values only applies with --fetch.");
+  }
+  const fetchValues = fetchOn ? parseValuesFlag(valuesRaw) : undefined;
   const abs = (p: string) => (isAbsolute(p) ? p : resolve(cwd, p));
   const requested: Required<Pick<PidfileInfo, "mode" | "path">> &
-    Pick<PidfileInfo, "host"> = {
+    Pick<PidfileInfo, "host" | "fetch"> = {
     mode: customBlock ? "custom-block" : "template",
     path: abs(customBlock ?? file ?? join(WORKING_DIR, "template.json")),
     ...(host ? { host: abs(host) } : {}),
+    ...(fetchValues ? { fetch: fetchValues } : {}),
   };
 
   const existing = readPidfile(cwd);
@@ -176,7 +207,9 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     if (
       mode !== requested.mode ||
       (existing.path !== undefined && existing.path !== requested.path) ||
-      (mode === "custom-block" && existing.host !== requested.host)
+      (mode === "custom-block" &&
+        (existing.host !== requested.host ||
+          JSON.stringify(existing.fetch) !== JSON.stringify(requested.fetch)))
     ) {
       throw new UsageError(
         `A live server is already running for ${existing.path ?? "another file"} (${mode}). Run \`templatical live stop\` first.`,
@@ -201,6 +234,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
     file,
     customBlock,
     host,
+    ...(fetchValues ? { fetch: { values: fetchValues } } : {}),
   });
 
   mkdirSync(dirname(pidfilePath(cwd)), { recursive: true });
@@ -224,6 +258,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
 
   // Emit before blocking: the caller needs the URL and the working path now,
   // not when the server shuts down.
+  const fetch = handle.lastFetch();
   emit(
     {
       url: handle.url,
@@ -232,6 +267,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
       fellBack: handle.fellBack,
       workingFile: handle.workingPath,
       customBlock: customBlock ? handle.workingPath : undefined,
+      fetch: fetch ?? undefined,
     },
     () =>
       [
@@ -240,6 +276,7 @@ export async function runLive(args: ParsedArgs): Promise<number> {
           ? `(port ${preferredPort} was busy - using ${handle.port})`
           : "",
         `${customBlock ? "Custom block" : "Working file"}: ${handle.workingPath}`,
+        fetch ? fetchLine(fetch) : "",
       ]
         .filter(Boolean)
         .join("\n"),

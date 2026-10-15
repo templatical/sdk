@@ -262,4 +262,5 @@ Ein benutzerdefinierter Blocktyp, der durch Felddefinitionen und ein Liquid-Temp
 | `customType` | `string` | Eindeutige Kennung für den benutzerdefinierten Blocktyp |
 | `fieldValues` | `Record<string, unknown>` | Aktuelle Werte für definierte Felder |
 | `renderedHtml` | `string` | Zwischengespeichertes gerendertes Ergebnis |
+| `renderedStylesheet` | `string` | Das `stylesheet` der Definition, zusammen mit `renderedHtml` hineinkopiert |
 | `dataSourceFetched` | `boolean` | Ob die Datenquelle abgerufen wurde |

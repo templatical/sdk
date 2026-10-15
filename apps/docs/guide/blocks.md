@@ -262,4 +262,5 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 | `customType` | `string` | Unique identifier for the custom block type |
 | `fieldValues` | `Record<string, unknown>` | Current values for defined fields |
 | `renderedHtml` | `string` | Cached rendered output |
+| `renderedStylesheet` | `string` | The definition's `stylesheet`, copied in alongside `renderedHtml` |
 | `dataSourceFetched` | `boolean` | Whether the data source has been fetched |

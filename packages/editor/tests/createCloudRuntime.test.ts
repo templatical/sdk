@@ -376,6 +376,25 @@ describe("bootstrapCloud — providers handed to init()", () => {
     expect(preRenderCustomBlocks).toHaveBeenCalledTimes(1);
   });
 
+  it("hands the save-time pre-render each definition's stylesheet", async () => {
+    const { runtime, providers } = await bootstrap();
+    attachInComponent(runtime);
+    const core = fakeCore();
+    core.registry = {
+      renderCustomBlock: vi.fn(),
+      getDefinition: (type: string) =>
+        type === "banner" ? { stylesheet: ".tplc-banner-a {}" } : undefined,
+    };
+    runtime.ready({ core, capabilities: {} });
+
+    await (providers.templates.save as any)("tmpl-1", { content: {} });
+
+    const resolver = vi.mocked(preRenderCustomBlocks).mock.calls[0][1];
+    expect(resolver.renderCustomBlock).toBe(core.registry.renderCustomBlock);
+    expect(resolver.getCustomBlockStylesheet("banner")).toBe(".tplc-banner-a {}");
+    expect(resolver.getCustomBlockStylesheet("other")).toBe(undefined);
+  });
+
   it("ignores a consumer-supplied render provider, and says so", async () => {
     // Rejected for a different reason than the id-keyed three: Cloud renders
     // server-side for test email, sends and exports, so a consumer's renderer

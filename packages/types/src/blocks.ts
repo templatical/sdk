@@ -509,6 +509,14 @@ export interface CustomBlock extends BaseBlock {
   customType: string;
   fieldValues: Record<string, unknown>;
   renderedHtml?: string;
+  /**
+   * The definition's `stylesheet`, copied in when `renderedHtml` is written.
+   * A render provider's backend, and Cloud rendering from storage, have no
+   * definition to ask, so `@templatical/renderer` emits this when no
+   * `getCustomBlockStylesheet` resolver is passed. A resolver, when passed,
+   * decides every type, so a stale copy never overrides a live definition.
+   */
+  renderedStylesheet?: string;
   dataSourceFetched?: boolean;
 }
 

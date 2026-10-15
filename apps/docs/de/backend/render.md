@@ -102,7 +102,7 @@ Wählen Sie das, wenn Ihr Backend E-Mails ohnehin schon rendert. Sie pflegen ein
 
 ```ts
 interface RenderPayload {
-  /** Custom Blocks sind bereits zu `renderedHtml` aufgelöst. */
+  /** Custom Blocks sind bereits zu `renderedHtml` und `renderedStylesheet` aufgelöst. */
   content: TemplateContent;
   fonts?: { customFonts: CustomFont[]; defaultFallback: string };
 }
@@ -148,7 +148,7 @@ Ein Provider mit `toMjml` *und* `compileMjml`, aber ohne `toHtml`, erhält HTML 
 
 Ein Provider gewinnt gegen den lokalen Renderer, deshalb übergibt der Editor alles, was ein Backend nicht selbst ermitteln kann. Die Nutzlast ist **render-vollständig**:
 
-- **Custom Blocks sind bereits aufgelöst.** `content` kommt mit gefülltem `renderedHtml` für jeden Custom Block an. Ohne das passiert der Fehler stillschweigend: Ein Renderer, der einen Custom Block ohne Resolver und ohne `renderedHtml` erhält, **lässt ihn aus der Ausgabe weg**. Das HTML entsteht aus Ihrem Liquid-Template plus den Feldwerten des Blocks, und die Definition ist im Browser registriert — ein Server könnte damit also nichts anfangen.
+- **Custom Blocks sind bereits aufgelöst.** `content` kommt mit gefülltem `renderedHtml` für jeden Custom Block an. Ohne das passiert der Fehler stillschweigend: Ein Renderer, der einen Custom Block ohne Resolver und ohne `renderedHtml` erhält, **lässt ihn aus der Ausgabe weg**. Das HTML entsteht aus Ihrem Liquid-Template plus den Feldwerten des Blocks, und die Definition ist im Browser registriert — ein Server könnte damit also nichts anfangen. Das `stylesheet` der Definition jedes Blocks kommt als `renderedStylesheet` mit, das der Renderer ausgibt, wenn Sie kein `getCustomBlockStylesheet` übergeben.
 - **Fonts sind aufgelöst.** `fonts` enthält die Custom-Schriften, mit denen der Editor tatsächlich rendert, plus den Fallback-Stack für alles Übrige — zusammengesetzt aus `init({ fonts })`, was aus dem Template-JSON nicht rekonstruierbar ist.
 - **`content` ist eine Schutzkopie.** Ändern Sie sie beliebig; das Dokument des Nutzers bleibt unberührt.
 
@@ -217,7 +217,7 @@ const editor = await init({
 Worauf Sie achten sollten:
 
 - Dies ist die eine Konstellation, in der `@templatical/renderer` trotz implementiertem `toMjml` in Ihrem Frontend-Bundle bleibt. Die Tabelle oben beschreibt Provider, die anderswo rendern; hier rufen Sie den lokalen Renderer selbst auf.
-- `getCustomBlockStylesheet` gehört nicht zur Nutzlast. Übergeben Sie einen eigenen Resolver, wenn Ihre Custom Blocks CSS auf Definitionsebene mitbringen — sonst entfallen deren `<mj-style>`-Regeln.
+- Die Stylesheets der Custom Blocks kommen an jedem Block als `renderedStylesheet` an, und der Renderer gibt sie aus, wenn Sie kein `getCustomBlockStylesheet` übergeben. Übergeben Sie eines nur, um das CSS selbst zu liefern; es entscheidet dann für jeden Typ, und die Kopien werden ignoriert.
 - `initCloud()` ignoriert `render`; dies ist also eine `init()`-Konstellation.
 
 ::: tip Auch in der Vorschau zeigen

@@ -102,7 +102,7 @@ Pick this when your backend already renders email. You keep one renderer instead
 
 ```ts
 interface RenderPayload {
-  /** Custom blocks already resolved into `renderedHtml`. */
+  /** Custom blocks already resolved into `renderedHtml` and `renderedStylesheet`. */
   content: TemplateContent;
   fonts?: { customFonts: CustomFont[]; defaultFallback: string };
 }
@@ -148,7 +148,7 @@ A provider supplying `toMjml` *and* `compileMjml` but not `toHtml` gets HTML bui
 
 A provider wins over the local renderer, so the editor hands over everything a backend cannot work out for itself. The payload is **render-complete**:
 
-- **Custom blocks are already resolved.** `content` arrives with every custom block's `renderedHtml` filled in. Without this the failure is silent: a renderer given a custom block with neither a resolver nor `renderedHtml` **omits it from the output**. The HTML comes from your liquid template plus the block's field values, and the definition is registered in the browser, so there is nothing a server could do with it.
+- **Custom blocks are already resolved.** `content` arrives with every custom block's `renderedHtml` filled in. Without this the failure is silent: a renderer given a custom block with neither a resolver nor `renderedHtml` **omits it from the output**. The HTML comes from your liquid template plus the block's field values, and the definition is registered in the browser, so there is nothing a server could do with it. Each block's definition-level `stylesheet` comes with it as `renderedStylesheet`, which the renderer emits when you pass no `getCustomBlockStylesheet`.
 - **Fonts are resolved.** `fonts` carries the custom faces the editor is rendering with, plus the fallback stack for anything unmatched — assembled from `init({ fonts })`, which is not reconstructible from the template JSON.
 - **`content` is a defensive copy.** Mutate it freely; the user's document is untouched.
 
@@ -217,7 +217,7 @@ const editor = await init({
 What to watch for:
 
 - This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
-- `getCustomBlockStylesheet` is not part of the payload. Pass your own resolver if your custom blocks carry definition-level CSS — otherwise their `<mj-style>` rules are dropped.
+- Custom-block stylesheets arrive on each block as `renderedStylesheet`, and the renderer emits them when you pass no `getCustomBlockStylesheet`. Pass one only to supply the CSS yourself; it then decides every type, and the copies are ignored.
 - `initCloud()` ignores `render`, so this is an `init()` arrangement.
 
 ::: tip Showing it in the preview too

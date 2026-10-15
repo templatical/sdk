@@ -381,7 +381,7 @@
         "fields": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/CustomBlockField"
+            "$ref": "#/definitions/CustomBlockRepeatableItemField"
           }
         },
         "default": {
@@ -429,6 +429,31 @@
         "left"
       ],
       "additionalProperties": false
+    },
+    "CustomBlockRepeatableItemField": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CustomBlockTextField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockTextareaField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockImageField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockColorField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockNumberField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockSelectField"
+        },
+        {
+          "$ref": "#/definitions/CustomBlockBooleanField"
+        }
+      ]
     }
   }
 }

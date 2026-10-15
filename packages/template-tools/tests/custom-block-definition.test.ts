@@ -67,6 +67,90 @@ describe("validateCustomBlockDefinition", () => {
     expect(ids(r)).toEqual(["schema"]);
   });
 
+  it("accepts the object a consumer's module exports, dataSource function included", () => {
+    expect(
+      validateCustomBlockDefinition({
+        ...TESTIMONIAL,
+        dataSource: { label: "Fetch", onFetch: async () => ({}) },
+      }),
+    ).toEqual({ valid: true, issues: [] });
+  });
+
+  it("points a JSON dataSource at dataSourcePreview, and requires a label", () => {
+    expect(
+      validateCustomBlockDefinition({
+        ...TESTIMONIAL,
+        dataSource: { label: "x", onFetch: "fetch()" },
+      }).issues,
+    ).toEqual([
+      {
+        ruleId: "schema",
+        severity: "error",
+        path: "/dataSource",
+        message:
+          "`dataSource.onFetch` must be a function. A JSON working file can't hold one: preview with `dataSourcePreview`, and write `dataSource` in the module at handoff.",
+      },
+    ]);
+    expect(
+      validateCustomBlockDefinition({
+        ...TESTIMONIAL,
+        dataSource: { onFetch: async () => null },
+      }).issues.map((i) => i.message),
+    ).toEqual(["`dataSource.label` must be a non-empty string."]);
+  });
+
+  it("rejects a repeatable nested inside a repeatable, as the TS type does", () => {
+    const r = validateCustomBlockDefinition({
+      ...TESTIMONIAL,
+      fields: [
+        {
+          key: "rows",
+          label: "Rows",
+          type: "repeatable",
+          fields: [
+            {
+              key: "cells",
+              label: "Cells",
+              type: "repeatable",
+              fields: [{ key: "t", label: "T", type: "text" }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(r.valid).toBe(false);
+    expect(new Set(ids(r))).toEqual(new Set(["schema"]));
+    expect(r.issues.some((i) => i.path?.startsWith("/fields/0/fields/0"))).toBe(true);
+  });
+
+  it("flags bounds no value or list length can satisfy", () => {
+    const repeatable = (extra: object) => ({
+      key: "items",
+      label: "Items",
+      type: "repeatable",
+      fields: [{ key: "t", label: "T", type: "text" }],
+      ...extra,
+    });
+    const run = (field: object) =>
+      validateCustomBlockDefinition({ ...TESTIMONIAL, fields: [field] }).issues.map(
+        (i) => `${i.ruleId} ${i.path}`,
+      );
+    expect(run({ key: "n", label: "N", type: "number", min: 10, max: 1 })).toEqual([
+      "field.range /fields/0",
+    ]);
+    expect(run(repeatable({ minItems: 5, maxItems: 2 }))).toEqual([
+      "field.items-range /fields/0",
+    ]);
+    expect(run(repeatable({ minItems: 1.5 }))).toEqual(["field.items-range /fields/0"]);
+    expect(run(repeatable({ minItems: 2, default: [{ t: "a" }] }))).toEqual([
+      "field.default-items /fields/0/default",
+    ]);
+    expect(run(repeatable({ maxItems: 1, default: [{ t: "a" }, { t: "b" }] }))).toEqual([
+      "field.default-items /fields/0/default",
+    ]);
+    expect(run(repeatable({ minItems: 1, maxItems: 3, default: [{ t: "a" }] }))).toEqual([]);
+  });
+
   it("accepts a dataSourcePreview recipe and rejects a malformed one", () => {
     const recipe = {
       label: "Fetch",

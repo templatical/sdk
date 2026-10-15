@@ -1339,9 +1339,15 @@
                 body: JSON.stringify({ fieldValues }),
               });
               const body = await res.json().catch(() => ({}));
+              // Throwing (not returning null, which reads as "cancelled") puts
+              // the toolbar in its fetch-error state, which stays visible.
               if (!res.ok) {
-                toast(body.error ?? "Fetch failed");
-                return null;
+                const message = body.error ?? "Fetch failed";
+                toast(message);
+                throw new Error(message);
+              }
+              if (body.unmapped?.length) {
+                toast("Not in the response: " + body.unmapped.join(", "));
               }
               return body.values;
             },

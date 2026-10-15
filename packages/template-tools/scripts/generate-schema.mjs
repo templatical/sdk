@@ -243,15 +243,50 @@ const customBlockConfig = {
   functions: "hide",
 };
 
+const FIELD_REF = "#/definitions/CustomBlockField";
+const REPEATABLE_REF = "#/definitions/CustomBlockRepeatableField";
+
+/**
+ * Restore the TS rule that a repeatable's sub-fields can't be repeatables.
+ * The generator emits `Exclude<CustomBlockField, CustomBlockRepeatableField>[]`
+ * as the whole union, so without this the schema the agent authors against
+ * allows nesting that the handoff's `CustomBlockDefinition` type rejects.
+ * Throws when the output stops having the shape it patches, so the patch
+ * can't silently stop applying.
+ */
+function forbidNestedRepeatables(schema) {
+  const defs = schema.definitions;
+  const union = defs.CustomBlockField?.anyOf;
+  const items = defs.CustomBlockRepeatableField?.properties?.fields?.items;
+  if (
+    !Array.isArray(union) ||
+    !union.some((r) => r.$ref === REPEATABLE_REF) ||
+    items?.$ref !== FIELD_REF
+  ) {
+    throw new Error(
+      "generate-schema: CustomBlockField's shape changed; revisit forbidNestedRepeatables.",
+    );
+  }
+  defs.CustomBlockRepeatableItemField = {
+    anyOf: union.filter((r) => r.$ref !== REPEATABLE_REF),
+  };
+  defs.CustomBlockRepeatableField.properties.fields.items = {
+    $ref: "#/definitions/CustomBlockRepeatableItemField",
+  };
+  return schema;
+}
+
 /** Build the JSON Schema for CustomBlockDefinition (minus dataSource). */
 export function buildCustomBlockSchema() {
   const program = ts.createProgram([customBlockConfig.path], COMPILER_OPTIONS);
-  return new SchemaGenerator(
-    program,
-    createParser(program, customBlockConfig),
-    createFormatter(customBlockConfig),
-    customBlockConfig,
-  ).createSchema(customBlockConfig.type);
+  return forbidNestedRepeatables(
+    new SchemaGenerator(
+      program,
+      createParser(program, customBlockConfig),
+      createFormatter(customBlockConfig),
+      customBlockConfig,
+    ).createSchema(customBlockConfig.type),
+  );
 }
 
 /** Serialize a schema object the same way the committed file is written. */

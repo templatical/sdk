@@ -22,3 +22,41 @@ describe("live harness custom-block mode", () => {
     expect(html).not.toMatch(/data-source\/fetch[\s\S]{0,200}headers:\s*\{[^}]*Authorization/);
   });
 });
+
+describe("live harness onFetch", () => {
+  // The page's own customBlocksConfig, run against stubbed fetch and toast.
+  const source = html.slice(
+    html.indexOf("function customBlocksConfig()"),
+    html.indexOf("async function mountEditor"),
+  );
+  const onFetch = (reply: { ok: boolean; body: unknown }, toasts: string[]) =>
+    new Function(
+      "customBlock",
+      "fetch",
+      "toast",
+      `${source}\nreturn customBlocksConfig()[0].dataSource.onFetch;`,
+    )(
+      { definition: { type: "p" }, dataSource: { label: "Fetch" } },
+      async () => ({ ok: reply.ok, json: async () => reply.body }),
+      (m: string) => toasts.push(m),
+    ) as (ctx: { fieldValues: object }) => Promise<unknown>;
+
+  it("throws the bridge's error, so the toolbar shows its error state", async () => {
+    const toasts: string[] = [];
+    const error = "Environment variable SHOP_TOKEN is not set.";
+    await expect(
+      onFetch({ ok: false, body: { error } }, toasts)({ fieldValues: {} }),
+    ).rejects.toThrow(error);
+    expect(toasts).toEqual([error]);
+  });
+
+  it("returns the mapped values and names the ones the response lacked", async () => {
+    const toasts: string[] = [];
+    const values = await onFetch(
+      { ok: true, body: { values: { name: "Lamp" }, unmapped: ["price"] } },
+      toasts,
+    )({ fieldValues: {} });
+    expect(values).toEqual({ name: "Lamp" });
+    expect(toasts).toEqual(["Not in the response: price"]);
+  });
+});

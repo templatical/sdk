@@ -256,6 +256,8 @@ describe('buildRenderPayload', () => {
       renderCustomBlock: renderCustomBlock as (
         block: CustomBlock,
       ) => Promise<string>,
+      getCustomBlockStylesheet: (customType: string) =>
+        customType === 'banner' ? '.tplc-banner-a { color: red; }' : undefined,
       getFonts: () => resolveRenderFonts(fontsSource()),
       ...(layout ? { getLayout: () => layout } : {}),
     };
@@ -277,6 +279,27 @@ describe('buildRenderPayload', () => {
     const column = (payload.content.blocks[0] as { children: CustomBlock[][] })
       .children[0];
     expect(column[0].renderedHtml).toBe('<p>banner</p>');
+  });
+
+  it("copies each custom block's stylesheet into the payload, and only into the copy", async () => {
+    const banner = makeCustomBlock('banner');
+    const content = makeContent([banner]);
+    const payload = await buildRenderPayload(source(content));
+
+    expect((payload.content.blocks[0] as CustomBlock).renderedStylesheet).toBe(
+      '.tplc-banner-a { color: red; }',
+    );
+    expect('renderedStylesheet' in (content.blocks[0] as CustomBlock)).toBe(false);
+  });
+
+  it("is render-complete: a backend's plain renderToMjml(payload.content) keeps the stylesheet", async () => {
+    const { renderToMjml } = await import('@templatical/renderer');
+    const payload = await buildRenderPayload(source(makeContent([makeCustomBlock('banner')])));
+
+    const mjml = await renderToMjml(payload.content);
+
+    expect(mjml).toContain('<p>banner</p>');
+    expect(mjml).toContain('.tplc-banner-a { color: red; }');
   });
 
   it('leaves the live content untouched — a render must not mutate the document', async () => {

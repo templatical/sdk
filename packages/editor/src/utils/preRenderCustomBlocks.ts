@@ -2,17 +2,19 @@ import type { Block, CustomBlock, TemplateContent } from "@templatical/types";
 import { isCustomBlock, isSection, isWrapper } from "@templatical/types";
 
 /**
- * The only thing this needs from the block registry. Named as a slice rather than
- * taking `UseBlockRegistryReturn` so the render-payload builder can supply the
- * editor instance's own `renderCustomBlock` without reaching for the registry.
+ * The only things this needs from the block registry. Named as a slice rather
+ * than taking `UseBlockRegistryReturn` so the render-payload builder can supply
+ * the editor instance's own methods without reaching for the registry.
  */
 export interface CustomBlockResolver {
   renderCustomBlock: (block: CustomBlock) => Promise<string>;
+  getCustomBlockStylesheet: (customType: string) => string | undefined;
 }
 
 /**
  * Renders every custom block in the content tree to its HTML representation
- * and stores the result on `block.renderedHtml`.
+ * and stores the result on `block.renderedHtml`, with the definition's
+ * stylesheet on `block.renderedStylesheet`.
  *
  * **A contract obligation of every render, not a save-path detail.** A renderer
  * handed a custom block with neither a resolver nor `renderedHtml` omits it from
@@ -37,6 +39,13 @@ export async function preRenderCustomBlocks(
       } catch {
         customBlock.renderedHtml = `<!-- Custom block render error: ${customBlock.customType} -->`;
       }
+      // Removed when the definition has none, so a copy written before its
+      // stylesheet was deleted doesn't outlive it.
+      const stylesheet = registry.getCustomBlockStylesheet(
+        customBlock.customType,
+      );
+      if (stylesheet?.trim()) customBlock.renderedStylesheet = stylesheet;
+      else delete customBlock.renderedStylesheet;
     }
 
     if (isSection(block)) {

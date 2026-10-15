@@ -611,6 +611,31 @@ dataSource: {
 },
 ```
 
+## Rendern außerhalb des Editors
+
+`editor.toMjml()` und die Aufrufe des Editors an einen [`render`-Provider](/de/backend/render) lösen jeden benutzerdefinierten Block vor dem Rendern zu HTML auf, und die Nutzlast bringt das Stylesheet jedes Blocks mit, sodass `renderToMjml(payload.content)` keine Optionen braucht. Template-JSON aus `getContent()` oder aus `save` eines `templates`-Providers enthält Feldwerte, kein HTML. Ein Server, der ein gespeichertes Template selbst rendert, braucht deshalb auch die Definitionen. Übergeben Sie `renderCustomBlock` und `getCustomBlockStylesheet` an `renderToMjml`, aus einem Modul, das Editor und Server beide importieren:
+
+```ts
+import { Liquid } from 'liquidjs';
+import { renderToMjml } from '@templatical/renderer';
+import { testimonial } from './custom-blocks/testimonial';
+
+const definitions = new Map([[testimonial.type, testimonial]]);
+const liquid = new Liquid();
+
+const mjml = await renderToMjml(content, {
+  renderCustomBlock: async (block) => {
+    const definition = definitions.get(block.customType);
+    return definition
+      ? liquid.parseAndRender(definition.template, block.fieldValues)
+      : '';
+  },
+  getCustomBlockStylesheet: (type) => definitions.get(type)?.stylesheet,
+});
+```
+
+Ohne `renderCustomBlock` fehlt ein benutzerdefinierter Block in der Ausgabe, ohne `getCustomBlockStylesheet` sein `stylesheet`. `dataSource.onFetch` läuft nur im Editor; der Server rendert die gespeicherten Feldwerte.
+
 ## Im Playground
 
 Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integrierten Blöcken in der Palette erscheint.

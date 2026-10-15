@@ -36,6 +36,23 @@ function formatIssues(issues: CustomBlockIssue[]): string {
     .join("\n");
 }
 
+/** `--values '<json>'`: field values a recipe runs with, over the defaults. */
+export function parseValuesFlag(
+  raw: string | undefined,
+): Record<string, unknown> {
+  if (raw === undefined) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new UsageError("--values must be a JSON object.");
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new UsageError("--values must be a JSON object.");
+  }
+  return parsed as Record<string, unknown>;
+}
+
 function loadValid(file: string, cwd: string): CustomBlockWorkingFile {
   const data = readTemplateFile(file, cwd);
   const r = validateCustomBlockDefinition(data);
@@ -89,13 +106,34 @@ export async function runCustomBlock(args: ParsedArgs): Promise<number> {
         `Unknown --state "${state}". Use one of: ${SPECIMEN_STATES.join(", ")}.`,
       );
     }
+    // A state the definition doesn't produce would render a sheet without the
+    // block, which reads as a block that renders nothing.
+    if (state !== undefined) {
+      const states = buildSpecimen(def).map((i) => i.state);
+      if (!(states as string[]).includes(state)) {
+        throw new UsageError(
+          `${file} has no "${state}" state: it has no ${state === "flipped" ? "boolean" : "repeatable"} field. Its states: ${states.join(", ")}.`,
+        );
+      }
+    }
     const format = flagValue(args, "format") ?? "mjml";
     if (format !== "mjml" && format !== "html")
       throw new UsageError(`Unknown --format "${format}". Use mjml or html.`);
-    let output = await renderSpecimenMjml(
-      def,
-      buildSpecimenTemplate(def, undefined, state as SpecimenState | undefined),
-    );
+    let output: string;
+    try {
+      output = await renderSpecimenMjml(
+        def,
+        buildSpecimenTemplate(
+          def,
+          undefined,
+          state as SpecimenState | undefined,
+        ),
+      );
+    } catch (err) {
+      throw new InvalidTemplateError(`${file} does not render.`, [
+        (err as Error).message,
+      ]);
+    }
     if (format === "html")
       output = (
         await (
@@ -124,24 +162,7 @@ export async function runCustomBlock(args: ParsedArgs): Promise<number> {
       recipeErrors.map((i) => `${i.ruleId}: ${i.message}`),
     );
   }
-  const raw = flagValue(args, "values");
-  let overrides: Record<string, unknown> = {};
-  if (raw !== undefined) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      throw new UsageError("--values must be a JSON object.");
-    }
-    if (
-      parsed === null ||
-      typeof parsed !== "object" ||
-      Array.isArray(parsed)
-    ) {
-      throw new UsageError("--values must be a JSON object.");
-    }
-    overrides = parsed as Record<string, unknown>;
-  }
+  const overrides = parseValuesFlag(flagValue(args, "values"));
   const defaults = buildSpecimen(def)[0].fieldValues;
   const result = await runRecipe(def.dataSourcePreview, {
     ...defaults,

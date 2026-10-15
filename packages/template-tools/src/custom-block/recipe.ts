@@ -5,13 +5,21 @@
 // These rules keep secrets contained, and each is load-bearing:
 //   - `${env:NAME}` resolves only in header values;
 //   - field values interpolate only into `url` and `body`;
+//   - the Liquid engine loads no files, so `{% include %}` can't put a local
+//     file (`.env`) into the request;
 //   - the URL's scheme and host are literal, every field value is URL-encoded
 //     (non-scalars as JSON), and the rendered URL must keep the recipe's
 //     origin, so no field value can send the headers to another host.
 // A field value can never pull an env var into the request, and a secret can
 // never be moved into the URL or off to a host the author didn't write.
 
-import { createLiquid } from "./liquid";
+import {
+  createLiquid,
+  fileTagMessage,
+  fileTags,
+  NO_PARTIALS,
+  outputsWithoutJson,
+} from "./liquid";
 import type {
   CustomBlockIssue,
   CustomBlockWorkingFile,
@@ -21,7 +29,19 @@ import type {
 const ENV_REF = /\$\{env:([A-Za-z_][A-Za-z0-9_]*)\}/g;
 const LIQUID = /\{\{|\{%/;
 const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-const SECRET_HEADER = /authorization|token|key|secret|cookie|session/i;
+// A header-name word that names a credential. Whole words of the name split
+// on - and _, so X-Session-Locale and Accept-Keys don't match while X-API-Key,
+// X-Auth-Token and X-AccessToken do. `session` counts only before `id`.
+const CREDENTIAL_WORD =
+  /^(?:authorization|auth|cookie|key|apikey|password|credentials?|sessionid)$|(?:token|secret)$/;
+
+function namesCredential(header: string): boolean {
+  const words = header.toLowerCase().split(/[-_]/);
+  return words.some(
+    (w, i) =>
+      CREDENTIAL_WORD.test(w) || (w === "session" && words[i + 1] === "id"),
+  );
+}
 
 const HOST_TEMPLATE_ERROR =
   "The request URL's scheme and host must be literal; Liquid may only follow the first `/` after the host.";
@@ -75,13 +95,17 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
   if (!r) return [];
   const issues: CustomBlockIssue[] = [];
   const keys = new Set(def.fields.map((f) => f.key));
-  const err = (ruleId: string, path: string, message: string) =>
-    issues.push({
-      ruleId,
-      severity: "error",
-      path: `/dataSourcePreview${path}`,
-      message,
-    });
+  const add =
+    (severity: CustomBlockIssue["severity"]) =>
+    (ruleId: string, path: string, message: string) =>
+      issues.push({
+        ruleId,
+        severity,
+        path: `/dataSourcePreview${path}`,
+        message,
+      });
+  const err = add("error");
+  const warn = add("warning");
   const engine = createLiquid();
 
   for (const [part, text] of [
@@ -97,13 +121,35 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
       );
     }
     try {
-      for (const [name] of engine.globalVariableSegmentsSync(text)) {
+      for (const [name] of engine.globalVariableSegmentsSync(
+        text,
+        NO_PARTIALS,
+      )) {
         if (!keys.has(String(name)))
           err(
             "recipe.undefined-variable",
             part,
             `The recipe reads \`${String(name)}\`, which no field defines.`,
           );
+      }
+      // The engine can't read files, so such a recipe would fail at fetch
+      // time; refusing it here keeps the bridge from running it at all.
+      const parsed = engine.parse(text);
+      for (const name of fileTags(parsed)) {
+        err("recipe.file-tag", part, fileTagMessage(name, "a recipe"));
+      }
+      // Body values go in raw, so a quote typed into a field ends the string
+      // early. `| json` quotes and escapes the value.
+      if (
+        part === "/request/body" &&
+        /^\s*[[{]/.test(text) &&
+        outputsWithoutJson(parsed) > 0
+      ) {
+        warn(
+          "recipe.body-unescaped",
+          part,
+          "A JSON body interpolates a value without `| json`, so a quote in it breaks the JSON. Write `{{ key | json }}`, which adds the quotes.",
+        );
       }
     } catch (e) {
       err(
@@ -134,6 +180,13 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
       "The request URL must be an absolute http(s) URL.",
     );
   }
+  if (r.request.body !== undefined && (r.request.method ?? "GET") !== "POST") {
+    err(
+      "recipe.body-without-post",
+      "/request/body",
+      'A `body` is sent only with `"method": "POST"`; a GET request can\'t carry one.',
+    );
+  }
   for (const [name, value] of Object.entries(r.request.headers ?? {})) {
     if (LIQUID.test(value)) {
       err(
@@ -142,7 +195,7 @@ export function checkRecipe(def: CustomBlockWorkingFile): CustomBlockIssue[] {
         `Header \`${name}\` interpolates a field; headers take only \`\${env:NAME}\`.`,
       );
     } else if (
-      SECRET_HEADER.test(name) &&
+      namesCredential(name) &&
       !new RegExp(ENV_REF.source).test(value)
     ) {
       err(

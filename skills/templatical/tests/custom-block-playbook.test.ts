@@ -10,6 +10,21 @@ describe("custom-block playbook", () => {
   it("triages saved blocks before authoring", () => {
     expect(md).toMatch(/saved block[\s\S]{0,400}\[providers\.md\]\(providers\.md\)/i);
   });
+  it("sends chrome that is on every email to init({ layout }), ahead of saved blocks", () => {
+    const triage = md.slice(md.indexOf("## 1. Triage"), md.indexOf("## 2."));
+    expect(triage).toMatch(/every email[\s\S]{0,300}init\(\{ layout \}\)[\s\S]{0,200}\[rules\.md\]\(rules\.md\)/);
+    expect(triage.indexOf("init({ layout })")).toBeLessThan(triage.indexOf("saved block"));
+  });
+  it("wires renderCustomBlock and getCustomBlockStylesheet for server-side rendering", () => {
+    const handoff = md.slice(md.indexOf("## 6. Handoff"));
+    expect(handoff).toContain("renderCustomBlock");
+    expect(handoff).toContain("getCustomBlockStylesheet");
+    expect(handoff).toMatch(/saved JSON holds field values, not HTML/);
+  });
+  it("escapes JSON body values with `| json` and keeps templates to one string", () => {
+    expect(md).toContain("{{ key | json }}");
+    expect(md).toMatch(/no `\{% include %\}`, `\{% render %\}` or\s+`\{% layout %\}`/);
+  });
   it("guards optional fields with `!= blank`, since Liquid treats an empty string as true", () => {
     expect(md).toContain("{% if <key> != blank %}");
     expect(md).not.toMatch(/Wrap every optional field in `\{% if <key> %\}`/);

@@ -11,8 +11,12 @@ import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
 const FLEX_GRID = /(^|;)\s*display\s*:\s*(inline-)?(flex|grid)\b/i;
 const POSITION = /(^|;)\s*position\s*:\s*(absolute|fixed)\b/i;
 const DIV_LAYOUT = /(^|;)\s*(width|max-width|float)\s*:/i;
-const BG_IMAGE = /(^|;)\s*background(-image)?\s*:[^;]*url\(/i;
-const BG_COLOR = /(^|;)\s*background-color\s*:/i;
+// `var(--x)` anywhere: Gmail and Outlook drop custom properties, and with them
+// the whole declaration that reads one.
+const CSS_VARIABLE = /\bvar\(\s*--/i;
+// A colour value in a `background:` shorthand: hex, or an rgb()/hsl() call.
+const COLOR_VALUE = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i;
+const FORM_CONTROLS = new Set(["form", "input", "select", "textarea"]);
 
 // The same two layout rules over stylesheet text, where a declaration can
 // also follow `{` or a newline.
@@ -25,6 +29,47 @@ const FLEX_GRID_MESSAGE =
   "`display: flex`/`grid` is ignored by Outlook and Gmail on many clients; use tables.";
 const POSITION_MESSAGE =
   "`position: absolute/fixed` is unsupported in email clients.";
+const CSS_VARIABLE_MESSAGE =
+  "CSS custom properties (`var(--…)`) are dropped by Gmail and Outlook, and the whole declaration with them; write the value itself.";
+
+/** A style attribute's declarations as lowercase property → raw value pairs. */
+export function declarations(style: string): [string, string][] {
+  const out: [string, string][] = [];
+  for (const part of style.split(";")) {
+    const colon = part.indexOf(":");
+    if (colon > 0) {
+      out.push([
+        part.slice(0, colon).trim().toLowerCase(),
+        part.slice(colon + 1),
+      ]);
+    }
+  }
+  return out;
+}
+
+/**
+ * Whether a background image here has a colour to fall back on when images
+ * are blocked: `background-color`, a colour inside the `background:`
+ * shorthand, or the `bgcolor` attribute Outlook reads.
+ */
+function backgroundIssue(
+  style: string,
+  attrs: Record<string, string>,
+): boolean {
+  const decls = declarations(style);
+  const hasImage = decls.some(
+    ([prop, value]) =>
+      (prop === "background" || prop === "background-image") &&
+      /url\(/i.test(value),
+  );
+  if (!hasImage || "bgcolor" in attrs) return false;
+  return !decls.some(
+    ([prop, value]) =>
+      prop === "background-color" ||
+      (prop === "background" &&
+        COLOR_VALUE.test(value.replace(/url\([^)]*\)/gi, ""))),
+  );
+}
 
 /** Drops `/* … *\/` comments in one linear pass; an unterminated comment drops the rest. */
 export function stripCssComments(css: string): string {
@@ -95,6 +140,13 @@ function cssLayoutIssues(css: string, path?: string): CustomBlockIssue[] {
       ...at,
       message: POSITION_MESSAGE,
     });
+  if (CSS_VARIABLE.test(text))
+    issues.push({
+      ruleId: "safety.css-variable",
+      severity: "warning",
+      ...at,
+      message: CSS_VARIABLE_MESSAGE,
+    });
   return issues;
 }
 
@@ -103,7 +155,7 @@ function stylesheetIssues(
   css: string,
 ): CustomBlockIssue[] {
   const issues: CustomBlockIssue[] = [];
-  if (/@import\b/i.test(css)) {
+  if (/@import\b/i.test(stripCssComments(css))) {
     issues.push({
       ruleId: "safety.import",
       severity: "error",
@@ -152,11 +204,25 @@ export function checkEmailSafety(
             add("safety.flex-grid", "error", FLEX_GRID_MESSAGE);
           if (POSITION.test(style))
             add("safety.position", "error", POSITION_MESSAGE);
-          if (BG_IMAGE.test(style) && !BG_COLOR.test(style))
+          if (CSS_VARIABLE.test(style))
+            add("safety.css-variable", "warning", CSS_VARIABLE_MESSAGE);
+          if (backgroundIssue(style, attrs))
             add(
               "safety.bg-image-fallback",
               "warning",
-              "A background image needs a `background-color` fallback; many clients block images.",
+              "A background image needs a fallback colour (`background-color`, a colour in `background:`, or `bgcolor`); many clients block images.",
+            );
+          if (name === "svg")
+            add(
+              "safety.svg",
+              "error",
+              "Inline `<svg>` is stripped by Gmail and not drawn by Outlook; use a PNG `<img>`.",
+            );
+          if (FORM_CONTROLS.has(name))
+            add(
+              "safety.form",
+              "warning",
+              `\`<${name}>\` doesn't work in most email clients (Gmail and Outlook disable forms); link to a page instead.`,
             );
           if (name === "script")
             add(
@@ -215,7 +281,7 @@ export function checkEmailSafety(
         onclosetag(name) {
           if (name === "style") {
             inStyle = false;
-            if (/@import\b/i.test(styleText))
+            if (/@import\b/i.test(stripCssComments(styleText)))
               add("safety.import", "error", IMPORT_MESSAGE);
             issues.push(...cssLayoutIssues(styleText));
           }

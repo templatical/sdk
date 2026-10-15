@@ -19,8 +19,28 @@ describe("checkEmailSafety", () => {
     ['<img src="a.png" alt="x">', "warning:safety.img-width"],
     ['<div style="width:300px">x</div>', "warning:safety.div-layout"],
     ['<td style="background-image:url(a.png)">x</td>', "warning:safety.bg-image-fallback"],
+    ['<td style="background: url(a.png) no-repeat center">x</td>', "warning:safety.bg-image-fallback"],
+    ['<svg width="10" height="10"><circle r="4"/></svg>', "error:safety.svg"],
+    ['<form action="/s"></form>', "warning:safety.form"],
+    ['<input type="email">', "warning:safety.form"],
+    ['<td style="color: var(--brand)">x</td>', "warning:safety.css-variable"],
   ])("flags %s", (html, expected) => {
     expect(lint(html)).toEqual([expected]);
+  });
+  it.each([
+    '<td style="background: #ffffff url(a.png) no-repeat">x</td>',
+    '<td style="background:rgba(0,0,0,.5) url(a.png)">x</td>',
+    '<td style="background-image:url(a.png)" bgcolor="#123456">x</td>',
+  ])("accepts a background image with a fallback colour: %s", (html) => {
+    expect(lint(html)).toEqual([]);
+  });
+  it("ignores @import inside a comment, in the stylesheet and in <style>", () => {
+    expect(lint("<p>x</p>", "/* no @import here */ .tplc-promo-a { color: red; }")).toEqual([]);
+    expect(lint("<style>/* @import x */ .a{}</style>")).toEqual(["warning:safety.style-tag"]);
+  });
+  it("warns on var() in the stylesheet, with its path", () => {
+    const issues = checkEmailSafety(def(".tplc-promo-a { color: var(--brand); }"), [{ state: "defaults", html: "<p>x</p>" }]);
+    expect(issues).toEqual([expect.objectContaining({ ruleId: "safety.css-variable", severity: "warning", path: "/stylesheet" })]);
   });
   it("flags a template <style> tag, and @import inside it", () => {
     expect(lint("<style>@import url(x.css); .a{}</style>")).toEqual(["warning:safety.style-tag", "error:safety.import"]);

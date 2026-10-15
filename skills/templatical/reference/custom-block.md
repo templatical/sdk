@@ -14,17 +14,24 @@ a custom block into a template; [rules.md](rules.md) still forbids that.
 
 ## 1. Triage
 
-Ask what changes each time the block is used. If the answer is "nothing — it's
-a design we reuse", that is a **saved block**, not a custom block: no code, no
-schema. The user builds it once and saves it with the bookmark action on the
-block in the editor; the library is stored by the `savedBlocks` provider —
-`init({ savedBlocks: createLocalStorageSavedBlocksProvider() })` (exported by
-`@templatical/editor`) for browser storage, or their own store. Set that up
-per [providers.md](providers.md) and stop.
+Ask what changes each time the block is used, and whether it belongs on
+every email:
 
-A custom block is right when end users fill in fields (a testimonial's quote
-and author), or the content comes from the consumer's backend (a product card
-filled from their catalogue API).
+- **On every email, the same each time** — a footer with the company address,
+  a legal line, view-in-browser: that is platform chrome, not a block. It is
+  `init({ layout })`, per the shell rule in [rules.md](rules.md); hand back
+  the layout document and point at [integrate.md](integrate.md). Stop.
+- **The same each time, but placed in some emails only** — a promo banner
+  reused across campaigns: that is a **saved block**, not a custom block: no
+  code, no schema. The user builds it once and saves it with the bookmark
+  action on the block in the editor; the library is stored by the
+  `savedBlocks` provider —
+  `init({ savedBlocks: createLocalStorageSavedBlocksProvider() })` (exported by
+  `@templatical/editor`) for browser storage, or their own store. Set that up
+  per [providers.md](providers.md) and stop.
+- **Different each time** — end users fill in fields (a testimonial's quote
+  and author), or the content comes from the consumer's backend (a product
+  card filled from their catalogue API): that is a custom block. Go on.
 
 ## 2. Create or edit
 
@@ -59,6 +66,9 @@ Write `.templatical/custom-blocks/<type>.json`. It is the definition minus
   `<div>`s; Outlook draws none of them.
 - Inline styles. Nothing external, no `<style>` in the template — use
   `stylesheet`.
+- The template is one string: no `{% include %}`, `{% render %}` or
+  `{% layout %}`, since there is no other template file to load. The same
+  holds for a recipe's `url` and `body`.
 - Every `<img>` has `alt` (bound to a field, or `""` if decorative) and a
   `width` attribute.
 - Wrap every optional field in `{% if <key> != blank %}` so an empty value
@@ -86,11 +96,14 @@ never paste or write the token anywhere. Then add a recipe:
     }
 
 Field values go in `url` and `body` only; `${env:NAME}` goes in header values
-only — it is the one way a credential reaches the recipe. Mapped values and
+only — it is the one way a credential reaches the recipe. A `body` needs
+`"method": "POST"`, and in a JSON body write each value as `{{ key | json }}`,
+which adds the quotes and escapes them; a bare `"{{ key }}"` breaks on the
+first quote a user types. Mapped values and
 errors are redacted if they echo the secret. Check the recipe once before
 opening the preview (`--values` must be a JSON object):
 
-    npx -y @templatical/template-tools@0.43.2 custom-block fetch .templatical/custom-blocks/<type>.json --values '{"productId":"123"}' --json
+    npx -y @templatical/template-tools@0.45.0 custom-block fetch .templatical/custom-blocks/<type>.json --values '{"productId":"123"}' --json
 
 `unmapped` lists `map` entries the response didn't contain — fix the paths
 before going on. If the variable isn't set, ask the user to export it in the
@@ -102,7 +115,7 @@ their picker.
 
 ## 4. Validate
 
-    npx -y @templatical/template-tools@0.43.2 custom-block validate .templatical/custom-blocks/<type>.json --json
+    npx -y @templatical/template-tools@0.45.0 custom-block validate .templatical/custom-blocks/<type>.json --json
 
 Fix every `error`. Treat `warning`s as defects unless there's a reason —
 say the reason. Never start or reload the preview on an invalid definition. A
@@ -110,19 +123,25 @@ field only the recipe reads (the id it fetches by) counts as used.
 
 To check the rendered output without the browser, render one state to a file:
 
-    npx -y @templatical/template-tools@0.43.2 custom-block render .templatical/custom-blocks/<type>.json --state defaults --format mjml -o .templatical/custom-blocks/<type>.mjml
+    npx -y @templatical/template-tools@0.45.0 custom-block render .templatical/custom-blocks/<type>.json --state defaults --format mjml -o .templatical/custom-blocks/<type>.mjml
 
 ## 5. Live preview
 
 Start it per [live-setup.md](live-setup.md), with the block instead of a
 template:
 
-    npx -y @templatical/template-tools@0.43.2 live --custom-block .templatical/custom-blocks/<type>.json --json
+    npx -y @templatical/template-tools@0.45.0 live --custom-block .templatical/custom-blocks/<type>.json --json
 
 Add `--host .templatical/<template>.json` to show it inside one of their
 templates. The canvas is a specimen sheet: the block with its defaults, with
 every optional field empty, with long text, with repeatables at their limits,
 with booleans flipped. Point the user at whichever state looks wrong.
+
+With a recipe, add `--fetch --values '{"productId":"123"}'` (the values that
+worked with `custom-block fetch`) to put a state filled from the real
+endpoint at the top. It calls their API on start and on every `live reload`;
+ask first if a call costs money or changes anything on their side. The
+`fetch` entry in each reload's output says whether it worked.
 
 The loop for every change: edit the working file → `custom-block validate` →
 `live reload`. Notes the user leaves (Alt-click) arrive on `GET /content`, as
@@ -156,5 +175,38 @@ With the user's go-ahead, put it in their codebase following
 - **Renaming or removing a field key, or changing a field's type, breaks
   saved content**: templates already saved carry values under the old key.
   Say so before writing and offer to keep the old key.
+- **Rendering outside the editor.** `editor.toMjml()` and a `render`
+  provider's calls get every custom block's HTML and stylesheet from the
+  editor; the payload carries both, so `renderToMjml(payload.content)` needs
+  no options. A server rendering a *saved* template on its own (a scheduled
+  send, an API export) gets neither: saved JSON holds field values, not HTML,
+  so without `renderCustomBlock` the block is silently left out, and without
+  `getCustomBlockStylesheet` its media queries are. Ask whether they render on
+  a server; if so, keep the definition in a module the server can import too
+  and wire both options where they call `renderToMjml`:
+
+      import { Liquid } from "liquidjs";
+      import { renderToMjml } from "@templatical/renderer";
+      import { testimonial } from "./custom-blocks/testimonial";
+
+      const definitions = new Map([[testimonial.type, testimonial]]);
+      const liquid = new Liquid();
+      const mjml = await renderToMjml(content, {
+        renderCustomBlock: async (block) => {
+          const definition = definitions.get(block.customType);
+          return definition
+            ? liquid.parseAndRender(definition.template, block.fieldValues)
+            : "";
+        },
+        getCustomBlockStylesheet: (type) => definitions.get(type)?.stylesheet,
+      });
+
+  The server renders the saved field values; `dataSource.onFetch` runs only
+  in the editor.
+- **A check in their CI.** `checkCustomBlock` from
+  `@templatical/template-tools` takes the module's exported object directly,
+  `dataSource` included. Offer a test that asserts each shipped definition
+  comes back `valid`, so a later edit to the template or fields can't
+  regress silently.
 
 If there's no repository, hand over the module and the `init()` snippet.

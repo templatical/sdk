@@ -10,14 +10,16 @@ import type { TemplateContent } from "./template";
  */
 export interface RenderPayload {
   /**
-   * The template to render, with every custom block's `renderedHtml` already
-   * filled in.
+   * The template to render, with every custom block's `renderedHtml` and
+   * `renderedStylesheet` already filled in.
    *
    * This is the part a server genuinely cannot do: a custom block's HTML comes
    * from the consumer's liquid template plus the block's field values, and the
    * template registration lives in the browser. A renderer that receives a
    * custom block with neither a resolver nor `renderedHtml` omits it silently,
-   * so pre-rendering is a contract obligation, not an optimisation.
+   * so pre-rendering is a contract obligation, not an optimisation. The same
+   * holds for the definition's stylesheet (media queries, hover rules), which
+   * the renderer emits from `renderedStylesheet` when given no resolver.
    *
    * A defensive copy — mutating it does not touch what the user is editing.
    */

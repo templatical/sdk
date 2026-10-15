@@ -82,6 +82,11 @@ export interface RenderOptions {
    * Headless consumers: provide your own resolver, typically from the same
    * definitions map used by `renderCustomBlock`. Return `undefined` or `null`
    * for definitions without a stylesheet — those are skipped.
+   *
+   * Without a resolver, each type's `block.renderedStylesheet` is emitted
+   * instead: the copy the editor writes before a render provider or Cloud
+   * storage sees the content. A resolver, when passed, decides every type and
+   * the copies are ignored, so a stale one never overrides a live definition.
    */
   getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
   /**
@@ -404,8 +409,9 @@ function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
 
 /**
  * Walk the content tree, find every unique `customType`, ask the consumer's
- * resolver for that definition's stylesheet, and return the non-empty,
- * content-deduped set in insertion order.
+ * resolver for that definition's stylesheet (or, with no resolver, take the
+ * first `renderedStylesheet` a block of that type carries), and return the
+ * non-empty, content-deduped set in insertion order.
  *
  * Content-level dedupe (not just by customType) means two definitions that
  * happen to ship the same stylesheet string emit it only once — cheap and
@@ -416,15 +422,21 @@ function collectCustomBlockStylesheets(
   content: TemplateContent,
   resolver: RenderOptions["getCustomBlockStylesheet"],
 ): string[] {
-  if (!resolver) {
-    return [];
-  }
-
   const customBlocks: CustomBlock[] = [];
   collectCustomBlocks(content.blocks, customBlocks);
 
   if (customBlocks.length === 0) {
     return [];
+  }
+
+  // Without a resolver, the first copy each type carries stands in for it.
+  const copies = new Map<string, string>();
+  if (!resolver) {
+    for (const block of customBlocks) {
+      if (block.renderedStylesheet && !copies.has(block.customType)) {
+        copies.set(block.customType, block.renderedStylesheet);
+      }
+    }
   }
 
   const seenTypes = new Set<string>();
@@ -437,7 +449,9 @@ function collectCustomBlockStylesheets(
     }
     seenTypes.add(block.customType);
 
-    const css = resolver(block.customType);
+    const css = resolver
+      ? resolver(block.customType)
+      : copies.get(block.customType);
     if (!css) {
       continue;
     }

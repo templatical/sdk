@@ -40,6 +40,22 @@ describe("custom-block validate", () => {
   });
 });
 
+describe("a template that throws while rendering", () => {
+  const throwing = { ...good, template: `${good.template}{{ "2024-01-01" | date: "%Y", "Not/AZone" }}` };
+  it("fails validate with exit 1 and a liquid.render issue", async () => {
+    setJsonMode(true);
+    expect(await run(["validate", file(throwing), "--json"])).toBe(1);
+    expect(json().issues.map((i: { ruleId: string }) => i.ruleId)).toEqual(["liquid.render"]);
+  });
+  it("fails render as an invalid definition, not an unexpected error", async () => {
+    const path = file(throwing);
+    const err = await run(["render", path]).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(InvalidTemplateError);
+    expect((err as InvalidTemplateError).message).toBe(`${path} does not render.`);
+    expect((err as InvalidTemplateError).errors[0]).toMatch(/^Invalid time zone specified: Not\/AZone/);
+  });
+});
+
 describe("custom-block render", () => {
   it("renders one state as MJML to a file", async () => {
     const out = join(dir, "o.mjml");
@@ -47,6 +63,13 @@ describe("custom-block render", () => {
     const mjml = readFileSync(out, "utf8");
     expect(mjml).toContain("Specimen:</strong> flipped");
     expect(mjml).not.toContain("Specimen:</strong> defaults");
+  });
+  it("refuses a state the definition doesn't produce, naming the ones it does", async () => {
+    const noBoolean = { ...good, fields: [good.fields[0]], template: "<p>{{ text }}</p>" };
+    const path = file(noBoolean);
+    await expect(run(["render", path, "--state", "flipped"])).rejects.toThrow(
+      new UsageError(`${path} has no "flipped" state: it has no boolean field. Its states: defaults, empty, long.`),
+    );
   });
   it("rejects an unknown state", async () => {
     await expect(run(["render", file(good), "--state", "weird"])).rejects.toThrow(UsageError);

@@ -130,6 +130,29 @@ describe("buildSpecimen", () => {
     ).toBe(6);
   });
 
+  it("max-items never drops below minItems when maxItems is unset", () => {
+    const rows = (minItems: number) =>
+      (
+        buildSpecimen({
+          type: "l",
+          name: "L",
+          template: "",
+          fields: [
+            {
+              key: "rows",
+              label: "Rows",
+              type: "repeatable",
+              minItems,
+              fields: [{ key: "a", label: "A", type: "text" }],
+            },
+          ],
+        } as never).find((i) => i.state === "max-items")!.fieldValues
+          .rows as unknown[]
+      ).length;
+    expect(rows(8)).toBe(8);
+    expect(rows(2)).toBe(6);
+  });
+
   it("flipped inverts every boolean", () => {
     expect(byState("flipped").on).toBe(false);
   });
@@ -146,6 +169,17 @@ describe("buildSpecimenTemplate", () => {
     );
     expect((t.blocks[1] as { content: string }).content).toContain("defaults");
     expect(host.blocks).toHaveLength(1); // host is not mutated
+  });
+
+  it("gives every state the same block ids on each build", () => {
+    const ids = () => buildSpecimenTemplate(def).blocks.map((b) => b.id);
+    expect(ids()).toEqual(ids());
+    expect(ids().slice(-4)).toEqual([
+      "specimen-max-items-label",
+      "specimen-max-items",
+      "specimen-flipped-label",
+      "specimen-flipped",
+    ]);
   });
 
   it("restricts to one state with `only`", () => {

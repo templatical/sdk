@@ -137,7 +137,13 @@ describe("annotation channel", () => {
         body: JSON.stringify({ text: "keep" }),
       });
       const result = missing.reload({ consumeAnnotations: true });
-      expect(result).toEqual({ ok: true, clients: 0, consumed: false, mode: "template" });
+      expect(result).toEqual({
+        ok: false,
+        clients: 0,
+        consumed: false,
+        mode: "template",
+        error: `${missing.workingPath} is missing or isn't valid JSON. Run \`templatical validate\` on it.`,
+      });
       expect(missing.getEditorState().annotations.map((a) => a.text)).toEqual([
         "keep",
       ]);

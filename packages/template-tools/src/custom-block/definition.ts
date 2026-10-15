@@ -1,7 +1,10 @@
-// Structural validation of a custom block working file: the generated
+// Structural validation of a custom block definition: the generated
 // CustomBlockDefinition schema (dataSource excluded, see generate-schema.mjs),
 // the hand-written dataSourcePreview recipe schema, and the field-model checks
-// a JSON Schema can't express (duplicate keys, defaults within bounds).
+// a JSON Schema can't express (duplicate keys, bounds that are ordered,
+// defaults within bounds). It takes a JSON working file or the object a
+// consumer's own module exports, `dataSource` function included, so the same
+// check can run in their CI over the definitions they ship.
 
 import Ajv, { type ErrorObject } from "ajv";
 import rawSchema from "../../custom-block-schema.json";
@@ -60,9 +63,14 @@ interface FieldLike {
   default?: unknown;
   min?: number;
   max?: number;
+  minItems?: number;
+  maxItems?: number;
   options?: { value: string }[];
   fields?: FieldLike[];
 }
+
+const isCount = (n: number | undefined) =>
+  n === undefined || (Number.isInteger(n) && n >= 0);
 
 function fieldIssues(fields: FieldLike[], base: string): CustomBlockIssue[] {
   const issues: CustomBlockIssue[] = [];
@@ -78,6 +86,19 @@ function fieldIssues(fields: FieldLike[], base: string): CustomBlockIssue[] {
       });
     }
     seen.add(field.key);
+    if (
+      field.type === "number" &&
+      field.min !== undefined &&
+      field.max !== undefined &&
+      field.min > field.max
+    ) {
+      issues.push({
+        ruleId: "field.range",
+        severity: "error",
+        path,
+        message: `\`${field.key}\` has min ${field.min} above max ${field.max}, so no value is allowed.`,
+      });
+    }
     if (field.type === "number" && typeof field.default === "number") {
       const below = field.min !== undefined && field.default < field.min;
       const above = field.max !== undefined && field.default > field.max;
@@ -102,11 +123,71 @@ function fieldIssues(fields: FieldLike[], base: string): CustomBlockIssue[] {
         message: `\`${field.key}\` defaults to "${String(field.default)}", which is not one of its options.`,
       });
     }
-    if (field.type === "repeatable" && field.fields) {
-      issues.push(...fieldIssues(field.fields, `${path}/fields`));
+    if (field.type === "repeatable") {
+      const { minItems, maxItems } = field;
+      if (!isCount(minItems) || !isCount(maxItems)) {
+        issues.push({
+          ruleId: "field.items-range",
+          severity: "error",
+          path,
+          message: `\`${field.key}\`'s minItems and maxItems must be whole numbers of 0 or more.`,
+        });
+      } else if (
+        minItems !== undefined &&
+        maxItems !== undefined &&
+        minItems > maxItems
+      ) {
+        issues.push({
+          ruleId: "field.items-range",
+          severity: "error",
+          path,
+          message: `\`${field.key}\` has minItems ${minItems} above maxItems ${maxItems}, so no list length is allowed.`,
+        });
+      } else if (Array.isArray(field.default)) {
+        const n = field.default.length;
+        if (
+          (minItems !== undefined && n < minItems) ||
+          (maxItems !== undefined && n > maxItems)
+        ) {
+          issues.push({
+            ruleId: "field.default-items",
+            severity: "error",
+            path: `${path}/default`,
+            message: `\`${field.key}\` defaults to ${n} item(s), outside ${minItems ?? 0}–${maxItems ?? "∞"}; the palette would insert a list the editor won't allow.`,
+          });
+        }
+      }
+      if (field.fields) {
+        issues.push(...fieldIssues(field.fields, `${path}/fields`));
+      }
     }
   });
   return issues;
+}
+
+/**
+ * A module's `dataSource` is `{ label, onFetch }` with a function, which the
+ * schema can't describe (the generator hides functions). A JSON working file
+ * can't hold a function at all, so there it is always an error that points at
+ * `dataSourcePreview`.
+ */
+function dataSourceIssues(dataSource: unknown): CustomBlockIssue[] {
+  const ds = dataSource as { label?: unknown; onFetch?: unknown } | null;
+  const issue = (message: string): CustomBlockIssue[] => [
+    { ruleId: "schema", severity: "error", path: "/dataSource", message },
+  ];
+  if (ds === null || typeof ds !== "object" || Array.isArray(ds)) {
+    return issue("`dataSource` must be an object with `label` and `onFetch`.");
+  }
+  if (typeof ds.onFetch !== "function") {
+    return issue(
+      "`dataSource.onFetch` must be a function. A JSON working file can't hold one: preview with `dataSourcePreview`, and write `dataSource` in the module at handoff.",
+    );
+  }
+  if (typeof ds.label !== "string" || ds.label === "") {
+    return issue("`dataSource.label` must be a non-empty string.");
+  }
+  return [];
 }
 
 export function validateCustomBlockDefinition(
@@ -125,8 +206,12 @@ export function validateCustomBlockDefinition(
       ],
     };
   }
-  const { dataSourcePreview, ...definition } = data as Record<string, unknown>;
+  const { dataSourcePreview, dataSource, ...definition } = data as Record<
+    string,
+    unknown
+  >;
   const issues: CustomBlockIssue[] = [];
+  if (dataSource !== undefined) issues.push(...dataSourceIssues(dataSource));
   if (!validateDefinition(definition)) {
     issues.push(...schemaIssues(validateDefinition.errors));
   }

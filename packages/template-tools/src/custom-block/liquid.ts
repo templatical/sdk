@@ -4,15 +4,32 @@
 // renders here and fails there, or the reverse, makes every check below lie.
 // tests/custom-block-liquid.test.ts holds the two equal.
 
-import { ForTag, Liquid, type Template } from "liquidjs";
+import { ForTag, Liquid, Output, Tag, type Template } from "liquidjs";
 import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
 
 export function createLiquid(): Liquid {
-  return new Liquid({ strictVariables: false, strictFilters: false });
+  // `templates: {}` resolves include/render/layout against an empty in-memory
+  // map, never the disk. Without it, Node's engine reads files relative to
+  // the cwd: a recipe body could carry `.env` to the API host, and a template
+  // would render here while the editor, which has no partials, fails.
+  return new Liquid({
+    strictVariables: false,
+    strictFilters: false,
+    templates: {},
+  });
 }
 
 // `forloop` is Liquid's own loop object, never a field.
 const LIQUID_GLOBALS = new Set(["forloop"]);
+
+// Tags that load another template file. A custom block's template and a
+// recipe are each one string, so nothing exists for them to load.
+const FILE_TAGS = new Set(["include", "render", "layout"]);
+
+// Static analysis follows include/render into the partial by default, which
+// the engine refuses to load, so every analysis call skips partials. The
+// file-tag rule reports those tags instead.
+export const NO_PARTIALS = { partials: false } as const;
 
 /** A tag's child templates, from liquidjs's static-analysis generator. */
 function childTemplates(template: Template): Template[] {
@@ -23,14 +40,37 @@ function childTemplates(template: Template): Template[] {
   return step.value ?? [];
 }
 
+/** Every template in the tree, depth-first, nested tags included. */
+function allTemplates(templates: Template[]): Template[] {
+  return templates.flatMap((t) => [t, ...allTemplates(childTemplates(t))]);
+}
+
 /** Every `for` tag in the tree, nested ones included. */
 function forTags(templates: Template[]): ForTag[] {
-  const found: ForTag[] = [];
-  for (const t of templates) {
-    if (t instanceof ForTag) found.push(t);
-    found.push(...forTags(childTemplates(t)));
-  }
-  return found;
+  return allTemplates(templates).filter(
+    (t): t is ForTag => t instanceof ForTag,
+  );
+}
+
+/** Names of the file-loading tags in the tree, each once, in source order. */
+export function fileTags(templates: Template[]): string[] {
+  const names = allTemplates(templates)
+    .filter((t): t is Tag => t instanceof Tag && FILE_TAGS.has(t.name))
+    .map((t) => t.name);
+  return [...new Set(names)];
+}
+
+/** How many `{{ }}` outputs in the tree reach the text without a `json` filter. */
+export function outputsWithoutJson(templates: Template[]): number {
+  return allTemplates(templates).filter(
+    (t) =>
+      t instanceof Output && !t.value.filters.some((f) => f.name === "json"),
+  ).length;
+}
+
+/** The message for a template or recipe that uses a file-loading tag. */
+export function fileTagMessage(name: string, where: string): string {
+  return `\`{% ${name} %}\` loads another template file, and ${where} has none to load. Write its content inline instead.`;
 }
 
 /**
@@ -63,14 +103,19 @@ export function checkLiquid(def: CustomBlockWorkingFile): CustomBlockIssue[] {
     ];
   }
 
-  const issues: CustomBlockIssue[] = [];
+  const issues: CustomBlockIssue[] = fileTags(parsed).map((name) => ({
+    ruleId: "liquid.file-tag",
+    severity: "error",
+    path: "/template",
+    message: fileTagMessage(name, "a custom block"),
+  }));
   const fields = new Map(
     def.fields.map((f, i) => [f.key, { field: f, index: i }]),
   );
 
   const globals = new Set(
     engine
-      .globalVariableSegmentsSync(def.template)
+      .globalVariableSegmentsSync(def.template, NO_PARTIALS)
       .map((segments) => String(segments[0]))
       .filter((name) => !LIQUID_GLOBALS.has(name)),
   );
@@ -91,7 +136,10 @@ export function checkLiquid(def: CustomBlockWorkingFile): CustomBlockIssue[] {
   for (const text of [request?.url, request?.body]) {
     if (text === undefined) continue;
     try {
-      for (const [name] of engine.globalVariableSegmentsSync(text)) {
+      for (const [name] of engine.globalVariableSegmentsSync(
+        text,
+        NO_PARTIALS,
+      )) {
         recipeReads.add(String(name));
       }
     } catch {
@@ -126,7 +174,10 @@ export function checkLiquid(def: CustomBlockWorkingFile): CustomBlockIssue[] {
       });
       continue;
     }
-    for (const [head, sub] of engine.variableSegmentsSync(loop.templates)) {
+    for (const [head, sub] of engine.variableSegmentsSync(
+      loop.templates,
+      NO_PARTIALS,
+    )) {
       if (String(head) !== local || typeof sub !== "string") continue;
       if (!target.fields.some((f) => f.key === sub)) {
         issues.push({

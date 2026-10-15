@@ -35,7 +35,8 @@ const USAGE = `templatical <command> [options]
   custom-block validate <file>          check a custom block definition
   custom-block render <file> [--state <s>] [--format mjml|html] [-o <file>]
   custom-block fetch <file> [--values '<json>']  run its dataSourcePreview once
-  live --custom-block <file> [--host <template>]  preview a custom block
+  live --custom-block <file> [--host <template>] [--fetch [--values '<json>']]
+                                                 preview a custom block
   list                                           working files in .templatical/
 
 Options:

@@ -56,6 +56,6 @@ template first. A mid-session switch just points the bridge at that file.
 A custom block definition is previewed the same way, with `--custom-block`
 instead of `--file` (and `--host` to show it inside a template):
 
-    npx -y @templatical/template-tools@0.43.2 live --custom-block .templatical/custom-blocks/<type>.json [--host .templatical/<name>.json] --json
+    npx -y @templatical/template-tools@0.45.0 live --custom-block .templatical/custom-blocks/<type>.json [--host .templatical/<name>.json] --json
 
 That mode's loop is in [custom-block.md](custom-block.md).

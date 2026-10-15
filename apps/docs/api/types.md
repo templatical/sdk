@@ -432,6 +432,7 @@ interface CustomBlock extends BaseBlock {
   customType: string;
   fieldValues: Record<string, unknown>;
   renderedHtml?: string;
+  renderedStylesheet?: string;
   dataSourceFetched?: boolean;
 }
 

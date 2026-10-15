@@ -30,6 +30,32 @@ describe("checkCustomBlock", () => {
     expect(bad.valid).toBe(false);
     expect(bad.issues.map((i) => i.ruleId)).toEqual(["recipe.undefined-variable"]);
   });
+  it("reports a template that throws while rendering as an error, not a crash", async () => {
+    const r = await checkCustomBlock({ ...good, template: `${good.template}{{ "2024-01-01" | date: "%Y", "Not/AZone" }}` });
+    expect(r).toEqual({
+      valid: false,
+      issues: [{
+        ruleId: "liquid.render",
+        severity: "error",
+        path: "/template",
+        message: expect.stringMatching(/^The template does not render: Invalid time zone specified: Not\/AZone/),
+      }],
+    });
+  });
+  it("stops before rendering a template that loads another file", async () => {
+    const r = await checkCustomBlock({ ...good, template: `${good.template}{% include 'package.json' %}` });
+    expect(r.valid).toBe(false);
+    expect(r.issues.map((i) => i.ruleId)).toEqual(["liquid.file-tag"]);
+  });
+  it("accepts a stylesheet with the whitespace a template literal carries", async () => {
+    const stylesheet = "\n  .tplc-quote-cell { font-style: italic; }\n\n";
+    expect(await checkCustomBlock({ ...good, stylesheet }, { compileMjml: compile })).toEqual({ valid: true, issues: [] });
+    expect(await checkCustomBlock({ ...good, stylesheet: "  \r\n" })).toEqual({ valid: true, issues: [] });
+  });
+  it("adds accessibility warnings, which leave the definition valid", async () => {
+    const r = await checkCustomBlock({ ...good, template: "<table><tr><td>{{ text }}</td></tr></table>" });
+    expect(r).toEqual({ valid: true, issues: [expect.objectContaining({ ruleId: "a11y.table-role", severity: "warning" })] });
+  });
   it("surfaces MJML compile errors as warnings", async () => {
     const r = await checkCustomBlock(good, { compileMjml: async () => ({ errors: [{ formattedMessage: "boom" }] }) });
     expect(r).toEqual({ valid: true, issues: [expect.objectContaining({ ruleId: "render.mjml", severity: "warning", message: "boom" })] });

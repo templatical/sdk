@@ -69,7 +69,7 @@ interface RenderOptions {
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
-| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. |
+| `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. Wenn weggelassen, wird stattdessen das `renderedStylesheet` jedes Typs ausgegeben (die Kopie, die der Editor schreibt, bevor ein Render-Provider oder der Cloud-Speicher den Inhalt sieht); wird es übergeben, entscheidet es für jeden Typ, und die Kopien werden ignoriert. |
 | `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${dir}/${platform}.png` aufgelöst, wobei `dir` der Stil ist, bei einem `iconTone` von `dark` oder `light` gefolgt von `-${tone}`. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke

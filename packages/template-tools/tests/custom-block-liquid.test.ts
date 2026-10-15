@@ -29,6 +29,26 @@ describe("checkLiquid", () => {
     expect(issues[0].severity).toBe("error");
   });
 
+  it("errors once per file-loading tag, nested ones included", () => {
+    const issues = run({
+      template: `${base.template}{% if heading %}{% include 'header' %}{% endif %}{% for item in items %}{% render 'card', item: item %}{% endfor %}{% include 'header' %}`,
+    });
+    expect(issues).toEqual([
+      {
+        ruleId: "liquid.file-tag",
+        severity: "error",
+        path: "/template",
+        message: "`{% include %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
+      },
+      {
+        ruleId: "liquid.file-tag",
+        severity: "error",
+        path: "/template",
+        message: "`{% render %}` loads another template file, and a custom block has none to load. Write its content inline instead.",
+      },
+    ]);
+  });
+
   it("errors on a variable no field defines", () => {
     const issues = run({ template: `${base.template}{{ subtitle }}` });
     expect(issues).toEqual([expect.objectContaining({ ruleId: "liquid.undefined-variable", severity: "error" })]);

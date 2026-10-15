@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { connect } from "node:net";
 import { createServer, request as httpRequest, type Server } from "node:http";
-import { startBridge, type BridgeHandle } from "../src/live/index";
+import { startBridge, type BridgeHandle, type StartBridgeOptions } from "../src/live/index";
 
 const JSON_HDR = { "content-type": "application/json" };
 const SECRET = "tok_supersecret_987";
@@ -21,12 +21,12 @@ const def = (extra: object = {}) => ({
   template: '<table role="presentation"><tr><td>{{ text }}{{ id }}</td></tr></table>', ...extra,
 });
 
-async function project(definition: unknown, env: Record<string, string> = {}) {
+async function project(definition: unknown, env: Record<string, string> = {}, extra: Partial<StartBridgeOptions> = {}) {
   const cwd = mkdtempSync(join(tmpdir(), "tt-live-cb-"));
   mkdirSync(join(cwd, ".templatical/custom-blocks"), { recursive: true });
   const file = ".templatical/custom-blocks/quote.json";
   writeFileSync(join(cwd, file), JSON.stringify(definition));
-  const h = await startBridge({ cwd, customBlock: file, env });
+  const h = await startBridge({ cwd, customBlock: file, env, ...extra });
   open.push(h);
   return { cwd, file, h, get: (p: string, init?: RequestInit) => fetch(`${h.url.replace(/\/$/, "")}${p}`, init) };
 }
@@ -135,6 +135,65 @@ describe("bridge custom-block mode", () => {
     await reader.cancel();
   });
 
+  describe("the fetched state", () => {
+    const withRecipe = (url: string) => def({ dataSourcePreview: { label: "F", request: { url }, map: { text: "quote" } } });
+    type Block = { id: string; type: string; content?: string; fieldValues?: Record<string, unknown>; dataSourceFetched?: boolean };
+    const blocks = async (get: (p: string) => Promise<Response>) => ((await (await get("/template")).json()).blocks as Block[]);
+
+    it("leads the sheet, filled from the API and marked fetched", async () => {
+      const up = await upstream();
+      const { get, h } = await project(withRecipe(`${up.base}/q/{{ id }}`), {}, { fetch: { values: { id: "42" } } });
+      const all = await blocks(get);
+      expect(all.slice(0, 3).map((b) => b.id)).toEqual(["specimen-fetched-label", "specimen-fetched", "specimen-defaults-label"]);
+      expect(all[1]).toMatchObject({ dataSourceFetched: true, fieldValues: { id: "42", text: "From API" } });
+      expect(up.seen.map((s) => s.url)).toEqual(["/q/42"]);
+      expect(h.lastFetch()).toEqual({ ok: true, unmapped: [] });
+    });
+
+    it("re-runs the request on an HTTP reload, not an in-process one", async () => {
+      const up = await upstream();
+      const { get, h } = await project(withRecipe(`${up.base}/q/{{ id }}`), {}, { fetch: { values: {} } });
+      const res = await get("/reload", { method: "POST", headers: JSON_HDR, body: "{}" });
+      expect(await res.json()).toEqual({ ok: true, clients: 0, consumed: false, mode: "custom-block", fetch: { ok: true, unmapped: [] } });
+      expect(up.seen).toHaveLength(2);
+      expect(h.reload()).toMatchObject({ ok: true, fetch: { ok: true } });
+      expect(up.seen).toHaveLength(2);
+    });
+
+    it("puts a failed request on the label and still reloads", async () => {
+      const { get, h } = await project(withRecipe("http://127.0.0.1:9/q"), {}, { fetch: { values: {} } });
+      const all = await blocks(get);
+      expect(all[0].id).toBe("specimen-fetched-label");
+      expect(all[0].content).toContain("The request failed: GET http://127.0.0.1:9/q failed");
+      expect(all.some((b) => b.id === "specimen-fetched")).toBe(false);
+      expect(h.lastFetch()).toMatchObject({ ok: false });
+      expect(h.reload()).toMatchObject({ ok: true, fetch: { ok: false } });
+    });
+
+    it("calls nothing without the fetch option", async () => {
+      const up = await upstream();
+      const { get, h } = await project(withRecipe(`${up.base}/q`));
+      expect((await blocks(get)).some((b) => b.id.startsWith("specimen-fetched"))).toBe(false);
+      await get("/reload", { method: "POST", headers: JSON_HDR, body: "{}" });
+      expect(up.seen).toEqual([]);
+      expect(h.lastFetch()).toBe(null);
+    });
+  });
+
+  it("keeps a note's block on the canvas across a reload", async () => {
+    const { get, h } = await project(def());
+    const customIds = async () =>
+      ((await (await get("/template")).json()).blocks as { id: string; type: string }[])
+        .filter((b) => b.type === "custom")
+        .map((b) => b.id);
+    const before = await customIds();
+    const note = await get("/annotations", { method: "POST", headers: JSON_HDR, body: JSON.stringify({ blockId: before[1], text: "Too tall when empty" }) });
+    expect(note.status).toBe(201);
+    expect(h.reload()).toMatchObject({ ok: true });
+    expect(await customIds()).toEqual(before);
+    expect(before).toEqual(["specimen-defaults", "specimen-empty", "specimen-long"]);
+  });
+
   it("refuses a foreign Host header on every route", async () => {
     const { h } = await project(def());
     const status = await new Promise<number>((resolve, reject) => {
@@ -158,6 +217,15 @@ describe("bridge custom-block mode", () => {
     const { get } = await project(def({ dataSourcePreview: { label: "F", request: { url: `${up.base}/q`, headers: {} }, map: {} } }));
     const res = await get("/data-source/fetch", { method: "POST", headers: { "content-type": "text/plain" }, body: "{}" });
     expect(res.status).toBe(415);
+    expect(up.seen).toEqual([]);
+  });
+
+  it("refuses a recipe that includes a file, without calling upstream", async () => {
+    const up = await upstream();
+    const { get } = await project(def({ dataSourcePreview: { label: "F", request: { method: "POST", url: `${up.base}/q`, body: "{% include '.env' %}" }, map: {} } }));
+    const res = await get("/data-source/fetch", { method: "POST", headers: JSON_HDR, body: "{}" });
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toContain("recipe.file-tag: `{% include %}` loads another template file");
     expect(up.seen).toEqual([]);
   });
 

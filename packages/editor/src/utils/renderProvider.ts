@@ -43,6 +43,7 @@ export function resolveRenderFonts(source: RenderFontsSource): RenderFonts {
 export interface RenderPayloadSource {
   getContent: () => TemplateContent;
   renderCustomBlock: (block: CustomBlock) => Promise<string>;
+  getCustomBlockStylesheet: (customType: string) => string | undefined;
   getFonts: () => RenderFonts;
   /**
    * Optional. Embedder shell spliced onto the payload's `content` so a BYO
@@ -65,9 +66,9 @@ export interface RenderPayloadSource {
  * a drag inside a section can leave a Sortable expando cycle reachable from live
  * content). When `getLayout` returns a shell, that copy is composed (`applyLayout`)
  * so a BYO `render.toMjml` cannot drop the chrome by reading payload content as
- * today's template. Pre-rendering writes `renderedHtml` onto blocks, and doing
- * that to the live tree would mark the editor dirty and make an export mutate
- * the document.
+ * today's template. Pre-rendering writes `renderedHtml` and
+ * `renderedStylesheet` onto blocks, and doing that to the live tree would mark
+ * the editor dirty and make an export mutate the document.
  */
 export async function buildRenderPayload(
   source: RenderPayloadSource,
@@ -81,6 +82,7 @@ export async function buildRenderPayload(
   }
   await preRenderCustomBlocks(content, {
     renderCustomBlock: source.renderCustomBlock,
+    getCustomBlockStylesheet: source.getCustomBlockStylesheet,
   });
 
   return { content, fonts: source.getFonts() };

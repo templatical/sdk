@@ -15,6 +15,44 @@ describe("checkRecipe", () => {
   it("accepts a well-formed recipe", () => {
     expect(checkRecipe(def(ok))).toEqual([]);
   });
+  it("warns when a JSON body interpolates a value without | json", () => {
+    const post = (body: string) => def({ ...ok, request: { ...ok.request, method: "POST", body } });
+    expect(checkRecipe(post('{"id":"{{ productId }}"}'))).toEqual([{
+      ruleId: "recipe.body-unescaped",
+      severity: "warning",
+      path: "/dataSourcePreview/request/body",
+      message: "A JSON body interpolates a value without `| json`, so a quote in it breaks the JSON. Write `{{ key | json }}`, which adds the quotes.",
+    }]);
+    expect(checkRecipe(post('{"id": {{ productId | json }}}'))).toEqual([]);
+    expect(checkRecipe(post("id={{ productId }}"))).toEqual([]);
+  });
+  it.each(["Authorization", "Proxy-Authorization", "X-API-Key", "X-Auth-Token", "X-AccessToken", "Cookie", "X-Session-Id", "Client_Secret"])(
+    "treats %s as a credential header",
+    (name) => {
+      const recipe = { ...ok, request: { ...ok.request, headers: { [name]: "literal-value" } } };
+      expect(checkRecipe(def(recipe)).map((i) => i.ruleId)).toEqual(["recipe.literal-secret"]);
+    },
+  );
+  it.each(["X-Session-Locale", "Accept-Keys", "X-Request-Id", "Monkey-Patch", "Accept"])(
+    "accepts a literal %s header",
+    (name) => {
+      const recipe = { ...ok, request: { ...ok.request, headers: { ...ok.request.headers, [name]: "en" } } };
+      expect(checkRecipe(def(recipe))).toEqual([]);
+    },
+  );
+  it("refuses a recipe that loads a file, in the body or the URL", () => {
+    const body = { ...ok, request: { ...ok.request, method: "POST", body: "{% include '.env' %}" } };
+    expect(checkRecipe(def(body))).toEqual([{
+      ruleId: "recipe.file-tag",
+      severity: "error",
+      path: "/dataSourcePreview/request/body",
+      message: "`{% include %}` loads another template file, and a recipe has none to load. Write its content inline instead.",
+    }]);
+    const url = { ...ok, request: { ...ok.request, url: "https://x.test/p/{% render 'id', p: productId %}" } };
+    expect(checkRecipe(def(url)).map((i) => `${i.ruleId} ${i.path}`)).toEqual([
+      "recipe.file-tag /dataSourcePreview/request/url",
+    ]);
+  });
   it.each([
     [{ ...ok, request: { ...ok.request, url: "https://x.test/{{ sku }}" } }, "recipe.undefined-variable"],
     [{ ...ok, map: { price: "price" } }, "recipe.unknown-map-key"],
@@ -22,6 +60,7 @@ describe("checkRecipe", () => {
     [{ ...ok, request: { ...ok.request, headers: { "X-Id": "{{ productId }}" } } }, "recipe.field-in-header"],
     [{ ...ok, request: { ...ok.request, url: "https://x.test/?k=${env:SHOP_TOKEN}" } }, "recipe.env-outside-headers"],
     [{ ...ok, request: { ...ok.request, url: "x.test/{{ productId }}" } }, "recipe.url"],
+    [{ ...ok, request: { ...ok.request, body: '{"id": {{ productId | json }}}' } }, "recipe.body-without-post"],
   ])("rejects %#", (recipe, ruleId) => {
     expect(checkRecipe(def(recipe)).map((i) => `${i.severity}:${i.ruleId}`)).toEqual([`error:${ruleId}`]);
   });
@@ -148,6 +187,17 @@ describe("runRecipe against a local server", () => {
     expect(hits).toBe(0);
     expect(r).toMatchObject({ ok: false, status: 302, error: expect.stringContaining(redirectTo) });
     expect(JSON.stringify(r)).not.toContain(SECRET);
+  });
+
+  it("puts no local file into a request, even when checkRecipe was skipped", async () => {
+    const r = await runRecipe(
+      { ...recipe(), request: { ...recipe().request, method: "POST", body: "{% include 'package.json' %}" } },
+      { productId: "1" },
+      { env: { SHOP_TOKEN: SECRET } },
+    );
+    expect(r.ok).toBe(false);
+    expect(r.ok ? "" : r.error).toMatch(/^The request template does not render: ENOENT: Failed to lookup "package\.json"/);
+    expect(seen).toEqual({});
   });
 
   it("resolves to a failure when the template does not render", async () => {

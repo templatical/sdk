@@ -24,6 +24,7 @@ vi.mock("../src/live/index", async (importOriginal) => {
 
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
+import { UsageError } from "../src/cli/io";
 import { runLive } from "../src/cli/commands/live";
 
 let dir: string;
@@ -147,7 +148,7 @@ describe("live already-running / reload / stop", () => {
       clients: 1,
       consumed: false,
       error:
-        "The custom block definition is missing or invalid; nothing was pushed. Run `templatical custom-block validate`.",
+        "The custom block definition is missing or invalid. Nothing was pushed.",
     });
   });
 
@@ -162,13 +163,14 @@ describe("live already-running / reload / stop", () => {
           clients: 0,
           consumed: false,
           mode: "custom-block",
-          error: "The --host template is missing or invalid.",
+          error:
+            "The --host template is missing or invalid. Run `templatical validate` on it.",
         }),
       })),
     );
     expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(1);
     expect(stdout.join("")).toBe(
-      "The --host template is missing or invalid; nothing was pushed. Run `templatical validate` on it.\n",
+      "The --host template is missing or invalid. Run `templatical validate` on it. Nothing was pushed.\n",
     );
   });
 
@@ -240,6 +242,7 @@ describe("live already-running / reload / stop", () => {
       url: "http://localhost:4848/",
       workingPath: join(dir, "a.json"),
       fellBack: false,
+      lastFetch: () => null,
       close: async () => {},
     });
     const before = { int: process.listeners("SIGINT"), term: process.listeners("SIGTERM") };
@@ -277,6 +280,7 @@ describe("live start for a custom block", () => {
     url: "http://localhost:4848/",
     workingPath: join(dir, "a.json"),
     fellBack: false,
+    lastFetch: () => null,
     close: async () => {},
     ...over,
   });
@@ -342,6 +346,39 @@ describe("live start for a custom block", () => {
     );
   });
 
+  it("rejects --fetch without --custom-block, and --values without --fetch", async () => {
+    await expect(runLive(parseArgs(["live", "--fetch", "--cwd", dir]))).rejects.toThrow(
+      new UsageError("--fetch only applies with --custom-block."),
+    );
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "a.json", "--values", '{"id":"7"}', "--cwd", dir])),
+    ).rejects.toThrow(new UsageError("--values only applies with --fetch."));
+  });
+
+  it("passes --fetch values to the bridge, records them, and prints the first fetch", async () => {
+    live.readPidfile.mockReturnValue(null);
+    live.startBridgePreferring.mockResolvedValue(
+      bridge({ lastFetch: () => ({ ok: false, error: "GET https://x.test/p/7 returned 500: down" }) }),
+    );
+    await startDetached(["live", "--custom-block", "a.json", "--fetch", "--values", '{"id":"7"}', "--no-open", "--cwd", dir]);
+    expect(live.startBridgePreferring).toHaveBeenCalledWith(
+      expect.objectContaining({ customBlock: "a.json", fetch: { values: { id: "7" } } }),
+    );
+    expect(JSON.parse(readFileSync(join(dir, ".templatical", "live-server.pid"), "utf8")).fetch).toEqual({ id: "7" });
+    expect(stdout.join("")).toContain("Fetched state: the request failed. GET https://x.test/p/7 returned 500: down\n");
+  });
+
+  it("refuses a running block started with different --fetch values", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 4747, mode: "custom-block", path: join(dir, "a.json"), fetch: { id: "7" } });
+    live.processAlive.mockReturnValue(true);
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "a.json", "--fetch", "--values", '{"id":"8"}', "--cwd", dir])),
+    ).rejects.toThrow(`A live server is already running for ${join(dir, "a.json")} (custom-block).`);
+    await expect(
+      runLive(parseArgs(["live", "--custom-block", "a.json", "--cwd", dir])),
+    ).rejects.toThrow(`A live server is already running for ${join(dir, "a.json")} (custom-block).`);
+  });
+
   it("prints the custom block path, the port fallback and opens the browser", async () => {
     live.readPidfile.mockReturnValue(null);
     live.startBridgePreferring.mockResolvedValue(bridge({ port: 4849, url: "http://localhost:4849/", fellBack: true }));
@@ -358,6 +395,26 @@ describe("live start for a custom block", () => {
   });
 });
 
+describe("live reload with a fetched state", () => {
+  it("adds the fetch outcome to the reload line and the JSON", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    const fetch = { ok: true, unmapped: ["price"] };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ status: 200, json: async () => ({ ok: true, clients: 1, consumed: false, mode: "custom-block", fetch }) })),
+    );
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(0);
+    expect(stdout.join("")).toBe(
+      "Pushed the custom block to 1 page(s).\nFetched state: filled from the API; not in the response: price.\n",
+    );
+    stdout.length = 0;
+    setJsonMode(true);
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir, "--json"]))).toBe(0);
+    expect(JSON.parse(stdout.join(""))).toEqual({ reloaded: true, ok: true, clients: 1, consumed: false, fetch });
+  });
+});
+
 describe("live reload failure wording", () => {
   const failing = (error?: string) => {
     live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
@@ -368,11 +425,29 @@ describe("live reload failure wording", () => {
     );
   };
 
-  it("falls back to the custom block line when the bridge names no error", async () => {
+  it("says a failure happened when the bridge names no error", async () => {
     failing(undefined);
     expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(1);
     expect(stdout.join("")).toBe(
-      "The custom block definition is missing or invalid; nothing was pushed. Run `templatical custom-block validate`.\n",
+      "The live server reported a failed reload. Nothing was pushed.\n",
+    );
+  });
+
+  it("treats a refused request as a failure, not a reload to no pages", async () => {
+    live.readPidfile.mockReturnValue({ pid: 4242, port: 5151 });
+    live.processAlive.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        status: 403,
+        json: async () => {
+          throw new SyntaxError("Unexpected token F");
+        },
+      })),
+    );
+    expect(await runLive(parseArgs(["live", "reload", "--cwd", dir]))).toBe(1);
+    expect(stdout.join("")).toBe(
+      "The live server refused the reload (403). Nothing was pushed.\n",
     );
   });
 
@@ -405,6 +480,7 @@ describe("live template-mode wording and path identity", () => {
       url: "http://localhost:4848/",
       workingPath: join(dir, "t.json"),
       fellBack: false,
+      lastFetch: () => null,
       close: async () => {},
     });
     const before = { int: process.listeners("SIGINT"), term: process.listeners("SIGTERM") };

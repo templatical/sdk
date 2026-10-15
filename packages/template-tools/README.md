@@ -15,8 +15,8 @@ npx -y @templatical/template-tools validate .templatical/my-template.json
 | `edit <file> --op <json>` | Apply one operation, or a batch with `--ops <file>` |
 | `import <file>` | Convert a template from another tool's export format — run `import --list-formats` to see what's supported |
 | `live` | Open the template in the real editor in a browser |
-| `live --custom-block <file> [--host <template>]` | Preview a custom block definition in the real editor, optionally inside a host template |
-| `custom-block validate <file>` | Check a custom block definition against its schema, its Liquid template and email-client safety rules |
+| `live --custom-block <file> [--host <template>] [--fetch [--values '<json>']]` | Preview a custom block definition in the real editor, optionally inside a host template, with a state filled from the real endpoint |
+| `custom-block validate <file>` | Check a custom block definition against its schema, its Liquid template, email-client safety and accessibility rules |
 | `custom-block render <file>` | Render a custom block's specimen states to MJML (`--format html` for HTML, `--state <name>` for one state) |
 | `custom-block fetch <file>` | Run the definition's `dataSourcePreview` recipe and print the response |
 | `schema` | Print the block JSON Schema |
@@ -55,6 +55,6 @@ import {
 import { startBridge } from "@templatical/template-tools/live";
 ```
 
-`checkCustomBlock` runs the same checks as `custom-block validate`; `validateCustomBlockDefinition` runs only the structural check. The JSON Schema for a custom block definition is at `@templatical/template-tools/custom-block-schema.json`.
+`checkCustomBlock` runs the same checks as `custom-block validate`, on a JSON working file or the object a definition module exports; `validateCustomBlockDefinition` runs only the structural check. The JSON Schema for a custom block definition is at `@templatical/template-tools/custom-block-schema.json`.
 
 MIT.

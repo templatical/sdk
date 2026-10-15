@@ -667,10 +667,12 @@ export async function bootstrapCloud(
       typeof baseSave === "function"
         ? async (id: string, patch: TemplatePatch) => {
             if (coreRef && editorRef) {
-              await preRenderCustomBlocks(
-                editorRef.content.value,
-                coreRef.registry,
-              );
+              const registry = coreRef.registry;
+              await preRenderCustomBlocks(editorRef.content.value, {
+                renderCustomBlock: registry.renderCustomBlock,
+                getCustomBlockStylesheet: (customType) =>
+                  registry.getDefinition(customType)?.stylesheet,
+              });
             }
             return baseSave(id, patch);
           }

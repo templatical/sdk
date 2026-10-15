@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import mjml2html from "mjml";
 import {
   createCustomBlock,
   createDefaultTemplateContent,
@@ -236,5 +237,49 @@ describe("renderer — custom block stylesheets", () => {
     });
 
     expect(mjml).toContain(".tplc-image-text");
+  });
+  describe("renderedStylesheet copies", () => {
+    const withCopy = (type: string, css?: string): CustomBlock => ({
+      ...createCustomBlock(definition(type)),
+      renderedHtml: `<div class="tplc-${type}">x</div>`,
+      ...(css === undefined ? {} : { renderedStylesheet: css }),
+    });
+
+    it("emits each type's copy once when no resolver is passed, as a backend renders a payload", async () => {
+      const mjml = await renderToMjml(
+        contentWithCustomBlocks(
+          withCopy("image-text", STACK_CSS),
+          withCopy("image-text", STACK_CSS),
+          withCopy("product-card", HOVER_CSS),
+        ),
+      );
+      expect(mjml.split(".tplc-image-text { display: block !important; }").length - 1).toBe(1);
+      expect(mjml).toContain(".tplc-product-card:hover");
+      expect((mjml.match(/<mj-style>/g) ?? []).length).toBe(3);
+    });
+
+    it("takes a later instance's copy when the first of its type carries none", async () => {
+      const mjml = await renderToMjml(
+        contentWithCustomBlocks(withCopy("image-text"), withCopy("image-text", STACK_CSS)),
+      );
+      expect(mjml).toContain(".tplc-image-text { display: block !important; }");
+    });
+
+    it("lets a passed resolver decide every type, so a stale copy never overrides it", async () => {
+      const resolver = vi.fn(() => undefined);
+      const mjml = await renderToMjml(contentWithCustomBlocks(withCopy("image-text", STACK_CSS)), {
+        getCustomBlockStylesheet: resolver,
+      });
+      expect(resolver).toHaveBeenCalledWith("image-text");
+      expect(mjml).not.toContain(".tplc-image-text {");
+    });
+
+    it("lands the copy in the compiled HTML's <style>", async () => {
+      const mjml = await renderToMjml(contentWithCustomBlocks(withCopy("image-text", STACK_CSS)));
+      const { html, errors } = await mjml2html(mjml);
+      expect(errors).toEqual([]);
+      const head = html.slice(0, html.indexOf("</head>"));
+      expect(head).toContain(".tplc-image-text { display: block !important; }");
+    });
   });
 });
