@@ -1,3 +1,5 @@
+import type { BackgroundImage } from "./background-image";
+
 export interface SpacingValue {
   top: number;
   right: number;
@@ -190,6 +192,8 @@ export interface SectionWrapper {
    * corner. Omitted/0 = square corners.
    */
   borderRadius?: BorderRadiusValue;
+  /** Image behind the band; `backgroundColor` is its fallback. */
+  backgroundImage?: BackgroundImage;
 }
 
 export interface SectionBlock extends BaseBlock {
@@ -213,6 +217,12 @@ export interface SectionBlock extends BaseBlock {
    * width 0 is not drawn.
    */
   border?: BorderValue;
+  /**
+   * Image behind the section's columns, rendered as `background-url` (plus
+   * size, position and repeat) on the `mj-section`. `styles.backgroundColor`
+   * is its fallback.
+   */
+  backgroundImage?: BackgroundImage;
   /** Optional outer frame (rendered as an `mj-wrapper` around the section). */
   wrapper?: SectionWrapper;
 }
@@ -531,13 +541,15 @@ export interface SlotBlock extends BaseBlock {
 
 /**
  * Layout-only band rendered as `mj-wrapper`. The block is the band:
- * `styles.backgroundColor` / `styles.padding` / `borderRadius` map to the
- * wrapper. Legal in layout only this ship.
+ * `styles.backgroundColor` / `styles.padding` / `borderRadius` /
+ * `backgroundImage` map to the wrapper. Legal in layout only this ship.
  */
 export interface WrapperBlock extends BaseBlock {
   type: "wrapper";
   children: Block[];
   borderRadius?: number;
+  /** Image behind the band; `styles.backgroundColor` is its fallback. */
+  backgroundImage?: BackgroundImage;
 }
 
 export type Block =

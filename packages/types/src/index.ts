@@ -53,6 +53,23 @@ export {
   uniformBorder,
 } from "./blocks";
 
+// Background images (sections and wrapper bands)
+export type {
+  BackgroundImage,
+  BackgroundPositionX,
+  BackgroundPositionY,
+  BackgroundSize,
+  ResolvedBackgroundImage,
+} from "./background-image";
+export {
+  BACKGROUND_POSITIONS_X,
+  BACKGROUND_POSITIONS_Y,
+  BACKGROUND_SIZES,
+  createBackgroundImage,
+  encodeCssUrl,
+  resolveBackgroundImage,
+} from "./background-image";
+
 // Social icon glyphs (shared by the editor's inline SVG + the renderer's PNG rasterizer)
 export type { SocialIconGlyph } from "./social";
 export {
