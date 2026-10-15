@@ -146,7 +146,7 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
   >
     <!-- Drag-over / uploading overlay (#229) -->
     <div
-      v-if="dropEnabled && (isOver || isUploading)"
+      v-if="(dropEnabled && isOver) || isUploading"
       class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
       style="
         background-color: color-mix(in srgb, var(--tpl-bg) 85%, transparent);

@@ -13,6 +13,7 @@ import {
   IMAGE_URL_RESOLVER_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  ON_REQUEST_MEDIA_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
 import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
@@ -370,5 +371,52 @@ describe("ImageBlock border", () => {
         "",
       );
     }
+  });
+});
+
+describe("ImageBlock drag-and-drop upload (#229)", () => {
+  it("shows the uploading state until the upload settles", async () => {
+    let finish: (value: { url: string }) => void = () => {};
+    const onRequestMedia = vi.fn(
+      () =>
+        new Promise<{ url: string }>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const wrapper = mount(ImageBlock, {
+      props: { block: createImageBlock({ src: "" }), viewport: "desktop" },
+      global: {
+        provide: {
+          ...baseProvide(),
+          [ON_REQUEST_MEDIA_KEY as symbol]: onRequestMedia,
+        },
+      },
+    });
+    const file = new File(["data"], "up.png", { type: "image/png" });
+
+    // The drop listener attaches once the zone's template ref resolves, a
+    // tick after mount.
+    await flushPromises();
+    const zone = wrapper.get('[data-testid="image-drop-zone"]');
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { files: [file], items: [{ type: file.type }] },
+    });
+    zone.element.dispatchEvent(event);
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledWith({
+      accept: ["images"],
+      files: [file],
+    });
+    expect(zone.text()).toContain(enTranslations.image.uploading);
+
+    finish({ url: "https://cdn/up.png" });
+    await flushPromises();
+
+    expect(zone.text()).not.toContain(enTranslations.image.uploading);
+    expect(wrapper.emitted("update")).toEqual([
+      [{ src: "https://cdn/up.png" }],
+    ]);
   });
 });

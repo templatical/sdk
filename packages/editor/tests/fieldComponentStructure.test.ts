@@ -1,11 +1,15 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises } from '@vue/test-utils';
 import TextField from '../src/components/toolbar/fields/TextField.vue';
 import TextareaField from '../src/components/toolbar/fields/TextareaField.vue';
 import NumberField from '../src/components/toolbar/fields/NumberField.vue';
 import SelectField from '../src/components/toolbar/fields/SelectField.vue';
 import BooleanField from '../src/components/toolbar/fields/BooleanField.vue';
+import ImageField from '../src/components/toolbar/fields/ImageField.vue';
 import { mountEditor } from './helpers/mount';
+import en from '../src/i18n/locales/en';
+import { ON_REQUEST_MEDIA_KEY, TRANSLATIONS_KEY } from '../src/keys';
 
 describe('TextField', () => {
   it('renders an editable MergeTagInput (not the disabled readOnly fallback)', () => {
@@ -183,5 +187,52 @@ describe('BooleanField', () => {
       props: { field: { ...field, required: true }, modelValue: false },
     });
     expect(wrapper.text()).toContain('*');
+  });
+});
+
+describe('ImageField', () => {
+  it('shows the uploading state until a dropped image finishes uploading', async () => {
+    let finish: (value: { url: string }) => void = () => {};
+    const onRequestMedia = vi.fn(
+      () =>
+        new Promise<{ url: string }>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const wrapper = mountEditor(ImageField, {
+      props: {
+        field: { type: 'image', key: 'img', label: 'Image' },
+        modelValue: '',
+      },
+      provides: {
+        [TRANSLATIONS_KEY]: en,
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      },
+    });
+    const file = new File(['data'], 'up.png', { type: 'image/png' });
+
+    // The drop listener attaches once the zone's template ref resolves, a
+    // tick after mount. A drop on the URL input bubbles up to the zone.
+    await flushPromises();
+    const event = new Event('drop', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'dataTransfer', {
+      value: { files: [file], items: [{ type: file.type }] },
+    });
+    wrapper.get('input[type="url"]').element.dispatchEvent(event);
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledWith({
+      accept: ['images'],
+      files: [file],
+    });
+    expect(wrapper.text()).toContain(en.image.uploading);
+
+    finish({ url: 'https://cdn/up.png' });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain(en.image.uploading);
+    expect(wrapper.emitted('update:modelValue')).toEqual([
+      ['https://cdn/up.png'],
+    ]);
   });
 });
