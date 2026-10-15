@@ -158,4 +158,43 @@ describe("font-family — round-trip through MJML compiler", () => {
     // MJML links an `mj-font` only when a font-family attribute uses it.
     expect(html).toContain('href="https://fonts.example.com/inter.css"');
   });
+
+  it("gives a lone unknown family the default fallback in the compiled HTML", async () => {
+    const html = await renderHtml(
+      makeContent(
+        [
+          createParagraphBlock({ content: "<p>Body</p>" }),
+          createTitleBlock({ content: "<p>Hi</p>", fontFamily: "Montserrat" }),
+        ],
+        "Helvetica Neue",
+      ),
+    );
+
+    const families = styleFontFamilies(html);
+    expect(families).toContain("'Helvetica Neue', Arial, sans-serif");
+    expect(families).toContain("'Montserrat', Arial, sans-serif");
+    expect(families).not.toContain("Helvetica Neue");
+    expect(families).not.toContain("Montserrat");
+  });
+
+  it("honours a configured defaultFallbackFont", async () => {
+    const html = await renderHtml(
+      makeContent([createParagraphBlock({ content: "<p>Body</p>" })], "Inter"),
+      { defaultFallbackFont: "Georgia, serif" },
+    );
+
+    expect(styleFontFamilies(html)).toContain("'Inter', Georgia, serif");
+  });
+
+  it("emits an author's stack unchanged", async () => {
+    const stack = "Montserrat, 'Trebuchet MS', sans-serif";
+    const html = await renderHtml(
+      makeContent([
+        createTitleBlock({ content: "<p>Hi</p>", fontFamily: stack }),
+      ]),
+    );
+
+    expect(styleFontFamilies(html)).toContain(stack);
+    expect(html).toContain(`font-family:${stack};`);
+  });
 });

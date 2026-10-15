@@ -21,9 +21,46 @@ describe('RenderContext', () => {
     expect(ctx.resolveFontFamily('Courier New')).toBe("'Courier New', monospace");
   });
 
-  it('returns unknown font family as-is', () => {
+  it('appends the default fallback to a lone unknown family, quoted', () => {
     const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
-    expect(ctx.resolveFontFamily('UnknownFont')).toBe('UnknownFont');
+    expect(ctx.resolveFontFamily('UnknownFont')).toBe("'UnknownFont', Arial, sans-serif");
+    expect(ctx.resolveFontFamily('Helvetica Neue')).toBe("'Helvetica Neue', Arial, sans-serif");
+    expect(ctx.resolveFontFamily('"Helvetica Neue"')).toBe("'Helvetica Neue', Arial, sans-serif");
+  });
+
+  it('uses a configured default fallback', () => {
+    const ctx = new RenderContext(600, [], 'Georgia, serif', true);
+    expect(ctx.resolveFontFamily('Inter')).toBe("'Inter', Georgia, serif");
+  });
+
+  it('passes a stack through as written', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.resolveFontFamily('Montserrat, Trebuchet MS, sans-serif')).toBe(
+      'Montserrat, Trebuchet MS, sans-serif',
+    );
+    expect(ctx.resolveFontFamily('"Helvetica Neue", Arial')).toBe('"Helvetica Neue", Arial');
+  });
+
+  it('leaves generic families, CSS-wide keywords and invalid values alone', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.resolveFontFamily('sans-serif')).toBe('sans-serif');
+    expect(ctx.resolveFontFamily('inherit')).toBe('inherit');
+    expect(ctx.resolveFontFamily('inherit, Arial')).toBe('inherit, Arial');
+  });
+
+  it('matches a quoted custom font name', () => {
+    const ctx = new RenderContext(
+      600,
+      [{ name: 'Inter', url: 'https://fonts.example.com/inter.css' }],
+      'Arial, sans-serif',
+      true,
+    );
+    expect(ctx.resolveFontFamily("'Inter'")).toBe("'Inter', Arial, sans-serif");
+  });
+
+  it('resolves Tahoma from the shared built-in table', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.resolveFontFamily('tahoma')).toBe('Tahoma, sans-serif');
   });
 
   it('resolves custom font with fallback', () => {
