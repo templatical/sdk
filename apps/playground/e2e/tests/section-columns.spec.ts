@@ -1,7 +1,6 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Locator } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
-import type { EditorPage } from "../pages/editor.page";
 
 const PADDING = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
 
@@ -38,31 +37,6 @@ const CONDITIONAL_COLUMN = {
     },
   ],
 };
-
-async function openWithContent(
-  page: Page,
-  editorPage: EditorPage,
-  shadowDom: boolean,
-) {
-  await page.route("**/api/shares/conditional-column", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "conditional-column",
-        sceneId: "minimum",
-        content: CONDITIONAL_COLUMN,
-        createdAt: "2026-10-15T00:00:00.000Z",
-      }),
-    }),
-  );
-  await page.goto(`/?s=conditional-column&shadowDom=${shadowDom ? "1" : "0"}`);
-  await page.waitForSelector(
-    '[data-testid="scene-host"][data-scene-ready="true"]',
-  );
-  await editorPage.waitForReady();
-  await editorPage.dismissOverlays();
-}
 
 const heightOf = async (el: Locator) => (await el.boundingBox())!.height;
 const borderOf = (el: Locator) =>
@@ -181,10 +155,10 @@ test.describe("Section columns", () => {
 
   test("a column whose blocks the condition filter hides collapses in preview", async ({
     editorPage,
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, editorPage, shadowDom);
+    await openSharedContent("conditional-column", CONDITIONAL_COLUMN);
 
     const column = editorPage.getSectionColumn(0, 0);
     const block = page.locator('[data-block-id="vip-note"]');

@@ -1,6 +1,43 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { blockByType } from "../helpers/selectors";
 
+const PADDING = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
+
+/** A one-column section holding two blocks, so its column can be reordered. */
+const TWO_BLOCK_COLUMN = {
+  settings: {
+    width: 600,
+    backgroundColor: "#ffffff",
+    textColor: "#1a1a1a",
+    fontFamily: "Arial",
+    locale: "en",
+  },
+  blocks: [
+    {
+      id: "section",
+      type: "section",
+      columns: "1",
+      styles: PADDING,
+      children: [
+        [
+          {
+            id: "first",
+            type: "paragraph",
+            content: "<p>First</p>",
+            styles: PADDING,
+          },
+          {
+            id: "second",
+            type: "paragraph",
+            content: "<p>Second</p>",
+            styles: PADDING,
+          },
+        ],
+      ],
+    },
+  ],
+};
+
 /**
  * Drag-and-drop fallback-mode regression suite.
  *
@@ -122,7 +159,8 @@ test.describe("Drag fallback-mode regression suite", () => {
   });
 
   test("section column reorder via grip (Chrome nested-Sortable fix)", async ({
-    editorReady: { editorPage },
+    editorPage,
+    openSharedContent,
     page,
   }) => {
     // Regression: Chrome's HTML5 native drag silently failed to fire
@@ -131,22 +169,21 @@ test.describe("Drag fallback-mode regression suite", () => {
     // to force-fallback bypassed Chrome's native-drag chain and made
     // the reorder work. Marking this test ensures fallback mode stays
     // in place on the section Sortable.
-    const sections = page.locator(blockByType("section"));
-    if ((await sections.count()) === 0) {
-      test.skip();
-      return;
-    }
-    const idsBefore = await editorPage.getSectionColumnBlockIds(0, 0);
-    if (idsBefore.length < 2) {
-      test.skip();
-      return;
-    }
+    await openSharedContent("two-block-column", TWO_BLOCK_COLUMN);
+    expect(await editorPage.getSectionColumnBlockIds(0, 0)).toEqual([
+      "first",
+      "second",
+    ]);
 
-    await editorPage.reorderBlockWithinSection(0, 0, 0, 1);
+    await editorPage.dragBlockByGrip(
+      page.locator('[data-block-id="first"]'),
+      page.locator('[data-block-id="second"]'),
+      "after",
+    );
 
-    const idsAfter = await editorPage.getSectionColumnBlockIds(0, 0);
-    expect(idsAfter[0]).toBe(idsBefore[1]);
-    expect(idsAfter[1]).toBe(idsBefore[0]);
+    await expect
+      .poll(() => editorPage.getSectionColumnBlockIds(0, 0))
+      .toEqual(["second", "first"]);
   });
 
   test("canvas reorder via grip works (no native-drag-aborting attribute)", async ({

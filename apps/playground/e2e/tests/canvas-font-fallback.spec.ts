@@ -1,7 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
-import { EditorPage } from "../pages/editor.page";
 
 /**
  * The canvas previews a font with the fallbacks the email gets. A family the
@@ -44,30 +43,6 @@ const CONTENT = {
   ],
 };
 
-async function openWithContent(page: Page, shadowDom: boolean) {
-  await page.route("**/api/shares/canvas-font-fallback", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "canvas-font-fallback",
-        sceneId: "minimum",
-        content: CONTENT,
-        createdAt: "2026-10-15T00:00:00.000Z",
-      }),
-    }),
-  );
-  await page.goto(
-    `/?s=canvas-font-fallback&shadowDom=${shadowDom ? "1" : "0"}`,
-  );
-  await page.waitForSelector(
-    '[data-testid="scene-host"][data-scene-ready="true"]',
-  );
-  const editorPage = new EditorPage(page);
-  await editorPage.waitForReady();
-  await editorPage.dismissOverlays();
-}
-
 /** The computed `font-family` as family names, quotes dropped. */
 const families = (element: Locator) =>
   element.evaluate((el) =>
@@ -81,10 +56,10 @@ const titleFont = (page: Page, id: string) =>
 
 test.describe("canvas font fallback", () => {
   test("a title in an unknown font falls back as the email does", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("canvas-font-fallback", CONTENT);
 
     await expect
       .poll(() => families(titleFont(page, "unknown-title")))
@@ -92,10 +67,10 @@ test.describe("canvas font fallback", () => {
   });
 
   test("a title in a built-in font gets its stack", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("canvas-font-fallback", CONTENT);
 
     await expect
       .poll(() => families(titleFont(page, "built-in-title")))
@@ -103,10 +78,10 @@ test.describe("canvas font fallback", () => {
   });
 
   test("the template font falls back as <mj-all> does", async ({
+    openSharedContent,
     page,
-    shadowDom,
   }) => {
-    await openWithContent(page, shadowDom);
+    await openSharedContent("canvas-font-fallback", CONTENT);
 
     await expect
       .poll(() => families(page.locator(SELECTORS.canvas).first()))

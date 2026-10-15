@@ -1,4 +1,3 @@
-import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, paletteByType } from "../helpers/selectors";
 import type { EditorPage } from "../pages/editor.page";
@@ -57,35 +56,6 @@ const CONTENT = {
   ],
 };
 
-async function openWithContent(
-  page: Page,
-  editorPage: EditorPage,
-  shadowDom: boolean,
-) {
-  await page.route("**/api/shares/column-drop-area", async (route) => {
-    if (route.request().method() !== "GET") {
-      await route.fallback();
-      return;
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "column-drop-area",
-        sceneId: "minimum",
-        content: CONTENT,
-        createdAt: "2026-10-13T00:00:00.000Z",
-      }),
-    });
-  });
-  await page.goto(`/?s=column-drop-area&shadowDom=${shadowDom ? "1" : "0"}`);
-  await page.waitForSelector(
-    '[data-testid="scene-host"][data-scene-ready="true"]',
-  );
-  await editorPage.waitForReady();
-  await editorPage.dismissOverlays();
-}
-
 /** Top-level and column block ids, with the dropped block's id as "dropped". */
 async function layout(editorPage: EditorPage) {
   const name = (id: string) =>
@@ -103,10 +73,10 @@ test.describe("Section column drop area", () => {
   for (const gap of [12, 150]) {
     test(`a palette drop ${gap}px below a short column's block lands after it`, async ({
       editorPage,
+      openSharedContent,
       page,
-      shadowDom,
     }) => {
-      await openWithContent(page, editorPage, shadowDom);
+      await openSharedContent("column-drop-area", CONTENT);
 
       const imageColumnBox = (await editorPage
         .getSectionColumn(0, 0)
