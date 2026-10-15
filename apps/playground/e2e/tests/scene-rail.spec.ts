@@ -220,7 +220,7 @@ test.describe("Scene rail", () => {
     scenePage,
     page,
   }) => {
-    await scenePage.goto("custom-blocks");
+    await scenePage.goto("media-on-request");
     const next = page.getByTestId("scene-next");
     await expect(next).toHaveAttribute("aria-label", "Next: Merge tags");
     await expect(next).toHaveAttribute("title", "Next: Merge tags");
@@ -236,7 +236,7 @@ test.describe("Scene rail", () => {
     ).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByTestId("scene-previous")).toHaveAttribute(
       "aria-label",
-      "Previous: Custom blocks",
+      "Previous: Media on request",
     );
   });
 

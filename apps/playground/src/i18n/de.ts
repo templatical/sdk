@@ -144,6 +144,12 @@ export default {
         "Ihr Block „Testimonial“ steht in der Palette und auf der Arbeitsfläche: Wählen Sie ihn aus, um seine Felder zu bearbeiten.",
       note: "Ihr Block",
     },
+    "media-on-request": {
+      title: "Medien auf Anfrage",
+      seeIt:
+        "Ziehen Sie ein „Image“ hinein und klicken Sie auf „Browse Media“: Statt der Mediathek öffnet sich Ihre eigene Auswahl, und eine abgelegte Datei wird direkt übernommen.",
+      note: "Bild hineinziehen",
+    },
     "merge-tags": {
       title: "Merge-Tags",
       seeIt:

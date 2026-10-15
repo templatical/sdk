@@ -146,6 +146,12 @@ export default {
         "Your Testimonial block sits on the palette and the canvas: select it to edit its fields.",
       note: "your block",
     },
+    "media-on-request": {
+      title: "Media on request",
+      seeIt:
+        "Drag an Image in and click Browse Media: your own picker opens instead of the library, and a dropped file goes straight in.",
+      note: "drag an Image",
+    },
     "merge-tags": {
       title: "Merge tags",
       seeIt:

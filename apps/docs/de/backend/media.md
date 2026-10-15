@@ -370,3 +370,7 @@ Eine CMS-Galerie, die listet und hochlädt und sonst nichts, hat dieselbe Form w
 Das Setup **Media** übergibt einen `media`-Provider mit einer vorbefüllten Galerie im Speicher dieses Browsers: durchsuchen, per Drag-and-drop hochladen, ein Bild auswählen.
 
 [Im Playground öffnen](https://play.templatical.com/scenes/media)
+
+Das Setup **Media on request** übergibt stattdessen `onRequestMedia`: „Browse Media“ öffnet eine Auswahl, die der Host-Seite gehört, und eine abgelegte Datei kommt als `data:`-URL zurück.
+
+[Im Playground öffnen](https://play.templatical.com/scenes/media-on-request)

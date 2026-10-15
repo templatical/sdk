@@ -289,6 +289,9 @@ export const SELECTORS = {
   // Playground's consumer-owned onRequest modal (separate from SDK picker)
   playgroundMergeTagModal: '[data-testid="playground-merge-tag-modal"]',
 
+  // Playground's host-owned onRequestMedia picker (separate from the library)
+  playgroundMediaModal: '[data-testid="playground-media-modal"]',
+
   // Config modal toggles (playground)
   configEnableOnRequestMergeTag: '[data-testid="enable-on-request-merge-tag"]',
   configApply: '[data-testid="config-apply"]',

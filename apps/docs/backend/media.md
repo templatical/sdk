@@ -370,3 +370,7 @@ A CMS gallery that lists and uploads, and nothing else, is the same shape as the
 The **Media** setup passes a `media` provider with a seeded gallery in this browser's storage: browse, drop a file to upload, pick an image.
 
 [Open in playground](https://play.templatical.com/scenes/media)
+
+The **Media on request** setup passes `onRequestMedia` instead: Browse opens a picker the host page owns, and a dropped file comes back as a `data:` URL.
+
+[Open in playground](https://play.templatical.com/scenes/media-on-request)

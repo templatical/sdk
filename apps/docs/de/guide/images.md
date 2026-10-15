@@ -9,7 +9,7 @@ Wenn ein Benutzer einen Bildblock hinzufügt, zeigt der Editor ein Textfeld an, 
 
 <img src="/images/image-fields.png" alt="Felder des Bildblocks" style="max-width: 360px;" />
 
-## Durchsuchen und auswählen
+## Durchsuchen und auswählen {#browse-and-pick}
 
 Eine Durchsuchen-Schaltfläche erscheint neben der URL-Eingabe, sobald **entweder** ein [`media`](/de/backend/media)-Provider **oder** `onRequestMedia` konfiguriert ist.
 
@@ -33,6 +33,8 @@ const editor = await init({
 ```
 
 Eine eigene Galerie ist der Schlüssel `media` — siehe [Medien](/de/backend/media).
+
+[Im Playground öffnen](https://play.templatical.com/scenes/media-on-request)
 
 Die Typsignatur:
 

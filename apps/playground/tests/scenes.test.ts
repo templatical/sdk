@@ -76,6 +76,7 @@ const CONFIGURE_IDS = [
   "shadow-dom-off",
   "issues",
   "custom-blocks",
+  "media-on-request",
 ] as const;
 
 const PERSONALIZATION_IDS = [
@@ -108,6 +109,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   "logic-tags": "/guide/logic-tags",
   "display-conditions": "/guide/display-conditions",
   "custom-blocks": "/guide/custom-blocks",
+  "media-on-request": "/guide/images#browse-and-pick",
   issues: "/quality/#wire-into-the-editor",
   fonts: "/guide/fonts#restricting-the-built-in-fonts",
   defaults: "/guide/defaults#block-defaults",
@@ -272,8 +274,8 @@ describe("sceneNeighbours", () => {
   });
 
   it("crosses from the last scene of one group to the first of the next", () => {
-    const { previous, next } = sceneNeighbours("custom-blocks");
-    expect(previous?.id).toBe("issues");
+    const { previous, next } = sceneNeighbours("media-on-request");
+    expect(previous?.id).toBe("custom-blocks");
     expect(next?.id).toBe("merge-tags");
     expect(next?.group).toBe("personalization");
   });

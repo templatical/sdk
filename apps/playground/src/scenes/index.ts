@@ -6,6 +6,7 @@ import { i18n } from "./author/i18n";
 import { issues } from "./author/issues";
 import { layout } from "./author/layout";
 import { logicTags } from "./author/logic-tags";
+import { mediaOnRequest } from "./author/media-on-request";
 import { mergeTags } from "./author/merge-tags";
 import { mergeTagsOnRequest } from "./author/merge-tags-on-request";
 import { mergeTagsResolvePreview } from "./author/merge-tags-resolve-preview";
@@ -58,6 +59,7 @@ export const SCENES: readonly Scene[] = [
   shadowDomOff,
   issues,
   customBlocks,
+  mediaOnRequest,
   mergeTags,
   mergeTagsOnRequest,
   mergeTagsSamples,
