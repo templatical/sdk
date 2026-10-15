@@ -6,6 +6,7 @@ import { i18n } from "./author/i18n";
 import { issues } from "./author/issues";
 import { layout } from "./author/layout";
 import { logicTags } from "./author/logic-tags";
+import { mediaOnRequest } from "./author/media-on-request";
 import { mergeTags } from "./author/merge-tags";
 import { mergeTagsOnRequest } from "./author/merge-tags-on-request";
 import { mergeTagsResolvePreview } from "./author/merge-tags-resolve-preview";
@@ -31,7 +32,6 @@ import { importUnlayer } from "./import/import-unlayer";
 import { minimum } from "./minimum";
 import { comments } from "./storage/comments";
 import { media } from "./storage/media";
-import { mediaOnRequest } from "./storage/media-on-request";
 import { render } from "./storage/render";
 import { savedBlocks } from "./storage/saved-blocks";
 import { templates } from "./storage/templates";
@@ -59,6 +59,7 @@ export const SCENES: readonly Scene[] = [
   shadowDomOff,
   issues,
   customBlocks,
+  mediaOnRequest,
   mergeTags,
   mergeTagsOnRequest,
   mergeTagsSamples,
@@ -70,7 +71,6 @@ export const SCENES: readonly Scene[] = [
   comments,
   savedBlocks,
   media,
-  mediaOnRequest,
   testEmail,
   render,
   // Importers follow the docs sidebar (tests/scenes.test.ts reads it).

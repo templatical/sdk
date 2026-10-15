@@ -18,6 +18,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Shadow DOM off](https://play.templatical.com/scenes/shadow-dom-off): Mount in the page light DOM
 - [Issues](https://play.templatical.com/scenes/issues): Lint the template as you edit
 - [Custom blocks](https://play.templatical.com/scenes/custom-blocks): Register your own block type
+- [Media on request](https://play.templatical.com/scenes/media-on-request): Pick images in your own UI
 
 ## Personalization
 
@@ -35,7 +36,6 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Comments](https://play.templatical.com/scenes/comments): Thread a note on a block
 - [Saved blocks](https://play.templatical.com/scenes/saved-blocks): Bookmark a reusable group
 - [Media](https://play.templatical.com/scenes/media): Upload and pick an image
-- [Media on request](https://play.templatical.com/scenes/media-on-request): Pick images in your own UI
 - [Test email](https://play.templatical.com/scenes/test-email): Send this to an inbox
 - [Render](https://play.templatical.com/scenes/render): Export MJML and HTML
 

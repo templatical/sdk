@@ -131,7 +131,7 @@ export const mediaOnRequest: Scene = {
   summary:
     "init({ onRequestMedia }) — a host-owned picker replaces the media library.",
   catalog: "oss",
-  group: "backend",
+  group: "configure",
   docs: "/guide/images#browse-and-pick",
   pointer: {
     selector: '[data-palette-type="image"]',
