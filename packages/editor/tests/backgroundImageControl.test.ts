@@ -127,6 +127,17 @@ describe("BackgroundImageControl", () => {
     expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(HERO));
   });
 
+  it("leaves the image alone when the media browser is cancelled", async () => {
+    const onRequestMedia = vi.fn(async () => null);
+    const wrapper = mountIt(createBackgroundImage(HERO), {
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+    });
+    await wrapper.get('[data-testid="t-bg-browse"]').trigger("click");
+    await flushPromises();
+    expect(onRequestMedia).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+  });
+
   describe("malformed JSON", () => {
     it("renders an image without a position and presses no cell", () => {
       const malformed = {
@@ -200,6 +211,35 @@ describe("BackgroundImageControl", () => {
         accept: ["images"],
         files: [file],
       });
+      expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(HERO));
+    });
+
+    it("shows the uploading state until the upload settles", async () => {
+      let finish: (value: { url: string }) => void = () => {};
+      const onRequestMedia = vi.fn(
+        () =>
+          new Promise<{ url: string }>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const wrapper = mountIt(undefined, {
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      });
+
+      await dropOn(
+        wrapper,
+        new File(["data"], "hero.png", { type: "image/png" }),
+      );
+      await flushPromises();
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).toContain(
+        en.image.uploading,
+      );
+
+      finish({ url: HERO });
+      await flushPromises();
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.uploading,
+      );
       expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(HERO));
     });
 

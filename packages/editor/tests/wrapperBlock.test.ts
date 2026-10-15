@@ -107,6 +107,35 @@ describe("WrapperBlock background images", () => {
     ).toContain('background-image: url("blob:hero.jpg")');
   });
 
+  it("looks up only section images among mixed children", async () => {
+    const resolve = vi.fn(async (src: string) => `blob:${src}`);
+    const resolver = createImageUrlResolver(resolve);
+    const title = createTitleBlock({ content: "<p>Card body</p>", level: 2 });
+    const plain = createSectionBlock();
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage("hero.jpg"),
+    });
+    const block = createWrapperBlock({ children: [title, plain, section] });
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block, viewport: "desktop" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [IMAGE_URL_RESOLVER_KEY]: resolver,
+      },
+    });
+    await flushPromises();
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(resolve).toHaveBeenCalledWith("hero.jpg");
+    expect(
+      wrapper.get(`[data-block-id="${plain.id}"]`).attributes("style"),
+    ).not.toContain("background-image");
+    expect(
+      wrapper.get(`[data-block-id="${section.id}"]`).attributes("style"),
+    ).toContain('background-image: url("blob:hero.jpg")');
+  });
+
   it("looks up the image of a section added to the band later", async () => {
     const resolve = vi.fn(async (src: string) => `blob:${src}`);
     const resolver = createImageUrlResolver(resolve);
