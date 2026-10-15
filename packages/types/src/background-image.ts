@@ -1,4 +1,9 @@
-/** `background-size` keywords. Each maps cleanly to Outlook's VML fill. */
+/**
+ * `background-size` keywords. In Outlook on Windows (VML), `cover` and
+ * `contain` draw a single frame when `repeat` is off and tile when it is on;
+ * `auto` always tiles from the top centre, whatever `position` and `repeat`
+ * say.
+ */
 export type BackgroundSize = "cover" | "contain" | "auto";
 
 export type BackgroundPositionX = "left" | "center" | "right";
@@ -93,7 +98,7 @@ export function encodeCssUrl(url: string): string {
 export function resolveBackgroundImage(
   bg: BackgroundImage | undefined,
 ): ResolvedBackgroundImage | null {
-  const url = bg?.url?.trim();
+  const url = typeof bg?.url === "string" ? bg.url.trim() : "";
   if (!bg || !url) {
     return null;
   }

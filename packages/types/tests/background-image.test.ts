@@ -112,6 +112,14 @@ describe("resolveBackgroundImage", () => {
       BackgroundImage;
     expect(resolveBackgroundImage(partial)?.position).toBe("center center");
   });
+
+  it("returns null when the url is not a string", () => {
+    expect(
+      resolveBackgroundImage(
+        { ...image, url: 123 } as unknown as BackgroundImage,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe("block fields", () => {
