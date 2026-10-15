@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  fontStack,
   parseAlignment,
   parseBorderShorthand,
   parseColor,
@@ -115,5 +116,22 @@ describe("parseAlignment", () => {
   });
   it("falls back for unknown", () => {
     expect(parseAlignment("justify", "left")).toBe("left");
+  });
+});
+
+describe("fontStack", () => {
+  it("keeps a stack's fallbacks", () => {
+    expect(fontStack("Montserrat, Arial, sans-serif")).toBe(
+      "Montserrat, Arial, sans-serif",
+    );
+  });
+  it("stores a built-in's own stack as the bare name", () => {
+    expect(fontStack("Arial, sans-serif")).toBe("Arial");
+  });
+  it("returns undefined when the value sets no font", () => {
+    expect(fontStack("")).toBeUndefined();
+    expect(fontStack("inherit")).toBeUndefined();
+    expect(fontStack(undefined)).toBeUndefined();
+    expect(fontStack(12)).toBeUndefined();
   });
 });
