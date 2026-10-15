@@ -1,5 +1,31 @@
 # @templatical/template-tools
 
+## 0.46.0
+
+### Patch Changes
+
+- c395ecf: The `SectionWrapper` description in `schema.json` no longer calls the wrapper a full-width band
+
+  The wrapper renders as an `mj-wrapper` without MJML's `full-width` attribute, so its band is as wide as the email body (`settings.width`), not the recipient's viewport. The description in the published schema now says so.
+
+- Updated dependencies [9d97f4d]
+- Updated dependencies [c395ecf]
+- Updated dependencies [f24888a]
+- Updated dependencies [58c7694]
+- Updated dependencies [1045b2c]
+- Updated dependencies [192c8ab]
+  - @templatical/types@0.46.0
+  - @templatical/renderer@0.46.0
+  - @templatical/import-html@0.46.0
+  - @templatical/import-stripo@0.46.0
+  - @templatical/import-mjml@0.46.0
+  - @templatical/import-topol@0.46.0
+  - @templatical/import-beefree@0.46.0
+  - @templatical/import-unlayer@0.46.0
+  - @templatical/import-chamaileon@0.46.0
+  - @templatical/import-easy-email-pro@0.46.0
+  - @templatical/quality@0.46.0
+
 ## 0.45.0
 
 ### Patch Changes
