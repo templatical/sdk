@@ -58,7 +58,7 @@ Container that arranges blocks into columns.
 
 <!-- BEGIN GENERATED FIELDS: section -->
 **Required** — `columns` (ColumnLayout), `children` (Block[][]).
-**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `wrapper` (SectionWrapper).
+**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
 - `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
@@ -73,10 +73,18 @@ Container that arranges blocks into columns.
 - `style` (inside each `border` side) is one of `"solid"`, `"dashed"`, `"dotted"`.
 - `stackOnMobile` — omit or `true` keeps the default responsive stacking
   (columns stack below 480px); `false` keeps them side by side.
-- `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius? }`
-  (e.g. a white card on a colored band); its `borderRadius` takes the same
-  number-or-per-corner form. The band is as wide as `settings.width`, not the
-  recipient's viewport.
+- `backgroundImage` paints an image behind the section's columns:
+  `{ url, size, position: { x, y }, repeat }`. `x` is `"left"`, `"center"` or
+  `"right"`; `y` is `"top"`, `"center"` or `"bottom"`; `repeat` is a boolean
+  (`false` paints it once). Set `styles.backgroundColor` too — it's the fallback
+  when images are off.
+- `size` (inside `backgroundImage`) is one of `"cover"`, `"contain"`, `"auto"`.
+- `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius?,
+  backgroundImage? }` (e.g. a white card on a colored band); its `borderRadius`
+  takes the same number-or-per-corner form. The band is as wide as
+  `settings.width`, not the recipient's viewport. Don't give both the wrapper
+  and its section a `backgroundImage`, and don't put a wrapper `backgroundColor`
+  behind a section image — Outlook for Windows breaks both.
 
 Don't nest a section inside another section — MJML has no equivalent, so the
 renderer drops it on export.

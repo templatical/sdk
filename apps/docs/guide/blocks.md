@@ -245,12 +245,20 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+| `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
 - Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.
 - Dashed and dotted borders compile, and Outlook's rendering engine often paints them solid.
 - An image border is drawn on the `<img>`, and Outlook often drops it. Section and button borders sit on the `<td>`, which is the durable place for a border.
+:::
+
+::: tip Email client note: background images
+- Set a background color as well. It shows while the image loads, when images are off, and in clients that don't support background images.
+- A merge tag works as the URL (for example <code v-pre>{{ hero_url }}</code>). The canvas shows the fallback color for it, since there is no image to load yet. Quotes inside the tag are percent-encoded, so avoid quoted arguments (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
+- Outlook on Windows draws the image with VML, where an image at its original size (`auto`) tiles from the top center whatever `position` and `repeat` say.
+- In Outlook on Windows, a wrapper's background color paints over the section's background image, and an image on both the wrapper and the section breaks the layout. The `structure` linter warns about both.
 :::
 
 ## Custom

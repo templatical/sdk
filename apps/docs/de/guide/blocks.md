@@ -245,12 +245,20 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 | `stackOnMobile` | `boolean` | Weglassen oder `true`: Spalten stapeln auf Mobilgeräten (MJML-Standard). `false`: nebeneinander (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder einer pro Ecke (optional; weglassen oder `0` für keine Abrundung) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, jeweils `{ width, style, color }`, um die Sektion gezeichnet (optional; weglassen für keinen Rahmen) |
-| `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius? }` — gerendert als `mj-wrapper`-Band um die Sektion. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay. |
+| `backgroundImage` | `BackgroundImage` | Optionales Bild hinter der Sektion — `{ url, size, position: { x, y }, repeat }` — gerendert als `background-url` mit Größe, Position und Wiederholung an der `mj-section`. `size` ist `"cover"`, `"contain"` oder `"auto"`; `x` ist `"left"`, `"center"` oder `"right"`; `y` ist `"top"`, `"center"` oder `"bottom"`. `styles.backgroundColor` dient als Fallback. |
+| `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — gerendert als `mj-wrapper`-Band um die Sektion. Eine vom Host vorgegebene Karte um die Autorensektionen ist ein [Layout](/de/guide/layout)-Overlay. |
 
 ::: tip Hinweis zu E-Mail-Clients: Rahmen und Ecken in Outlook
 - Outlook unter Windows ignoriert `border-radius`, auch die Form mit vier Werten (pro Ecke).
 - Gestrichelte und gepunktete Rahmen werden kompiliert, die Rendering-Engine von Outlook zeichnet sie aber oft durchgezogen.
 - Ein Bildrahmen wird am `<img>` gezeichnet, und Outlook lässt ihn oft weg. Rahmen von Sektionen und Schaltflächen sitzen am `<td>`, dem beständigen Ort für einen Rahmen.
+:::
+
+::: tip Hinweis zu E-Mail-Clients: Hintergrundbilder
+- Legen Sie zusätzlich eine Hintergrundfarbe fest. Sie erscheint, solange das Bild lädt, wenn Bilder deaktiviert sind, und in Clients ohne Unterstützung für Hintergrundbilder.
+- Ein Merge-Tag funktioniert als URL (zum Beispiel <code v-pre>{{ hero_url }}</code>). Die Arbeitsfläche zeigt dafür die Fallback-Farbe, da noch kein Bild geladen werden kann. Anführungszeichen im Tag werden prozentkodiert, vermeiden Sie daher Argumente in Anführungszeichen (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
+- Outlook unter Windows zeichnet das Bild mit VML; ein Bild in Originalgröße (`auto`) wird dort ab oben mittig gekachelt, unabhängig von `position` und `repeat`.
+- In Outlook unter Windows überdeckt die Hintergrundfarbe eines Wrappers das Hintergrundbild der Sektion, und ein Bild auf Wrapper und Sektion zugleich zerstört das Layout. Der `structure`-Linter warnt vor beidem.
 :::
 
 ## Custom

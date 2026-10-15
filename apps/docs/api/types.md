@@ -246,12 +246,23 @@ interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
   border?: BorderValue;     // absent: no border
+  backgroundImage?: BackgroundImage; // absent: no image; styles.backgroundColor is its fallback
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
 }
 
 type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+
+interface BackgroundImage {
+  url: string;
+  size: 'cover' | 'contain' | 'auto';
+  position: {
+    x: 'left' | 'center' | 'right';
+    y: 'top' | 'center' | 'bottom';
+  };
+  repeat: boolean; // false: painted once
+}
 ```
 
 ### DividerBlock
@@ -444,6 +455,7 @@ interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
   borderRadius?: number;
+  backgroundImage?: BackgroundImage;
 }
 ```
 

@@ -202,6 +202,7 @@ describe("block-guide.md documents every enum value the schema declares", () => 
       // once, through the first side that reaches it.
       "button.border.top.style",
       "image.border.top.style",
+      "section.backgroundImage.size",
       "section.border.top.style",
       "section.columns",
       "settings.direction",

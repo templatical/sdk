@@ -60,7 +60,7 @@ unmount();
 | `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
-| `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                                                                             |
+| `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for section and section-wrapper background image URLs: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                                                                             |
 | `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                       |
 | `resolvePreview`     | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering)                                                                                                                                                                                                                                                                                                  |
 | `displayConditions`  | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -1443,12 +1443,23 @@ interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
   border?: BorderValue;     // absent: no border
+  backgroundImage?: BackgroundImage; // absent: no image; styles.backgroundColor is its fallback
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
 }
 
 type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+
+interface BackgroundImage {
+  url: string;
+  size: 'cover' | 'contain' | 'auto';
+  position: {
+    x: 'left' | 'center' | 'right';
+    y: 'top' | 'center' | 'bottom';
+  };
+  repeat: boolean; // false: painted once
+}
 ```
 
 ### DividerBlock
@@ -1641,6 +1652,7 @@ interface WrapperBlock extends BaseBlock {
   type: 'wrapper';
   children: Block[];
   borderRadius?: number;
+  backgroundImage?: BackgroundImage;
 }
 ```
 
@@ -6967,12 +6979,20 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
-| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
+| `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. |
+| `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
 - Outlook on Windows ignores `border-radius`, including the four-value (per-corner) form.
 - Dashed and dotted borders compile, and Outlook's rendering engine often paints them solid.
 - An image border is drawn on the `<img>`, and Outlook often drops it. Section and button borders sit on the `<td>`, which is the durable place for a border.
+:::
+
+::: tip Email client note: background images
+- Set a background color as well. It shows while the image loads, when images are off, and in clients that don't support background images.
+- A merge tag works as the URL (for example <code v-pre>{{ hero_url }}</code>). The canvas shows the fallback color for it, since there is no image to load yet. Quotes inside the tag are percent-encoded, so avoid quoted arguments (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
+- Outlook on Windows draws the image with VML, where an image at its original size (`auto`) tiles from the top center whatever `position` and `repeat` say.
+- In Outlook on Windows, a wrapper's background color paints over the section's background image, and an image on both the wrapper and the section breaks the layout. The `structure` linter warns about both.
 :::
 
 ## Custom
@@ -8518,6 +8538,7 @@ How the editor calls it:
 - **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src. Note this also holds for *transient* failures: a src that failed to resolve stays unresolved until the editor is re-initialized. A hook to re-trigger resolution may be added in a future release.
 - **Merge-tag srcs are skipped.** A src like <code v-pre>{{product.image}}</code> is never passed to the resolver; its `placeholderUrl` (if set) is resolved instead.
 - **Video thumbnails are covered too.** An explicit video `thumbnailUrl` (and a video block's `placeholderUrl`) resolves the same way. Thumbnails auto-derived from a YouTube/Vimeo URL are already real URLs and are never passed to the resolver.
+- **Background images are covered too.** The `backgroundImage.url` of a section or a section wrapper resolves the same way, for the canvas only. A merge-tag background URL is never passed to the resolver, and the canvas shows the element's fallback color for it.
 - **Display-only, by design.** Unlike returning a `blob:` URL from `onRequestMedia` (which would end up in the export — see above), a URL from `resolveImageUrl` never enters the template content.
 
 ## Image Block Properties
@@ -10822,7 +10843,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 
 ## Things that don't map automatically
 
-- **Section background images** — `SectionWrapper` carries only `backgroundColor`, `padding`, and `borderRadius`; Templatical has no background-image field on any block, and the renderer emits no `background-url`. A Topol section's `background-url` is never read, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
+- **Section background images** — Templatical sections take a `backgroundImage`, but the Topol importer doesn't read `background-url` yet. A Topol section's photo is never read, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
 - **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
 - **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
 - **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.

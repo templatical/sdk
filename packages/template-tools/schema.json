@@ -140,6 +140,10 @@
           "$ref": "#/definitions/BorderValue",
           "description": "Border around the section box, per side. Omitted = no border; a side with width 0 is not drawn."
         },
+        "backgroundImage": {
+          "$ref": "#/definitions/BackgroundImage",
+          "description": "Image behind the section's columns, rendered as `background-url` (plus size, position and repeat) on the `mj-section`. `styles.backgroundColor` is its fallback."
+        },
         "wrapper": {
           "$ref": "#/definitions/SectionWrapper",
           "description": "Optional outer frame (rendered as an `mj-wrapper` around the section)."
@@ -310,6 +314,70 @@
         "dotted"
       ]
     },
+    "BackgroundImage": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "size": {
+          "$ref": "#/definitions/BackgroundSize"
+        },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "$ref": "#/definitions/BackgroundPositionX"
+            },
+            "y": {
+              "$ref": "#/definitions/BackgroundPositionY"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        "repeat": {
+          "type": "boolean",
+          "description": "`false` paints the image once; `true` tiles it."
+        }
+      },
+      "required": [
+        "url",
+        "size",
+        "position",
+        "repeat"
+      ],
+      "additionalProperties": false,
+      "description": "An image painted behind a section or a wrapper band. The element's own `backgroundColor` is its fallback: it shows while the image loads, with images off, and in clients without background-image support."
+    },
+    "BackgroundSize": {
+      "type": "string",
+      "enum": [
+        "cover",
+        "contain",
+        "auto"
+      ],
+      "description": "`background-size` keywords. In Outlook on Windows (VML), `cover` and `contain` draw a single frame when `repeat` is off and tile when it is on; `auto` always tiles from the top centre, whatever `position` and `repeat` say."
+    },
+    "BackgroundPositionX": {
+      "type": "string",
+      "enum": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "BackgroundPositionY": {
+      "type": "string",
+      "enum": [
+        "top",
+        "center",
+        "bottom"
+      ]
+    },
     "SectionWrapper": {
       "type": "object",
       "properties": {
@@ -322,6 +390,10 @@
         "borderRadius": {
           "$ref": "#/definitions/BorderRadiusValue",
           "description": "Corner radius in px for the outer frame — one number, or a radius per corner. Omitted/0 = square corners."
+        },
+        "backgroundImage": {
+          "$ref": "#/definitions/BackgroundImage",
+          "description": "Image behind the band; `backgroundColor` is its fallback."
         }
       },
       "additionalProperties": false,
@@ -1685,6 +1757,10 @@
         },
         "borderRadius": {
           "type": "number"
+        },
+        "backgroundImage": {
+          "$ref": "#/definitions/BackgroundImage",
+          "description": "Image behind the band; `styles.backgroundColor` is its fallback."
         }
       },
       "required": [
@@ -1694,7 +1770,7 @@
         "type"
       ],
       "additionalProperties": false,
-      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` map to the wrapper. Legal in layout only this ship."
+      "description": "Layout-only band rendered as `mj-wrapper`. The block is the band: `styles.backgroundColor` / `styles.padding` / `borderRadius` / `backgroundImage` map to the wrapper. Legal in layout only this ship."
     },
     "TemplateSettings": {
       "type": "object",
