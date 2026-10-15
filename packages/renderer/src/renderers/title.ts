@@ -1,7 +1,11 @@
 import type { TitleBlock } from "@templatical/types";
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { convertMergeTagsToValues, escapeAttr } from "../escape";
+import {
+  convertMergeTagsToValues,
+  escapeAttr,
+  escapeFontFamily,
+} from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import {
@@ -75,5 +79,5 @@ function renderFontFamilyAttr(
 
   const resolved = context.resolveFontFamily(fontFamily);
 
-  return ` font-family="${resolved}"`;
+  return ` font-family="${escapeFontFamily(resolved)}"`;
 }

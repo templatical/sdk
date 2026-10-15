@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { escapeHtml, escapeAttr, convertMergeTagsToValues } from '../src';
+import { escapeFontFamily } from '../src/escape';
 
 describe('escapeHtml', () => {
   it('escapes HTML entities', () => {
@@ -22,6 +23,26 @@ describe('escapeAttr', () => {
     expect(escapeAttr('test "value" & <tag>')).toBe(
       'test &quot;value&quot; &amp; &lt;tag&gt;',
     );
+  });
+});
+
+describe('escapeFontFamily', () => {
+  it('escapes double quotes so a quoted family cannot end the attribute', () => {
+    expect(escapeFontFamily('"Helvetica Neue", Arial, sans-serif')).toBe(
+      '&quot;Helvetica Neue&quot;, Arial, sans-serif',
+    );
+  });
+
+  it('escapes & < >', () => {
+    expect(escapeFontFamily('A&B, <C>')).toBe('A&amp;B, &lt;C&gt;');
+  });
+
+  it('leaves single-quoted and plain stacks byte-for-byte', () => {
+    expect(escapeFontFamily("'Times New Roman', serif")).toBe(
+      "'Times New Roman', serif",
+    );
+    expect(escapeFontFamily('Arial, sans-serif')).toBe('Arial, sans-serif');
+    expect(escapeFontFamily('')).toBe('');
   });
 });
 

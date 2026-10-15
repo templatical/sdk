@@ -55,6 +55,23 @@ export function escapeCssValue(text: string): string {
   return escapeAttr(text).replace(/[;{}\r\n]/g, "");
 }
 
+const FONT_FAMILY_ENTITY_REGEX = /[&<>"]/g;
+
+/**
+ * Escape a font stack for a double-quoted `font-family="…"` MJML attribute.
+ * A `"`-quoted family (`"Helvetica Neue", Arial`) must not end the attribute,
+ * or the compiler reads it as empty. Unlike `escapeAttr`, single quotes are
+ * left alone: they can't end a double-quoted attribute, and they're how the
+ * renderer quotes families itself (`'Times New Roman', serif`), so every
+ * stack without `&<>"` is emitted byte-for-byte.
+ */
+export function escapeFontFamily(text: string): string {
+  return text.replace(
+    FONT_FAMILY_ENTITY_REGEX,
+    (char) => HTML_ENTITIES[char] ?? char,
+  );
+}
+
 /**
  * Replace merge tag span elements with their data attribute values.
  * Converts `<span data-merge-tag="{{name}}">Label</span>` to `{{name}}`.
