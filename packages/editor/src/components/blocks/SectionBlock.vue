@@ -118,13 +118,30 @@ function showsNoBlocks(colIndex: number): boolean {
 // its last shown block, so it doesn't collapse under the pointer.
 const dragSourceCol = ref<number | null>(null);
 
+// Preview shows the email as it will be sent, so the drop chrome is edit-only,
+// as on the empty canvas. A column whose blocks the condition filter hides
+// holds only the condition's raw tags there, which take no height.
 function holdsDropHeight(colIndex: number): boolean {
+  if (editor.state.previewMode) return false;
   if (showsNoBlocks(colIndex)) return true;
   if (dragSourceCol.value !== colIndex) return false;
   return (
     getColumnBlocks(colIndex).filter((child) => isChildShown(child.id))
       .length <= 1
   );
+}
+
+// Gates the dashed border and the drop hint, mirroring Canvas's `isEmptyCanvas`.
+function isEmptyColumn(colIndex: number): boolean {
+  return getColumnBlocks(colIndex).length === 0 && !editor.state.previewMode;
+}
+
+// In preview, a column with no blocks is as tall as the renderer's
+// `<mj-text>&nbsp;</mj-text>` placeholder for it: 34px, mj-text's 10px top and
+// bottom padding around one 14px line. The renderer's mjml-fidelity tests pin
+// that height.
+function holdsPlaceholderHeight(colIndex: number): boolean {
+  return getColumnBlocks(colIndex).length === 0 && editor.state.previewMode;
 }
 
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
@@ -176,7 +193,7 @@ function handleFetchData(
         :key="colIndex"
         class="tpl:relative tpl:flex tpl:flex-col tpl:rounded"
         :class="
-          getColumnBlocks(colIndex).length === 0
+          isEmptyColumn(colIndex)
             ? 'tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)]'
             : ''
         "
@@ -201,7 +218,10 @@ function handleFetchData(
           :empty-insert-threshold="20"
           :force-fallback="true"
           class="tpl:grow"
-          :class="{ 'tpl:min-h-[60px]': holdsDropHeight(colIndex) }"
+          :class="{
+            'tpl:min-h-[60px]': holdsDropHeight(colIndex),
+            'tpl:min-h-[34px]': holdsPlaceholderHeight(colIndex),
+          }"
           @start="dragSourceCol = colIndex"
           @end="dragSourceCol = null"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
@@ -233,7 +253,7 @@ function handleFetchData(
           </div>
         </VueDraggable>
         <div
-          v-if="getColumnBlocks(colIndex).length === 0"
+          v-if="isEmptyColumn(colIndex)"
           data-testid="section-drop-hint"
           class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-chrome-text-dim)]"
         >

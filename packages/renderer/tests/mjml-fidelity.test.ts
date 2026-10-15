@@ -361,6 +361,32 @@ describe("nested section does not produce invalid MJML", () => {
   });
 });
 
+/**
+ * The editor's preview gives an empty section column this placeholder's height,
+ * 34px (`SectionBlock.vue`): mj-text's 10px top and bottom padding around one
+ * 14px line at line-height 1. Changing any of the three moves the sent email
+ * off the preview, so change the editor's height with it.
+ */
+describe("an empty section column compiles to a 34px placeholder", () => {
+  it("fills the column with one 14px line between 10px paddings", async () => {
+    const section = createSectionBlock({
+      columns: "2",
+      children: [[createParagraphBlock({ content: "<p>FILLED</p>" })], []],
+    });
+
+    const html = await compile(await renderToMjml(makeContent([section])));
+    const placeholder = html.match(
+      /<td[^>]*style="([^"]*)"[^>]*>\s*<div style="([^"]*)">&nbsp;<\/div>/,
+    );
+
+    expect(placeholder).not.toBeNull();
+    const [, cell, line] = placeholder!;
+    expect(cell).toContain("padding:10px 25px;");
+    expect(line).toContain("font-size:14px;");
+    expect(line).toContain("line-height:1;");
+  });
+});
+
 describe("section border-radius round-trips through MJML", () => {
   it("a section with borderRadius compiles cleanly and the radius reaches the HTML", async () => {
     const section = createSectionBlock({
