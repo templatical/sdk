@@ -40,7 +40,7 @@ const editor = await init({
 | Property | Type | Description |
 |---|---|---|
 | `defaultFont` | `string` | Font name selected by default in new templates |
-| `defaultFallback` | `string` | Fallback stack used when a custom font is unavailable |
+| `defaultFallback` | `string` | Fallback stack added after a font that has none of its own: a custom font without a `fallback`, or any single family that isn't a built-in (such as `Helvetica Neue`). A full stack is used as written. |
 | `customFonts` | `CustomFont[]` | List of custom fonts to register |
 | `builtIns` | `boolean \| string[]` | Restrict which built-in fonts appear in the picker (see [below](#restricting-the-built-in-fonts)) |
 

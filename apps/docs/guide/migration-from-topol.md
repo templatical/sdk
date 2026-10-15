@@ -150,7 +150,7 @@ A visual comparison catches what the report can't. Several of the losses below â
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` | `SocialIconsBlock` | Each platform named in the node's `display` list with a matching `<platform>-href` becomes a `SocialIcon`. Topol packs every icon onto this one node's attributes, rather than nesting `mj-social-element` children the way hand-written MJML does. |
-| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. |
+| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. A font stack carries over whole, so its fallbacks survive. |
 | Anything else | `HtmlBlock` | No Templatical block exists for the tag; the raw node is preserved as JSON, flagged `html-fallback`. |
 
 ## Where the mapping is lossy

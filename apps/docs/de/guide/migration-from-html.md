@@ -214,7 +214,7 @@ Globale Template-Einstellungen werden aus dem Dokument gelesen:
 
 - **Breite** — `width`-Attribut bzw. `style="width:…"` der äußersten `<table>`. Standard: `600`.
 - **Hintergrundfarbe** — `background-color` des `<body>`. Standard: `#ffffff`.
-- **Schriftart** — `font-family` des `<body>`. Standard: `Arial`.
+- **Schriftart** — `font-family` des `<body>`. Standard: `Arial`. Der gesamte Stack wird übernommen, sodass seine Fallbacks erhalten bleiben; ein Stack, der genau dem einer eingebauten Schriftart entspricht (`Arial, sans-serif`), wird als bloßer Name gespeichert.
 - **Link-Unterstreichung** — `text-decoration` in einer `<style>`-Regel für jeden Link, `a { … }`. Standard: `true`, der Browser-Standard. Eine Regel für nur einige Links, ein `:hover`-Zustand oder eine `@media`-Query setzt sie nicht.
 - **Preheader** — erstes `<div style="display:none">` oben im Body (Konvention).
 

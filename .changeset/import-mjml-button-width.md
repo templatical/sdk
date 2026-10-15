@@ -10,4 +10,4 @@ A `border-radius` with two to four values, such as `8px 8px 0 0`, used to import
 
 `border` and `border-top`, `-right`, `-bottom` and `-left` on `mj-section`, `mj-image` and `mj-button` used to be dropped. They now import as the block's `border`, each side taking its own declaration over `border`. A style other than solid, dashed or dotted is drawn solid, and a side whose width isn't in px is left undrawn, both reported `approximated`. Templatical's wrapper has no border, so a border on `mj-wrapper` is dropped and reported.
 
-An `mj-button`'s own `font-family` used to be dropped. It now imports as `fontFamily`, the first family in the stack. The document font that the renderer writes onto every element through `mj-all` is not read as the button's own.
+An `mj-button`'s own `font-family` used to be dropped. It now imports as `fontFamily`. The document font that the renderer writes onto every element through `mj-all` is not read as the button's own.

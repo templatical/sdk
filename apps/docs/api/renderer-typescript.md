@@ -65,7 +65,7 @@ interface RenderOptions {
 | Option | Default | Description |
 |--------|---------|-------------|
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
-| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
+| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |

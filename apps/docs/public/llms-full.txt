@@ -743,7 +743,7 @@ interface RenderOptions {
 | Option | Default | Description |
 |--------|---------|-------------|
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
-| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
+| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
@@ -8033,7 +8033,7 @@ const editor = await init({
 | Property | Type | Description |
 |---|---|---|
 | `defaultFont` | `string` | Font name selected by default in new templates |
-| `defaultFallback` | `string` | Fallback stack used when a custom font is unavailable |
+| `defaultFallback` | `string` | Fallback stack added after a font that has none of its own: a custom font without a `fallback`, or any single family that isn't a built-in (such as `Helvetica Neue`). A full stack is used as written. |
 | `customFonts` | `CustomFont[]` | List of custom fonts to register |
 | `builtIns` | `boolean \| string[]` | Restrict which built-in fonts appear in the picker (see [below](#restricting-the-built-in-fonts)) |
 
@@ -9421,7 +9421,7 @@ Global template settings are converted where possible:
 - **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` — the full-width band behind the row — is not read, so its background is dropped.
 - **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
 - **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
-- **Font family** -- The default font family carries over to `settings.fontFamily`. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
+- **Font family** -- The default font family carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
 
 ## Known Limitations
 
@@ -9802,7 +9802,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 
 | Easy Email Pro | Templatical block | Notes |
 |---|---|---|
-| `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
+| `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (the whole stack, so its fallbacks survive) / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
 | `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. |
 | `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
@@ -10082,7 +10082,7 @@ Global template settings are extracted from the document:
 
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
 - **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
-- **Font family** — `<body>` `font-family` style. Defaults to `Arial`.
+- **Font family** — `<body>` `font-family` style. Defaults to `Arial`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 - **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.
 
@@ -10687,7 +10687,7 @@ A visual comparison catches what the report can't. Several of the losses below �
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` | `SocialIconsBlock` | Each platform named in the node's `display` list with a matching `<platform>-href` becomes a `SocialIcon`. Topol packs every icon onto this one node's attributes, rather than nesting `mj-social-element` children the way hand-written MJML does. |
-| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. |
+| Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. A font stack carries over whole, so its fallbacks survive. |
 | Anything else | `HtmlBlock` | No Templatical block exists for the tag; the raw node is preserved as JSON, flagged `html-fallback`. |
 
 ## Where the mapping is lossy
@@ -10880,7 +10880,7 @@ Global template settings are converted where possible:
 - **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
 - **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
 - **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty
-- **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`
+- **Font family** — `body.values.fontFamily.value` carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 
 ## Known Limitations
 

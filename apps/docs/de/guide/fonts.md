@@ -40,7 +40,7 @@ const editor = await init({
 | Eigenschaft | Typ | Beschreibung |
 |---|---|---|
 | `defaultFont` | `string` | Schriftartname, der in neuen Templates standardmäßig ausgewählt ist |
-| `defaultFallback` | `string` | Fallback-Stack, der verwendet wird, wenn eine benutzerdefinierte Schriftart nicht verfügbar ist |
+| `defaultFallback` | `string` | Fallback-Stack, der an eine Schriftart ohne eigenen Fallback angehängt wird: eine benutzerdefinierte Schriftart ohne `fallback` oder eine einzelne Schriftfamilie, die keine eingebaute ist (etwa `Helvetica Neue`). Ein vollständiger Stack wird unverändert verwendet. |
 | `customFonts` | `CustomFont[]` | Liste benutzerdefinierter Schriftarten, die registriert werden sollen |
 | `builtIns` | `boolean \| string[]` | Schränkt ein, welche integrierten Schriftarten in der Auswahl erscheinen (siehe [unten](#restricting-the-built-in-fonts)) |
 
