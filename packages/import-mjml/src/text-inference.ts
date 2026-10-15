@@ -3,6 +3,7 @@ import type { Cheerio, CheerioAPI } from "cheerio";
 import { isTag, isText } from "domhandler";
 import type { AnyNode, Element } from "domhandler";
 import {
+  canonicalFontStack,
   createMenuBlock,
   createParagraphBlock,
   createTableBlock,
@@ -15,12 +16,7 @@ import type {
   MenuItemData,
   TableRowData,
 } from "@templatical/types";
-import {
-  parseAlignment,
-  parseColor,
-  parseFontFamily,
-  parsePxValue,
-} from "./attribute-parser";
+import { parseAlignment, parseColor, parsePxValue } from "./attribute-parser";
 import {
   ownAttr,
   readParagraphGap,
@@ -78,7 +74,7 @@ function convertTitle(
   // element through the document-wide `<mj-attributes>` cascade (§7) is not
   // this title's own and must not be read back onto it.
   const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-text", cascade),
   );
 
@@ -135,7 +131,7 @@ function convertTable(
   // block sets its own (renderers/table.ts:34,29).
   const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-text", cascade),
   );
 
@@ -229,7 +225,7 @@ function convertMenu(
   // block sets its own (renderers/menu.ts:29,24).
   const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-text", cascade),
   );
 

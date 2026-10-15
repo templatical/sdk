@@ -433,12 +433,12 @@ describe("mj-button font-family", () => {
     return "fontFamily" in block ? block.fontFamily : "absent";
   }
 
-  it("reads the first family of its own font-family", () => {
+  it("keeps its own font-family stack", () => {
     expect(
       fontOf(
         `<mjml><mj-body><mj-button href="https://x.test" font-family="'Open Sans', Arial, sans-serif">Go</mj-button></mj-body></mjml>`,
       ),
-    ).toBe("Open Sans");
+    ).toBe("'Open Sans', Arial, sans-serif");
   });
 
   it("omits fontFamily when the attribute is absent", () => {

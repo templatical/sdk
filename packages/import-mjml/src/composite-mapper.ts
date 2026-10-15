@@ -1,5 +1,6 @@
 import type { Cheerio } from "cheerio";
 import {
+  canonicalFontStack,
   createMenuBlock,
   createSocialIconsBlock,
   createTableBlock,
@@ -17,12 +18,7 @@ import type {
   TableRowData,
 } from "@templatical/types";
 import type { Element } from "domhandler";
-import {
-  parseAlignment,
-  parseColor,
-  parseFontFamily,
-  parsePxValue,
-} from "./attribute-parser";
+import { parseAlignment, parseColor, parsePxValue } from "./attribute-parser";
 import {
   childElements,
   ownAttr,
@@ -297,7 +293,7 @@ export function convertNavbar(
   // mj-navbar, but a hand-written document's own
   // <mj-attributes><mj-navbar font-family="…"/></mj-attributes> default must
   // not be read back as this navbar's own override.
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-navbar", ctx.cascade),
   );
 
@@ -355,7 +351,7 @@ export function convertNativeTable(
   // default must not be read back as this table's own override.
   const color = parseColor(ownAttr(attrs, "color", "mj-table", ctx.cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-table", ctx.cascade),
   );
 

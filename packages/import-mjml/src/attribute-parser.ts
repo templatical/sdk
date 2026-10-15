@@ -130,17 +130,6 @@ export function parsePaddingShorthand(value: string | undefined): SpacingValue {
 }
 
 /**
- * Strips quotes and returns the first font in a font-family stack.
- */
-export function parseFontFamily(value: string | undefined): string {
-  if (!value) return "";
-  return value
-    .split(",")[0]
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-}
-
-/**
  * Parses an alignment to one of the three the block model accepts.
  */
 export function parseAlignment(

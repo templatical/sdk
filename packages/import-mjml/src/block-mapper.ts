@@ -1,6 +1,7 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
 import {
+  canonicalFontStack,
   createButtonBlock,
   createDividerBlock,
   createHtmlBlock,
@@ -12,7 +13,6 @@ import {
   parseAlignment,
   parseBorderStyle,
   parseColor,
-  parseFontFamily,
   parsePaddingShorthand,
   parsePxValue,
 } from "./attribute-parser";
@@ -174,7 +174,7 @@ function convertButton(
   const backgroundColor = parseColor(attrs["background-color"]);
   const textColor = parseColor(attrs.color);
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(
+  const fontFamily = canonicalFontStack(
     ownAttr(attrs, "font-family", "mj-button", ctx.cascade),
   );
   const base = baseFields(attrs);

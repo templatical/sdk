@@ -320,7 +320,16 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const mjml = await renderToMjml(original);
     const { content } = convertMjmlTemplate(mjml);
 
-    expect(normalize(content)).toEqual(normalize(original));
+    // The renderer gives the unknown font "Inter" the default fallback, and the
+    // importer keeps that stack, since only a built-in's own stack collapses.
+    const expected = {
+      ...original,
+      settings: {
+        ...original.settings,
+        fontFamily: "'Inter', Arial, sans-serif",
+      },
+    };
+    expect(normalize(content)).toEqual(normalize(expected));
   });
 
   it("converts every element with no approximations at all", async () => {

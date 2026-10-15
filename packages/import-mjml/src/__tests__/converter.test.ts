@@ -58,7 +58,7 @@ describe("convertMjmlTemplate end to end", () => {
 
     expect(content.settings.width).toBe(600);
     expect(content.settings.backgroundColor).toBe("#f4f4f4");
-    expect(content.settings.fontFamily).toBe("Inter");
+    expect(content.settings.fontFamily).toBe("Inter, sans-serif");
     expect(content.settings.textColor).toBe("#222222");
     expect(content.settings.linkColor).toBe("#0055ff");
     expect(content.settings.linkUnderline).toBe(false);

@@ -1,5 +1,6 @@
 import type { CheerioAPI } from "cheerio";
 import {
+  canonicalFontStack,
   DEFAULT_TEMPLATE_DEFAULTS,
   resolveContentDirection,
 } from "@templatical/types";
@@ -8,7 +9,7 @@ import type {
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
-import { parseColor, parseFontFamily, parsePxValue } from "./attribute-parser";
+import { parseColor, parsePxValue } from "./attribute-parser";
 import {
   childElements,
   findByTag,
@@ -124,8 +125,8 @@ export function extractSettings(
     REQUIRED_TEMPLATE_DEFAULTS.backgroundColor;
 
   const fontFromCascade =
-    parseFontFamily(cascade.all["font-family"]) ||
-    parseFontFamily(cascade.byTag["mj-text"]?.["font-family"]);
+    canonicalFontStack(cascade.all["font-family"]) ||
+    canonicalFontStack(cascade.byTag["mj-text"]?.["font-family"]);
   const fontFromDeclaration =
     findByTag($, "mj-font").first().attr("name") ?? "";
   const fontFamily =

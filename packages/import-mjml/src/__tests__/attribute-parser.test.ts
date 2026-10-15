@@ -6,7 +6,6 @@ import {
   parseBorderStyle,
   parseColor,
   parseDefinitePx,
-  parseFontFamily,
   parsePaddingShorthand,
   parsePercent,
   parsePxValue,
@@ -146,18 +145,6 @@ describe("parsePaddingShorthand", () => {
       bottom: 0,
       left: 0,
     });
-  });
-});
-
-describe("parseFontFamily", () => {
-  it("returns the first family in a stack, unquoted", () => {
-    expect(parseFontFamily("'Helvetica Neue', Helvetica, sans-serif")).toBe(
-      "Helvetica Neue",
-    );
-  });
-
-  it("returns an empty string for a missing value", () => {
-    expect(parseFontFamily(undefined)).toBe("");
   });
 });
 
