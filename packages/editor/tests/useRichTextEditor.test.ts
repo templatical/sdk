@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { shallowRef, defineComponent, h, ref } from 'vue';
+import { shallowRef, defineComponent, h, ref, render } from 'vue';
 import { mount } from '@vue/test-utils';
 import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_REQUESTING_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
 import { SYNTAX_PRESETS } from '@templatical/types';
@@ -50,6 +50,19 @@ class StubEditor {
 
   setHTMLExternally(html: string): void {
     this.html = html;
+    this.onUpdate?.({ editor: this });
+  }
+
+  /**
+   * TipTap >= 3.31.4 applies an input rule in two dispatches: the typed
+   * character (emits `update`), then the node replacement. Mounting the new
+   * node's Vue view calls Vue's `render()`, which flushes queued pre-flush
+   * watchers synchronously — before the second `update` is emitted.
+   */
+  applyNodeInputRule(typedHtml: string, nodeHtml: string): void {
+    this.setHTMLExternally(typedHtml);
+    this.html = nodeHtml;
+    render(h('span'), document.createElement('div'));
     this.onUpdate?.({ editor: this });
   }
 
@@ -351,6 +364,61 @@ describe('useRichTextEditor', () => {
       await flushAsync();
 
       expect(setContentSpy).not.toHaveBeenCalled();
+    });
+
+    // These need the round trip a real store makes: updateBlock writes the
+    // block content the watcher reads back. They pin the watcher's contract
+    // against a stub; typedMergeTagChip.test.ts is the guard with real TipTap.
+    function mountWithStore(blockContent: string) {
+      const ctx = mountRichText({ blockContent });
+      ctx.updateBlock.mockImplementation(
+        (_id: string, patch: { content: string }) => {
+          ctx.blockContent.value = patch.content;
+        },
+      );
+      return ctx;
+    }
+
+    it('keeps a chip created by a two-dispatch input rule (#858)', async () => {
+      const ctx = mountWithStore('<p>Hello.</p>');
+      await flushAsync();
+      const tipTap = ctx.api().editor.value as unknown as StubEditor;
+      const typed = '<p>Hello. {{first_name}}</p>';
+      const chip = '<p>Hello. <span data-merge-tag="{{first_name}}">First Name</span></p>';
+
+      tipTap.applyNodeInputRule(typed, chip);
+      await flushAsync();
+
+      expect(tipTap.getHTML()).toBe(chip);
+      expect(ctx.blockContent.value).toBe(chip);
+    });
+
+    it('still applies an external change that lands after its own update', async () => {
+      const ctx = mountWithStore('<p>Hello.</p>');
+      await flushAsync();
+      const tipTap = ctx.api().editor.value as unknown as StubEditor;
+
+      tipTap.setHTMLExternally('<p>Typed</p>');
+      ctx.blockContent.value = '<p>From history</p>';
+      await flushAsync();
+
+      expect(tipTap.getHTML()).toBe('<p>From history</p>');
+    });
+
+    it('applies a redo back to the content it last emitted itself', async () => {
+      const ctx = mountWithStore('<p>A</p>');
+      await flushAsync();
+      const tipTap = ctx.api().editor.value as unknown as StubEditor;
+
+      tipTap.setHTMLExternally('<p>AB</p>');
+      await flushAsync();
+      ctx.blockContent.value = '<p>A</p>'; // undo
+      await flushAsync();
+      expect(tipTap.getHTML()).toBe('<p>A</p>');
+
+      ctx.blockContent.value = '<p>AB</p>'; // redo
+      await flushAsync();
+      expect(tipTap.getHTML()).toBe('<p>AB</p>');
     });
   });
 

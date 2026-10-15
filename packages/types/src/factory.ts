@@ -22,6 +22,7 @@ import type {
   VideoBlock,
   WrapperBlock,
 } from "./blocks";
+import { safeClone } from "./clone";
 import type { CustomBlockDefinition, CustomBlockField } from "./custom-blocks";
 import type { BlockDefaults } from "./defaults";
 import {
@@ -41,12 +42,28 @@ import {
   VIDEO_BLOCK_DEFAULTS,
 } from "./defaults";
 
+/**
+ * `base` is copied because it carries the `*_BLOCK_DEFAULTS` constants' own
+ * nested objects (e.g. `buttonPadding`): every block made from it would share
+ * them, and mutating one block's would change the defaults and every other
+ * block. `partial` is the caller's and is merged as given — whatever it passes
+ * directly lands in the block by reference.
+ */
 function applyDefaults<T extends object>(
   base: T,
   partial: Partial<T> | undefined,
 ): T {
-  if (!partial || Object.keys(partial).length === 0) return base;
-  return deepMergeDefaults(base, partial);
+  const ownBase = safeClone(base);
+  if (!partial || Object.keys(partial).length === 0) return ownBase;
+  return deepMergeDefaults(ownBase, partial);
+}
+
+/**
+ * A defaults entry copied for one block. Defaults seed every block of their
+ * type, so a nested value merged in as-is would be shared by all of them.
+ */
+function copyDefaults<T>(defaults: T | undefined): T | undefined {
+  return defaults === undefined ? undefined : safeClone(defaults);
 }
 
 export function generateId(): string {
@@ -249,10 +266,13 @@ export function createCustomBlock(
   const fieldValues: Record<string, unknown> = {};
 
   for (const field of definition.fields) {
-    fieldValues[field.key] = getFieldDefault(field);
+    fieldValues[field.key] = copyDefaults(getFieldDefault(field));
   }
 
-  const styles = applyDefaults(createDefaultStyles(), definition.defaultStyles);
+  const styles = applyDefaults(
+    createDefaultStyles(),
+    copyDefaults(definition.defaultStyles),
+  );
 
   return {
     id: generateId(),
@@ -292,31 +312,31 @@ export function createBlock(
 ): Block {
   switch (type) {
     case "section":
-      return createSectionBlock(blockDefaults?.section);
+      return createSectionBlock(copyDefaults(blockDefaults?.section));
     case "title":
-      return createTitleBlock(blockDefaults?.title);
+      return createTitleBlock(copyDefaults(blockDefaults?.title));
     case "paragraph":
-      return createParagraphBlock(blockDefaults?.paragraph);
+      return createParagraphBlock(copyDefaults(blockDefaults?.paragraph));
     case "image":
-      return createImageBlock(blockDefaults?.image);
+      return createImageBlock(copyDefaults(blockDefaults?.image));
     case "button":
-      return createButtonBlock(blockDefaults?.button);
+      return createButtonBlock(copyDefaults(blockDefaults?.button));
     case "divider":
-      return createDividerBlock(blockDefaults?.divider);
+      return createDividerBlock(copyDefaults(blockDefaults?.divider));
     case "video":
-      return createVideoBlock(blockDefaults?.video);
+      return createVideoBlock(copyDefaults(blockDefaults?.video));
     case "social":
-      return createSocialIconsBlock(blockDefaults?.social);
+      return createSocialIconsBlock(copyDefaults(blockDefaults?.social));
     case "spacer":
-      return createSpacerBlock(blockDefaults?.spacer);
+      return createSpacerBlock(copyDefaults(blockDefaults?.spacer));
     case "html":
-      return createHtmlBlock(blockDefaults?.html);
+      return createHtmlBlock(copyDefaults(blockDefaults?.html));
     case "menu":
-      return createMenuBlock(blockDefaults?.menu);
+      return createMenuBlock(copyDefaults(blockDefaults?.menu));
     case "table":
-      return createTableBlock(blockDefaults?.table);
+      return createTableBlock(copyDefaults(blockDefaults?.table));
     case "countdown":
-      return createCountdownBlock(blockDefaults?.countdown);
+      return createCountdownBlock(copyDefaults(blockDefaults?.countdown));
     case "slot":
       throw new Error(
         "[Templatical] slot cannot be inserted into content. Use createSlotBlock() to build a layout.",

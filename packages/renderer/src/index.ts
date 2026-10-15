@@ -18,7 +18,12 @@ import {
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import type { BlockRendererMap } from "./render-context";
 import { renderBlock } from "./renderers";
-import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
+import {
+  escapeHtml,
+  escapeAttr,
+  escapeCssValue,
+  escapeFontFamily,
+} from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
 import { bgAttr, borderRadiusAttr } from "./utils";
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
@@ -201,7 +206,7 @@ export async function renderToMjml(
   return `<mjml lang="${lang}" dir="${dir}">
   <mj-head>${previewTag}
     <mj-attributes>
-      <mj-all font-family="${fontFamily}" />
+      <mj-all font-family="${escapeFontFamily(fontFamily)}" />
       <mj-text font-size="14px"${textColorAttr} />
       <mj-section padding="0" />
       <mj-column padding="0" />

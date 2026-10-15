@@ -264,6 +264,10 @@ export const SELECTORS = {
   // Inline merge tag node rendered by MergeTagNodeView. The raw value
   // lives in data-tooltip on the inner display span.
   mergeTagNode: ".tpl-merge-tag-node",
+  // Inline logic tag node rendered by LogicMergeTagNodeView, and the stored
+  // markup it serializes to outside the edit session.
+  logicMergeTagNode: ".tpl-logic-merge-tag-node",
+  logicMergeTagSpan: "span[data-logic-merge-tag]",
 
   // Built-in merge tag picker (SDK)
   mergeTagPickerModal: '[data-testid="merge-tag-picker-modal"]',

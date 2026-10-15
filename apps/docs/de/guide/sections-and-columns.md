@@ -142,7 +142,7 @@ card.styles.backgroundColor = '#ffffff';
 
 ### Äußerer Rahmen (Wrapper)
 
-Um eine Sektion in einem vollbreiten farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius:
+Um eine Sektion in einem farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius. Das Band ist so breit wie der E-Mail-Körper (`settings.width`), nicht wie das gesamte Fenster des Empfängers:
 
 ```ts
 const card = createSectionBlock({ columns: '1', borderRadius: 12 });
