@@ -30,12 +30,23 @@ const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const aliveFlag = useAliveFlag();
 
+const WIDTH_PRESETS = [300, 400, 500];
+const DEFAULT_CUSTOM_WIDTH = 350;
 const DEFAULT_CUSTOM_HEIGHT = 200;
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
 const urlHasMergeTag = computed(() =>
   containsMergeTag(props.block.url, mergeTagSyntax),
 );
+
+// Any other number reads as Custom: imports and agent-written JSON carry
+// widths the presets don't list, and the select would otherwise show blank.
+const widthMode = computed(() => {
+  const w = props.block.width;
+  if (w === "full") return "full";
+  if (WIDTH_PRESETS.includes(w)) return String(w);
+  return "custom";
+});
 
 const heightMode = computed(() =>
   typeof props.block.height === "number" ? "custom" : "auto",
@@ -52,6 +63,25 @@ const { start: startPulseThumbnail } = useTimeoutFn(
 
 function updateField(field: keyof VideoBlock, value: unknown): void {
   emit("update", { [field]: value } as Partial<VideoBlock>);
+}
+
+function updateWidthMode(value: string): void {
+  if (value === "custom") {
+    const w = props.block.width;
+    if (typeof w !== "number" || WIDTH_PRESETS.includes(w)) {
+      updateField("width", DEFAULT_CUSTOM_WIDTH);
+    }
+    return;
+  }
+  updateField("width", value === "full" ? "full" : Number(value));
+}
+
+function updateCustomWidth(raw: string): void {
+  // Same guard as the image block's custom width (#259): an empty number
+  // field yields Number("") === 0, which would collapse the thumbnail.
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return;
+  updateField("width", n);
 }
 
 function updateHeightMode(value: string): void {
@@ -154,21 +184,30 @@ async function openMediaBrowser(): Promise<void> {
     <label :class="labelClass">{{ t.video.width }}</label>
     <select
       :class="inputClass"
-      :value="block.width"
-      @change="
-        updateField(
-          'width',
-          ($event.target as HTMLSelectElement).value === 'full'
-            ? 'full'
-            : Number(($event.target as HTMLSelectElement).value),
-        )
-      "
+      data-testid="video-width-mode"
+      :value="widthMode"
+      @change="updateWidthMode(($event.target as HTMLSelectElement).value)"
     >
       <option value="full">{{ t.video.fullWidth }}</option>
       <option value="300">300px</option>
       <option value="400">400px</option>
       <option value="500">500px</option>
+      <option value="custom">{{ t.video.widthCustom }}</option>
     </select>
+    <div
+      v-if="widthMode === 'custom'"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+    >
+      <input
+        type="number"
+        data-testid="video-width-input"
+        :class="inputGroupInputClass"
+        :value="block.width"
+        min="20"
+        @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
+      />
+      <span :class="inputSuffixClass">px</span>
+    </div>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.video.height }}</label>

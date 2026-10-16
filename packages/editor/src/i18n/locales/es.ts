@@ -250,6 +250,7 @@ const es: typeof en = {
     altTextPlaceholder: "Descripción del vídeo",
     width: "Ancho",
     fullWidth: "Ancho completo",
+    widthCustom: "Personalizado",
     height: "Altura",
     heightAuto: "Automática",
     heightCustom: "Personalizada",
