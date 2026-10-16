@@ -14,6 +14,7 @@ import {
   createCountdownBlock,
   createVideoBlock,
   HEADING_LEVEL_FONT_SIZE,
+  TITLE_FONT_WEIGHT,
   TITLE_LINE_HEIGHT,
 } from '@templatical/types';
 import type { Block, CustomBlock } from '@templatical/types';
@@ -38,6 +39,13 @@ describe('renderBlock', () => {
     const result = renderBlock(block, ctx);
     expect(TITLE_LINE_HEIGHT).toBe(1.3);
     expect(result).toContain(`line-height="${TITLE_LINE_HEIGHT}"`);
+  });
+
+  it('writes the shared title font weight onto the heading', () => {
+    const block = createTitleBlock({ content: '<p>Hello</p>', level: 2 });
+    const result = renderBlock(block, ctx);
+    expect(TITLE_FONT_WEIGHT).toBe(700);
+    expect(result).toMatch(/<h2 style="[^"]*font-weight:700[^"]*">Hello<\/h2>/);
   });
 
   it('renders title block level 3 with correct font size', () => {

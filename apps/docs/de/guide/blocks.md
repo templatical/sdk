@@ -34,6 +34,8 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 
 Ein Überschriften-Block mit festen Größenstufen. Verwenden Sie Titel für Überschriften, Sektionsüberschriften und andere prominente Texte.
 
+Titel sind fett (Schriftstärke 700): auf der Arbeitsfläche, während Sie sie bearbeiten, und in der E-Mail. Fettdruck innerhalb eines Titels verlangt eine noch kräftigere Schriftstärke. Websichere Schriften wie Arial haben keine, deshalb ist er nur in einer Schrift sichtbar, die eine besitzt.
+
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `content` | `string` | HTML-Inhalt |

@@ -247,6 +247,16 @@ export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
 export const TITLE_LINE_HEIGHT = 1.3;
 
 /**
+ * A title block's font weight.
+ *
+ * The renderer writes it onto the exported heading, and the editor sets it on
+ * the canvas title in both view and edit mode. The edit surface is a `<p>`, so
+ * without it a title drops from bold to regular as editing starts, and a host
+ * or client that resets heading styles would show the email's titles regular.
+ */
+export const TITLE_FONT_WEIGHT = 700;
+
+/**
  * Spacing (px) for the HTML a rich-text block stores — the `<p>`, `<ul>`,
  * `<ol>` and `<li>` elements TipTap produces.
  *

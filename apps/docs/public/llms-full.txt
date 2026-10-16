@@ -6772,6 +6772,8 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 
 A heading block with fixed size levels. Use titles for headings, section headers, and other prominent text.
 
+Titles are bold (weight 700) on the canvas, while you edit them, and in the email. Inline bold inside a title asks for a heavier weight, which web-safe fonts such as Arial don't have, so it shows only in a font that does.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | HTML content |
