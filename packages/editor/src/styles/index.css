@@ -684,10 +684,18 @@
     @apply tpl:outline-none;
 }
 
+/* The edit surface sits exactly where the rendered text does, so a block
+   enters editing without rewrapping (#930). Its ring is an outline because an
+   outline takes no layout space: a border, padding or min-height here narrows
+   or grows the text box and changes where lines break. */
 .tpl-text-editable {
-    @apply tpl:rounded tpl:border tpl:border-dashed tpl:p-2;
-    border-color: var(--tpl-primary);
-    min-height: 1.5em;
+    @apply tpl:rounded;
+    outline: 1px dashed var(--tpl-primary);
+    outline-offset: 4px;
+}
+
+.tpl-text-editable--error {
+    outline-color: var(--tpl-danger);
 }
 
 /* Rich-text spacing mirrors `RICH_TEXT_SPACING` in `@templatical/types`, which

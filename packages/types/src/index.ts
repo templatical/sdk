@@ -44,6 +44,7 @@ export type {
 } from "./blocks";
 export {
   HEADING_LEVEL_FONT_SIZE,
+  TITLE_LINE_HEIGHT,
   RICH_TEXT_SPACING,
   BORDER_CORNERS,
   BORDER_SIDES,
@@ -264,6 +265,7 @@ export { EventEmitter } from "./events";
 // Utilities
 export { safeClone } from "./clone";
 export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
 export type { FontFamily } from "./fonts";
 export {
   BUILT_IN_FONT_STACKS,
