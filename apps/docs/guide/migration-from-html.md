@@ -189,7 +189,7 @@ A section has one background colour, so a row whose cells render on different fi
 
 ### Section background images {#background-images}
 
-A section takes the nearest image, read from a `background-image` style, the image in a `background` shorthand, or the `background` attribute of a `<table>`, `<td>` or `<th>`. Any CSS background declaration on the element overrides the attribute.
+A section takes the nearest image, read from a `background-image` style, the image in a `background` shorthand, or the `background` attribute of a `<table>`, `<td>` or `<th>`. A `background-image` or `background` declaration on the element overrides the attribute; a `background-color` doesn't.
 
 1. The `<tr>`, or the cell holding a row's column containers.
 2. The row's columns, when there is one or they all share the same image. Gutter cells don't count, and neither does a cell whose entire content is one styled text `<a>`. Columns whose images differ, and column images beside a nearer image, are dropped, and the `note` names the columns.

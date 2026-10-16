@@ -96,7 +96,7 @@ for (const entry of report.entries) {
 }
 ```
 
-A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subjectLine` or `fontFiles`, and a count of colour variables resolved to their defaults.
+A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subjectLine` or `fontFiles`, a body `backgroundImage`, and a count of colour variables resolved to their defaults.
 
 ## Document shape
 
@@ -152,7 +152,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 |---|---|---|
 | `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
 | `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
-| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section the same way; a box image among siblings is dropped, `approximated`. |
+| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section when the fullwidth has no `contentBackgroundImage`; with one, or among siblings, the box image is dropped and noted, `approximated`. |
 | `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's five layouts. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
@@ -173,7 +173,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 A fullwidth's section image is, nearest first:
 
 1. `contentBackgroundImage`, the content area the section paints.
-2. The `backgroundImage` of a box that is the fullwidth's only child, which moves up as its colour does.
+2. The `backgroundImage` of a box that is the fullwidth's only child, which moves up while there is no `contentBackgroundImage`.
 3. The band's `backgroundImage`, only while the content area has no colour. The section paints it at the content width, takes the band colour as its fill, and the entry is `approximated`.
 
 A band image the content area covers is dropped, and the entry notes it. When the section has its own image, the band colour is dropped too, with a note, instead of becoming `wrapper.backgroundColor`: Outlook desktop paints a wrapper colour over the section's image.
@@ -186,7 +186,7 @@ A band image the content area covers is dropped, and the entry notes it. When th
 - **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column `multicolumn` folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
 - **Outlined buttons** — `background-color` unset plus a coloured border has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **Loops and conditionals** — Chamaileon `attrs.expression` is not Liquid and is not MJML display-condition syntax. Empty nodes `skipped`. Populated nodes convert their children and drop the branching; stuffing the expression into `displayCondition` would lie about the dialect.
-- **Box paint among siblings** — a nested box with a real fill, padding, or radius that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`. A new top-level section would split the row; a nested section is illegal in a column.
+- **Box paint among siblings** — a nested box with a real fill, padding, radius, or background image that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`, and a dropped background image is noted. A new top-level section would split the row; a nested section is illegal in a column.
 - **Variable references** — `{ reference, default }` resolves to a concrete colour. The reference name does not survive as a merge tag.
 - **Social icon sizes and unknown platforms** — size snaps to small / medium / large; an unknown `type` becomes `website`.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. A sole `<h5>` or `<h6>` clamps to 4.

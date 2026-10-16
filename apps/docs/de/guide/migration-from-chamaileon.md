@@ -96,7 +96,7 @@ for (const entry of report.entries) {
 }
 ```
 
-Eine `note` bei einem `approximated`-Eintrag nennt den ursprünglichen Wert. `report.warnings` trägt Verluste auf Dokumentebene, die an keinem einzelnen Eintrag hängen — eine nicht-leere `subjectLine` oder `fontFiles`, und eine Anzahl von Farbvariablen, die auf ihre Default-Werte aufgelöst wurden.
+Eine `note` bei einem `approximated`-Eintrag nennt den ursprünglichen Wert. `report.warnings` trägt Verluste auf Dokumentebene, die an keinem einzelnen Eintrag hängen — eine nicht-leere `subjectLine` oder `fontFiles`, ein `backgroundImage` des Bodys und eine Anzahl von Farbvariablen, die auf ihre Default-Werte aufgelöst wurden.
 
 ## Dokumentform
 
@@ -152,7 +152,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 |---|---|---|
 | `body` | Template-`settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText`, wenn nicht leer; ein `backgroundImage` wird verworfen und in `report.warnings` genannt. |
 | `fullwidth` | `SectionBlock` | Äußeres `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → Padding. Ein Fullwidth ohne `multicolumn` ist `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; `backgroundImage` und Farbe des Bands folgen [Hintergrundbilder](#hintergrundbilder). |
-| `box` | In das Elternelement abgeflacht | Transparente Boxen verschwinden ohne Eintrag. Eine bemalte Box, die einziges Kind eines Fullwidth ohne Content-Fill ist, kopiert diese Farbe auf die Sektion. Eine bemalte Box unter Geschwistern wird abgeflacht, `approximated`. Das Hintergrundbild einer einzelnen Box wandert ebenso auf die Sektion; ein Box-Bild unter Geschwistern wird verworfen, `approximated`. |
+| `box` | In das Elternelement abgeflacht | Transparente Boxen verschwinden ohne Eintrag. Eine bemalte Box, die einziges Kind eines Fullwidth ohne Content-Fill ist, kopiert diese Farbe auf die Sektion. Eine bemalte Box unter Geschwistern wird abgeflacht, `approximated`. Das Hintergrundbild einer einzelnen Box wandert auf die Sektion, wenn das Fullwidth kein `contentBackgroundImage` hat; hat es eines, oder unter Geschwistern, wird das Box-Bild verworfen und vermerkt, `approximated`. |
 | `multicolumn` + `column` | Section-`columns` / `children[i]` | Pixelbreiten werden in Prozent von `bodyWidth` umgerechnet und auf Templaticals fünf Layouts gematcht. Eine verschachtelte `multicolumn` kann kein verschachtelter `SectionBlock` werden — innere Spalten fließen in die Elternspalte, `approximated`. |
 | `text` | `TitleBlock` oder `ParagraphBlock` | Abgeleitet aus dem HTML in `attrs.text`: eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zum Title; alles andere zum Paragraph. |
 | `typed-text` | `TitleBlock` oder `ParagraphBlock` | `style.subType === "title"` → Title; `"list"` → Paragraph, `approximated`; sonst Paragraph. |
@@ -173,8 +173,8 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 Das Bild der Sektion eines Fullwidth ist, vom nächstliegenden an:
 
 1. `contentBackgroundImage`, die Inhaltsfläche, die die Sektion zeichnet.
-2. Das `backgroundImage` einer Box, die das einzige Kind des Fullwidth ist; es wandert wie ihre Farbe nach oben.
-3. Das `backgroundImage` des Bands, nur solange die Inhaltsfläche keine Farbe hat. Die Sektion zeichnet es in Inhaltsbreite, übernimmt die Farbe des Bands als Füllung, und der Eintrag ist `approximated`.
+2. Das `backgroundImage` einer Box, die das einzige Kind des Fullwidth ist; es wandert nach oben, solange es kein `contentBackgroundImage` gibt.
+3. Das `backgroundImage` des Bands, nur solange die Inhaltsfläche keine Farbe hat. Die Sektion zeichnet es in Inhaltsbreite, übernimmt die Farbe des Bands als Fill, und der Eintrag ist `approximated`.
 
 Ein Band-Bild, das die Inhaltsfläche verdeckt, wird verworfen, und der Eintrag vermerkt es. Hat die Sektion ein eigenes Bild, wird auch die Farbe des Bands mit einer Notiz verworfen, statt `wrapper.backgroundColor` zu werden: Outlook für Desktop malt eine Wrapper-Farbe über das Bild der Sektion.
 
@@ -186,7 +186,7 @@ Ein Band-Bild, das die Inhaltsfläche verdeckt, wird verworfen, und der Eintrag 
 - **4+ Spalten** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). Eine `multicolumn` mit 4, 5 oder 6 Spalten wird auf `"3"` gefaltet; überzählige Kinder hängen an den letzten Slot, `approximated`, Originalbreiten in der `note`.
 - **Outlined-Buttons** — ungesetztes `background-color` plus farbiger Rahmen hat keine Templatical-Entsprechung. Nach `createButtonBlock` wird Fill als `#ffffff` geschrieben, damit das Factory-`#333333` einen Ghost-Button nicht in eine dunkle Pille verwandelt. Der Outline entfällt; der Eintrag ist `approximated`.
 - **Schleifen und Bedingungen** — Chamaileons `attrs.expression` ist kein Liquid und keine MJML-Anzeigebedingungs-Syntax. Leere Knoten `skipped`. Gefüllte Knoten konvertieren ihre Kinder und verwerfen die Verzweigung; den Ausdruck in `displayCondition` zu stecken, würde über den Dialekt lügen.
-- **Box-Farbe unter Geschwistern** — eine verschachtelte Box mit echtem Fill, Padding oder Radius, die nicht das einzige Kind eines sonst unbemalten Fullwidth ist, wird abgeflacht. Die Farbe entfällt, `approximated`. Eine neue Top-Level-Sektion würde die Zeile teilen; eine verschachtelte Sektion ist in einer Spalte unzulässig.
+- **Box-Bemalung unter Geschwistern** — eine verschachtelte Box mit echtem Fill, Padding, Radius oder Hintergrundbild, die nicht das einzige Kind eines sonst unbemalten Fullwidth ist, wird abgeflacht. Die Bemalung entfällt, `approximated`, und ein verworfenes Hintergrundbild wird vermerkt. Eine neue Top-Level-Sektion würde die Zeile teilen; eine verschachtelte Sektion ist in einer Spalte unzulässig.
 - **Variablen-Referenzen** — `{ reference, default }` wird auf eine konkrete Farbe aufgelöst. Der Referenzname überlebt nicht als Merge-Tag.
 - **Social-Icon-Größen und unbekannte Plattformen** — Größe rastet auf small / medium / large; ein unbekannter `type` wird zu `website`.
 - **Überschriften-Ebenen** — `TitleBlock` unterstützt die Ebenen 1 bis 4. Ein einzelnes `<h5>` oder `<h6>` wird auf 4 begrenzt.

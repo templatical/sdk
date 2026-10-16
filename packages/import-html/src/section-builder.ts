@@ -562,8 +562,9 @@ export interface CarriedImage {
 
 /**
  * The image an element paints: its CSS background, else the legacy
- * `background` attribute of a table or cell, which any CSS background
- * declaration overrides.
+ * `background` attribute of a table or cell. A `background-image` or
+ * `background` declaration overrides the attribute; a `background-color`
+ * doesn't.
  */
 function imageOf(
   $el: Cheerio<Element>,

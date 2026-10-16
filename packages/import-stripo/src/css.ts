@@ -805,8 +805,9 @@ export function readCssBackground(
 
 /**
  * The image an element paints: its inline CSS background, else its legacy
- * `background` attribute, which any CSS background declaration overrides.
- * The image twin of `colorFromPaint`.
+ * `background` attribute. A `background-image` or `background` declaration
+ * overrides the attribute; a `background-color` doesn't. The image twin of
+ * `colorFromPaint`.
  */
 export function imageFromPaint(
   styleAttr: string | undefined,

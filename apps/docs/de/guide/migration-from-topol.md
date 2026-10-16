@@ -155,7 +155,7 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 
 ### Hintergrundbilder
 
-`background-url` an einer `mj-section` wird zum `backgroundImage` der Sektion, mit `background-size`, `background-position` (sowie `-x` / `-y`) und `background-repeat`. Topol rendert über MJML, daher übernimmt ein Attribut, das die Section weglässt, MJMLs Standard (`auto`, `top center`, `repeat`), und das Bild erscheint dort, wo es war.
+`background-url` an einer `mj-section` wird zum `backgroundImage` der Section, mit `background-size`, `background-position` (sowie `-x` / `-y`) und `background-repeat`. Topol rendert über MJML, daher übernimmt ein Attribut, das die Section weglässt, MJMLs Standard (`auto`, `top center`, `repeat`), und das Bild erscheint dort, wo es war.
 
 Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet, und der Eintrag der Section ist `approximated` mit einer Notiz. Eine Größe, die eine Seite füllt (`100%`, `100% auto`, `auto 100%` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`.
 

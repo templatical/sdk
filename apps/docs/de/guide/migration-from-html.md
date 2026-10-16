@@ -189,7 +189,7 @@ Eine Section hat eine einzige Hintergrundfarbe. Eine Zeile, deren Zellen auf ver
 
 ### Section-Hintergrundbilder
 
-Eine Section übernimmt das nächstgelegene Bild, gelesen aus einem `background-image`-Style, dem Bild in einer `background`-Kurzschreibweise oder dem `background`-Attribut eines `<table>`, `<td>` oder `<th>`. Jede CSS-Hintergrundangabe am Element überschreibt das Attribut.
+Eine Section übernimmt das nächstgelegene Bild, gelesen aus einem `background-image`-Style, dem Bild in einer `background`-Kurzschreibweise oder dem `background`-Attribut eines `<table>`, `<td>` oder `<th>`. Eine `background-image`- oder `background`-Angabe am Element überschreibt das Attribut, eine `background-color` nicht.
 
 1. Das `<tr>` oder die Zelle, die die Spalten-Container einer Zeile enthält.
 2. Die Spalten der Zeile, wenn es nur eine gibt oder alle dasselbe Bild teilen. Gutter-Zellen zählen nicht, ebenso wenig eine Zelle, deren gesamter Inhalt ein gestyltes Text-`<a>` ist. Spalten mit unterschiedlichen Bildern und Spaltenbilder neben einem näheren Bild werden verworfen, und die `note` nennt die Spalten.
