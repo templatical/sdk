@@ -42,9 +42,12 @@ const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const pulseSrc = ref(false);
 const pulseAlt = ref(false);
 
-const { start: startPulseSrc } = useTimeoutFn(
+// The pulse plays when its class goes on, so both flags come off again for
+// the next pick to pulse.
+const { start: startPulse } = useTimeoutFn(
   () => {
     pulseSrc.value = false;
+    pulseAlt.value = false;
   },
   1000,
   { immediate: false },
@@ -126,7 +129,7 @@ function applyMedia(result: MediaResult): void {
     pulseAlt.value = true;
   }
   pulseSrc.value = true;
-  startPulseSrc();
+  startPulse();
 }
 
 const dropZoneRef = ref<HTMLElement>();

@@ -437,6 +437,36 @@ describe("ImageToolbar media browser", () => {
     }
   });
 
+  // The pulse is a CSS animation that plays when the class goes on, so alt
+  // only pulses again on a later pick if the class came off in between.
+  it("stops pulsing alt a second after the pick, so the next pick pulses it again", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const wrapper = mountWithMedia(
+        createImageBlock({ src: "" }),
+        vi.fn(async () => ({ url: HERO, alt: "Hero" })),
+      );
+
+      await browseButton(wrapper)!.trigger("click");
+      await flushPromises();
+      expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+
+      vi.advanceTimersByTime(999);
+      await nextTick();
+      expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+
+      vi.advanceTimersByTime(1);
+      await nextTick();
+      expect(altInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+
+      await browseButton(wrapper)!.trigger("click");
+      await flushPromises();
+      expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("leaves the block alone when the media browser is cancelled", async () => {
     const onRequestMedia = vi.fn(async () => null);
     const wrapper = mountWithMedia(
@@ -533,6 +563,29 @@ describe("ImageToolbar drag-and-drop upload (#229)", () => {
     ]);
     expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
     expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+  });
+
+  it("stops pulsing both fields a second after a dropped image lands", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const wrapper = mountWithMedia(
+        createImageBlock({ src: "" }),
+        vi.fn(async () => ({ url: HERO, alt: "Hero" })),
+      );
+      await flushPromises();
+
+      srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+      await flushPromises();
+      expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+      expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+
+      vi.advanceTimersByTime(1000);
+      await nextTick();
+      expect(srcInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+      expect(altInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("leaves the block alone when the upload is cancelled", async () => {
