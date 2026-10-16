@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   resolveBlockComponent,
+  backgroundImageHostClass,
   getBackgroundImageStyle,
   getBlockWrapperStyle,
   getCachedBlockWrapperStyle,
@@ -406,7 +407,23 @@ describe("background images on the canvas", () => {
       backgroundSize: "cover",
       backgroundPosition: "center center",
       backgroundRepeat: "no-repeat",
+      "--tpl-block-bg-layer":
+        'url("https://cdn.test/hero.jpg") center center / cover no-repeat',
     });
+  });
+
+  it("the dark-preview layer paints the same url, position, size and repeat", () => {
+    const tiled = {
+      ...image,
+      size: "auto" as const,
+      position: { x: "left" as const, y: "top" as const },
+      repeat: true,
+    };
+    const style = getBackgroundImageStyle(tiled, 'blob:http://x.test/a"b');
+    expect(style["--tpl-block-bg-layer"]).toBe(
+      'url("blob:http://x.test/a%22b") left top / auto repeat',
+    );
+    expect(style.backgroundImage).toBe('url("blob:http://x.test/a%22b")');
   });
 
   it("getBackgroundImageStyle is empty without a usable url", () => {
@@ -455,6 +472,44 @@ describe("background images on the canvas", () => {
       backgroundImage: createBackgroundImage("https://cdn.test/band.jpg"),
     });
     expect(getWrapperStyle(band)?.backgroundSize).toBe("cover");
+  });
+
+  it("marks every surface that paints an image as a dark-preview photo host", () => {
+    const section = createSectionBlock({
+      backgroundImage: image,
+      wrapper: { backgroundImage: createBackgroundImage("https://cdn.test/band.jpg") },
+    });
+    const band = createWrapperBlock({
+      backgroundImage: createBackgroundImage("https://cdn.test/band.jpg"),
+    });
+    expect(backgroundImageHostClass(getBlockWrapperStyle(section))).toBe(
+      "tpl-has-bg-image",
+    );
+    expect(backgroundImageHostClass(getSectionWrapperStyle(section))).toBe(
+      "tpl-has-bg-image",
+    );
+    expect(backgroundImageHostClass(getWrapperStyle(band))).toBe(
+      "tpl-has-bg-image",
+    );
+  });
+
+  it("leaves surfaces without a painted image unmarked", () => {
+    const plain = createSectionBlock({ wrapper: { backgroundColor: "#eee" } });
+    const mergeTag = createSectionBlock({
+      backgroundImage: createBackgroundImage("{{ hero_url }}"),
+    });
+    expect(backgroundImageHostClass(getBlockWrapperStyle(plain))).toBeUndefined();
+    expect(
+      backgroundImageHostClass(getSectionWrapperStyle(plain)),
+    ).toBeUndefined();
+    expect(
+      backgroundImageHostClass(
+        getBlockWrapperStyle(mergeTag, { backgroundImageUrl: null }),
+      ),
+    ).toBeUndefined();
+    expect(
+      backgroundImageHostClass(getSectionWrapperStyle(createTitleBlock())),
+    ).toBeUndefined();
   });
 });
 

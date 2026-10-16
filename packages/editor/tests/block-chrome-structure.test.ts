@@ -90,6 +90,43 @@ describe("block chrome structure", () => {
     );
   });
 
+  describe("dark-preview background photos", () => {
+    // A background can't take its own counter-filter without un-inverting the
+    // content painted over it, so in dark preview the photo moves to a
+    // `::before` beneath that content, counter-inverted like an `img`.
+    /** Every rule whose selector names a photo host, as [selector, body]. */
+    const hostRules = [
+      ...canvas.matchAll(/([^{}]*\.tpl-has-bg-image[^{}]*)\{([^}]*)\}/g),
+    ].map((m) => [m[1].replace(/\/\*[\s\S]*?\*\//g, "").trim(), m[2]]);
+
+    it("drops the host's own image and paints it on a counter-inverted ::before", () => {
+      const host = hostRules.find(([sel]) => !sel.includes("::before"));
+      const layer = hostRules.find(([sel]) => sel.includes("::before"));
+      expect(host?.[1]).toMatch(/background-image:\s*none\s*!important/);
+      expect(host?.[1]).toMatch(/isolation:\s*isolate/);
+      expect(layer?.[1]).toMatch(
+        /background:\s*var\(--tpl-block-bg-layer,\s*none\)/,
+      );
+      expect(layer?.[1]).toMatch(/filter:\s*invert\(1\)\s+hue-rotate\(180deg\)/);
+      expect(layer?.[1]).toMatch(/z-index:\s*-1/);
+      expect(layer?.[1]).toMatch(/border-radius:\s*inherit/);
+    });
+
+    it("applies only in dark preview, and only under the `.tpl-block-content` inversion", () => {
+      // Light mode keeps painting the inline background. A host outside the
+      // filter target (today's wrapper frame and layout band) is not
+      // inverted, so it must not get the counter-filter either.
+      expect(hostRules.length).toBe(2);
+      for (const [selectorList] of hostRules) {
+        for (const selector of selectorList.split(",")) {
+          expect(selector.trim()).toMatch(
+            /^\.tpl-canvas--dark-mode\s+:deep\(\.tpl-block-content(\.|\s+\.)tpl-has-bg-image\)(::before)?$/,
+          );
+        }
+      }
+    });
+  });
+
   it("light-theme variable override is scoped to `.tpl-block-content`, not `.tpl-canvas-wrapper`", () => {
     // Email content needs light-theme vars (designed for white bg), but
     // chrome (action bar, indicators) lives OUTSIDE `.tpl-block-content`

@@ -96,10 +96,23 @@ export interface CanvasStyleOptions {
 }
 
 /**
+ * The painted background image as one `background` layer
+ * (`url(…) <position> / <size> <repeat>`). The dark-mode canvas preview
+ * repaints the photo from it on a counter-inverted `::before` (Canvas.vue), so
+ * it stays un-inverted like an `<img>`; light mode paints the inline
+ * `background-*` declarations next to it.
+ */
+const BACKGROUND_LAYER_VAR = "--tpl-block-bg-layer";
+
+/** Marks a surface that paints a background image, for Canvas.vue's dark-preview rules. */
+const BACKGROUND_IMAGE_HOST_CLASS = "tpl-has-bg-image";
+
+/**
  * Canvas declarations for a background image — the same size, position and
  * repeat the renderer emits on `mj-section` / `mj-wrapper`
- * (`resolveBackgroundImage` backs both). Empty when there is no image, or when
- * `displayUrl` is `null` (see {@link CanvasStyleOptions.backgroundImageUrl}).
+ * (`resolveBackgroundImage` backs both), plus {@link BACKGROUND_LAYER_VAR}.
+ * Empty when there is no image, or when `displayUrl` is `null` (see
+ * {@link CanvasStyleOptions.backgroundImageUrl}).
  */
 export function getBackgroundImageStyle(
   bg: BackgroundImage | undefined,
@@ -115,7 +128,21 @@ export function getBackgroundImageStyle(
     backgroundSize: resolved.size,
     backgroundPosition: resolved.position,
     backgroundRepeat: resolved.repeat,
+    [BACKGROUND_LAYER_VAR]: `url("${url}") ${resolved.position} / ${resolved.size} ${resolved.repeat}`,
   };
+}
+
+/**
+ * The class a surface takes when `style` (from the canvas style helpers here)
+ * paints a background image; `undefined` otherwise. Bind it next to that
+ * style, on the same element.
+ */
+export function backgroundImageHostClass(
+  style: Record<string, string> | null | undefined,
+): string | undefined {
+  return style && BACKGROUND_LAYER_VAR in style
+    ? BACKGROUND_IMAGE_HOST_CLASS
+    : undefined;
 }
 
 /**

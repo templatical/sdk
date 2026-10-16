@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  backgroundImageHostClass,
   getCachedBlockWrapperStyle,
   getWrapperStyle,
   resolveBlockComponent,
@@ -66,6 +67,13 @@ if (imageUrlResolver) {
   );
 }
 
+const childBoxes = computed(() =>
+  props.block.children.map((child) => ({
+    child,
+    style: getCachedBlockWrapperStyle(child, imageUrlResolver, syntax),
+  })),
+);
+
 function getBlockComponent(block: Block) {
   // Children resolve through the registry (title, section, …). No local
   // fallback map: a Canvas import of PreviewSectionBlock (or a preview import
@@ -75,12 +83,18 @@ function getBlockComponent(block: Block) {
 </script>
 
 <template>
-  <div data-testid="layout-wrapper" class="tpl:w-full" :style="wrapperStyle">
+  <div
+    data-testid="layout-wrapper"
+    class="tpl:w-full"
+    :style="wrapperStyle"
+    :class="backgroundImageHostClass(wrapperStyle)"
+  >
     <div
-      v-for="child in block.children"
+      v-for="{ child, style } in childBoxes"
       :key="child.id"
       :data-block-id="child.id"
-      :style="getCachedBlockWrapperStyle(child, imageUrlResolver, syntax)"
+      :style="style"
+      :class="backgroundImageHostClass(style)"
     >
       <component
         :is="getBlockComponent(child)"

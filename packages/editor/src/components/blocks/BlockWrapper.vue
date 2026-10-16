@@ -13,6 +13,7 @@ import {
 import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
 import { useResolvedBackgroundUrl } from "../../composables/useImageUrlResolver";
 import {
+  backgroundImageHostClass,
   getBlockWrapperStyle,
   getSectionWrapperStyle,
 } from "../../utils/blockComponentResolver";
@@ -353,12 +354,22 @@ function handleConditionToggle(): void {
       v-if="sectionWrapperStyle"
       class="tpl-section-wrapper"
       :style="sectionWrapperStyle"
+      :class="backgroundImageHostClass(sectionWrapperStyle)"
     >
-      <div class="tpl-block-content" :style="contentStyle">
+      <div
+        class="tpl-block-content"
+        :style="contentStyle"
+        :class="backgroundImageHostClass(contentStyle)"
+      >
         <slot />
       </div>
     </div>
-    <div v-else class="tpl-block-content" :style="contentStyle">
+    <div
+      v-else
+      class="tpl-block-content"
+      :style="contentStyle"
+      :class="backgroundImageHostClass(contentStyle)"
+    >
       <slot />
     </div>
   </div>

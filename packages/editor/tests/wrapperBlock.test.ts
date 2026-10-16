@@ -136,6 +136,44 @@ describe("WrapperBlock background images", () => {
     ).toContain('background-image: url("blob:hero.jpg")');
   });
 
+  it("marks the band and each child box that paints an image as dark-preview photo hosts", async () => {
+    const resolver = createImageUrlResolver((src) => `blob:${src}`);
+    const title = createTitleBlock({ content: "<p>Card body</p>", level: 2 });
+    const plain = createSectionBlock();
+    const section = createSectionBlock({
+      backgroundImage: createBackgroundImage("hero.jpg"),
+    });
+    const block = createWrapperBlock({
+      backgroundImage: createBackgroundImage("band.jpg"),
+      children: [title, plain, section],
+    });
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block, viewport: "desktop" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [IMAGE_URL_RESOLVER_KEY]: resolver,
+      },
+    });
+    await flushPromises();
+
+    const band = wrapper.get('[data-testid="layout-wrapper"]');
+    expect(band.classes()).toContain("tpl-has-bg-image");
+    expect(band.attributes("style")).toContain(
+      '--tpl-block-bg-layer: url("blob:band.jpg") center center / cover no-repeat',
+    );
+    const box = wrapper.get(`[data-block-id="${section.id}"]`);
+    expect(box.classes()).toContain("tpl-has-bg-image");
+    expect(box.attributes("style")).toContain(
+      '--tpl-block-bg-layer: url("blob:hero.jpg") center center / cover no-repeat',
+    );
+    for (const child of [title, plain]) {
+      expect(
+        wrapper.get(`[data-block-id="${child.id}"]`).classes(),
+      ).not.toContain("tpl-has-bg-image");
+    }
+  });
+
   it("looks up the image of a section added to the band later", async () => {
     const resolve = vi.fn(async (src: string) => `blob:${src}`);
     const resolver = createImageUrlResolver(resolve);

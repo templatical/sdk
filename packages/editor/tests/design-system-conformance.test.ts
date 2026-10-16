@@ -173,6 +173,7 @@ describe("design system conformance", () => {
       "--tpl-doc-link-color": "utils/blockComponentResolver.ts",
       "--tpl-doc-link-underline": "utils/blockComponentResolver.ts",
       "--tpl-doc-paragraph-spacing": "utils/blockComponentResolver.ts",
+      "--tpl-block-bg-layer": "utils/blockComponentResolver.ts",
     };
 
     /** Every `--tpl-*` property `css` declares or registers, comments aside. */

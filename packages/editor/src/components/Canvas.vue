@@ -565,4 +565,29 @@ function handleFetchData(
 .tpl-canvas--dark-mode :deep(.tpl-block-content img) {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* Background photos get the same counter-invert. A filter on the host would
+   also hit the content painted over it, so the photo moves to a `::before`
+   beneath that content, painted from `--tpl-block-bg-layer`
+   (`getBackgroundImageStyle`). The selectors key on `.tpl-block-content`, the
+   filter target: a host outside it is never inverted, so it keeps painting
+   its own background. `isolation` keeps the `z-index: -1` layer above the
+   host's background colour wherever the host isn't the filtered box itself. */
+.tpl-canvas--dark-mode :deep(.tpl-block-content.tpl-has-bg-image),
+.tpl-canvas--dark-mode :deep(.tpl-block-content .tpl-has-bg-image) {
+  position: relative;
+  isolation: isolate;
+  background-image: none !important;
+}
+.tpl-canvas--dark-mode :deep(.tpl-block-content.tpl-has-bg-image)::before,
+.tpl-canvas--dark-mode :deep(.tpl-block-content .tpl-has-bg-image)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--tpl-block-bg-layer, none);
+  filter: invert(1) hue-rotate(180deg);
+}
 </style>

@@ -66,6 +66,25 @@ describe("BlockWrapper background images", () => {
     expect(block.wrapper?.backgroundImage?.url).toBe("band.jpg");
   });
 
+  it("marks the box and the frame as dark-preview photo hosts, with the painted url", async () => {
+    const wrapper = mountWrapper(
+      sectionWithImages(),
+      createImageUrlResolver((src) => `blob:${src}`),
+    );
+    await flushPromises();
+
+    const box = wrapper.get(".tpl-block-content");
+    expect(box.classes()).toContain("tpl-has-bg-image");
+    expect(box.attributes("style")).toContain(
+      '--tpl-block-bg-layer: url("blob:hero.jpg") center center / cover no-repeat',
+    );
+    const frame = wrapper.get(".tpl-section-wrapper");
+    expect(frame.classes()).toContain("tpl-has-bg-image");
+    expect(frame.attributes("style")).toContain(
+      '--tpl-block-bg-layer: url("blob:band.jpg") center center / cover no-repeat',
+    );
+  });
+
   it("paints the stored urls when no resolver is configured", () => {
     const wrapper = mountWrapper(sectionWithImages());
 
@@ -105,6 +124,15 @@ describe("BlockWrapper background images", () => {
     expect(frame).not.toContain("background-image");
     expect(frame).toContain("background-color: #1e293b");
     expect(resolve).not.toHaveBeenCalled();
+    // Nothing for the dark preview's photo layer to paint either.
+    expect(box).not.toContain("--tpl-block-bg-layer");
+    expect(frame).not.toContain("--tpl-block-bg-layer");
+    expect(wrapper.get(".tpl-block-content").classes()).not.toContain(
+      "tpl-has-bg-image",
+    );
+    expect(wrapper.get(".tpl-section-wrapper").classes()).not.toContain(
+      "tpl-has-bg-image",
+    );
   });
 
   it("paints no image on a section without one", () => {
@@ -112,6 +140,9 @@ describe("BlockWrapper background images", () => {
 
     expect(wrapper.get(".tpl-block-content").attributes("style")).not.toContain(
       "background-image",
+    );
+    expect(wrapper.get(".tpl-block-content").classes()).not.toContain(
+      "tpl-has-bg-image",
     );
   });
 });
