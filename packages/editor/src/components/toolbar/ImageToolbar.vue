@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
@@ -11,21 +12,20 @@ import {
   inputSuffixClass,
   labelClass,
 } from "../../constants/styleConstants";
-import type { BorderRadiusValue, ImageBlock } from "@templatical/types";
+import type {
+  BorderRadiusValue,
+  ImageBlock,
+  MediaResult,
+} from "@templatical/types";
 import {
   containsMergeTag,
   SYNTAX_PRESETS,
   toBorderRadiusCss,
 } from "@templatical/types";
-import { Image, Upload, LoaderCircle } from "@lucide/vue";
+import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import {
-  CAN_DROP_MEDIA_KEY,
-  ON_REQUEST_MEDIA_KEY,
-  MERGE_TAG_SYNTAX_KEY,
-} from "../../keys";
-import { useAliveFlag } from "../../composables/useAliveFlag";
-import { useImageDrop } from "../../composables/useImageDrop";
+import { MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { useMediaDropField } from "../../composables/useMediaDropField";
 import { useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
@@ -37,12 +37,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
-const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
-const aliveFlag = useAliveFlag();
-
-const canBrowseMedia = computed(() => !!onRequestMedia);
 
 const pulseSrc = ref(false);
 const pulseAlt = ref(false);
@@ -124,82 +119,34 @@ function updateCustomWidth(raw: string): void {
   updateField("width", n);
 }
 
-async function openMediaBrowser(): Promise<void> {
-  const result = await onRequestMedia?.({ accept: ["images"] });
-  if (!aliveFlag.alive) return;
-  if (result) {
-    updateField("src", result.url);
-    if (result.alt) {
-      updateField("alt", result.alt);
-      pulseAlt.value = true;
-    }
-    pulseSrc.value = true;
-    startPulseSrc();
+function applyMedia(result: MediaResult): void {
+  updateField("src", result.url);
+  if (result.alt) {
+    updateField("alt", result.alt);
+    pulseAlt.value = true;
   }
+  pulseSrc.value = true;
+  startPulseSrc();
 }
 
-// --- Drag-and-drop upload (#229) ---
 const dropZoneRef = ref<HTMLElement>();
-const isUploading = ref(false);
 // A merge-tag src is a deliberate dynamic value — never clobber it via drop.
 const hasMergeTagSrc = computed(() =>
   containsMergeTag(props.block.src, mergeTagSyntax),
 );
-const dropEnabled = computed(
-  () =>
-    (canDropMedia?.value ?? !!onRequestMedia) &&
-    !isUploading.value &&
-    !hasMergeTagSrc.value,
-);
-
-async function uploadDroppedFiles(files: File[]): Promise<void> {
-  if (!onRequestMedia) return;
-  isUploading.value = true;
-  try {
-    const result = await onRequestMedia({ accept: ["images"], files });
-    if (!aliveFlag.alive) return;
-    if (result) {
-      updateField("src", result.url);
-      if (result.alt) {
-        updateField("alt", result.alt);
-        pulseAlt.value = true;
-      }
-      pulseSrc.value = true;
-      startPulseSrc();
-    }
-  } finally {
-    if (aliveFlag.alive) isUploading.value = false;
-  }
-}
-
-const { isOver } = useImageDrop({
-  target: dropZoneRef,
-  enabled: dropEnabled,
-  onFiles: uploadDroppedFiles,
-});
+const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
+  useMediaDropField({
+    target: dropZoneRef,
+    blocked: hasMergeTagSrc,
+    apply: applyMedia,
+  });
 </script>
 
 <template>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.image.imageUrl }}</label>
     <div ref="dropZoneRef" class="tpl:relative">
-      <!-- Drag-over / uploading overlay (#229) -->
-      <div
-        v-if="(dropEnabled && isOver) || isUploading"
-        class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
-        style="
-          background-color: color-mix(in srgb, var(--tpl-bg) 90%, transparent);
-        "
-      >
-        <template v-if="isUploading">
-          <LoaderCircle class="tpl-spinner" :size="18" :stroke-width="2" />
-          {{ t.image.uploading }}
-        </template>
-        <template v-else>
-          <Upload :size="18" :stroke-width="1.5" />
-          {{ t.image.dropToUpload }}
-        </template>
-      </div>
+      <MediaDropOverlay v-if="showOverlay" :uploading="isUploading" />
       <MergeTagInput
         :model-value="block.src"
         type="url"
@@ -208,7 +155,7 @@ const { isOver } = useImageDrop({
         @update:model-value="updateField('src', $event)"
       />
       <button
-        v-if="canBrowseMedia"
+        v-if="canBrowse"
         class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all"
         style="
           border-color: var(--tpl-border);

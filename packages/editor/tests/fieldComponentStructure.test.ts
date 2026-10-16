@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { flushPromises } from '@vue/test-utils';
+import { computed, nextTick } from 'vue';
+import { flushPromises, type VueWrapper } from '@vue/test-utils';
+import type { MediaResult } from '@templatical/types';
 import TextField from '../src/components/toolbar/fields/TextField.vue';
 import TextareaField from '../src/components/toolbar/fields/TextareaField.vue';
 import NumberField from '../src/components/toolbar/fields/NumberField.vue';
@@ -9,7 +11,11 @@ import BooleanField from '../src/components/toolbar/fields/BooleanField.vue';
 import ImageField from '../src/components/toolbar/fields/ImageField.vue';
 import { mountEditor } from './helpers/mount';
 import en from '../src/i18n/locales/en';
-import { ON_REQUEST_MEDIA_KEY, TRANSLATIONS_KEY } from '../src/keys';
+import {
+  CAN_DROP_MEDIA_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  TRANSLATIONS_KEY,
+} from '../src/keys';
 
 describe('TextField', () => {
   it('renders an editable MergeTagInput (not the disabled readOnly fallback)', () => {
@@ -190,7 +196,58 @@ describe('BooleanField', () => {
   });
 });
 
+// The zone reads the dragged type from `items` and the dropped file from
+// `files`, so one shape serves every drag event.
+function dragEvent(type: 'dragenter' | 'dragleave' | 'drop'): Event {
+  const file = new File(['data'], 'up.png', { type: 'image/png' });
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'dataTransfer', {
+    value: { files: [file], items: [{ type: file.type }] },
+  });
+  return event;
+}
+
+/** An `onRequestMedia` that stays pending until the test settles it. */
+function pendingMedia() {
+  let settle: (value: MediaResult | null) => void = () => {};
+  const fn = vi.fn(
+    () =>
+      new Promise<MediaResult | null>((resolve) => {
+        settle = resolve;
+      }),
+  );
+  return { fn, settle: (value: MediaResult | null) => settle(value) };
+}
+
 describe('ImageField', () => {
+  const imageField = { type: 'image' as const, key: 'img', label: 'Image' };
+
+  function mountImageField(
+    onRequestMedia: unknown,
+    options: { readOnly?: boolean; provides?: Record<symbol, unknown> } = {},
+  ) {
+    return mountEditor(ImageField, {
+      props: { field: imageField, modelValue: '', readOnly: options.readOnly },
+      provides: {
+        [TRANSLATIONS_KEY]: en,
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+        ...options.provides,
+      },
+    });
+  }
+
+  function browseButton(wrapper: VueWrapper) {
+    return wrapper
+      .findAll('button')
+      .find((b) => b.text().includes(en.image.browseMedia));
+  }
+
+  // A read-only field renders a disabled input, so drags go to the zone
+  // itself rather than through the input.
+  function dropZone(wrapper: VueWrapper): Element {
+    return wrapper.get('input[type="url"]').element.parentElement!;
+  }
+
   it('shows the uploading state until a dropped image finishes uploading', async () => {
     let finish: (value: { url: string }) => void = () => {};
     const onRequestMedia = vi.fn(
@@ -234,5 +291,136 @@ describe('ImageField', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([
       ['https://cdn/up.png'],
     ]);
+  });
+
+  it('sets the url from the media browser and ignores alt', async () => {
+    const onRequestMedia = vi.fn(async () => ({
+      url: 'https://cdn/f.png',
+      alt: 'ignored',
+    }));
+    const wrapper = mountImageField(onRequestMedia);
+
+    await browseButton(wrapper)!.trigger('click');
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledWith({ accept: ['images'] });
+    expect(wrapper.emitted('update:modelValue')).toEqual([
+      ['https://cdn/f.png'],
+    ]);
+  });
+
+  it('leaves the url alone when the media browser is cancelled', async () => {
+    const onRequestMedia = vi.fn(async () => null);
+    const wrapper = mountImageField(onRequestMedia);
+
+    await browseButton(wrapper)!.trigger('click');
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  });
+
+  it('hides browse without a media handler and when read-only', () => {
+    expect(browseButton(mountImageField(null))).toBeUndefined();
+    expect(
+      browseButton(mountImageField(vi.fn(), { readOnly: true })),
+    ).toBeUndefined();
+  });
+
+  it('highlights while an image is dragged over the field', async () => {
+    const wrapper = mountImageField(vi.fn());
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('dragenter'));
+    await nextTick();
+    expect(wrapper.text()).toContain(en.image.dropToUpload);
+    expect(wrapper.get('.lucide-upload').attributes('width')).toBe('18');
+
+    dropZone(wrapper).dispatchEvent(dragEvent('dragleave'));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+  });
+
+  it('leaves the url alone when the upload is cancelled', async () => {
+    const media = pendingMedia();
+    const wrapper = mountImageField(media.fn);
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+    expect(wrapper.text()).toContain(en.image.uploading);
+
+    media.settle(null);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain(en.image.uploading);
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  });
+
+  it('ignores a second drop while the first uploads', async () => {
+    const media = pendingMedia();
+    const wrapper = mountImageField(media.fn);
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+    dropZone(wrapper).dispatchEvent(dragEvent('dragenter'));
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+
+    expect(media.fn).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    media.settle({ url: 'https://cdn/f.png' });
+    await flushPromises();
+    expect(wrapper.emitted('update:modelValue')).toEqual([
+      ['https://cdn/f.png'],
+    ]);
+  });
+
+  it('ignores a drop when read-only', async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountImageField(onRequestMedia, { readOnly: true });
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('dragenter'));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  });
+
+  it('ignores a drop when the library is read-only, but keeps browse', async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountImageField(onRequestMedia, {
+      provides: { [CAN_DROP_MEDIA_KEY]: computed(() => false) },
+    });
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('dragenter'));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(browseButton(wrapper)).toBeDefined();
+  });
+
+  it('ignores a drop without a media handler', async () => {
+    const wrapper = mountImageField(null);
+    await flushPromises();
+
+    dropZone(wrapper).dispatchEvent(dragEvent('dragenter'));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    dropZone(wrapper).dispatchEvent(dragEvent('drop'));
+    await flushPromises();
+    expect(wrapper.text()).not.toContain(en.image.uploading);
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
   });
 });

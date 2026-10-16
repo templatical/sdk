@@ -3,6 +3,7 @@ import { useI18n } from "../../composables/useI18n";
 import { useMergeTag } from "../../composables/useMergeTag";
 import type {
   ImageBlock as ImageBlockType,
+  MediaResult,
   ViewportSize,
 } from "@templatical/types";
 import {
@@ -11,12 +12,11 @@ import {
   toBorderRadiusCss,
 } from "@templatical/types";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
+import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
-import { Image, Upload, LoaderCircle } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
-import { CAN_DROP_MEDIA_KEY, ON_REQUEST_MEDIA_KEY } from "../../keys";
-import { useAliveFlag } from "../../composables/useAliveFlag";
-import { useImageDrop } from "../../composables/useImageDrop";
+import { Image } from "@lucide/vue";
+import { computed, ref } from "vue";
+import { useMediaDropField } from "../../composables/useMediaDropField";
 import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
 
 const props = defineProps<{
@@ -30,56 +30,25 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { syntax } = useMergeTag();
-const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
-const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
-const canBrowseMedia = computed(() => !!onRequestMedia);
-const aliveFlag = useAliveFlag();
 
-async function browseMedia(): Promise<void> {
-  const result = await onRequestMedia?.({ accept: ["images"] });
-  if (!aliveFlag.alive) return;
-  if (result) {
-    const updates: Partial<ImageBlockType> = { src: result.url };
-    if (result.alt) updates.alt = result.alt;
-    emit("update", updates);
-  }
-}
-
-// --- Drag-and-drop upload (#229) ---
-const dropZoneRef = ref<HTMLElement>();
-const isUploading = ref(false);
-
-// A merge-tag src is a deliberate dynamic value — never clobber it via drop.
-// Browse and drop are distinct: a read-only provider still opens the
-// library, but `canDropMedia` is false so the zone does not highlight.
-const dropEnabled = computed(
-  () =>
-    (canDropMedia?.value ?? !!onRequestMedia) &&
-    !isUploading.value &&
-    !hasMergeTagSrc.value,
+const hasMergeTagSrc = computed(() =>
+  containsMergeTag(props.block.src, syntax),
 );
 
-async function uploadDroppedFiles(files: File[]): Promise<void> {
-  if (!onRequestMedia) return;
-  isUploading.value = true;
-  try {
-    const result = await onRequestMedia({ accept: ["images"], files });
-    if (!aliveFlag.alive) return;
-    if (result) {
-      const updates: Partial<ImageBlockType> = { src: result.url };
-      if (result.alt) updates.alt = result.alt;
-      emit("update", updates);
-    }
-  } finally {
-    if (aliveFlag.alive) isUploading.value = false;
-  }
+function applyMedia(result: MediaResult): void {
+  const updates: Partial<ImageBlockType> = { src: result.url };
+  if (result.alt) updates.alt = result.alt;
+  emit("update", updates);
 }
 
-const { isOver } = useImageDrop({
-  target: dropZoneRef,
-  enabled: dropEnabled,
-  onFiles: uploadDroppedFiles,
-});
+const dropZoneRef = ref<HTMLElement>();
+const { canBrowse, dropEnabled, isUploading, showOverlay, openMediaBrowser } =
+  useMediaDropField({
+    target: dropZoneRef,
+    // A merge-tag src is a deliberate dynamic value — never clobber it via drop.
+    blocked: hasMergeTagSrc,
+    apply: applyMedia,
+  });
 
 const containerStyle = computed(() => ({
   textAlign: props.block.align,
@@ -120,10 +89,6 @@ const imageStyle = computed(() => {
   };
 });
 
-const hasMergeTagSrc = computed(() =>
-  containsMergeTag(props.block.src, syntax),
-);
-
 // Display-only preview URLs (#415). The canonical values stay in block.src /
 // block.placeholderUrl (and thus in the MJML export) — the resolver only
 // changes what the canvas <img> shows. A merge-tag src is never displayable,
@@ -144,23 +109,11 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
     class="tpl:relative tpl:w-full"
     :style="containerStyle"
   >
-    <!-- Drag-over / uploading overlay (#229) -->
-    <div
-      v-if="(dropEnabled && isOver) || isUploading"
-      class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
-      style="
-        background-color: color-mix(in srgb, var(--tpl-bg) 85%, transparent);
-      "
-    >
-      <template v-if="isUploading">
-        <LoaderCircle class="tpl-spinner" :size="20" :stroke-width="2" />
-        {{ t.image.uploading }}
-      </template>
-      <template v-else>
-        <Upload :size="20" :stroke-width="1.5" />
-        {{ t.image.dropToUpload }}
-      </template>
-    </div>
+    <MediaDropOverlay
+      v-if="showOverlay"
+      :uploading="isUploading"
+      size="canvas"
+    />
     <!-- Placeholder with preview image provided -->
     <template v-if="block.src && hasMergeTagSrc && block.placeholderUrl">
       <a
@@ -239,10 +192,10 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
       class="tpl:flex tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
     >
       <button
-        v-if="canBrowseMedia"
+        v-if="canBrowse"
         :aria-label="t.image.browseMedia"
         class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:cursor-pointer tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
-        @click.stop="browseMedia"
+        @click.stop="openMediaBrowser"
       >
         <Image :size="14" :stroke-width="1.5" />
         {{ t.image.browseMedia }}

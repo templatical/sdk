@@ -320,7 +320,7 @@ export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
  *
  * `null` when neither a provider nor a callback is configured — image
  * fields stay URL-only and drop is off. Injected as a computed; consumed
- * by ImageBlock / ImageToolbar / ImageField with a `null` default.
+ * by `useMediaDropField` with a `null` default.
  */
 export const CAN_DROP_MEDIA_KEY: InjectionKey<ComputedRef<boolean> | null> =
   Symbol("canDropMedia");

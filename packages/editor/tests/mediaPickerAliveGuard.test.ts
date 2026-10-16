@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
 import { shallowRef, nextTick } from "vue";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { SYNTAX_PRESETS } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
@@ -14,6 +14,7 @@ import ImageBlock from "../src/components/blocks/ImageBlock.vue";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
 import VideoToolbar from "../src/components/toolbar/VideoToolbar.vue";
 import ImageField from "../src/components/toolbar/fields/ImageField.vue";
+import BackgroundImageControl from "../src/components/toolbar/BackgroundImageControl.vue";
 
 interface MediaResolver {
   resolveWithObservable: () => { urlReadAfterResolve: () => boolean };
@@ -58,6 +59,15 @@ function setupOnRequestMedia(): {
       };
     },
   };
+}
+
+function dropImageOn(element: Element): void {
+  const file = new File(["data"], "up.png", { type: "image/png" });
+  const event = new Event("drop", { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: { files: [file], items: [{ type: file.type }] },
+  });
+  element.dispatchEvent(event);
 }
 
 function baseProvide(onRequestMedia: unknown) {
@@ -193,6 +203,142 @@ describe("media picker alive guard", () => {
       .find((b) => b.text().includes(enTranslations.image.browseMedia));
     expect(browseButton).toBeTruthy();
     await browseButton!.trigger("click");
+    expect(media.fn).toHaveBeenCalled();
+
+    wrapper.unmount();
+    const observable = media.next().resolveWithObservable();
+    await nextTick();
+
+    expect(observable.urlReadAfterResolve()).toBe(false);
+  });
+
+  it("BackgroundImageControl does not emit update:modelValue after the component unmounts", async () => {
+    const media = setupOnRequestMedia();
+    const wrapper = mount(BackgroundImageControl, {
+      props: { modelValue: undefined, testidPrefix: "t" },
+      global: {
+        provide: baseProvide(media.fn),
+      },
+    });
+
+    await wrapper.get('[data-testid="t-bg-browse"]').trigger("click");
+    expect(media.fn).toHaveBeenCalled();
+
+    wrapper.unmount();
+    const observable = media.next().resolveWithObservable();
+    await nextTick();
+
+    expect(observable.urlReadAfterResolve()).toBe(false);
+  });
+});
+
+// A drop's upload outlives the component the same way a browse does. The
+// drop listener attaches once the zone's template ref resolves, a tick after
+// mount.
+describe("media drop alive guard", () => {
+  it("ImageBlock does not emit update when the upload settles after unmount", async () => {
+    const media = setupOnRequestMedia();
+    const wrapper = mount(ImageBlock, {
+      props: {
+        block: {
+          id: "img-1",
+          type: "image",
+          src: "",
+          alt: "",
+          width: "full",
+          align: "center",
+          linkUrl: "",
+          placeholderUrl: "",
+          styles: {},
+        } as any,
+        viewport: "desktop",
+      },
+      global: {
+        provide: baseProvide(media.fn),
+      },
+    });
+    await flushPromises();
+
+    dropImageOn(wrapper.get('[data-testid="image-drop-zone"]').element);
+    expect(media.fn).toHaveBeenCalled();
+
+    wrapper.unmount();
+    const observable = media.next().resolveWithObservable();
+    await nextTick();
+
+    expect(observable.urlReadAfterResolve()).toBe(false);
+  });
+
+  it("ImageToolbar does not emit update when the upload settles after unmount", async () => {
+    const media = setupOnRequestMedia();
+    const wrapper = mount(ImageToolbar, {
+      props: {
+        block: {
+          id: "img-1",
+          type: "image",
+          src: "https://example.com/initial.png",
+          alt: "",
+          width: "full",
+          align: "center",
+          linkUrl: "",
+          placeholderUrl: "",
+          styles: {},
+        } as any,
+      },
+      global: {
+        provide: baseProvide(media.fn),
+      },
+    });
+    await flushPromises();
+
+    dropImageOn(wrapper.get('input[type="url"]').element);
+    expect(media.fn).toHaveBeenCalled();
+
+    wrapper.unmount();
+    const observable = media.next().resolveWithObservable();
+    await nextTick();
+
+    expect(observable.urlReadAfterResolve()).toBe(false);
+  });
+
+  it("ImageField does not emit update:modelValue when the upload settles after unmount", async () => {
+    const media = setupOnRequestMedia();
+    const wrapper = mount(ImageField, {
+      props: {
+        field: {
+          key: "hero",
+          type: "image",
+          label: "Hero image",
+        } as any,
+        modelValue: "",
+      },
+      global: {
+        provide: baseProvide(media.fn),
+      },
+    });
+    await flushPromises();
+
+    dropImageOn(wrapper.get('input[type="url"]').element);
+    expect(media.fn).toHaveBeenCalled();
+
+    wrapper.unmount();
+    const observable = media.next().resolveWithObservable();
+    await nextTick();
+
+    expect(observable.urlReadAfterResolve()).toBe(false);
+  });
+
+  it("BackgroundImageControl does not emit update:modelValue when the upload settles after unmount", async () => {
+    const media = setupOnRequestMedia();
+    const wrapper = mount(BackgroundImageControl, {
+      props: { modelValue: undefined, testidPrefix: "t" },
+      global: {
+        provide: baseProvide(media.fn),
+      },
+    });
+    await flushPromises();
+
+    dropImageOn(wrapper.get('[data-testid="t-bg-url"]').element);
     expect(media.fn).toHaveBeenCalled();
 
     wrapper.unmount();

@@ -2,11 +2,10 @@
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
 import { inputClass } from "../../../constants/styleConstants";
-import { Image, Upload, LoaderCircle } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
-import { CAN_DROP_MEDIA_KEY, ON_REQUEST_MEDIA_KEY } from "../../../keys";
-import { useAliveFlag } from "../../../composables/useAliveFlag";
-import { useImageDrop } from "../../../composables/useImageDrop";
+import { Image } from "@lucide/vue";
+import { ref } from "vue";
+import { useMediaDropField } from "../../../composables/useMediaDropField";
+import MediaDropOverlay from "../../MediaDropOverlay.vue";
 import FieldWrapper from "./FieldWrapper.vue";
 
 const props = defineProps<{
@@ -20,47 +19,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
-const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
-const aliveFlag = useAliveFlag();
 
-const canBrowseMedia = computed(() => !!onRequestMedia);
-
-async function browseMedia(): Promise<void> {
-  const result = await onRequestMedia?.({ accept: ["images"] });
-  if (!aliveFlag.alive) return;
-  if (result) {
-    emit("update:modelValue", result.url);
-  }
-}
-
-// --- Drag-and-drop upload (#229) ---
 const dropZoneRef = ref<HTMLElement>();
-const isUploading = ref(false);
-const dropEnabled = computed(
-  () =>
-    (canDropMedia?.value ?? !!onRequestMedia) &&
-    !isUploading.value &&
-    !props.readOnly,
-);
-
-async function uploadDroppedFiles(files: File[]): Promise<void> {
-  if (!onRequestMedia) return;
-  isUploading.value = true;
-  try {
-    const result = await onRequestMedia({ accept: ["images"], files });
-    if (!aliveFlag.alive) return;
-    if (result) emit("update:modelValue", result.url);
-  } finally {
-    if (aliveFlag.alive) isUploading.value = false;
-  }
-}
-
-const { isOver } = useImageDrop({
-  target: dropZoneRef,
-  enabled: dropEnabled,
-  onFiles: uploadDroppedFiles,
-});
+const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
+  useMediaDropField({
+    target: dropZoneRef,
+    blocked: () => !!props.readOnly,
+    apply: (result) => emit("update:modelValue", result.url),
+  });
 </script>
 
 <template>
@@ -70,23 +36,7 @@ const { isOver } = useImageDrop({
     :read-only="readOnly"
   >
     <div ref="dropZoneRef" class="tpl:relative">
-      <!-- Drag-over / uploading overlay (#229) -->
-      <div
-        v-if="(dropEnabled && isOver) || isUploading"
-        class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
-        style="
-          background-color: color-mix(in srgb, var(--tpl-bg) 90%, transparent);
-        "
-      >
-        <template v-if="isUploading">
-          <LoaderCircle class="tpl-spinner" :size="18" :stroke-width="2" />
-          {{ t.image.uploading }}
-        </template>
-        <template v-else>
-          <Upload :size="18" :stroke-width="1.5" />
-          {{ t.image.dropToUpload }}
-        </template>
-      </div>
+      <MediaDropOverlay v-if="showOverlay" :uploading="isUploading" />
       <input
         v-if="readOnly"
         type="url"
@@ -107,9 +57,9 @@ const { isOver } = useImageDrop({
         "
       />
       <button
-        v-if="canBrowseMedia && !readOnly"
+        v-if="canBrowse && !readOnly"
         class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
-        @click="browseMedia()"
+        @click="openMediaBrowser()"
       >
         <Image :size="14" :stroke-width="1.5" />
         {{ t.image.browseMedia }}

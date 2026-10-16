@@ -1,15 +1,20 @@
-import { shallowRef } from "vue";
+import { computed, nextTick, shallowRef } from "vue";
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
-import { flushPromises, mount } from "@vue/test-utils";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import {
   SYNTAX_PRESETS,
   createImageBlock,
   uniformBorder,
 } from "@templatical/types";
+import type {
+  ImageBlock as ImageBlockType,
+  MediaResult,
+} from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
+  CAN_DROP_MEDIA_KEY,
   IMAGE_URL_RESOLVER_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
@@ -374,6 +379,109 @@ describe("ImageBlock border", () => {
   });
 });
 
+const HERO = "https://cdn/up.png";
+
+// The zone reads the dragged type from `items` and the dropped file from
+// `files`, so one shape serves every drag event.
+function dragEvent(type: "dragenter" | "dragleave" | "drop"): Event {
+  const file = new File(["data"], "up.png", { type: "image/png" });
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: { files: [file], items: [{ type: file.type }] },
+  });
+  return event;
+}
+
+/** An `onRequestMedia` that stays pending until the test settles it. */
+function pendingMedia() {
+  let settle: (value: MediaResult | null) => void = () => {};
+  const fn = vi.fn(
+    () =>
+      new Promise<MediaResult | null>((resolve) => {
+        settle = resolve;
+      }),
+  );
+  return { fn, settle: (value: MediaResult | null) => settle(value) };
+}
+
+function mountWithMedia(
+  block: ImageBlockType,
+  onRequestMedia: unknown,
+  provides: Record<symbol, unknown> = {},
+) {
+  return mount(ImageBlock, {
+    props: { block, viewport: "desktop" },
+    global: {
+      provide: {
+        ...baseProvide(),
+        [ON_REQUEST_MEDIA_KEY as symbol]: onRequestMedia,
+        ...provides,
+      },
+    },
+  });
+}
+
+function dropZone(wrapper: VueWrapper) {
+  return wrapper.get('[data-testid="image-drop-zone"]');
+}
+
+function browseButton(wrapper: VueWrapper) {
+  return wrapper.find(
+    `button[aria-label="${enTranslations.image.browseMedia}"]`,
+  );
+}
+
+describe("ImageBlock media browser", () => {
+  it("sets src and alt from the picked image in one update", async () => {
+    const onRequestMedia = vi.fn(async () => ({ url: HERO, alt: "Hero" }));
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+    );
+
+    await browseButton(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledWith({ accept: ["images"] });
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO, alt: "Hero" }]]);
+  });
+
+  it("sets only src when the picked image has no alt", async () => {
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      vi.fn(async () => ({ url: HERO })),
+    );
+
+    await browseButton(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO }]]);
+  });
+
+  it("leaves the block alone when the media browser is cancelled", async () => {
+    const onRequestMedia = vi.fn(async () => null);
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+    );
+
+    await browseButton(wrapper).trigger("click");
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("offers browse only with a media handler", () => {
+    const withHandler = mountWithMedia(createImageBlock({ src: "" }), vi.fn());
+    const without = mountWithMedia(createImageBlock({ src: "" }), null);
+
+    expect(browseButton(withHandler).exists()).toBe(true);
+    expect(browseButton(without).exists()).toBe(false);
+    expect(without.text()).toContain(enTranslations.image.clickToAdd);
+  });
+});
+
 describe("ImageBlock drag-and-drop upload (#229)", () => {
   it("shows the uploading state until the upload settles", async () => {
     let finish: (value: { url: string }) => void = () => {};
@@ -418,5 +526,136 @@ describe("ImageBlock drag-and-drop upload (#229)", () => {
     expect(wrapper.emitted("update")).toEqual([
       [{ src: "https://cdn/up.png" }],
     ]);
+  });
+
+  it("highlights while an image is dragged over the block", async () => {
+    const wrapper = mountWithMedia(createImageBlock({ src: HERO }), vi.fn());
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("true");
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(dropZone(wrapper).text()).toContain(
+      enTranslations.image.dropToUpload,
+    );
+    // The canvas draws the overlay larger than a sidebar field does.
+    expect(dropZone(wrapper).get(".lucide-upload").attributes("width")).toBe(
+      "20",
+    );
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("dragleave"));
+    await nextTick();
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.dropToUpload,
+    );
+  });
+
+  it("sets src and alt from a dropped image in one update", async () => {
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      vi.fn(async () => ({ url: HERO, alt: "Hero" })),
+    );
+    await flushPromises();
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO, alt: "Hero" }]]);
+  });
+
+  it("leaves the block alone when the upload is cancelled", async () => {
+    const media = pendingMedia();
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), media.fn);
+    await flushPromises();
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(dropZone(wrapper).text()).toContain(enTranslations.image.uploading);
+
+    media.settle(null);
+    await flushPromises();
+
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.uploading,
+    );
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("ignores a second drop while the first uploads", async () => {
+    const media = pendingMedia();
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), media.fn);
+    await flushPromises();
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("false");
+    dropZone(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+
+    expect(media.fn).toHaveBeenCalledTimes(1);
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.dropToUpload,
+    );
+
+    media.settle({ url: HERO });
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("true");
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO }]]);
+  });
+
+  it("ignores a drop on a merge-tag src", async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "{{ user.avatar }}" }),
+      onRequestMedia,
+    );
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("false");
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.dropToUpload,
+    );
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("ignores a drop when the library is read-only, but keeps browse", async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+      { [CAN_DROP_MEDIA_KEY as symbol]: computed(() => false) },
+    );
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("false");
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(browseButton(wrapper).exists()).toBe(true);
+  });
+
+  it("ignores a drop without a media handler", async () => {
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), null);
+    await flushPromises();
+    expect(dropZone(wrapper).attributes("data-drop-enabled")).toBe("false");
+
+    dropZone(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    dropZone(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.dropToUpload,
+    );
+    expect(dropZone(wrapper).text()).not.toContain(
+      enTranslations.image.uploading,
+    );
+    expect(wrapper.emitted("update")).toBeUndefined();
   });
 });

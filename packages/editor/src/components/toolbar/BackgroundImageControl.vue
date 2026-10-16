@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
@@ -15,15 +16,10 @@ import {
   type BackgroundPositionY,
   type BackgroundSize,
 } from "@templatical/types";
-import { Image, LoaderCircle, Upload } from "@lucide/vue";
+import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import {
-  CAN_DROP_MEDIA_KEY,
-  MERGE_TAG_SYNTAX_KEY,
-  ON_REQUEST_MEDIA_KEY,
-} from "../../keys";
-import { useAliveFlag } from "../../composables/useAliveFlag";
-import { useImageDrop } from "../../composables/useImageDrop";
+import { MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { useMediaDropField } from "../../composables/useMediaDropField";
 
 const props = defineProps<{
   modelValue: BackgroundImage | undefined;
@@ -35,10 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
-const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
-const aliveFlag = useAliveFlag();
 
 // Loaded JSON isn't schema-checked, so a non-string url reads as empty.
 const url = computed(() =>
@@ -111,39 +104,14 @@ function isCurrentPosition(cell: PositionCell): boolean {
   );
 }
 
-async function openMediaBrowser(): Promise<void> {
-  const result = await onRequestMedia?.({ accept: ["images"] });
-  if (!aliveFlag.alive) return;
-  if (result) setUrl(result.url);
-}
-
-// A merge-tag url is a deliberate dynamic value — never clobber it via drop.
 const dropZoneRef = ref<HTMLElement>();
-const isUploading = ref(false);
-const dropEnabled = computed(
-  () =>
-    (canDropMedia?.value ?? !!onRequestMedia) &&
-    !isUploading.value &&
-    !containsMergeTag(url.value, mergeTagSyntax),
-);
-
-async function uploadDroppedFiles(files: File[]): Promise<void> {
-  if (!onRequestMedia) return;
-  isUploading.value = true;
-  try {
-    const result = await onRequestMedia({ accept: ["images"], files });
-    if (!aliveFlag.alive) return;
-    if (result) setUrl(result.url);
-  } finally {
-    if (aliveFlag.alive) isUploading.value = false;
-  }
-}
-
-const { isOver } = useImageDrop({
-  target: dropZoneRef,
-  enabled: dropEnabled,
-  onFiles: uploadDroppedFiles,
-});
+const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
+  useMediaDropField({
+    target: dropZoneRef,
+    // A merge-tag url is a deliberate dynamic value — never clobber it via drop.
+    blocked: () => containsMergeTag(url.value, mergeTagSyntax),
+    apply: (result) => setUrl(result.url),
+  });
 </script>
 
 <template>
@@ -155,26 +123,7 @@ const { isOver } = useImageDrop({
         class="tpl:relative"
         :data-testid="`${testidPrefix}-bg-url`"
       >
-        <div
-          v-if="(dropEnabled && isOver) || isUploading"
-          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
-          style="
-            background-color: color-mix(
-              in srgb,
-              var(--tpl-bg) 90%,
-              transparent
-            );
-          "
-        >
-          <template v-if="isUploading">
-            <LoaderCircle class="tpl-spinner" :size="18" :stroke-width="2" />
-            {{ t.image.uploading }}
-          </template>
-          <template v-else>
-            <Upload :size="18" :stroke-width="1.5" />
-            {{ t.image.dropToUpload }}
-          </template>
-        </div>
+        <MediaDropOverlay v-if="showOverlay" :uploading="isUploading" />
         <MergeTagInput
           :model-value="url"
           type="url"
@@ -182,7 +131,7 @@ const { isOver } = useImageDrop({
           @update:model-value="setUrl"
         />
         <button
-          v-if="onRequestMedia"
+          v-if="canBrowse"
           type="button"
           :data-testid="`${testidPrefix}-bg-browse`"
           class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all"

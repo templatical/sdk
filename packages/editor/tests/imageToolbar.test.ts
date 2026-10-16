@@ -1,15 +1,20 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { flushPromises } from "@vue/test-utils";
+import { computed, nextTick } from "vue";
+import { flushPromises, type VueWrapper } from "@vue/test-utils";
 import { createImageBlock } from "@templatical/types";
-import type { ImageBlock } from "@templatical/types";
+import type { ImageBlock, MediaResult } from "@templatical/types";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
 import { mountEditor } from "./helpers/mount";
 import en from "../src/i18n/locales/en";
 // French, not German: the German translation of "(optional)" is literally
 // "(optional)", so it cannot distinguish a translated hint from a hardcoded one.
 import fr from "../src/i18n/locales/fr";
-import { ON_REQUEST_MEDIA_KEY, TRANSLATIONS_KEY } from "../src/keys";
+import {
+  CAN_DROP_MEDIA_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  TRANSLATIONS_KEY,
+} from "../src/keys";
 
 function mountIt(block: ImageBlock) {
   return mountEditor(ImageToolbar, { props: { block } });
@@ -316,6 +321,144 @@ describe("ImageToolbar corner radius control", () => {
   });
 });
 
+const HERO = "https://cdn/up.png";
+
+function imageFile(): File {
+  return new File(["data"], "up.png", { type: "image/png" });
+}
+
+// The zone reads the dragged type from `items` and the dropped file from
+// `files`, so one shape serves every drag event.
+function dragEvent(type: "dragenter" | "dragleave" | "drop"): Event {
+  const file = imageFile();
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: { files: [file], items: [{ type: file.type }] },
+  });
+  return event;
+}
+
+/** An `onRequestMedia` that stays pending until the test settles it. */
+function pendingMedia() {
+  let settle: (value: MediaResult | null) => void = () => {};
+  const fn = vi.fn(
+    () =>
+      new Promise<MediaResult | null>((resolve) => {
+        settle = resolve;
+      }),
+  );
+  return { fn, settle: (value: MediaResult | null) => settle(value) };
+}
+
+function mountWithMedia(
+  block: ImageBlock,
+  onRequestMedia: unknown,
+  provides: Record<symbol, unknown> = {},
+) {
+  return mountEditor(ImageToolbar, {
+    props: { block },
+    provides: {
+      [TRANSLATIONS_KEY]: en,
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      ...provides,
+    },
+  });
+}
+
+function browseButton(wrapper: VueWrapper) {
+  return wrapper
+    .findAll("button")
+    .find((b) => b.text().includes(en.image.browseMedia));
+}
+
+function srcInput(wrapper: VueWrapper) {
+  return wrapper.get('input[type="url"]');
+}
+
+function altInput(wrapper: VueWrapper) {
+  return wrapper.get('input[type="text"]');
+}
+
+describe("ImageToolbar media browser", () => {
+  it("sets src, then alt, from the picked image and pulses both fields", async () => {
+    const onRequestMedia = vi.fn(async () => ({ url: HERO, alt: "Hero" }));
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+    );
+
+    await browseButton(wrapper)!.trigger("click");
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledWith({ accept: ["images"] });
+    expect(wrapper.emitted("update")).toEqual([
+      [{ src: HERO }],
+      [{ alt: "Hero" }],
+    ]);
+    expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+    expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+  });
+
+  it("sets only src when the picked image has no alt", async () => {
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      vi.fn(async () => ({ url: HERO })),
+    );
+
+    await browseButton(wrapper)!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO }]]);
+    expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+    expect(altInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+  });
+
+  it("stops pulsing src a second after the pick", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const wrapper = mountWithMedia(
+        createImageBlock({ src: "" }),
+        vi.fn(async () => ({ url: HERO })),
+      );
+
+      await browseButton(wrapper)!.trigger("click");
+      await flushPromises();
+      expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+
+      vi.advanceTimersByTime(999);
+      await nextTick();
+      expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+
+      vi.advanceTimersByTime(1);
+      await nextTick();
+      expect(srcInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves the block alone when the media browser is cancelled", async () => {
+    const onRequestMedia = vi.fn(async () => null);
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+    );
+
+    await browseButton(wrapper)!.trigger("click");
+    await flushPromises();
+
+    expect(onRequestMedia).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted("update")).toBeUndefined();
+    expect(srcInput(wrapper).classes()).not.toContain("tpl-pulse-fill");
+  });
+
+  it("hides browse without a media handler", () => {
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), null);
+
+    expect(browseButton(wrapper)).toBeUndefined();
+  });
+});
+
 describe("ImageToolbar drag-and-drop upload (#229)", () => {
   it("shows the uploading state until the upload settles", async () => {
     let finish: (value: { url: string }) => void = () => {};
@@ -357,5 +500,129 @@ describe("ImageToolbar drag-and-drop upload (#229)", () => {
     expect(wrapper.emitted("update")).toEqual([
       [{ src: "https://cdn/up.png" }],
     ]);
+  });
+
+  it("highlights while an image is dragged over the field", async () => {
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), vi.fn());
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(wrapper.text()).toContain(en.image.dropToUpload);
+    expect(wrapper.get(".lucide-upload").attributes("width")).toBe("18");
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("dragleave"));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+  });
+
+  it("sets src, then alt, from a dropped image and pulses both fields", async () => {
+    const onRequestMedia = vi.fn(async () => ({ url: HERO, alt: "Hero" }));
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+    );
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+
+    expect(wrapper.emitted("update")).toEqual([
+      [{ src: HERO }],
+      [{ alt: "Hero" }],
+    ]);
+    expect(srcInput(wrapper).classes()).toContain("tpl-pulse-fill");
+    expect(altInput(wrapper).classes()).toContain("tpl-pulse-fill");
+  });
+
+  it("leaves the block alone when the upload is cancelled", async () => {
+    const media = pendingMedia();
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), media.fn);
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(wrapper.text()).toContain(en.image.uploading);
+
+    media.settle(null);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain(en.image.uploading);
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("ignores a second drop while the first uploads", async () => {
+    const media = pendingMedia();
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), media.fn);
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    srcInput(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+
+    expect(media.fn).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    media.settle({ url: HERO });
+    await flushPromises();
+    expect(wrapper.emitted("update")).toEqual([[{ src: HERO }]]);
+  });
+
+  it("ignores a drop on a merge-tag src", async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "{{ user.avatar }}" }),
+      onRequestMedia,
+    );
+    await flushPromises();
+    // The merge-tag src renders as chips, not an input; Browse sits in the
+    // same zone.
+    const target = browseButton(wrapper)!.element;
+
+    target.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    target.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("ignores a drop when the library is read-only, but keeps browse", async () => {
+    const onRequestMedia = vi.fn();
+    const wrapper = mountWithMedia(
+      createImageBlock({ src: "" }),
+      onRequestMedia,
+      {
+        [CAN_DROP_MEDIA_KEY]: computed(() => false),
+      },
+    );
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(onRequestMedia).not.toHaveBeenCalled();
+    expect(browseButton(wrapper)).toBeDefined();
+  });
+
+  it("ignores a drop without a media handler", async () => {
+    const wrapper = mountWithMedia(createImageBlock({ src: "" }), null);
+    await flushPromises();
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("dragenter"));
+    await nextTick();
+    expect(wrapper.text()).not.toContain(en.image.dropToUpload);
+
+    srcInput(wrapper).element.dispatchEvent(dragEvent("drop"));
+    await flushPromises();
+    expect(wrapper.text()).not.toContain(en.image.uploading);
+    expect(wrapper.emitted("update")).toBeUndefined();
   });
 });

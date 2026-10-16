@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
+import { computed, nextTick } from "vue";
 import { flushPromises } from "@vue/test-utils";
 import { createBackgroundImage } from "@templatical/types";
-import type { BackgroundImage } from "@templatical/types";
+import type { BackgroundImage, MediaResult } from "@templatical/types";
 import BackgroundImageControl from "../src/components/toolbar/BackgroundImageControl.vue";
-import { ON_REQUEST_MEDIA_KEY, TRANSLATIONS_KEY } from "../src/keys";
+import {
+  CAN_DROP_MEDIA_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  TRANSLATIONS_KEY,
+} from "../src/keys";
 import en from "../src/i18n/locales/en";
 import { mountEditor } from "./helpers/mount";
 
@@ -196,6 +201,35 @@ describe("BackgroundImageControl", () => {
       zone.dispatchEvent(event);
     }
 
+    async function dragOn(
+      wrapper: ReturnType<typeof mountIt>,
+      type: "dragenter" | "dragleave",
+    ): Promise<void> {
+      const zone = wrapper.get('[data-testid="t-bg-url"]').element;
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "dataTransfer", {
+        value: { files: [], items: [{ type: "image/png" }] },
+      });
+      zone.dispatchEvent(event);
+      await nextTick();
+    }
+
+    function imageFile(): File {
+      return new File(["data"], "hero.png", { type: "image/png" });
+    }
+
+    /** An `onRequestMedia` that stays pending until the test settles it. */
+    function pendingMedia() {
+      let settle: (value: MediaResult | null) => void = () => {};
+      const fn = vi.fn(
+        () =>
+          new Promise<MediaResult | null>((resolve) => {
+            settle = resolve;
+          }),
+      );
+      return { fn, settle: (value: MediaResult | null) => settle(value) };
+    }
+
     it("uploads a dropped image and sets it with the defaults", async () => {
       const onRequestMedia = vi.fn(async () => ({ url: HERO }));
       const wrapper = mountIt(undefined, {
@@ -256,6 +290,130 @@ describe("BackgroundImageControl", () => {
       await flushPromises();
 
       expect(onRequestMedia).toHaveBeenCalledTimes(0);
+      expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("highlights while an image is dragged over the field", async () => {
+      const wrapper = mountIt(undefined, { [ON_REQUEST_MEDIA_KEY]: vi.fn() });
+      await flushPromises();
+
+      await dragOn(wrapper, "dragenter");
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).toContain(
+        en.image.dropToUpload,
+      );
+      expect(wrapper.get(".lucide-upload").attributes("width")).toBe("18");
+
+      await dragOn(wrapper, "dragleave");
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.dropToUpload,
+      );
+    });
+
+    it("does not highlight over a merge-tag url", async () => {
+      const wrapper = mountIt(createBackgroundImage("{{ hero_url }}"), {
+        [ON_REQUEST_MEDIA_KEY]: vi.fn(),
+      });
+      await flushPromises();
+
+      await dragOn(wrapper, "dragenter");
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.dropToUpload,
+      );
+    });
+
+    it("accepts a drop over a non-string url", async () => {
+      const onRequestMedia = vi.fn(async () => ({ url: HERO }));
+      const malformed = {
+        ...createBackgroundImage(HERO),
+        url: 123,
+      } as unknown as BackgroundImage;
+      const wrapper = mountIt(malformed, {
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+      });
+
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+
+      expect(onRequestMedia).toHaveBeenCalledTimes(1);
+      expect(lastEmitted(wrapper)).toEqual({ ...malformed, url: HERO });
+    });
+
+    it("leaves the image alone when the upload is cancelled", async () => {
+      const media = pendingMedia();
+      const wrapper = mountIt(createBackgroundImage(HERO), {
+        [ON_REQUEST_MEDIA_KEY]: media.fn,
+      });
+
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).toContain(
+        en.image.uploading,
+      );
+
+      media.settle(null);
+      await flushPromises();
+
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.uploading,
+      );
+      expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    });
+
+    it("ignores a second drop while the first uploads", async () => {
+      const media = pendingMedia();
+      const wrapper = mountIt(undefined, { [ON_REQUEST_MEDIA_KEY]: media.fn });
+
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+      await dragOn(wrapper, "dragenter");
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+
+      expect(media.fn).toHaveBeenCalledTimes(1);
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.dropToUpload,
+      );
+
+      media.settle({ url: HERO });
+      await flushPromises();
+      expect(wrapper.emitted("update:modelValue")).toEqual([
+        [createBackgroundImage(HERO)],
+      ]);
+    });
+
+    it("ignores a drop when the library is read-only, but keeps browse", async () => {
+      const onRequestMedia = vi.fn();
+      const wrapper = mountIt(undefined, {
+        [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+        [CAN_DROP_MEDIA_KEY]: computed(() => false),
+      });
+      await flushPromises();
+
+      await dragOn(wrapper, "dragenter");
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.dropToUpload,
+      );
+
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+      expect(onRequestMedia).not.toHaveBeenCalled();
+      expect(wrapper.find('[data-testid="t-bg-browse"]').exists()).toBe(true);
+    });
+
+    it("ignores a drop without a media handler", async () => {
+      const wrapper = mountIt(undefined);
+      await flushPromises();
+
+      await dragOn(wrapper, "dragenter");
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.dropToUpload,
+      );
+
+      await dropOn(wrapper, imageFile());
+      await flushPromises();
+      expect(wrapper.get('[data-testid="t-bg-url"]').text()).not.toContain(
+        en.image.uploading,
+      );
       expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     });
   });
