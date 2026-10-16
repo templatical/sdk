@@ -577,6 +577,29 @@ describe("buildWrapper", () => {
     ]);
   });
 
+  it("gives each section of a multi-section wrapper its own wrapper and image objects", () => {
+    const { blocks } = build(
+      '<mj-wrapper background-url="https://cdn.test/band.jpg"><mj-section><mj-column /></mj-section><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+
+    const [first, second] = blocks.map(
+      (block) => (block as SectionBlock).wrapper!,
+    );
+    expect(first.backgroundImage).toEqual({
+      url: "https://cdn.test/band.jpg",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: true,
+    });
+    expect(second).toEqual(first);
+    expect(second).not.toBe(first);
+    expect(second.backgroundImage).not.toBe(first.backgroundImage);
+    expect(second.backgroundImage!.position).not.toBe(
+      first.backgroundImage!.position,
+    );
+  });
+
   it("reads a per-corner border radius", () => {
     const { blocks, entries } = build(
       '<mj-wrapper border-radius="0 16px"><mj-section><mj-column /></mj-section></mj-wrapper>',

@@ -371,6 +371,17 @@ function readWrapper(
   };
 }
 
+/** Each section gets its own band and band image, so editing one leaves the others alone. */
+function copyWrapper(wrapper: SectionWrapper): SectionWrapper {
+  const image = wrapper.backgroundImage;
+  return {
+    ...wrapper,
+    ...(image
+      ? { backgroundImage: { ...image, position: { ...image.position } } }
+      : {}),
+  };
+}
+
 /**
  * Fold an `mj-wrapper` into the `wrapper` field of the section(s) it holds.
  *
@@ -419,6 +430,6 @@ export function buildWrapper(
   }
 
   return sections.flatMap(($section) =>
-    buildSection($section, ctx, entries, wrapper),
+    buildSection($section, ctx, entries, copyWrapper(wrapper)),
   );
 }
