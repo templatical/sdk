@@ -595,6 +595,46 @@ describe("empty paragraph emits nothing", () => {
   });
 });
 
+describe("blank lines between paragraphs", () => {
+  // TipTap stores a blank line as `<p></p>`, which has no height in a mail
+  // client. The canvas and the edit surface show it a line tall, so the email
+  // must too (#930).
+  const BLANK_LINE = /First<\/p>\s*<p[^>]*>(?:&nbsp;|\u00a0)<\/p>\s*<p[^>]*>Second/;
+
+  it("fills a blank line in a paragraph block", () => {
+    const block = createParagraphBlock({
+      content: "<p>First</p><p></p><p>Second</p>",
+    } as Parameters<typeof createParagraphBlock>[0]);
+    expect(renderBlock(block, ctx)).toContain(
+      "<p>First</p><p>&nbsp;</p><p>Second</p>",
+    );
+  });
+
+  it("fills a blank line in a title and keeps its paragraphs", () => {
+    const block = createTitleBlock({
+      content: "<p>First</p><p></p><p>Second</p>",
+      level: 2,
+    });
+    expect(renderBlock(block, ctx)).toContain(
+      "<p>First</p><p>&nbsp;</p><p>Second</p></h2>",
+    );
+  });
+
+  it("keeps a single-paragraph title unwrapped and unfilled", () => {
+    const block = createTitleBlock({ content: "<p>Only</p>", level: 2 });
+    expect(renderBlock(block, ctx)).toContain(">Only</h2>");
+  });
+
+  it("survives the MJML compile as a one-line paragraph", async () => {
+    const block = createParagraphBlock({
+      content:
+        '<p style="text-align: left;">First</p><p style="text-align: left;"></p><p style="text-align: left;">Second</p>',
+    } as Parameters<typeof createParagraphBlock>[0]);
+    const html = await compile(await renderToMjml(makeContent([block])));
+    expect(html).toMatch(BLANK_LINE);
+  });
+});
+
 describe("paragraph default font-size matches canvas (14px)", () => {
   it("paragraph without explicit font-size should render at 14px in HTML", async () => {
     const block = createParagraphBlock({

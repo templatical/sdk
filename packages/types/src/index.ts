@@ -265,6 +265,7 @@ export { EventEmitter } from "./events";
 // Utilities
 export { safeClone } from "./clone";
 export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
 export type { FontFamily } from "./fonts";
 export {
   BUILT_IN_FONT_STACKS,

@@ -1,4 +1,5 @@
 import {
+  fillEmptyParagraphs,
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
   substituteHtmlMergeTagSamples,
@@ -51,9 +52,15 @@ export function useEditableTextBlock(
   // arbitrary HTML — including `<script>`, `<img onerror>`, or
   // `javascript:` anchors that would otherwise execute when the block
   // renders in the canvas.
+  //
+  // Blank lines are filled for display only, with the renderer's own helper,
+  // so a blank line is one line tall here, in the edit surface and in the
+  // email. The stored content keeps TipTap's `<p></p>`.
   const resolvedContent = computed(() =>
-    sanitizeRichTextHtml(
-      resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
+    fillEmptyParagraphs(
+      sanitizeRichTextHtml(
+        resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
+      ),
     ),
   );
 
