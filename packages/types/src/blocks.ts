@@ -1,4 +1,5 @@
 import type { BackgroundImage } from "./background-image";
+import type { SectionHero } from "./hero";
 
 export interface SpacingValue {
   top: number;
@@ -223,6 +224,14 @@ export interface SectionBlock extends BaseBlock {
    * is its fallback.
    */
   backgroundImage?: BackgroundImage;
+  /**
+   * Draws a one-column section with a background image as an `mj-hero`: the
+   * image fills the box and the content sits on top. Ignored (the section
+   * renders as a regular one, and the `structure` linter says why) with more
+   * than one column, without an image, or with `height: "image"` and no
+   * image size.
+   */
+  hero?: SectionHero;
   /** Optional outer frame (rendered as an `mj-wrapper` around the section). */
   wrapper?: SectionWrapper;
 }

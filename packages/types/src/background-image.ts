@@ -21,6 +21,13 @@ export interface BackgroundImage {
   position: { x: BackgroundPositionX; y: BackgroundPositionY };
   /** `false` paints the image once; `true` tiles it. */
   repeat: boolean;
+  /**
+   * The image's size in px: measured by the editor when the author sets the
+   * URL, or read from an importer's source. Only the ratio is used: a section
+   * hero with `height: "image"` keeps its box at `height / width`.
+   */
+  width?: number;
+  height?: number;
 }
 
 /**

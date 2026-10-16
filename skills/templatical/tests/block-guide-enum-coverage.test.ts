@@ -205,6 +205,7 @@ describe("block-guide.md documents every enum value the schema declares", () => 
       "section.backgroundImage.size",
       "section.border.top.style",
       "section.columns",
+      "section.hero.verticalAlign",
       "settings.direction",
       "social.iconSize",
       "social.iconStyle",

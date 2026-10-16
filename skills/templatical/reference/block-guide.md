@@ -58,7 +58,7 @@ Container that arranges blocks into columns.
 
 <!-- BEGIN GENERATED FIELDS: section -->
 **Required** — `columns` (ColumnLayout), `children` (Block[][]).
-**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `wrapper` (SectionWrapper).
+**Optional** — `stackOnMobile` (bool), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `backgroundImage` (BackgroundImage), `hero` (SectionHero), `wrapper` (SectionWrapper).
 <!-- END GENERATED FIELDS: section -->
 
 - `columns` is one of `"1"`, `"2"`, `"3"`, `"2-1"`, `"1-2"`.
@@ -74,11 +74,20 @@ Container that arranges blocks into columns.
 - `stackOnMobile` — omit or `true` keeps the default responsive stacking
   (columns stack below 480px); `false` keeps them side by side.
 - `backgroundImage` paints an image behind the section's columns:
-  `{ url, size, position: { x, y }, repeat }`. `x` is `"left"`, `"center"` or
-  `"right"`; `y` is `"top"`, `"center"` or `"bottom"`; `repeat` is a boolean
-  (`false` paints it once). Set `styles.backgroundColor` too — it's the fallback
-  when images are off.
+  `{ url, size, position: { x, y }, repeat, width?, height? }`. `x` is
+  `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`;
+  `repeat` is a boolean (`false` paints it once). `width` / `height` are the
+  image's size in px — only a hero needs them. Set `styles.backgroundColor`
+  too — it's the fallback when images are off.
 - `size` (inside `backgroundImage`) is one of `"cover"`, `"contain"`, `"auto"`.
+- `hero` draws a one-column section with a `backgroundImage` as a hero
+  banner: `{ height, verticalAlign }`. The image always fills the box (`size`
+  and `repeat` are ignored) and `border` isn't drawn. `height` is `"image"` —
+  the box keeps the image's shape at every width, so set
+  `backgroundImage.width` and `height` to the image's size in px — or a number,
+  a fixed height in px with padding included. With more than one column, no
+  image, or `"image"` without the size, the section renders as a regular one.
+- `verticalAlign` (inside `hero`) is one of `"top"`, `"middle"`, `"bottom"`.
 - `wrapper` is an outer band: `{ backgroundColor?, padding?, borderRadius?,
   backgroundImage? }` (e.g. a white card on a colored band); its `borderRadius`
   takes the same number-or-per-corner form. The band is as wide as
