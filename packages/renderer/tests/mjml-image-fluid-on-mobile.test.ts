@@ -77,12 +77,15 @@ function isFluid(html: string): boolean {
   return probeMarkup(html).includes("mj-full-width-mobile");
 }
 
+/** The probe's `<img>` tag, found by its `src` rather than a pattern built from it. */
+function probeTag(html: string): string {
+  const at = html.indexOf(`src="${PROBE}"`);
+  expect(at).toBeGreaterThan(-1);
+  return html.slice(html.lastIndexOf("<img", at), html.indexOf(">", at) + 1);
+}
+
 function renderedWidth(html: string): number {
-  const img = html.match(
-    new RegExp(`<img\\b[^>]*src="${PROBE.replace(/[./]/g, "\\$&")}"[^>]*>`),
-  );
-  expect(img).not.toBeNull();
-  const width = img![0].match(/\bwidth="(\d+)"/);
+  const width = probeTag(html).match(/\bwidth="(\d+)"/);
   expect(width).not.toBeNull();
   return Number(width![1]);
 }
@@ -124,9 +127,7 @@ describe("fluid-on-mobile is set per image", () => {
   it("keeps an image with a set height narrower than the column unstretched", async () => {
     const html = await compile(doc([probeImage(120, { height: 40 })]));
     expect(isFluid(html)).toBe(false);
-    const img = html.match(
-      /<img\b[^>]*src="https:\/\/example\.com\/probe\.png"[^>]*>/,
-    )![0];
+    const img = probeTag(html);
     expect(img).toContain('height="40"');
     expect(img).toContain('width="120"');
   });
