@@ -612,6 +612,53 @@ describe("page-header and page-footer", () => {
     ]);
   });
 
+  it("reports a lossy band image over a bare leaf with an entry of its own", () => {
+    const { content, report } = convertEasyEmailProTemplate({
+      type: "page",
+      data: {},
+      attributes: {},
+      children: [
+        band(
+          "page-header",
+          [
+            {
+              type: "standard-image",
+              data: {},
+              attributes: { src: "https://cdn.test/logo.png", alt: "Logo" },
+              children: [{ text: "" }],
+            },
+          ],
+          {
+            attributes: {
+              "background-url": "https://cdn.test/band.png",
+              "background-size": "50%",
+            },
+          },
+        ),
+      ],
+    });
+    const header = content.blocks[0] as SectionBlock;
+    expect(header.wrapper?.backgroundImage).toEqual({
+      url: "https://cdn.test/band.png",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: true,
+    });
+    expect(report.entries).toEqual([
+      {
+        sourceTag: "standard-image",
+        templaticalBlockType: "image",
+        status: "converted",
+      },
+      {
+        sourceTag: "page-header",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: 'Wrapper background-size "50%" has no exact Templatical equivalent; imported as "auto".',
+      },
+    ]);
+  });
+
   it("copies the band onto each of several sections and approximates them", () => {
     const { content, report } = convertEasyEmailProTemplate({
       type: "page",

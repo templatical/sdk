@@ -186,7 +186,9 @@ function buildWrapper(node: EasyEmailProNode, map: MapContext): Converted {
 /**
  * Paint `node`'s `mj-wrapper` band onto every section in `blocks`. A section
  * holds one band, so a band around several sections is copied onto each and
- * their `converted` entries become `approximated`.
+ * their `converted` entries become `approximated`. A band image value with no
+ * exact keyword is noted on every section entry, or on one entry of the
+ * band's own when its sections (bare leaves) have none.
  */
 export function applyWrapper(
   node: EasyEmailProNode,
@@ -221,8 +223,18 @@ export function applyWrapper(
     }
   }
   if (notes.length > 0) {
-    for (const entry of entries) {
-      if (entry.templaticalBlockType !== "section") continue;
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    if (sectionEntries.length === 0) {
+      entries.push({
+        sourceTag: node.type ?? "standard-wrapper",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: notes.join(" "),
+      });
+    }
+    for (const entry of sectionEntries) {
       entry.status = "approximated";
       entry.note = [entry.note, ...notes].filter(Boolean).join(" ");
     }
