@@ -5,6 +5,7 @@ import {
   parseColor,
   parsePadding,
   parsePercent,
+  readMjmlBackgroundImage,
 } from "./attribute-parser";
 import { convertLeaf, type MapContext } from "./block-mapper";
 import { convertSocial } from "./social-mapper";
@@ -151,15 +152,24 @@ export function buildSection(
   const pixels = columnPixels(layout, ctx.style.settings.width);
   const children: Block[][] = Array.from({ length: slots }, () => []);
 
+  const background = readMjmlBackgroundImage(
+    (name) => attr(node, name),
+    "Section",
+    ctx.style.settings.width,
+  );
+  const notes = [
+    ...(exact
+      ? []
+      : [
+          `Column widths ${rawWidths.map((w) => w ?? "auto").join(", ")} have no exact Templatical layout; resolved to "${layout}".`,
+        ]),
+    ...(background?.notes ?? []),
+  ];
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
-    status: exact ? "converted" : "approximated",
-    ...(exact
-      ? {}
-      : {
-          note: `Column widths ${rawWidths.map((w) => w ?? "auto").join(", ")} have no exact Templatical layout; resolved to "${layout}".`,
-        }),
+    status: notes.length > 0 ? "approximated" : "converted",
+    ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
   });
 
   columns.forEach((column, index) => {
@@ -181,6 +191,7 @@ export function buildSection(
         padding: parsePadding(node),
         ...(backgroundColor ? { backgroundColor } : {}),
       },
+      ...(background ? { backgroundImage: background.image } : {}),
     }),
   ];
 }

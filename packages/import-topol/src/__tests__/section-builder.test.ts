@@ -185,3 +185,58 @@ describe("buildSection", () => {
     expect(build(section({})).blocks).toEqual([]);
   });
 });
+
+describe("buildSection background image", () => {
+  it("maps background-url and its longhands onto backgroundImage, converted", () => {
+    const { blocks, entries } = build(
+      section(
+        {
+          "background-url": "https://cdn.test/hero.jpg",
+          "background-size": "cover",
+          "background-position": "center top",
+          "background-repeat": "no-repeat",
+        },
+        column("100%", spacer(8)),
+      ),
+    );
+    expect((blocks[0] as SectionBlock).backgroundImage).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "center", y: "top" },
+      repeat: false,
+    });
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "converted",
+    });
+  });
+
+  it("reads Topol's null as unset", () => {
+    const { blocks } = build(
+      section(
+        { "background-url": null, "background-size": "cover" },
+        column("100%", spacer(8)),
+      ),
+    );
+    expect("backgroundImage" in blocks[0]).toBe(false);
+  });
+
+  it("joins a background note to the column-width note", () => {
+    const { entries } = build(
+      section(
+        { "background-url": "u", "background-size": "50%" },
+        column("40%", spacer(8)),
+        column("60%", spacer(8)),
+      ),
+    );
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note:
+        'Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2". ' +
+        'Section background-size "50%" has no exact Templatical equivalent; imported as "auto".',
+    });
+  });
+});
