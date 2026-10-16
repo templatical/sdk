@@ -371,7 +371,11 @@ function readWrapper(
   };
 }
 
-/** Each section gets its own band and band image, so editing one leaves the others alone. */
+/**
+ * Each section gets its own band object and band image, so editing one
+ * section's image leaves the others alone. `padding` and `borderRadius` stay
+ * shared, as in the other importers.
+ */
 function copyWrapper(wrapper: SectionWrapper): SectionWrapper {
   const image = wrapper.backgroundImage;
   return {
