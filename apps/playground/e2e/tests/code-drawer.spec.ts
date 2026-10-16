@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
+import { captureCopies, copiedText } from "../helpers/clipboard";
 import { freezeMotion } from "../helpers/motion";
 import { SELECTORS } from "../helpers/selectors";
 
@@ -81,12 +82,17 @@ test.describe("Code drawer", () => {
     await expect(page.locator(SELECTORS.toolbarCode)).toBeFocused();
   });
 
-  test("Copy copies the whole snippet", async ({ page, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  test("Copy copies the whole snippet", async ({ page }) => {
+    await captureCopies(page);
+    const drawer = page.locator(SELECTORS.codeDrawer);
     await page.locator(SELECTORS.toolbarCode).click();
+    await expect(drawer).toContainText("builtIns");
+    const shown = (await drawer.locator(".cm-line").allTextContents()).join(
+      "\n",
+    );
+    expect(shown).toContain('import { init } from "@templatical/editor";');
+
     await page.locator(SELECTORS.codeDrawerCopy).click();
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copied).toContain('import { init } from "@templatical/editor";');
-    expect(copied).toContain("builtIns");
+    await expect.poll(() => copiedText(page)).toBe(shown);
   });
 });

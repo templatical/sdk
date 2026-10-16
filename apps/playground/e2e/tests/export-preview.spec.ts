@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { Locator } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
+import { captureCopies, copiedText } from "../helpers/clipboard";
 import { SELECTORS } from "../helpers/selectors";
 import { readBuildInfo } from "../../scripts/build-info";
 
@@ -94,33 +95,15 @@ test.describe("Export preview", () => {
   test("Copy on Preview copies the HTML the frame renders", async ({
     editorPage,
     page,
-    context,
   }) => {
-    // Capture the write instead of reading the OS clipboard: CI's parallel
-    // workers share it, so another spec's copy can land between this one's
-    // write and read. The granted permission keeps VueUse on the Clipboard
-    // API, off its execCommand fallback.
-    await context.grantPermissions(["clipboard-write"]);
-    await page.evaluate(() => {
-      const target = window as { __copied?: string };
-      Object.defineProperty(navigator.clipboard, "write", {
-        value: async (items: ClipboardItem[]) => {
-          const blob = await items[0].getType("text/plain");
-          target.__copied = await blob.text();
-        },
-      });
-    });
+    await captureCopies(page);
     await editorPage.openExport();
     const frame = page.locator(SELECTORS.exportPreviewFrame);
     await expect(frame).toHaveAttribute("srcdoc", /^<!doctype html>/i);
     const srcdoc = await frame.getAttribute("srcdoc");
 
     await page.locator(SELECTORS.exportCopyBtn).click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as { __copied?: string }).__copied),
-      )
-      .toBe(srcdoc);
+    await expect.poll(() => copiedText(page)).toBe(srcdoc);
   });
 
   test("Download on Preview saves the HTML", async ({ editorPage, page }) => {

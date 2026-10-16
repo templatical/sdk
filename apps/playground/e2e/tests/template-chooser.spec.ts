@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
+import { captureCopies, copiedText } from "../helpers/clipboard";
 import { SELECTORS } from "../helpers/selectors";
 
 const HERO_PROOFS = [
@@ -122,30 +123,25 @@ test.describe("Setup catalog", () => {
     await editorPage.waitForReady();
   });
 
-  test("copies the install command", async ({ chooserPage, page, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  test("copies the install command", async ({ chooserPage, page }) => {
+    await captureCopies(page);
     await chooserPage.goto();
     await page.getByTestId("catalog-install-copy").click();
     await expect(page.getByTestId("catalog-setup")).toContainText("Copied");
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      "npm i @templatical/editor",
-    );
+    expect(await copiedText(page)).toBe("npm i @templatical/editor");
   });
 
   test("shows the minimal setup and copies exactly what it shows", async ({
     chooserPage,
     page,
-    context,
   }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await captureCopies(page);
     await chooserPage.goto();
     const shown = await page.getByTestId("catalog-snippet").textContent();
     expect(shown).toContain('import { init } from "@templatical/editor";');
     expect(shown).toContain("const editor = await init({");
     await page.getByTestId("catalog-snippet-copy").click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      shown,
-    );
+    await expect.poll(() => copiedText(page)).toBe(shown);
   });
 
   test("Back from a scene lands on that scene's group", async ({

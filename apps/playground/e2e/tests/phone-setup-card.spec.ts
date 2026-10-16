@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect } from "@playwright/test";
 import { test } from "../fixtures/editor.fixture";
+import { captureCopies, copiedText } from "../helpers/clipboard";
 import { SELECTORS } from "../helpers/selectors";
 
 /**
@@ -76,17 +77,13 @@ test.describe("Phone setup card", () => {
     await expect(page.locator(SELECTORS.settingsShowNotes)).toHaveCount(0);
   });
 
-  test("Copy copies the scene's snippet", async ({
-    page,
-    context,
-    scenePage,
-  }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  test("Copy copies the scene's snippet", async ({ page, scenePage }) => {
+    await captureCopies(page);
     await scenePage.goto("fonts");
     const copy = page.locator(SELECTORS.setupCardCopy);
     await copy.click();
     await expect(copy).toHaveText("Copied!");
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    const copied = await copiedText(page);
     expect(copied).toBe(
       await page.locator(SELECTORS.setupCardSnippet).innerText(),
     );
