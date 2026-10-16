@@ -220,3 +220,31 @@ describe("readChamaileonBackgroundImage", () => {
     },
   );
 });
+
+describe("readChamaileonBackgroundImage on adversarial input", () => {
+  const digits = "0".repeat(100_000);
+  const spaces = " ".repeat(100_000);
+
+  it("reads runs of digits and spaces in linear time", () => {
+    const run = () =>
+      readChamaileonBackgroundImage(
+        { backgroundImage: `url(${spaces}` },
+        "background",
+        "Section",
+        600,
+      ) ??
+      readChamaileonBackgroundImage(
+        {
+          backgroundImage: "url(u)",
+          backgroundSize: `${digits}!`,
+          backgroundPosition: `${digits}! ${digits}!`,
+        },
+        "background",
+        "Section",
+        600,
+      );
+    const started = performance.now();
+    run();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});

@@ -191,8 +191,8 @@ export interface ReadBackgroundImage {
 
 const X_GRID = ["left", "center", "right"] as const;
 const Y_GRID = ["top", "center", "bottom"] as const;
-const PERCENT = /^(-?\d*\.?\d+)%$/;
-const LENGTH = /^-?\d*\.?\d+[a-z]*$/;
+const PERCENT = /^(-?(?:\d+(?:\.\d+)?|\.\d+))%$/;
+const LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)[a-z]*$/;
 
 /**
  * `background-size` as a keyword. A size with a side at 100%, or a px width
@@ -211,7 +211,7 @@ function backgroundSizeKeyword(
   if (parts.every((part) => part === "auto")) {
     return { size: "auto", exact: true };
   }
-  const px = /^(\d*\.?\d+)px$/.exec(first);
+  const px = /^(\d+(?:\.\d+)?|\.\d+)px$/.exec(first);
   const fills =
     parts.includes("100%") ||
     (px !== null && boxWidth !== undefined && Number(px[1]) >= boxWidth);
@@ -300,7 +300,7 @@ const CSS_BACKGROUND_DEFAULTS = {
   repeat: true,
 } as const;
 
-const URL_FUNCTION = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"']*))\s*\)/i;
+const URL_FUNCTION = /url\((?:\s*"([^"]*)"\s*|\s*'([^']*)'\s*|([^)"']*))\)/i;
 
 /** The URL inside a CSS `url(…)`, unquoted and trimmed; "" when there is none. */
 function cssUrl(value: string | undefined): string {

@@ -183,8 +183,8 @@ export interface ReadBackgroundImage {
 
 const X_GRID = ["left", "center", "right"] as const;
 const Y_GRID = ["top", "center", "bottom"] as const;
-const PERCENT = /^(-?\d*\.?\d+)%$/;
-const LENGTH = /^-?\d*\.?\d+[a-z]*$/;
+const PERCENT = /^(-?(?:\d+(?:\.\d+)?|\.\d+))%$/;
+const LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)[a-z]*$/;
 
 /** What MJML paints for a `background-*` attribute an `mj-section` / `mj-wrapper` leaves out. */
 const MJML_BACKGROUND_DEFAULTS = {
@@ -211,7 +211,7 @@ function backgroundSizeKeyword(
   if (parts.every((part) => part === "auto")) {
     return { size: "auto", exact: true };
   }
-  const px = /^(\d*\.?\d+)px$/.exec(first);
+  const px = /^(\d+(?:\.\d+)?|\.\d+)px$/.exec(first);
   const fills =
     parts.includes("100%") ||
     (px !== null && boxWidth !== undefined && Number(px[1]) >= boxWidth);

@@ -467,3 +467,29 @@ describe("readLegacyBackground", () => {
     expect(readLegacyBackground(undefined, "Section", 600)).toBeNull();
   });
 });
+
+describe("readCssBackground on adversarial input", () => {
+  const digits = "0".repeat(100_000);
+  const spaces = " ".repeat(100_000);
+
+  it("reads runs of digits and spaces in linear time", () => {
+    const run = () =>
+      readCssBackground(
+        { "background-image": `url(${spaces}` },
+        "Section",
+        600,
+      ) ??
+      readCssBackground(
+        {
+          background: `${digits}! url(u) ${digits}! / ${digits}!`,
+          "background-size": `${digits}!`,
+          "background-position": `${digits}! ${digits}!`,
+        },
+        "Section",
+        600,
+      );
+    const started = performance.now();
+    run();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
