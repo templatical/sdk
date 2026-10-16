@@ -721,16 +721,24 @@ describe("convertBeeFreeTemplate", () => {
               width: b.width,
               height: b.height,
               align: b.align,
+              natural: [b.naturalWidth, b.naturalHeight],
             }
           : null,
       );
     expect(images).toEqual([
-      { file: "logoipsum.png", width: 173, height: undefined, align: "left" },
+      {
+        file: "logoipsum.png",
+        width: 173,
+        height: undefined,
+        align: "left",
+        natural: [254, 59],
+      },
       {
         file: "hero_white_classic.jpg",
         width: "full",
         height: undefined,
         align: "center",
+        natural: [1920, 466],
       },
     ]);
   });

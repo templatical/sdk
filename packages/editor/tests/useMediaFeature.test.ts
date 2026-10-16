@@ -101,6 +101,46 @@ describe("useMediaFeature", () => {
     expect(feature.isModalOpen.value).toBe(false);
   });
 
+  // The image block stores it for its aspect-ratio lock.
+  it("passes the asset's size through on a pick, only when both are known", async () => {
+    const { feature } = withFeature({ provider: createMockProvider() });
+
+    const sized = feature.requestMedia!();
+    feature.select({ ...ASSET, width: 1200, height: 600 });
+    await expect(sized).resolves.toStrictEqual({
+      url: "https://cdn.example.com/hero.png",
+      alt: "Hero",
+      width: 1200,
+      height: 600,
+    });
+
+    const halfSized = feature.requestMedia!();
+    feature.select({ ...ASSET, width: 1200 });
+    await expect(halfSized).resolves.toStrictEqual({
+      url: "https://cdn.example.com/hero.png",
+      alt: "Hero",
+    });
+  });
+
+  it("passes an uploaded asset's size through", async () => {
+    const create = vi
+      .fn()
+      .mockResolvedValue({ ...ASSET, width: 800, height: 400 });
+    const { feature } = withFeature({
+      provider: createMockProvider({ create }),
+    });
+    const file = new File(["x"], "photo.png", { type: "image/png" });
+
+    await expect(feature.requestMedia!({ files: [file] })).resolves.toStrictEqual(
+      {
+        url: "https://cdn.example.com/hero.png",
+        alt: "Hero",
+        width: 800,
+        height: 400,
+      },
+    );
+  });
+
   it("refuses a drop when the provider's create is false", async () => {
     const provider = createMockProvider({ create: false });
     const { feature } = withFeature({ provider });

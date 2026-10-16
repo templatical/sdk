@@ -69,6 +69,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `linkUrl` | `string` | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` | Verhalten des Linkziels |
 | `placeholderUrl` | `string` | Platzhalter, der im Editor angezeigt wird, wenn `src` ein Merge-Tag verwendet |
+| `naturalWidth` / `naturalHeight` | `number` | Die eigene Größe der Bilddatei, für die [Seitenverhältnis-Sperre](/de/guide/images#aspect-ratio-lock). Wird nie gerendert |
 
 ## Button
 

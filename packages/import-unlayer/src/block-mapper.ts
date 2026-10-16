@@ -335,11 +335,18 @@ function convertImage(
       ? Math.round((src.height * shownWidth) / src.width)
       : undefined;
 
+  const fileWidth = src?.width ? Math.round(src.width) : 0;
+  const fileHeight = src?.height ? Math.round(src.height) : 0;
+
   return {
     block: createImageBlock({
       src: src?.url || "",
       alt: values.altText || "",
       width,
+      // The file's size feeds the editor's aspect-ratio lock; never rendered.
+      ...(fileWidth > 0 && fileHeight > 0
+        ? { naturalWidth: fileWidth, naturalHeight: fileHeight }
+        : {}),
       borderRadius: parseImageBorderRadius(
         values.borderRadius,
         src?.width ? shownWidth : undefined,

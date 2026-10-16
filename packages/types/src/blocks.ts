@@ -319,6 +319,15 @@ export interface ImageBlock extends BaseBlock {
    * clients don't support `object-fit`.
    */
   height?: number;
+  /**
+   * The image file's own size in px, when known: given by the media library,
+   * read by an importer, or measured in the editor during an edit. Both or
+   * neither; one without the other reads as unknown. It drives the editor's
+   * aspect-ratio lock and is never rendered. Cleared when `src` changes
+   * without a new size alongside it.
+   */
+  naturalWidth?: number;
+  naturalHeight?: number;
   align: "left" | "center" | "right";
   /**
    * Corner radius in px. Omitted/0 = square corners. A radius of at least half

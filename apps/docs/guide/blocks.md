@@ -69,6 +69,7 @@ Displays an image with optional link wrapping.
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Placeholder shown in the editor when `src` uses a merge tag |
+| `naturalWidth` / `naturalHeight` | `number` | The image file's own size, for the [aspect-ratio lock](/guide/images#aspect-ratio-lock). Never rendered |
 
 ## Button
 

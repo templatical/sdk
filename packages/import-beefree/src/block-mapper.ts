@@ -371,6 +371,10 @@ function convertImage(
     src: image.src || "",
     alt: image.alt || "",
     width,
+    // The file's size feeds the editor's aspect-ratio lock; never rendered.
+    ...(fileWidth > 0 && fileHeight > 0
+      ? { naturalWidth: fileWidth, naturalHeight: fileHeight }
+      : {}),
     borderRadius: parseImageBorderRadius(
       image.style?.["border-radius"],
       stated ? shownWidth : undefined,

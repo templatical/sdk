@@ -212,6 +212,20 @@ describe("convertModule", () => {
         ]);
       });
 
+      it("stores the file's size as the natural size, only when both are stated", () => {
+        const both = shown({
+          image: { src: "p.jpg", width: "1920px", height: "466px" },
+        });
+        expect([both.naturalWidth, both.naturalHeight]).toEqual([1920, 466]);
+        const auto = shown({
+          image: { src: "p.jpg", width: "1920px", height: "auto" },
+        });
+        expect([auto.naturalWidth, auto.naturalHeight]).toEqual([
+          undefined,
+          undefined,
+        ]);
+      });
+
       it("an autowidth image is full whatever its computed width", () => {
         expect(
           shown({

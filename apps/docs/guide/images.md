@@ -42,6 +42,9 @@ The type signature:
 interface MediaResult {
   url: string;
   alt?: string;
+  /** The file's size in px, when known. Feeds the image's aspect-ratio lock. */
+  width?: number;
+  height?: number;
 }
 
 interface MediaRequestContext {
@@ -141,12 +144,23 @@ The `ImageBlock` type defines all configurable properties:
 | `linkUrl` | `string` (optional) | Wraps the image in a link |
 | `linkOpenInNewTab` | `boolean` (optional) | Opens the link in a new tab |
 | `placeholderUrl` | `string` (optional) | Design-time preview image when `src` uses a merge tag |
+| `naturalWidth` / `naturalHeight` | `number` (optional) | The image file's own size, for the [aspect-ratio lock](#aspect-ratio-lock). Never rendered |
 
 ### Height
 
 `height` is optional, and leaving it out is usually right: the height is then derived from the width and the image keeps its aspect ratio. Set it when the layout needs a fixed box -- a banner slot of a known size, or a row of images that must line up.
 
 Setting both `width` and `height` **stretches** the image to that box. It does not crop, because `object-fit` is unsupported in Outlook and most email clients, so the editor canvas stretches identically rather than promising a crop the inbox won't deliver. Match the ratio of the source image, or resize the asset before uploading it.
+
+### Aspect-ratio lock {#aspect-ratio-lock}
+
+When the image file's size is known, the Height row in the image settings has a link toggle that keeps the image's proportions, on by default. Under the lock, typing a height sets the width (the height times the file's ratio) and the stored `height` stays unset, so the image keeps its ratio on every screen. A height that would make the image wider than its column sets the width to Full, and the field notes the height the image lands at.
+
+The file's size is `naturalWidth` / `naturalHeight` on the block. A media pick fills them from the asset's `width` / `height`, or from the `width` / `height` an `onRequestMedia` result returns. The Unlayer and BeeFree importers fill them from the source file. Otherwise the editor measures the image while it is selected, and stores the size only with the edit that uses it. A merge-tag `src` names no file, so it gets no lock unless the block already stores a size. An image whose stored `height` stretches it opens unlocked, and turning the lock on clears that height.
+
+::: tip
+A stored height under a px width squashes the image on any phone narrower than that width: MJML shrinks the width to fit and keeps the stated height. That is why the lock leaves the height on Auto.
+:::
 
 ### Width on phones {#width-on-phones}
 

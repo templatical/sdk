@@ -284,6 +284,17 @@ describe("convertContent", () => {
       ).toBeUndefined();
     });
 
+    // Never rendered: the editor's aspect-ratio lock reads it.
+    it("stores the file's size as the natural size, only when both are stated", () => {
+      const both = imageWith({ src: { url: "u", width: 1600, height: 799.6 } });
+      expect([both.naturalWidth, both.naturalHeight]).toEqual([1600, 800]);
+      const widthOnly = imageWith({ src: { url: "u", width: 1600 } });
+      expect([widthOnly.naturalWidth, widthOnly.naturalHeight]).toEqual([
+        undefined,
+        undefined,
+      ]);
+    });
+
     it("imports an image with no stated width as full width", () => {
       const block = imageWith({ src: { url: "u" } });
       expect(block.width).toBe("full");

@@ -12,6 +12,7 @@ import {
   toBorderRadiusCss,
 } from "@templatical/types";
 import { getBorderStyle } from "../../utils/blockComponentResolver";
+import { naturalSizeFields, toNaturalSize } from "../../utils/imageNaturalSize";
 import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 import { Image } from "@lucide/vue";
@@ -36,7 +37,10 @@ const hasMergeTagSrc = computed(() =>
 );
 
 function applyMedia(result: MediaResult): void {
-  const updates: Partial<ImageBlockType> = { src: result.url };
+  const updates: Partial<ImageBlockType> = {
+    src: result.url,
+    ...naturalSizeFields(toNaturalSize(result.width, result.height)),
+  };
   if (result.alt) updates.alt = result.alt;
   emit("update", updates);
 }
