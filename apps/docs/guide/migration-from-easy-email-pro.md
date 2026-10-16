@@ -168,7 +168,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
 | `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
-| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
+| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. `width`: missing or `100%` → `"full"`; px stays px, and becomes `"full"` once it fills the column's content width less the image's padding; a percentage under `100%` becomes px of that room, `approximated`. |
 | `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |

@@ -5,6 +5,7 @@ import type {
   TemplateContent,
   CustomFont,
   SectionWrapper,
+  SpacingValue,
 } from "@templatical/types";
 import {
   applyLayout,
@@ -25,7 +26,12 @@ import {
   escapeFontFamily,
 } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
-import { backgroundImageAttrs, bgAttr, borderRadiusAttr } from "./utils";
+import {
+  backgroundImageAttrs,
+  bgAttr,
+  borderRadiusAttr,
+  horizontalInset,
+} from "./utils";
 import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
 import { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 import { toPaddingString } from "./padding";
@@ -215,7 +221,6 @@ export async function renderToMjml(
       <mj-text font-size="14px"${textColorAttr} />
       <mj-section padding="0" />
       <mj-column padding="0" />
-      <mj-image fluid-on-mobile="true" />
     </mj-attributes>${fontDeclarations}
     <mj-style inline="inline">
       ${richTextStylesheet(collectParagraphGaps(blocks), contentDirection)}
@@ -244,8 +249,9 @@ ${bodyContent}
  */
 function renderTopLevelBlock(block: Block, context: RenderContext): string {
   if (isWrapper(block)) {
+    const innerContext = insideWrapper(context, block.styles.padding);
     const inner = filterHtmlBlocks(block.children, context.allowHtmlBlocks)
-      .map((child) => renderTopLevelBlock(child, context))
+      .map((child) => renderTopLevelBlock(child, innerContext))
       .filter((value) => value !== "")
       .join("\n");
     const framed = renderMjWrapper(
@@ -262,7 +268,10 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
   }
 
   if (isSection(block)) {
-    const rendered = renderBlock(block, context);
+    const rendered = renderBlock(
+      block,
+      block.wrapper ? insideWrapper(context, block.wrapper.padding) : context,
+    );
     // An empty render (hidden section) stays empty — never emit a bare wrapper.
     const framed =
       block.wrapper && rendered !== ""
@@ -274,6 +283,20 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
   const content = renderBlock(block, context);
   const wrapped = wrapInSection(content, context.contentDirection);
   return wrapWithDisplayCondition(block, wrapped);
+}
+
+/**
+ * The context for what an `mj-wrapper` holds: MJML narrows its children by the
+ * wrapper's side padding. `containerWidth` stays the nominal share of the body.
+ */
+function insideWrapper(
+  context: RenderContext,
+  padding: SpacingValue | undefined,
+): RenderContext {
+  return context.withContainerWidth(
+    context.containerWidth,
+    Math.floor(context.contentWidth) - horizontalInset(padding),
+  );
 }
 
 /**
@@ -503,6 +526,10 @@ export {
 // full-width button whose `mj-button` lacks this class is clickable only on
 // its label.
 export { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
+// Exported for `blockRenderers` consumers that emit their own `mj-image` (a
+// video thumbnail, a countdown GIF): `fluid-on-mobile` is set per image, so an
+// `mj-image` without it keeps its desktop width on a phone.
+export { fluidOnMobileAttr } from "./utils";
 export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
 export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";

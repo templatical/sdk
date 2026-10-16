@@ -251,7 +251,7 @@ const mjml = await renderToMjml(content, {
 
 Es verallgemeinert `renderCustomBlock` von einem Blocktyp auf beliebige. Ein Backend, dessen Ausgabe eine *Obermenge* der des Browsers ist, kann genau diese Differenz einspeisen, statt den Renderer zu forken, und die Gleichwertigkeit aller übrigen Blocktypen ergibt sich dann konstruktiv. Templatical Cloud nutzt es für zwei Blöcke: ein serverseitig erzeugtes animiertes Countdown-GIF und einen zusammengesetzten Video-Play-Button.
 
-Eine Überschreibung übernimmt alles, was der eingebaute Renderer tat — einschließlich des vorzeitigen Ausstiegs für Blöcke, die auf allen Viewports verborgen sind.
+Eine Überschreibung übernimmt alles, was der eingebaute Renderer tat — einschließlich des vorzeitigen Ausstiegs für Blöcke, die auf allen Viewports verborgen sind, und `fluid-on-mobile`: Eine Überschreibung, die ein `mj-image` ausgibt, ergänzt es mit [`fluidOnMobileAttr`](/de/api/renderer-typescript#fluid-on-mobile-attr), sonst behält das Bild auf dem Smartphone seine Desktop-Breite.
 
 ### Blöcke ohne Renderer
 

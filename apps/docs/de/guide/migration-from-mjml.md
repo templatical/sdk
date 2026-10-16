@@ -136,7 +136,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. `align`, `color` und `font-size` eines Absatzes landen in seinem Markup: `text-align` auf jedem `<p>`, Farbe und Größe auf einem `<span>` darin (`ParagraphBlock` hat dafür keine Felder). Eine Ausrichtung an der Startkante (`left`, in einem RTL-Template `right`) und eine Größe von 14px entfallen. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding, `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (siehe [Bildbreite](#image-width)), Padding, `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). `fluid-on-mobile` bleibt bei einem Bild erhalten, das seine Spalte füllt; bei einem schmaleren ist es `approximated`, weil das Bild [auf dem Smartphone seine Breite behält](/de/guide/images#width-on-phones). |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, Padding, `width` (siehe [Button-Breite](#button-breite)), `border-radius`, `border` (siehe [Rahmen und Ecken](#rahmen-und-ecken)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (siehe [Divider-Breite](#divider-breite)), Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
@@ -148,6 +148,10 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Wird in einen HTML-Block mit erhaltenem Original-Markup konvertiert. |
 | `mjml` | Template-`settings` | `lang` → `locale`; `dir` → `direction`, nur wenn es von der Schreibrichtung abweicht, die die Sprache vorgibt. |
 | `mj-head`-Inhalte | Template-`settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` setzen Schriftart, Textfarbe und Link-Farbe/-Unterstreichung des Dokuments. `mj-title` hat keine Entsprechung in den Settings und wird mit einer Warnung verworfen. |
+
+### Bildbreite {#image-width}
+
+Eine px-`width` wird `"full"`, sobald sie den Platz des Bildes erreicht: seine Spalte abzüglich seines eigenen seitlichen Paddings und Rahmens, wo MJML es begrenzt. Eine schmalere px-Breite bleibt px, und ein Bild ohne `width` ist `"full"`.
 
 ### Divider-Breite
 

@@ -60,7 +60,7 @@ Displays an image with optional link wrapping.
 |----------|------|-------------|
 | `src` | `string` | Image URL |
 | `alt` | `string` | Alt text |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
@@ -205,7 +205,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `url` | `string` | Video URL (YouTube, Vimeo, etc.) |
 | `thumbnailUrl` | `string` | Thumbnail image URL |
 | `alt` | `string` | Alt text for thumbnail |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `openInNewTab` | `boolean` | Link target behavior |

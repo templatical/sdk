@@ -103,6 +103,18 @@ BeeFree block types map to Templatical equivalents:
 
 Unknown module types — forms included — are converted to HTML blocks as a fallback, reported `html-fallback`. The block's content is the module's `descriptor.text.html`, `descriptor.html.html` or `descriptor.heading.text`, the first one set. With none of them, it is a `<!-- Unsupported BeeFree module: <type> -->` comment and renders nothing.
 
+### Image width {#image-width}
+
+| BeeFree image | `ImageBlock.width` | Status |
+|---|---|---|
+| `computedStyle.class` includes `autowidth` | `"full"` | Converted |
+| `computedStyle.width` narrower than the image's room | the px number, rounded | Converted |
+| `computedStyle.width` as wide as the room or wider | `"full"` | Converted |
+| no `computedStyle` | `image.width`, by the same rule | Converted |
+| no width at all | `"full"` | Converted |
+
+`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at. The image's room is its column's content width less the image's left and right padding. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
+
 ### Divider width
 
 | BeeFree `width` | `DividerBlock.width` | Status |

@@ -173,6 +173,9 @@ underline: bool, color?: hex }`.
 <!-- END GENERATED FIELDS: image -->
 
 - `alt` — write meaningful alt text.
+- `width` — `"full"` for a hero or banner that spans its column, a px number for
+  a logo or icon. A px width keeps that width on phones; one at or above the
+  column's room renders like `"full"` and fills the column there.
 - `height` — omit it: the height is then derived from the width and the image
   keeps its aspect ratio. Setting both stretches the image, because email
   clients don't support `object-fit`.

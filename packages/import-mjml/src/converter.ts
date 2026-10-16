@@ -157,6 +157,7 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
     $,
     cascade,
     containerWidth: settings.width,
+    contentWidth: settings.width,
     columnPadding: 0,
     direction: resolveContentDirection(settings),
     warnings,

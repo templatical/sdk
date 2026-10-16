@@ -706,6 +706,35 @@ describe("convertBeeFreeTemplate", () => {
     expect(report.warnings.some((w) => w.includes("locked"))).toBe(true);
   });
 
+  // The export's `image.width` × `image.height` are the files (254 × 59 and
+  // 1920 × 466); BeeFree shows them at 172.5px left-aligned and across the
+  // 600px column.
+  it("imports the real fixture's images at the size BeeFree shows them", () => {
+    const { content } = convertBeeFreeTemplate(fixture as BeeFreeTemplate);
+    const images = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .filter((b) => b.type === "image")
+      .map((b) =>
+        b.type === "image"
+          ? {
+              file: b.src.split("/").pop(),
+              width: b.width,
+              height: b.height,
+              align: b.align,
+            }
+          : null,
+      );
+    expect(images).toEqual([
+      { file: "logoipsum.png", width: 173, height: undefined, align: "left" },
+      {
+        file: "hero_white_classic.jpg",
+        width: "full",
+        height: undefined,
+        align: "center",
+      },
+    ]);
+  });
+
   it("converts real BeeFree fixture", () => {
     const { content, report } = convertBeeFreeTemplate(
       fixture as BeeFreeTemplate,

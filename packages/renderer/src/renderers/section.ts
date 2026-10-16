@@ -8,6 +8,7 @@ import {
   bgAttr,
   borderAttr,
   borderRadiusAttr,
+  horizontalInset,
 } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 import { wrapWithDisplayCondition } from "../display-condition";
@@ -33,6 +34,16 @@ export function renderSection(
   const columnsLayout = block.columns;
   const columnWidths = getWidthPercentages(columnsLayout);
   const columnWidthsPx = getWidthPixels(columnsLayout, context.containerWidth);
+  // What MJML gives each column's content: the emitted percentage of the room
+  // inside the section's padding and border, floored as MJML floors it. From
+  // the percentage strings, not `columnWidthsPx`: 33.33% of 600 is 199, a
+  // third is 200.
+  const sectionBox =
+    Math.floor(context.contentWidth) -
+    horizontalInset(block.styles.padding, block.border);
+  const columnContentWidths = columnWidths.map((width) =>
+    Math.floor((sectionBox * parseFloat(width)) / 100),
+  );
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "native");
   const bgImage = backgroundImageAttrs(block.backgroundImage);
@@ -63,7 +74,10 @@ export function renderSection(
       column,
       context.allowHtmlBlocks,
     ).filter((child) => !isSection(child));
-    const columnContext = context.withContainerWidth(columnWidth);
+    const columnContext = context.withContainerWidth(
+      columnWidth,
+      columnContentWidths[index] ?? sectionBox,
+    );
 
     const columnBlocks = filteredColumn
       .map((child) =>

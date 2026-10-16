@@ -84,7 +84,7 @@ HTML elements map to Templatical equivalents:
 | `<p>` / text-only `<div>` / `<span>` | `paragraph` | Converted |
 | Text-only `<td>` in a layout table | `paragraph` | Converted |
 | Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
-| `<img>` | `image` | Converted |
+| `<img>` | `image` | Converted (approximated when a percentage width becomes px; see [Image width](#image-width)) |
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
@@ -102,6 +102,19 @@ A cell mixing copy with a link becomes one `paragraph` holding both, with the `<
 A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
 
 A text-only wrapper's `text-align` applies to each `<p>` inside it that states no `text-align` of its own. A `<p>` that states one keeps it.
+
+### Image width {#image-width}
+
+| `<img>` width | `ImageBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| px, narrower than the image's room | the px number | Converted |
+| px, as wide as the room or wider | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | that share of the room in px | Approximated |
+
+The `width` attribute is read first, then the `width` style. The image's room is its column's width less the image's left and right padding. Where the room is unknown (an image inside a link that also holds text), a px width stays as written and a percentage is `"full"`, approximated.
+
+A `height` style overrides the `height` attribute, as it does in a browser, so `height: auto` leaves the height unset and the image keeps its aspect ratio.
 
 ### Divider width
 

@@ -13,6 +13,7 @@ import {
 import type {
   Block,
   DividerBlock,
+  ImageBlock,
   HeadingLevel,
   SpacingValue,
 } from "@templatical/types";
@@ -520,47 +521,111 @@ export function convertInlineRun(
 }
 
 /**
- * <img> → Image block.
+ * An `<img>`'s shown width as `ImageBlock.width`: the `width` attribute, else
+ * the `width` style. No width, or `100%`, is `"full"`, as is a px width that
+ * reaches `room`, the column less the image's side padding, when the caller
+ * knows it. A percentage under 100% becomes px of `room` and pushes a note,
+ * since a px width keeps its size on a phone where a percentage shrinks with
+ * the column; with no `room` to resolve against it is `"full"`.
+ */
+function resolveImageWidth(
+  values: (string | undefined)[],
+  room: number | undefined,
+  notes: string[],
+): ImageBlock["width"] {
+  for (const raw of values) {
+    const value = (raw ?? "").trim();
+    if (!value) continue;
+    const percent = value.match(/^(\d+(?:\.\d+)?)\s*%$/);
+    if (percent) {
+      const share = parseFloat(percent[1]);
+      if (share <= 0 || share >= 100) return "full";
+      if (room === undefined) {
+        notes.push(
+          `Image width ${value} has no known column to resolve against; imported as full width.`,
+        );
+        return "full";
+      }
+      const px = Math.round((room * share) / 100);
+      if (px >= room) return "full";
+      notes.push(
+        `Image width ${value} imported as ${px}px, which keeps its size on a phone.`,
+      );
+      return px;
+    }
+    const px = parsePxValue(value);
+    if (px > 0) return room !== undefined && px >= room ? "full" : px;
+  }
+  return "full";
+}
+
+/**
+ * <img> → Image block. `room` is the width its column leaves a line, when the
+ * caller knows it.
  */
 function convertImage(
   $el: Cheerio<Element>,
+  room: number | undefined,
   link?: { url: string; openInNewTab: boolean },
-): Block {
+): { block: Block; notes: string[] } {
   const styles = getStyles($el);
   const src = $el.attr("src") ?? "";
   const alt = $el.attr("alt") ?? "";
-  const widthAttr = $el.attr("width");
-  const widthStyle = styles.width;
-  // Kept separate from the `?? 600` fallback: a percentage radius has to
-  // resolve against a width the template actually stated.
-  const readWidth =
-    parsePxValue(widthAttr) || parsePxValue(widthStyle) || undefined;
-  const width = readWidth ?? 600;
-  // No default, unlike width: an absent height is what keeps the aspect ratio,
-  // and `height="auto"` / `height: auto` parse to 0, which reads the same way.
+  const padding = readPaddingFromStyles(styles);
+  const imageRoom =
+    room === undefined ? undefined : room - padding.left - padding.right;
+  const notes: string[] = [];
+  const width = resolveImageWidth(
+    [$el.attr("width"), styles.width],
+    imageRoom,
+    notes,
+  );
+  // The style wins over the attribute, as it does in a browser: a responsive
+  // `<img height="300" style="height: auto">` is shown at its aspect ratio, so
+  // no height is pinned. "auto" parses to 0, which reads the same way.
+  const heightStyle = (styles.height ?? "").trim();
   const height =
-    parsePxValue($el.attr("height")) ||
-    parsePxValue(styles.height) ||
-    undefined;
+    (heightStyle
+      ? parsePxValue(heightStyle)
+      : parsePxValue($el.attr("height"))) || undefined;
   const href = (link?.url ?? "").trim();
+  // A percentage radius resolves against the shown width, and only when the
+  // template stated one.
+  const stated = Boolean(
+    ($el.attr("width") ?? "").trim() || (styles.width ?? "").trim(),
+  );
+  const shownWidth = width === "full" ? imageRoom : width;
 
-  return createImageBlock({
-    src,
-    alt,
-    width,
-    height,
-    borderRadius: parseImageBorderRadius(
-      styles["border-radius"],
-      readWidth,
+  return {
+    block: createImageBlock({
+      src,
+      alt,
+      width,
       height,
-    ),
-    align: parseAlignment(styles["text-align"], "center"),
-    styles: {
-      padding: readPaddingFromStyles(styles),
-    },
-    ...(href ? { linkUrl: href } : {}),
-    ...(href && link?.openInNewTab ? { linkOpenInNewTab: true } : {}),
-  });
+      borderRadius: parseImageBorderRadius(
+        styles["border-radius"],
+        stated ? shownWidth : undefined,
+        height,
+      ),
+      align: parseAlignment(styles["text-align"], "center"),
+      styles: { padding },
+      ...(href ? { linkUrl: href } : {}),
+      ...(href && link?.openInNewTab ? { linkOpenInNewTab: true } : {}),
+    }),
+    notes,
+  };
+}
+
+/**
+ * The report entry for an image `convertImage` produced from `sourceTag`.
+ */
+function imageEntry(sourceTag: string, notes: string[]): ImportReportEntry {
+  return {
+    sourceTag,
+    templaticalBlockType: "image",
+    status: notes.length > 0 ? "approximated" : "converted",
+    ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+  };
 }
 
 /**
@@ -581,18 +646,13 @@ function isImageOnlyAnchor($el: Cheerio<Element>): boolean {
 function convertLinkedImage(
   $anchor: Cheerio<Element>,
   $img: Cheerio<Element>,
+  room: number | undefined,
 ): { block: Block; entry: ImportReportEntry } {
-  return {
-    block: convertImage($img, {
-      url: $anchor.attr("href") ?? "",
-      openInNewTab: $anchor.attr("target") === "_blank",
-    }),
-    entry: {
-      sourceTag: "a",
-      templaticalBlockType: "image",
-      status: "converted",
-    },
-  };
+  const { block, notes } = convertImage($img, room, {
+    url: $anchor.attr("href") ?? "",
+    openInNewTab: $anchor.attr("target") === "_blank",
+  });
+  return { block, entry: imageEntry("a", notes) };
 }
 
 /**
@@ -610,7 +670,13 @@ function splitMixedImageAnchor(
 
   for (const img of $anchor.find("img").toArray()) {
     results.push(
-      convertLinkedImage($anchor, $(img) as unknown as Cheerio<Element>),
+      // The inline walk doesn't carry the column's room, so a px width here
+      // stays as stated.
+      convertLinkedImage(
+        $anchor,
+        $(img) as unknown as Cheerio<Element>,
+        undefined,
+      ),
     );
   }
 
@@ -1070,8 +1136,8 @@ export function isButtonCell(
  * styles are what `styles` already holds.
  *
  * `room` is the width, in px, that a line in the element's column can span
- * before the element's own padding, when the caller knows it. Only a divider
- * reads it.
+ * before the element's own padding, when the caller knows it. A divider and an
+ * image read it.
  *
  * Returns `null` for elements that do not contain any meaningful content
  * (the caller should skip them).
@@ -1097,14 +1163,8 @@ export function convertElement(
   }
 
   if (tag === "img") {
-    return {
-      block: convertImage($target),
-      entry: {
-        sourceTag: tag,
-        templaticalBlockType: "image",
-        status: "converted",
-      },
-    };
+    const { block, notes } = convertImage($target, room);
+    return { block, entry: imageEntry(tag, notes) };
   }
 
   if (tag === "a") {
@@ -1115,6 +1175,7 @@ export function convertElement(
       return convertLinkedImage(
         $target,
         $($target.find("img")[0]) as unknown as Cheerio<Element>,
+        room,
       );
     }
     if (looksLikeButton(styles)) {

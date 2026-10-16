@@ -185,7 +185,8 @@ describe("convertContent", () => {
         expect(block.src).toBe("https://cdn.test/i.jpg");
         expect(block.alt).toBe("alt");
         expect(block.width).toBe(480);
-        expect(block.height).toBe(200);
+        // `src.height` is the file's height, never the shown one.
+        expect(block.height).toBeUndefined();
         expect(block.align).toBe("left");
         expect(block.linkUrl).toBe("https://x.test");
         expect(block.linkOpenInNewTab).toBe(true);
@@ -272,24 +273,119 @@ describe("convertContent", () => {
       ).toBeUndefined();
     });
 
-    it("rounds a fractional src.height", () => {
-      const { block } = convertContent(
-        makeContent("image", { src: { url: "u", width: 480, height: 199.6 } }),
-        [],
-      );
-      if (block.type !== "image") throw new Error("expected image block");
-      expect(block.height).toBe(200);
+    // `src.width` × `src.height` is the uploaded file, so a stated height
+    // would pin the file's height under a narrower shown width and stretch it.
+    it("never carries src.height over", () => {
+      expect(
+        imageWith({ src: { url: "u", width: 480, height: 199.6 } }).height,
+      ).toBeUndefined();
+      expect(
+        imageWith({ src: { url: "u", width: 1920, height: 466 } }).height,
+      ).toBeUndefined();
     });
 
-    it("defaults width to 600 when src.width missing", () => {
-      const { block } = convertContent(
-        makeContent("image", { src: { url: "u" } }),
+    it("imports an image with no stated width as full width", () => {
+      const block = imageWith({ src: { url: "u" } });
+      expect(block.width).toBe("full");
+      expect(block.align).toBe("center");
+    });
+
+    function shown(
+      src: Record<string, unknown>,
+      columnWidth = 600,
+      containerPadding?: string,
+    ) {
+      const { block, entry } = convertContent(
+        makeContent("image", {
+          src: { url: "u", ...src },
+          ...(containerPadding ? { containerPadding } : {}),
+        }),
         [],
+        { columnWidth },
       );
-      if (block.type === "image") {
-        expect(block.width).toBe(600);
-        expect(block.align).toBe("center");
-      }
+      if (block.type !== "image") throw new Error("expected an image block");
+      return { width: block.width, status: entry.status, note: entry.note };
+    }
+
+    describe("shown width", () => {
+      // Unlayer's own sample design stores `width: 1600` on every image, the
+      // uploaded file's size, and sizes each one with autoWidth/maxWidth.
+      it("autoWidth shows the file's width, capped at the column", () => {
+        expect(shown({ width: 120 }).width).toBe(120);
+        expect(shown({ width: 120, autoWidth: true }).width).toBe(120);
+        expect(shown({ width: 1600, autoWidth: true }).width).toBe("full");
+      });
+
+      it("is full at exactly the room inside the image's padding", () => {
+        expect(shown({ width: 560 }, 600, "10px 20px").width).toBe("full");
+        expect(shown({ width: 559 }, 600, "10px 20px").width).toBe(559);
+      });
+
+      it("reads the column it lands in", () => {
+        expect(shown({ width: 300 }, 300).width).toBe("full");
+        expect(shown({ width: 300 }, 600).width).toBe(300);
+      });
+
+      it("maxWidth under 100% becomes px of the room, with a note", () => {
+        const logo = shown(
+          { width: 1600, autoWidth: false, maxWidth: "11%" },
+          700,
+        );
+        expect(logo).toEqual({
+          width: 77,
+          status: "approximated",
+          note: "Unlayer shows this image at 11% of its column; imported as 77px, which keeps its size on a phone.",
+        });
+        expect(
+          shown(
+            { width: 1600, autoWidth: false, maxWidth: "75%" },
+            700,
+            "0px 0px 32px",
+          ).width,
+        ).toBe(525);
+      });
+
+      it("maxWidth of 100% is full and converted", () => {
+        expect(
+          shown({ width: 1600, autoWidth: false, maxWidth: "100%" }),
+        ).toEqual({ width: "full", status: "converted", note: undefined });
+      });
+
+      it("an unreadable or missing maxWidth is full", () => {
+        expect(
+          shown({ width: 1600, autoWidth: false, maxWidth: "wide" }),
+        ).toEqual({
+          width: "full",
+          status: "approximated",
+          note: 'Image maxWidth "wide" could not be read; imported as full width.',
+        });
+        expect(shown({ width: 1600, autoWidth: false })).toEqual({
+          width: "full",
+          status: "converted",
+          note: undefined,
+        });
+      });
+
+      it("resolves a percentage radius against the shown size", () => {
+        const { block } = convertContent(
+          makeContent("image", {
+            src: {
+              url: "u",
+              width: 1600,
+              height: 800,
+              autoWidth: false,
+              maxWidth: "11%",
+            },
+            borderRadius: "50%",
+          }),
+          [],
+          { columnWidth: 700 },
+        );
+        if (block.type !== "image") throw new Error("expected an image block");
+        // Shown at 77 × 39 (the file's 2:1 ratio): half the shorter side,
+        // 19.5, rounds to 20.
+        expect(block.borderRadius).toBe(20);
+      });
     });
   });
 
@@ -824,7 +920,7 @@ describe("convertContent", () => {
         if (block.type === "image") {
           expect(block.src).toBe("");
           expect(block.alt).toBe("");
-          expect(block.width).toBe(600);
+          expect(block.width).toBe("full");
           expect(block.align).toBe("center");
           expect(block.linkUrl).toBeUndefined();
         }

@@ -1,6 +1,6 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
-import { BORDER_SIDES, createHtmlBlock } from "@templatical/types";
+import { BORDER_SIDES, createHtmlBlock, toBorderCss } from "@templatical/types";
 import type {
   Block,
   BlockStyles,
@@ -10,6 +10,7 @@ import type {
   BorderSideValue,
   BorderValue,
   ContentDirection,
+  SpacingValue,
 } from "@templatical/types";
 import {
   parseBorderDeclaration,
@@ -34,6 +35,12 @@ import type { ImportReportEntry } from "./types";
  * `mj-divider`'s px width is measured against, less `columnPadding` and the
  * divider's own side padding.
  *
+ * `contentWidth` is the room the renderer will give the converted element's
+ * column: the body width less the side padding and border of the section and
+ * wrapper band it lands in, split by the layout's column percentage and
+ * floored, as MJML floors it. `containerWidth` keeps the nominal share, which
+ * `width: "full"` and the divider and button rules are measured against.
+ *
  * `columnPadding` is the side padding (left plus right, px) of the
  * `mj-column` holding the element, 0 at top level. A Templatical column has no
  * padding of its own, so this is read only where it changes what a value
@@ -47,6 +54,7 @@ export interface ConvertContext {
   $: CheerioAPI;
   cascade: AttributeCascade;
   containerWidth: number;
+  contentWidth: number;
   columnPadding: number;
   direction: ContentDirection;
   warnings: string[];
@@ -94,6 +102,25 @@ export function baseFields(
     },
     ...(visibility ? { visibility } : {}),
   };
+}
+
+/**
+ * The width side padding and drawn side borders take from a box, mirroring
+ * `horizontalInset` in `renderer/src/utils.ts`: what MJML subtracts when it
+ * sizes a wrapper's, a section's or an image's content.
+ */
+export function horizontalInset(
+  padding: SpacingValue | undefined,
+  border?: BorderValue,
+): number {
+  const drawn = (side: BorderValue["left"] | undefined) =>
+    toBorderCss(side) === null ? 0 : side!.width;
+  return (
+    (padding?.left ?? 0) +
+    (padding?.right ?? 0) +
+    drawn(border?.left) +
+    drawn(border?.right)
+  );
 }
 
 /**

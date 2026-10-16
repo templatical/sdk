@@ -149,6 +149,18 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 
 Werden `width` und `height` gemeinsam gesetzt, wird das Bild auf diese Box **gestreckt**. Es wird nicht beschnitten, denn `object-fit` wird von Outlook und den meisten E-Mail-Clients nicht unterstützt -- die Editor-Leinwand streckt deshalb genauso, statt einen Beschnitt zu versprechen, den der Posteingang nicht liefert. Passen Sie das Verhältnis an das Quellbild an oder skalieren Sie das Asset vor dem Upload.
 
+### Breite auf Smartphones {#width-on-phones}
+
+Ein Bild mit `'full'` füllt seine Spalte auf jedem Bildschirm. Eine Pixelbreite bleibt auf dem Smartphone erhalten, so wie die mobile Vorschau des Editors sie zeichnet, und schrumpft nur, wenn die Spalte des Smartphones schmaler ist. Ein 120px breites Logo bleibt 120px breit.
+
+Eine Pixelbreite, die den Platz ihrer Spalte erreicht oder überschreitet, wird wie `'full'` gerendert: auf dem Desktop in Spaltenbreite, auf dem Smartphone über die ganze Spalte. Dieser Platz ist die Spalte abzüglich des seitlichen Paddings und Rahmens von Wrapper-Band, Sektion und Bild.
+
+Video-Thumbnails folgen derselben Regel.
+
+::: tip
+Wenn die Spalten einer Sektion auf dem Smartphone untereinander rutschen, ist jede Spalte dort breiter als auf dem Desktop. Ein Bild, dessen Breite zwischen beiden liegt, füllt die Spalte auf dem Smartphone, während die mobile Vorschau es in seiner eingestellten Breite zeigt.
+:::
+
 ### Eckenradius
 
 `borderRadius` rundet die Ecken des Bildes ab, in Pixeln. Ohne Angabe oder bei `0` bleiben die Ecken eckig -- das gilt für jeden bestehenden Block.

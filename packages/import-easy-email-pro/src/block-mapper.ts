@@ -19,6 +19,7 @@ import type {
   BlockVisibility,
   ButtonBlock,
   DividerBlock,
+  ImageBlock,
   HeadingLevel,
   MenuItemData,
   SocialIcon,
@@ -272,20 +273,65 @@ function convertImage(node: EasyEmailProNode, map: MapContext): Converted {
   const radius = parsePx(readAttr(node, "border-radius", map.resolve));
   const align = parseAlign(readAttr(node, "align", map.resolve));
   const target = setString(readAttr(node, "target", map.resolve));
+  const styles = leafStyles(node, map);
+  const { left, right } = styles.styles.padding;
+  const room =
+    map.contentWidth === undefined
+      ? undefined
+      : map.contentWidth - left - right;
+  const notes: string[] = [];
+  const width = imageWidth(readAttr(node, "width", map.resolve), room, notes);
 
   return finish(
     createImageBlock({
       src,
       alt,
+      width,
       ...(align ? { align } : {}),
       ...(radius !== undefined && radius > 0 ? { borderRadius: radius } : {}),
       ...(linkUrl ? { linkUrl } : {}),
       ...(linkUrl && target === "_blank" ? { linkOpenInNewTab: true } : {}),
-      ...leafStyles(node, map),
+      ...styles,
     }),
     node,
-    report("standard-image", "image", "converted"),
+    notes.length > 0
+      ? report("standard-image", "image", "approximated", notes.join(" "))
+      : report("standard-image", "image", "converted"),
   );
+}
+
+/**
+ * An image's `width` as `ImageBlock.width`. A missing, unreadable or `100%`
+ * width is `"full"`, MJML's default. A px width stays px until it fills `room`,
+ * the column less the image's own side padding, and then it is `"full"`. A
+ * percentage under 100% becomes px of `room` and pushes a note, since a px
+ * width keeps its size on a phone where a percentage shrinks with the column.
+ */
+function imageWidth(
+  value: unknown,
+  room: number | undefined,
+  notes: string[],
+): ImageBlock["width"] {
+  if (isUnset(value)) return "full";
+  if (typeof value === "string" && value.trim().endsWith("%")) {
+    const percent = parsePercent(value);
+    if (percent === null || percent <= 0 || percent >= 100) return "full";
+    if (room === undefined) {
+      notes.push(
+        `Image width ${value.trim()} has no known column to resolve against; imported as full width.`,
+      );
+      return "full";
+    }
+    const px = Math.round((room * percent) / 100);
+    if (px >= room) return "full";
+    notes.push(
+      `Image width ${value.trim()} imported as ${px}px, which keeps its size on a phone.`,
+    );
+    return px;
+  }
+  const px = parsePx(value);
+  if (px === undefined || px <= 0) return "full";
+  return room !== undefined && px >= room ? "full" : px;
 }
 
 function convertDivider(node: EasyEmailProNode, map: MapContext): Converted {

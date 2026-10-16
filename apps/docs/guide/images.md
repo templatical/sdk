@@ -148,6 +148,18 @@ The `ImageBlock` type defines all configurable properties:
 
 Setting both `width` and `height` **stretches** the image to that box. It does not crop, because `object-fit` is unsupported in Outlook and most email clients, so the editor canvas stretches identically rather than promising a crop the inbox won't deliver. Match the ratio of the source image, or resize the asset before uploading it.
 
+### Width on phones {#width-on-phones}
+
+A `'full'` image fills its column on every screen. A pixel width keeps that width on a phone, as the editor's mobile preview draws it, and shrinks only to fit a phone column narrower than it. A 120px logo stays 120px.
+
+A pixel width at or above the room its column gives it renders like `'full'`: at the column's width on desktop, and across the whole column on a phone. That room is the column less the side padding and border of the wrapper band, the section and the image itself.
+
+Video thumbnails follow the same rule.
+
+::: tip
+When a section's columns stack on a phone, each column there is wider than on desktop. An image whose width falls between the two fills the phone's column, while the mobile preview draws it at its set width.
+:::
+
 ### Corner radius
 
 `borderRadius` rounds the image's corners, in pixels. Omitted or `0` leaves them square, which is what every existing block gets.

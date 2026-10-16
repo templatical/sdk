@@ -39,6 +39,7 @@ function convertWithHead(
     $,
     cascade: buildAttributeCascade($),
     containerWidth: 600,
+    contentWidth: 600,
     columnPadding: 0,
     direction,
     warnings: [],

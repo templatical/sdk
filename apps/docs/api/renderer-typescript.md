@@ -143,6 +143,7 @@ import {
   getCssClasses,
   getWidthPercentages,
   getWidthPixels,
+  fluidOnMobileAttr,
   DEFAULT_SOCIAL_ICONS_BASE_URL,
   RenderContext,
 } from '@templatical/renderer';
@@ -209,7 +210,30 @@ Renders a single block to its MJML representation. Used internally by `renderToM
 
 ### `RenderContext`
 
-The context object passed to block renderers. Contains render options and font configuration.
+The context object passed to block renderers. Contains render options, font configuration and two widths:
+
+| Field | Value |
+|---|---|
+| `containerWidth` | The column's share of the body width, ignoring the padding and borders around it. A `'full'` image or video is emitted at this width, and MJML caps it at its real box. |
+| `contentWidth` | The whole pixels MJML gives the column's content: the body width less the side padding and border of the wrapper band and the section, then the column's percentage, floored. Width-aware decisions read this one. |
+
+`withContainerWidth(width, contentWidth = width)` returns a copy for a narrower container.
+
+### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
+
+Returns `' fluid-on-mobile="true"'` for an image that fills its column on desktop, and `''` otherwise. An image fills its column when its `width` is `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. See [Width on phones](/guide/images#width-on-phones).
+
+The built-in image and video renderers use it. A `blockRenderers` override that emits its own `mj-image` calls it too; without the attribute, the image keeps its desktop width on a phone:
+
+```ts
+blockRenderers: {
+  image: (block, ctx) => {
+    const image = block as ImageBlock;
+    const width = image.width === 'full' ? ctx.containerWidth : image.width;
+    return `<mj-image src="${escapeAttr(image.src)}" width="${width}px"${fluidOnMobileAttr(image, ctx)} />`;
+  },
+},
+```
 
 ### `getCssClassAttr(block)` / `getCssClasses(block)`
 

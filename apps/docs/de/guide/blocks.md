@@ -60,7 +60,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 |----------|------|-------------|
 | `src` | `string` | Bild-URL |
 | `alt` | `string` | Alternativtext |
-| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder `{ topLeft, topRight, bottomRight, bottomLeft }` pro Ecke. Ohne Angabe oder 0 bleiben die Ecken eckig |
@@ -205,7 +205,7 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 | `url` | `string` | Video-URL (YouTube, Vimeo usw.) |
 | `thumbnailUrl` | `string` | URL des Thumbnail-Bildes |
 | `alt` | `string` | Alternativtext für das Thumbnail |
-| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |

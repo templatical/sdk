@@ -251,7 +251,7 @@ const mjml = await renderToMjml(content, {
 
 It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. Templatical Cloud uses it for two blocks: a server-generated animated countdown GIF and a composited video play button.
 
-An override owns everything the built-in did, including the hidden-on-all-viewports early return.
+An override owns everything the built-in did, including the hidden-on-all-viewports early return and `fluid-on-mobile`: an override that emits an `mj-image` adds it with [`fluidOnMobileAttr`](/api/renderer-typescript#fluid-on-mobile-attr), or the image keeps its desktop width on a phone.
 
 ### Blocks with no renderer
 

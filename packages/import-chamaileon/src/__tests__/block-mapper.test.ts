@@ -105,6 +105,51 @@ describe("image", () => {
     expect(b.width).toBe(72);
   });
 
+  // MJML caps the image at its column less its own side padding, so the
+  // boundary is that room, not the column.
+  it("is full at exactly the room inside the image's padding", () => {
+    const at = (width: number) =>
+      (
+        convertLeaf(
+          node({
+            type: "image",
+            attrs: { src: "https://cdn.test/x.png" },
+            style: {
+              width: `${width}px`,
+              paddingLeft: "20px",
+              paddingRight: "20px",
+            },
+          }),
+          ctx(),
+        ).block as ImageBlock
+      ).width;
+    expect(at(560)).toBe("full");
+    expect(at(559)).toBe(559);
+  });
+
+  it("measures a video thumbnail against the same room", () => {
+    const at = (width: number) =>
+      (
+        convertLeaf(
+          node({
+            type: "video",
+            attrs: {
+              src: "https://cdn.test/t.png",
+              href: "https://youtu.be/x",
+            },
+            style: {
+              width: `${width}px`,
+              paddingLeft: "20px",
+              paddingRight: "20px",
+            },
+          }),
+          ctx(),
+        ).block as VideoBlock
+      ).width;
+    expect(at(560)).toBe("full");
+    expect(at(559)).toBe(559);
+  });
+
   it("reads 4.x attrs.src and treats body-width as full", () => {
     const { block } = convertLeaf(
       node({

@@ -287,6 +287,20 @@ describe("mj-image", () => {
     expect((r.block as ImageBlock).width).toBe("full");
   });
 
+  // MJML caps the image at its column less its own side padding, so the
+  // boundary is that room, not the column.
+  it("is full at exactly the room inside the image's padding", () => {
+    const at = (width: number) =>
+      (
+        convertLeaf(
+          node("mj-image", { src: "a.png", width, padding: "10px 20px" }),
+          ctx(),
+        )!.block as ImageBlock
+      ).width;
+    expect(at(560)).toBe("full");
+    expect(at(559)).toBe(559);
+  });
+
   it("falls back to full width when neither width nor widthPercent is set", () => {
     const r = convertLeaf(node("mj-image", { src: "a.png" }), ctx())!;
     expect((r.block as ImageBlock).width).toBe("full");
