@@ -457,7 +457,6 @@ describe("readMjmlBackgroundImage", () => {
 
 describe("readMjmlBackgroundImage on adversarial input", () => {
   const digits = "0".repeat(100_000);
-  const spaces = " ".repeat(100_000);
 
   it("reads runs of digits in linear time", () => {
     const attrs: Record<string, string> = {

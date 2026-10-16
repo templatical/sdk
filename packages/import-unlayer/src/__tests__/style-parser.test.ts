@@ -331,7 +331,6 @@ describe("readUnlayerBackgroundImage", () => {
 
 describe("readUnlayerBackgroundImage on adversarial input", () => {
   const digits = "0".repeat(100_000);
-  const spaces = " ".repeat(100_000);
 
   it("reads runs of digits and spaces in linear time", () => {
     const run = () =>

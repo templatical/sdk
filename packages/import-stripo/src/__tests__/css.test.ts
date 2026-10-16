@@ -425,3 +425,28 @@ describe("readCssBackground edge cases", () => {
     });
   });
 });
+
+describe("readCssBackground url() scanning", () => {
+  const read = (value: string) =>
+    readCssBackground({ "background-image": value }, "Section", 600);
+
+  it("reads a repeated unclosed url( in linear time", () => {
+    const value = "url(" + "url(!".repeat(20_000);
+    const started = performance.now();
+    expect(read(value)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(
+    "reads no image from the malformed %s",
+    (value) => {
+      expect(read(value)).toBeNull();
+    },
+  );
+
+  it("unquotes the first url() and trims it", () => {
+    expect(read("  URL( 'https://cdn.test/a.png' )  ")?.image.url).toBe(
+      "https://cdn.test/a.png",
+    );
+  });
+});

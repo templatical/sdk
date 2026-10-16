@@ -300,12 +300,29 @@ const CSS_BACKGROUND_DEFAULTS = {
   repeat: true,
 } as const;
 
-const URL_FUNCTION = /url\((?:\s*"([^"]*)"\s*|\s*'([^']*)'\s*|([^)"']*))\)/i;
-
-/** The URL inside a CSS `url(…)`, unquoted and trimmed; "" when there is none. */
+/**
+ * The URL inside the first CSS `url(…)`, unquoted and trimmed; "" when there
+ * is none or it is malformed. A forward scan rather than a regex, so a long
+ * run of unclosed `url(` can't make it backtrack.
+ */
 function cssUrl(value: string | undefined): string {
-  const match = URL_FUNCTION.exec(value ?? "");
-  return (match?.[1] ?? match?.[2] ?? match?.[3] ?? "").trim();
+  const text = value ?? "";
+  const start = text.search(/url\(/i);
+  if (start === -1) return "";
+  let i = start + 4;
+  while (i < text.length && /\s/.test(text[i])) i++;
+  const quote = text[i];
+  if (quote === '"' || quote === "'") {
+    const close = text.indexOf(quote, i + 1);
+    if (close === -1) return "";
+    let j = close + 1;
+    while (j < text.length && /\s/.test(text[j])) j++;
+    return text[j] === ")" ? text.slice(i + 1, close).trim() : "";
+  }
+  const close = text.indexOf(")", i);
+  if (close === -1) return "";
+  const inner = text.slice(i, close);
+  return /["']/.test(inner) ? "" : inner.trim();
 }
 
 /**
