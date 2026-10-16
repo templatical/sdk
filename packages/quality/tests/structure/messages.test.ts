@@ -13,11 +13,26 @@ describe("structure rule messages", () => {
     expect(Object.keys(de).sort()).toEqual(Object.keys(en).sort());
   });
 
-  it("every registered structure rule has an en + de message", () => {
+  it("every registered structure rule has an en + de message per variant", () => {
     for (const rule of STRUCTURE_RULES) {
-      expect(en).toHaveProperty(rule.meta.id);
-      expect(de).toHaveProperty(rule.meta.id);
+      const ids = rule.meta.messageVariants?.map(
+        (variant) => `${rule.meta.id}.${variant}`,
+      ) ?? [rule.meta.id];
+      for (const id of ids) {
+        expect(en).toHaveProperty([id]);
+        expect(de).toHaveProperty([id]);
+      }
     }
+  });
+
+  it("has no message for a rule or variant that doesn't exist", () => {
+    const expected = STRUCTURE_RULES.flatMap(
+      (rule) =>
+        rule.meta.messageVariants?.map(
+          (variant) => `${rule.meta.id}.${variant}`,
+        ) ?? [rule.meta.id],
+    ).sort();
+    expect(Object.keys(en).sort()).toEqual(expected);
   });
 
   it("placeholders match between locales for every key", () => {

@@ -15,6 +15,12 @@ const de: typeof en = {
     "Outlook unter Windows malt die Hintergrundfarbe des Wrappers über das Hintergrundbild dieser Sektion. Entferne die Wrapper-Farbe oder lege das Bild auf den Wrapper.",
   "structure.nested-background-image":
     "Diese Sektion und ihr Wrapper haben beide ein Hintergrundbild. Outlook unter Windows kann sie nicht übereinanderlegen und zerstört das Layout. Behalte das Bild nur auf einem von beiden.",
+  "structure.hero-not-applied.columns":
+    "Der Hero-Modus braucht eine einspaltige Sektion, deshalb wird diese Sektion als normale Sektion dargestellt. Stelle wieder eine Spalte ein oder schalte den Hero-Modus aus.",
+  "structure.hero-not-applied.image":
+    "Der Hero-Modus braucht ein Hintergrundbild, deshalb wird diese Sektion als normale Sektion dargestellt, bis sie eines hat.",
+  "structure.hero-not-applied.size":
+    "Der Hero-Modus kann die Form dieses Hintergrundbilds nicht übernehmen, weil seine Größe unbekannt ist (eine Merge-Tag-URL oder ein Bild, das der Editor nicht vermessen hat), deshalb wird die Sektion als normale Sektion dargestellt. Gib ihr eine feste Höhe oder trage Breite und Höhe des Bilds ein.",
 };
 
 export default de;

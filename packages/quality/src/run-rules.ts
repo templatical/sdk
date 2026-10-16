@@ -15,7 +15,8 @@ import { walkBlocks } from "./walk";
 
 export type MessageFormatter = (
   locale: string,
-  ruleId: string,
+  /** The rule's id, or `<id>.<variant>` for a hit with a message variant. */
+  messageId: string,
   params?: Record<string, string | number>,
 ) => string;
 
@@ -38,11 +39,14 @@ export function runRules(
     severity: Exclude<Severity, "off">,
     hit: RuleHit,
   ): LintIssue {
+    const messageId = hit.messageVariant
+      ? `${ruleId}.${hit.messageVariant}`
+      : ruleId;
     return {
       blockId: hit.blockId,
       ruleId,
       severity,
-      message: formatMessage(opts.locale, ruleId, hit.params),
+      message: formatMessage(opts.locale, messageId, hit.params),
       fix: hit.fix,
     };
   }

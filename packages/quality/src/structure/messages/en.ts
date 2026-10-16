@@ -18,6 +18,12 @@ const en = {
     "Outlook on Windows paints the wrapper's background color over this section's background image. Remove the wrapper color or put the image on the wrapper.",
   "structure.nested-background-image":
     "This section and its wrapper both have a background image. Outlook on Windows can't layer them and breaks the layout. Keep the image on one of them.",
+  "structure.hero-not-applied.columns":
+    "Hero mode needs a one-column section, so this section renders as a regular one. Switch it back to one column, or turn hero mode off.",
+  "structure.hero-not-applied.image":
+    "Hero mode needs a background image, so this section renders as a regular one until it has one.",
+  "structure.hero-not-applied.size":
+    "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image's width and height.",
 };
 
 export default en;

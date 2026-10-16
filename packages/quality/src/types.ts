@@ -128,6 +128,13 @@ export interface RuleMeta {
   id: string;
   /** Default severity when no override is supplied. */
   severity: Exclude<Severity, "off">;
+  /**
+   * For a rule whose hits explain themselves in more than one way: each
+   * variant has its own localized message, keyed `<id>.<variant>`, and a hit
+   * picks one with `RuleHit.messageVariant`. A rule without variants has one
+   * message, keyed by its `id`.
+   */
+  messageVariants?: readonly string[];
 }
 
 /**
@@ -139,6 +146,8 @@ export interface RuleHit {
   blockId: string | null;
   /** Interpolation values for the rule's localized message template. */
   params?: Record<string, string | number>;
+  /** One of the rule's `meta.messageVariants`: formats the message `<id>.<variant>`. */
+  messageVariant?: string;
   fix?: LintPatch;
 }
 
