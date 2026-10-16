@@ -7,16 +7,16 @@ import {
   colorFromPaint,
   columnRooms,
   emailBodyWidth,
-  imageFromPaint,
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
   withoutBandOverImage,
-  type ImageLayer,
-  type ReadBackgroundImage,
   type SectionPaint,
 } from "./css";
 import {
+  bandImage,
+  imageLayer,
+  imageOf,
   pushEntry,
   recordImageSpan,
   withBackground,
@@ -141,32 +141,6 @@ function bandColor($stripe: Cheerio<Element>): string {
     : "";
 }
 
-function imageOf(
-  $el: Cheerio<Element>,
-  label: string,
-  boxWidth: number,
-): ReadBackgroundImage | null {
-  return imageFromPaint(
-    $el.attr("style"),
-    $el.attr("background"),
-    label,
-    boxWidth,
-  );
-}
-
-/** The stripe's image: on the stripe, else on a table stripe's first cell, as `bandColor` reads colour. */
-function bandImage(
-  $stripe: Cheerio<Element>,
-  boxWidth: number,
-): ImageLayer | null {
-  const own = imageOf($stripe, "Stripe", boxWidth);
-  if (own) return { read: own, source: $stripe[0] };
-  if ($stripe.is("td") || $stripe.is("th")) return null;
-  const $cell = bandCell($stripe);
-  const cell = $cell.length > 0 ? imageOf($cell, "Stripe", boxWidth) : null;
-  return cell ? { read: cell, source: $stripe[0] } : null;
-}
-
 function paintFor($el: Cheerio<Element>, ctx: ConvertCtx): SectionPaint {
   const $stripe = enclosing($el, "[class~='esd-stripe']");
   const $body = enclosing($el, BODY_SELECTOR);
@@ -229,14 +203,10 @@ function sectionFromStructure(
     );
   }
   const $stripe = enclosing($structure, "[class~='esd-stripe']");
-  const structureImage = imageOf($structure, "Section", bodyWidth);
-  const bodyImage = $body ? imageOf($body, "Section", bodyWidth) : null;
   const image = resolveSectionImage({
-    structure: structureImage
-      ? { read: structureImage, source: $structure[0] }
-      : null,
-    body: bodyImage && $body ? { read: bodyImage, source: $body[0] } : null,
-    band: $stripe ? bandImage($stripe, bodyWidth) : null,
+    structure: imageLayer($structure, "Section", bodyWidth),
+    body: imageLayer($body, "Section", bodyWidth),
+    band: $stripe ? bandImage($stripe, bandCell($stripe), bodyWidth) : null,
     columns: frames.map(($f) => imageOf($f, "Column", bodyWidth)),
     bodyPainted: $body
       ? colorFromPaint($body.attr("style"), $body.attr("bgcolor")) !== ""
@@ -292,7 +262,7 @@ export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
     const image = resolveSectionImage({
       structure: null,
       body: null,
-      band: bandImage($stripe, 600),
+      band: bandImage($stripe, bandCell($stripe), 600),
       columns: [],
       bodyPainted: false,
     });

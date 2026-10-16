@@ -870,9 +870,11 @@ function droppedColumnsNote(columns: number[]): string {
 /**
  * The image a section paints, nearest first: the structure's own, then the
  * body's, then the containers', moved up when there is one or all share the
- * same image, then the stripe's while the body leaves it showing. Every
- * image the section can't keep is named in a note. The image is a copy, so
- * sections that share a source don't share an object.
+ * same image, then the stripe's while the body leaves it showing. An image
+ * that showed in the section but can't be kept is named in a note. A body
+ * image beneath the structure's own is covered in this section, so it isn't
+ * named; it still paints the stripe's other sections. The image is a copy,
+ * so sections that share a source don't share an object.
  */
 export function resolveSectionImage(layers: SectionImageLayers): SectionImage {
   const notes: string[] = [];

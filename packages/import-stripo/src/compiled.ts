@@ -7,7 +7,6 @@ import {
   colorFromPaint,
   columnRooms,
   emailBodyWidth,
-  imageFromPaint,
   readBoxPadding,
   resolveSectionImage,
   resolveSectionPaint,
@@ -17,7 +16,10 @@ import {
   type SectionPaint,
 } from "./css";
 import {
+  bandImage,
   blocksFromHtml,
+  imageLayer,
+  imageOf,
   pushEntry,
   recordImageSpan,
   withBackground,
@@ -90,32 +92,6 @@ function bandColor($stripe: Cheerio<Element>): string {
   if ($stripe.is("td") || $stripe.is("th")) return "";
   const $cell = directCell($stripe);
   return $cell.length > 0 ? paintOf($cell) : "";
-}
-
-function imageOf(
-  $el: Cheerio<Element>,
-  label: string,
-  boxWidth: number,
-): ReadBackgroundImage | null {
-  return imageFromPaint(
-    $el.attr("style"),
-    $el.attr("background"),
-    label,
-    boxWidth,
-  );
-}
-
-/** The stripe's image: on the stripe table, else on its cell, as `bandColor` reads colour. */
-function bandImage(
-  $stripe: Cheerio<Element>,
-  boxWidth: number,
-): ImageLayer | null {
-  const own = imageOf($stripe, "Stripe", boxWidth);
-  if (own) return { read: own, source: $stripe[0] };
-  if ($stripe.is("td") || $stripe.is("th")) return null;
-  const $cell = directCell($stripe);
-  const cell = $cell.length > 0 ? imageOf($cell, "Stripe", boxWidth) : null;
-  return cell ? { read: cell, source: $stripe[0] } : null;
 }
 
 /** A column's image: on its `es-left` / `es-right` table, else on that table's cell. */
@@ -456,13 +432,7 @@ function sectionsFromRow(
 
   const seam =
     rendered.length > 1 && hasPadding(padding) ? SEAM_NOTE : undefined;
-  const structureImage = $structure
-    ? imageOf($structure, "Section", bodyWidth)
-    : null;
-  const structure: ImageLayer | null =
-    structureImage && $structure
-      ? { read: structureImage, source: $structure[0] }
-      : null;
+  const structure = imageLayer($structure, "Section", bodyWidth);
   return rendered.map((group, index) => {
     const image = resolveSectionImage({
       structure,
@@ -515,11 +485,9 @@ function sectionsFromStripe(
     bandColor($stripe),
     $body.length > 0 ? paintOf($body) : "",
   );
-  const bodyImage =
-    $body.length > 0 ? imageOf($body, "Section", bodyWidth) : null;
   const images: StripeImages = {
-    body: bodyImage ? { read: bodyImage, source: $body[0] } : null,
-    band: bandImage($stripe, bodyWidth),
+    body: imageLayer($body, "Section", bodyWidth),
+    band: bandImage($stripe, directCell($stripe), bodyWidth),
     bodyPainted: $body.length > 0 && paintOf($body) !== "",
   };
   const out: Block[] = [];

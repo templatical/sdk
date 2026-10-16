@@ -1,6 +1,13 @@
+import type { Cheerio } from "cheerio";
+import type { Element } from "domhandler";
 import { convertHtmlTemplate } from "@templatical/import-html";
 import type { ImportReportEntry } from "@templatical/import-html";
 import type { Block, SectionBlock } from "@templatical/types";
+import {
+  imageFromPaint,
+  type ImageLayer,
+  type ReadBackgroundImage,
+} from "./css";
 
 export interface ConvertCtx {
   entries: ImportReportEntry[];
@@ -98,4 +105,47 @@ export function noteImageSpans(ctx: ConvertCtx): void {
       entry.note = entry.note ? `${entry.note} ${note}` : note;
     }
   }
+}
+
+/** The image an element paints: its inline CSS background, else its `background` attribute. */
+export function imageOf(
+  $el: Cheerio<Element>,
+  label: string,
+  boxWidth: number,
+): ReadBackgroundImage | null {
+  return imageFromPaint(
+    $el.attr("style"),
+    $el.attr("background"),
+    label,
+    boxWidth,
+  );
+}
+
+/** An element's image with that element as its source; `null` when there is no element or it paints none. */
+export function imageLayer(
+  $el: Cheerio<Element> | null,
+  label: string,
+  boxWidth: number,
+): ImageLayer | null {
+  if (!$el) return null;
+  const read = imageOf($el, label, boxWidth);
+  return read ? { read, source: $el[0] } : null;
+}
+
+/**
+ * The stripe's image: on the stripe, else on `$cell`, the cell Stripo paints
+ * instead of a table stripe, as the band colour is read. A `td` / `th` stripe
+ * is its own paint. The stripe names the image either way, since it is the
+ * element that spans the sections.
+ */
+export function bandImage(
+  $stripe: Cheerio<Element>,
+  $cell: Cheerio<Element>,
+  boxWidth: number,
+): ImageLayer | null {
+  const own = imageLayer($stripe, "Stripe", boxWidth);
+  if (own) return own;
+  if ($stripe.is("td") || $stripe.is("th")) return null;
+  const cell = $cell.length > 0 ? imageOf($cell, "Stripe", boxWidth) : null;
+  return cell ? { read: cell, source: $stripe[0] } : null;
 }
