@@ -83,6 +83,11 @@ const { t } = useI18n();
 
 const fontFamilies = fontsManager.fonts;
 
+const letterSpacingOptions = LETTER_SPACING_OPTIONS.map((value) => ({
+  value,
+  label: value === "normal" ? t.paragraphEditor.letterSpacingNormal : value,
+}));
+
 function insertEmoji(emoji: string): void {
   props.editor?.chain().focus().insertContent(emoji).run();
 }
@@ -338,15 +343,15 @@ function setHighlight(color: string): void {
             :model-value="getCurrentLineHeight()"
             :options="LINE_HEIGHT_OPTIONS"
             :label="t.paragraphEditor.lineHeight"
-            placeholder="LH"
+            :placeholder="t.paragraphEditor.lineHeightShort"
             width-class="tpl:w-16"
             @update:model-value="setLineHeight"
           />
           <ToolbarSelect
             :model-value="textStyleAttr('letterSpacing')"
-            :options="LETTER_SPACING_OPTIONS"
+            :options="letterSpacingOptions"
             :label="t.paragraphEditor.letterSpacing"
-            placeholder="LS"
+            :placeholder="t.paragraphEditor.letterSpacingShort"
             width-class="tpl:w-20"
             @update:model-value="setLetterSpacing"
           />

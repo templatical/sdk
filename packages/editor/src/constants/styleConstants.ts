@@ -177,14 +177,16 @@ export const LINE_HEIGHT_OPTIONS = [
   "2.5",
 ];
 
+// "normal" is labelled from translations where it's rendered; the rest are
+// shown as their value.
 export const LETTER_SPACING_OPTIONS = [
-  { label: "Normal", value: "normal" },
-  { label: "-0.5px", value: "-0.5px" },
-  { label: "0.5px", value: "0.5px" },
-  { label: "1px", value: "1px" },
-  { label: "1.5px", value: "1.5px" },
-  { label: "2px", value: "2px" },
-  { label: "3px", value: "3px" },
+  "normal",
+  "-0.5px",
+  "0.5px",
+  "1px",
+  "1.5px",
+  "2px",
+  "3px",
 ];
 
 // Default color constants

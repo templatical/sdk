@@ -132,6 +132,11 @@ export default {
     highlightColor: "Highlight Color",
     lineHeight: "Line Height",
     letterSpacing: "Letter Spacing",
+    // Placeholders of the narrow line-height and letter-spacing selects, which
+    // carry the full name as their tooltip. Keep each to about two characters.
+    lineHeightShort: "LH",
+    letterSpacingShort: "LS",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Insert emoji {emoji}",
   },
 

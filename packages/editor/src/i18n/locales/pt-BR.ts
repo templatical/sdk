@@ -134,6 +134,9 @@ const ptBR: typeof en = {
     highlightColor: "Cor de Destaque",
     lineHeight: "Altura da Linha",
     letterSpacing: "Espaçamento entre Letras",
+    lineHeightShort: "AL",
+    letterSpacingShort: "EL",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Inserir emoji {emoji}",
   },
 

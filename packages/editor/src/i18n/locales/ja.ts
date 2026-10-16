@@ -105,6 +105,9 @@ const translations: typeof en = {
     highlightColor: "ハイライト色",
     lineHeight: "行間",
     letterSpacing: "文字間隔",
+    lineHeightShort: "行間",
+    letterSpacingShort: "字間",
+    letterSpacingNormal: "標準",
     emojiItemLabel: "絵文字 {emoji} を挿入",
   },
   blockActions: {

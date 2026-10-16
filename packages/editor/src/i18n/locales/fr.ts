@@ -120,6 +120,9 @@ const fr: typeof en = {
     highlightColor: "Couleur de surlignage",
     lineHeight: "Interligne",
     letterSpacing: "Espacement des lettres",
+    lineHeightShort: "IL",
+    letterSpacingShort: "EL",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Insérer l'émoji {emoji}",
   },
   blockActions: {

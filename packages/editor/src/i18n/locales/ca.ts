@@ -134,6 +134,9 @@ const ca: typeof en = {
     highlightColor: "Color de ressaltat",
     lineHeight: "Interlínia",
     letterSpacing: "Espaiat de lletres",
+    lineHeightShort: "IL",
+    letterSpacingShort: "EL",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Insereix l'emoji {emoji}",
   },
 

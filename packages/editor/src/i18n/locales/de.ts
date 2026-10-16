@@ -136,6 +136,9 @@ const de: typeof en = {
     highlightColor: "Hervorhebungsfarbe",
     lineHeight: "Zeilenhöhe",
     letterSpacing: "Zeichenabstand",
+    lineHeightShort: "ZH",
+    letterSpacingShort: "ZA",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Emoji {emoji} einfügen",
   },
 

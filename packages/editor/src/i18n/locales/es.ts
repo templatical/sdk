@@ -135,6 +135,9 @@ const es: typeof en = {
     highlightColor: "Color de resaltado",
     lineHeight: "Interlineado",
     letterSpacing: "Espaciado entre letras",
+    lineHeightShort: "IL",
+    letterSpacingShort: "EL",
+    letterSpacingNormal: "Normal",
     emojiItemLabel: "Insertar emoji {emoji}",
   },
 

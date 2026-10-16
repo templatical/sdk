@@ -120,6 +120,9 @@ const nl: typeof en = {
     highlightColor: "Markeerkleur",
     lineHeight: "Regelafstand",
     letterSpacing: "Letterafstand",
+    lineHeightShort: "RA",
+    letterSpacingShort: "LA",
+    letterSpacingNormal: "Normaal",
     emojiItemLabel: "Emoji {emoji} invoegen",
   },
   blockActions: {
