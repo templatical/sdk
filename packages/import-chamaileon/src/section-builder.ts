@@ -200,6 +200,19 @@ export function buildFullwidth(
   return [section];
 }
 
+const BOX_IMAGE_DROPPED = "box background image dropped";
+
+function hasBoxImage(node: ChamaileonNode, ctx: MapContext): boolean {
+  return (
+    readChamaileonBackgroundImage(
+      readStyle(node, ctx.variables, ctx.stats),
+      "background",
+      "Box",
+      undefined,
+    ) !== null
+  );
+}
+
 function flattenBoxes(
   nodes: ChamaileonNode[],
   ctx: MapContext,
@@ -215,7 +228,18 @@ function flattenBoxes(
       continue;
     }
     const keepsImage = child === imageKept;
-    if (child !== silent && isPaintedBox(child, ctx, keepsImage)) {
+    if (child === silent) {
+      // The lone box's fill went up with the section's paint, so it stays
+      // silent; an image the section didn't keep is still lost and reported.
+      if (!keepsImage && hasBoxImage(child, ctx)) {
+        entries.push({
+          sourceTag: "box",
+          templaticalBlockType: null,
+          status: "approximated",
+          note: BOX_IMAGE_DROPPED,
+        });
+      }
+    } else if (isPaintedBox(child, ctx, keepsImage)) {
       reportPaintedBox(child, ctx, entries, keepsImage);
     }
     out.push(...flattenBoxes(child.children ?? [], ctx, entries, undefined));
@@ -288,12 +312,7 @@ function isPaintedBox(
 ): boolean {
   const style = readStyle(node, ctx.variables, ctx.stats);
   if (parseColor(styleValue(style, "backgroundColor"))) return true;
-  if (
-    !imageKept &&
-    readChamaileonBackgroundImage(style, "background", "Box", undefined)
-  ) {
-    return true;
-  }
+  if (!imageKept && hasBoxImage(node, ctx)) return true;
   const padding = parsePadding(style);
   if (
     padding.top !== 0 ||
@@ -315,13 +334,10 @@ function reportPaintedBox(
 ): void {
   const style = readStyle(node, ctx.variables, ctx.stats);
   const fill = parseColor(styleValue(style, "backgroundColor"));
-  const image =
-    !imageKept &&
-    readChamaileonBackgroundImage(style, "background", "Box", undefined) !==
-      null;
+  const image = !imageKept && hasBoxImage(node, ctx);
   const lost = [
     fill ? `box fill ${fill} dropped` : "",
-    image ? "box background image dropped" : "",
+    image ? BOX_IMAGE_DROPPED : "",
   ].filter(Boolean);
   entries.push({
     sourceTag: "box",

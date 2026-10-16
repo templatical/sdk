@@ -541,6 +541,54 @@ describe("buildFullwidth background images", () => {
     });
   });
 
+  it("reports a lone box's image the section doesn't keep", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: { contentBackgroundImage: "url(https://cdn.test/hero.jpg)" },
+      children: [
+        box(
+          { backgroundImage: "url(https://cdn.test/box.jpg)" },
+          text("<p>Hi</p>"),
+        ),
+      ],
+    });
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    expect(entries.filter((entry) => entry.sourceTag === "box")).toEqual([
+      {
+        sourceTag: "box",
+        templaticalBlockType: null,
+        status: "approximated",
+        note: "box background image dropped",
+      },
+    ]);
+  });
+
+  it("reports the image but not the copied fill of a lone box", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: { contentBackgroundImage: "url(https://cdn.test/hero.jpg)" },
+      children: [
+        box(
+          {
+            backgroundColor: "#123456",
+            backgroundImage: "url(https://cdn.test/box.jpg)",
+          },
+          text("<p>Hi</p>"),
+        ),
+      ],
+    });
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    expect(entries.filter((entry) => entry.sourceTag === "box")).toEqual([
+      {
+        sourceTag: "box",
+        templaticalBlockType: null,
+        status: "approximated",
+        note: "box background image dropped",
+      },
+    ]);
+  });
+
   it("reports a content size with no keyword", () => {
     const { entries } = sectionOf({
       type: "fullwidth",
