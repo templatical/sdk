@@ -10,7 +10,9 @@ import {
   parseLineStyle,
   parsePadding,
   parsePx,
+  readChamaileonBackgroundImage,
 } from "../attribute-parser";
+import { readStyle } from "../normalize";
 
 describe("parsePx", () => {
   it("parses a px length", () => {
@@ -134,4 +136,87 @@ describe("fontStack", () => {
     expect(fontStack(undefined)).toBeUndefined();
     expect(fontStack(12)).toBeUndefined();
   });
+});
+
+describe("readChamaileonBackgroundImage", () => {
+  it("returns null for an unset image", () => {
+    expect(
+      readChamaileonBackgroundImage({}, "background", "Section", 600),
+    ).toBeNull();
+    expect(
+      readChamaileonBackgroundImage(
+        { backgroundImage: "url()", backgroundSize: "auto" },
+        "background",
+        "Section",
+        600,
+      ),
+    ).toBeNull();
+  });
+
+  it("reads Chamaileon's own four keys exactly", () => {
+    expect(
+      readChamaileonBackgroundImage(
+        {
+          backgroundImage: "url(https://images.chamaileon.io/mav-header.jpg)",
+          backgroundSize: "auto",
+          backgroundPosition: "center center",
+          backgroundRepeat: "no-repeat",
+        },
+        "background",
+        "Box",
+        600,
+      ),
+    ).toEqual({
+      image: {
+        url: "https://images.chamaileon.io/mav-header.jpg",
+        size: "auto",
+        position: { x: "center", y: "center" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("reads the content-area keys, kebab-case from 2.0 documents too", () => {
+    const style = readStyle(
+      {
+        type: "fullwidth",
+        style: {
+          "content-background-image": "url('https://cdn.test/hero.jpg')",
+          "content-background-size": "cover",
+        },
+      },
+      [],
+    );
+    expect(
+      readChamaileonBackgroundImage(style, "contentBackground", "Section", 600)
+        ?.image,
+    ).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+  });
+
+  it.each([
+    ["backgroundSize", "100% auto", "background-size", "cover"],
+    ["backgroundSize", "50%", "background-size", "auto"],
+    ["backgroundPosition", "30% 80%", "background-position", "center bottom"],
+    ["backgroundRepeat", "repeat-x", "background-repeat", "repeat"],
+  ])(
+    "maps %s %s to the nearest keyword, with a note",
+    (key, value, property, shown) => {
+      expect(
+        readChamaileonBackgroundImage(
+          { backgroundImage: "url(u)", [key]: value },
+          "background",
+          "Section",
+          600,
+        )?.notes,
+      ).toEqual([
+        `Section ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+      ]);
+    },
+  );
 });

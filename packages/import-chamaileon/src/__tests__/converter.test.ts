@@ -339,6 +339,35 @@ describe("convertChamaileonTemplate document warnings", () => {
   });
 });
 
+describe("convertChamaileonTemplate page background image", () => {
+  const docWithBodyImage = (backgroundImage: string): ChamaileonDocument => ({
+    body: {
+      eid: "root",
+      type: "body",
+      children: [],
+      style: { bodyWidth: 600, backgroundColor: "#ffffff", backgroundImage },
+    },
+  });
+
+  it("drops the body's background image with a warning", () => {
+    const { report } = convertChamaileonTemplate(
+      docWithBodyImage("url(https://cdn.test/page.jpg)"),
+    );
+    expect(report.warnings).toContain(
+      'The email background image "https://cdn.test/page.jpg" was dropped; Templatical has no email-level background image.',
+    );
+  });
+
+  it("stays quiet for Chamaileon's unset url()", () => {
+    const { report } = convertChamaileonTemplate(docWithBodyImage("url()"));
+    expect(
+      report.warnings.some((warning) =>
+        warning.includes("email background image"),
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("convertChamaileonTemplate corpus smoke", () => {
   it.skipIf(!existsSync(CORPUS))(
     "imports welcome-email into 10 sections with a teal hero button",

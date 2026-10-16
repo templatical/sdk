@@ -9739,9 +9739,9 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 
 | Chamaileon | Templatical block | Notes |
 |---|---|---|
-| `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty. |
-| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. |
-| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. |
+| `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
+| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
+| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section the same way; a box image among siblings is dropped, `approximated`. |
 | `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's five layouts. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
@@ -9756,6 +9756,18 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | Any other `type` | `HtmlBlock` | The raw node is preserved as JSON, flagged `html-fallback`. |
 
 `hideOnMobile` / `hideOnDesktop` map onto `visibility`. Absent when both flags are false.
+
+### Background images {#background-images}
+
+A fullwidth's section image is, nearest first:
+
+1. `contentBackgroundImage`, the content area the section paints.
+2. The `backgroundImage` of a box that is the fullwidth's only child, which moves up as its colour does.
+3. The band's `backgroundImage`, only while the content area has no colour. The section paints it at the content width, takes the band colour as its fill, and the entry is `approximated`.
+
+A band image the content area covers is dropped, and the entry notes it. When the section has its own image, the band colour is dropped too, with a note, instead of becoming `wrapper.backgroundColor`: Outlook desktop paints a wrapper colour over the section's image.
+
+`backgroundSize`, `backgroundPosition` and `backgroundRepeat` (and their `content…` forms) come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge; `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
 ## Lossy conversions
 

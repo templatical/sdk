@@ -150,9 +150,9 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 
 | Chamaileon | Templatical-Block | Hinweise |
 |---|---|---|
-| `body` | Template-`settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText`, wenn nicht leer. |
-| `fullwidth` | `SectionBlock` | Äußeres `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → Padding. Ein Fullwidth ohne `multicolumn` ist `columns: "1"`. |
-| `box` | In das Elternelement abgeflacht | Transparente Boxen verschwinden ohne Eintrag. Eine bemalte Box, die einziges Kind eines Fullwidth ohne Content-Fill ist, kopiert diese Farbe auf die Sektion. Eine bemalte Box unter Geschwistern wird abgeflacht, `approximated`. |
+| `body` | Template-`settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText`, wenn nicht leer; ein `backgroundImage` wird verworfen und in `report.warnings` genannt. |
+| `fullwidth` | `SectionBlock` | Äußeres `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → Padding. Ein Fullwidth ohne `multicolumn` ist `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; `backgroundImage` und Farbe des Bands folgen [Hintergrundbilder](#hintergrundbilder). |
+| `box` | In das Elternelement abgeflacht | Transparente Boxen verschwinden ohne Eintrag. Eine bemalte Box, die einziges Kind eines Fullwidth ohne Content-Fill ist, kopiert diese Farbe auf die Sektion. Eine bemalte Box unter Geschwistern wird abgeflacht, `approximated`. Das Hintergrundbild einer einzelnen Box wandert ebenso auf die Sektion; ein Box-Bild unter Geschwistern wird verworfen, `approximated`. |
 | `multicolumn` + `column` | Section-`columns` / `children[i]` | Pixelbreiten werden in Prozent von `bodyWidth` umgerechnet und auf Templaticals fünf Layouts gematcht. Eine verschachtelte `multicolumn` kann kein verschachtelter `SectionBlock` werden — innere Spalten fließen in die Elternspalte, `approximated`. |
 | `text` | `TitleBlock` oder `ParagraphBlock` | Abgeleitet aus dem HTML in `attrs.text`: eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zum Title; alles andere zum Paragraph. |
 | `typed-text` | `TitleBlock` oder `ParagraphBlock` | `style.subType === "title"` → Title; `"list"` → Paragraph, `approximated`; sonst Paragraph. |
@@ -167,6 +167,18 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 | Jeder andere `type` | `HtmlBlock` | Der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
 
 `hideOnMobile` / `hideOnDesktop` werden auf `visibility` abgebildet. Fehlt, wenn beide Flags falsch sind.
+
+### Hintergrundbilder
+
+Das Bild der Sektion eines Fullwidth ist, vom nächstliegenden an:
+
+1. `contentBackgroundImage`, die Inhaltsfläche, die die Sektion zeichnet.
+2. Das `backgroundImage` einer Box, die das einzige Kind des Fullwidth ist; es wandert wie ihre Farbe nach oben.
+3. Das `backgroundImage` des Bands, nur solange die Inhaltsfläche keine Farbe hat. Die Sektion zeichnet es in Inhaltsbreite, übernimmt die Farbe des Bands als Füllung, und der Eintrag ist `approximated`.
+
+Ein Band-Bild, das die Inhaltsfläche verdeckt, wird verworfen, und der Eintrag vermerkt es. Hat die Sektion ein eigenes Bild, wird auch die Farbe des Bands mit einer Notiz verworfen, statt `wrapper.backgroundColor` zu werden: Outlook für Desktop malt eine Wrapper-Farbe über das Bild der Sektion.
+
+`backgroundSize`, `backgroundPosition` und `backgroundRepeat` (sowie ihre `content…`-Formen) werden mitgenommen, wo nicht gesetzt mit den CSS-Anfangswerten. Eine Größe, die eine Seite füllt (`100%`, `100% auto` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`; eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand; `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`. Jeder solche Wert wird vermerkt.
 
 ## Verlustbehaftete Konvertierung
 

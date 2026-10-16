@@ -1,6 +1,11 @@
 import { createSectionBlock } from "@templatical/types";
 import type { Block, BlockVisibility, SpacingValue } from "@templatical/types";
-import { parseColor, parsePadding, parsePx } from "./attribute-parser";
+import {
+  parseColor,
+  parsePadding,
+  parsePx,
+  readChamaileonBackgroundImage,
+} from "./attribute-parser";
 import {
   convertLeaf,
   isLoopType,
@@ -34,6 +39,18 @@ export function buildFullwidth(
   const attrs = readAttrs(node, ctx.variables, ctx.stats);
   const contentFill = parseColor(styleValue(style, "contentBackgroundColor"));
   const outerFill = parseColor(styleValue(style, "backgroundColor"));
+  const content = readChamaileonBackgroundImage(
+    style,
+    "contentBackground",
+    "Section",
+    ctx.bodyWidth,
+  );
+  const band = readChamaileonBackgroundImage(
+    style,
+    "background",
+    "fullwidth",
+    ctx.bodyWidth,
+  );
 
   const original = node.children ?? [];
   const sole = original.length === 1 ? original[0] : undefined;
@@ -41,12 +58,22 @@ export function buildFullwidth(
     sole?.type === "box" &&
     isPaintedBox(sole, ctx) &&
     contentFill === undefined;
+  const soleImage =
+    sole?.type === "box" && !content
+      ? readChamaileonBackgroundImage(
+          readStyle(sole, ctx.variables, ctx.stats),
+          "background",
+          "Box",
+          ctx.bodyWidth,
+        )
+      : null;
 
   const flattened = flattenBoxes(
     original,
     ctx,
     entries,
     copySoleFill ? sole : undefined,
+    soleImage ? sole : undefined,
   );
   if (flattened.length === 0) return [];
 
@@ -129,7 +156,36 @@ export function buildFullwidth(
 
   section.styles.padding = contentPadding(style);
   if (fill) section.styles.backgroundColor = fill;
-  if (outerFill) section.wrapper = { backgroundColor: outerFill };
+
+  const own = content ?? soleImage;
+  let backgroundImage = own?.image;
+  if (own) reasons.push(...own.notes);
+  if (band) {
+    if (!own && fill === undefined) {
+      backgroundImage = band.image;
+      reasons.push(
+        ...band.notes,
+        "fullwidth background image spans the full width in Chamaileon; the section paints it at the content width.",
+      );
+    } else {
+      reasons.push(
+        "fullwidth background image outside the content width was dropped.",
+      );
+    }
+  }
+  if (backgroundImage) section.backgroundImage = backgroundImage;
+
+  if (outerFill) {
+    if (!backgroundImage) {
+      section.wrapper = { backgroundColor: outerFill };
+    } else if (backgroundImage === band?.image) {
+      section.styles.backgroundColor = outerFill;
+    } else {
+      reasons.push(
+        `fullwidth background colour ${outerFill} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
+      );
+    }
+  }
 
   const visibility = readVisibility(attrs);
   if (visibility) section.visibility = visibility;
@@ -149,6 +205,7 @@ function flattenBoxes(
   ctx: MapContext,
   entries: ImportReportEntry[],
   silent: ChamaileonNode | undefined,
+  imageKept?: ChamaileonNode,
 ): ChamaileonNode[] {
   const out: ChamaileonNode[] = [];
   for (const child of nodes) {
@@ -157,8 +214,9 @@ function flattenBoxes(
       out.push(child);
       continue;
     }
-    if (child !== silent && isPaintedBox(child, ctx)) {
-      reportPaintedBox(child, ctx, entries);
+    const keepsImage = child === imageKept;
+    if (child !== silent && isPaintedBox(child, ctx, keepsImage)) {
+      reportPaintedBox(child, ctx, entries, keepsImage);
     }
     out.push(...flattenBoxes(child.children ?? [], ctx, entries, undefined));
   }
@@ -219,9 +277,23 @@ function convertColumnChildren(
   return blocks;
 }
 
-function isPaintedBox(node: ChamaileonNode, ctx: MapContext): boolean {
+/**
+ * Whether flattening the box loses paint: a fill, padding, a radius, or a
+ * background image the section doesn't keep (`imageKept`).
+ */
+function isPaintedBox(
+  node: ChamaileonNode,
+  ctx: MapContext,
+  imageKept = false,
+): boolean {
   const style = readStyle(node, ctx.variables, ctx.stats);
   if (parseColor(styleValue(style, "backgroundColor"))) return true;
+  if (
+    !imageKept &&
+    readChamaileonBackgroundImage(style, "background", "Box", undefined)
+  ) {
+    return true;
+  }
   const padding = parsePadding(style);
   if (
     padding.top !== 0 ||
@@ -239,15 +311,23 @@ function reportPaintedBox(
   node: ChamaileonNode,
   ctx: MapContext,
   entries: ImportReportEntry[],
+  imageKept = false,
 ): void {
-  const fill = parseColor(
-    styleValue(readStyle(node, ctx.variables, ctx.stats), "backgroundColor"),
-  );
+  const style = readStyle(node, ctx.variables, ctx.stats);
+  const fill = parseColor(styleValue(style, "backgroundColor"));
+  const image =
+    !imageKept &&
+    readChamaileonBackgroundImage(style, "background", "Box", undefined) !==
+      null;
+  const lost = [
+    fill ? `box fill ${fill} dropped` : "",
+    image ? "box background image dropped" : "",
+  ].filter(Boolean);
   entries.push({
     sourceTag: "box",
     templaticalBlockType: null,
     status: "approximated",
-    note: fill ? `box fill ${fill} dropped` : "box padding/radius dropped",
+    note: lost.length > 0 ? lost.join("; ") : "box padding/radius dropped",
   });
 }
 
