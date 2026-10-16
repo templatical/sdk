@@ -4,7 +4,11 @@ import type {
   TitleBlock as TitleBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { HEADING_LEVEL_FONT_SIZE, TITLE_LINE_HEIGHT } from "@templatical/types";
+import {
+  HEADING_LEVEL_FONT_SIZE,
+  TITLE_FONT_WEIGHT,
+  TITLE_LINE_HEIGHT,
+} from "@templatical/types";
 import { computed, defineAsyncComponent } from "vue";
 import { unwrapParagraph } from "../../utils/unwrapParagraph";
 import { FONTS_MANAGER_KEY, requireInject } from "../../keys";
@@ -32,8 +36,9 @@ const titleStyle = computed(() => {
   const style: Record<string, string> = {
     fontSize: `${fontSize}px`,
     // On the wrapper so the view heading and the edit surface inherit the
-    // same value the renderer writes onto the title's `mj-text`.
+    // same values the renderer writes onto the title's `mj-text` and heading.
     lineHeight: String(TITLE_LINE_HEIGHT),
+    fontWeight: String(TITLE_FONT_WEIGHT),
     textAlign: props.block.textAlign,
   };
   // Unset color = inherit the canvas text color (the document `textColor`).
@@ -68,7 +73,7 @@ const headingHtml = computed(() => unwrapParagraph(resolvedContent.value));
       :is="headingTag"
       v-else
       class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-[inherit] tpl:outline-none"
-      :style="{ color: 'inherit' }"
+      :style="{ color: 'inherit', fontWeight: 'inherit' }"
       v-html="headingHtml"
     />
     <!-- eslint-enable vue/no-v-html, vue/no-v-text-v-html-on-component -->

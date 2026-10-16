@@ -117,6 +117,8 @@ pixel width does not shrink on a phone.
 - `content` is the heading text; inline HTML is allowed.
 - `level` is one of `1`, `2`, `3`, `4` — `1` is the largest.
 - `color` inherits `settings.textColor` when unset.
+- A title is always bold (weight 700), so don't wrap the whole `content` in
+  `<strong>`: in web-safe fonts it changes nothing.
 
 ### paragraph
 

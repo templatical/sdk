@@ -72,6 +72,32 @@ describe("title heading does not nest <p>", () => {
   });
 });
 
+describe("title weight survives the MJML compile", () => {
+  // The weight is declared on the heading rather than left to each client's
+  // default heading style, so a page that resets headings (Tailwind preflight
+  // sets `font-weight: inherit`) still shows the title as the canvas does.
+  it.each([1, 2, 3, 4] as const)(
+    "h%i declares weight 700 in the compiled HTML",
+    async (level) => {
+      const block = createTitleBlock({ content: "<p>Title</p>", level });
+      const html = await compile(wrapBlock(renderBlock(block, ctx)));
+      const heading = html.match(new RegExp(`<h${level}\\b[^>]*>`, "i"));
+      expect(heading?.[0]).toMatch(/style="[^"]*font-weight:\s*700/);
+    },
+  );
+
+  it("keeps inline bold inside the heading", async () => {
+    const block = createTitleBlock({
+      content: "<p>Big <strong>news</strong></p>",
+      level: 2,
+    });
+    const html = await compile(wrapBlock(renderBlock(block, ctx)));
+    expect(html).toMatch(
+      /<h2\b[^>]*font-weight:\s*700[^>]*>Big <strong>news<\/strong><\/h2>/,
+    );
+  });
+});
+
 describe("column widths sum to 100%", () => {
   it("three-column layout columns should sum to 100% in compiled HTML", async () => {
     const section = createSectionBlock({

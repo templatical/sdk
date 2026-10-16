@@ -1220,7 +1220,7 @@ describe("convertElement — a container wrapping one block-level element", () =
     // the colour and reads the alignment off nothing.
     const { $, $el } = firstEl(
       '<div style="font-family:Arial, sans-serif;font-size:22px;text-align:center;color:#ff0000">' +
-        '<h3 style="margin:0;font-size:inherit;color:inherit;line-height:inherit">Inheriting heading</h3>' +
+        '<h3 style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:700">Inheriting heading</h3>' +
         "</div>",
       "div",
     );

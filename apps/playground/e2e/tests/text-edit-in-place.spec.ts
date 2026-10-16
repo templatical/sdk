@@ -120,6 +120,23 @@ test.describe("text blocks edit in place", () => {
     expectSameBox(edit, view);
   });
 
+  test("a title keeps the email's weight when editing starts", async ({
+    openSharedContent,
+    page,
+  }) => {
+    await openSharedContent("text-edit-in-place", CONTENT);
+    const title = block(page, "in-place-title");
+    const weightOf = (element: Locator) =>
+      element.evaluate((el) => getComputedStyle(el).fontWeight);
+    // 700 is what the renderer writes onto the exported heading. The edit
+    // surface is a <p>, so without the wrapper's weight it drops to 400.
+    expect(await weightOf(title.locator(".tpl-text-content"))).toBe("700");
+    await title.dblclick();
+    const editText = title.locator(".tiptap p").first();
+    await editText.waitFor();
+    expect(await weightOf(editText)).toBe("700");
+  });
+
   test("the editing ring is an outline outside the text", async ({
     openSharedContent,
     page,
