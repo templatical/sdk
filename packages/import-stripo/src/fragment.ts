@@ -50,10 +50,16 @@ function fragmentDocument(inner: string, css?: string): string {
   return `<!DOCTYPE html><html>${head}<body>${inner}</body></html>`;
 }
 
+/** The start of the HTML importer's page-image warning. */
+const PAGE_IMAGE_WARNING = "The email background image ";
+
 /**
  * Run the generic HTML importer on a subtree and keep its blocks.
  * Section entries belong to the row the HTML importer invented; Stripo's own
- * section entries are recorded by the caller.
+ * section entries are recorded by the caller. A fragment's `<body>` is
+ * synthetic, so the page-image warning the HTML importer raises for a `body`
+ * background in the caller's CSS is dropped; Stripo reports the page image
+ * once, from `es-wrapper`.
  */
 export function blocksFromHtml(inner: string, ctx: ConvertCtx): Block[] {
   const result = convertHtmlTemplate(fragmentDocument(inner, ctx.css));
@@ -61,7 +67,11 @@ export function blocksFromHtml(inner: string, ctx: ConvertCtx): Block[] {
     if (entry.templaticalBlockType === "section") continue;
     ctx.entries.push(entry);
   }
-  ctx.warnings.push(...result.report.warnings);
+  ctx.warnings.push(
+    ...result.report.warnings.filter(
+      (warning) => !warning.startsWith(PAGE_IMAGE_WARNING),
+    ),
+  );
   return flattenBlocks(result.content.blocks);
 }
 

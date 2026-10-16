@@ -818,6 +818,24 @@ describe("compiled background images", () => {
   });
 });
 
+describe("page background image from options.css", () => {
+  it("raises no page warning per fragment for a body image in the caller's CSS", () => {
+    const html = compiled(
+      contentBody(`<tr><td><p>One</p></td></tr>`) +
+        contentBody(`<tr><td><p>Two</p></td></tr>`),
+    );
+    const { content, report } = convertStripoTemplate(html, {
+      css: "body{background-image:url(https://cdn.example/x.png)}",
+    });
+    expect(sections(content.blocks)).toHaveLength(2);
+    expect(
+      report.warnings.filter((warning) =>
+        warning.includes("email background image"),
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe("editor fidelity", () => {
   function editorDoc(structure: string, stripeStyle = ""): string {
     return `<!DOCTYPE html><html><body>
