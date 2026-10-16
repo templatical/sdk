@@ -122,6 +122,20 @@ const cases: Array<
   ],
   ["body width 640", 280, (w) => doc([section("2", 0, image(w))], 640)],
   [
+    // The band is searched first and holds no image, so its padding must not
+    // narrow the content that follows it.
+    "after a layout header band",
+    260,
+    (w) => doc([section("2", 0, image(w))]),
+    doc([
+      createWrapperBlock({
+        styles: { padding: { top: 0, right: 30, bottom: 0, left: 30 } },
+        children: [createSectionBlock({ columns: "1", children: [[]] })],
+      }),
+      createSlotBlock(),
+    ]),
+  ],
+  [
     "inside a layout wrapper",
     230,
     (w) => doc([section("2", 1, image(w))]),
