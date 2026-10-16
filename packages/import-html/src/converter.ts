@@ -14,7 +14,14 @@ import {
   walkContentNodes,
 } from "./block-mapper";
 import { processTable } from "./section-builder";
-import { parseColor, parsePxValue, parseStyleAttribute } from "./style-parser";
+import {
+  backgroundShorthandColor,
+  parseColor,
+  parsePxValue,
+  parseStyleAttribute,
+  readCssBackground,
+  readLegacyBackground,
+} from "./style-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
 function emptyPadding() {
@@ -50,7 +57,7 @@ function extractSettings(
   const fontFamily = canonicalFontStack(bodyStyles["font-family"]) || "Arial";
   const backgroundColor =
     parseColor(bodyStyles["background-color"]) ||
-    parseColor(bodyStyles.background) ||
+    parseColor(backgroundShorthandColor(bodyStyles.background)) ||
     "#ffffff";
 
   // Width heuristic: outermost table width attr, or ".container" width style.
@@ -218,6 +225,22 @@ function processBody(
 }
 
 /**
+ * The page's background image, which has no Templatical equivalent: the
+ * body's CSS background, else its legacy `background` attribute.
+ */
+function pageImageWarning($: CheerioAPI): string | null {
+  const $body = $("body");
+  const styles = parseStyleAttribute($body.attr("style"));
+  const read =
+    styles["background-image"] !== undefined || styles.background !== undefined
+      ? readCssBackground(styles, "Body", undefined)
+      : readLegacyBackground($body.attr("background"), "Body", undefined);
+  return read
+    ? `The email background image "${read.image.url}" was dropped; Templatical has no email-level background image.`
+    : null;
+}
+
+/**
  * Converts an HTML email template to Templatical TemplateContent.
  *
  * Designed for table-based marketing email HTML (output of MJML, Mailchimp,
@@ -263,6 +286,8 @@ export function convertHtmlTemplate(html: string): ImportResult {
   const warnings: string[] = [];
 
   const settings = extractSettings($, linkUnderline);
+  const pageImage = pageImageWarning($);
+  if (pageImage) warnings.push(pageImage);
   const blocks = processBody($, entries, warnings, settings.width);
 
   if (blocks.length === 0) {

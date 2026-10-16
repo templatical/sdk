@@ -2953,3 +2953,171 @@ describe("extractCellBlocks — the cell's padding insets the blocks it holds", 
     ]);
   });
 });
+
+describe("processTable — a section's background image is the nearest image", () => {
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  function sectionEntries(entries: ImportReportEntry[]): ImportReportEntry[] {
+    return entries.filter((entry) => entry.templaticalBlockType === "section");
+  }
+
+  const CONVERTED: ImportReportEntry = {
+    sourceTag: "tr",
+    templaticalBlockType: "section",
+    status: "converted",
+  };
+
+  const twoColumnTable =
+    '<table role="presentation"><tr>' +
+    "<td><h2>Left heading</h2></td>" +
+    "<td><p>Right copy.</p></td>" +
+    "</tr></table>";
+
+  it("reads a row's background-image and its longhands", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr style="background-image:url(https://cdn.test/hero.jpg);' +
+        'background-size:cover;background-position:center top;background-repeat:no-repeat">' +
+        "<td><p>Copy</p></td></tr></table>",
+    );
+    expect(onlySection(blocks).backgroundImage).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "center", y: "top" },
+      repeat: false,
+    });
+    expect(sectionEntries(entries)).toEqual([CONVERTED]);
+  });
+
+  it("moves a one-cell row's background attribute up to the section", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td background="https://cdn.test/tile.gif" bgcolor="#7bceeb"><p>Copy</p></td>' +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/tile.gif",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+    expect(section.styles.backgroundColor).toBe("#7bceeb");
+    expect(sectionEntries(entries)).toEqual([CONVERTED]);
+  });
+
+  it("moves an image every column shares up to the section", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td background="https://cdn.test/a.png"><p>Left</p></td>' +
+        '<td background="https://cdn.test/a.png"><p>Right</p></td>' +
+        "</tr></table>",
+    );
+    expect(onlySection(blocks).backgroundImage?.url).toBe(
+      "https://cdn.test/a.png",
+    );
+    expect(sectionEntries(entries)).toEqual([CONVERTED]);
+  });
+
+  it("drops column images that differ, naming the columns", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td background="https://cdn.test/a.png"><p>Left</p></td>' +
+        '<td background="https://cdn.test/b.png"><p>Right</p></td>' +
+        "</tr></table>",
+    );
+    expect(onlySection(blocks).backgroundImage).toBeUndefined();
+    expect(sectionEntries(entries)).toEqual([
+      {
+        sourceTag: "tr",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "Background images on columns 1, 2 were dropped. A Templatical section has one background image.",
+      },
+    ]);
+  });
+
+  it("keeps the row's own image over a column's, and names the column", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr style="background-image:url(https://cdn.test/row.png)">' +
+        '<td background="https://cdn.test/cell.png"><p>Copy</p></td></tr></table>',
+    );
+    expect(onlySection(blocks).backgroundImage?.url).toBe(
+      "https://cdn.test/row.png",
+    );
+    expect(sectionEntries(entries)[0].note).toBe(
+      "The background image on column 1 was dropped. A Templatical section has one background image.",
+    );
+  });
+
+  it("takes the table's image when nothing nearer paints one", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" background="https://cdn.test/t.png">' +
+        "<tr><td><p>A</p></td></tr></table>",
+    );
+    expect(onlySection(blocks).backgroundImage?.url).toBe(
+      "https://cdn.test/t.png",
+    );
+    expect(sectionEntries(entries)).toEqual([CONVERTED]);
+  });
+
+  it("copies a table's image onto each of its rows' sections, and says so", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation" background="https://cdn.test/t.png">' +
+        "<tr><td><p>A</p></td></tr><tr><td><p>B</p></td></tr></table>",
+    );
+    const [a, b] = blocks as SectionBlock[];
+    expect(a.backgroundImage?.url).toBe("https://cdn.test/t.png");
+    expect(b.backgroundImage).toEqual(a.backgroundImage);
+    expect(b.backgroundImage).not.toBe(a.backgroundImage);
+    const spread =
+      "A background image behind 2 sections was applied to each of them — Templatical has no multi-section band.";
+    expect(sectionEntries(entries).map((entry) => entry.note)).toEqual([
+      spread,
+      spread,
+    ]);
+  });
+
+  it("carries a wrapper cell's image down to the section below", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td style="background-image:url(https://cdn.test/w.png)">' +
+        twoColumnTable +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.columns).toBe("2");
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/w.png");
+  });
+
+  it("keeps a row with a background image as the section that carries it", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr style="background-image:url(https://cdn.test/r.png)"><td>' +
+        twoColumnTable +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.columns).toBe("1");
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/r.png");
+  });
+
+  it("reads a section colour and image out of a background shorthand", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr style="background:#123456 url(https://cdn.test/r.png) no-repeat">' +
+        "<td><p>Copy</p></td></tr></table>",
+    );
+    const section = onlySection(blocks);
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/r.png",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: false,
+    });
+    expect(sectionEntries(entries)).toEqual([CONVERTED]);
+  });
+});

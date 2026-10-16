@@ -10190,9 +10190,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper rows
 
-Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour, no background image and no padding — a row failing any of those becomes a section of its own, because the section is what carries a row's background and padding.
 
-A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it.
+A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it. So does a background image on the cell or the table; when one lands on more than one section, each of those entries is `approximated` with a note.
 
 ### Gutter rows
 
@@ -10214,13 +10214,23 @@ Templatical sections cannot nest. Tables nested inside a `<td>` are flattened �
 
 ### Section backgrounds
 
-A section takes the nearest fill, read from a `background-color` style, a `background` colour or a `bgcolor` attribute:
+A section takes the nearest fill, read from a `background-color` style, the colour in a `background` shorthand (even one that also sets an image) or a `bgcolor` attribute:
 
 1. The `<tr>`.
 2. The row's cells, when they all share one fill. Gutter cells do not count, and a cell whose entire content is one styled text `<a>` keeps its colour on the `button`.
 3. The `<table>` holding the row, then the tables and wrapper cells around it.
 
 A section has one background colour, so a row whose cells render on different fills is approximated, and its `note` names each cell's fill.
+
+### Section background images {#background-images}
+
+A section takes the nearest image, read from a `background-image` style, the image in a `background` shorthand, or the `background` attribute of a `<table>`, `<td>` or `<th>`. Any CSS background declaration on the element overrides the attribute.
+
+1. The `<tr>`, or the cell holding a row's column containers.
+2. The row's columns, when there is one or they all share the same image. Gutter cells don't count, and neither does a cell whose entire content is one styled text `<a>`. Columns whose images differ, and column images beside a nearer image, are dropped, and the `note` names the columns.
+3. The `<table>` holding the row, then the wrapper cells and tables around it. An image that lands on several sections is copied onto each, and each of those entries is `approximated` with a note.
+
+`background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, longhands winning over the shorthand, with CSS's initial values (`auto`, `0% 0%`, `repeat`) where unset. A bare `background` attribute tiles from the top left at the image's own size, as a browser draws it. A value with no exact keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Of several layers the first image is kept, and the note says so.
 
 ### Cell padding {#cell-padding}
 
@@ -10248,7 +10258,8 @@ For best fidelity, inline your styles before importing. Most production marketin
 Global template settings are extracted from the document:
 
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
-- **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
+- **Background color** — `<body>` `background-color` style, or the colour in its `background` shorthand. Defaults to `#ffffff`.
+- **Background image** — a `<body>` background image (style or `background` attribute) has no Templatical equivalent. It's dropped, and `report.warnings` names it.
 - **Font family** — `<body>` `font-family` style. Defaults to `Arial`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 - **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.

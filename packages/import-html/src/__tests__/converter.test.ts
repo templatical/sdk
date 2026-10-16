@@ -1107,3 +1107,23 @@ describe("convertHtmlTemplate — font stacks", () => {
     expect(content.settings.fontFamily).toBe("Georgia");
   });
 });
+
+describe("convertHtmlTemplate — the page background", () => {
+  it("reads the page colour out of a background shorthand", () => {
+    const { content } = convertHtmlTemplate(
+      '<html><body style="background:#eeeeee url(https://cdn.test/page.jpg) repeat">' +
+        '<table role="presentation"><tr><td><p>Copy</p></td></tr></table></body></html>',
+    );
+    expect(content.settings.backgroundColor).toBe("#eeeeee");
+  });
+
+  it("drops the page's background image with a warning", () => {
+    const { report } = convertHtmlTemplate(
+      '<html><body background="https://cdn.test/page.jpg">' +
+        '<table role="presentation"><tr><td><p>Copy</p></td></tr></table></body></html>',
+    );
+    expect(report.warnings).toContain(
+      'The email background image "https://cdn.test/page.jpg" was dropped; Templatical has no email-level background image.',
+    );
+  });
+});

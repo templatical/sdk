@@ -6,7 +6,12 @@ import {
   createButtonBlock,
   createSpacerBlock,
 } from "@templatical/types";
-import type { Block, ColumnLayout, SpacingValue } from "@templatical/types";
+import type {
+  BackgroundImage,
+  Block,
+  ColumnLayout,
+  SpacingValue,
+} from "@templatical/types";
 import {
   columnDivsOf,
   convertElement,
@@ -25,12 +30,16 @@ import {
 } from "./column-ratio";
 import type { ColumnWidth } from "./column-ratio";
 import {
+  backgroundShorthandColor,
   parseColor,
   parseLegacyColor,
   parsePxValue,
   parseStyleAttribute,
+  readCssBackground,
+  readLegacyBackground,
   readPaddingFromStyles,
 } from "./style-parser";
+import type { ReadBackgroundImage } from "./style-parser";
 import type { ImportReportEntry } from "./types";
 
 function emptyPadding() {
@@ -68,13 +77,14 @@ function readHostPadding($el: Cheerio<Element>): SpacingValue {
 
 /**
  * The colour an element paints behind its content: its CSS background, then
- * its legacy `bgcolor` attribute, which CSS overrides.
+ * its legacy `bgcolor` attribute, which CSS overrides. A `background`
+ * shorthand contributes its colour token, image or not.
  */
 function fillOf($el: Cheerio<Element>): string {
   const styles = getStyles($el);
   return (
     parseColor(styles["background-color"]) ||
-    parseColor(styles.background) ||
+    parseColor(backgroundShorthandColor(styles.background)) ||
     parseLegacyColor($el.attr("bgcolor"))
   );
 }
@@ -407,14 +417,15 @@ function packagingTablesOf(
  *
  * - The cell's meaningful content must *be* the tables. Descending discards
  *   the row, so a heading or an image beside the table would be dropped.
- * - The row's style must set no background and no padding. The section it
- *   emits is the carrier for those, so descending past a styled row would
- *   drop the band it paints.
+ * - The row's style must set no background (colour or image) and no padding.
+ *   The section it emits is the carrier for those, so descending past a
+ *   styled row would drop the band it paints.
  *
- * A fill the descent does pass — the row's `bgcolor`, its cell's, its
- * table's — is not lost: `processTable` hands it to the tables below, whose
- * sections take it when nothing nearer paints them. Section counts depend on
- * this gate, so a fill is carried down rather than made a reason to stop.
+ * A fill or image the descent does pass — the row's `bgcolor`, its cell's,
+ * its table's — is not lost: `processTable` hands it to the tables below,
+ * whose sections take it when nothing nearer paints them. Section counts
+ * depend on this gate, so a fill is carried down rather than made a reason
+ * to stop.
  */
 function packagingRowTables(
   $row: Cheerio<Element>,
@@ -426,7 +437,8 @@ function packagingRowTables(
   const rowStyles = getStyles($row);
   if (
     parseColor(rowStyles["background-color"]) ||
-    parseColor(rowStyles.background)
+    parseColor(backgroundShorthandColor(rowStyles.background)) ||
+    readCssBackground(rowStyles, "Section", undefined)
   )
     return null;
   const padding = readPaddingFromStyles(rowStyles);
@@ -458,13 +470,15 @@ function packagingRowTables(
  * three-into-one merge for a row that always stated one column.
  *
  * A background the section could not keep adds its own note after the
- * layout's, so one entry names every loss the row had.
+ * layout's, and so does a background-image value or column image it could not
+ * keep, so one entry names every loss the row had.
  */
 function sectionEntry(
   columnCount: number,
   slotCount: number,
   ratioNote: string | undefined,
   fillNote: string | undefined,
+  imageNotes: string[] = [],
 ): ImportReportEntry {
   const notes: string[] = [];
   if (slotCount !== columnCount) {
@@ -475,6 +489,7 @@ function sectionEntry(
     notes.push(ratioNote);
   }
   if (fillNote) notes.push(fillNote);
+  notes.push(...imageNotes);
 
   if (notes.length === 0) {
     return {
@@ -533,6 +548,128 @@ function sectionFill(
     color,
     note: `Cell backgrounds ${cells} differ from ${section}. A Templatical section has one background colour.`,
   };
+}
+
+/**
+ * An image a wrapper cell or table paints, handed to the sections below it.
+ * `entries` collects the report entry of each section that took it, so an
+ * image copied onto several sections can say so on each.
+ */
+export interface CarriedImage {
+  read: ReadBackgroundImage;
+  entries: ImportReportEntry[];
+}
+
+/**
+ * The image an element paints: its CSS background, else the legacy
+ * `background` attribute of a table or cell, which any CSS background
+ * declaration overrides.
+ */
+function imageOf(
+  $el: Cheerio<Element>,
+  room: number | undefined,
+): ReadBackgroundImage | null {
+  const styles = getStyles($el);
+  if (
+    styles["background-image"] !== undefined ||
+    styles.background !== undefined
+  ) {
+    return readCssBackground(styles, "Section", room);
+  }
+  return $el.is("table, td, th")
+    ? readLegacyBackground($el.attr("background"), "Section", room)
+    : null;
+}
+
+function sameImage(a: BackgroundImage, b: BackgroundImage): boolean {
+  return (
+    a.url === b.url &&
+    a.size === b.size &&
+    a.repeat === b.repeat &&
+    a.position.x === b.position.x &&
+    a.position.y === b.position.y
+  );
+}
+
+/** Each section gets its own image object, so editing one leaves the others alone. */
+function copyImage(image: BackgroundImage): BackgroundImage {
+  return { ...image, position: { ...image.position } };
+}
+
+function droppedColumnsNote(columns: number[]): string {
+  return columns.length === 1
+    ? `The background image on column ${columns[0]} was dropped. A Templatical section has one background image.`
+    : `Background images on columns ${columns.join(", ")} were dropped. A Templatical section has one background image.`;
+}
+
+/**
+ * The image a row's section paints, nearest first, as `sectionFill` reads
+ * colour: the `<tr>`, or the cell around a column set, which spans the row;
+ * then the columns' own images, moved up when there is one column or every
+ * column shares the same image; then `carried`, the image of the table
+ * holding the row or of the wrappers around it. Column images the section
+ * can't keep are named in a note. A button cell's background is the
+ * button's, so it is never read as a column image.
+ */
+function sectionImage(
+  $row: Cheerio<Element>,
+  layoutCells: Cheerio<Element>[],
+  hosts: ColumnHost[],
+  carried: CarriedImage | null,
+  room: number | undefined,
+  $: CheerioAPI,
+): {
+  image: BackgroundImage | undefined;
+  notes: string[];
+  carried: CarriedImage | null;
+} {
+  const own =
+    imageOf($row, room) ??
+    (hosts[0]?.kind === "container" ? imageOf(layoutCells[0], room) : null);
+  const columns = hosts.map((host) =>
+    host.kind === "cell" && isButtonCell(host.$el, $).match
+      ? null
+      : imageOf(host.$el, room),
+  );
+  const withImage = columns.flatMap((read, index) => (read ? [index + 1] : []));
+  const first = columns[0] ?? null;
+  const shared =
+    first !== null &&
+    columns.every(
+      (read) => read !== null && sameImage(read.image, first.image),
+    );
+
+  const notes: string[] = [];
+  let picked = own;
+  if (withImage.length > 0) {
+    if (!own && shared) picked = first;
+    else notes.push(droppedColumnsNote(withImage));
+  }
+  if (picked) {
+    return {
+      image: copyImage(picked.image),
+      notes: [...picked.notes, ...notes],
+      carried: null,
+    };
+  }
+  if (carried) {
+    return {
+      image: copyImage(carried.read.image),
+      notes: [...carried.read.notes, ...notes],
+      carried,
+    };
+  }
+  return { image: undefined, notes, carried: null };
+}
+
+/** Note on each section a carried image was copied onto, once it spans more than one. */
+function noteSpread(carried: CarriedImage): void {
+  if (carried.entries.length < 2) return;
+  const note = `A background image behind ${carried.entries.length} sections was applied to each of them — Templatical has no multi-section band.`;
+  for (const entry of carried.entries) {
+    entry.status = "approximated";
+    entry.note = entry.note ? `${entry.note} ${note}` : note;
+  }
 }
 
 /**
@@ -774,6 +911,9 @@ function hostRooms(
  *   land: the template body's width for a table whose rows become sections,
  *   the surrounding column's for a flattened one. Unknown, a divider keeps a
  *   px width as stated.
+ * @param enclosingImage - The image of the wrapper cells and tables this
+ *   table was reached through, which its sections take when nothing nearer
+ *   paints one.
  */
 export function processTable(
   $table: Cheerio<Element>,
@@ -783,6 +923,7 @@ export function processTable(
   flattenInline = false,
   enclosingFill = "",
   room?: number,
+  enclosingImage: CarriedImage | null = null,
 ): Block[] {
   if (!isLayoutTable($table, $)) {
     entries.push({
@@ -798,6 +939,10 @@ export function processTable(
   if (rows.length === 0) return [];
 
   const tableFill = fillOf($table) || enclosingFill;
+  const ownTableImage = imageOf($table, room);
+  const tableImage: CarriedImage | null = ownTableImage
+    ? { read: ownTableImage, entries: [] }
+    : enclosingImage;
   const sections: Block[] = [];
 
   for (const $row of rows) {
@@ -815,6 +960,10 @@ export function processTable(
     const packaging = packagingRowTables($row, cells, $);
     if (packaging) {
       const carried = fillOf($row) || fillOf(cells[0]) || tableFill;
+      const cellImage = imageOf(cells[0], room);
+      const carriedImage: CarriedImage | null = cellImage
+        ? { read: cellImage, entries: [] }
+        : tableImage;
       // Flattened, the descended blocks land in the parent column, so the
       // wrapper cell's padding insets them as it would have had the walk
       // stopped at the cell, and narrows their room with it.
@@ -831,9 +980,11 @@ export function processTable(
             flattenInline,
             carried,
             innerRoom,
+            carriedImage,
           ),
         );
       }
+      if (cellImage && carriedImage) noteSpread(carriedImage);
       if (flattenInline) insetColumns([descended], wrapperPadding);
       sections.push(...descended);
       continue;
@@ -909,10 +1060,16 @@ export function processTable(
     }
 
     const fill = sectionFill($row, layoutCells, tableFill, $);
-
-    entries.push(
-      sectionEntry(hosts.length, columnsBlocks.length, ratio.note, fill.note),
+    const image = sectionImage($row, layoutCells, hosts, tableImage, room, $);
+    const entry = sectionEntry(
+      hosts.length,
+      columnsBlocks.length,
+      ratio.note,
+      fill.note,
+      image.notes,
     );
+    entries.push(entry);
+    image.carried?.entries.push(entry);
     sections.push(
       createSectionBlock({
         columns: ratio.layout,
@@ -921,9 +1078,11 @@ export function processTable(
           padding,
           ...(fill.color ? { backgroundColor: fill.color } : {}),
         },
+        ...(image.image ? { backgroundImage: image.image } : {}),
       }),
     );
   }
 
+  if (ownTableImage && tableImage) noteSpread(tableImage);
   return sections;
 }

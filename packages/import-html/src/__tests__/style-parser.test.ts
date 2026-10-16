@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  backgroundShorthandColor,
   parseAlignment,
+  parseBackgroundShorthand,
   parseBorderShorthand,
   parseColor,
   parseFontWeight,
@@ -8,6 +10,8 @@ import {
   parsePxValue,
   parseStyleAttribute,
   parseWidthPercent,
+  readCssBackground,
+  readLegacyBackground,
   readPaddingFromStyles,
   serializeStyleAttribute,
 } from "../style-parser";
@@ -241,5 +245,207 @@ describe("parseBorderShorthand", () => {
       style: "solid",
       color: "#000000",
     });
+  });
+});
+
+describe("parseStyleAttribute — semicolons inside a value", () => {
+  it("doesn't split inside url() or quotes", () => {
+    expect(
+      parseStyleAttribute(
+        "background-image:url(data:image/png;base64,AAAA);color:red",
+      ),
+    ).toEqual({
+      "background-image": "url(data:image/png;base64,AAAA)",
+      color: "red",
+    });
+    expect(
+      parseStyleAttribute('background-image:url("a.png?x=1;y=2");padding:4px'),
+    ).toEqual({
+      "background-image": 'url("a.png?x=1;y=2")',
+      padding: "4px",
+    });
+  });
+});
+
+describe("parseBackgroundShorthand", () => {
+  it("reads mjml@5's section shorthand", () => {
+    expect(
+      parseBackgroundShorthand(
+        "#222222 url('https://cdn.test/hero.jpg') center top / cover no-repeat",
+      ),
+    ).toEqual({
+      color: "#222222",
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: "center top",
+      repeat: "no-repeat",
+      layers: 1,
+    });
+  });
+
+  it("reads a colour-only shorthand", () => {
+    expect(parseBackgroundShorthand("rgb(1, 2, 3)")).toEqual({
+      color: "rgb(1, 2, 3)",
+      url: "",
+      size: "",
+      position: "",
+      repeat: "",
+      layers: 1,
+    });
+  });
+
+  it("takes the colour from the last layer and the image from the first with a url", () => {
+    expect(
+      parseBackgroundShorthand(
+        "url(a.png) no-repeat, linear-gradient(#000, #fff) #123456",
+      ),
+    ).toEqual({
+      color: "#123456",
+      url: "a.png",
+      size: "",
+      position: "",
+      repeat: "no-repeat",
+      layers: 2,
+    });
+  });
+});
+
+describe("backgroundShorthandColor", () => {
+  it("reads the colour out of a shorthand with an image", () => {
+    expect(
+      backgroundShorthandColor(
+        "#f0e0d0 url('https://cdn.test/x.png') center top / cover no-repeat",
+      ),
+    ).toBe("#f0e0d0");
+    expect(backgroundShorthandColor("url(x.png)")).toBe("");
+    expect(backgroundShorthandColor(undefined)).toBe("");
+  });
+});
+
+describe("readCssBackground", () => {
+  const read = (styles: Record<string, string>, boxWidth = 600) =>
+    readCssBackground(styles, "Section", boxWidth);
+
+  it("returns null without an image", () => {
+    expect(read({})).toBeNull();
+    expect(read({ "background-image": "none" })).toBeNull();
+    expect(read({ "background-image": "url()" })).toBeNull();
+    expect(read({ background: "#ffffff" })).toBeNull();
+  });
+
+  it("gives unset longhands CSS's initial values", () => {
+    expect(read({ "background-image": "url(https://cdn.test/a.png)" })).toEqual(
+      {
+        image: {
+          url: "https://cdn.test/a.png",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        notes: [],
+      },
+    );
+  });
+
+  it.each([
+    ['url("https://cdn.test/a.png")', "https://cdn.test/a.png"],
+    ["url('https://cdn.test/a.png')", "https://cdn.test/a.png"],
+    ["url( https://cdn.test/a.png )", "https://cdn.test/a.png"],
+    ["url({{ hero_url }})", "{{ hero_url }}"],
+  ])("unquotes %s", (value, expected) => {
+    expect(read({ "background-image": value })?.image.url).toBe(expected);
+  });
+
+  it("reads mjml@5's compiled section exactly", () => {
+    expect(
+      read({
+        background:
+          "#222222 url('https://cdn.test/hero.jpg') center top / cover no-repeat",
+        "background-position": "center top",
+        "background-repeat": "no-repeat",
+        "background-size": "cover",
+      }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "cover",
+        position: { x: "center", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("lets a longhand win over the shorthand's value", () => {
+    expect(
+      read({
+        background: "url(a.png) no-repeat",
+        "background-repeat": "repeat",
+      })?.image.repeat,
+    ).toBe(true);
+  });
+
+  it("keeps the first image of several layers, with a note", () => {
+    expect(
+      read({
+        "background-image": "linear-gradient(#000, #fff), url(a.png)",
+        "background-size": "auto, cover",
+      }),
+    ).toEqual({
+      image: {
+        url: "a.png",
+        size: "cover",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [
+        'Section background has 2 layers; only the image "a.png" was imported.',
+      ],
+    });
+  });
+
+  it.each([
+    ["background-size", "100%", "cover"],
+    ["background-size", "600px", "cover"],
+    ["background-size", "50%", "auto"],
+    ["background-position", "30% 80%", "center bottom"],
+    ["background-position", "20px 0", "left top"],
+    ["background-repeat", "repeat-x", "repeat"],
+  ])("maps %s %s to %s, with a note", (property, value, shown) => {
+    expect(
+      read({ "background-image": "url(u)", [property]: value })?.notes,
+    ).toEqual([
+      `Section ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+    ]);
+  });
+
+  it("reads keyword positions in either order exactly", () => {
+    expect(
+      read({
+        "background-image": "url(u)",
+        "background-position": "bottom right",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "right", y: "bottom" } },
+      notes: [],
+    });
+  });
+});
+
+describe("readLegacyBackground", () => {
+  it("tiles a bare background attribute from the top left, as a browser does", () => {
+    expect(
+      readLegacyBackground(" https://cdn.test/tile.gif ", "Section", 600),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/tile.gif",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [],
+    });
+    expect(readLegacyBackground("", "Section", 600)).toBeNull();
+    expect(readLegacyBackground(undefined, "Section", 600)).toBeNull();
   });
 });
