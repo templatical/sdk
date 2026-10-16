@@ -28,7 +28,8 @@ import { convertMjmlTemplate } from "../converter";
  * condition on a top-level section, a display condition on a block nested
  * inside a section column, a paragraph carrying a hard `<br>` line break, a
  * button at each width (fit to content, full and px), and per-corner radii and
- * borders on a button, an image, a section and a wrapper.
+ * borders on a button, an image, a section and a wrapper, and a section
+ * background image and a wrapper background image.
  *
  * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
@@ -134,6 +135,12 @@ function buildFixtureTemplate(): TemplateContent {
       }),
       createSectionBlock({
         columns: "3",
+        backgroundImage: {
+          url: "https://cdn.test/hero.jpg",
+          size: "cover",
+          position: { x: "center", y: "top" },
+          repeat: false,
+        },
         children: [
           col([createSpacerBlock({ height: 12 })]),
           col([
@@ -234,6 +241,12 @@ function buildFixtureTemplate(): TemplateContent {
             topRight: 20,
             bottomRight: 0,
             bottomLeft: 20,
+          },
+          backgroundImage: {
+            url: "https://cdn.test/band.png",
+            size: "auto",
+            position: { x: "left", y: "bottom" },
+            repeat: true,
           },
         },
         children: [
@@ -339,6 +352,8 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     // The full-width button's own class must not come back as a dropped one,
     // so this case cannot pass because the renderer stopped emitting it.
     expect(mjml).toContain('css-class="tpl-button-full"');
+    expect(mjml).toContain('background-url="https://cdn.test/hero.jpg"');
+    expect(mjml).toContain('background-url="https://cdn.test/band.png"');
     expect(report.summary.approximated).toBe(0);
     expect(report.summary.htmlFallback).toBe(0);
     expect(report.summary.skipped).toBe(0);
