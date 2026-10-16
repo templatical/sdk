@@ -265,6 +265,24 @@ describe("parseStyleAttribute — semicolons inside a value", () => {
       padding: "4px",
     });
   });
+
+  it("keeps the declarations after an unterminated quote", () => {
+    expect(
+      parseStyleAttribute("font-family:'Open Sans;background-color:#abcdef"),
+    ).toEqual({
+      "font-family": "'Open Sans",
+      "background-color": "#abcdef",
+    });
+  });
+
+  it("keeps the declarations after an unclosed parenthesis", () => {
+    expect(parseStyleAttribute("background-image:url(a.png;color:red")).toEqual(
+      {
+        "background-image": "url(a.png",
+        color: "red",
+      },
+    );
+  });
 });
 
 describe("parseBackgroundShorthand", () => {

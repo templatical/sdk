@@ -29,8 +29,13 @@ export function parseStyleAttribute(
   return result;
 }
 
-/** Split `value` at each `separator` that sits outside quotes and parentheses. */
-function splitTopLevel(value: string, separator: string): string[] {
+/**
+ * Split `value` at each `separator` that sits outside quotes and parentheses.
+ * A value whose quote or parenthesis never closes is split at every
+ * `separator` instead, so a malformed declaration costs only itself and the
+ * ones after it still read.
+ */
+export function splitTopLevel(value: string, separator: string): string[] {
   const parts: string[] = [];
   let depth = 0;
   let quote = "";
@@ -49,6 +54,7 @@ function splitTopLevel(value: string, separator: string): string[] {
       start = i + 1;
     }
   }
+  if (quote || depth > 0) return value.split(separator);
   parts.push(value.slice(start));
   return parts;
 }

@@ -176,3 +176,16 @@ describe("resolveCssStyles", () => {
     expect($("style").length).toBe(0);
   });
 });
+
+describe("parseStyleSheet — a data-URI image", () => {
+  it("keeps a semicolon inside url() in its declaration", () => {
+    const rules = parseStyleSheet(
+      ".hero { background-image: url(data:image/png;base64,AAAA); background-color: #123456 }",
+    );
+    expect(rules).toHaveLength(1);
+    expect(rules[0].declarations).toEqual({
+      "background-image": "url(data:image/png;base64,AAAA)",
+      "background-color": "#123456",
+    });
+  });
+});

@@ -1127,3 +1127,19 @@ describe("convertHtmlTemplate — the page background", () => {
     );
   });
 });
+
+describe("convertHtmlTemplate — a stylesheet rule's data-URI background image", () => {
+  it("imports the image and the colour the rule sets", () => {
+    const { content } = convertHtmlTemplate(
+      "<html><head><style>" +
+        ".hero{background-image:url(data:image/png;base64,AAAA);background-color:#123456}" +
+        "</style></head><body>" +
+        '<table class="hero" role="presentation"><tr><td><p>Copy</p></td></tr></table>' +
+        "</body></html>",
+    );
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.backgroundImage?.url).toBe("data:image/png;base64,AAAA");
+  });
+});
