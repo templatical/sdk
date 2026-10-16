@@ -85,7 +85,7 @@ function getBlockComponent(block: Block) {
 <template>
   <div
     data-testid="layout-wrapper"
-    class="tpl:w-full"
+    class="tpl-email-surface tpl:w-full"
     :style="wrapperStyle"
     :class="backgroundImageHostClass(wrapperStyle)"
   >

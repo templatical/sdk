@@ -11,6 +11,25 @@ import { SELECTORS, blockByType } from "../helpers/selectors";
  * only pass because the shell was left out.
  */
 
+/**
+ * How many `invert(1)` filters lie between the canvas and `el`, `el`'s own
+ * included. Odd shows inverted in the dark preview, even shows as it is.
+ */
+function inversions(el: Element): number {
+  let count = 0;
+  for (
+    let node: Element | null = el;
+    node;
+    node =
+      node.parentElement ?? ((node.getRootNode() as ShadowRoot).host ?? null)
+  ) {
+    count += (getComputedStyle(node).filter.match(/invert\(1\)/g) ?? [])
+      .length;
+    if (node.classList.contains("tpl-canvas")) break;
+  }
+  return count;
+}
+
 /** Export's Download writes the whole file; the code view renders only the
  * lines in its viewport, so a missing-text check against it proves nothing. */
 async function downloadExport(page: Page): Promise<string> {
@@ -38,6 +57,27 @@ test.describe("Layout scene", () => {
     await expect(page.getByText("Imprint", { exact: true })).toBeVisible();
     await editorPage.togglePreview();
     await expect(page.getByText("View in browser")).toHaveCount(0);
+  });
+
+  test("dark preview inverts the shell band and the email inside it once", async ({
+    editorPage,
+    page,
+  }) => {
+    await editorPage.togglePreview();
+    await editorPage.toggleDarkMode();
+
+    // The band is the outermost email surface: it carries the one inversion,
+    // and the authored email inside it inverts with it, never a second time.
+    const band = page.locator('[data-testid="layout-wrapper"]');
+    await expect.poll(() => band.evaluate(inversions)).toBe(1);
+    const text = band.locator(".tpl-text-content");
+    expect(await text.count()).toBeGreaterThan(1);
+    for (const node of await text.all()) {
+      expect(await node.evaluate(inversions)).toBe(1);
+    }
+    // Images take the counter-filter, as everywhere else in the dark preview.
+    const image = band.locator("img").first();
+    expect(await image.evaluate(inversions)).toBe(2);
   });
 
   test("export composes the shell and the JSON stays authored", async ({

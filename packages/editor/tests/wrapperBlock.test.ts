@@ -59,6 +59,27 @@ describe("WrapperBlock", () => {
     expect(registry.getComponent).toHaveBeenCalledWith(title);
     expect(wrapper.get(`[data-block-id="${title.id}"]`).exists()).toBe(true);
   });
+
+  it("is one email surface for the dark preview, with its children inside it", () => {
+    const title = createTitleBlock({ content: "<p>Card body</p>", level: 2 });
+    const section = createSectionBlock();
+    const block = createWrapperBlock({ children: [title, section] });
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block, viewport: "desktop" },
+      provides: { [BLOCK_REGISTRY_KEY]: titleRegistry() },
+    });
+
+    // The band inverts as one unit; its child boxes are not surfaces of their
+    // own, so nothing inside inverts a second time.
+    const root = wrapper.get('[data-testid="layout-wrapper"]');
+    expect(root.classes()).toContain("tpl-email-surface");
+    for (const child of [title, section]) {
+      expect(
+        wrapper.get(`[data-block-id="${child.id}"]`).classes(),
+      ).not.toContain("tpl-email-surface");
+    }
+  });
 });
 
 describe("WrapperBlock background images", () => {

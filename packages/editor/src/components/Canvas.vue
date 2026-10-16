@@ -547,40 +547,41 @@ function handleFetchData(
 </template>
 
 <style scoped>
-/* Dark-mode preview: invert only top-level `.tpl-block-content`. Applying
-   filter to every `.tpl-block-content` would compound at nested levels
-   (sections wrapping child blocks) and cancel out — `:not(...)` restricts
-   it to outermost wrappers so the inversion is single-pass. Block chrome
-   (action bar, indicators, overlays) lives outside `.tpl-block-content`
-   and is therefore never filtered — no counter-filter / toggle flicker. */
-.tpl-canvas--dark-mode :deep(.tpl-block-content:not(.tpl-block-content *)) {
+/* Dark-mode preview: invert only the outermost `.tpl-email-surface` — a
+   block's box, a section's wrapper frame, or a layout band. Surfaces nest
+   (child blocks inside a section, a box inside its frame, the whole email
+   inside a band), and a filter at every level would compound and cancel
+   out, so `:not(...)` keeps the inversion single-pass. Block chrome (action
+   bar, indicators, overlays) lives outside every surface and is therefore
+   never filtered — no counter-filter / toggle flicker. */
+.tpl-canvas--dark-mode :deep(.tpl-email-surface:not(.tpl-email-surface *)) {
   filter: invert(1) hue-rotate(180deg);
 }
-:deep(.tpl-block-content) {
+:deep(.tpl-email-surface) {
   transition: filter 300ms ease;
 }
 
-/* Counter-invert images so they look normal inside the inverted block
-   content layer (canonical CSS-filter dark-mode trick). */
-.tpl-canvas--dark-mode :deep(.tpl-block-content img) {
+/* Counter-invert images so they look normal inside the inverted email
+   surface (canonical CSS-filter dark-mode trick). */
+.tpl-canvas--dark-mode :deep(.tpl-email-surface img) {
   filter: invert(1) hue-rotate(180deg);
 }
 
 /* Background photos get the same counter-invert. A filter on the host would
    also hit the content painted over it, so the photo moves to a `::before`
    beneath that content, painted from `--tpl-block-bg-layer`
-   (`getBackgroundImageStyle`). The selectors key on `.tpl-block-content`, the
-   filter target: a host outside it is never inverted, so it keeps painting
-   its own background. `isolation` keeps the `z-index: -1` layer above the
-   host's background colour wherever the host isn't the filtered box itself. */
-.tpl-canvas--dark-mode :deep(.tpl-block-content.tpl-has-bg-image),
-.tpl-canvas--dark-mode :deep(.tpl-block-content .tpl-has-bg-image) {
+   (`getBackgroundImageStyle`). Every host is a surface or sits inside one, so
+   every host is under exactly one inversion. `isolation` keeps the
+   `z-index: -1` layer above the host's background colour wherever the host
+   isn't the filtered surface itself. */
+.tpl-canvas--dark-mode :deep(.tpl-email-surface.tpl-has-bg-image),
+.tpl-canvas--dark-mode :deep(.tpl-email-surface .tpl-has-bg-image) {
   position: relative;
   isolation: isolate;
   background-image: none !important;
 }
-.tpl-canvas--dark-mode :deep(.tpl-block-content.tpl-has-bg-image)::before,
-.tpl-canvas--dark-mode :deep(.tpl-block-content .tpl-has-bg-image)::before {
+.tpl-canvas--dark-mode :deep(.tpl-email-surface.tpl-has-bg-image)::before,
+.tpl-canvas--dark-mode :deep(.tpl-email-surface .tpl-has-bg-image)::before {
   content: "";
   position: absolute;
   inset: 0;

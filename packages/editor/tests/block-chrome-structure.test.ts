@@ -27,13 +27,30 @@ describe("block chrome structure", () => {
   const blockWrapper = read("components/blocks/BlockWrapper.vue");
   const canvas = read("components/Canvas.vue");
   const styles = read("styles/index.css");
+  const wrapperBlock = read("components/blocks/WrapperBlock.vue");
 
   it("BlockWrapper wraps the slot in `.tpl-block-content`", () => {
-    // The `.tpl-block-content` wrapper is the canvas-dark-preview filter
-    // target. If the slot is rendered directly (without wrapper), dark
-    // preview stops inverting block content + section bg.
+    // The `.tpl-block-content` wrapper is the email surface the canvas dark
+    // preview filters. If the slot is rendered directly (without wrapper),
+    // dark preview stops inverting block content + section bg.
     expect(blockWrapper).toMatch(
-      /<div\s+class="tpl-block-content"[^>]*>\s*<slot\s*\/>\s*<\/div>/,
+      /<div\s+class="tpl-block-content[\s"][^>]*>\s*<slot\s*\/>\s*<\/div>/,
+    );
+  });
+
+  it("every email surface carries the dark-preview root marker", () => {
+    // The dark preview inverts the outermost `.tpl-email-surface`: the section
+    // box, the section wrapper frame around it, or a layout band. A surface
+    // without the marker sits outside the filter and stays light while the
+    // email around it inverts — the wrapper frame and layout bands did.
+    expect(
+      blockWrapper.match(/class="tpl-block-content tpl-email-surface"/g),
+    ).toHaveLength(2);
+    expect(blockWrapper).toMatch(
+      /class="tpl-section-wrapper tpl-email-surface"/,
+    );
+    expect(wrapperBlock).toMatch(
+      /data-testid="layout-wrapper"\s+class="[^"]*\btpl-email-surface\b/,
     );
   });
 
@@ -49,7 +66,7 @@ describe("block chrome structure", () => {
       /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(\s*props\.block\s*[,)]/,
     );
     expect(blockWrapper).toMatch(
-      /class="tpl-block-content"\s+:style="contentStyle"/,
+      /class="tpl-block-content[^"]*"\s+:style="contentStyle"/,
     );
     // Applied wholesale, never property-by-property. Copying a named list
     // across is how `--tpl-doc-paragraph-spacing` came to be computed and then
@@ -81,13 +98,24 @@ describe("block chrome structure", () => {
     expect(wrapperStyleBlock).not.toMatch(/filter:/);
   });
 
-  it("dark-preview filter targets only top-level `.tpl-block-content` (no nesting compound)", () => {
-    // `.tpl-block-content` nests inside section blocks. Applying filter to
-    // every level compounds (invert ∘ invert = identity) and leaves nested
-    // blocks looking un-inverted. The `:not(...)` excludes nested wrappers.
+  it("dark-preview filter targets only the outermost email surface (no nesting compound)", () => {
+    // Surfaces nest: a section box inside its wrapper frame, child blocks
+    // inside a section, a layout band around the whole email. Applying filter
+    // to every level compounds (invert ∘ invert = identity) and leaves nested
+    // content looking un-inverted. The `:not(...)` excludes nested surfaces.
     expect(canvas).toMatch(
-      /\.tpl-canvas--dark-mode\s+:deep\(\.tpl-block-content:not\(\.tpl-block-content\s+\*\)\)/,
+      /\.tpl-canvas--dark-mode\s+:deep\(\.tpl-email-surface:not\(\.tpl-email-surface\s+\*\)\)\s*\{\s*filter:\s*invert\(1\)\s+hue-rotate\(180deg\)/,
     );
+    // Images inside any surface take the counter-filter, whichever surface
+    // carries the inversion.
+    expect(canvas).toMatch(
+      /\.tpl-canvas--dark-mode\s+:deep\(\.tpl-email-surface\s+img\)\s*\{\s*filter:\s*invert\(1\)\s+hue-rotate\(180deg\)/,
+    );
+    // The surface itself fades between modes.
+    expect(canvas).toMatch(
+      /:deep\(\.tpl-email-surface\)\s*\{\s*transition:\s*filter\s+300ms/,
+    );
+    expect(canvas).not.toMatch(/\.tpl-block-content:not\(/);
   });
 
   describe("dark-preview background photos", () => {
@@ -112,15 +140,15 @@ describe("block chrome structure", () => {
       expect(layer?.[1]).toMatch(/border-radius:\s*inherit/);
     });
 
-    it("applies only in dark preview, and only under the `.tpl-block-content` inversion", () => {
-      // Light mode keeps painting the inline background. A host outside the
-      // filter target (today's wrapper frame and layout band) is not
-      // inverted, so it must not get the counter-filter either.
+    it("applies only in dark preview, and only on or inside an email surface", () => {
+      // Light mode keeps painting the inline background. The selectors key on
+      // the surface marker, so every host under the inversion — a surface
+      // itself or anything inside one — gets the counter-inverted layer.
       expect(hostRules.length).toBe(2);
       for (const [selectorList] of hostRules) {
         for (const selector of selectorList.split(",")) {
           expect(selector.trim()).toMatch(
-            /^\.tpl-canvas--dark-mode\s+:deep\(\.tpl-block-content(\.|\s+\.)tpl-has-bg-image\)(::before)?$/,
+            /^\.tpl-canvas--dark-mode\s+:deep\(\.tpl-email-surface(\.|\s+\.)tpl-has-bg-image\)(::before)?$/,
           );
         }
       }

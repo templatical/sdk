@@ -5,29 +5,31 @@ const HERO = "https://cdn.test/hero.jpg";
 const BAND = "https://cdn.test/band.jpg";
 
 /**
- * How many `invert(1)` filters lie between the canvas and whatever paints
- * `el`'s background photo — `el` itself, or its dark-preview `::before` layer.
- * Even means the photo shows as it is; `null` means nothing paints it.
+ * How many `invert(1)` filters lie between the canvas and what `el` paints:
+ * `colour` for its background colour and content, `photo` for its background
+ * photo — painted by `el` itself or by its dark-preview `::before` layer
+ * (`null` when nothing paints one). Odd shows inverted, even shows as it is.
  */
-function photoInversions(el: Element): number | null {
+function inversions(el: Element): { colour: number; photo: number | null } {
   const inverts = (filter: string) =>
     (filter.match(/invert\(1\)/g) ?? []).length;
-  let count = 0;
+  let colour = 0;
   for (
     let node: Element | null = el;
     node;
     node =
       node.parentElement ?? ((node.getRootNode() as ShadowRoot).host ?? null)
   ) {
-    count += inverts(getComputedStyle(node).filter);
+    colour += inverts(getComputedStyle(node).filter);
     if (node.classList.contains("tpl-canvas")) break;
   }
-  if (getComputedStyle(el).backgroundImage.startsWith("url(")) return count;
   const layer = getComputedStyle(el, "::before");
-  if (layer.content !== "none" && layer.backgroundImage.startsWith("url(")) {
-    return count + inverts(layer.filter);
-  }
-  return null;
+  const photo = getComputedStyle(el).backgroundImage.startsWith("url(")
+    ? colour
+    : layer.content !== "none" && layer.backgroundImage.startsWith("url(")
+      ? colour + inverts(layer.filter)
+      : null;
+  return { colour, photo };
 }
 
 test.describe("Section background image", () => {
@@ -60,7 +62,7 @@ test.describe("Section background image", () => {
     );
   });
 
-  test("dark preview leaves the photos un-inverted, like an image", async ({
+  test("dark preview inverts the frame with its section once, and leaves the photos as they are", async ({
     blankEditorReady: { editorPage },
     page,
   }) => {
@@ -86,15 +88,17 @@ test.describe("Section background image", () => {
       "style",
       /url\("https:\/\/cdn\.test\/band\.jpg"\)/,
     );
-    expect(await box.evaluate(photoInversions)).toBe(0);
-    expect(await frame.evaluate(photoInversions)).toBe(0);
+    expect(await frame.evaluate(inversions)).toEqual({ colour: 0, photo: 0 });
+    expect(await box.evaluate(inversions)).toEqual({ colour: 0, photo: 0 });
 
     await editorPage.toggleDarkMode();
 
-    // The box is the filter target, so its photo moves to a counter-inverted
-    // layer: two inversions cancel. The frame sits outside the filter and
-    // keeps painting its own photo, never inverted.
-    await expect.poll(() => box.evaluate(photoInversions)).toBe(2);
-    expect(await frame.evaluate(photoInversions)).toBe(0);
+    // The frame is the outermost surface, so it carries the one inversion
+    // for itself and the section inside it. Each photo moves to a
+    // counter-inverted layer, where two inversions cancel.
+    await expect
+      .poll(() => frame.evaluate(inversions))
+      .toEqual({ colour: 1, photo: 2 });
+    expect(await box.evaluate(inversions)).toEqual({ colour: 1, photo: 2 });
   });
 });
