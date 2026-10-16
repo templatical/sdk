@@ -24,7 +24,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/templatical-media-library.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/templatical-media-library.css"
   },
   "files": [
     "dist"

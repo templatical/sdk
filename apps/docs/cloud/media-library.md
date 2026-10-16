@@ -82,6 +82,7 @@ The same UI, without Confirm, via `@templatical/media-library`. Pass a `provider
 ```ts
 import { init } from '@templatical/media-library';
 import { createCloudMediaProvider } from '@templatical/core/cloud';
+import '@templatical/media-library/style.css';
 
 const mediaLibrary = await init({
   container: '#media-library',

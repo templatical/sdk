@@ -251,6 +251,24 @@ describe("standalone MediaLibrary chrome", () => {
     expect(list).toHaveBeenCalledWith({ category: "images" });
   });
 
+  it("keeps the root's border inside its inline 100% size", async () => {
+    // The chrome reset matches descendants of `.tpl` only, so the root sizes
+    // itself. Content-box made it 2px larger than its container on a host
+    // without a reset. The bare-page e2e measures the geometry.
+    const wrapper = await mountLibrary(fakeProvider());
+    const root = wrapper.element as HTMLElement;
+
+    expect(root.classList.contains("tpl")).toBe(true);
+    expect(root.classList.contains("tpl:box-border")).toBe(true);
+    expect(root.style.width).toBe("100%");
+    expect(root.style.height).toBe("100%");
+    // happy-dom misparses a `border` shorthand holding `var()`, and Vue writes
+    // the style through it, so read the authored value from the source.
+    expect(readSrc("standalone/MediaLibrary.vue")).toContain(
+      "border: 1px solid var(--tpl-border);",
+    );
+  });
+
   it("omits Select unless onSelect is passed, then emits the preview asset", async () => {
     const asset = createAsset("hero");
     const onSelect = vi.fn();

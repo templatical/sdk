@@ -82,6 +82,7 @@ Dieselbe Oberfläche, ohne Bestätigen, über `@templatical/media-library`. Übe
 ```ts
 import { init } from '@templatical/media-library';
 import { createCloudMediaProvider } from '@templatical/core/cloud';
+import '@templatical/media-library/style.css';
 
 const mediaLibrary = await init({
   container: '#media-library',
