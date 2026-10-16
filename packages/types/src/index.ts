@@ -44,6 +44,7 @@ export type {
 } from "./blocks";
 export {
   HEADING_LEVEL_FONT_SIZE,
+  TITLE_LINE_HEIGHT,
   RICH_TEXT_SPACING,
   BORDER_CORNERS,
   BORDER_SIDES,
