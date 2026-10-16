@@ -845,4 +845,132 @@ describe("convertBeeFreeTemplate", () => {
     const { report } = convertBeeFreeTemplate(template);
     expect(report.warnings.some((w) => w.includes("web fonts"))).toBe(true);
   });
+
+  describe("row background images", () => {
+    function convertRow(
+      styles: {
+        content?: Record<string, string>;
+        container?: Record<string, string>;
+      },
+      columns = 1,
+    ) {
+      const template = {
+        page: {
+          rows: [
+            {
+              ...(styles.content ? { content: { style: styles.content } } : {}),
+              ...(styles.container
+                ? { container: { style: styles.container } }
+                : {}),
+              columns: Array.from({ length: columns }, () => ({
+                "grid-columns": 12 / columns,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-text",
+                    descriptor: { text: { html: "<p>Copy</p>" } },
+                  },
+                ],
+              })),
+            },
+          ],
+        },
+      } as BeeFreeTemplate;
+      const { content, report } = convertBeeFreeTemplate(template);
+      return { blocks: content.blocks, warnings: report.warnings };
+    }
+
+    const HERO = {
+      "background-image": "url('https://cdn.test/hero.jpg')",
+      "background-position": "top left",
+      "background-repeat": "no-repeat",
+    };
+
+    it("wraps a single-column row with a content image in a section that carries it", () => {
+      const { blocks, warnings } = convertRow({ content: HERO });
+      expect(blocks).toHaveLength(1);
+      const section = blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.backgroundImage).toEqual({
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: false,
+      });
+      expect(section.styles.backgroundColor).toBeUndefined();
+      expect(warnings).toEqual([]);
+    });
+
+    it("maps a content image on a multi-column row", () => {
+      const section = convertRow({ content: HERO }, 2).blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.columns).toBe("2");
+      expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    });
+
+    it("paints a band image at the content width while the content area is transparent", () => {
+      const { blocks, warnings } = convertRow({
+        container: {
+          "background-image": "url(https://cdn.test/band.jpg)",
+          "background-repeat": "repeat",
+        },
+        content: { "background-color": "transparent" },
+      });
+      const section = blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.backgroundImage).toEqual({
+        url: "https://cdn.test/band.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      });
+      expect(warnings).toEqual([
+        'Row container background image "https://cdn.test/band.jpg" spans the full width in BeeFree; the section paints it at the content width.',
+      ]);
+    });
+
+    it("drops a band image behind a painted content area", () => {
+      const { blocks, warnings } = convertRow({
+        container: { "background-image": "url(https://cdn.test/band.jpg)" },
+        content: { "background-color": "#ffffff" },
+      });
+      const section = blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.backgroundImage).toBeUndefined();
+      expect(warnings).toEqual([
+        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background #ffffff.',
+      ]);
+    });
+
+    it("keeps the content image over a band image", () => {
+      const { blocks, warnings } = convertRow({
+        container: { "background-image": "url(https://cdn.test/band.jpg)" },
+        content: HERO,
+      });
+      const section = blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+      expect(warnings).toEqual([
+        'Row container background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background image.',
+      ]);
+    });
+
+    it("reports a value with no exact keyword in warnings", () => {
+      const { warnings } = convertRow({
+        content: { ...HERO, "background-size": "100%" },
+      });
+      expect(warnings).toEqual([
+        'Row background-size "100%" has no exact Templatical equivalent; imported as "cover".',
+      ]);
+    });
+
+    it("leaves a row whose background-image is none as bare modules", () => {
+      const { blocks } = convertRow({
+        content: {
+          "background-image": "none",
+          "background-repeat": "no-repeat",
+        },
+      });
+      expect(blocks[0].type).toBe("paragraph");
+    });
+  });
 });

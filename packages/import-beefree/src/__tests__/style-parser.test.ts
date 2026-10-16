@@ -5,6 +5,7 @@ import {
   parseBorderTop,
   extractPadding,
   parseDividerWidth,
+  readBeefreeBackgroundImage,
 } from "../style-parser";
 
 describe("parsePxValue", () => {
@@ -146,5 +147,70 @@ describe("parseDividerWidth", () => {
     expect(parseDividerWidth("inherit")).toBeUndefined();
     expect(parseDividerWidth("50em")).toBeUndefined();
     expect(parseDividerWidth("")).toBeUndefined();
+  });
+});
+
+describe("readBeefreeBackgroundImage", () => {
+  const read = (style: Record<string, string>, boxWidth = 600) =>
+    readBeefreeBackgroundImage(style, "Row", boxWidth);
+
+  it("returns null without an image", () => {
+    expect(readBeefreeBackgroundImage(undefined, "Row", 600)).toBeNull();
+    expect(read({ "background-image": "none" })).toBeNull();
+    expect(read({ "background-image": "url()" })).toBeNull();
+    expect(read({ "background-color": "#ffffff" })).toBeNull();
+  });
+
+  it("gives unset longhands CSS's initial values", () => {
+    expect(
+      read({ "background-image": "url(https://cdn.test/hero.jpg)" }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [],
+    });
+  });
+
+  it.each([
+    ['url("https://cdn.test/a.png")', "https://cdn.test/a.png"],
+    ["url('https://cdn.test/a.png')", "https://cdn.test/a.png"],
+    ["url( https://cdn.test/a.png )", "https://cdn.test/a.png"],
+  ])("unquotes %s", (value, expected) => {
+    expect(read({ "background-image": value })?.image.url).toBe(expected);
+  });
+
+  it("reads BeeFree's own longhands exactly", () => {
+    expect(
+      read({
+        "background-image": "url(https://cdn.test/hero.jpg)",
+        "background-position": "top left",
+        "background-repeat": "no-repeat",
+      }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it.each([
+    ["background-size", "100%", "cover"],
+    ["background-size", "50%", "auto"],
+    ["background-position", "30% 80%", "center bottom"],
+    ["background-repeat", "repeat-x", "repeat"],
+  ])("maps %s %s to %s, with a note", (property, value, shown) => {
+    expect(
+      read({ "background-image": "url(u)", [property]: value })?.notes,
+    ).toEqual([
+      `Row ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+    ]);
   });
 });
