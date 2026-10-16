@@ -171,3 +171,66 @@ describe("readMjmlBackgroundImage on adversarial input", () => {
     expect(performance.now() - started).toBeLessThan(1000);
   });
 });
+
+describe("readMjmlBackgroundImage edge cases", () => {
+  const read = (attrs: Record<string, string>) =>
+    readMjmlBackgroundImage((name) => attrs[name], "Section", 600);
+
+  it("reads auto size and single-keyword positions exactly", () => {
+    expect(
+      read({ "background-url": "u", "background-size": "auto" })?.image.size,
+    ).toBe("auto");
+    expect(
+      read({ "background-url": "u", "background-position": "bottom" }),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(
+      read({ "background-url": "u", "background-position": "left" }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+  });
+
+  it("keeps the edge keywords of an offset position, with a note", () => {
+    expect(
+      read({
+        "background-url": "u",
+        "background-position": "right 20px bottom 10px",
+      }),
+    ).toEqual({
+      image: {
+        url: "u",
+        size: "auto",
+        position: { x: "right", y: "bottom" },
+        repeat: true,
+      },
+      notes: [
+        'Section background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+      ],
+    });
+  });
+
+  it("notes lossy background-position-x and -y values", () => {
+    expect(
+      read({
+        "background-url": "u",
+        "background-position-x": "30%",
+        "background-position-y": "10px",
+      }),
+    ).toEqual({
+      image: {
+        url: "u",
+        size: "auto",
+        position: { x: "center", y: "top" },
+        repeat: true,
+      },
+      notes: [
+        'Section background-position-x "30%" has no exact Templatical equivalent; imported as "center".',
+        'Section background-position-y "10px" has no exact Templatical equivalent; imported as "top".',
+      ],
+    });
+  });
+});

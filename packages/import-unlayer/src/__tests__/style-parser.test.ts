@@ -350,3 +350,35 @@ describe("readUnlayerBackgroundImage on adversarial input", () => {
     expect(performance.now() - started).toBeLessThan(1000);
   });
 });
+
+describe("readUnlayerBackgroundImage edge cases", () => {
+  it("reads an auto size and a keyword customPosition exactly", () => {
+    expect(
+      readUnlayerBackgroundImage({ url: "u", size: "auto" }, "Row", 600),
+    ).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(
+      readUnlayerBackgroundImage(
+        { url: "u", position: "custom", customPosition: ["left", "bottom"] },
+        "Row",
+        600,
+      ),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "bottom" } },
+      notes: [],
+    });
+  });
+
+  it("centres an unknown position keyword, with a note", () => {
+    expect(
+      readUnlayerBackgroundImage({ url: "u", position: "middle" }, "Row", 600),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "center" } },
+      notes: [
+        'Row backgroundImage.position "middle" has no exact Templatical equivalent; imported as "center center".',
+      ],
+    });
+  });
+});

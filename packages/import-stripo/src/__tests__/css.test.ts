@@ -356,3 +356,72 @@ describe("readCssBackground on adversarial input", () => {
     expect(performance.now() - started).toBeLessThan(1000);
   });
 });
+
+describe("readCssBackground edge cases", () => {
+  const read = (styles: Record<string, string>) =>
+    readCssBackground(
+      { "background-image": "url(u)", ...styles },
+      "Section",
+      600,
+    );
+
+  it("reads contain, auto and single-keyword positions exactly", () => {
+    expect(read({ "background-size": "contain" })?.image.size).toBe("contain");
+    expect(read({ "background-size": "auto" })).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(read({ "background-position": "bottom" })).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(read({ "background-position": "left" })).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+  });
+
+  it("maps offsets and lengths to the edge they start from, with a note", () => {
+    expect(
+      read({ "background-position": "right 20px bottom 10px" })?.notes,
+    ).toEqual([
+      'Section background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+    ]);
+    expect(
+      read({ "background-position": "20px 10px" })?.image.position,
+    ).toEqual({ x: "left", y: "top" });
+  });
+
+  it("notes lossy background-position-x and -y values", () => {
+    expect(
+      read({ "background-position-x": "30%", "background-position-y": "10px" }),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "top" } },
+      notes: [
+        'Section background-position-x "30%" has no exact Templatical equivalent; imported as "center".',
+        'Section background-position-y "10px" has no exact Templatical equivalent; imported as "top".',
+      ],
+    });
+  });
+
+  it("reads a shorthand's quoted url, size pair and repeat", () => {
+    expect(
+      readCssBackground(
+        { background: 'url("a b.png") left bottom / 50% auto repeat-y' },
+        "Section",
+        600,
+      ),
+    ).toEqual({
+      image: {
+        url: "a b.png",
+        size: "auto",
+        position: { x: "left", y: "bottom" },
+        repeat: true,
+      },
+      notes: [
+        'Section background-size "50% auto" has no exact Templatical equivalent; imported as "auto".',
+        'Section background-repeat "repeat-y" has no exact Templatical equivalent; imported as "repeat".',
+      ],
+    });
+  });
+});

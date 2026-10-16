@@ -244,3 +244,46 @@ describe("readBeefreeBackgroundImage on adversarial input", () => {
     expect(performance.now() - started).toBeLessThan(1000);
   });
 });
+
+describe("readBeefreeBackgroundImage edge cases", () => {
+  const read = (style: Record<string, string>) =>
+    readBeefreeBackgroundImage(
+      { "background-image": "url(u)", ...style },
+      "Row",
+      600,
+    );
+
+  it("reads contain, auto and single-keyword positions exactly", () => {
+    expect(read({ "background-size": "contain" })?.image.size).toBe("contain");
+    expect(read({ "background-size": "auto" })).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(read({ "background-position": "bottom" })).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(read({ "background-position": "left" })).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+    expect(read({ "background-repeat": "no-repeat" })).toMatchObject({
+      image: { repeat: false },
+      notes: [],
+    });
+  });
+
+  it("maps offsets and lengths to the edge they start from, with a note", () => {
+    expect(
+      read({ "background-position": "right 20px bottom 10px" })?.notes,
+    ).toEqual([
+      'Row background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+    ]);
+    expect(read({ "background-position": "20px 10px" })).toMatchObject({
+      image: { position: { x: "left", y: "top" } },
+      notes: [
+        'Row background-position "20px 10px" has no exact Templatical equivalent; imported as "left top".',
+      ],
+    });
+  });
+});
