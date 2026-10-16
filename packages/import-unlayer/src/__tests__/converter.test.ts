@@ -476,25 +476,25 @@ describe("convertUnlayerTemplate", () => {
     expect(report.warnings).toEqual([]);
   });
 
-  describe("row backgrounds", () => {
-    function convertRow(values: UnlayerRow["values"]) {
-      const { content, report } = convertUnlayerTemplate({
-        body: {
-          values: {},
-          rows: [
-            {
-              cells: [1],
-              columns: [{ contents: [], values: {} }],
-              values,
-            },
-          ],
-        },
-      });
-      const section = content.blocks[0];
-      if (section.type !== "section") throw new Error("expected a section");
-      return { section, warnings: report.warnings };
-    }
+  function convertRow(values: UnlayerRow["values"]) {
+    const { content, report } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1],
+            columns: [{ contents: [], values: {} }],
+            values,
+          },
+        ],
+      },
+    });
+    const section = content.blocks[0];
+    if (section.type !== "section") throw new Error("expected a section");
+    return { section, warnings: report.warnings };
+  }
 
+  describe("row backgrounds", () => {
     it("prefers the content background and warns naming the dropped row background", () => {
       const { section, warnings } = convertRow({
         backgroundColor: "#1d1d1f",
@@ -530,24 +530,6 @@ describe("convertUnlayerTemplate", () => {
   });
 
   describe("row background images", () => {
-    function convertRow(values: UnlayerRow["values"]) {
-      const { content, report } = convertUnlayerTemplate({
-        body: {
-          values: {},
-          rows: [
-            {
-              cells: [1],
-              columns: [{ contents: [], values: {} }],
-              values,
-            },
-          ],
-        },
-      });
-      const section = content.blocks[0];
-      if (section.type !== "section") throw new Error("expected a section");
-      return { section, warnings: report.warnings };
-    }
-
     it("maps a content-width image exactly", () => {
       const { section, warnings } = convertRow({
         backgroundImage: {
