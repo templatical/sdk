@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import type { ImportReportEntry } from "@templatical/import-html";
 import type {
   Block,
   DividerBlock,
@@ -558,7 +559,7 @@ describe("compiled paint and padding", () => {
     expect(section.wrapper).toBeUndefined();
   });
 
-  it("reports a background image and keeps the colour", () => {
+  it("drops a stripe image the body covers, and keeps the colours", () => {
     const html = compiled(
       `<table class="es-content" style="background-color:#222222;background-image:url(https://cdn.example/stripe.png)"><tr><td>
         <table class="es-content-body" width="600" style="background-color:#ffffff"><tr><td style="padding:0"><p>Photo</p></td></tr></table>
@@ -569,12 +570,17 @@ describe("compiled paint and padding", () => {
     const section = sections(content.blocks)[0];
     expect(section.styles.backgroundColor).toBe("#ffffff");
     expect(section.wrapper).toEqual({ backgroundColor: "#222222" });
-    expect(JSON.stringify(content)).not.toContain("stripe.png");
+    expect(section.backgroundImage).toBeUndefined();
     expect(
-      report.entries.some((e) =>
-        /background image was not imported/.test(e.note ?? ""),
-      ),
-    ).toBe(true);
+      report.entries.filter((e) => e.templaticalBlockType === "section"),
+    ).toEqual([
+      {
+        sourceTag: "es-content",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: "The band colour was imported as a section wrapper. The stripe's background image outside the content width was dropped.",
+      },
+    ]);
   });
 
   it("maps structure padding onto the section, including an explicit 0", () => {
@@ -645,6 +651,170 @@ describe("compiled report", () => {
           e.sourceTag === "es-content" && e.templaticalBlockType === "section",
       ),
     ).toBe(true);
+  });
+});
+
+describe("compiled background images", () => {
+  const sectionEntries = (entries: ImportReportEntry[]) =>
+    entries.filter((e) => e.templaticalBlockType === "section");
+
+  it("maps the content body's image onto the section", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td>
+        <table class="es-content-body" width="600" style="background-color:#ffffff;background-image:url(https://cdn.example/body.png);background-repeat:no-repeat;background-position:center top"><tr><td style="padding:0"><p>Photo</p></td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.example/body.png",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: false,
+    });
+    expect(section.styles.backgroundColor).toBe("#ffffff");
+    expect(sectionEntries(report.entries)).toEqual([
+      {
+        sourceTag: "es-content",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("paints the stripe's image, and its colour, over a transparent body", () => {
+    const html = compiled(
+      `<table class="es-content" style="background-color:#222222;background-image:url(https://cdn.example/stripe.png)"><tr><td>
+        <table class="es-content-body" width="600"><tr><td style="padding:0"><p>Photo</p></td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.example/stripe.png",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+    expect(section.styles.backgroundColor).toBe("#222222");
+    expect(section.wrapper).toBeUndefined();
+    expect(sectionEntries(report.entries)[0].note).toBe(
+      "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
+    );
+  });
+
+  it("drops the band colour when the section has an image", () => {
+    const html = compiled(
+      `<table class="es-content" style="background-color:#222222"><tr><td>
+        <table class="es-content-body" width="600" style="background-color:#ffffff;background-image:url(https://cdn.example/body.png)"><tr><td style="padding:0"><p>Photo</p></td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.wrapper).toBeUndefined();
+    expect(section.backgroundImage?.url).toBe("https://cdn.example/body.png");
+    expect(sectionEntries(report.entries)[0].note).toBe(
+      "The band colour #222222 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    );
+  });
+
+  it("moves a lone container's image up to the section", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td>
+        <table class="es-content-body" width="600" style="background-color:#ffffff"><tr><td style="padding:0">
+          <table class="es-left" style="background-image:url(https://cdn.example/col.png)"><tr><td><p>Only</p></td></tr></table>
+        </td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].backgroundImage?.url).toBe(
+      "https://cdn.example/col.png",
+    );
+    expect(sectionEntries(report.entries)[0].status).toBe("converted");
+  });
+
+  it("drops container images that differ, naming the columns", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td>
+        <table class="es-content-body" width="600"><tr><td style="padding:0">
+          <table class="es-left" style="background-image:url(https://cdn.example/a.png)"><tr><td><p>Left</p></td></tr></table>
+          <table class="es-right" style="background-image:url(https://cdn.example/b.png)"><tr><td><p>Right</p></td></tr></table>
+        </td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].backgroundImage).toBeUndefined();
+    expect(sectionEntries(report.entries)[0].note).toBe(
+      "Background images on columns 1, 2 were dropped. A Templatical section has one background image.",
+    );
+  });
+
+  it("copies a body image onto each of its rows' sections, and says so", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td>
+        <table class="es-content-body" width="600" style="background-image:url(https://cdn.example/body.png)">
+          <tr><td style="padding:0"><p>One</p></td></tr>
+          <tr><td style="padding:0"><p>Two</p></td></tr>
+        </table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    const [one, two] = sections(content.blocks);
+    expect(one.backgroundImage?.url).toBe("https://cdn.example/body.png");
+    expect(two.backgroundImage).toEqual(one.backgroundImage);
+    const spread =
+      "A background image behind 2 sections was applied to each of them — Templatical has no multi-section band.";
+    expect(sectionEntries(report.entries).map((e) => e.note)).toEqual([
+      spread,
+      spread,
+    ]);
+  });
+
+  it("maps a row cell's own image onto its section, ahead of the body's", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td>
+        <table class="es-content-body" width="600" style="background-image:url(https://cdn.example/body.png)"><tr><td style="padding:0;background-image:url(https://cdn.example/row.png)"><p>Row</p></td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].backgroundImage?.url).toBe(
+      "https://cdn.example/row.png",
+    );
+    expect(sectionEntries(report.entries)).toEqual([
+      {
+        sourceTag: "es-content",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("reads the stripe's image from its cell, as it reads the stripe's colour", () => {
+    const html = compiled(
+      `<table class="es-content"><tr><td style="background-image:url(https://cdn.example/cell.png)">
+        <table class="es-content-body" width="600"><tr><td style="padding:0"><p>Photo</p></td></tr></table>
+      </td></tr></table>`,
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(sections(content.blocks)[0].backgroundImage?.url).toBe(
+      "https://cdn.example/cell.png",
+    );
+    expect(sectionEntries(report.entries)[0].note).toBe(
+      "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
+    );
+  });
+
+  it("drops the page's background image with a warning", () => {
+    // `compiled()` pastes its second argument into the wrapper's style.
+    const html = compiled(
+      contentBody(`<tr><td><p>Copy</p></td></tr>`, { body: "#ffffff" }),
+      "#ffffff;background-image:url(https://cdn.example/page.png)",
+    );
+    const { content, report } = convertStripoTemplate(html);
+    expect(content.settings.backgroundColor).toBe("#ffffff");
+    expect(report.warnings).toContain(
+      'The email background image "https://cdn.example/page.png" was dropped; Templatical has no email-level background image.',
+    );
   });
 });
 
@@ -752,6 +922,24 @@ ${structure}
     expect(report.entries.some((e) => e.sourceTag === "esd-stripe")).toBe(true);
   });
 
+  it("paints a stripe with no body and no structure with the stripe's image", () => {
+    const html = `<!DOCTYPE html><html><body>
+<table><tr><td class="esd-stripe" bgcolor="#112233" style="background-image:url(https://cdn.example/band.png)">
+<table><tr><td class="esd-block-text"><p>Stripe Copy</p></td></tr></table>
+</td></tr></table>
+</body></html>`;
+    const { content, report } = convertStripoTemplate(html);
+    const section = sections(content.blocks)[0];
+    expect(section.backgroundImage?.url).toBe("https://cdn.example/band.png");
+    expect(section.styles.backgroundColor).toBe("#112233");
+    expect(report.entries.find((e) => e.sourceTag === "esd-stripe")).toEqual({
+      sourceTag: "esd-stripe",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
+    });
+  });
+
   it("reads an esd-block-spacer border as a divider", () => {
     const html = editorDoc(
       `<td class="esd-structure"><table><tr><td class="esd-container-frame"><table><tr>
@@ -802,6 +990,57 @@ ${structure}
     expect(blob).toContain("CSS Widget Copy");
     expect(blob).toContain("color: #c01010");
     expect(blob).not.toContain("p { color");
+  });
+
+  it("maps a structure's own image onto its section", () => {
+    const { content, report } = convertStripoTemplate(
+      editorDoc(
+        `<td class="esd-structure es-p20" style="background-image:url(https://cdn.example/s.png);background-size:cover;background-position:center center;background-repeat:no-repeat"><table><tr><td class="esd-container-frame"><table><tr><td class="esd-block-text"><p>Hero</p></td></tr></table></td></tr></table></td>`,
+      ),
+    );
+    expect(sections(content.blocks)[0].backgroundImage).toEqual({
+      url: "https://cdn.example/s.png",
+      size: "cover",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+    expect(
+      report.entries.filter((e) => e.templaticalBlockType === "section"),
+    ).toEqual([
+      {
+        sourceTag: "esd-structure",
+        templaticalBlockType: "section",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("moves a lone container frame's image up to the section", () => {
+    const { content } = convertStripoTemplate(
+      editorDoc(
+        `<td class="esd-structure es-p20"><table><tr><td class="esd-container-frame" style="background-image:url(https://cdn.example/c.png)"><table><tr><td class="esd-block-text"><p>Hero</p></td></tr></table></td></tr></table></td>`,
+      ),
+    );
+    expect(sections(content.blocks)[0].backgroundImage?.url).toBe(
+      "https://cdn.example/c.png",
+    );
+  });
+
+  it("drops a stripe image the painted body covers", () => {
+    const { report } = convertStripoTemplate(
+      editorDoc(
+        `<td class="esd-structure es-p20"><table><tr><td class="esd-container-frame"><table><tr><td class="esd-block-text"><p>Hero</p></td></tr></table></td></tr></table></td>`,
+        ' style="background-image:url(https://cdn.example/stripe.png)"',
+      ),
+    );
+    expect(
+      report.entries.find((e) => e.templaticalBlockType === "section"),
+    ).toEqual({
+      sourceTag: "esd-structure",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "The stripe's background image outside the content width was dropped.",
+    });
   });
 });
 

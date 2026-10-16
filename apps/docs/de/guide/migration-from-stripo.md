@@ -146,13 +146,26 @@ Der kompilierte Export entfernt `esd-*` von den Elementen und behält `es-*`-Res
 | `es-spacer` mit sichtbarem Rahmen | `divider` | Stil, Farbe und Stärke aus `border-bottom` oder `border-top`. Die Breite folgt der Regel unten. |
 | `es-spacer` ohne Rahmen | `spacer` | Höhe aus `style`, dem `height`-Attribut oder dem vertikalen Padding. |
 
-`settings.backgroundColor` ist die erste gesetzte Farbe von `es-wrapper` oder `es-wrapper-color` (`#ffffff`, wenn keine gesetzt ist). Eine `es-*-body`-Füllung ist der Hintergrund des Abschnitts. Ein transparenter Body lässt die Streifenfüllung auf dem Abschnitt. Eine Streifenfüllung, die sich von Seite und Body unterscheidet, wird `section.wrapper.backgroundColor`; dieser Abschnitt ist `approximated`. Ein `background-image` wird gemeldet und verworfen; die Farbe bleibt.
+`settings.backgroundColor` ist die erste gesetzte Farbe von `es-wrapper` oder `es-wrapper-color` (`#ffffff`, wenn keine gesetzt ist). Eine `es-*-body`-Füllung ist der Hintergrund des Abschnitts. Ein transparenter Body lässt die Streifenfüllung auf dem Abschnitt. Eine Streifenfüllung, die sich von Seite und Body unterscheidet, wird `section.wrapper.backgroundColor`; dieser Abschnitt ist `approximated`. Hintergrundbilder, und was sie mit dieser Streifenfarbe tun, folgen [Hintergrundbilder](#hintergrundbilder).
 
 Das Padding der Strukturzelle ist das Padding des Abschnitts. Der Standard ist 0. Im Plugin-HTML setzt `es-p20` jede Seite und `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` überschreibt eine Seite; ein Inline-Padding überschreibt die Seiten, die es nennt. Diese Klassen werden am Structure-Element gelesen.
 
 Die Breite eines Trenners gilt für die Spalte, in der er steht. Fehlende Breite, `auto` oder `100%` füllt diese Spalte. Ein anderer Prozentwert bleibt ein Prozentwert, auf zwei Dezimalstellen gerundet und auf 0–100 begrenzt. Eine px-Breite bleibt px, bis sie den Raum der Spalte füllt (der Anteil der Spalte an der Body-Breite, abzüglich des Abschnitts-Paddings an der Kante, die diese Spalte trägt, und des eigenen Seiten-Paddings des Trenners). `double`, `groove`, `ridge`, `inset` und `outset` werden als `solid` importiert. Eine schmalere Linie mit Ausrichtung links oder rechts wird zentriert; dieser Eintrag ist `approximated`. Eine schmalere Linie ohne Ausrichtung gilt als links.
 
 Alles andere in einer Zeile läuft durch `@templatical/import-html` (Überschriften, Absätze, Bilder, `<hr>`-Trenner).
+
+### Hintergrundbilder
+
+Das Bild eines Elements wird aus seinem Inline-`background-image`, dem Bild in seiner `background`-Kurzschreibweise oder seinem `background`-Attribut gelesen. Ein Abschnitt übernimmt das nächstgelegene:
+
+1. Das eigene Bild der Structure: die Zeilenzelle, `esd-structure` im Plugin-HTML.
+2. Das Bild des `es-*-body`, der Inhaltsfläche hinter jeder Structure im Streifen.
+3. Die Bilder der Container (`es-left` / `es-right` oder `esd-container-frame`), wenn es nur einen Container gibt oder alle dasselbe Bild teilen. Andernfalls, oder neben einem näheren Bild, werden sie verworfen, und die Notiz nennt die Spalten.
+4. Das Bild des Streifens, nur solange der Body transparent ist. Der Abschnitt zeichnet es in Inhaltsbreite, und der Eintrag ist `approximated`. Ein Streifenbild, das der Body verdeckt, wird mit einer Notiz verworfen.
+
+Ein Bild hinter mehreren Abschnitten, etwa ein Body-Bild über mehrere Structures, wird auf jeden kopiert, und jeder dieser Einträge ist `approximated` mit einer Notiz. Hat ein Abschnitt ein Bild, wird eine Streifenfarbe, die `section.wrapper.backgroundColor` geworden wäre, stattdessen mit einer Notiz verworfen, denn Outlook für Desktop malt eine Wrapper-Farbe über das Bild des Abschnitts. Ein Bild am `es-wrapper` hat keine Templatical-Entsprechung, und `report.warnings` nennt es.
+
+`background-size`, `background-position` und `background-repeat` werden mitgenommen, wo nicht gesetzt mit den CSS-Anfangswerten. Eine Größe, die eine Seite füllt (`100%`, `100% auto` oder eine px-Breite mindestens so groß wie der Body), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`. Jeder solche Wert wird vermerkt.
 
 ## Wo das Mapping verlustbehaftet ist
 

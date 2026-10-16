@@ -7,14 +7,19 @@ import {
   colorFromPaint,
   columnRooms,
   emailBodyWidth,
-  hasBackgroundImage,
+  imageFromPaint,
   readBoxPadding,
+  resolveSectionImage,
   resolveSectionPaint,
+  withoutBandOverImage,
+  type ImageLayer,
+  type ReadBackgroundImage,
   type SectionPaint,
 } from "./css";
 import {
   blocksFromHtml,
   pushEntry,
+  recordImageSpan,
   withBackground,
   type ConvertCtx,
 } from "./fragment";
@@ -28,7 +33,6 @@ const BODY_SELECTOR =
 
 const BETWEEN_NOTE = "Content between columns was placed after them.";
 const SEAM_NOTE = "This row's padding was split across more than one section.";
-const IMAGE_NOTE = "A background image was not imported.";
 
 type WidgetKind = "menu" | "social" | "button" | "spacer";
 
@@ -88,10 +92,47 @@ function bandColor($stripe: Cheerio<Element>): string {
   return $cell.length > 0 ? paintOf($cell) : "";
 }
 
-function imageNote(...styles: Array<string | undefined>): string | undefined {
-  return styles.some((style) => hasBackgroundImage(style))
-    ? IMAGE_NOTE
-    : undefined;
+function imageOf(
+  $el: Cheerio<Element>,
+  label: string,
+  boxWidth: number,
+): ReadBackgroundImage | null {
+  return imageFromPaint(
+    $el.attr("style"),
+    $el.attr("background"),
+    label,
+    boxWidth,
+  );
+}
+
+/** The stripe's image: on the stripe table, else on its cell, as `bandColor` reads colour. */
+function bandImage(
+  $stripe: Cheerio<Element>,
+  boxWidth: number,
+): ImageLayer | null {
+  const own = imageOf($stripe, "Stripe", boxWidth);
+  if (own) return { read: own, source: $stripe[0] };
+  if ($stripe.is("td") || $stripe.is("th")) return null;
+  const $cell = directCell($stripe);
+  const cell = $cell.length > 0 ? imageOf($cell, "Stripe", boxWidth) : null;
+  return cell ? { read: cell, source: $stripe[0] } : null;
+}
+
+/** A column's image: on its `es-left` / `es-right` table, else on that table's cell. */
+function columnImage(
+  $column: Cheerio<Element>,
+  boxWidth: number,
+): ReadBackgroundImage | null {
+  const own = imageOf($column, "Column", boxWidth);
+  if (own) return own;
+  const $cell = directCell($column);
+  return $cell.length > 0 ? imageOf($cell, "Column", boxWidth) : null;
+}
+
+interface StripeImages {
+  body: ImageLayer | null;
+  band: ImageLayer | null;
+  bodyPainted: boolean;
 }
 
 function hasPadding(padding: SpacingValue): boolean {
@@ -354,19 +395,21 @@ function sectionsFromRow(
   ctx: ConvertCtx,
   token: string,
   paint: SectionPaint,
-  image: string | undefined,
+  images: StripeImages,
   bodyWidth: number,
 ): Block[] {
   if (isHidden($row)) return [];
   const pieces: Piece[] = [];
   let padding = { ...ZERO };
   let sawCell = false;
+  let $structure: Cheerio<Element> | null = null;
   $row.children("td, th").each((_, cell) => {
     const $cell = $(cell) as Cheerio<Element>;
     if (isHidden($cell)) return;
     if (!sawCell) {
       padding = readBoxPadding($cell.attr("class"), $cell.attr("style"));
       sawCell = true;
+      $structure = $cell;
     }
     pieces.push(...collectPieces($cell, $));
   });
@@ -376,6 +419,7 @@ function sectionsFromRow(
     children: Block[][];
     layout: ColumnLayout;
     extra?: string;
+    columnImages: Array<ReadBackgroundImage | null>;
   }> = [];
   for (const group of groupsFromPieces(pieces)) {
     if (group.mode === "columns") {
@@ -388,6 +432,9 @@ function sectionsFromRow(
         children: built.children,
         layout: built.layout,
         extra: built.flattenNote,
+        columnImages: cols.map((el) =>
+          columnImage($(el) as Cheerio<Element>, bodyWidth),
+        ),
       });
       continue;
     }
@@ -398,32 +445,57 @@ function sectionsFromRow(
       columnRooms(bodyWidth, "1", padding, 1)[0],
     );
     if (blocks.length === 0) continue;
-    rendered.push({ children: [blocks], layout: "1", extra: group.extra });
+    rendered.push({
+      children: [blocks],
+      layout: "1",
+      extra: group.extra,
+      columnImages: [],
+    });
   }
   if (rendered.length === 0) return [];
 
   const seam =
     rendered.length > 1 && hasPadding(padding) ? SEAM_NOTE : undefined;
+  const structureImage = $structure
+    ? imageOf($structure, "Section", bodyWidth)
+    : null;
+  const structure: ImageLayer | null =
+    structureImage && $structure
+      ? { read: structureImage, source: $structure[0] }
+      : null;
   return rendered.map((group, index) => {
-    const notes = [...paint.notes, group.extra, image, seam].filter(
-      (note): note is string => Boolean(note),
-    );
-    pushEntry(
+    const image = resolveSectionImage({
+      structure,
+      body: images.body,
+      band: images.band,
+      columns: group.columnImages,
+      bodyPainted: images.bodyPainted,
+    });
+    const groupPaint = withoutBandOverImage(paint, image.image !== undefined);
+    const notes = [
+      ...groupPaint.notes,
+      group.extra,
+      ...image.notes,
+      seam,
+    ].filter((note): note is string => Boolean(note));
+    const entry = pushEntry(
       ctx,
       token,
       "section",
       notes.length > 0 ? "approximated" : "converted",
       notes.length > 0 ? notes.join(" ") : undefined,
     );
+    recordImageSpan(ctx, image.source, entry);
     const section = createSectionBlock({
       columns: group.layout,
       children: group.children,
       styles: { padding: splitPadding(padding, rendered.length, index) },
-      ...(paint.wrapperColor
-        ? { wrapper: { backgroundColor: paint.wrapperColor } }
+      ...(groupPaint.wrapperColor
+        ? { wrapper: { backgroundColor: groupPaint.wrapperColor } }
         : {}),
+      ...(image.image ? { backgroundImage: image.image } : {}),
     });
-    return withBackground(section, paint.backgroundColor);
+    return withBackground(section, groupPaint.backgroundColor);
   });
 }
 
@@ -436,21 +508,23 @@ function sectionsFromStripe(
   const token = stripeToken($stripe) ?? "es-content";
   const $body = $stripe.find(BODY_SELECTOR).first() as Cheerio<Element>;
   const rows = $body.length > 0 ? directRows($body, $) : directRows($stripe, $);
+  const $width = $body.length > 0 ? $body : $stripe;
+  const bodyWidth = emailBodyWidth($width.attr("width"), $width.attr("style"));
   const paint = resolveSectionPaint(
     ctx.pageBackground ?? "#ffffff",
     bandColor($stripe),
     $body.length > 0 ? paintOf($body) : "",
   );
-  const image = imageNote(
-    $stripe.attr("style"),
-    directCell($stripe).attr("style"),
-    $body.attr("style"),
-  );
-  const $width = $body.length > 0 ? $body : $stripe;
-  const bodyWidth = emailBodyWidth($width.attr("width"), $width.attr("style"));
+  const bodyImage =
+    $body.length > 0 ? imageOf($body, "Section", bodyWidth) : null;
+  const images: StripeImages = {
+    body: bodyImage ? { read: bodyImage, source: $body[0] } : null,
+    band: bandImage($stripe, bodyWidth),
+    bodyPainted: $body.length > 0 && paintOf($body) !== "",
+  };
   const out: Block[] = [];
   for (const $row of rows) {
-    out.push(...sectionsFromRow($row, $, ctx, token, paint, image, bodyWidth));
+    out.push(...sectionsFromRow($row, $, ctx, token, paint, images, bodyWidth));
   }
   return out;
 }

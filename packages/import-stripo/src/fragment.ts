@@ -9,6 +9,11 @@ export interface ConvertCtx {
   css?: string;
   /** `es-wrapper` colour, or `#ffffff` when the document has none. */
   pageBackground?: string;
+  /**
+   * The report entries of the sections that took each shared image, keyed by
+   * the element that paints it (a body, stripe or structure cell).
+   */
+  imageSpans?: Map<object, ImportReportEntry[]>;
 }
 
 /** Paint after `createSectionBlock` so `styles` keeps its required padding. */
@@ -59,11 +64,38 @@ export function pushEntry(
   templaticalBlockType: string | null,
   status: ImportReportEntry["status"],
   note?: string,
-): void {
-  ctx.entries.push({
+): ImportReportEntry {
+  const entry: ImportReportEntry = {
     sourceTag,
     templaticalBlockType,
     status,
     ...(note ? { note } : {}),
-  });
+  };
+  ctx.entries.push(entry);
+  return entry;
+}
+
+/** Record that a section's entry took the image `source` paints. */
+export function recordImageSpan(
+  ctx: ConvertCtx,
+  source: object | null,
+  entry: ImportReportEntry,
+): void {
+  if (!source) return;
+  ctx.imageSpans ??= new Map();
+  const spanned = ctx.imageSpans.get(source) ?? [];
+  spanned.push(entry);
+  ctx.imageSpans.set(source, spanned);
+}
+
+/** Note on each entry whose section shares its image with another section. */
+export function noteImageSpans(ctx: ConvertCtx): void {
+  for (const spanned of ctx.imageSpans?.values() ?? []) {
+    if (spanned.length < 2) continue;
+    const note = `A background image behind ${spanned.length} sections was applied to each of them — Templatical has no multi-section band.`;
+    for (const entry of spanned) {
+      entry.status = "approximated";
+      entry.note = entry.note ? `${entry.note} ${note}` : note;
+    }
+  }
 }

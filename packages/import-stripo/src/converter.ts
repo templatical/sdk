@@ -3,10 +3,10 @@ import { convertHtmlTemplate } from "@templatical/import-html";
 import type { ImportReport, ImportResult } from "@templatical/import-html";
 import { createDefaultTemplateContent } from "@templatical/types";
 import { convertCompiled } from "./compiled";
-import { colorFromPaint } from "./css";
+import { colorFromPaint, imageFromPaint } from "./css";
 import { detectStripoKind } from "./detect";
 import { convertEditor } from "./editor";
-import type { ConvertCtx } from "./fragment";
+import { noteImageSpans, type ConvertCtx } from "./fragment";
 
 export interface ConvertStripoOptions {
   /** Sibling CSS from plugin `getTemplateData()`. Applied inside each HTML fragment. */
@@ -40,6 +40,26 @@ function pageBackground($: CheerioAPI): string {
     if (color) return color;
   }
   return "#ffffff";
+}
+
+/** The page's background image, which has no Templatical equivalent: the first `es-wrapper-color` / `es-wrapper` that paints one. */
+function pageImageWarning($: CheerioAPI): string | null {
+  const nodes = $(
+    "[class~='es-wrapper-color'], [class~='es-wrapper']",
+  ).toArray();
+  for (const node of nodes) {
+    const $el = $(node);
+    const read = imageFromPaint(
+      $el.attr("style"),
+      $el.attr("background"),
+      "Page",
+      undefined,
+    );
+    if (read) {
+      return `The email background image "${read.image.url}" was dropped; Templatical has no email-level background image.`;
+    }
+  }
+  return null;
 }
 
 function summarize(ctx: ConvertCtx): ImportReport {
@@ -105,12 +125,16 @@ export function convertStripoTemplate(
     warnings: [],
     css: options?.css,
   };
-  const pageBg = pageBackground(load(prepared));
+  const $page = load(prepared);
+  const pageBg = pageBackground($page);
+  const pageImage = pageImageWarning($page);
+  if (pageImage) ctx.warnings.push(pageImage);
   ctx.pageBackground = pageBg;
   const blocks =
     kind === "editor"
       ? convertEditor(prepared, ctx)
       : convertCompiled(prepared, ctx);
+  noteImageSpans(ctx);
 
   // After `fallback.content`: its settings carry the HTML importer's white
   // page, which would hide the wrapper colour.

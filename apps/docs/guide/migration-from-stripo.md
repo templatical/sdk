@@ -146,13 +146,26 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. A `background-image` is reported and dropped; the colour still applies.
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. Background images, and what they do to that band colour, follow [Background images](#background-images).
 
 The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
 
 A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share of the body width, less the section padding on the edge that column owns, and the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
 
 Everything else in a row goes through `@templatical/import-html` (headings, paragraphs, images, `<hr>` dividers).
+
+### Background images {#background-images}
+
+An element's image is read from its inline `background-image`, the image in its `background` shorthand, or its `background` attribute. A section takes the nearest:
+
+1. The structure's own image: the row cell, `esd-structure` in plugin HTML.
+2. The `es-*-body` image, the content area behind every structure in the stripe.
+3. The containers' images (`es-left` / `es-right`, or `esd-container-frame`), when there is one container or they all share the same image. Otherwise, or beside a nearer image, they're dropped, and the note names the columns.
+4. The stripe's image, only while the body is transparent. The section paints it at the content width, and the entry is `approximated`. A stripe image the body covers is dropped with a note.
+
+An image behind several sections, such as a body image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
+
+`background-size`, `background-position` and `background-repeat` come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the body's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
 ## Where the mapping is lossy
 
