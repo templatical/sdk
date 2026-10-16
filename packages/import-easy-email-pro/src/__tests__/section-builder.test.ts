@@ -454,3 +454,101 @@ describe("buildTopLevel", () => {
     ]);
   });
 });
+
+describe("background images", () => {
+  const section = (
+    text: string,
+    attributes: Record<string, unknown> = {},
+  ): EasyEmailProNode => ({
+    type: "standard-section",
+    data: {},
+    attributes,
+    children: [col([para(text)])],
+  });
+
+  it("maps a section's background-url and longhands onto backgroundImage, converted", () => {
+    const { blocks, entries } = build(
+      section("Hi", {
+        "background-url": "https://cdn.test/hero.jpg",
+        "background-size": "cover",
+        "background-position": "center top",
+        "background-repeat": "no-repeat",
+      }),
+    );
+    expect((blocks[0] as SectionBlock).backgroundImage).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "center", y: "top" },
+      repeat: false,
+    });
+    expect(entries[0]).toEqual({
+      sourceTag: "standard-section",
+      templaticalBlockType: "section",
+      status: "converted",
+    });
+  });
+
+  it("reports a section size with no keyword as approximated", () => {
+    const { entries } = build(
+      section("Hi", { "background-url": "u", "background-size": "100%" }),
+    );
+    expect(entries[0]).toEqual({
+      sourceTag: "standard-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Section background-size "100%" has no exact Templatical equivalent; imported as "cover".',
+    });
+  });
+
+  it("maps a wrapper's image onto each section's wrapper, one copy each", () => {
+    const { blocks } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: {
+        "background-url": "https://cdn.test/band.png",
+        "background-position": "left bottom",
+      },
+      children: [section("A"), section("B")],
+    });
+    const [a, b] = blocks as SectionBlock[];
+    expect(a.wrapper?.backgroundImage).toEqual({
+      url: "https://cdn.test/band.png",
+      size: "auto",
+      position: { x: "left", y: "bottom" },
+      repeat: true,
+    });
+    expect(b.wrapper?.backgroundImage).toEqual(a.wrapper?.backgroundImage);
+    expect(b.wrapper?.backgroundImage).not.toBe(a.wrapper?.backgroundImage);
+  });
+
+  it("appends a lossy wrapper value to the section entry", () => {
+    const { entries } = build({
+      type: "standard-wrapper",
+      data: {},
+      attributes: { "background-url": "u", "background-repeat": "repeat-x" },
+      children: [section("A")],
+    });
+    expect(
+      entries.filter((entry) => entry.templaticalBlockType === "section"),
+    ).toEqual([
+      {
+        sourceTag: "standard-section",
+        templaticalBlockType: "section",
+        status: "approximated",
+        note: 'Wrapper background-repeat "repeat-x" has no exact Templatical equivalent; imported as "repeat".',
+      },
+    ]);
+  });
+
+  it("keeps a hero's background-url as its leading image, with no backgroundImage", () => {
+    const { blocks } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: { "background-url": "https://cdn.test/hero.png" },
+      children: [],
+    });
+    const hero = blocks[0] as SectionBlock;
+    expect(hero.children[0][0].type).toBe("image");
+    expect("backgroundImage" in hero).toBe(false);
+  });
+});

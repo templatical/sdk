@@ -9949,12 +9949,12 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | Easy Email Pro | Templatical block | Notes |
 |---|---|---|
 | `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (the whole stack, so its fallbacks survive) / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
-| `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. |
+| `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. `background-url` with its size, position and repeat → `backgroundImage` (see [Background images](#background-images)). |
 | `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
-| `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
+| `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
-| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
+| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / `background-url` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
@@ -9979,6 +9979,14 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | Any other `type` | `HtmlBlock` | The raw node is preserved as JSON, flagged `html-fallback`. |
 
 `visible: "desktop"` / `"mobile"` maps onto `visibility`. Absent when the key is missing.
+
+### Background images {#background-images}
+
+`background-url` on a `standard-section` becomes the section's `backgroundImage`, and on a `standard-wrapper` or a page header / footer band the `wrapper.backgroundImage` of each section it holds. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, read through the same attribute cascade as every other attribute; one the node leaves out takes MJML's default (`auto`, `top center`, `repeat`), which is what Easy Email Pro renders.
+
+A value with no exact Templatical keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
+
+`standard-hero` keeps its current mapping: its `background-url` is a leading `ImageBlock`.
 
 ## Lossy conversions
 

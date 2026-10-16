@@ -9,6 +9,7 @@ import {
   parseColor,
   parsePercent,
   parsePx,
+  readMjmlBackgroundImage,
   readPadding,
 } from "./attribute-parser";
 import { convertLeaf, type Converted, type MapContext } from "./block-mapper";
@@ -98,6 +99,15 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   paintSection(section, node, map, {
     stackOnMobile: plan.grouped ? false : undefined,
   });
+  const background = readMjmlBackgroundImage(
+    (name) => readAttr(node, name, map.resolve),
+    "Section",
+    map.contentWidth,
+  );
+  if (background) {
+    section.backgroundImage = background.image;
+    reasons.push(...background.notes);
+  }
   entries.unshift(
     sectionEntry(
       node,
@@ -187,9 +197,19 @@ export function applyWrapper(
   const sections = blocks.filter(isSection);
   if (sections.length === 0) return;
 
-  const wrapper = readWrapper(node, map);
+  const { wrapper, notes } = readWrapper(node, map);
   for (const section of sections) {
-    section.wrapper = { ...wrapper };
+    section.wrapper = {
+      ...wrapper,
+      ...(wrapper.backgroundImage
+        ? {
+            backgroundImage: {
+              ...wrapper.backgroundImage,
+              position: { ...wrapper.backgroundImage.position },
+            },
+          }
+        : {}),
+    };
   }
   if (sections.length > 1) {
     const note = `${node.type ?? "standard-wrapper"} holding ${sections.length} sections was applied to each of them — Templatical has no multi-section band.`;
@@ -198,6 +218,13 @@ export function applyWrapper(
       if (entry.status !== "converted") continue;
       entry.status = "approximated";
       entry.note = note;
+    }
+  }
+  if (notes.length > 0) {
+    for (const entry of entries) {
+      if (entry.templaticalBlockType !== "section") continue;
+      entry.status = "approximated";
+      entry.note = [entry.note, ...notes].filter(Boolean).join(" ");
     }
   }
 }
@@ -343,16 +370,28 @@ function sectionFill(
   );
 }
 
-function readWrapper(node: EasyEmailProNode, map: MapContext): SectionWrapper {
+function readWrapper(
+  node: EasyEmailProNode,
+  map: MapContext,
+): { wrapper: SectionWrapper; notes: string[] } {
   const backgroundColor = parseColor(
     readAttr(node, "background-color", map.resolve),
   );
   const padding = readPadding((key) => readAttr(node, key, map.resolve));
   const radius = parsePx(readAttr(node, "border-radius", map.resolve));
+  const background = readMjmlBackgroundImage(
+    (name) => readAttr(node, name, map.resolve),
+    "Wrapper",
+    map.contentWidth,
+  );
   return {
-    ...(backgroundColor ? { backgroundColor } : {}),
-    padding,
-    ...(radius !== undefined && radius > 0 ? { borderRadius: radius } : {}),
+    wrapper: {
+      ...(backgroundColor ? { backgroundColor } : {}),
+      padding,
+      ...(radius !== undefined && radius > 0 ? { borderRadius: radius } : {}),
+      ...(background ? { backgroundImage: background.image } : {}),
+    },
+    notes: background?.notes ?? [],
   };
 }
 
