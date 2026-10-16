@@ -249,6 +249,7 @@ const de: typeof en = {
     altTextPlaceholder: "Videobeschreibung",
     width: "Breite",
     fullWidth: "Volle Breite",
+    widthCustom: "Benutzerdefiniert",
     height: "Höhe",
     heightAuto: "Automatisch",
     heightCustom: "Benutzerdefiniert",

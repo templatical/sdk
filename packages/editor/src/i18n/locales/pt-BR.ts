@@ -246,6 +246,7 @@ const ptBR: typeof en = {
     altTextPlaceholder: "Descrição do vídeo",
     width: "Largura",
     fullWidth: "Largura Total",
+    widthCustom: "Personalizada",
     height: "Altura",
     heightAuto: "Automática",
     heightCustom: "Personalizada",

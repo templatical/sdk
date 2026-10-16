@@ -218,6 +218,7 @@ const fr: typeof en = {
     altTextPlaceholder: "Description de la vidéo",
     width: "Largeur",
     fullWidth: "Pleine largeur",
+    widthCustom: "Personnalisée",
     height: "Hauteur",
     heightAuto: "Automatique",
     heightCustom: "Personnalisée",

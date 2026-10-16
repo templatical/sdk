@@ -244,6 +244,7 @@ export default {
     altTextPlaceholder: "Video description",
     width: "Width",
     fullWidth: "Full Width",
+    widthCustom: "Custom",
     height: "Height",
     heightAuto: "Auto",
     heightCustom: "Custom",

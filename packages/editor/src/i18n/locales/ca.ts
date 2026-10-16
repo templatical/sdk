@@ -247,6 +247,7 @@ const ca: typeof en = {
     altTextPlaceholder: "Descripció del vídeo",
     width: "Amplada",
     fullWidth: "Amplada completa",
+    widthCustom: "Personalitzada",
     height: "Alçada",
     heightAuto: "Automàtica",
     heightCustom: "Personalitzada",

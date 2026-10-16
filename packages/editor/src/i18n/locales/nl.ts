@@ -219,6 +219,7 @@ const nl: typeof en = {
     altTextPlaceholder: "Beschrijving van de video",
     width: "Breedte",
     fullWidth: "Volledige breedte",
+    widthCustom: "Aangepast",
     height: "Hoogte",
     heightAuto: "Automatisch",
     heightCustom: "Aangepast",

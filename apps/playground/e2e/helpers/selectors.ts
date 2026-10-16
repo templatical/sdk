@@ -167,6 +167,8 @@ export const SELECTORS = {
    */
   blockToolbar: '[data-testid="block-toolbar"]',
   paragraphSpacing: '[data-testid="paragraph-spacing"]',
+  videoWidthMode: '[data-testid="video-width-mode"]',
+  videoWidthInput: '[data-testid="video-width-input"]',
   rightPanelSettings: "#tpl-tabpanel-settings",
   /**
    * Hydrated template-settings panel. Same async-chunk race as

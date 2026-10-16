@@ -13,6 +13,107 @@ function mountIt(block: VideoBlock) {
 }
 
 /**
+ * Imports and agent-written JSON carry widths the presets don't list (the
+ * BeeFree importer falls back to 600), so the control must still show them.
+ */
+describe("VideoToolbar width control", () => {
+  const widthSelect = (w: ReturnType<typeof mountIt>) =>
+    w.find('[data-testid="video-width-mode"]');
+  const widthInput = (w: ReturnType<typeof mountIt>) =>
+    w.find('[data-testid="video-width-input"]');
+
+  it("reads Custom with the stored value when the presets don't list the width", () => {
+    const wrapper = mountIt(createVideoBlock({ width: 600 }));
+
+    expect((widthSelect(wrapper).element as HTMLSelectElement).value).toBe(
+      "custom",
+    );
+    expect((widthInput(wrapper).element as HTMLInputElement).value).toBe("600");
+  });
+
+  it("reads the preset, with no px input, when the width is one", () => {
+    const preset = mountIt(createVideoBlock({ width: 400 }));
+    expect((widthSelect(preset).element as HTMLSelectElement).value).toBe(
+      "400",
+    );
+    expect(widthInput(preset).exists()).toBe(false);
+
+    const full = mountIt(createVideoBlock({ width: "full" }));
+    expect((widthSelect(full).element as HTMLSelectElement).value).toBe("full");
+    expect(widthInput(full).exists()).toBe(false);
+  });
+
+  it("switching from a preset to Custom seeds the default custom width", async () => {
+    const wrapper = mountIt(createVideoBlock({ width: 400 }));
+
+    await widthSelect(wrapper).setValue("custom");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<VideoBlock>];
+    expect(update.width).toBe(350);
+  });
+
+  it("choosing Custom again keeps a width the presets don't list", async () => {
+    const wrapper = mountIt(createVideoBlock({ width: 600 }));
+
+    await widthSelect(wrapper).setValue("custom");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("selecting Full width emits 'full'; selecting a preset emits the number", async () => {
+    const wrapper = mountIt(createVideoBlock({ width: 600 }));
+    const select = widthSelect(wrapper);
+
+    await select.setValue("full");
+    await select.setValue("300");
+
+    const emitted = wrapper.emitted("update") as [Partial<VideoBlock>][];
+    expect(emitted[0][0].width).toBe("full");
+    expect(emitted[1][0].width).toBe(300);
+  });
+
+  it("typing a valid custom width commits it as a number", async () => {
+    const wrapper = mountIt(createVideoBlock({ width: 600 }));
+
+    await widthInput(wrapper).setValue("450");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<VideoBlock>];
+    expect(update.width).toBe(450);
+  });
+
+  it("clearing or zeroing the custom width never emits width: 0", async () => {
+    // Same guard as the image block's custom width input (#259): an empty
+    // number field yields Number("") === 0, collapsing the thumbnail.
+    const wrapper = mountIt(createVideoBlock({ width: 600 }));
+    const input = widthInput(wrapper);
+
+    await input.setValue("");
+    await input.setValue("0");
+    await input.setValue("-5");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("translates the Full and Custom modes", () => {
+    const wrapper = mountEditor(VideoToolbar, {
+      props: { block: createVideoBlock({ width: 600 }) },
+      provides: { [TRANSLATIONS_KEY]: fr },
+    });
+    const options = widthSelect(wrapper)
+      .findAll("option")
+      .map((o) => o.text());
+
+    expect(options).toEqual([
+      fr.video.fullWidth,
+      "300px",
+      "400px",
+      "500px",
+      fr.video.widthCustom,
+    ]);
+  });
+});
+
+/**
  * The video thumbnail ships as an `mj-image`, so its height behaves exactly
  * like the image block's: optional, and absent means MJML's `auto`. Hence two
  * modes rather than a bare number field — `Number("")` is `0`, so a stored `0`

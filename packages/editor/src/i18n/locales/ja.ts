@@ -204,6 +204,7 @@ const translations: typeof en = {
     altTextPlaceholder: "動画の説明",
     width: "幅",
     fullWidth: "全幅",
+    widthCustom: "カスタム",
     height: "高さ",
     heightAuto: "自動",
     heightCustom: "カスタム",
