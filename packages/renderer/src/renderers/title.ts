@@ -1,5 +1,8 @@
 import type { TitleBlock } from "@templatical/types";
-import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
+import {
+  HEADING_LEVEL_FONT_SIZE,
+  fillEmptyParagraphs,
+} from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import {
   convertMergeTagsToValues,
@@ -25,7 +28,11 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
-  const content = unwrapParagraph(convertMergeTagsToValues(block.content));
+  // Blank lines between a title's paragraphs are filled as the canvas fills
+  // them; a single paragraph is unwrapped into the heading.
+  const content = unwrapParagraph(
+    fillEmptyParagraphs(convertMergeTagsToValues(block.content)),
+  );
   // Clamp out-of-range levels to a defined entry so we never interpolate
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").
   const fontSize =
