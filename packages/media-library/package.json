@@ -4,7 +4,7 @@
   "version": "0.46.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.55.0",
+    "@lucide/vue": "^1.56.0",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^15.0.0",
     "vue-advanced-cropper": "^2.8.9"
@@ -16,7 +16,7 @@
     "typescript": "^6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
-    "vue": "^3.5.43",
+    "vue": "^3.5.44",
     "vue-tsc": "^3.3.13"
   },
   "exports": {
@@ -41,7 +41,7 @@
   "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
-    "vue": "^3.5.43"
+    "vue": "^3.5.44"
   },
   "publishConfig": {
     "access": "public"
