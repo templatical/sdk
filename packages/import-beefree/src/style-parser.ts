@@ -1,4 +1,10 @@
-import type { SpacingValue } from "@templatical/types";
+import type {
+  BackgroundImage,
+  BackgroundPositionX,
+  BackgroundPositionY,
+  BackgroundSize,
+  SpacingValue,
+} from "@templatical/types";
 
 /**
  * Parses CSS-like style values from BeeFree descriptors.
@@ -170,4 +176,203 @@ export function parseDividerWidth(
   const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(%|px)$/);
   if (!match) return undefined;
   return { value: parseFloat(match[1]), unit: match[2] === "%" ? "%" : "px" };
+}
+
+/** A background image read from the source, with a note for each value that had no exact keyword. */
+export interface ReadBackgroundImage {
+  image: BackgroundImage;
+  notes: string[];
+}
+
+const X_GRID = ["left", "center", "right"] as const;
+const Y_GRID = ["top", "center", "bottom"] as const;
+const PERCENT = /^(-?(?:\d+(?:\.\d+)?|\.\d+))%$/;
+const LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)[a-z]*$/;
+
+/**
+ * `background-size` as a keyword. A size with a side at 100%, or a px width
+ * spanning the box, fills it as `cover` does; any other length or percentage
+ * draws the image at a size of its own, which `auto` is closest to.
+ */
+function backgroundSizeKeyword(
+  raw: string,
+  boxWidth: number | undefined,
+): { size: BackgroundSize; exact: boolean } {
+  const parts = raw.toLowerCase().split(/\s+/);
+  const [first] = parts;
+  if (parts.length === 1 && (first === "cover" || first === "contain")) {
+    return { size: first, exact: true };
+  }
+  if (parts.every((part) => part === "auto")) {
+    return { size: "auto", exact: true };
+  }
+  const px = /^(\d+(?:\.\d+)?|\.\d+)px$/.exec(first);
+  const fills =
+    parts.includes("100%") ||
+    (px !== null && boxWidth !== undefined && Number(px[1]) >= boxWidth);
+  return { size: fills ? "cover" : "auto", exact: false };
+}
+
+/**
+ * `background-position` split into x and y the way MJML and CSS read it: a
+ * lone `top` / `bottom` names y and centres x, any other lone value is x
+ * with y centred, and a pair is x then y unless it leads with `top` /
+ * `bottom` (or with `center` before `left` / `right`). Three- and four-value
+ * edge offsets keep their edge keywords only.
+ */
+function splitBackgroundPosition(raw: string): {
+  x: string;
+  y: string;
+  exact: boolean;
+} {
+  const parts = raw.toLowerCase().split(/\s+/);
+  if (parts.length === 1) {
+    const [only] = parts;
+    return only === "top" || only === "bottom"
+      ? { x: "center", y: only, exact: true }
+      : { x: only, y: "center", exact: true };
+  }
+  if (parts.length === 2) {
+    const [a, b] = parts;
+    const yFirst =
+      a === "top" ||
+      a === "bottom" ||
+      (a === "center" && (b === "left" || b === "right"));
+    return yFirst ? { x: b, y: a, exact: true } : { x: a, y: b, exact: true };
+  }
+  return {
+    x: parts.find((part) => part === "left" || part === "right") ?? "center",
+    y: parts.find((part) => part === "top" || part === "bottom") ?? "center",
+    exact: false,
+  };
+}
+
+/**
+ * One axis as a grid point: its keyword; the point nearest a percentage,
+ * ties going to the centre; or the start edge for a length, which is an
+ * offset from it. `null` when the token is unreadable.
+ */
+function backgroundAxisPoint<T extends string>(
+  token: string,
+  grid: readonly [T, T, T],
+): { point: T; exact: boolean } | null {
+  const keyword = grid.find((point) => point === token);
+  if (keyword) return { point: keyword, exact: true };
+  const percent = PERCENT.exec(token);
+  if (percent) {
+    const n = Number(percent[1]);
+    return {
+      point: n < 25 ? grid[0] : n > 75 ? grid[2] : grid[1],
+      exact: n === 0 || n === 50 || n === 100,
+    };
+  }
+  if (LENGTH.test(token)) {
+    return { point: grid[0], exact: parseFloat(token) === 0 };
+  }
+  return null;
+}
+
+/**
+ * `background-repeat`: unrepeated only when every axis is `no-repeat`.
+ * Anything but plain `repeat` tiles too, inexactly.
+ */
+function backgroundRepeatFlag(raw: string): {
+  repeat: boolean;
+  exact: boolean;
+} {
+  const parts = raw.toLowerCase().split(/\s+/);
+  if (parts.every((part) => part === "no-repeat")) {
+    return { repeat: false, exact: true };
+  }
+  return { repeat: true, exact: parts.every((part) => part === "repeat") };
+}
+
+/** CSS's initial values: what a browser paints for a longhand BeeFree leaves out. */
+const CSS_BACKGROUND_DEFAULTS = {
+  size: "auto",
+  x: "left",
+  y: "top",
+  repeat: true,
+} as const;
+
+/**
+ * The URL inside the first CSS `url(…)`, unquoted and trimmed; "" when there
+ * is none or it is malformed. A forward scan rather than a regex, so a long
+ * run of unclosed `url(` can't make it backtrack.
+ */
+function cssUrl(value: string | undefined): string {
+  const text = value ?? "";
+  const start = text.search(/url\(/i);
+  if (start === -1) return "";
+  let i = start + 4;
+  while (i < text.length && /\s/.test(text[i])) i++;
+  const quote = text[i];
+  if (quote === '"' || quote === "'") {
+    const close = text.indexOf(quote, i + 1);
+    if (close === -1) return "";
+    let j = close + 1;
+    while (j < text.length && /\s/.test(text[j])) j++;
+    return text[j] === ")" ? text.slice(i + 1, close).trim() : "";
+  }
+  const close = text.indexOf(")", i);
+  if (close === -1) return "";
+  const inner = text.slice(i, close);
+  return /["']/.test(inner) ? "" : inner.trim();
+}
+
+/**
+ * A row's background image from a BeeFree style map (`content.style` or
+ * `container.style`), `null` when `background-image` holds no `url()`.
+ * Unset longhands take CSS's initial values; a value with no exact keyword
+ * takes the nearest one and adds a note naming it. `label` names the element
+ * in each note, and a px `background-size` is measured against `boxWidth`.
+ */
+export function readBeefreeBackgroundImage(
+  style: Record<string, string> | undefined,
+  label: string,
+  boxWidth: number | undefined,
+): ReadBackgroundImage | null {
+  const url = cssUrl(style?.["background-image"]);
+  if (!url) return null;
+
+  const notes: string[] = [];
+  const lossy = (name: string, raw: string, shown: string): void => {
+    notes.push(
+      `${label} ${name} "${raw}" has no exact Templatical equivalent; imported as "${shown}".`,
+    );
+  };
+
+  let size: BackgroundSize = CSS_BACKGROUND_DEFAULTS.size;
+  const rawSize = style?.["background-size"]?.trim();
+  if (rawSize) {
+    const parsed = backgroundSizeKeyword(rawSize, boxWidth);
+    size = parsed.size;
+    if (!parsed.exact) lossy("background-size", rawSize, size);
+  }
+
+  let x: BackgroundPositionX = CSS_BACKGROUND_DEFAULTS.x;
+  let y: BackgroundPositionY = CSS_BACKGROUND_DEFAULTS.y;
+  const rawPosition = style?.["background-position"]?.trim();
+  if (rawPosition) {
+    const split = splitBackgroundPosition(rawPosition);
+    const readX = backgroundAxisPoint(split.x, X_GRID);
+    const readY = backgroundAxisPoint(split.y, Y_GRID);
+    x = readX?.point ?? x;
+    y = readY?.point ?? y;
+    if (!split.exact || !readX?.exact || !readY?.exact) {
+      lossy("background-position", rawPosition, `${x} ${y}`);
+    }
+  }
+
+  let repeat: boolean = CSS_BACKGROUND_DEFAULTS.repeat;
+  const rawRepeat = style?.["background-repeat"]?.trim();
+  if (rawRepeat) {
+    const parsed = backgroundRepeatFlag(rawRepeat);
+    repeat = parsed.repeat;
+    if (!parsed.exact) {
+      lossy("background-repeat", rawRepeat, repeat ? "repeat" : "no-repeat");
+    }
+  }
+
+  return { image: { url, size, position: { x, y }, repeat }, notes };
 }

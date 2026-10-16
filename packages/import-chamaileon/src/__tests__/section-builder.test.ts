@@ -398,3 +398,208 @@ describe("buildFullwidth", () => {
     expect(filled.entries.some((e) => e.status === "approximated")).toBe(true);
   });
 });
+
+describe("buildFullwidth background images", () => {
+  const box = (
+    style: Record<string, unknown>,
+    ...children: ChamaileonNode[]
+  ): ChamaileonNode => ({ type: "box", style, children });
+
+  const fullwidthEntry = (entries: ImportReportEntry[]) =>
+    entries.find((entry) => entry.sourceTag === "fullwidth");
+
+  it("maps the content-area image exactly", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        contentBackgroundImage: "url(https://cdn.test/hero.jpg)",
+        contentBackgroundSize: "cover",
+        contentBackgroundPosition: "center center",
+        contentBackgroundRepeat: "no-repeat",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+    expect(fullwidthEntry(entries)?.status).toBe("converted");
+  });
+
+  it("moves a lone box's image up to the section, as its colour moves", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {},
+      children: [
+        box(
+          {
+            backgroundImage: "url(https://cdn.test/box.jpg)",
+            backgroundSize: "auto",
+            backgroundPosition: "center center",
+            backgroundRepeat: "no-repeat",
+          },
+          text("<p>Hi</p>"),
+        ),
+      ],
+    });
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/box.jpg",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+    expect(entries.some((entry) => entry.sourceTag === "box")).toBe(false);
+    expect(fullwidthEntry(entries)?.status).toBe("converted");
+  });
+
+  it("paints the band's image, and its colour, while the content area is unpainted", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        backgroundColor: "#222222",
+        backgroundImage: "url(https://cdn.test/band.jpg)",
+        backgroundSize: "auto",
+        backgroundPosition: "center center",
+        backgroundRepeat: "repeat",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.backgroundImage).toEqual({
+      url: "https://cdn.test/band.jpg",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: true,
+    });
+    expect(section.styles.backgroundColor).toBe("#222222");
+    expect(section.wrapper).toBeUndefined();
+    expect(fullwidthEntry(entries)).toEqual({
+      sourceTag: "fullwidth",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "fullwidth background image spans the full width in Chamaileon; the section paints it at the content width.",
+    });
+  });
+
+  it("drops the band's image behind a painted content area", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        backgroundImage: "url(https://cdn.test/band.jpg)",
+        contentBackgroundColor: "#ffffff",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.backgroundImage).toBeUndefined();
+    expect(fullwidthEntry(entries)?.note).toBe(
+      "fullwidth background image outside the content width was dropped.",
+    );
+  });
+
+  it("drops the band colour when the section has its own image", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        backgroundColor: "#f4f4f4",
+        contentBackgroundImage: "url(https://cdn.test/hero.jpg)",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.wrapper).toBeUndefined();
+    expect(fullwidthEntry(entries)?.note).toBe(
+      "fullwidth background colour #f4f4f4 was dropped: Outlook desktop paints a wrapper colour over the section's background image.",
+    );
+  });
+
+  it("still makes the band colour the wrapper when there is no image", () => {
+    const { section } = sectionOf({
+      type: "fullwidth",
+      style: { backgroundColor: "#f4f4f4", contentBackgroundColor: "#ffffff" },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(section.wrapper).toEqual({ backgroundColor: "#f4f4f4" });
+  });
+
+  it("reports a box image it can't keep", () => {
+    const { entries } = sectionOf({
+      type: "fullwidth",
+      style: {},
+      children: [
+        box(
+          { backgroundImage: "url(https://cdn.test/box.jpg)" },
+          text("<p>A</p>"),
+        ),
+        text("<p>B</p>"),
+      ],
+    });
+    expect(entries).toContainEqual({
+      sourceTag: "box",
+      templaticalBlockType: null,
+      status: "approximated",
+      note: "box background image dropped",
+    });
+  });
+
+  it("reports a lone box's image the section doesn't keep", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: { contentBackgroundImage: "url(https://cdn.test/hero.jpg)" },
+      children: [
+        box(
+          { backgroundImage: "url(https://cdn.test/box.jpg)" },
+          text("<p>Hi</p>"),
+        ),
+      ],
+    });
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    expect(entries.filter((entry) => entry.sourceTag === "box")).toEqual([
+      {
+        sourceTag: "box",
+        templaticalBlockType: null,
+        status: "approximated",
+        note: "box background image dropped",
+      },
+    ]);
+  });
+
+  it("reports the image but not the copied fill of a lone box", () => {
+    const { section, entries } = sectionOf({
+      type: "fullwidth",
+      style: { contentBackgroundImage: "url(https://cdn.test/hero.jpg)" },
+      children: [
+        box(
+          {
+            backgroundColor: "#123456",
+            backgroundImage: "url(https://cdn.test/box.jpg)",
+          },
+          text("<p>Hi</p>"),
+        ),
+      ],
+    });
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.backgroundImage?.url).toBe("https://cdn.test/hero.jpg");
+    expect(entries.filter((entry) => entry.sourceTag === "box")).toEqual([
+      {
+        sourceTag: "box",
+        templaticalBlockType: null,
+        status: "approximated",
+        note: "box background image dropped",
+      },
+    ]);
+  });
+
+  it("reports a content size with no keyword", () => {
+    const { entries } = sectionOf({
+      type: "fullwidth",
+      style: {
+        contentBackgroundImage: "url(u)",
+        contentBackgroundSize: "100% auto",
+      },
+      children: [text("<p>Hi</p>")],
+    });
+    expect(fullwidthEntry(entries)?.note).toBe(
+      'Section background-size "100% auto" has no exact Templatical equivalent; imported as "cover".',
+    );
+  });
+});

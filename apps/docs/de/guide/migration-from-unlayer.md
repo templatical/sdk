@@ -149,12 +149,25 @@ Setzt eine Reihe beide auf unterschiedliche Farben, übernimmt die Section `colu
 `columnsBackgroundColor` füllt die Inhaltsbreite, also die Fläche, die eine Section einfärbt. `backgroundColor` füllt den Streifen außerhalb davon, und eine Templatical-Section hat keinen Streifen über die volle Breite.
 :::
 
+### Hintergrundbild der Section
+
+Das `backgroundImage` einer Reihe wird zum `backgroundImage` der Section:
+
+| `backgroundImage.fullWidth` | Ergebnis |
+|---|---|
+| `false` (die Inhaltsfläche) | Das Bild der Section, exakt. |
+| `true`, `columnsBackgroundColor` nicht gesetzt | Das Bild der Section, in Inhaltsbreite gezeichnet; `report.warnings` vermerkt das. |
+| `true`, `columnsBackgroundColor` gesetzt | Verworfen, da in Unlayer die Inhaltsfarbe es innerhalb der Inhaltsbreite verdeckt; `report.warnings` nennt es. |
+
+`size` `cover` und `contain` werden übernommen, `custom` ist das Bild in Originalgröße (`auto`). Die neun `position`-Schlüsselwörter werden auf den passenden Rasterpunkt abgebildet. Bei einer `custom`-Position rastet ein Prozentwert in `customPosition` auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x` und `repeat-y` werden zu `repeat`. Die Flags `cover` und `center` älterer Designs werden gelesen, wenn `size` und `position` fehlen: `cover` wird zu `cover` (`false` zu `auto`), `center` zu oben mittig (`false` zu links oben). Jeder Wert ohne exaktes Schlüsselwort fügt `report.warnings` eine Zeile hinzu.
+
 ## Template-Einstellungen
 
 Globale Template-Einstellungen werden übertragen, wo möglich:
 
 - **Breite** — Unlayers `body.values.contentWidth` wird auf `settings.width` abgebildet
 - **Hintergrundfarbe** — `body.values.backgroundColor` wird auf `settings.backgroundColor` abgebildet
+- **Hintergrundbild** — `body.values.backgroundImage` hat keine Templatical-Entsprechung, da der E-Mail-Body nur eine Farbe kennt. Es wird verworfen, und `report.warnings` nennt es.
 - **Textfarbe** — `body.values.textColor` wird auf `settings.textColor` abgebildet. Überschriften, Menüs und Absätze ohne eigene Farbe übernehmen sie.
 - **Links** — `body.values.linkStyle.linkColor` wird auf `settings.linkColor` abgebildet, `linkStyle.linkUnderline` auf `settings.linkUnderline`. Setzt `linkStyle` kein `linkUnderline`, werden Links unterstrichen, wie in Unlayer.
 - **Preheader** — `body.values.preheaderText` wird auf `settings.preheaderText` abgebildet und entfällt, wenn er leer ist

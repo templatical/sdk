@@ -577,6 +577,29 @@ describe("buildWrapper", () => {
     ]);
   });
 
+  it("gives each section of a multi-section wrapper its own wrapper and image objects", () => {
+    const { blocks } = build(
+      '<mj-wrapper background-url="https://cdn.test/band.jpg"><mj-section><mj-column /></mj-section><mj-section><mj-column /></mj-section></mj-wrapper>',
+      "wrapper",
+    );
+
+    const [first, second] = blocks.map(
+      (block) => (block as SectionBlock).wrapper!,
+    );
+    expect(first.backgroundImage).toEqual({
+      url: "https://cdn.test/band.jpg",
+      size: "auto",
+      position: { x: "center", y: "top" },
+      repeat: true,
+    });
+    expect(second).toEqual(first);
+    expect(second).not.toBe(first);
+    expect(second.backgroundImage).not.toBe(first.backgroundImage);
+    expect(second.backgroundImage!.position).not.toBe(
+      first.backgroundImage!.position,
+    );
+  });
+
   it("reads a per-corner border radius", () => {
     const { blocks, entries } = build(
       '<mj-wrapper border-radius="0 16px"><mj-section><mj-column /></mj-section></mj-wrapper>',
@@ -643,5 +666,91 @@ describe("buildWrapper", () => {
           'Wrapper border-radius "50%" could not be read; imported as square corners.',
       },
     ]);
+  });
+});
+
+describe("buildSection background image", () => {
+  it("maps background-url and its longhands onto backgroundImage, converted", () => {
+    const { blocks, entries } = build(
+      '<mj-section background-url="https://cdn.test/hero.jpg" background-size="cover" background-position="center top" background-repeat="no-repeat">' +
+        "<mj-column><mj-text>Hi</mj-text></mj-column></mj-section>",
+    );
+    expect((blocks[0] as SectionBlock).backgroundImage).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "center", y: "top" },
+      repeat: false,
+    });
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "converted",
+    });
+  });
+
+  it("reports a size with no keyword as approximated", () => {
+    const { blocks, entries } = build(
+      '<mj-section background-url="https://cdn.test/hero.jpg" background-size="100% auto">' +
+        "<mj-column><mj-text>Hi</mj-text></mj-column></mj-section>",
+    );
+    expect((blocks[0] as SectionBlock).backgroundImage?.size).toBe("cover");
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-section",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Section background-size "100% auto" has no exact Templatical equivalent; imported as "cover".',
+    });
+  });
+
+  it("joins a background note after the border note", () => {
+    const { entries } = build(
+      '<mj-section border-radius="1em" background-url="u" background-repeat="repeat-x">' +
+        "<mj-column><mj-text>Hi</mj-text></mj-column></mj-section>",
+    );
+    expect(entries[0].note).toBe(
+      'Section border-radius "1em" could not be read; imported as square corners. ' +
+        'Section background-repeat "repeat-x" has no exact Templatical equivalent; imported as "repeat".',
+    );
+  });
+
+  it("omits backgroundImage when there is no background-url", () => {
+    const { blocks } = build(
+      '<mj-section background-size="cover"><mj-column><mj-text>Hi</mj-text></mj-column></mj-section>',
+    );
+    expect("backgroundImage" in blocks[0]).toBe(false);
+  });
+});
+
+describe("buildWrapper background image", () => {
+  it("maps the wrapper's background onto section.wrapper.backgroundImage", () => {
+    const { blocks, entries } = build(
+      '<mj-wrapper background-url="https://cdn.test/band.png" background-position="left bottom">' +
+        "<mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-wrapper>",
+      "wrapper",
+    );
+    expect((blocks[0] as SectionBlock).wrapper?.backgroundImage).toEqual({
+      url: "https://cdn.test/band.png",
+      size: "auto",
+      position: { x: "left", y: "bottom" },
+      repeat: true,
+    });
+    expect(entries.map((entry) => entry.sourceTag)).toEqual([
+      "mj-section",
+      "mj-text",
+    ]);
+  });
+
+  it("reports a lossy wrapper value in the wrapper's own entry", () => {
+    const { entries } = build(
+      '<mj-wrapper background-url="u" background-repeat="repeat-y">' +
+        "<mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-wrapper>",
+      "wrapper",
+    );
+    expect(entries[0]).toEqual({
+      sourceTag: "mj-wrapper",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: 'Wrapper background-repeat "repeat-y" has no exact Templatical equivalent; imported as "repeat".',
+    });
   });
 });

@@ -3,7 +3,12 @@ import {
   createSectionBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
-import type { Block, ColumnLayout, TemplateContent } from "@templatical/types";
+import type {
+  BackgroundImage,
+  Block,
+  ColumnLayout,
+  TemplateContent,
+} from "@templatical/types";
 import type {
   BeeFreeTemplate,
   BeeFreeeRow,
@@ -17,7 +22,11 @@ import {
   FALLBACK_TEXT_COLOR,
   type ModuleContext,
 } from "./block-mapper";
-import { parsePxValue, parseColor } from "./style-parser";
+import {
+  parsePxValue,
+  parseColor,
+  readBeefreeBackgroundImage,
+} from "./style-parser";
 
 /**
  * Determines the Templatical ColumnLayout from BeeFree column grid values.
@@ -90,6 +99,50 @@ function convertColumnModules(
 }
 
 /**
+ * The image a row's section paints. `content.style` is the content area a
+ * section paints, so its image maps exactly. `container.style` is the
+ * full-width band: it shows through only while the content area has neither
+ * an image nor a colour, and then the section paints it at the content
+ * width; otherwise it's dropped. Losses go to `warnings`, since rows have no
+ * report entry.
+ */
+function resolveRowBackgroundImage(
+  row: BeeFreeeRow,
+  rowBg: string,
+  width: number,
+  warnings: string[],
+): BackgroundImage | undefined {
+  const content = readBeefreeBackgroundImage(row.content?.style, "Row", width);
+  const band = readBeefreeBackgroundImage(
+    row.container?.style,
+    "Row container",
+    width,
+  );
+
+  if (content) {
+    warnings.push(...content.notes);
+    if (band) {
+      warnings.push(
+        `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background image.`,
+      );
+    }
+    return content.image;
+  }
+  if (!band) return undefined;
+  if (rowBg) {
+    warnings.push(
+      `Row container background image "${band.image.url}" outside the content width was dropped; the section keeps the content background ${rowBg}.`,
+    );
+    return undefined;
+  }
+  warnings.push(
+    ...band.notes,
+    `Row container background image "${band.image.url}" spans the full width in BeeFree; the section paints it at the content width.`,
+  );
+  return band.image;
+}
+
+/**
  * Processes a single BeeFree row into one or more Templatical blocks.
  */
 function processRow(
@@ -117,6 +170,12 @@ function processRow(
 
   // Extract section-level background from row content styles.
   const rowBg = parseColor(row.content?.style?.["background-color"]);
+  const backgroundImage = resolveRowBackgroundImage(
+    row,
+    rowBg,
+    settings.width,
+    warnings,
+  );
 
   if (!layout) {
     // Single column (or flattened 4+ columns) — return modules directly.
@@ -129,18 +188,19 @@ function processRow(
     for (const column of columns) {
       blocks.push(...convertColumnModules(column, context, entries, warnings));
     }
-    // A non-transparent row background can't survive on bare modules; wrap
-    // them in a one-column section so the colored band still renders. Mirrors
+    // A row background — a colour or an image — can't survive on bare
+    // modules; wrap them in a one-column section so it still renders. Mirrors
     // the multi-column path and the Unlayer importer (which wraps every row).
-    if (rowBg) {
+    if (rowBg || backgroundImage) {
       return [
         createSectionBlock({
           columns: "1",
           children: [blocks],
           styles: {
             padding: { top: 0, right: 0, bottom: 0, left: 0 },
-            backgroundColor: rowBg,
+            ...(rowBg ? { backgroundColor: rowBg } : {}),
           },
+          ...(backgroundImage ? { backgroundImage } : {}),
         }),
       ];
     }
@@ -165,6 +225,7 @@ function processRow(
       padding: { top: 0, right: 0, bottom: 0, left: 0 },
       ...(rowBg ? { backgroundColor: rowBg } : {}),
     },
+    ...(backgroundImage ? { backgroundImage } : {}),
   });
 
   return [section];

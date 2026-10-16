@@ -1,5 +1,9 @@
 import type { CheerioAPI } from "cheerio";
-import { parseStyleAttribute, serializeStyleAttribute } from "./style-parser";
+import {
+  parseStyleAttribute,
+  serializeStyleAttribute,
+  splitTopLevel,
+} from "./style-parser";
 
 interface CssRule {
   selectors: string[];
@@ -58,11 +62,12 @@ function stripAtRules(css: string): string {
 
 /**
  * Parses a CSS declarations block (`color: red; font-size: 14px`) into
- * a flat record. `!important` markers are dropped.
+ * a flat record. `!important` markers are dropped. A semicolon inside quotes
+ * or parentheses — `url(data:image/png;base64,…)` — belongs to its value.
  */
 function parseDeclarations(text: string): Record<string, string> {
   const result: Record<string, string> = {};
-  for (const decl of text.split(";")) {
+  for (const decl of splitTopLevel(text, ";")) {
     const idx = decl.indexOf(":");
     if (idx === -1) continue;
     const key = decl.slice(0, idx).trim().toLowerCase();

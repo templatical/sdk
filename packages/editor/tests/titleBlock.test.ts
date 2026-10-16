@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { createTitleBlock } from "@templatical/types";
+import { TITLE_LINE_HEIGHT, createTitleBlock } from "@templatical/types";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
 import { mountEditor } from "./helpers/mount";
 
@@ -80,5 +80,17 @@ describe("TitleBlock canvas rendering", () => {
     const style = styled.attributes("style") ?? "";
     expect(style).toContain("color: #ff0000");
     expect(style).toContain("text-align: center");
+  });
+
+  it("sets the renderer's title line height on the wrapper both modes share", () => {
+    const wrapper = mount({ level: 2 });
+    // The wrapper holds the view heading and, while editing, the edit surface,
+    // so both inherit this value.
+    const root = wrapper.find("div").element as HTMLElement;
+    expect(root.style.lineHeight).toBe(String(TITLE_LINE_HEIGHT));
+    expect(root.style.lineHeight).toBe("1.3");
+    const heading = wrapper.find("h2");
+    expect(heading.classes()).toContain("tpl:leading-[inherit]");
+    expect(heading.classes()).not.toContain("tpl:leading-tight");
   });
 });

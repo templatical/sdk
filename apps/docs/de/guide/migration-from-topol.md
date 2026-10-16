@@ -135,13 +135,13 @@ const mjml = await renderToMjml(content);
 // Topols eigenem `html`-Feld vergleichen, aus derselben API-Antwort, die auch `json` trägt.
 ```
 
-Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der unten genannten Verluste — am sichtbarsten das Hintergrundbild einer Section — werden vom Importer nie gelesen, sodass nichts in `report.entries` darauf hinweist.
+Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der unten genannten Verluste werden vom Importer nie gelesen, sodass nichts in `report.entries` darauf hinweist.
 
 ## Topol-Tag-Mapping {#topol-tag-mapping}
 
 | Topol-Tag | Templatical-Block | Hinweise |
 |---|---|---|
-| `mj-section` (mit `mj-column`-Kindern) | `SectionBlock` mit `columns` | Spaltenbreiten kommen aus dem `width`-Prozentwert jeder Spalte oder werden gleichmäßig verteilt; ein Verhältnis außerhalb von Templaticals fünf Layouts wird auf das nächstliegende aufgelöst. |
+| `mj-section` (mit `mj-column`-Kindern) | `SectionBlock` mit `columns` | Spaltenbreiten kommen aus dem `width`-Prozentwert jeder Spalte oder werden gleichmäßig verteilt; ein Verhältnis außerhalb von Templaticals fünf Layouts wird auf das nächstliegende aufgelöst. `background-url` wird zu `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
 | `mj-column` | Section-Spalte | Hält eine Liste verschachtelter Blöcke. |
 | `mj-text` | `TitleBlock` oder `ParagraphBlock` | Eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zu `TitleBlock`; alles andere wird zu `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift und `padding` als äußerer Abstand des Blocks — sein `margin` überlebt nicht. |
@@ -153,11 +153,18 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 | Wurzel-`attributes` (plus `background-color` von `mj-container`) | Template-`settings` | Ein bloßes `:color` / `a:color` setzt die Text-/Link-Farbe des Dokuments; Selektor-Defaults (`h1:font-family` und Ähnliches) setzen die Schriftart einer Überschrift, wenn diese selbst keine festlegt. Ein eigenes Attribut des Knotens gewinnt immer gegen diese Defaults. Ein Schriftart-Stack wird vollständig übernommen, sodass seine Fallbacks erhalten bleiben. |
 | Alles andere | `HtmlBlock` | Für das Tag existiert kein Templatical-Block; der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
 
+### Hintergrundbilder
+
+`background-url` an einer `mj-section` wird zum `backgroundImage` der Section, mit `background-size`, `background-position` (sowie `-x` / `-y`) und `background-repeat`. Topol rendert über MJML, daher übernimmt ein Attribut, das die Section weglässt, MJMLs Standard (`auto`, `top center`, `repeat`), und das Bild erscheint dort, wo es war.
+
+Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet, und der Eintrag der Section ist `approximated` mit einer Notiz. Eine Größe, die eine Seite füllt (`100%`, `100% auto`, `auto 100%` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`.
+
 ## Wo das Mapping verlustbehaftet ist
 
 Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener Editor erzeugt in der Praxis nichts, das dieser Importer als `html-fallback` behandelt. Innerhalb dessen sind einige Konvertierungen Näherungen statt exakter Treffer, jede davon als `approximated`-Eintrag mit einer `note` in `report.entries` festgehalten:
 
 - **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol erlaubt eine beliebige Spaltenzahl bei beliebiger Breite, daher wird ein Verhältnis außerhalb dieser fünf — am häufigsten vier gleich breite Spalten — auf das nächstliegende Layout aufgelöst, und jede Spalte ab der vierten fließt in die letzte.
+- **Hintergrundbilder** — ein `background-size`, `background-position` oder `background-repeat` ohne exaktes Schlüsselwort wird auf das nächstliegende abgebildet. Siehe [Hintergrundbilder](#hintergrundbilder).
 - **GIFs** — `mj-gif` wird als `ImageBlock` importiert, derselbe Block, den `mj-image` erzeugt. Templatical hat keinen eigenen GIF-Block.
 - **Überschriften-Ebenen** — `TitleBlock` unterstützt die Ebenen 1 bis 4. Ein `mj-text`, das ein einzelnes `<h5>` oder `<h6>` umschließt, wird auf Ebene 4 begrenzt.
 - **Die Plattform `google`** — `SocialPlatform` hat kein `google`-Element, daher wird ein `google-href` stattdessen auf `website` abgebildet. Das ist der Normalfall, kein Randfall: Topols eigenes Social-Widget schreibt weiterhin `google-href` für Google+, ein vor Jahren eingestelltes Netzwerk.
@@ -166,7 +173,7 @@ Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener 
 
 ## Nicht übertragene Merkmale
 
-- **Hintergrundbilder einer Section** — Templatical-Sektionen kennen ein `backgroundImage`, der Topol-Importer liest `background-url` aber noch nicht, daher behält eine Hero-Section ihre Hintergrundfarbe, verliert aber ihr Foto — und weil das Attribut unangetastet bleibt, weist nichts in `report.entries` darauf hin. `full-width` und `layout` auf derselben `mj-section` sowie `vertical-align` auf `mj-column` gehen denselben Weg.
+- **`full-width`, `layout` und `vertical-align`** — `full-width` und `layout` auf einer `mj-section` sowie `vertical-align` auf `mj-column` werden nie gelesen, daher weist nichts in `report.entries` darauf hin.
 - **Der `margin` eines Buttons** — `styles.padding` ist das einzige Feld für äußeren Abstand von `ButtonBlock`. Topol schreibt auf jedem `mj-button` sowohl `padding` als auch `margin`; `padding` füllt dieses Feld, und `margin` wird verworfen statt eingerechnet zu werden, was den vertikalen Abstand verdoppeln würde. Auch das innere Padding der Button-Beschriftung (`buttonPadding`) behält Templaticals Standardwert, da Topol dafür kein eigenes Attribut hat.
 - **Farbe, Schriftart und Ausrichtung eines Absatzes auf Knotenebene** — `ParagraphBlock` akzeptiert nur `content` und die `styles` des Blocks (Padding, Hintergrund); es gibt kein Feld für eine Farbe, Schriftart oder Ausrichtung auf Knotenebene. Bei einem `mj-text`-Knoten, der als Absatz erkannt wird, bleiben diese Attribute nur erhalten, wenn sie bereits inline im `content`-HTML stehen — ein reines Knotenattribut wird stillschweigend verworfen, und der Eintrag bleibt trotzdem `converted`, da es im Block-Modell nichts gibt, an dem sich der Verlust vermerken ließe. Die Asymmetrie ist wissenswert: Eine Überschrift aus demselben Tag berücksichtigt ein eigenes `color`- und `font-family`-Attribut des Knotens sehr wohl (`TitleBlock`, siehe die Tag-Mapping-Tabelle oben) — ein Design, das Überschriften und Absätze identisch einfärbt, behält diese Farbe nach dem Import also nur bei den Überschriften.
 - **Importierte Webfonts** — Templatical hat kein Konzept für den Import von Webfonts. Das Wurzel-Array `fonts` des Designs listet die in das Topol-Projekt importierten Webfonts auf (ein Design misst `["\"Cabin\", sans-serif"]`; ein anderes trägt zwei Einträge), und das Array wird verworfen — Text, der davon abhing, wird in seiner Ersatzschriftart gerendert, ohne Warnung zur Laufzeit. Das ist ein anderes Feld als `attributes.fonts`, ein kommagetrennter Fallback-Stack auf derselben Wurzel, den der Importer liest und der die Standard-`fontFamily` des Templates füllt, wenn nichts Spezifischeres eine setzt.

@@ -2,7 +2,12 @@ import {
   createSectionBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
-import type { Block, ColumnLayout, TemplateContent } from "@templatical/types";
+import type {
+  BackgroundImage,
+  Block,
+  ColumnLayout,
+  TemplateContent,
+} from "@templatical/types";
 import type {
   UnlayerTemplate,
   UnlayerRow,
@@ -22,6 +27,7 @@ import {
   parseColor,
   parseFontFamily,
   parsePaddingShorthand,
+  readUnlayerBackgroundImage,
 } from "./style-parser";
 
 function resolveColumnLayout(
@@ -110,6 +116,41 @@ function resolveRowBackground(
 }
 
 /**
+ * The image a row's section paints. `fullWidth: false` is the content area
+ * a section paints, so it maps exactly. A full-width band (Unlayer's
+ * default) shows through the content area only while
+ * `columnsBackgroundColor` leaves it transparent: then the section paints it
+ * at the content width, and otherwise it's dropped. Losses go to `warnings`,
+ * since rows have no report entry.
+ */
+function resolveRowBackgroundImage(
+  row: UnlayerRow,
+  width: number,
+  warnings: string[],
+): BackgroundImage | undefined {
+  const bg = row.values?.backgroundImage;
+  const read = readUnlayerBackgroundImage(bg, "Row", width);
+  if (!read) return undefined;
+
+  const band = bg?.fullWidth !== false;
+  const content = parseColor(row.values?.columnsBackgroundColor);
+  if (band && content) {
+    warnings.push(
+      `Row background image "${read.image.url}" outside the content width was dropped; the section keeps the content background ${content}.`,
+    );
+    return undefined;
+  }
+
+  warnings.push(...read.notes);
+  if (band) {
+    warnings.push(
+      `Row background image "${read.image.url}" spans the full width in Unlayer; the section paints it at the content width.`,
+    );
+  }
+  return read.image;
+}
+
+/**
  * Processes a single Unlayer row into one or more Templatical blocks.
  *
  * Each column's px width derives from `settings.width` and the resolved
@@ -148,6 +189,11 @@ function processRow(
 
   const background = resolveRowBackground(row, warnings);
   const padding = parsePaddingShorthand(row.values?.padding);
+  const backgroundImage = resolveRowBackgroundImage(
+    row,
+    settings.width,
+    warnings,
+  );
 
   const section = createSectionBlock({
     columns: layout,
@@ -156,6 +202,7 @@ function processRow(
       padding,
       ...(background ? { backgroundColor: background } : {}),
     },
+    ...(backgroundImage ? { backgroundImage } : {}),
   });
 
   return [section];
@@ -227,6 +274,13 @@ export function convertUnlayerTemplate(
   const headers = template.body.headers ?? [];
   const footers = template.body.footers ?? [];
   const settings = extractSettings(template);
+
+  const pageImage = template.body.values?.backgroundImage?.url;
+  if (typeof pageImage === "string" && pageImage.trim()) {
+    warnings.push(
+      `The email background image "${pageImage.trim()}" was dropped; Templatical has no email-level background image.`,
+    );
+  }
 
   if (headers.length > 0) {
     warnings.push(

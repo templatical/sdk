@@ -12,6 +12,7 @@ import {
   parseDefinitePx,
   parsePaddingShorthand,
   parsePercent,
+  readMjmlBackgroundImage,
 } from "./attribute-parser";
 import {
   childElements,
@@ -282,6 +283,12 @@ export function buildSection(
       ];
   const borderRadius = readBorderRadius(attrs, "Section", notes);
   const border = readBorder(attrs, "Section", notes);
+  const background = readMjmlBackgroundImage(
+    (name) => attrs[name],
+    "Section",
+    ctx.containerWidth,
+  );
+  if (background) notes.push(...background.notes);
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
@@ -310,6 +317,7 @@ export function buildSection(
     ...(grouped ? { stackOnMobile: false } : {}),
     ...(borderRadius ? { borderRadius } : {}),
     ...(border ? { border } : {}),
+    ...(background ? { backgroundImage: background.image } : {}),
     ...(wrapper ? { wrapper } : {}),
     // "native": mj-section is the one element whose own background-color
     // attribute is its container fill (renderers/section.ts:32) — every other
@@ -332,10 +340,19 @@ const WRAPPER_BORDER_ATTRIBUTES = [
  * `SectionWrapper` has no border, so each `border` or `border-<side>` the
  * wrapper sets pushes a note instead.
  */
-function readWrapper(attrs: Attrs, notes: string[]): SectionWrapper {
+function readWrapper(
+  attrs: Attrs,
+  notes: string[],
+  boxWidth: number,
+): SectionWrapper {
   const backgroundColor = parseColor(attrs["background-color"]);
   const padding: SpacingValue = parsePaddingShorthand(attrs.padding);
   const borderRadius = readBorderRadius(attrs, "Wrapper", notes);
+  const background = readMjmlBackgroundImage(
+    (name) => attrs[name],
+    "Wrapper",
+    boxWidth,
+  );
 
   for (const name of WRAPPER_BORDER_ATTRIBUTES) {
     const raw = attrs[name];
@@ -344,11 +361,28 @@ function readWrapper(attrs: Attrs, notes: string[]): SectionWrapper {
       `Wrapper ${name} "${raw.trim()}" has no Templatical equivalent; dropped.`,
     );
   }
+  if (background) notes.push(...background.notes);
 
   return {
     ...(backgroundColor ? { backgroundColor } : {}),
     padding,
     ...(borderRadius ? { borderRadius } : {}),
+    ...(background ? { backgroundImage: background.image } : {}),
+  };
+}
+
+/**
+ * Each section gets its own band object and band image, so editing one
+ * section's image leaves the others alone. `padding` and `borderRadius` stay
+ * shared, as in the other importers.
+ */
+function copyWrapper(wrapper: SectionWrapper): SectionWrapper {
+  const image = wrapper.backgroundImage;
+  return {
+    ...wrapper,
+    ...(image
+      ? { backgroundImage: { ...image, position: { ...image.position } } }
+      : {}),
   };
 }
 
@@ -366,7 +400,7 @@ export function buildWrapper(
 ): Block[] {
   const attrs = resolveAttributes($el, ctx.cascade);
   const notes: string[] = [];
-  const wrapper = readWrapper(attrs, notes);
+  const wrapper = readWrapper(attrs, notes, ctx.containerWidth);
 
   const sections = childElements($el, ctx.$).filter(
     ($k) => tagOf($k[0]) === "mj-section",
@@ -400,6 +434,6 @@ export function buildWrapper(
   }
 
   return sections.flatMap(($section) =>
-    buildSection($section, ctx, entries, wrapper),
+    buildSection($section, ctx, entries, copyWrapper(wrapper)),
   );
 }

@@ -158,12 +158,12 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | Easy Email Pro | Templatical-Block | Hinweise |
 |---|---|---|
 | `page` | Template-`settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` nach `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (der gesamte Stack, sodass seine Fallbacks erhalten bleiben) / `textColor`; `link-color` → `linkColor`, wenn gesetzt; `preheader` → `settings.preheaderText`, wenn nicht leer. `content-background-color` ist die Standard-Sektionsfüllung, nicht der Seitenhintergrund. |
-| `standard-section` | `SectionBlock` | Eigenes `background-color` → `section.styles.backgroundColor`; sonst das Seiten-`content-background-color`. `padding-*` → Padding. Direkte `standard-column`-Kinder, oder die Spalten in einem einzelnen `standard-group`. |
+| `standard-section` | `SectionBlock` | Eigenes `background-color` → `section.styles.backgroundColor`; sonst das Seiten-`content-background-color`. `padding-*` → Padding. Direkte `standard-column`-Kinder, oder die Spalten in einem einzelnen `standard-group`. `background-url` mit Größe, Position und Wiederholung → `backgroundImage` (siehe [Hintergrundbilder](#hintergrundbilder)). |
 | `standard-column` | Section-`columns` / `children[i]` | Prozentbreiten (`"50%"`, `"33.33%"`) werden auf Templaticals fünf Layouts gematcht. Kein eigener Berichtseintrag. |
 | `standard-group` | Abgeflachte Spalten; `stackOnMobile: false` | Eine Group aus Spalten auf einer Sektion ist die Spaltenstruktur dieser Sektion. Eine verschachtelte Group in einer Spalte wird abgeflacht, `approximated`. |
-| `standard-wrapper` | Innere Sektion(en) `wrapper` | Äußeres `background-color` / Padding → `section.wrapper`. Eine innere Sektion → converted. Mehrere Innere → Wrapper auf jede kopiert, `approximated`. |
+| `standard-wrapper` | Innere Sektion(en) `wrapper` | Äußeres `background-color` / `background-url` / Padding → `section.wrapper`. Eine innere Sektion → converted. Mehrere Innere → Wrapper auf jede kopiert, `approximated`. |
 | `standard-hero` | 1-Spalten-`SectionBlock` | Kinder werden als h1 / Paragraph / Button durchlaufen. `background-color` auf die Sektion; `background-url` stellt einen `ImageBlock` voran (gestapelt, nicht Overlay), `approximated`. |
-| `page-header` / `page-footer` | Die Sektionen ihres Inhalts, das Band als `section.wrapper` | `data.content` wird in Reihenfolge so konvertiert wie Seiten-Kinder; ein nacktes Blatt landet in einer 1-Spalten-Sektion. `background-color` / Padding des Bands → `section.wrapper` auf jeder entstehenden Sektion. Mehrere Sektionen → Wrapper auf jede kopiert, `approximated`. Leer → `skipped`. |
+| `page-header` / `page-footer` | Die Sektionen ihres Inhalts, das Band als `section.wrapper` | `data.content` wird in Reihenfolge so konvertiert wie Seiten-Kinder; ein nacktes Blatt landet in einer 1-Spalten-Sektion. `background-color` / `background-url` / Padding des Bands → `section.wrapper` auf jeder entstehenden Sektion. Mehrere Sektionen → Wrapper auf jede kopiert, `approximated`. Leer → `skipped`. |
 | `placeholder` | Übersprungen | Editor-Chrome. Kein Eintrag. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` ist der Standard-Textblock; beide werden gleich abgebildet, einschließlich der Attribut-Kaskade. Inhalt aus Slate-Kindern. Bleibt ein Paragraph, auch bei großer `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 aus dem Typ. |
@@ -188,6 +188,14 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | Jeder andere `type` | `HtmlBlock` | Der rohe Knoten bleibt als JSON erhalten, markiert als `html-fallback`. |
 
 `visible: "desktop"` / `"mobile"` wird auf `visibility` abgebildet. Fehlt, wenn der Schlüssel fehlt.
+
+### Hintergrundbilder
+
+`background-url` an einer `standard-section` wird zum `backgroundImage` der Sektion, an einem `standard-wrapper` oder einem Header- / Footer-Band der Seite zum `wrapper.backgroundImage` jeder Sektion darin. `background-size`, `background-position` (sowie `-x` / `-y`) und `background-repeat` werden mitgenommen und über dieselbe Attribut-Kaskade gelesen wie jedes andere Attribut; ein Attribut, das der Knoten weglässt, übernimmt MJMLs Standard (`auto`, `top center`, `repeat`), den Easy Email Pro rendert.
+
+Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet, `approximated` mit einer Notiz. Eine Größe, die eine Seite füllt (`100%`, `100% auto`, `auto 100%` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`.
+
+`standard-hero` behält seine bisherige Abbildung: Sein `background-url` wird ein vorangestellter `ImageBlock`.
 
 ## Verlustbehaftete Konvertierung
 

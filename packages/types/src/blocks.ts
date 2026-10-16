@@ -237,6 +237,16 @@ export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
 };
 
 /**
+ * A title block's line height, as a multiple of its font size.
+ *
+ * The renderer writes it onto the title's `mj-text`, and the editor sets it on
+ * the canvas title in both view and edit mode, so a title is the same height
+ * in all three places. A literal in any one of them drifts silently: a
+ * multi-line title then reads shorter on the canvas than in the inbox.
+ */
+export const TITLE_LINE_HEIGHT = 1.3;
+
+/**
  * Spacing (px) for the HTML a rich-text block stores — the `<p>`, `<ul>`,
  * `<ol>` and `<li>` elements TipTap produces.
  *

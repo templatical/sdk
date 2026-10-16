@@ -8,6 +8,7 @@ import {
   createTitleBlock,
 } from "@templatical/types";
 import type {
+  BackgroundImage,
   Block,
   ColumnLayout,
   ParagraphBlock,
@@ -413,5 +414,52 @@ describe("round trip: section styling and document settings", () => {
       // `a { text-decoration }` rule, which mjml@5 keeps in a <style> block.
       expect(content.settings.linkUnderline).toBe(linkUnderline);
     }
+  });
+
+  it("keeps every section's background image, and its colour", async () => {
+    const original = buildGroundTruth();
+    const images: BackgroundImage[] = [
+      {
+        url: "https://cdn.test/hero.jpg",
+        size: "cover",
+        position: { x: "center", y: "top" },
+        repeat: false,
+      },
+      {
+        url: "https://cdn.test/tile.png",
+        size: "auto",
+        position: { x: "left", y: "bottom" },
+        repeat: true,
+      },
+      {
+        url: "https://cdn.test/fit.png",
+        size: "contain",
+        position: { x: "right", y: "center" },
+        repeat: false,
+      },
+    ];
+    original.blocks.slice(0, 3).forEach((block, index) => {
+      if (!isSection(block)) throw new Error("expected a section");
+      block.styles.backgroundColor = SECTION_FILLS[index];
+      block.backgroundImage = images[index];
+    });
+    const { compiled, content, report } = await roundTrip(original);
+
+    // Desired. mjml@5 writes a section's colour only inside the `background`
+    // shorthand once it has an image, so the colour rides on the same parse.
+    // The URL reaching the compiled HTML keeps this case from passing because
+    // the renderer stopped emitting it.
+    expect(compiled.html).toContain("url('https://cdn.test/hero.jpg')");
+    const sections = content.blocks.filter(isSection);
+    expect(
+      sections.slice(0, 3).map((section) => section.backgroundImage),
+    ).toEqual(images);
+    expect(
+      sections.slice(0, 3).map((section) => section.styles.backgroundColor),
+    ).toEqual(SECTION_FILLS.slice(0, 3));
+    expect(sections.slice(3).map((section) => section.backgroundImage)).toEqual(
+      [undefined, undefined],
+    );
+    expect(report.summary.approximated).toBe(0);
   });
 });

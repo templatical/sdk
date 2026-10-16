@@ -14,6 +14,7 @@ import {
   createCountdownBlock,
   createVideoBlock,
   HEADING_LEVEL_FONT_SIZE,
+  TITLE_LINE_HEIGHT,
 } from '@templatical/types';
 import type { Block, CustomBlock } from '@templatical/types';
 import { renderBlock, RenderContext } from '../src';
@@ -30,6 +31,13 @@ describe('renderBlock', () => {
     expect(result).toContain('<h1');
     expect(result).toContain('Hello');
     expect(result).toContain('</h1>');
+  });
+
+  it('writes the shared title line height onto the mj-text', () => {
+    const block = createTitleBlock({ content: '<p>Hello</p>', level: 2 });
+    const result = renderBlock(block, ctx);
+    expect(TITLE_LINE_HEIGHT).toBe(1.3);
+    expect(result).toContain(`line-height="${TITLE_LINE_HEIGHT}"`);
   });
 
   it('renders title block level 3 with correct font size', () => {

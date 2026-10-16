@@ -7,12 +7,21 @@ import {
   colorFromPaint,
   columnRooms,
   emailBodyWidth,
-  hasBackgroundImage,
   readBoxPadding,
+  resolveSectionImage,
   resolveSectionPaint,
+  withoutBandOverImage,
   type SectionPaint,
 } from "./css";
-import { pushEntry, withBackground, type ConvertCtx } from "./fragment";
+import {
+  bandImage,
+  imageLayer,
+  imageOf,
+  pushEntry,
+  recordImageSpan,
+  withBackground,
+  type ConvertCtx,
+} from "./fragment";
 import {
   buttonFrom,
   labelledInnerBlocks,
@@ -24,7 +33,6 @@ import {
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 const BODY_SELECTOR =
   "[class~='es-header-body'], [class~='es-content-body'], [class~='es-footer-body']";
-const IMAGE_NOTE = "A background image was not imported.";
 
 function columnLayout(
   count: number,
@@ -113,18 +121,21 @@ function enclosing(
   return $parent.length > 0 ? ($parent as Cheerio<Element>) : null;
 }
 
-function bandColor($stripe: Cheerio<Element>): string {
-  const own = colorFromPaint($stripe.attr("style"), $stripe.attr("bgcolor"));
-  if (own) return own;
-  if ($stripe.is("td") || $stripe.is("th")) return "";
+/** A table stripe's first cell, which Stripo paints instead of the table. */
+function bandCell($stripe: Cheerio<Element>): Cheerio<Element> {
   const $direct = $stripe.children("tr").children("td, th");
   const $nested = $stripe
     .children("tbody, thead")
     .children("tr")
     .children("td, th");
-  const $cell = (
-    $direct.length > 0 ? $direct : $nested
-  ).first() as Cheerio<Element>;
+  return ($direct.length > 0 ? $direct : $nested).first() as Cheerio<Element>;
+}
+
+function bandColor($stripe: Cheerio<Element>): string {
+  const own = colorFromPaint($stripe.attr("style"), $stripe.attr("bgcolor"));
+  if (own) return own;
+  if ($stripe.is("td") || $stripe.is("th")) return "";
+  const $cell = bandCell($stripe);
   return $cell.length > 0
     ? colorFromPaint($cell.attr("style"), $cell.attr("bgcolor"))
     : "";
@@ -138,12 +149,6 @@ function paintFor($el: Cheerio<Element>, ctx: ConvertCtx): SectionPaint {
     $stripe ? bandColor($stripe) : "",
     $body ? colorFromPaint($body.attr("style"), $body.attr("bgcolor")) : "",
   );
-}
-
-function imageNote(...styles: Array<string | undefined>): string | undefined {
-  return styles.some((style) => hasBackgroundImage(style))
-    ? IMAGE_NOTE
-    : undefined;
 }
 
 function sectionFromStructure(
@@ -197,17 +202,35 @@ function sectionFromStructure(
       blocksInContainer($f, $, ctx, rooms[index]),
     );
   }
-  const paint = paintFor($structure, ctx);
   const $stripe = enclosing($structure, "[class~='esd-stripe']");
-  const notes = [
-    ...paint.notes,
-    flattenNote,
-    imageNote($stripe?.attr("style"), $body?.attr("style")),
-  ].filter((note): note is string => Boolean(note));
+  const image = resolveSectionImage({
+    structure: imageLayer($structure, "Section", bodyWidth),
+    body: imageLayer($body, "Section", bodyWidth),
+    band: $stripe ? bandImage($stripe, bandCell($stripe), bodyWidth) : null,
+    columns: frames.map(($f) => imageOf($f, "Column", bodyWidth)),
+    bodyPainted: $body
+      ? colorFromPaint($body.attr("style"), $body.attr("bgcolor")) !== ""
+      : false,
+  });
+  const paint = withoutBandOverImage(
+    paintFor($structure, ctx),
+    image.image !== undefined,
+  );
+  const notes = [...paint.notes, flattenNote, ...image.notes].filter(
+    (note): note is string => Boolean(note),
+  );
   if (notes.length > 0) {
-    pushEntry(ctx, "esd-structure", "section", "approximated", notes.join(" "));
+    const entry = pushEntry(
+      ctx,
+      "esd-structure",
+      "section",
+      "approximated",
+      notes.join(" "),
+    );
+    recordImageSpan(ctx, image.source, entry);
   } else if (frameCount <= 3) {
-    pushEntry(ctx, "esd-structure", "section", "converted");
+    const entry = pushEntry(ctx, "esd-structure", "section", "converted");
+    recordImageSpan(ctx, image.source, entry);
   }
   const section = createSectionBlock({
     columns: layout,
@@ -216,6 +239,7 @@ function sectionFromStructure(
     ...(paint.wrapperColor
       ? { wrapper: { backgroundColor: paint.wrapperColor } }
       : {}),
+    ...(image.image ? { backgroundImage: image.image } : {}),
   });
   return withBackground(section, paint.backgroundColor);
 }
@@ -235,17 +259,28 @@ export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
     if (inner.length > 0) {
       return sectionFromStructure(inner.first() as Cheerio<Element>, $, ctx);
     }
-    const paint = paintFor($stripe, ctx);
-    const notes = [...paint.notes, imageNote($stripe.attr("style"))].filter(
+    const image = resolveSectionImage({
+      structure: null,
+      body: null,
+      band: bandImage($stripe, bandCell($stripe), 600),
+      columns: [],
+      bodyPainted: false,
+    });
+    const paint = withoutBandOverImage(
+      paintFor($stripe, ctx),
+      image.image !== undefined,
+    );
+    const notes = [...paint.notes, ...image.notes].filter(
       (note): note is string => Boolean(note),
     );
-    pushEntry(
+    const entry = pushEntry(
       ctx,
       "esd-stripe",
       "section",
       notes.length > 0 ? "approximated" : "converted",
       notes.length > 0 ? notes.join(" ") : undefined,
     );
+    recordImageSpan(ctx, image.source, entry);
     const section = createSectionBlock({
       columns: "1",
       children: [
@@ -255,6 +290,7 @@ export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
       ...(paint.wrapperColor
         ? { wrapper: { backgroundColor: paint.wrapperColor } }
         : {}),
+      ...(image.image ? { backgroundImage: image.image } : {}),
     });
     return withBackground(section, paint.backgroundColor);
   });

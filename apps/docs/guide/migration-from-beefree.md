@@ -138,7 +138,8 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 Global template settings are converted where possible:
 
 - **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
-- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` — the full-width band behind the row — is not read, so its background is dropped.
+- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` color — the full-width band behind the row — is not read, so it's dropped.
+- **Background images** -- A row's `content.style` `background-image` becomes its section's `backgroundImage`, with `background-size`, `background-position` and `background-repeat` (CSS's initial values where unset), and wraps a single-column row in a section as a color does. The `container.style` band's image shows only while the content area has neither an image nor a color: then the section paints it at the content width; otherwise it's dropped. A size that fills a side (`100%`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom); `repeat-x` and `repeat-y` become `repeat`. `report.warnings` names every band image and every value with no exact keyword.
 - **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
 - **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
 - **Font family** -- The default font family carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
@@ -150,7 +151,7 @@ Global template settings are converted where possible:
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
 - **Forms** -- BeeFree form modules have no Templatical equivalent. Each becomes an `html-fallback` HTML block, and the form's fields and submit action are not reproduced.
 - **Per-block link colors** -- A text module's own link color (`computedStyle.linkColor`) is dropped; its links take `settings.linkColor`.
-- **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
+- **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides) may not be fully preserved.
 
 ## Verifying Converted Templates
 

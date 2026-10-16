@@ -5,6 +5,7 @@ import {
   parseBorderTop,
   extractPadding,
   parseDividerWidth,
+  readBeefreeBackgroundImage,
 } from "../style-parser";
 
 describe("parsePxValue", () => {
@@ -146,5 +147,168 @@ describe("parseDividerWidth", () => {
     expect(parseDividerWidth("inherit")).toBeUndefined();
     expect(parseDividerWidth("50em")).toBeUndefined();
     expect(parseDividerWidth("")).toBeUndefined();
+  });
+});
+
+describe("readBeefreeBackgroundImage", () => {
+  const read = (style: Record<string, string>, boxWidth = 600) =>
+    readBeefreeBackgroundImage(style, "Row", boxWidth);
+
+  it("returns null without an image", () => {
+    expect(readBeefreeBackgroundImage(undefined, "Row", 600)).toBeNull();
+    expect(read({ "background-image": "none" })).toBeNull();
+    expect(read({ "background-image": "url()" })).toBeNull();
+    expect(read({ "background-color": "#ffffff" })).toBeNull();
+  });
+
+  it("gives unset longhands CSS's initial values", () => {
+    expect(
+      read({ "background-image": "url(https://cdn.test/hero.jpg)" }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [],
+    });
+  });
+
+  it.each([
+    ['url("https://cdn.test/a.png")', "https://cdn.test/a.png"],
+    ["url('https://cdn.test/a.png')", "https://cdn.test/a.png"],
+    ["url( https://cdn.test/a.png )", "https://cdn.test/a.png"],
+  ])("unquotes %s", (value, expected) => {
+    expect(read({ "background-image": value })?.image.url).toBe(expected);
+  });
+
+  it("reads BeeFree's own longhands exactly", () => {
+    expect(
+      read({
+        "background-image": "url(https://cdn.test/hero.jpg)",
+        "background-position": "top left",
+        "background-repeat": "no-repeat",
+      }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it.each([
+    ["background-size", "100%", "cover"],
+    ["background-size", "50%", "auto"],
+    ["background-position", "30% 80%", "center bottom"],
+    ["background-repeat", "repeat-x", "repeat"],
+  ])("maps %s %s to %s, with a note", (property, value, shown) => {
+    expect(
+      read({ "background-image": "url(u)", [property]: value })?.notes,
+    ).toEqual([
+      `Row ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+    ]);
+  });
+});
+
+describe("readBeefreeBackgroundImage on adversarial input", () => {
+  const digits = "0".repeat(100_000);
+  const spaces = " ".repeat(100_000);
+
+  it("reads runs of digits and spaces in linear time", () => {
+    const run = () =>
+      readBeefreeBackgroundImage(
+        {
+          "background-image": `url(${spaces}`,
+          "background-size": `${digits}!`,
+          "background-position": `${digits}! ${digits}!`,
+        },
+        "Row",
+        600,
+      ) ??
+      readBeefreeBackgroundImage(
+        {
+          "background-image": "url(u)",
+          "background-size": `${digits}!`,
+          "background-position": `${digits}! ${digits}!`,
+        },
+        "Row",
+        600,
+      );
+    const started = performance.now();
+    run();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
+
+describe("readBeefreeBackgroundImage edge cases", () => {
+  const read = (style: Record<string, string>) =>
+    readBeefreeBackgroundImage(
+      { "background-image": "url(u)", ...style },
+      "Row",
+      600,
+    );
+
+  it("reads contain, auto and single-keyword positions exactly", () => {
+    expect(read({ "background-size": "contain" })?.image.size).toBe("contain");
+    expect(read({ "background-size": "auto" })).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(read({ "background-position": "bottom" })).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(read({ "background-position": "left" })).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+    expect(read({ "background-repeat": "no-repeat" })).toMatchObject({
+      image: { repeat: false },
+      notes: [],
+    });
+  });
+
+  it("maps offsets and lengths to the edge they start from, with a note", () => {
+    expect(
+      read({ "background-position": "right 20px bottom 10px" })?.notes,
+    ).toEqual([
+      'Row background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+    ]);
+    expect(read({ "background-position": "20px 10px" })).toMatchObject({
+      image: { position: { x: "left", y: "top" } },
+      notes: [
+        'Row background-position "20px 10px" has no exact Templatical equivalent; imported as "left top".',
+      ],
+    });
+  });
+});
+
+describe("readBeefreeBackgroundImage url() scanning", () => {
+  const read = (value: string) =>
+    readBeefreeBackgroundImage({ "background-image": value }, "Row", 600);
+
+  it("reads a repeated unclosed url( in linear time", () => {
+    const value = "url(" + "url(!".repeat(20_000);
+    const started = performance.now();
+    expect(read(value)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(
+    "reads no image from the malformed %s",
+    (value) => {
+      expect(read(value)).toBeNull();
+    },
+  );
+
+  it("unquotes the first url() and trims it", () => {
+    expect(read("  URL( 'https://cdn.test/a.png' )  ")?.image.url).toBe(
+      "https://cdn.test/a.png",
+    );
   });
 });

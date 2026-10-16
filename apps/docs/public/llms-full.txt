@@ -9564,7 +9564,8 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 Global template settings are converted where possible:
 
 - **Width** -- `page.body.content.computedStyle.messageWidth` maps to `settings.width`, with `page.body.content.style.width` as the fallback and 600 when neither is set
-- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` — the full-width band behind the row — is not read, so its background is dropped.
+- **Background color** -- `page.body.content.style.background-color` maps to `settings.backgroundColor`, with `page.body.container.style.background-color` as the fallback and `#ffffff` when neither is set. A row's `content.style.background-color` becomes its section's `backgroundColor`; a single-column row with one is wrapped in a one-column section so the color survives. A row's `container.style` color — the full-width band behind the row — is not read, so it's dropped.
+- **Background images** -- A row's `content.style` `background-image` becomes its section's `backgroundImage`, with `background-size`, `background-position` and `background-repeat` (CSS's initial values where unset), and wraps a single-column row in a section as a color does. The `container.style` band's image shows only while the content area has neither an image nor a color: then the section paints it at the content width; otherwise it's dropped. A size that fills a side (`100%`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom); `repeat-x` and `repeat-y` become `repeat`. `report.warnings` names every band image and every value with no exact keyword.
 - **Text color** -- `page.body.content.style.color` maps to `settings.textColor`, `#1a1a1a` when it is unset. Text, paragraph, list, heading, menu and table modules with no color of their own follow it.
 - **Links** -- `page.body.content.computedStyle.linkColor` maps to `settings.linkColor`. `settings.linkUnderline` is `true`: BeeFree sets underlines per link, in each link's markup.
 - **Font family** -- The default font family carries over to `settings.fontFamily`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name. A module whose `font-family` is `inherit`, `initial`, `unset` or `revert` sets no font of its own and takes `settings.fontFamily`.
@@ -9576,7 +9577,7 @@ Global template settings are converted where possible:
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
 - **Forms** -- BeeFree form modules have no Templatical equivalent. Each becomes an `html-fallback` HTML block, and the form's fields and submit action are not reproduced.
 - **Per-block link colors** -- A text module's own link color (`computedStyle.linkColor`) is dropped; its links take `settings.linkColor`.
-- **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
+- **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides) may not be fully preserved.
 
 ## Verifying Converted Templates
 
@@ -9684,7 +9685,7 @@ for (const entry of report.entries) {
 }
 ```
 
-A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subjectLine` or `fontFiles`, and a count of colour variables resolved to their defaults.
+A `note` on an `approximated` entry names the original value. `report.warnings` carries document-level drops that do not attach to a single entry — a non-empty `subjectLine` or `fontFiles`, a body `backgroundImage`, and a count of colour variables resolved to their defaults.
 
 ## Document shape
 
@@ -9738,9 +9739,9 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 
 | Chamaileon | Templatical block | Notes |
 |---|---|---|
-| `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty. |
-| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. |
-| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. |
+| `body` | Template `settings` | `bodyWidth` → `settings.width`; `backgroundColor` → `settings.backgroundColor`; `previewText` → `settings.preheaderText` when non-empty; a `backgroundImage` is dropped and named in `report.warnings`. |
+| `fullwidth` | `SectionBlock` | Outer `backgroundColor` → `wrapper.backgroundColor`; `contentBackgroundColor` → `section.styles.backgroundColor`; `contentPadding*` → padding. A fullwidth with no `multicolumn` is `columns: "1"`. `contentBackgroundImage` → `backgroundImage`; the band's `backgroundImage` and colour follow [Background images](#background-images). |
+| `box` | Flattened into the parent | Transparent boxes vanish with no entry. A painted box that is the sole child of a fullwidth whose content fill is unset copies that paint onto the section. A painted box among siblings flattens, `approximated`. A lone box's background image moves to the section when the fullwidth has no `contentBackgroundImage`; with one, or among siblings, the box image is dropped and noted, `approximated`. |
 | `multicolumn` + `column` | Section `columns` / `children[i]` | Pixel widths convert to percent-of-`bodyWidth` and match Templatical's five layouts. Nested `multicolumn` cannot become a nested `SectionBlock` — inner columns flatten into the parent column, `approximated`. |
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
@@ -9756,13 +9757,25 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 
 `hideOnMobile` / `hideOnDesktop` map onto `visibility`. Absent when both flags are false.
 
+### Background images {#background-images}
+
+A fullwidth's section image is, nearest first:
+
+1. `contentBackgroundImage`, the content area the section paints.
+2. The `backgroundImage` of a box that is the fullwidth's only child, which moves up while there is no `contentBackgroundImage`.
+3. The band's `backgroundImage`, only while the content area has no colour. The section paints it at the content width, takes the band colour as its fill, and the entry is `approximated`.
+
+A band image the content area covers is dropped, and the entry notes it. When the section has its own image, the band colour is dropped too, with a note, instead of becoming `wrapper.backgroundColor`: Outlook desktop paints a wrapper colour over the section's image.
+
+`backgroundSize`, `backgroundPosition` and `backgroundRepeat` (and their `content…` forms) come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the email's) becomes `cover` and any other length or percentage `auto`; a percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge; `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
+
 ## Lossy conversions
 
 - **Nested `multicolumn`** — a row inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested multicolumn flattened (N columns)"`. Leaves convert; geometry is the loss.
 - **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column `multicolumn` folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
 - **Outlined buttons** — `background-color` unset plus a coloured border has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **Loops and conditionals** — Chamaileon `attrs.expression` is not Liquid and is not MJML display-condition syntax. Empty nodes `skipped`. Populated nodes convert their children and drop the branching; stuffing the expression into `displayCondition` would lie about the dialect.
-- **Box paint among siblings** — a nested box with a real fill, padding, or radius that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`. A new top-level section would split the row; a nested section is illegal in a column.
+- **Box paint among siblings** — a nested box with a real fill, padding, radius, or background image that is not the sole child of an otherwise unpainted fullwidth flattens. The paint is dropped, `approximated`, and a dropped background image is noted. A new top-level section would split the row; a nested section is illegal in a column.
 - **Variable references** — `{ reference, default }` resolves to a concrete colour. The reference name does not survive as a merge tag.
 - **Social icon sizes and unknown platforms** — size snaps to small / medium / large; an unknown `type` becomes `website`.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. A sole `<h5>` or `<h6>` clamps to 4.
@@ -9949,12 +9962,12 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | Easy Email Pro | Templatical block | Notes |
 |---|---|---|
 | `page` | Template `settings` | `width` → `settings.width`; `background-color` → `settings.backgroundColor` after `$var`; `globalAttributes["font-family"]` / `color` → `fontFamily` (the whole stack, so its fallbacks survive) / `textColor`; `link-color` → `linkColor` when set; `preheader` → `settings.preheaderText` when non-empty. `content-background-color` is the default section fill, not the page background. |
-| `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. |
+| `standard-section` | `SectionBlock` | Own `background-color` → `section.styles.backgroundColor`; else the page `content-background-color`. `padding-*` → padding. Direct `standard-column` children, or the columns inside a single `standard-group`. `background-url` with its size, position and repeat → `backgroundImage` (see [Background images](#background-images)). |
 | `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
-| `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
+| `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
 | `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
-| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
+| `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / `background-url` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
@@ -9979,6 +9992,14 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | Any other `type` | `HtmlBlock` | The raw node is preserved as JSON, flagged `html-fallback`. |
 
 `visible: "desktop"` / `"mobile"` maps onto `visibility`. Absent when the key is missing.
+
+### Background images {#background-images}
+
+`background-url` on a `standard-section` becomes the section's `backgroundImage`, and on a `standard-wrapper` or a page header / footer band the `wrapper.backgroundImage` of each section it holds. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, read through the same attribute cascade as every other attribute; one the node leaves out takes MJML's default (`auto`, `top center`, `repeat`), which is what Easy Email Pro renders.
+
+A value with no exact Templatical keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
+
+`standard-hero` keeps its current mapping: its `background-url` is a leading `ImageBlock`.
 
 ## Lossy conversions
 
@@ -10169,9 +10190,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper rows
 
-Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row's `style` sets no background colour, no background image and no padding — a row failing any of those becomes a section of its own, because the section is what carries a row's background and padding.
 
-A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it.
+A fill the descent passes, from the row's `bgcolor`, the cell or the table, carries to the sections below it. So does a background image on the cell or the table; when one lands on more than one section, each of those entries is `approximated` with a note.
 
 ### Gutter rows
 
@@ -10193,13 +10214,23 @@ Templatical sections cannot nest. Tables nested inside a `<td>` are flattened �
 
 ### Section backgrounds
 
-A section takes the nearest fill, read from a `background-color` style, a `background` colour or a `bgcolor` attribute:
+A section takes the nearest fill, read from a `background-color` style, the colour in a `background` shorthand (even one that also sets an image) or a `bgcolor` attribute:
 
 1. The `<tr>`.
 2. The row's cells, when they all share one fill. Gutter cells do not count, and a cell whose entire content is one styled text `<a>` keeps its colour on the `button`.
 3. The `<table>` holding the row, then the tables and wrapper cells around it.
 
 A section has one background colour, so a row whose cells render on different fills is approximated, and its `note` names each cell's fill.
+
+### Section background images {#background-images}
+
+A section takes the nearest image, read from a `background-image` style, the image in a `background` shorthand, or the `background` attribute of a `<table>`, `<td>` or `<th>`. A `background-image` or `background` declaration on the element overrides the attribute; a `background-color` doesn't.
+
+1. The `<tr>`, or the cell holding a row's column containers.
+2. The row's columns, when there is one or they all share the same image. Gutter cells don't count, and neither does a cell whose entire content is one styled text `<a>`. Columns whose images differ, and column images beside a nearer image, are dropped, and the `note` names the columns.
+3. The `<table>` holding the row, then the wrapper cells and tables around it. An image that lands on several sections is copied onto each, and each of those entries is `approximated` with a note.
+
+`background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, longhands winning over the shorthand, with CSS's initial values (`auto`, `0% 0%`, `repeat`) where unset. A bare `background` attribute tiles from the top left at the image's own size, as a browser draws it. A value with no exact keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Of several layers the first image is kept, and the note says so.
 
 ### Cell padding {#cell-padding}
 
@@ -10227,7 +10258,8 @@ For best fidelity, inline your styles before importing. Most production marketin
 Global template settings are extracted from the document:
 
 - **Width** — outermost `<table>` `width` attribute or `style="width:…"`. Defaults to `600`.
-- **Background color** — `<body>` `background-color` style. Defaults to `#ffffff`.
+- **Background color** — `<body>` `background-color` style, or the colour in its `background` shorthand. Defaults to `#ffffff`.
+- **Background image** — a `<body>` background image (style or `background` attribute) has no Templatical equivalent. It's dropped, and `report.warnings` names it.
 - **Font family** — `<body>` `font-family` style. Defaults to `Arial`. The whole stack carries over, so its fallbacks survive; a stack that is exactly a built-in font's own (`Arial, sans-serif`) is stored as the bare name.
 - **Link underline** — `text-decoration` in a `<style>` rule for every link, `a { … }`. Defaults to `true`, the browser default. A rule scoped to some links, a `:hover` state or an `@media` query does not set it.
 - **Preheader text** — first `<div style="display:none">` near the top of the body, by convention.
@@ -10422,7 +10454,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 | MJML tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). |
+| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. `border-radius` and `border` too (see [Borders and corners](#borders-and-corners)). `background-url` with its size, position and repeat becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
@@ -10434,7 +10466,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
-| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `padding` and `border-radius` carry over; a `border` is dropped and reported. |
+| `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `background-url` (with its size, position and repeat), `padding` and `border-radius` carry over; a `border` is dropped and reported. |
 | `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
@@ -10487,6 +10519,18 @@ A percentage is measured against the width the button can fill: its column less 
 
 A side's own `border-<side>` wins over `border`, as it does in MJML. A missing colour imports as unset, which draws in the inherited text colour (`currentColor`) as it did in MJML, and so does a colour the importer can't read. Templatical's wrapper has no border, so a `border` on `mj-wrapper` is dropped and its entry's `note` names it.
 
+### Background images {#background-images}
+
+`background-url` on an `mj-section` becomes the section's `backgroundImage`, and on an `mj-wrapper` the band's `wrapper.backgroundImage`. `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat` come along, and an attribute the element leaves out takes MJML's own default (`auto`, `top center`, `repeat`), so the image paints where it did.
+
+A value with no exact Templatical keyword maps to the nearest one, and the entry is `approximated` with a note:
+
+- **Size** — a size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the section's) becomes `cover`; any other length or percentage becomes `auto`.
+- **Position** — a percentage snaps to the nearest of left, center and right (top, center and bottom); a length is an offset from the left or top edge and maps there.
+- **Repeat** — `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
+
+`mj-column` has no `background-url` in MJML, so there is no column image to import. `mj-hero` still imports as an HTML block.
+
 ## Where the mapping is lossy
 
 MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
@@ -10497,6 +10541,7 @@ MJML produced by Templatical's own renderer round-trips through the importer wit
 - **Divider width and alignment** — an `mj-divider` `width` outside 0–100% or below 0px is clamped into range, an unreadable one becomes `"full"`, and a partial-width divider aligned left or right is centred. See [Divider width](#divider-width).
 - **Button width** — an `mj-button` `width` given as a percentage other than `100%` becomes the px it comes to, one above `100%` becomes `"full"`, and one that is unreadable or comes to `0px` or less leaves the button fitting its label. See [Button width](#button-width).
 - **Borders and corners** — a `border-radius` that isn't in px imports as square corners, a border style other than solid, dashed or dotted is drawn solid, a border side with no px width is left undrawn, and a border on `mj-wrapper` is dropped. See [Borders and corners](#borders-and-corners).
+- **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact Templatical keyword maps to the nearest one. See [Background images](#background-images).
 - **Video blocks** — a `VideoBlock` renders the same way a linked `ImageBlock` does, so nothing in the MJML marks it as video. Importing that markup back produces an `ImageBlock` holding the same thumbnail and link; content survives, the block type does not.
 - **HTML blocks** — for the same reason, an `HtmlBlock`'s content renders as plain `mj-text` markup with nothing marking it as HTML. Importing it back produces a `ParagraphBlock` holding the same markup.
 - **Block IDs** — every imported block gets a freshly generated ID. IDs never appear in rendered MJML, so nothing that keys off one — a Cloud comment thread, for example — survives a round trip.
@@ -10657,13 +10702,26 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Each dir
 | `es-spacer` with a visible border | `divider` | Style, colour and thickness from `border-bottom` or `border-top`. Width follows the rule below. |
 | `es-spacer` with no border | `spacer` | Height from `style`, the `height` attribute, or vertical padding. |
 
-`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. A `background-image` is reported and dropped; the colour still applies.
+`settings.backgroundColor` is the first painted `es-wrapper` or `es-wrapper-color` (`#ffffff` when neither is set). An `es-*-body` fill is the section's background. A transparent body leaves the stripe fill on the section. A stripe fill that differs from both the page and the body becomes `section.wrapper.backgroundColor`, and that section is `approximated`. Background images, and what they do to that band colour, follow [Background images](#background-images).
 
 The structure cell's padding is the section's padding. The default is 0. On plugin HTML, `es-p20` sets every side and `es-p10t` / `es-p10r` / `es-p10b` / `es-p10l` override one side; an inline padding overrides the sides it states. Those classes are read on the structure element.
 
 A divider's width uses the column it sits in. No width, `auto` or `100%` spans that column. Another percentage stays a percentage, rounded to two decimals and clamped to 0–100. A px width stays px until it fills the column's room (the column's share of the body width, less the section padding on the edge that column owns, and the divider's own side padding). `double`, `groove`, `ridge`, `inset` and `outset` import as `solid`. A partial-width line aligned left or right is centred, and that entry is `approximated`. A partial line with no alignment is treated as left.
 
 Everything else in a row goes through `@templatical/import-html` (headings, paragraphs, images, `<hr>` dividers).
+
+### Background images {#background-images}
+
+An element's image is read from its inline `background-image`, the image in its `background` shorthand, or its `background` attribute. A section takes the nearest:
+
+1. The structure's own image: the row cell, `esd-structure` in plugin HTML.
+2. The `es-*-body` image, the content area behind every structure in the stripe.
+3. The containers' images (`es-left` / `es-right`, or `esd-container-frame`), when there is one container or they all share the same image. Otherwise, or beside a nearer image, they're dropped, and the note names the columns.
+4. The stripe's image, only while the body is transparent. The section paints it at the content width, and the entry is `approximated`. A stripe image the body covers is dropped with a note.
+
+An image behind several sections, such as a body image across several structures, is copied onto each, and each entry is `approximated` with a note. When a section has an image, a stripe colour that would have become `section.wrapper.backgroundColor` is dropped with a note instead, because Outlook desktop paints a wrapper colour over the section's image. An `es-wrapper` image has no Templatical equivalent, and `report.warnings` names it.
+
+`background-size`, `background-position` and `background-repeat` come along, with CSS's initial values where unset. A size that fills a side (`100%`, `100% auto`, or a px width at least the body's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`. Each such value is noted.
 
 ## Where the mapping is lossy
 
@@ -10818,13 +10876,13 @@ const mjml = await renderToMjml(content);
 // Topol's own `html` field, from the same API response that carries `json`.
 ```
 
-A visual comparison catches what the report can't. Several of the losses below — the section background image most visibly — are never read by the importer at all, so nothing in `report.entries` points at them.
+A visual comparison catches what the report can't. Several of the losses below are never read by the importer at all, so nothing in `report.entries` points at them.
 
 ## Topol tag mapping {#topol-tag-mapping}
 
 | Topol tag | Templatical block | Notes |
 |---|---|---|
-| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's five layouts resolves to the nearest one. |
+| `mj-section` (with `mj-column` children) | `SectionBlock` with `columns` | Column widths come from each column's `width` percentage, or are distributed equally; a shape outside Templatical's five layouts resolves to the nearest one. `background-url` becomes `backgroundImage` (see [Background images](#background-images)). |
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
@@ -10836,11 +10894,18 @@ A visual comparison catches what the report can't. Several of the losses below �
 | Root `attributes` (plus `mj-container`'s `background-color`) | Template `settings` | A bare `:color` / `a:color` sets the document's text/link colour; per-selector defaults (`h1:font-family` and similar) seed a heading's font when the heading sets none itself. A node's own attribute always wins over these. A font stack carries over whole, so its fallbacks survive. |
 | Anything else | `HtmlBlock` | No Templatical block exists for the tag; the raw node is preserved as JSON, flagged `html-fallback`. |
 
+### Background images {#background-images}
+
+`background-url` on an `mj-section` becomes the section's `backgroundImage`, with `background-size`, `background-position` (and `-x` / `-y`) and `background-repeat`. Topol renders through MJML, so an attribute the section leaves out takes MJML's default (`auto`, `top center`, `repeat`), and the image paints where it did.
+
+A value with no exact Templatical keyword maps to the nearest one, and the section entry is `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
+
 ## Where the mapping is lossy
 
 Every leaf tag in the mapping table above converts — Topol's own editor doesn't emit anything this importer treats as `html-fallback` in practice. Within that, a few conversions are approximations rather than exact matches, each recorded as an `approximated` entry with a `note` in `report.entries`:
 
 - **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol allows any column count at any width, so a shape outside those five — most often four equal columns — resolves to the nearest layout, and any column past the third folds its content into the last one.
+- **Background images** — a `background-size`, `background-position` or `background-repeat` with no exact keyword maps to the nearest one. See [Background images](#background-images).
 - **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
 - **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for Google+, a network retired years ago.
@@ -10849,7 +10914,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 
 ## Things that don't map automatically
 
-- **Section background images** — Templatical sections take a `backgroundImage`, but the Topol importer doesn't read `background-url` yet, so a hero section keeps its background colour and loses its photo — and because the attribute is untouched, nothing in `report.entries` points at it. `full-width` and `layout` on the same `mj-section`, and `vertical-align` on `mj-column`, go the same way.
+- **`full-width`, `layout` and `vertical-align`** — `full-width` and `layout` on an `mj-section`, and `vertical-align` on `mj-column`, are never read, so nothing in `report.entries` points at them.
 - **A button's margin** — `ButtonBlock`'s `styles.padding` is its only outer-spacing field. Topol writes both `padding` and `margin` on every `mj-button`; `padding` fills that field, and `margin` is dropped rather than folded in, which would double the vertical space. The button's inner label padding (`buttonPadding`) keeps Templatical's default too, since Topol has no separate attribute for it.
 - **A paragraph's node-level color, font, and alignment** — `ParagraphBlock` accepts only `content` plus the block's `styles` (padding, background); there's no field for a node-level `color`, `font-family`, or `align`. An `mj-text` node that infers as a paragraph keeps those attributes only where the `content` HTML itself carries them inline — a bare node attribute is dropped silently, and the entry still reports `converted`, since there's nowhere in the block model to note the drop against. The asymmetry is worth knowing: a heading built from the same tag does honor a node's own `color` and `font-family` (`TitleBlock`, see the tag mapping table above), so a design that colours headings and paragraphs identically keeps that colour only on the headings after import.
 - **Imported webfonts** — Templatical has no webfont-import concept. The design root's top-level `fonts` array lists the webfonts imported into the Topol project (one design measures `["\"Cabin\", sans-serif"]`; another carries two entries), and the array is dropped — text that depended on it renders in its fallback face, with no warning at runtime. This is a different field from `attributes.fonts`, a comma-separated fallback stack on the same root that the importer does read, feeding the template's default `fontFamily` when nothing more specific sets one.
@@ -11017,12 +11082,25 @@ When a row sets both to different colours, the section takes `columnsBackgroundC
 `columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
 :::
 
+### Section background image {#background-images}
+
+A row's `backgroundImage` becomes the section's `backgroundImage`:
+
+| `backgroundImage.fullWidth` | Result |
+|---|---|
+| `false` (the content area) | The section's image, exactly. |
+| `true`, `columnsBackgroundColor` unset | The section's image, painted at the content width, and `report.warnings` says so. |
+| `true`, `columnsBackgroundColor` set | Dropped, since in Unlayer the content colour covers it inside the content width, and `report.warnings` names it. |
+
+`size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Older designs' `cover` and `center` flags are read when `size` and `position` are absent: `cover` maps to `cover` (`false` to `auto`), and `center` to center top (`false` to left top). Each value with no exact keyword adds a line to `report.warnings`.
+
 ## Template Settings
 
 Global template settings are converted where possible:
 
 - **Width** — Unlayer `body.values.contentWidth` maps to `settings.width`
 - **Background color** — `body.values.backgroundColor` maps to `settings.backgroundColor`
+- **Background image** — `body.values.backgroundImage` has no Templatical equivalent, since the email body takes a colour only. It's dropped, and `report.warnings` names it.
 - **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
 - **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
 - **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty

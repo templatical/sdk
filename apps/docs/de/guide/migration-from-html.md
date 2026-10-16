@@ -155,9 +155,9 @@ The section was imported as 3 equal columns.
 
 ### Wrapper-Zeilen
 
-Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Tabellen. Eine Zeile mit einer einzigen Zelle, deren Inhalt ausschließlich aus Tabellen besteht, wird durchlaufen, statt eine Section zu werden — die Spaltenzahl wird so an der Zeile gelesen, die sie deklariert. Das gilt nur, wenn diese Zelle neben ihren Tabellen keinen Inhalt trägt und der `style` der Zeile weder eine Hintergrundfarbe noch ein Padding setzt. Eine Zeile, die eine dieser Bedingungen nicht erfüllt, wird eine eigene Section, denn die Section trägt Hintergrund und Padding der Zeile.
+Tabellenbasierte E-Mails umschließen ihr eigentliches Layout mit einzelligen Tabellen. Eine Zeile mit einer einzigen Zelle, deren Inhalt ausschließlich aus Tabellen besteht, wird durchlaufen, statt eine Section zu werden — die Spaltenzahl wird so an der Zeile gelesen, die sie deklariert. Das gilt nur, wenn diese Zelle neben ihren Tabellen keinen Inhalt trägt und der `style` der Zeile weder eine Hintergrundfarbe noch ein Hintergrundbild noch ein Padding setzt. Eine Zeile, die eine dieser Bedingungen nicht erfüllt, wird eine eigene Section, denn die Section trägt Hintergrund und Padding der Zeile.
 
-Eine Füllfarbe, die der Abstieg passiert, aus dem `bgcolor` der Zeile, der Zelle oder der Tabelle, geht an die Sections darunter über.
+Eine Füllfarbe, die der Abstieg passiert, aus dem `bgcolor` der Zeile, der Zelle oder der Tabelle, geht an die Sections darunter über. Ebenso ein Hintergrundbild der Zelle oder der Tabelle; landet es auf mehr als einer Section, ist jeder dieser Einträge `approximated` mit einer Notiz.
 
 ### Gutter-Zeilen
 
@@ -179,13 +179,23 @@ Templatical-Sections können nicht verschachtelt werden. Tabellen, die in einem 
 
 ### Section-Hintergründe
 
-Eine Section übernimmt die nächstgelegene Füllfarbe, gelesen aus einem `background-color`-Style, einer `background`-Farbe oder einem `bgcolor`-Attribut:
+Eine Section übernimmt die nächstgelegene Füllfarbe, gelesen aus einem `background-color`-Style, der Farbe in einer `background`-Kurzschreibweise (auch wenn diese zugleich ein Bild setzt) oder einem `bgcolor`-Attribut:
 
 1. Das `<tr>`.
 2. Die Zellen der Zeile, wenn sie alle dieselbe Füllfarbe haben. Gutter-Zellen zählen nicht, und eine Zelle, deren gesamter Inhalt ein gestyltes Text-`<a>` ist, behält ihre Farbe am `button`.
 3. Die `<table>`, die die Zeile enthält, danach die Tabellen und Wrapper-Zellen um sie herum.
 
 Eine Section hat eine einzige Hintergrundfarbe. Eine Zeile, deren Zellen auf verschiedenen Füllfarben liegen, ist daher angenähert, und ihre `note` nennt die Füllfarbe jeder Zelle.
+
+### Section-Hintergrundbilder
+
+Eine Section übernimmt das nächstgelegene Bild, gelesen aus einem `background-image`-Style, dem Bild in einer `background`-Kurzschreibweise oder dem `background`-Attribut eines `<table>`, `<td>` oder `<th>`. Eine `background-image`- oder `background`-Angabe am Element überschreibt das Attribut, eine `background-color` nicht.
+
+1. Das `<tr>` oder die Zelle, die die Spalten-Container einer Zeile enthält.
+2. Die Spalten der Zeile, wenn es nur eine gibt oder alle dasselbe Bild teilen. Gutter-Zellen zählen nicht, ebenso wenig eine Zelle, deren gesamter Inhalt ein gestyltes Text-`<a>` ist. Spalten mit unterschiedlichen Bildern und Spaltenbilder neben einem näheren Bild werden verworfen, und die `note` nennt die Spalten.
+3. Die `<table>`, die die Zeile enthält, danach die Wrapper-Zellen und Tabellen um sie herum. Ein Bild, das auf mehreren Sections landet, wird auf jede kopiert, und jeder dieser Einträge ist `approximated` mit einer Notiz.
+
+`background-size`, `background-position` (sowie `-x` / `-y`) und `background-repeat` werden mitgenommen, Longhands haben Vorrang vor der Kurzschreibweise, und wo nichts gesetzt ist, gelten die CSS-Anfangswerte (`auto`, `0% 0%`, `repeat`). Ein bloßes `background`-Attribut wird wie im Browser ab links oben in Originalgröße gekachelt. Ein Wert ohne exaktes Schlüsselwort wird auf das nächstliegende abgebildet, `approximated` mit einer Notiz. Eine Größe, die eine Seite füllt (`100%`, `100% auto` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`. Von mehreren Ebenen bleibt das erste Bild erhalten, und die Notiz vermerkt das.
 
 ### Zellen-Padding {#cell-padding}
 
@@ -213,7 +223,8 @@ Beste Treue erreichen Sie, indem Sie Styles vor dem Import inlinen. Produktions-
 Globale Template-Einstellungen werden aus dem Dokument gelesen:
 
 - **Breite** — `width`-Attribut bzw. `style="width:…"` der äußersten `<table>`. Standard: `600`.
-- **Hintergrundfarbe** — `background-color` des `<body>`. Standard: `#ffffff`.
+- **Hintergrundfarbe** — `background-color` des `<body>` oder die Farbe in seiner `background`-Kurzschreibweise. Standard: `#ffffff`.
+- **Hintergrundbild** — ein Hintergrundbild des `<body>` (Style oder `background`-Attribut) hat keine Templatical-Entsprechung. Es wird verworfen, und `report.warnings` nennt es.
 - **Schriftart** — `font-family` des `<body>`. Standard: `Arial`. Der gesamte Stack wird übernommen, sodass seine Fallbacks erhalten bleiben; ein Stack, der genau dem einer eingebauten Schriftart entspricht (`Arial, sans-serif`), wird als bloßer Name gespeichert.
 - **Link-Unterstreichung** — `text-decoration` in einer `<style>`-Regel für jeden Link, `a { … }`. Standard: `true`, der Browser-Standard. Eine Regel für nur einige Links, ein `:hover`-Zustand oder eine `@media`-Query setzt sie nicht.
 - **Preheader** — erstes `<div style="display:none">` oben im Body (Konvention).

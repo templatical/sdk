@@ -10,7 +10,9 @@ import {
   parseLineStyle,
   parsePadding,
   parsePx,
+  readChamaileonBackgroundImage,
 } from "../attribute-parser";
+import { readStyle } from "../normalize";
 
 describe("parsePx", () => {
   it("parses a px length", () => {
@@ -133,5 +135,198 @@ describe("fontStack", () => {
     expect(fontStack("inherit")).toBeUndefined();
     expect(fontStack(undefined)).toBeUndefined();
     expect(fontStack(12)).toBeUndefined();
+  });
+});
+
+describe("readChamaileonBackgroundImage", () => {
+  it("returns null for an unset image", () => {
+    expect(
+      readChamaileonBackgroundImage({}, "background", "Section", 600),
+    ).toBeNull();
+    expect(
+      readChamaileonBackgroundImage(
+        { backgroundImage: "url()", backgroundSize: "auto" },
+        "background",
+        "Section",
+        600,
+      ),
+    ).toBeNull();
+  });
+
+  it("reads Chamaileon's own four keys exactly", () => {
+    expect(
+      readChamaileonBackgroundImage(
+        {
+          backgroundImage: "url(https://images.chamaileon.io/mav-header.jpg)",
+          backgroundSize: "auto",
+          backgroundPosition: "center center",
+          backgroundRepeat: "no-repeat",
+        },
+        "background",
+        "Box",
+        600,
+      ),
+    ).toEqual({
+      image: {
+        url: "https://images.chamaileon.io/mav-header.jpg",
+        size: "auto",
+        position: { x: "center", y: "center" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("reads the content-area keys, kebab-case from 2.0 documents too", () => {
+    const style = readStyle(
+      {
+        type: "fullwidth",
+        style: {
+          "content-background-image": "url('https://cdn.test/hero.jpg')",
+          "content-background-size": "cover",
+        },
+      },
+      [],
+    );
+    expect(
+      readChamaileonBackgroundImage(style, "contentBackground", "Section", 600)
+        ?.image,
+    ).toEqual({
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+  });
+
+  it.each([
+    ["backgroundSize", "100% auto", "background-size", "cover"],
+    ["backgroundSize", "50%", "background-size", "auto"],
+    ["backgroundPosition", "30% 80%", "background-position", "center bottom"],
+    ["backgroundRepeat", "repeat-x", "background-repeat", "repeat"],
+  ])(
+    "maps %s %s to the nearest keyword, with a note",
+    (key, value, property, shown) => {
+      expect(
+        readChamaileonBackgroundImage(
+          { backgroundImage: "url(u)", [key]: value },
+          "background",
+          "Section",
+          600,
+        )?.notes,
+      ).toEqual([
+        `Section ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+      ]);
+    },
+  );
+});
+
+describe("readChamaileonBackgroundImage on adversarial input", () => {
+  const digits = "0".repeat(100_000);
+  const spaces = " ".repeat(100_000);
+
+  it("reads runs of digits and spaces in linear time", () => {
+    const run = () =>
+      readChamaileonBackgroundImage(
+        { backgroundImage: `url(${spaces}` },
+        "background",
+        "Section",
+        600,
+      ) ??
+      readChamaileonBackgroundImage(
+        {
+          backgroundImage: "url(u)",
+          backgroundSize: `${digits}!`,
+          backgroundPosition: `${digits}! ${digits}!`,
+        },
+        "background",
+        "Section",
+        600,
+      );
+    const started = performance.now();
+    run();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
+
+describe("readChamaileonBackgroundImage edge cases", () => {
+  const read = (style: Record<string, string>) =>
+    readChamaileonBackgroundImage(
+      {
+        backgroundImage: "url(u)",
+        ...Object.fromEntries(
+          Object.entries(style).map(([k, v]) => [
+            k.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase()),
+            v,
+          ]),
+        ),
+      },
+      "background",
+      "Section",
+      600,
+    );
+
+  it("reads contain, auto and single-keyword positions exactly", () => {
+    expect(read({ "background-size": "contain" })?.image.size).toBe("contain");
+    expect(read({ "background-size": "auto" })).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(read({ "background-position": "bottom" })).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(read({ "background-position": "left" })).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+    expect(read({ "background-repeat": "no-repeat" })).toMatchObject({
+      image: { repeat: false },
+      notes: [],
+    });
+  });
+
+  it("maps offsets and lengths to the edge they start from, with a note", () => {
+    expect(
+      read({ "background-position": "right 20px bottom 10px" })?.notes,
+    ).toEqual([
+      'Section background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+    ]);
+    expect(read({ "background-position": "20px 10px" })).toMatchObject({
+      image: { position: { x: "left", y: "top" } },
+      notes: [
+        'Section background-position "20px 10px" has no exact Templatical equivalent; imported as "left top".',
+      ],
+    });
+  });
+});
+
+describe("readChamaileonBackgroundImage url() scanning", () => {
+  const read = (value: string) =>
+    readChamaileonBackgroundImage(
+      { backgroundImage: value },
+      "background",
+      "Section",
+      600,
+    );
+
+  it("reads a repeated unclosed url( in linear time", () => {
+    const value = "url(" + "url(!".repeat(20_000);
+    const started = performance.now();
+    expect(read(value)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(
+    "reads no image from the malformed %s",
+    (value) => {
+      expect(read(value)).toBeNull();
+    },
+  );
+
+  it("unquotes the first url() and trims it", () => {
+    expect(read("  URL( 'https://cdn.test/a.png' )  ")?.image.url).toBe(
+      "https://cdn.test/a.png",
+    );
   });
 });

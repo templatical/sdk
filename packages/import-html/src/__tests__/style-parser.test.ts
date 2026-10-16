@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  backgroundShorthandColor,
   parseAlignment,
+  parseBackgroundShorthand,
   parseBorderShorthand,
   parseColor,
   parseFontWeight,
@@ -8,6 +10,8 @@ import {
   parsePxValue,
   parseStyleAttribute,
   parseWidthPercent,
+  readCssBackground,
+  readLegacyBackground,
   readPaddingFromStyles,
   serializeStyleAttribute,
 } from "../style-parser";
@@ -240,6 +244,409 @@ describe("parseBorderShorthand", () => {
       width: 1,
       style: "solid",
       color: "#000000",
+    });
+  });
+});
+
+describe("parseStyleAttribute — semicolons inside a value", () => {
+  it("doesn't split inside url() or quotes", () => {
+    expect(
+      parseStyleAttribute(
+        "background-image:url(data:image/png;base64,AAAA);color:red",
+      ),
+    ).toEqual({
+      "background-image": "url(data:image/png;base64,AAAA)",
+      color: "red",
+    });
+    expect(
+      parseStyleAttribute('background-image:url("a.png?x=1;y=2");padding:4px'),
+    ).toEqual({
+      "background-image": 'url("a.png?x=1;y=2")',
+      padding: "4px",
+    });
+  });
+
+  it("keeps the declarations after an unterminated quote", () => {
+    expect(
+      parseStyleAttribute("font-family:'Open Sans;background-color:#abcdef"),
+    ).toEqual({
+      "font-family": "'Open Sans",
+      "background-color": "#abcdef",
+    });
+  });
+
+  it("keeps the declarations after an unclosed parenthesis", () => {
+    expect(parseStyleAttribute("background-image:url(a.png;color:red")).toEqual(
+      {
+        "background-image": "url(a.png",
+        color: "red",
+      },
+    );
+  });
+});
+
+describe("parseBackgroundShorthand", () => {
+  it("reads mjml@5's section shorthand", () => {
+    expect(
+      parseBackgroundShorthand(
+        "#222222 url('https://cdn.test/hero.jpg') center top / cover no-repeat",
+      ),
+    ).toEqual({
+      color: "#222222",
+      url: "https://cdn.test/hero.jpg",
+      size: "cover",
+      position: "center top",
+      repeat: "no-repeat",
+      layers: 1,
+    });
+  });
+
+  it("reads a colour-only shorthand", () => {
+    expect(parseBackgroundShorthand("rgb(1, 2, 3)")).toEqual({
+      color: "rgb(1, 2, 3)",
+      url: "",
+      size: "",
+      position: "",
+      repeat: "",
+      layers: 1,
+    });
+  });
+
+  it("takes the colour from the last layer and the image from the first with a url", () => {
+    expect(
+      parseBackgroundShorthand(
+        "url(a.png) no-repeat, linear-gradient(#000, #fff) #123456",
+      ),
+    ).toEqual({
+      color: "#123456",
+      url: "a.png",
+      size: "",
+      position: "",
+      repeat: "no-repeat",
+      layers: 2,
+    });
+  });
+});
+
+describe("backgroundShorthandColor", () => {
+  it("reads the colour out of a shorthand with an image", () => {
+    expect(
+      backgroundShorthandColor(
+        "#f0e0d0 url('https://cdn.test/x.png') center top / cover no-repeat",
+      ),
+    ).toBe("#f0e0d0");
+    expect(backgroundShorthandColor("url(x.png)")).toBe("");
+    expect(backgroundShorthandColor(undefined)).toBe("");
+  });
+});
+
+describe("readCssBackground", () => {
+  const read = (styles: Record<string, string>, boxWidth = 600) =>
+    readCssBackground(styles, "Section", boxWidth);
+
+  it("returns null without an image", () => {
+    expect(read({})).toBeNull();
+    expect(read({ "background-image": "none" })).toBeNull();
+    expect(read({ "background-image": "url()" })).toBeNull();
+    expect(read({ background: "#ffffff" })).toBeNull();
+  });
+
+  it("gives unset longhands CSS's initial values", () => {
+    expect(read({ "background-image": "url(https://cdn.test/a.png)" })).toEqual(
+      {
+        image: {
+          url: "https://cdn.test/a.png",
+          size: "auto",
+          position: { x: "left", y: "top" },
+          repeat: true,
+        },
+        notes: [],
+      },
+    );
+  });
+
+  it.each([
+    ['url("https://cdn.test/a.png")', "https://cdn.test/a.png"],
+    ["url('https://cdn.test/a.png')", "https://cdn.test/a.png"],
+    ["url( https://cdn.test/a.png )", "https://cdn.test/a.png"],
+    ["url({{ hero_url }})", "{{ hero_url }}"],
+  ])("unquotes %s", (value, expected) => {
+    expect(read({ "background-image": value })?.image.url).toBe(expected);
+  });
+
+  it("reads mjml@5's compiled section exactly", () => {
+    expect(
+      read({
+        background:
+          "#222222 url('https://cdn.test/hero.jpg') center top / cover no-repeat",
+        "background-position": "center top",
+        "background-repeat": "no-repeat",
+        "background-size": "cover",
+      }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "cover",
+        position: { x: "center", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("lets a longhand win over the shorthand's value", () => {
+    expect(
+      read({
+        background: "url(a.png) no-repeat",
+        "background-repeat": "repeat",
+      })?.image.repeat,
+    ).toBe(true);
+  });
+
+  it("keeps the first image of several layers, with a note", () => {
+    expect(
+      read({
+        "background-image": "linear-gradient(#000, #fff), url(a.png)",
+        "background-size": "auto, cover",
+      }),
+    ).toEqual({
+      image: {
+        url: "a.png",
+        size: "cover",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [
+        'Section background has 2 layers; only the image "a.png" was imported.',
+      ],
+    });
+  });
+
+  it.each([
+    ["background-size", "100%", "cover"],
+    ["background-size", "600px", "cover"],
+    ["background-size", "50%", "auto"],
+    ["background-position", "30% 80%", "center bottom"],
+    ["background-position", "20px 0", "left top"],
+    ["background-repeat", "repeat-x", "repeat"],
+  ])("maps %s %s to %s, with a note", (property, value, shown) => {
+    expect(
+      read({ "background-image": "url(u)", [property]: value })?.notes,
+    ).toEqual([
+      `Section ${property} "${value}" has no exact Templatical equivalent; imported as "${shown}".`,
+    ]);
+  });
+
+  it("reads keyword positions in either order exactly", () => {
+    expect(
+      read({
+        "background-image": "url(u)",
+        "background-position": "bottom right",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "right", y: "bottom" } },
+      notes: [],
+    });
+  });
+});
+
+describe("readLegacyBackground", () => {
+  it("tiles a bare background attribute from the top left, as a browser does", () => {
+    expect(
+      readLegacyBackground(" https://cdn.test/tile.gif ", "Section", 600),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/tile.gif",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: true,
+      },
+      notes: [],
+    });
+    expect(readLegacyBackground("", "Section", 600)).toBeNull();
+    expect(readLegacyBackground(undefined, "Section", 600)).toBeNull();
+  });
+});
+
+describe("readCssBackground on adversarial input", () => {
+  const digits = "0".repeat(100_000);
+  const spaces = " ".repeat(100_000);
+
+  it("reads runs of digits and spaces in linear time", () => {
+    const run = () =>
+      readCssBackground(
+        { "background-image": `url(${spaces}` },
+        "Section",
+        600,
+      ) ??
+      readCssBackground(
+        {
+          background: `${digits}! url(u) ${digits}! / ${digits}!`,
+          "background-size": `${digits}!`,
+          "background-position": `${digits}! ${digits}!`,
+        },
+        "Section",
+        600,
+      );
+    const started = performance.now();
+    run();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
+
+describe("readCssBackground edge cases", () => {
+  const read = (styles: Record<string, string>) =>
+    readCssBackground(
+      { "background-image": "url(u)", ...styles },
+      "Section",
+      600,
+    );
+
+  it("reads contain, auto and single-keyword positions exactly", () => {
+    expect(read({ "background-size": "contain" })?.image.size).toBe("contain");
+    expect(read({ "background-size": "auto" })).toMatchObject({
+      image: { size: "auto" },
+      notes: [],
+    });
+    expect(read({ "background-position": "bottom" })).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [],
+    });
+    expect(read({ "background-position": "left" })).toMatchObject({
+      image: { position: { x: "left", y: "center" } },
+      notes: [],
+    });
+  });
+
+  it("maps offsets and lengths to the edge they start from, with a note", () => {
+    expect(
+      read({ "background-position": "right 20px bottom 10px" })?.notes,
+    ).toEqual([
+      'Section background-position "right 20px bottom 10px" has no exact Templatical equivalent; imported as "right bottom".',
+    ]);
+    expect(
+      read({ "background-position": "20px 10px" })?.image.position,
+    ).toEqual({ x: "left", y: "top" });
+  });
+
+  it("notes lossy background-position-x and -y values", () => {
+    expect(
+      read({ "background-position-x": "30%", "background-position-y": "10px" }),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "top" } },
+      notes: [
+        'Section background-position-x "30%" has no exact Templatical equivalent; imported as "center".',
+        'Section background-position-y "10px" has no exact Templatical equivalent; imported as "top".',
+      ],
+    });
+  });
+
+  it("reads a shorthand's quoted url, size pair and repeat", () => {
+    expect(
+      readCssBackground(
+        { background: 'url("a b.png") left bottom / 50% auto repeat-y' },
+        "Section",
+        600,
+      ),
+    ).toEqual({
+      image: {
+        url: "a b.png",
+        size: "auto",
+        position: { x: "left", y: "bottom" },
+        repeat: true,
+      },
+      notes: [
+        'Section background-size "50% auto" has no exact Templatical equivalent; imported as "auto".',
+        'Section background-repeat "repeat-y" has no exact Templatical equivalent; imported as "repeat".',
+      ],
+    });
+  });
+});
+
+describe("readCssBackground url() scanning", () => {
+  const read = (value: string) =>
+    readCssBackground({ "background-image": value }, "Section", 600);
+
+  it("reads a repeated unclosed url( in linear time", () => {
+    const value = "url(" + "url(!".repeat(20_000);
+    const started = performance.now();
+    expect(read(value)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it.each(['url("a.png', 'url("a.png" x)', 'url(a"b)', "url(a.png"])(
+    "reads no image from the malformed %s",
+    (value) => {
+      expect(read(value)).toBeNull();
+    },
+  );
+
+  it("unquotes the first url() and trims it", () => {
+    expect(read("  URL( 'https://cdn.test/a.png' )  ")?.image.url).toBe(
+      "https://cdn.test/a.png",
+    );
+  });
+});
+
+describe("readCssBackground position overrides and the position note", () => {
+  const read = (styles: Record<string, string>) =>
+    readCssBackground(
+      { "background-image": "url(u)", ...styles },
+      "Section",
+      600,
+    );
+
+  it("names the position imported after an override", () => {
+    expect(
+      read({
+        "background-position": "30% 80%",
+        "background-position-x": "left",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "bottom" } },
+      notes: [
+        'Section background-position "30% 80%" has no exact Templatical equivalent; imported as "left bottom".',
+      ],
+    });
+  });
+
+  it("drops the note when an exact override replaces the only lossy axis", () => {
+    expect(
+      read({
+        "background-position": "30% bottom",
+        "background-position-x": "left",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "bottom" } },
+      notes: [],
+    });
+  });
+
+  it("drops an offset position's note when both axes are overridden exactly", () => {
+    expect(
+      read({
+        "background-position": "right 20px bottom 10px",
+        "background-position-x": "left",
+        "background-position-y": "top",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "top" } },
+      notes: [],
+    });
+  });
+
+  it("keeps the position's axis, and its note, when the override is unreadable", () => {
+    expect(
+      read({
+        "background-position": "30% 80%",
+        "background-position-x": "sideways",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [
+        'Section background-position "30% 80%" has no exact Templatical equivalent; imported as "center bottom".',
+        'Section background-position-x "sideways" has no exact Templatical equivalent; imported as "center".',
+      ],
     });
   });
 });

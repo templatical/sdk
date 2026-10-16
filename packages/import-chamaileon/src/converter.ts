@@ -7,7 +7,11 @@ import type {
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
-import { parseColor, parsePx } from "./attribute-parser";
+import {
+  parseColor,
+  parsePx,
+  readChamaileonBackgroundImage,
+} from "./attribute-parser";
 import {
   convertLeaf,
   isLoopType,
@@ -91,6 +95,17 @@ export function convertChamaileonTemplate(
   const backgroundColor =
     parseColor(styleValue(bodyStyle, "backgroundColor")) ??
     REQUIRED_DEFAULTS.backgroundColor;
+  const pageImage = readChamaileonBackgroundImage(
+    bodyStyle,
+    "background",
+    "Body",
+    width,
+  );
+  if (pageImage) {
+    warnings.push(
+      `The email background image "${pageImage.image.url}" was dropped; Templatical has no email-level background image.`,
+    );
+  }
 
   const previewRaw =
     typeof document.previewText === "string" ? document.previewText.trim() : "";

@@ -4,7 +4,14 @@
  * "transparent" is unset. A present padding longhand of 0 beats the shorthand.
  */
 
-import type { DividerBlock, SpacingValue } from "@templatical/types";
+import type {
+  BackgroundImage,
+  BackgroundPositionX,
+  BackgroundPositionY,
+  BackgroundSize,
+  DividerBlock,
+  SpacingValue,
+} from "@templatical/types";
 
 const ZERO: SpacingValue = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -24,12 +31,17 @@ const SIDE_LETTER: Record<string, keyof SpacingValue> = {
   l: "left",
 };
 
+/**
+ * A `style` attribute as a key/value map. A semicolon inside quotes or
+ * parentheses — `url("a;b")`, `url(data:image/png;base64,…)` — belongs to
+ * its value.
+ */
 export function parseStyleAttribute(
   styleAttr: string | undefined,
 ): Record<string, string> {
   const result: Record<string, string> = {};
   if (!styleAttr) return result;
-  for (const decl of styleAttr.split(";")) {
+  for (const decl of splitTopLevel(styleAttr, ";")) {
     const idx = decl.indexOf(":");
     if (idx === -1) continue;
     const key = decl.slice(0, idx).trim().toLowerCase();
@@ -37,6 +49,36 @@ export function parseStyleAttribute(
     if (key && value) result[key] = value;
   }
   return result;
+}
+
+/**
+ * Split `value` at each `separator` that sits outside quotes and parentheses.
+ * A value whose quote or parenthesis never closes is split at every
+ * `separator` instead, so a malformed declaration costs only itself and the
+ * ones after it still read.
+ */
+function splitTopLevel(value: string, separator: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quote = "";
+  let start = 0;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (quote) {
+      if (char === quote) quote = "";
+      continue;
+    }
+    if (char === '"' || char === "'") quote = char;
+    else if (char === "(") depth++;
+    else if (char === ")") depth = Math.max(0, depth - 1);
+    else if (char === separator && depth === 0) {
+      parts.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  if (quote || depth > 0) return value.split(separator);
+  parts.push(value.slice(start));
+  return parts;
 }
 
 function channelHex(value: number): string {
@@ -87,15 +129,6 @@ export function colorFromPaint(
     fromShorthand ||
     parseColor(bgcolor) ||
     ""
-  );
-}
-
-export function hasBackgroundImage(styleAttr: string | undefined): boolean {
-  if (!styleAttr) return false;
-  const styles = parseStyleAttribute(styleAttr);
-  return (
-    /url\s*\(/i.test(styles["background-image"] ?? "") ||
-    /url\s*\(/i.test(styles.background ?? "")
   );
 }
 
@@ -365,4 +398,573 @@ export function visibleLineBorder(
     }
   }
   return null;
+}
+
+/** A background image read from the source, with a note for each value that had no exact keyword. */
+export interface ReadBackgroundImage {
+  image: BackgroundImage;
+  notes: string[];
+}
+
+const X_GRID = ["left", "center", "right"] as const;
+const Y_GRID = ["top", "center", "bottom"] as const;
+const PERCENT = /^(-?(?:\d+(?:\.\d+)?|\.\d+))%$/;
+const LENGTH = /^-?(?:\d+(?:\.\d+)?|\.\d+)[a-z]*$/;
+
+/**
+ * `background-size` as a keyword. A size with a side at 100%, or a px width
+ * spanning the box, fills it as `cover` does; any other length or percentage
+ * draws the image at a size of its own, which `auto` is closest to.
+ */
+function backgroundSizeKeyword(
+  raw: string,
+  boxWidth: number | undefined,
+): { size: BackgroundSize; exact: boolean } {
+  const parts = raw.toLowerCase().split(/\s+/);
+  const [first] = parts;
+  if (parts.length === 1 && (first === "cover" || first === "contain")) {
+    return { size: first, exact: true };
+  }
+  if (parts.every((part) => part === "auto")) {
+    return { size: "auto", exact: true };
+  }
+  const px = /^(\d+(?:\.\d+)?|\.\d+)px$/.exec(first);
+  const fills =
+    parts.includes("100%") ||
+    (px !== null && boxWidth !== undefined && Number(px[1]) >= boxWidth);
+  return { size: fills ? "cover" : "auto", exact: false };
+}
+
+/**
+ * `background-position` split into x and y the way MJML and CSS read it: a
+ * lone `top` / `bottom` names y and centres x, any other lone value is x
+ * with y centred, and a pair is x then y unless it leads with `top` /
+ * `bottom` (or with `center` before `left` / `right`). Three- and four-value
+ * edge offsets keep their edge keywords only.
+ */
+function splitBackgroundPosition(raw: string): {
+  x: string;
+  y: string;
+  exact: boolean;
+} {
+  const parts = raw.toLowerCase().split(/\s+/);
+  if (parts.length === 1) {
+    const [only] = parts;
+    return only === "top" || only === "bottom"
+      ? { x: "center", y: only, exact: true }
+      : { x: only, y: "center", exact: true };
+  }
+  if (parts.length === 2) {
+    const [a, b] = parts;
+    const yFirst =
+      a === "top" ||
+      a === "bottom" ||
+      (a === "center" && (b === "left" || b === "right"));
+    return yFirst ? { x: b, y: a, exact: true } : { x: a, y: b, exact: true };
+  }
+  return {
+    x: parts.find((part) => part === "left" || part === "right") ?? "center",
+    y: parts.find((part) => part === "top" || part === "bottom") ?? "center",
+    exact: false,
+  };
+}
+
+/**
+ * One axis as a grid point: its keyword; the point nearest a percentage,
+ * ties going to the centre; or the start edge for a length, which is an
+ * offset from it. `null` when the token is unreadable.
+ */
+function backgroundAxisPoint<T extends string>(
+  token: string,
+  grid: readonly [T, T, T],
+): { point: T; exact: boolean } | null {
+  const keyword = grid.find((point) => point === token);
+  if (keyword) return { point: keyword, exact: true };
+  const percent = PERCENT.exec(token);
+  if (percent) {
+    const n = Number(percent[1]);
+    return {
+      point: n < 25 ? grid[0] : n > 75 ? grid[2] : grid[1],
+      exact: n === 0 || n === 50 || n === 100,
+    };
+  }
+  if (LENGTH.test(token)) {
+    return { point: grid[0], exact: parseFloat(token) === 0 };
+  }
+  return null;
+}
+
+/**
+ * `background-repeat`: unrepeated only when every axis is `no-repeat`.
+ * Anything but plain `repeat` tiles too, inexactly.
+ */
+function backgroundRepeatFlag(raw: string): {
+  repeat: boolean;
+  exact: boolean;
+} {
+  const parts = raw.toLowerCase().split(/\s+/);
+  if (parts.every((part) => part === "no-repeat")) {
+    return { repeat: false, exact: true };
+  }
+  return { repeat: true, exact: parts.every((part) => part === "repeat") };
+}
+
+/** CSS's initial values: what a browser paints for a longhand the source leaves out. */
+const CSS_BACKGROUND_DEFAULTS = {
+  size: "auto",
+  x: "left",
+  y: "top",
+  repeat: true,
+} as const;
+
+const IMAGE_FUNCTION = /^(?:url|[a-z-]*gradient|image-set)\(/;
+const REPEAT_TOKENS = new Set([
+  "repeat",
+  "no-repeat",
+  "repeat-x",
+  "repeat-y",
+  "round",
+  "space",
+]);
+const POSITION_TOKENS = new Set(["left", "right", "top", "bottom", "center"]);
+const NON_COLOR_TOKENS = new Set([
+  "none",
+  "scroll",
+  "fixed",
+  "local",
+  "border-box",
+  "padding-box",
+  "content-box",
+  "text",
+  "cover",
+  "contain",
+  "auto",
+]);
+const MEASURE = /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:%|[a-z]+)?$/i;
+
+/**
+ * The URL inside the first CSS `url(…)`, unquoted and trimmed; "" when there
+ * is none or it is malformed. A forward scan rather than a regex, so a long
+ * run of unclosed `url(` can't make it backtrack.
+ */
+function cssUrl(value: string | undefined): string {
+  const text = value ?? "";
+  const start = text.search(/url\(/i);
+  if (start === -1) return "";
+  let i = start + 4;
+  while (i < text.length && /\s/.test(text[i])) i++;
+  const quote = text[i];
+  if (quote === '"' || quote === "'") {
+    const close = text.indexOf(quote, i + 1);
+    if (close === -1) return "";
+    let j = close + 1;
+    while (j < text.length && /\s/.test(text[j])) j++;
+    return text[j] === ")" ? text.slice(i + 1, close).trim() : "";
+  }
+  const close = text.indexOf(")", i);
+  if (close === -1) return "";
+  const inner = text.slice(i, close);
+  return /["']/.test(inner) ? "" : inner.trim();
+}
+
+/**
+ * Whitespace-separated tokens, keeping a function's arguments together and
+ * making the `/` between position and size a token of its own.
+ */
+function cssTokens(value: string): string[] {
+  const tokens: string[] = [];
+  let depth = 0;
+  let quote = "";
+  let current = "";
+  const push = (): void => {
+    if (current) tokens.push(current);
+    current = "";
+  };
+  for (const char of value) {
+    if (quote) {
+      current += char;
+      if (char === quote) quote = "";
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+    if (char === "(") depth++;
+    if (char === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && /\s/.test(char)) {
+      push();
+      continue;
+    }
+    if (depth === 0 && char === "/") {
+      push();
+      tokens.push("/");
+      continue;
+    }
+    current += char;
+  }
+  push();
+  return tokens;
+}
+
+function isColorToken(token: string): boolean {
+  const lower = token.toLowerCase();
+  if (lower === "/" || IMAGE_FUNCTION.test(lower)) return false;
+  return (
+    !REPEAT_TOKENS.has(lower) &&
+    !POSITION_TOKENS.has(lower) &&
+    !NON_COLOR_TOKENS.has(lower) &&
+    !MEASURE.test(lower)
+  );
+}
+
+export interface BackgroundShorthand {
+  /** The colour token as written; "" when there is none. */
+  color: string;
+  url: string;
+  size: string;
+  position: string;
+  repeat: string;
+  layers: number;
+}
+
+/**
+ * The parts of a `background` shorthand. The colour comes from the last
+ * layer, the only one CSS lets carry it; the image and its size, position
+ * and repeat come from the first layer with a `url()`.
+ */
+export function parseBackgroundShorthand(value: string): BackgroundShorthand {
+  const layers = splitTopLevel(value, ",")
+    .map((layer) => layer.trim())
+    .filter(Boolean);
+  const last = cssTokens(layers[layers.length - 1] ?? "");
+  const color = last.find(isColorToken) ?? "";
+  const imageLayer = layers.find((layer) => cssUrl(layer) !== "");
+  if (!imageLayer) {
+    return {
+      color,
+      url: "",
+      size: "",
+      position: "",
+      repeat: "",
+      layers: layers.length,
+    };
+  }
+
+  const tokens = cssTokens(imageLayer);
+  const slash = tokens.indexOf("/");
+  const before = slash === -1 ? tokens : tokens.slice(0, slash);
+  const after = slash === -1 ? [] : tokens.slice(slash + 1);
+  const size: string[] = [];
+  for (const token of after) {
+    const lower = token.toLowerCase();
+    const isSize =
+      lower === "cover" ||
+      lower === "contain" ||
+      lower === "auto" ||
+      MEASURE.test(lower);
+    if (size.length === 2 || !isSize) break;
+    size.push(token);
+  }
+  const rest = [...before, ...after.slice(size.length)];
+  return {
+    color,
+    url: cssUrl(imageLayer),
+    size: size.join(" "),
+    position: before
+      .filter(
+        (token) =>
+          POSITION_TOKENS.has(token.toLowerCase()) || MEASURE.test(token),
+      )
+      .join(" "),
+    repeat: rest
+      .filter((token) => REPEAT_TOKENS.has(token.toLowerCase()))
+      .join(" "),
+    layers: layers.length,
+  };
+}
+
+/**
+ * A background image from a URL and its longhands. A longhand left out takes
+ * CSS's initial value; a value with no exact keyword takes the nearest one
+ * and adds a note naming it. `null` for a blank URL.
+ */
+function buildBackgroundImage(
+  url: string,
+  longhands: {
+    size?: string;
+    position?: string;
+    positionX?: string;
+    positionY?: string;
+    repeat?: string;
+  },
+  label: string,
+  boxWidth: number | undefined,
+): ReadBackgroundImage | null {
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+
+  const notes: string[] = [];
+  const lossy = (name: string, raw: string, shown: string): void => {
+    notes.push(
+      `${label} ${name} "${raw}" has no exact Templatical equivalent; imported as "${shown}".`,
+    );
+  };
+
+  let size: BackgroundSize = CSS_BACKGROUND_DEFAULTS.size;
+  const rawSize = longhands.size?.trim();
+  if (rawSize) {
+    const parsed = backgroundSizeKeyword(rawSize, boxWidth);
+    size = parsed.size;
+    if (!parsed.exact) lossy("background-size", rawSize, size);
+  }
+
+  let x: BackgroundPositionX = CSS_BACKGROUND_DEFAULTS.x;
+  let y: BackgroundPositionY = CSS_BACKGROUND_DEFAULTS.y;
+  let lossyX = false;
+  let lossyY = false;
+  const rawPosition = longhands.position?.trim();
+  if (rawPosition) {
+    const split = splitBackgroundPosition(rawPosition);
+    const readX = backgroundAxisPoint(split.x, X_GRID);
+    const readY = backgroundAxisPoint(split.y, Y_GRID);
+    x = readX?.point ?? x;
+    y = readY?.point ?? y;
+    lossyX = !split.exact || !readX?.exact;
+    lossyY = !split.exact || !readY?.exact;
+  }
+  // A readable `-x` / `-y` replaces its axis, and with it whatever the
+  // position lost there; the position's note then names what was imported.
+  const rawX = longhands.positionX?.trim();
+  const overrideX = rawX
+    ? backgroundAxisPoint(rawX.toLowerCase(), X_GRID)
+    : null;
+  if (overrideX) {
+    x = overrideX.point;
+    lossyX = false;
+  }
+  const rawY = longhands.positionY?.trim();
+  const overrideY = rawY
+    ? backgroundAxisPoint(rawY.toLowerCase(), Y_GRID)
+    : null;
+  if (overrideY) {
+    y = overrideY.point;
+    lossyY = false;
+  }
+  if (rawPosition && (lossyX || lossyY)) {
+    lossy("background-position", rawPosition, `${x} ${y}`);
+  }
+  if (rawX && !overrideX?.exact) lossy("background-position-x", rawX, x);
+  if (rawY && !overrideY?.exact) lossy("background-position-y", rawY, y);
+
+  let repeat: boolean = CSS_BACKGROUND_DEFAULTS.repeat;
+  const rawRepeat = longhands.repeat?.trim();
+  if (rawRepeat) {
+    const parsed = backgroundRepeatFlag(rawRepeat);
+    repeat = parsed.repeat;
+    if (!parsed.exact) {
+      lossy("background-repeat", rawRepeat, repeat ? "repeat" : "no-repeat");
+    }
+  }
+
+  return {
+    image: { url: trimmedUrl, size, position: { x, y }, repeat },
+    notes,
+  };
+}
+
+/**
+ * A background image from CSS declarations: `background-image`, else the
+ * `background` shorthand's image, with the size, position and repeat
+ * longhands winning over the shorthand's. A style map keeps no declaration
+ * order, so a longhand is taken to follow the shorthand, as it usually does.
+ * Of several layers the first image is kept, and a note says so. `null`
+ * when the declarations paint no image.
+ */
+export function readCssBackground(
+  styles: Record<string, string>,
+  label: string,
+  boxWidth: number | undefined,
+): ReadBackgroundImage | null {
+  const shorthand =
+    styles.background !== undefined
+      ? parseBackgroundShorthand(styles.background)
+      : null;
+  const imageLayers =
+    styles["background-image"] !== undefined
+      ? splitTopLevel(styles["background-image"], ",").map((layer) =>
+          layer.trim(),
+        )
+      : null;
+  const index = imageLayers
+    ? imageLayers.findIndex((layer) => cssUrl(layer) !== "")
+    : -1;
+  const url = imageLayers
+    ? index === -1
+      ? ""
+      : cssUrl(imageLayers[index])
+    : (shorthand?.url ?? "");
+  if (!url) return null;
+
+  const layer = (value: string | undefined): string | undefined => {
+    if (value === undefined) return undefined;
+    const parts = splitTopLevel(value, ",").map((part) => part.trim());
+    return parts[Math.max(index, 0)] ?? parts[0];
+  };
+  const read = buildBackgroundImage(
+    url,
+    {
+      size: layer(styles["background-size"]) ?? shorthand?.size,
+      position: layer(styles["background-position"]) ?? shorthand?.position,
+      positionX: styles["background-position-x"],
+      positionY: styles["background-position-y"],
+      repeat: layer(styles["background-repeat"]) ?? shorthand?.repeat,
+    },
+    label,
+    boxWidth,
+  );
+  const layers = imageLayers?.length ?? shorthand?.layers ?? 1;
+  if (read && layers > 1) {
+    read.notes.unshift(
+      `${label} background has ${layers} layers; only the image "${url}" was imported.`,
+    );
+  }
+  return read;
+}
+
+/**
+ * The image an element paints: its inline CSS background, else its legacy
+ * `background` attribute. A `background-image` or `background` declaration
+ * overrides the attribute; a `background-color` doesn't. The image twin of
+ * `colorFromPaint`.
+ */
+export function imageFromPaint(
+  styleAttr: string | undefined,
+  backgroundAttr: string | undefined,
+  label: string,
+  boxWidth: number | undefined,
+): ReadBackgroundImage | null {
+  const styles = parseStyleAttribute(styleAttr);
+  if (
+    styles["background-image"] !== undefined ||
+    styles.background !== undefined
+  ) {
+    return readCssBackground(styles, label, boxWidth);
+  }
+  return buildBackgroundImage(backgroundAttr ?? "", {}, label, boxWidth);
+}
+
+/** An image an element paints, and that element, which identifies the image when it spans several sections. */
+export interface ImageLayer {
+  read: ReadBackgroundImage;
+  source: object;
+}
+
+/** Every image that can reach one section. */
+export interface SectionImageLayers {
+  /** The structure (row) cell's own image. */
+  structure: ImageLayer | null;
+  /** The `es-*-body` image: the content area behind every structure in the stripe. */
+  body: ImageLayer | null;
+  /** The stripe's image: the full-width band. */
+  band: ImageLayer | null;
+  /** Each container's image, in column order. */
+  columns: Array<ReadBackgroundImage | null>;
+  /** Whether the body paints a colour, which hides the band in the content area. */
+  bodyPainted: boolean;
+}
+
+export interface SectionImage {
+  image: BackgroundImage | undefined;
+  notes: string[];
+  /** The element the image came from when other sections can share it; `null` for a container's. */
+  source: object | null;
+}
+
+function sameImage(a: BackgroundImage, b: BackgroundImage): boolean {
+  return (
+    a.url === b.url &&
+    a.size === b.size &&
+    a.repeat === b.repeat &&
+    a.position.x === b.position.x &&
+    a.position.y === b.position.y
+  );
+}
+
+function droppedColumnsNote(columns: number[]): string {
+  return columns.length === 1
+    ? `The background image on column ${columns[0]} was dropped. A Templatical section has one background image.`
+    : `Background images on columns ${columns.join(", ")} were dropped. A Templatical section has one background image.`;
+}
+
+/**
+ * The image a section paints, nearest first: the structure's own, then the
+ * body's, then the containers', moved up when there is one or all share the
+ * same image, then the stripe's while the body leaves it showing. An image
+ * that showed in the section but can't be kept is named in a note. A body
+ * image beneath the structure's own is covered in this section, so it isn't
+ * named; it still paints the stripe's other sections. The image is a copy,
+ * so sections that share a source don't share an object.
+ */
+export function resolveSectionImage(layers: SectionImageLayers): SectionImage {
+  const notes: string[] = [];
+  let picked: { read: ReadBackgroundImage; source: object | null } | null =
+    layers.structure ?? layers.body;
+
+  const withImage = layers.columns.flatMap((read, index) =>
+    read ? [index + 1] : [],
+  );
+  const first = layers.columns[0] ?? null;
+  const shared =
+    first !== null &&
+    layers.columns.every(
+      (read) => read !== null && sameImage(read.image, first.image),
+    );
+  if (withImage.length > 0) {
+    if (!picked && shared) picked = { read: first, source: null };
+    else notes.push(droppedColumnsNote(withImage));
+  }
+
+  if (layers.band) {
+    if (!picked && !layers.bodyPainted) {
+      picked = layers.band;
+      notes.push(
+        "The stripe's background image spans the full width in Stripo; the section paints it at the content width.",
+      );
+    } else {
+      notes.push(
+        "The stripe's background image outside the content width was dropped.",
+      );
+    }
+  }
+
+  if (!picked) return { image: undefined, notes, source: null };
+  return {
+    image: {
+      ...picked.read.image,
+      position: { ...picked.read.image.position },
+    },
+    notes: [...picked.read.notes, ...notes],
+    source: picked.source,
+  };
+}
+
+/**
+ * The paint, minus a band colour that would become the section's wrapper
+ * colour, when the section has a background image. The wrapper has no
+ * padding, so the colour shows nowhere except Outlook desktop, which paints
+ * it over the section's image.
+ */
+export function withoutBandOverImage(
+  paint: SectionPaint,
+  hasImage: boolean,
+): SectionPaint {
+  if (!hasImage || !paint.wrapperColor) return paint;
+  return {
+    backgroundColor: paint.backgroundColor,
+    notes: [
+      `The band colour ${paint.wrapperColor} was dropped: Outlook desktop paints a wrapper colour over the section's background image.`,
+    ],
+  };
 }
