@@ -325,6 +325,8 @@ export function readMjmlBackgroundImage(
 
   let x: BackgroundPositionX = MJML_BACKGROUND_DEFAULTS.x;
   let y: BackgroundPositionY = MJML_BACKGROUND_DEFAULTS.y;
+  let lossyX = false;
+  let lossyY = false;
   const rawPosition = read("background-position")?.trim();
   if (rawPosition) {
     const split = splitBackgroundPosition(rawPosition);
@@ -332,22 +334,32 @@ export function readMjmlBackgroundImage(
     const readY = backgroundAxisPoint(split.y, Y_GRID);
     x = readX?.point ?? x;
     y = readY?.point ?? y;
-    if (!split.exact || !readX?.exact || !readY?.exact) {
-      lossy("background-position", rawPosition, `${x} ${y}`);
-    }
+    lossyX = !split.exact || !readX?.exact;
+    lossyY = !split.exact || !readY?.exact;
   }
+  // A readable `-x` / `-y` replaces its axis, and with it whatever the
+  // position lost there; the position's note then names what was imported.
   const rawX = read("background-position-x")?.trim();
-  if (rawX) {
-    const parsed = backgroundAxisPoint(rawX.toLowerCase(), X_GRID);
-    x = parsed?.point ?? x;
-    if (!parsed?.exact) lossy("background-position-x", rawX, x);
+  const overrideX = rawX
+    ? backgroundAxisPoint(rawX.toLowerCase(), X_GRID)
+    : null;
+  if (overrideX) {
+    x = overrideX.point;
+    lossyX = false;
   }
   const rawY = read("background-position-y")?.trim();
-  if (rawY) {
-    const parsed = backgroundAxisPoint(rawY.toLowerCase(), Y_GRID);
-    y = parsed?.point ?? y;
-    if (!parsed?.exact) lossy("background-position-y", rawY, y);
+  const overrideY = rawY
+    ? backgroundAxisPoint(rawY.toLowerCase(), Y_GRID)
+    : null;
+  if (overrideY) {
+    y = overrideY.point;
+    lossyY = false;
   }
+  if (rawPosition && (lossyX || lossyY)) {
+    lossy("background-position", rawPosition, `${x} ${y}`);
+  }
+  if (rawX && !overrideX?.exact) lossy("background-position-x", rawX, x);
+  if (rawY && !overrideY?.exact) lossy("background-position-y", rawY, y);
 
   let repeat: boolean = MJML_BACKGROUND_DEFAULTS.repeat;
   const rawRepeat = read("background-repeat")?.trim();

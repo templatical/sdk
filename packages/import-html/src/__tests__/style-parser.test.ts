@@ -587,3 +587,66 @@ describe("readCssBackground url() scanning", () => {
     );
   });
 });
+
+describe("readCssBackground position overrides and the position note", () => {
+  const read = (styles: Record<string, string>) =>
+    readCssBackground(
+      { "background-image": "url(u)", ...styles },
+      "Section",
+      600,
+    );
+
+  it("names the position imported after an override", () => {
+    expect(
+      read({
+        "background-position": "30% 80%",
+        "background-position-x": "left",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "bottom" } },
+      notes: [
+        'Section background-position "30% 80%" has no exact Templatical equivalent; imported as "left bottom".',
+      ],
+    });
+  });
+
+  it("drops the note when an exact override replaces the only lossy axis", () => {
+    expect(
+      read({
+        "background-position": "30% bottom",
+        "background-position-x": "left",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "bottom" } },
+      notes: [],
+    });
+  });
+
+  it("drops an offset position's note when both axes are overridden exactly", () => {
+    expect(
+      read({
+        "background-position": "right 20px bottom 10px",
+        "background-position-x": "left",
+        "background-position-y": "top",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "left", y: "top" } },
+      notes: [],
+    });
+  });
+
+  it("keeps the position's axis, and its note, when the override is unreadable", () => {
+    expect(
+      read({
+        "background-position": "30% 80%",
+        "background-position-x": "sideways",
+      }),
+    ).toMatchObject({
+      image: { position: { x: "center", y: "bottom" } },
+      notes: [
+        'Section background-position "30% 80%" has no exact Templatical equivalent; imported as "center bottom".',
+        'Section background-position-x "sideways" has no exact Templatical equivalent; imported as "center".',
+      ],
+    });
+  });
+});
