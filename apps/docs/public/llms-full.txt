@@ -11045,12 +11045,25 @@ When a row sets both to different colours, the section takes `columnsBackgroundC
 `columnsBackgroundColor` fills the content width, the area a section paints. `backgroundColor` fills the band outside it, and a Templatical section has no full-width band.
 :::
 
+### Section background image {#background-images}
+
+A row's `backgroundImage` becomes the section's `backgroundImage`:
+
+| `backgroundImage.fullWidth` | Result |
+|---|---|
+| `false` (the content area) | The section's image, exactly. |
+| `true`, `columnsBackgroundColor` unset | The section's image, painted at the content width, and `report.warnings` says so. |
+| `true`, `columnsBackgroundColor` set | Dropped, since in Unlayer the content colour covers it inside the content width, and `report.warnings` names it. |
+
+`size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Each value with no exact keyword adds a line to `report.warnings`.
+
 ## Template Settings
 
 Global template settings are converted where possible:
 
 - **Width** — Unlayer `body.values.contentWidth` maps to `settings.width`
 - **Background color** — `body.values.backgroundColor` maps to `settings.backgroundColor`
+- **Background image** — `body.values.backgroundImage` has no Templatical equivalent, since the email body takes a colour only. It's dropped, and `report.warnings` names it.
 - **Text color** — `body.values.textColor` maps to `settings.textColor`. Headings, menus and paragraphs with no colour of their own inherit it.
 - **Links** — `body.values.linkStyle.linkColor` maps to `settings.linkColor`, and `linkStyle.linkUnderline` to `settings.linkUnderline`. When `linkStyle` sets no `linkUnderline`, links are underlined, as in Unlayer.
 - **Preheader** — `body.values.preheaderText` maps to `settings.preheaderText`, omitted when empty

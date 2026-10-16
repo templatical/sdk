@@ -6,7 +6,9 @@ import {
   parseBorderObject,
   parseDividerWidth,
   parseFontFamily,
+  readUnlayerBackgroundImage,
 } from "../style-parser";
+import type { UnlayerBackgroundImage } from "../types";
 
 describe("parsePxValue", () => {
   it("parses '12px' to 12", () => {
@@ -183,5 +185,103 @@ describe("parseFontFamily", () => {
   });
   it("returns empty for undefined", () => {
     expect(parseFontFamily(undefined)).toBe("");
+  });
+});
+
+describe("readUnlayerBackgroundImage", () => {
+  const read = (bg: UnlayerBackgroundImage) =>
+    readUnlayerBackgroundImage(bg, "Row", 600);
+
+  it("returns null without a url", () => {
+    expect(readUnlayerBackgroundImage(undefined, "Row", 600)).toBeNull();
+    expect(
+      read({
+        url: "",
+        fullWidth: true,
+        repeat: "no-repeat",
+        size: "custom",
+        position: "center",
+      }),
+    ).toBeNull();
+  });
+
+  it("reads Unlayer's defaults as the image at its own size, centred, once", () => {
+    expect(
+      read({
+        url: "https://cdn.test/hero.jpg",
+        fullWidth: true,
+        repeat: "no-repeat",
+        size: "custom",
+        position: "center",
+      }),
+    ).toEqual({
+      image: {
+        url: "https://cdn.test/hero.jpg",
+        size: "auto",
+        position: { x: "center", y: "center" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("gives unset fields Unlayer's editor defaults", () => {
+    expect(read({ url: "u" })?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "center", y: "center" },
+      repeat: false,
+    });
+  });
+
+  it.each([
+    ["top-left", { x: "left", y: "top" }],
+    ["top-center", { x: "center", y: "top" }],
+    ["center-right", { x: "right", y: "center" }],
+    ["bottom-right", { x: "right", y: "bottom" }],
+  ])("reads position %s exactly", (position, expected) => {
+    const result = read({ url: "u", position });
+    expect(result?.image.position).toEqual(expected);
+    expect(result?.notes).toEqual([]);
+  });
+
+  it("reads a custom position's customPosition as CSS", () => {
+    expect(
+      read({ url: "u", position: "custom", customPosition: ["50%", "100%"] }),
+    ).toEqual({
+      image: {
+        url: "u",
+        size: "auto",
+        position: { x: "center", y: "bottom" },
+        repeat: false,
+      },
+      notes: [],
+    });
+    expect(
+      read({ url: "u", position: "custom", customPosition: ["20px", "30%"] })
+        ?.notes,
+    ).toEqual([
+      'Row backgroundImage.customPosition "20px 30%" has no exact Templatical equivalent; imported as "left center".',
+    ]);
+  });
+
+  it("reads cover and contain exactly", () => {
+    expect(read({ url: "u", size: "cover" })?.image.size).toBe("cover");
+    expect(read({ url: "u", size: "contain" })?.image.size).toBe("contain");
+  });
+
+  it("reads repeat, a boolean from older designs too", () => {
+    expect(read({ url: "u", repeat: "repeat" })).toMatchObject({
+      image: { repeat: true },
+      notes: [],
+    });
+    expect(read({ url: "u", repeat: true })?.image.repeat).toBe(true);
+    expect(read({ url: "u", repeat: false })?.image.repeat).toBe(false);
+    expect(read({ url: "u", repeat: "repeat-x" })).toMatchObject({
+      image: { repeat: true },
+      notes: [
+        'Row backgroundImage.repeat "repeat-x" has no exact Templatical equivalent; imported as "repeat".',
+      ],
+    });
   });
 });

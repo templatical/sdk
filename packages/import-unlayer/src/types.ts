@@ -18,12 +18,22 @@ export interface UnlayerBody {
   values: UnlayerBodyValues;
 }
 
+/**
+ * A row or body background image. The vocabulary is Unlayer's own (its CSS →
+ * design mapper in `unlayer/elements`).
+ */
 export interface UnlayerBackgroundImage {
   url?: string;
+  /** `true` paints the full-width band behind the row; `false` the content area. */
   fullWidth?: boolean;
-  repeat?: string;
+  /** `"no-repeat"`, `"repeat"`, `"repeat-x"` or `"repeat-y"`; a boolean in older designs. */
+  repeat?: string | boolean;
+  /** `"cover"`, `"contain"` or `"custom"`, the image at its own size. */
   size?: string;
+  /** `"center"`, `"top-left"` … `"bottom-right"`, or `"custom"` with `customPosition`. */
   position?: string;
+  /** `[x, y]` as CSS lengths or percentages; read when `position` is `"custom"`. */
+  customPosition?: [string, string];
 }
 
 export interface UnlayerFontFamily {

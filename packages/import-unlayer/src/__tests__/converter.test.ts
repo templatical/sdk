@@ -529,6 +529,100 @@ describe("convertUnlayerTemplate", () => {
     });
   });
 
+  describe("row background images", () => {
+    function convertRow(values: UnlayerRow["values"]) {
+      const { content, report } = convertUnlayerTemplate({
+        body: {
+          values: {},
+          rows: [
+            {
+              cells: [1],
+              columns: [{ contents: [], values: {} }],
+              values,
+            },
+          ],
+        },
+      });
+      const section = content.blocks[0];
+      if (section.type !== "section") throw new Error("expected a section");
+      return { section, warnings: report.warnings };
+    }
+
+    it("maps a content-width image exactly", () => {
+      const { section, warnings } = convertRow({
+        backgroundImage: {
+          url: "https://cdn.test/hero.jpg",
+          fullWidth: false,
+          repeat: "no-repeat",
+          size: "cover",
+          position: "top-center",
+        },
+      });
+      expect(section.backgroundImage).toEqual({
+        url: "https://cdn.test/hero.jpg",
+        size: "cover",
+        position: { x: "center", y: "top" },
+        repeat: false,
+      });
+      expect(warnings).toEqual([]);
+    });
+
+    it("paints a full-width band image at the content width while the content area is transparent", () => {
+      const { section, warnings } = convertRow({
+        backgroundColor: "#1d1d1f",
+        columnsBackgroundColor: "",
+        backgroundImage: {
+          url: "https://cdn.test/band.jpg",
+          fullWidth: true,
+          size: "cover",
+          position: "center",
+        },
+      });
+      expect(section.backgroundImage?.url).toBe("https://cdn.test/band.jpg");
+      expect(section.styles.backgroundColor).toBe("#1d1d1f");
+      expect(warnings).toEqual([
+        'Row background image "https://cdn.test/band.jpg" spans the full width in Unlayer; the section paints it at the content width.',
+      ]);
+    });
+
+    it("drops a full-width band image behind a painted content area", () => {
+      const { section, warnings } = convertRow({
+        columnsBackgroundColor: "#ffffff",
+        backgroundImage: { url: "https://cdn.test/band.jpg", fullWidth: true },
+      });
+      expect(section.backgroundImage).toBeUndefined();
+      expect(warnings).toEqual([
+        'Row background image "https://cdn.test/band.jpg" outside the content width was dropped; the section keeps the content background #ffffff.',
+      ]);
+    });
+
+    it("reports a value with no exact keyword in warnings", () => {
+      const { warnings } = convertRow({
+        backgroundImage: { url: "u", fullWidth: false, repeat: "repeat-y" },
+      });
+      expect(warnings).toEqual([
+        'Row backgroundImage.repeat "repeat-y" has no exact Templatical equivalent; imported as "repeat".',
+      ]);
+    });
+  });
+
+  it("drops the email's background image with a warning", () => {
+    const { report } = convertUnlayerTemplate({
+      body: {
+        values: {
+          backgroundImage: {
+            url: "https://cdn.test/page.jpg",
+            fullWidth: true,
+          },
+        },
+        rows: [],
+      },
+    });
+    expect(report.warnings).toContain(
+      'The email background image "https://cdn.test/page.jpg" was dropped; Templatical has no email-level background image.',
+    );
+  });
+
   it("wraps 4+ column rows in a single-column section instead of dropping the wrapper", () => {
     const { content } = convertUnlayerTemplate({
       body: {
