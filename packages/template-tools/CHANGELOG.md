@@ -1,5 +1,47 @@
 # @templatical/template-tools
 
+## 0.47.0
+
+### Minor Changes
+
+- f8018d8: Add `templatical custom-block validate|render|fetch` and `live --custom-block [--host]` for authoring custom block definitions. `validate` checks the definition against a generated `custom-block-schema.json`, cross-checks the Liquid template against its fields, lints the rendered HTML for email-client safety, and proves it renders through MJML. `checkCustomBlock` also takes the object a definition module exports, `dataSource` included, so the same check can run in your own tests. Accessibility warnings cover vague link text, links with no name, layout tables without `role="presentation"` and low contrast between inline colours. The live preview shows the block in its edge-case states, and with `--fetch` adds one filled from the real endpoint. That request, and the editor's Fetch button, run a preview-only `dataSourcePreview` recipe; the bridge makes those requests from Node, reading credentials from environment variables, so they never reach the page.
+
+  The live bridge now answers only requests whose `Host` header is `localhost`, `127.0.0.1` or `[::1]` on its own port, in both modes, so a tunnel or proxy that rewrites the hostname gets a 403. A write carrying another site's `Origin` also gets a 403, and a `POST` must be `application/json`, so a web page open in the same browser can't post notes or content to it. In template mode, `live reload` now exits 1 and pushes nothing when the working file is missing or isn't valid JSON.
+
+- 2797f5e: Sections and wrapper bands take a background image
+
+  There was no way to put an image behind content — a hero banner or a textured band needed an HTML block, and HTML blocks render inside `mj-text`, where a background can't reach the section.
+
+  `SectionBlock`, `SectionWrapper` and the layout `WrapperBlock` gain an optional `backgroundImage: BackgroundImage` — `{ url, size, position: { x, y }, repeat }`, with `size` one of `"cover"`, `"contain"` or `"auto"` and `position` a 9-point grid. It renders as MJML's `background-url`, `background-size`, `background-position` and `background-repeat` on the `mj-section` / `mj-wrapper`, which includes MJML's VML fallback for Outlook on Windows. The element's `backgroundColor` stays its fallback colour. Templates without an image render exactly as before.
+
+  The editor's Background panel gets an image control for sections, and the section wrapper settings get one for the band: a URL (merge tags, the media browser and drag-and-drop upload all work, as for image blocks), then Fill / Fit / Original, a position grid and a repeat toggle. The canvas paints the image through `resolveImageUrl` like image blocks do, and the dark-mode preview leaves it un-inverted, as it does images.
+
+  `createBackgroundImage()`, `resolveBackgroundImage()` and `encodeCssUrl()` are exported from `@templatical/types`, so the canvas and the renderer resolve images identically. `encodeCssUrl` percent-encodes the characters that could end a quoted CSS `url()`, because MJML pastes the URL verbatim into inline CSS.
+
+  `lintStructure` gains two warnings for Outlook on Windows: `structure.wrapper-color-over-background-image` (a wrapper colour paints over the section's image there) and `structure.nested-background-image` (an image on both the wrapper and its section breaks the layout there).
+
+  Outlook on Windows tiles an image at its original size (`auto`) from the top center, whatever the position and repeat settings.
+
+### Patch Changes
+
+- Updated dependencies [fb6c024]
+- Updated dependencies [51d5cfd]
+- Updated dependencies [f8018d8]
+- Updated dependencies [2797f5e]
+- Updated dependencies [7afcadf]
+- Updated dependencies [4d0870d]
+  - @templatical/types@0.47.0
+  - @templatical/renderer@0.47.0
+  - @templatical/import-mjml@0.47.0
+  - @templatical/import-topol@0.47.0
+  - @templatical/import-easy-email-pro@0.47.0
+  - @templatical/import-unlayer@0.47.0
+  - @templatical/import-beefree@0.47.0
+  - @templatical/import-chamaileon@0.47.0
+  - @templatical/import-html@0.47.0
+  - @templatical/import-stripo@0.47.0
+  - @templatical/quality@0.47.0
+
 ## 0.46.0
 
 ### Patch Changes

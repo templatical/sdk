@@ -10,9 +10,9 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@templatical/editor": "^0.46.0",
-    "@templatical/renderer": "^0.46.0",
-    "@templatical/types": "^0.46.0",
+    "@templatical/editor": "^0.47.0",
+    "@templatical/renderer": "^0.47.0",
+    "@templatical/types": "^0.47.0",
     "mjml": "^5.4.1",
     "nuxt": "^4.6.1",
     "vue": "^3.5.44"

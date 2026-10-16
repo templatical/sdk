@@ -17,8 +17,168 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.46.0",
+  "latest": "0.47.0",
   "versions": [
+    {
+      "version": "0.47.0",
+      "date": "2026-10-16",
+      "changes": [
+        {
+          "hash": "2797f5e",
+          "level": "minor",
+          "title": "Sections and wrapper bands take a background image",
+          "body": "There was no way to put an image behind content — a hero banner or a textured band needed an HTML block, and HTML blocks render inside `mj-text`, where a background can't reach the section.\n\n`SectionBlock`, `SectionWrapper` and the layout `WrapperBlock` gain an optional `backgroundImage: BackgroundImage` — `{ url, size, position: { x, y }, repeat }`, with `size` one of `\"cover\"`, `\"contain\"` or `\"auto\"` and `position` a 9-point grid. It renders as MJML's `background-url`, `background-size`, `background-position` and `background-repeat` on the `mj-section` / `mj-wrapper`, which includes MJML's VML fallback for Outlook on Windows. The element's `backgroundColor` stays its fallback colour. Templates without an image render exactly as before.\n\nThe editor's Background panel gets an image control for sections, and the section wrapper settings get one for the band: a URL (merge tags, the media browser and drag-and-drop upload all work, as for image blocks), then Fill / Fit / Original, a position grid and a repeat toggle. The canvas paints the image through `resolveImageUrl` like image blocks do, and the dark-mode preview leaves it un-inverted, as it does images.\n\n`createBackgroundImage()`, `resolveBackgroundImage()` and `encodeCssUrl()` are exported from `@templatical/types`, so the canvas and the renderer resolve images identically. `encodeCssUrl` percent-encodes the characters that could end a quoted CSS `url()`, because MJML pastes the URL verbatim into inline CSS.\n\n`lintStructure` gains two warnings for Outlook on Windows: `structure.wrapper-color-over-background-image` (a wrapper colour paints over the section's image there) and `structure.nested-background-image` (an image on both the wrapper and its section breaks the layout there).\n\nOutlook on Windows tiles an image at its original size (`auto`) from the top center, whatever the position and repeat settings.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/quality",
+            "@templatical/renderer",
+            "@templatical/template-tools",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "4d0870d",
+          "level": "minor",
+          "title": "Titles and paragraphs enter editing in place. The edit surface used to add a dashed border and 8px of padding around the text, which made the text column 18px narrower and could move its line breaks; its dashed ring is now an outline drawn 4px outside the text, so nothing moves. Titles also kept a different line height in each place: 1.5 while editing, 1.25 on the canvas and 1.3 in the email. All three now use 1.3, which `@templatical/types` exports as `TITLE_LINE_HEIGHT`, so sent emails are unchanged and a canvas title is about 1px taller per line.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "51d5cfd",
+          "level": "minor",
+          "title": "Importers bring section and wrapper background images across",
+          "body": "Importers used to drop a section's background image, mostly without a word in the report, so a hero banner arrived as a plain colour. Each one now maps it onto the `backgroundImage` field sections and wrapper bands already have.\n\n- **MJML, Topol, Easy Email Pro:** `background-url` with its size, position and repeat, on `mj-section` / `standard-section`, and on `mj-wrapper` / `standard-wrapper` / page header and footer bands as `wrapper.backgroundImage`.\n- **Unlayer:** a row's `backgroundImage`; the body's is dropped with a warning.\n- **BeeFree:** a row's `content.style` image; the `container.style` band's image while the content area is unpainted.\n- **Chamaileon:** a fullwidth's `contentBackgroundImage`, a lone box's image, and the band's while the content area is unpainted; the body's is dropped with a warning.\n- **HTML:** `background-image`, the `background` shorthand and the `background` attribute on tables and cells, nearest first; a page image is dropped with a warning. A `background` shorthand's colour is now read too, so `background: #222 url(…)` keeps its `#222`.\n- **Stripo:** structure, body, container and stripe images, nearest first. \"A background image was not imported.\" is gone, because the image now maps or is reported specifically. An `es-wrapper` page image is dropped with a warning.\n\nAn attribute the source leaves out takes the source's own default, so an image paints where it did. A size, position or repeat with no exact keyword maps to the nearest one, with a note: the entry is `approximated`, or, for Unlayer and BeeFree rows, which have no entry, a line in `report.warnings`. Column images move up to the section when the row has one column or every column shares the image, and are otherwise dropped with a note naming the columns. A full-width band image goes to the section only when the content area doesn't cover it. Stripo and Chamaileon drop a band colour that would paint over the section's image in Outlook desktop. An image painted behind several sections is copied onto each, and the report notes it.\n\nHeroes (`mj-hero`, Easy Email Pro's `standard-hero`) keep their current mapping.",
+          "packages": [
+            "@templatical/import-beefree",
+            "@templatical/import-chamaileon",
+            "@templatical/import-easy-email-pro",
+            "@templatical/import-html",
+            "@templatical/import-mjml",
+            "@templatical/import-stripo",
+            "@templatical/import-topol",
+            "@templatical/import-unlayer"
+          ]
+        },
+        {
+          "hash": "7afcadf",
+          "level": "minor",
+          "title": "A blank line typed in a title or paragraph is kept on the canvas and in the email. TipTap stores it as an empty `<p></p>`, which showed a line tall only while editing: on the canvas and in mail clients an empty paragraph has no height. The renderer and the canvas now fill each empty paragraph with `&nbsp;`, so the blank line is one line tall everywhere. Templates that already contain blank lines get taller in sent emails, matching what the author saw while editing. The stored content is unchanged, and a paragraph with no text at all still renders nothing. `@templatical/types` exports the rule as `fillEmptyParagraphs`, with `isBlankRichText` for the empty check.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "f8018d8",
+          "level": "minor",
+          "title": "Add `templatical custom-block validate|render|fetch` and `live --custom-block [--host]` for authoring custom block definitions. `validate` checks the definition against a generated `custom-block-schema.json`, cross-checks the Liquid template against its fields, lints the rendered HTML for email-client safety, and proves it renders through MJML. `checkCustomBlock` also takes the object a definition module exports, `dataSource` included, so the same check can run in your own tests. Accessibility warnings cover vague link text, links with no name, layout tables without `role=\"presentation\"` and low contrast between inline colours. The live preview shows the block in its edge-case states, and with `--fetch` adds one filled from the real endpoint. That request, and the editor's Fetch button, run a preview-only `dataSourcePreview` recipe; the bridge makes those requests from Node, reading credentials from environment variables, so they never reach the page.",
+          "body": "The live bridge now answers only requests whose `Host` header is `localhost`, `127.0.0.1` or `[::1]` on its own port, in both modes, so a tunnel or proxy that rewrites the hostname gets a 403. A write carrying another site's `Origin` also gets a 403, and a `POST` must be `application/json`, so a web page open in the same browser can't post notes or content to it. In template mode, `live reload` now exits 1 and pushes nothing when the working file is missing or isn't valid JSON.",
+          "packages": [
+            "@templatical/template-tools"
+          ]
+        },
+        {
+          "hash": "f8018d8",
+          "level": "minor",
+          "title": "Custom-block stylesheets now reach a render backend. The editor copies each definition's `stylesheet` onto its blocks as `renderedStylesheet` when it pre-renders `renderedHtml`, for a `render` provider's payload and before Cloud saves. `renderToMjml` emits those copies when no `getCustomBlockStylesheet` is passed, so `renderToMjml(payload.content)` keeps a custom block's media queries and hover rules with no extra wiring. A resolver, when passed, still decides every type.",
+          "body": "",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "fb6c024",
+          "level": "minor",
+          "title": "The editor canvas shows a font with the same fallbacks as the email. A title, button, menu, table or countdown in a font the browser doesn't have, or a template font such as `Helvetica Neue`, used to preview in the browser's default serif while the email fell back to `defaultFallback` (`Arial, sans-serif` unless configured). The canvas, preview mode and the block previews now apply the renderer's own rule: a single unknown font previews as `'Helvetica Neue', Arial, sans-serif`, a built-in font as its stack, and a custom font with its fallback. `@templatical/types` exports the rule as `resolveFontStack`.",
+          "body": "A custom font whose name contains an apostrophe, such as `Ma'am Sans`, now gets a valid `font-family` that reaches its fallback. It used to be emitted as `font-family: Ma'am Sans`, which mail clients drop.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "1a44195",
+          "level": "patch",
+          "title": "The video toolbar's Width control now shows a width that isn't one of its presets. A video with any other width, such as the 600px the BeeFree importer writes for a video with no explicit width, or an integer in API- or agent-written JSON, showed a blank select, and touching it overwrote the width. Width now works like the image toolbar's: Full Width, 300px, 400px, 500px or Custom, with a px input for Custom. Any other width reads as Custom with its value in the input, so authors can see it and type any width.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "3af22e7",
+          "level": "patch",
+          "title": "Dropping an image now shows the uploading state while it uploads. An image dropped on an image block on the canvas, its URL field in the sidebar, or a custom block's image field used to clear the drop overlay as soon as the upload started, so the spinner and \"Uploading…\" never appeared.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "3b056bb",
+          "level": "patch",
+          "title": "The image toolbar's alt text field now pulses every time a picked or dropped image fills it in. It used to pulse only for the first image with alt text and stay still for every later one, even on another image block.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "4c007eb",
+          "level": "patch",
+          "title": "The text toolbar's line-height and letter-spacing selects show their placeholders and the letter-spacing \"Normal\" option in the editor's locale. They used to read `LH`, `LS` and `Normal` in every locale. The placeholders stay short, such as `ZH` / `ZA` in German and `行間` / `字間` in Japanese, and each select's tooltip and accessible label still give the full name.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "8ef4e69",
+          "level": "patch",
+          "title": "A top-level block dragged into a section column that already holds blocks now lands where it's dropped. It used to land at the top of the column whatever the drop position, because the column's drop index was counted with a selector only the canvas's own items match. Drops into an empty column, between columns and sections, out to the canvas and within the canvas are unchanged.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "dbfb7a5",
+          "level": "patch",
+          "title": "The paragraph toolbar's font size, line height and letter spacing selects show the value in use when they don't offer it. Imported or pasted text often carries one, such as 15px text or a 1.3 line height, and the select showed nothing. The value is now listed first, like an unlisted font. A CSS-wide keyword such as `inherit` shows the select's placeholder.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "f323d0e",
+          "level": "patch",
+          "title": "The editor's interface now renders as designed in the default Shadow DOM mount, and on host pages without a CSS reset. A host reset such as Tailwind's preflight hid all of this in light-DOM mounts.",
+          "body": "- **Interface:** the sidebars, dialogs, pickers and toolbars now get a reset of their own, scoped to the editor and never applied to the email on the canvas. Before, they rendered with browser defaults:\n  - dialog panels grew past their size limits by their padding (the test-email dialog by about 40px each way);\n  - titles and help text picked up browser margins (the saved-blocks browser header was 46px taller);\n  - buttons used the browser's 13.33px font.\n- **Canvas placeholders:** the HTML, image, video and custom-block placeholders were 4–34px taller than designed. They now fit their minimum heights.\n- **Spacer:** the dashed guide shown while editing added 2px to the spacer's height and drew 3px dashed borders on its sides. It now sits inside the height, with no side borders.\n- **Video:** the thumbnail left a 6px gap below it that the email doesn't have. It now renders `display: block`, as the email's image does.\n- **Dialogs:** every dialog's backdrop was 32px taller than the page or host box it covers, so dialogs sat 16px low and lost their bottom 32px inside a clipping host. The backdrop now fits the box it covers.\n- **Sidebars:** each sidebar was 1px wider than the canvas leaves for it, so the right one covered the canvas's last pixel column, where a block's drag grip sits.\n\nThe email itself renders exactly as before, and the export is unchanged.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "f69fa20",
+          "level": "patch",
+          "title": "The dark-mode canvas preview now inverts section wrapper frames and layout bands. A section's wrapper frame stayed light while the section inside it turned dark, and with a `layout`, the band around the email (and the whole email inside it) stayed light in the preview. Both now invert together with the content they hold, once, and images on them still show as they are.",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.46.0",
       "date": "2026-10-15",
