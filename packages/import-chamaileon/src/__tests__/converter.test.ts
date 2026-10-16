@@ -223,6 +223,48 @@ describe("convertChamaileonTemplate end to end", () => {
   });
 });
 
+describe("convertChamaileonTemplate resolved-variable count", () => {
+  const variable = (value: string) => ({
+    reference: "BrandColor",
+    default: value,
+  });
+  const box = (style: Record<string, unknown>) => ({
+    type: "box",
+    style,
+    children: [{ type: "text", attrs: { text: "<p>Hi</p>" } }],
+  });
+  const resolvedWarning = (boxes: ReturnType<typeof box>[]) =>
+    convertChamaileonTemplate({
+      body: {
+        eid: "root",
+        type: "body",
+        style: { bodyWidth: 600 },
+        children: [{ type: "fullwidth", children: boxes }],
+      },
+    }).report.warnings;
+
+  it("counts a lone box's variable fill as it did before background images", () => {
+    expect(
+      resolvedWarning([box({ backgroundColor: variable("#123456") })]),
+    ).toEqual(["Resolved 2 colour/image variables to their default values."]);
+  });
+
+  it("counts each painted sibling box's variable fill as it did before background images", () => {
+    expect(
+      resolvedWarning([
+        box({ backgroundColor: variable("#123456") }),
+        box({ backgroundColor: variable("#654321") }),
+      ]),
+    ).toEqual(["Resolved 4 colour/image variables to their default values."]);
+  });
+
+  it("counts a sibling box's variable radius as it did before background images", () => {
+    expect(
+      resolvedWarning([box({ borderRadius: variable("8px") }), box({})]),
+    ).toEqual(["Resolved 2 colour/image variables to their default values."]);
+  });
+});
+
 describe("convertChamaileonTemplate loops", () => {
   it("converts a loop's fullwidth child and marks produced entries approximated", () => {
     const { content, report } = convertChamaileonTemplate({

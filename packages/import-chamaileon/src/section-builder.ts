@@ -53,20 +53,32 @@ export function buildFullwidth(
   );
 
   const original = node.children ?? [];
-  const sole = original.length === 1 ? original[0] : undefined;
+  const sole =
+    original.length === 1 && original[0].type === "box"
+      ? original[0]
+      : undefined;
+  const soleStyle = sole ? readStyle(sole, ctx.variables, ctx.stats) : {};
   const copySoleFill =
-    sole?.type === "box" &&
-    isPaintedBox(sole, ctx) &&
-    contentFill === undefined;
+    sole !== undefined && losesPaint(soleStyle) && contentFill === undefined;
   const soleImage =
-    sole?.type === "box" && !content
+    sole !== undefined && !content
       ? readChamaileonBackgroundImage(
-          readStyle(sole, ctx.variables, ctx.stats),
+          soleStyle,
           "background",
           "Box",
           ctx.bodyWidth,
         )
       : null;
+  if (copySoleFill && !soleImage && hasBoxImage(soleStyle)) {
+    // The lone box's fill goes up with the section's paint, so it stays
+    // silent; an image the section doesn't keep is still lost and reported.
+    entries.push({
+      sourceTag: "box",
+      templaticalBlockType: null,
+      status: "approximated",
+      note: BOX_IMAGE_DROPPED,
+    });
+  }
 
   const flattened = flattenBoxes(
     original,
@@ -202,14 +214,10 @@ export function buildFullwidth(
 
 const BOX_IMAGE_DROPPED = "box background image dropped";
 
-function hasBoxImage(node: ChamaileonNode, ctx: MapContext): boolean {
+function hasBoxImage(style: Record<string, unknown>): boolean {
   return (
-    readChamaileonBackgroundImage(
-      readStyle(node, ctx.variables, ctx.stats),
-      "background",
-      "Box",
-      undefined,
-    ) !== null
+    readChamaileonBackgroundImage(style, "background", "Box", undefined) !==
+    null
   );
 }
 
@@ -228,18 +236,7 @@ function flattenBoxes(
       continue;
     }
     const keepsImage = child === imageKept;
-    if (child === silent) {
-      // The lone box's fill went up with the section's paint, so it stays
-      // silent; an image the section didn't keep is still lost and reported.
-      if (!keepsImage && hasBoxImage(child, ctx)) {
-        entries.push({
-          sourceTag: "box",
-          templaticalBlockType: null,
-          status: "approximated",
-          note: BOX_IMAGE_DROPPED,
-        });
-      }
-    } else if (isPaintedBox(child, ctx, keepsImage)) {
+    if (child !== silent && isPaintedBox(child, ctx, keepsImage)) {
       reportPaintedBox(child, ctx, entries, keepsImage);
     }
     out.push(...flattenBoxes(child.children ?? [], ctx, entries, undefined));
@@ -310,9 +307,15 @@ function isPaintedBox(
   ctx: MapContext,
   imageKept = false,
 ): boolean {
-  const style = readStyle(node, ctx.variables, ctx.stats);
+  return losesPaint(readStyle(node, ctx.variables, ctx.stats), imageKept);
+}
+
+function losesPaint(
+  style: Record<string, unknown>,
+  imageKept = false,
+): boolean {
   if (parseColor(styleValue(style, "backgroundColor"))) return true;
-  if (!imageKept && hasBoxImage(node, ctx)) return true;
+  if (!imageKept && hasBoxImage(style)) return true;
   const padding = parsePadding(style);
   if (
     padding.top !== 0 ||
@@ -334,7 +337,7 @@ function reportPaintedBox(
 ): void {
   const style = readStyle(node, ctx.variables, ctx.stats);
   const fill = parseColor(styleValue(style, "backgroundColor"));
-  const image = !imageKept && hasBoxImage(node, ctx);
+  const image = !imageKept && hasBoxImage(style);
   const lost = [
     fill ? `box fill ${fill} dropped` : "",
     image ? BOX_IMAGE_DROPPED : "",
