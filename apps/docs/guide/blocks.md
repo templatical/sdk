@@ -34,6 +34,8 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 
 A heading block with fixed size levels. Use titles for headings, section headers, and other prominent text.
 
+Titles are bold (weight 700) on the canvas, while you edit them, and in the email. Inline bold inside a title asks for a heavier weight, which web-safe fonts such as Arial don't have, so it shows only in a font that does.
+
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | HTML content |
@@ -58,7 +60,7 @@ Displays an image with optional link wrapping.
 |----------|------|-------------|
 | `src` | `string` | Image URL |
 | `alt` | `string` | Alt text |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
@@ -67,6 +69,7 @@ Displays an image with optional link wrapping.
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Placeholder shown in the editor when `src` uses a merge tag |
+| `naturalWidth` / `naturalHeight` | `number` | The image file's own size, for the [aspect-ratio lock](/guide/images#aspect-ratio-lock). Never rendered |
 
 ## Button
 
@@ -203,7 +206,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `url` | `string` | Video URL (YouTube, Vimeo, etc.) |
 | `thumbnailUrl` | `string` | Thumbnail image URL |
 | `alt` | `string` | Alt text for thumbnail |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `openInNewTab` | `boolean` | Link target behavior |

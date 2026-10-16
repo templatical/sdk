@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+  A bare host page for the standalone media library. It loads no CSS of its
+  own, so the library renders with its stylesheet and browser defaults only,
+  as on a site without a CSS reset. The playground's pages can't stand in:
+  their document carries Tailwind's preflight, which hides what this checks.
+  Served by the playground's dev server for
+  `e2e/tests/media-library-standalone.spec.ts`; `vite build` never picks it up.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Standalone media library (bare host)</title>
+  </head>
+  <body>
+    <p id="host-probe">A host paragraph, styled by the browser only.</p>
+    <div id="media" style="width: 900px; height: 650px"></div>
+    <script type="module" src="./standalone-media-library.ts"></script>
+  </body>
+</html>

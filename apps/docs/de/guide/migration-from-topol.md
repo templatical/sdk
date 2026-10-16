@@ -145,7 +145,7 @@ Ein visueller Vergleich zeigt, was der Bericht nicht zeigen kann. Mehrere der un
 | `mj-column` | Section-Spalte | Hält eine Liste verschachtelter Blöcke. |
 | `mj-text` | `TitleBlock` oder `ParagraphBlock` | Eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zu `TitleBlock`; alles andere wird zu `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift und `padding` als äußerer Abstand des Blocks — sein `margin` überlebt nicht. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. `width` ist `"full"` bei `widthPercent` 100, wenn sie fehlt, oder sobald sie die Spalte abzüglich des seitlichen Paddings des Bildes erreicht. |
 | `mj-gif` | `ImageBlock` | Dieselben Felder wie `mj-image` — Templatical hat keinen eigenen GIF-Block. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |

@@ -49,7 +49,7 @@ function handleConfirm(item: MediaAsset): void {
 <template>
   <div
     ref="popoverRoot"
-    class="tpl tpl:flex tpl:flex-col tpl:overflow-hidden tpl:rounded-[var(--tpl-radius-lg)]"
+    class="tpl tpl:box-border tpl:flex tpl:flex-col tpl:overflow-hidden tpl:rounded-[var(--tpl-radius-lg)]"
     style="
       width: 100%;
       height: 100%;
@@ -57,6 +57,10 @@ function handleConfirm(item: MediaAsset): void {
       border: 1px solid var(--tpl-border);
     "
   >
+    <!-- `tpl:box-border` above keeps the 1px border inside the inline `100%`,
+         so the root fits its container. The chrome reset only reaches
+         descendants of `.tpl`, and a host without a reset leaves the root
+         content-box. -->
     <MediaLibraryChrome
       :provider="provider"
       :accept="accept"

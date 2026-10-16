@@ -157,7 +157,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
 | `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
-| `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. |
+| `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. A px `style.width` becomes `"full"` once it reaches the column less the image's side padding. |
 | `dynamic-image` | `ImageBlock` | `approximated`; the note names the source type. |
 | `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` and 4.1 `style.width` / `type` / `color` (line thickness, not block width). |
 | `social` | `SocialIconsBlock` | `elements[]` is the source of truth. Unknown platform names become `website`. Icon size snaps to 24 / 32 / 48 px. |

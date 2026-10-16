@@ -84,7 +84,7 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<p>` / Text-`<div>` / `<span>` | `paragraph` | Konvertiert |
 | `<td>` mit ausschließlich Text in einer Layout-Tabelle | `paragraph` | Konvertiert |
 | Reiner Text auf Body-Ebene oder direkt in einem Wrapper | `paragraph` | Konvertiert |
-| `<img>` | `image` | Konvertiert |
+| `<img>` | `image` | Konvertiert (angenähert, wenn eine Prozentbreite zu px wird; siehe [Bildbreite](#image-width)) |
 | `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
 | `<a>` (Text-Link) | geht im umgebenden `paragraph` auf | Konvertiert |
 | `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
@@ -102,6 +102,19 @@ Eine Zelle, die Text und einen Link mischt, wird ein einzelner `paragraph`, der 
 Ein `<div>`, `<center>` oder `<main>`, das eine Tabelle umschließt, erzeugt keinen eigenen Block: Der Importer steigt hinein, unabhängig von der Verschachtelungstiefe, und ordnet die gefundenen Tabellen zu. Ein Wrapper, der nur Text enthält, behält seine `paragraph`-Zuordnung; ein Wrapper, dessen gesamter Inhalt eine Überschrift ist, wird entfernt, sodass die Überschrift selbst zugeordnet wird.
 
 Das `text-align` eines Wrappers, der nur Text enthält, gilt für jedes `<p>` darin, das kein eigenes `text-align` angibt. Ein `<p>`, das eines angibt, behält es.
+
+### Bildbreite {#image-width}
+
+| `<img>`-Breite | `ImageBlock.width` | Status |
+|---|---|---|
+| fehlend oder `100%` | `"full"` | Konvertiert |
+| px, schmaler als der Platz des Bildes | die px-Zahl | Konvertiert |
+| px, so breit wie der Platz oder breiter | `"full"` | Konvertiert |
+| ein Prozentwert unter `100%`, etwa `50%` | dieser Anteil des Platzes in px | Angenähert |
+
+Zuerst wird das Attribut `width` gelesen, dann der Style `width`. Der Platz des Bildes ist die Breite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. Wo der Platz unbekannt ist (ein Bild in einem Link, der auch Text enthält), bleibt eine px-Breite wie angegeben und ein Prozentwert wird `"full"`, angenähert.
+
+Ein `height`-Style hat wie im Browser Vorrang vor dem Attribut `height`. `height: auto` lässt die Höhe also offen, und das Bild behält sein Seitenverhältnis.
 
 ### Divider-Breite
 

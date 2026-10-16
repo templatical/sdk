@@ -17,6 +17,7 @@ import type {
   Block,
   DividerBlock,
   HeadingLevel,
+  ImageBlock,
   SocialPlatform,
   SocialIcon,
   MenuItemData,
@@ -303,32 +304,87 @@ function convertHeading(
   });
 }
 
-function convertImage(descriptor: BeeFreeeModuleDescriptor): Block {
+/**
+ * The classes BeeFree records in `computedStyle.class` for an image: its
+ * alignment and `autowidth` / `fixedwidth`.
+ */
+function computedClasses(descriptor: BeeFreeeModuleDescriptor): string[] {
+  const value = descriptor.computedStyle?.class;
+  return typeof value === "string" ? value.trim().split(/\s+/) : [];
+}
+
+/**
+ * The width BeeFree shows an image at, as `ImageBlock.width`. `image.width` and
+ * `image.height` are the file's own size: an `autowidth` image fills its
+ * column, and a `fixedwidth` one is shown at `computedStyle.width`. An export
+ * without `computedStyle` falls back to `image.width`. No width, or one that
+ * reaches `room` (the column less the image's side padding), is `"full"`.
+ */
+function resolveImageWidth(
+  descriptor: BeeFreeeModuleDescriptor,
+  room: number | undefined,
+): ImageBlock["width"] {
+  if (computedClasses(descriptor).includes("autowidth")) return "full";
+  const computed = descriptor.computedStyle?.width;
+  const shown =
+    parsePxValue(typeof computed === "string" ? computed : undefined) ||
+    parsePxValue(descriptor.image?.width);
+  if (shown <= 0) return "full";
+  return room !== undefined && shown >= room ? "full" : shown;
+}
+
+function convertImage(
+  descriptor: BeeFreeeModuleDescriptor,
+  columnWidth: number | undefined,
+): Block {
   const image = descriptor.image;
+  const styles = makeStyles(descriptor);
   if (!image) {
-    return createImageBlock({ styles: makeStyles(descriptor) });
+    return createImageBlock({ styles });
   }
 
-  // Kept separate from the `?? 600` fallback below: a percentage radius has to
-  // resolve against a width the template actually stated.
-  const readWidth = parsePxValue(image.width) || undefined;
-  const readHeight = parsePxValue(image.height) || undefined;
+  const room =
+    columnWidth === undefined
+      ? undefined
+      : columnWidth - styles.padding.left - styles.padding.right;
+  const width = resolveImageWidth(descriptor, room);
+
+  // `image.width` × `image.height` is the file, so the height is never carried
+  // over: the image keeps its aspect ratio at the width it is shown at. A
+  // percentage radius resolves against that shown size, and only when BeeFree
+  // stated a width.
+  const fileWidth = parsePxValue(image.width);
+  const fileHeight = parsePxValue(image.height);
+  const shownWidth = width === "full" ? room : width;
+  const stated = fileWidth > 0 || width !== "full";
+  const shownHeight =
+    shownWidth !== undefined && fileWidth > 0 && fileHeight > 0
+      ? Math.round((fileHeight * shownWidth) / fileWidth)
+      : undefined;
+
+  const classes = computedClasses(descriptor);
+  const classAlign = (["left", "center", "right"] as const).find((side) =>
+    classes.includes(side),
+  );
 
   return createImageBlock({
     src: image.src || "",
     alt: image.alt || "",
-    width: readWidth ?? 600,
-    // No default, unlike width: an absent height is what keeps the aspect
-    // ratio, and BeeFree's "auto" parses to 0, which reads the same way.
-    height: readHeight,
+    width,
+    // The file's size feeds the editor's aspect-ratio lock; never rendered.
+    ...(fileWidth > 0 && fileHeight > 0
+      ? { naturalWidth: fileWidth, naturalHeight: fileHeight }
+      : {}),
     borderRadius: parseImageBorderRadius(
       image.style?.["border-radius"],
-      readWidth,
-      readHeight,
+      stated ? shownWidth : undefined,
+      shownHeight,
     ),
-    align: toAlign(image.style?.["text-align"], "center"),
+    // Exports keep the alignment in `computedStyle.class` ("left fixedwidth")
+    // and often have no image `style` at all.
+    align: toAlign(image.style?.["text-align"] ?? classAlign, "center"),
     linkUrl: image.href || undefined,
-    styles: makeStyles(descriptor),
+    styles,
   });
 }
 
@@ -656,7 +712,7 @@ export function convertModule(
       block = convertHeading(descriptor, textColor);
       break;
     case "image":
-      block = convertImage(descriptor);
+      block = convertImage(descriptor, context.columnWidth);
       break;
     case "button":
       block = convertButton(descriptor);

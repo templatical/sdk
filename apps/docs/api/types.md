@@ -204,6 +204,9 @@ interface ImageBlock extends BaseBlock {
   width: number | 'full';
   /** Absent derives the height from the width, keeping the aspect ratio. */
   height?: number;
+  /** The image file's own size, for the aspect-ratio lock. Never rendered. */
+  naturalWidth?: number;
+  naturalHeight?: number;
   align: 'left' | 'center' | 'right';
   /** Corner radius in px. Omitted/0 = square corners. */
   borderRadius?: BorderRadiusValue;

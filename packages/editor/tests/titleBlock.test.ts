@@ -1,6 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { TITLE_LINE_HEIGHT, createTitleBlock } from "@templatical/types";
+import {
+  TITLE_FONT_WEIGHT,
+  TITLE_LINE_HEIGHT,
+  createTitleBlock,
+} from "@templatical/types";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
 import { mountEditor } from "./helpers/mount";
 
@@ -92,5 +96,16 @@ describe("TitleBlock canvas rendering", () => {
     const heading = wrapper.find("h2");
     expect(heading.classes()).toContain("tpl:leading-[inherit]");
     expect(heading.classes()).not.toContain("tpl:leading-tight");
+  });
+
+  it("sets the renderer's title font weight on the wrapper both modes share", () => {
+    const wrapper = mount({ level: 2 });
+    const root = wrapper.find("div").element as HTMLElement;
+    expect(root.style.fontWeight).toBe(String(TITLE_FONT_WEIGHT));
+    expect(root.style.fontWeight).toBe("700");
+    // The heading takes the wrapper's weight, not the browser's heading
+    // default, so the edit surface (a plain <p>) and the view always match.
+    const heading = wrapper.find("h2").element as HTMLElement;
+    expect(heading.style.fontWeight).toBe("inherit");
   });
 });

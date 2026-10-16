@@ -143,6 +143,7 @@ import {
   getCssClasses,
   getWidthPercentages,
   getWidthPixels,
+  fluidOnMobileAttr,
   DEFAULT_SOCIAL_ICONS_BASE_URL,
   RenderContext,
 } from '@templatical/renderer';
@@ -209,7 +210,30 @@ Rendert einen einzelnen Block in seine MJML-Darstellung. Wird intern von `render
 
 ### `RenderContext`
 
-Das an Block-Renderer übergebene Kontextobjekt. Enthält Rendering-Optionen und Schriftart-Konfiguration.
+Das an Block-Renderer übergebene Kontextobjekt. Enthält Rendering-Optionen, Schriftart-Konfiguration und zwei Breiten:
+
+| Feld | Wert |
+|---|---|
+| `containerWidth` | Der Anteil der Spalte an der Body-Breite, ohne Padding und Rahmen um sie herum. Ein Bild oder Video mit `'full'` wird in dieser Breite ausgegeben, und MJML begrenzt es auf seine tatsächliche Box. |
+| `contentWidth` | Die ganzen Pixel, die MJML dem Inhalt der Spalte gibt: die Body-Breite abzüglich des seitlichen Paddings und Rahmens von Wrapper-Band und Sektion, davon der Prozentanteil der Spalte, abgerundet. Breitenabhängige Entscheidungen lesen diesen Wert. |
+
+`withContainerWidth(width, contentWidth = width)` gibt eine Kopie für einen schmaleren Container zurück.
+
+### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
+
+Gibt `' fluid-on-mobile="true"'` für ein Bild zurück, das seine Spalte auf dem Desktop füllt, sonst `''`. Ein Bild füllt seine Spalte, wenn seine `width` `'full'` ist oder eine Pixelbreite, die `context.contentWidth` abzüglich des seitlichen Paddings und Rahmens des Blocks erreicht oder überschreitet. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones).
+
+Die eingebauten Bild- und Video-Renderer verwenden sie. Eine `blockRenderers`-Überschreibung, die ein eigenes `mj-image` ausgibt, ruft sie ebenfalls auf; ohne das Attribut behält das Bild auf dem Smartphone seine Desktop-Breite:
+
+```ts
+blockRenderers: {
+  image: (block, ctx) => {
+    const image = block as ImageBlock;
+    const width = image.width === 'full' ? ctx.containerWidth : image.width;
+    return `<mj-image src="${escapeAttr(image.src)}" width="${width}px"${fluidOnMobileAttr(image, ctx)} />`;
+  },
+},
+```
 
 ### `getCssClassAttr(block)` / `getCssClasses(block)`
 

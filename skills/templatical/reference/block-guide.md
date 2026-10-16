@@ -117,6 +117,8 @@ pixel width does not shrink on a phone.
 - `content` is the heading text; inline HTML is allowed.
 - `level` is one of `1`, `2`, `3`, `4` — `1` is the largest.
 - `color` inherits `settings.textColor` when unset.
+- A title is always bold (weight 700), so don't wrap the whole `content` in
+  `<strong>`: in web-safe fonts it changes nothing.
 
 ### paragraph
 
@@ -167,10 +169,16 @@ underline: bool, color?: hex }`.
 
 <!-- BEGIN GENERATED FIELDS: image -->
 **Required** — `src` (string), `alt` (string), `width` (int | "full"), `align` ("left" | "center" | "right").
-**Optional** — `height` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
+**Optional** — `height` (int), `naturalWidth` (int), `naturalHeight` (int), `borderRadius` (BorderRadiusValue), `border` (BorderValue), `linkUrl` (string), `linkOpenInNewTab` (bool), `placeholderUrl` (string), `decorative` (bool).
 <!-- END GENERATED FIELDS: image -->
 
 - `alt` — write meaningful alt text.
+- `width` — `"full"` for a hero or banner that spans its column, a px number for
+  a logo or icon. A px width keeps that width on phones; one at or above the
+  column's room renders like `"full"` and fills the column there.
+- `naturalWidth` / `naturalHeight` — the image file's own size, filled in by
+  the editor and the importers for the aspect-ratio lock. Never rendered; omit
+  them.
 - `height` — omit it: the height is then derived from the width and the image
   keeps its aspect ratio. Setting both stretches the image, because email
   clients don't support `object-fit`.

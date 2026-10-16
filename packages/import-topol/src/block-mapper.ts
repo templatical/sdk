@@ -171,9 +171,14 @@ function convertImage(
   const widthPercent = numAttr(node, "widthPercent");
   const pxWidth = numAttr(node, "width");
   const href = attr(node, "href");
+  const base = baseStyles(node);
+  // MJML caps an image at its column less its own side padding, so a px width
+  // that reaches that renders as "full" does.
+  const room =
+    ctx.columnWidth - base.styles.padding.left - base.styles.padding.right;
 
   const width =
-    widthPercent === 100 || pxWidth === undefined || pxWidth >= ctx.columnWidth
+    widthPercent === 100 || pxWidth === undefined || pxWidth >= room
       ? ("full" as const)
       : Math.round(pxWidth);
 
@@ -186,7 +191,7 @@ function convertImage(
       width,
       align: parseAlignment(attr(node, "align"), "center"),
       ...(href ? { linkUrl: href } : {}),
-      ...baseStyles(node),
+      ...base,
     }),
     entry: {
       sourceTag,

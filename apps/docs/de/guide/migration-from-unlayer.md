@@ -89,7 +89,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 |---|---|---|
 | Text | `paragraph` | Konvertiert |
 | Heading | `title` | Konvertiert |
-| Image | `image` | Konvertiert |
+| Image | `image` | Konvertiert (angenähert, wenn ein `maxWidth` unter 100% zu px wird; siehe [Bildbreite](#image-width)) |
 | Button | `button` | Konvertiert |
 | Divider | `divider` | Konvertiert (angenähert, wenn ein Divider mit Teilbreite links oder rechts ausgerichtet ist) |
 | Spacer | `spacer` | Konvertiert |
@@ -101,6 +101,22 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Form | — | Übersprungen |
 
 Unbekannte Inhaltstypen werden als Fallback in HTML-Blöcke konvertiert.
+
+### Bildbreite {#image-width}
+
+| Unlayer-Bild | `ImageBlock.width` | Status |
+|---|---|---|
+| `autoWidth` (Standard), `src.width` schmaler als der Platz des Bildes | die px-Zahl | Konvertiert |
+| `autoWidth`, `src.width` so breit wie der Platz oder breiter, oder fehlend | `"full"` | Konvertiert |
+| `autoWidth: false`, `maxWidth` `100%` oder fehlend | `"full"` | Konvertiert |
+| `autoWidth: false`, `maxWidth` unter `100%`, etwa `75%` | dieser Anteil des Platzes in px | Angenähert |
+| `autoWidth: false`, nicht lesbares `maxWidth` | `"full"` | Angenähert |
+
+`src.width` und `src.height` sind die Größe der hochgeladenen Datei. Der Platz des Bildes ist die Breite seiner Spalte abzüglich des linken und rechten `containerPadding`. `src.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält.
+
+::: tip
+Eine px-Breite behält auf dem Smartphone ihre Größe, während ein Prozentwert mit der Spalte schrumpft. Deshalb ist ein `maxWidth` unter `100%` angenähert.
+:::
 
 ### Divider-Breite
 

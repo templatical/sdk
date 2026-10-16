@@ -7,6 +7,57 @@ describe('RenderContext', () => {
     expect(ctx.containerWidth).toBe(600);
   });
 
+  it('defaults contentWidth to the container width', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.contentWidth).toBe(600);
+  });
+
+  it('takes contentWidth as its last argument', () => {
+    const ctx = new RenderContext(
+      600,
+      [],
+      'Arial, sans-serif',
+      true,
+      undefined,
+      undefined,
+      undefined,
+      'rtl',
+      540,
+    );
+    expect(ctx.containerWidth).toBe(600);
+    expect(ctx.contentWidth).toBe(540);
+    expect(ctx.contentDirection).toBe('rtl');
+  });
+
+  it('withContainerWidth sets both widths, or each on its own', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    const column = ctx.withContainerWidth(300);
+    expect(column.containerWidth).toBe(300);
+    expect(column.contentWidth).toBe(300);
+
+    const padded = ctx.withContainerWidth(300, 260);
+    expect(padded.containerWidth).toBe(300);
+    expect(padded.contentWidth).toBe(260);
+    expect(ctx.contentWidth).toBe(600);
+  });
+
+  it('withContainerWidth keeps the direction and renderers', () => {
+    const image = () => '<mj-raw />';
+    const ctx = new RenderContext(
+      600,
+      [],
+      'Arial, sans-serif',
+      true,
+      undefined,
+      undefined,
+      { image },
+      'rtl',
+    );
+    const column = ctx.withContainerWidth(300, 260);
+    expect(column.contentDirection).toBe('rtl');
+    expect(column.blockRenderers.image).toBe(image);
+  });
+
   it('creates new context with different width', () => {
     const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
     const narrow = ctx.withContainerWidth(300);

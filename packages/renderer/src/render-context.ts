@@ -33,7 +33,21 @@ export const DEFAULT_SOCIAL_ICONS_BASE_URL = `https://cdn.jsdelivr.net/npm/@temp
  * Immutable context passed through the block rendering chain.
  */
 export class RenderContext {
+  /**
+   * The whole pixels MJML gives this container's content: the body width less
+   * the side padding and border of every wrapper and section around it, then
+   * the column's own percentage of what is left, floored as MJML floors it.
+   * Width-aware decisions read this one, since it is the box MJML caps a block
+   * at. Defaults to `containerWidth`.
+   */
+  public readonly contentWidth: number;
+
   constructor(
+    /**
+     * The column's share of the body width, ignoring any padding or border
+     * around it. Emitted as the pixel width of a `"full"` image or video, which
+     * MJML then caps at the real box ({@link contentWidth}).
+     */
     public readonly containerWidth: number,
     public readonly customFonts: CustomFont[],
     public readonly defaultFallbackFont: string,
@@ -63,13 +77,20 @@ export class RenderContext {
      * would leave a two-column RTL section rendering LTR inside the columns.
      */
     public readonly contentDirection: ContentDirection = "ltr",
-  ) {}
+    contentWidth?: number,
+  ) {
+    this.contentWidth = contentWidth ?? containerWidth;
+  }
 
   /**
-   * Create a new context with a different container width.
-   * Used when rendering columns with narrower widths.
+   * Create a new context with a different container width. Used when rendering
+   * columns, and wrappers, whose content is narrower. `contentWidth` defaults
+   * to `width`, a container with nothing around it.
    */
-  withContainerWidth(width: number): RenderContext {
+  withContainerWidth(
+    width: number,
+    contentWidth: number = width,
+  ): RenderContext {
     return new RenderContext(
       width,
       this.customFonts,
@@ -79,6 +100,7 @@ export class RenderContext {
       this.socialIconsBaseUrl,
       this.blockRenderers,
       this.contentDirection,
+      contentWidth,
     );
   }
 

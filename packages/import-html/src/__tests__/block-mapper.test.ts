@@ -207,7 +207,7 @@ describe("convertElement — images", () => {
     expect(r.block.alt).toBe("");
   });
 
-  it("falls back to width style or 600 default", () => {
+  it("falls back to the width style, then to full width", () => {
     const r1 = (() => {
       const { $, $el } = firstEl('<img src="x" style="width:480px" />', "img");
       return convertElement($el, $)!;
@@ -219,7 +219,63 @@ describe("convertElement — images", () => {
     if (r1.block.type !== "image") throw new Error();
     if (r2.block.type !== "image") throw new Error();
     expect(r1.block.width).toBe(480);
-    expect(r2.block.width).toBe(600);
+    expect(r2.block.width).toBe("full");
+  });
+
+  describe("image width against the column", () => {
+    function image(html: string, room?: number) {
+      const { $, $el } = firstEl(html, "img");
+      const { block, entry } = convertElement($el, $, room)!;
+      if (block.type !== "image") throw new Error("expected an image block");
+      return { block, entry };
+    }
+
+    it("is full at exactly the room inside the image's padding", () => {
+      const at = (px: number) =>
+        image(`<img src="x" width="${px}" style="padding:0 20px" />`, 600).block
+          .width;
+      expect(at(560)).toBe("full");
+      expect(at(559)).toBe(559);
+    });
+
+    it("keeps a px width as stated when the room is unknown", () => {
+      expect(image('<img src="x" width="900" />').block.width).toBe(900);
+    });
+
+    it("is full at 100%", () => {
+      expect(image('<img src="x" width="100%" />', 600).block.width).toBe(
+        "full",
+      );
+      expect(image('<img src="x" style="width:100%" />', 600).block.width).toBe(
+        "full",
+      );
+    });
+
+    it("turns a percentage into px of the room, with a note", () => {
+      const half = image('<img src="x" width="50%" />', 600);
+      expect(half.block.width).toBe(300);
+      expect(half.entry.status).toBe("approximated");
+      expect(half.entry.note).toBe(
+        "Image width 50% imported as 300px, which keeps its size on a phone.",
+      );
+
+      const unknown = image('<img src="x" width="50%" />');
+      expect(unknown.block.width).toBe("full");
+      expect(unknown.entry.note).toBe(
+        "Image width 50% has no known column to resolve against; imported as full width.",
+      );
+    });
+
+    it("reads the room for an image-only link too", () => {
+      const { $, $el } = firstEl(
+        '<a href="https://x.test"><img src="x" width="600" /></a>',
+        "a",
+      );
+      const { block } = convertElement($el, $, 600)!;
+      if (block.type !== "image") throw new Error("expected an image block");
+      expect(block.width).toBe("full");
+      expect(block.linkUrl).toBe("https://x.test");
+    });
   });
 
   // A source template that pins a height is expressing a fixed layout box;
@@ -244,6 +300,20 @@ describe("convertElement — images", () => {
     if (fromStyle.block.type !== "image") throw new Error();
     expect(fromAttr.block.height).toBe(180);
     expect(fromStyle.block.height).toBe(180);
+  });
+
+  // The style wins over the attribute in a browser, so a responsive image with
+  // both shows at its aspect ratio; pinning the attribute's height would
+  // stretch it once the width changes (on a phone, or a "full" import).
+  it("lets a height:auto style override the height attribute", () => {
+    const { $, $el } = firstEl(
+      '<img src="x" width="600" height="300" style="width:100%;height:auto" />',
+      "img",
+    );
+    const { block } = convertElement($el, $, 600)!;
+    if (block.type !== "image") throw new Error("expected an image block");
+    expect(block.width).toBe("full");
+    expect(block.height).toBeUndefined();
   });
 
   it("leaves the height unset when the source has none, or says auto", () => {
@@ -1220,7 +1290,7 @@ describe("convertElement — a container wrapping one block-level element", () =
     // the colour and reads the alignment off nothing.
     const { $, $el } = firstEl(
       '<div style="font-family:Arial, sans-serif;font-size:22px;text-align:center;color:#ff0000">' +
-        '<h3 style="margin:0;font-size:inherit;color:inherit;line-height:inherit">Inheriting heading</h3>' +
+        '<h3 style="margin:0;font-size:inherit;color:inherit;line-height:inherit;font-weight:700">Inheriting heading</h3>' +
         "</div>",
       "div",
     );

@@ -15,6 +15,7 @@ import type {
   Block,
   DividerBlock,
   HeadingLevel,
+  ImageBlock,
   SocialPlatform,
   SocialIcon,
   MenuItemData,
@@ -22,6 +23,7 @@ import type {
 import type {
   UnlayerContent,
   UnlayerContentValues,
+  UnlayerImageSrc,
   ImportReportEntry,
 } from "./types";
 import {
@@ -270,31 +272,93 @@ function convertHeading(values: UnlayerContentValues): Block {
   });
 }
 
-function convertImage(values: UnlayerContentValues): Block {
+/**
+ * The width Unlayer shows an image at, as `ImageBlock.width`. `src.width` is
+ * the file's own size: with `autoWidth` (the default) the image is shown at
+ * that size capped at the column, without it at `maxWidth`, a percentage of
+ * the column. `room` is the column less the image's side padding. No width, or
+ * one that reaches `room`, is `"full"`.
+ *
+ * A percentage under 100% becomes px of `room`, which keeps its size on a
+ * phone where a percentage would shrink with the column, so it pushes a note.
+ */
+function resolveImageWidth(
+  src: UnlayerImageSrc | undefined,
+  room: number,
+  notes: string[],
+): ImageBlock["width"] {
+  if (src?.autoWidth === false) {
+    const raw = (src.maxWidth ?? "").trim();
+    const parsed = raw ? parseDividerWidth(raw) : undefined;
+    if (!parsed || parsed.value <= 0) {
+      if (raw) {
+        notes.push(
+          `Image maxWidth "${raw}" could not be read; imported as full width.`,
+        );
+      }
+      return "full";
+    }
+    const px = Math.round(
+      parsed.unit === "%" ? (room * parsed.value) / 100 : parsed.value,
+    );
+    if (px >= room) return "full";
+    if (parsed.unit === "%") {
+      notes.push(
+        `Unlayer shows this image at ${raw} of its column; imported as ${px}px, which keeps its size on a phone.`,
+      );
+    }
+    return px;
+  }
+
+  const natural = src?.width ? Math.round(src.width) : 0;
+  return natural <= 0 || natural >= room ? "full" : natural;
+}
+
+function convertImage(
+  values: UnlayerContentValues,
+  columnWidth: number,
+): { block: Block; notes: string[] } {
   const src = values.src;
   const action = values.action?.values;
+  const styles = makeStyles(values);
+  const notes: string[] = [];
+  const room = columnWidth - styles.padding.left - styles.padding.right;
+  const width = resolveImageWidth(src, room, notes);
 
-  // Kept separate from the `?? 600` fallback below: a percentage radius has to
-  // resolve against a width the template actually stated.
-  const readWidth = src?.width ? Math.round(src.width) : undefined;
-  const readHeight = src?.height ? Math.round(src.height) : undefined;
+  // `src.width` and `src.height` are the file's size, so the height is never
+  // carried over: the image keeps its aspect ratio at the width it is shown
+  // at. A percentage radius resolves against that shown size, and only when
+  // Unlayer stated the file's width.
+  const shownWidth = width === "full" ? room : width;
+  const shownHeight =
+    src?.width && src.height
+      ? Math.round((src.height * shownWidth) / src.width)
+      : undefined;
 
-  return createImageBlock({
-    src: src?.url || "",
-    alt: values.altText || "",
-    width: readWidth ?? 600,
-    // No default, unlike width: an absent height keeps the aspect ratio.
-    height: readHeight,
-    borderRadius: parseImageBorderRadius(
-      values.borderRadius,
-      readWidth,
-      readHeight,
-    ),
-    align: toAlign(values.textAlign, "center"),
-    linkUrl: action?.href || undefined,
-    linkOpenInNewTab: action?.target === "_blank" || undefined,
-    styles: makeStyles(values),
-  });
+  const fileWidth = src?.width ? Math.round(src.width) : 0;
+  const fileHeight = src?.height ? Math.round(src.height) : 0;
+
+  return {
+    block: createImageBlock({
+      src: src?.url || "",
+      alt: values.altText || "",
+      width,
+      // The file's size feeds the editor's aspect-ratio lock; never rendered.
+      ...(fileWidth > 0 && fileHeight > 0
+        ? { naturalWidth: fileWidth, naturalHeight: fileHeight }
+        : {}),
+      borderRadius: parseImageBorderRadius(
+        values.borderRadius,
+        src?.width ? shownWidth : undefined,
+        shownHeight,
+      ),
+      align: toAlign(values.textAlign, "center"),
+      linkUrl: action?.href || undefined,
+      linkOpenInNewTab: action?.target === "_blank" || undefined,
+      styles,
+    }),
+    notes,
+  };
 }
 
 function convertButton(values: UnlayerContentValues): Block {
@@ -522,15 +586,18 @@ export function convertContent(
           status: "converted",
         },
       };
-    case "image":
+    case "image": {
+      const { block, notes } = convertImage(values, columnWidth);
       return {
-        block: convertImage(values),
+        block,
         entry: {
           unlayerContentType: type,
           templaticalBlockType: "image",
-          status: "converted",
+          status: notes.length > 0 ? "approximated" : "converted",
+          ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
         },
       };
+    }
     case "button":
       return {
         block: convertButton(values),

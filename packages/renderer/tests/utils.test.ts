@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { bgAttr, heightAttr } from "../src/utils";
+import { uniformBorder } from "@templatical/types";
+import type { BorderValue, SpacingValue } from "@templatical/types";
+import { RenderContext } from "../src/render-context";
+import {
+  bgAttr,
+  fluidOnMobileAttr,
+  heightAttr,
+  horizontalInset,
+} from "../src/utils";
 
 describe("bgAttr", () => {
   it("returns empty string when no color", () => {
@@ -55,5 +63,95 @@ describe("heightAttr", () => {
 
   it("includes leading space so it can be interpolated into a tag's attribute list", () => {
     expect(heightAttr(180).startsWith(" ")).toBe(true);
+  });
+});
+
+const pad = (left: number, right: number): SpacingValue => ({
+  top: 0,
+  right,
+  bottom: 0,
+  left,
+});
+
+describe("horizontalInset", () => {
+  it("sums side padding and the left and right borders", () => {
+    const border = uniformBorder({ width: 3, style: "solid", color: "#000" });
+    expect(horizontalInset(pad(10, 15), border)).toBe(31);
+  });
+
+  it("ignores top and bottom", () => {
+    expect(
+      horizontalInset({ top: 40, right: 5, bottom: 40, left: 5 }),
+    ).toBe(10);
+  });
+
+  it("counts only the sides that are drawn", () => {
+    const border: BorderValue = {
+      ...uniformBorder({ width: 4, style: "solid", color: "#000" }),
+      right: { width: 0, style: "solid", color: "#000" },
+    };
+    expect(horizontalInset(pad(0, 0), border)).toBe(4);
+  });
+
+  it("is 0 with nothing around the box", () => {
+    expect(horizontalInset(undefined)).toBe(0);
+    expect(horizontalInset(pad(0, 0), undefined)).toBe(0);
+  });
+});
+
+describe("fluidOnMobileAttr", () => {
+  // A column whose nominal share is 300px but which MJML gives 260px.
+  const ctx = new RenderContext(
+    300,
+    [],
+    "Arial, sans-serif",
+    true,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    260,
+  );
+  const image = (width: number | "full", border?: BorderValue) => ({
+    width,
+    styles: { padding: pad(10, 10) },
+    border,
+  });
+
+  it('is set on a "full" image', () => {
+    expect(fluidOnMobileAttr(image("full"), ctx)).toBe(
+      ' fluid-on-mobile="true"',
+    );
+  });
+
+  it("is set from the room inside the image's padding, up", () => {
+    expect(fluidOnMobileAttr(image(240), ctx)).toBe(' fluid-on-mobile="true"');
+    expect(fluidOnMobileAttr(image(600), ctx)).toBe(' fluid-on-mobile="true"');
+    expect(fluidOnMobileAttr(image(239), ctx)).toBe("");
+  });
+
+  it("reads contentWidth, not the nominal containerWidth", () => {
+    // 270 is under the nominal 300 − 20 but over the real 260 − 20.
+    expect(fluidOnMobileAttr(image(270), ctx)).toBe(' fluid-on-mobile="true"');
+  });
+
+  it("takes the image's own border off the room", () => {
+    const border = uniformBorder({ width: 4, style: "solid", color: "#000" });
+    expect(fluidOnMobileAttr(image(232, border), ctx)).toBe(
+      ' fluid-on-mobile="true"',
+    );
+    expect(fluidOnMobileAttr(image(231, border), ctx)).toBe("");
+  });
+
+  it("floors a fractional contentWidth as MJML does", () => {
+    const fractional = ctx.withContainerWidth(300, 260.9);
+    expect(fluidOnMobileAttr(image(240), fractional)).toBe(
+      ' fluid-on-mobile="true"',
+    );
+    expect(fluidOnMobileAttr(image(239), fractional)).toBe("");
+  });
+
+  it("is never set on a narrow image", () => {
+    expect(fluidOnMobileAttr(image(120), ctx)).toBe("");
   });
 });

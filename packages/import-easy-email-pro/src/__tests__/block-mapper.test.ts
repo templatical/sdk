@@ -256,6 +256,74 @@ describe("convertLeaf", () => {
     expect(img.alt).toBe("Hero");
   });
 
+  describe("image width", () => {
+    function image(attributes: Record<string, unknown>, contentWidth?: number) {
+      const { blocks, entries } = map(
+        {
+          type: "standard-image",
+          data: {},
+          attributes: { src: "https://cdn.test/x.png", ...attributes },
+          children: [{ text: "" }],
+        },
+        emptyPage,
+        contentWidth,
+      );
+      return {
+        width: (blocks[0] as ImageBlock).width,
+        status: entries[0].status,
+        note: entries[0].note,
+      };
+    }
+
+    // The attribute used to be dropped, so every sized image (a logo) imported
+    // as full width.
+    it("keeps a px width narrower than the column", () => {
+      expect(image({ width: "120px" }, 600)).toEqual({
+        width: 120,
+        status: "converted",
+        note: undefined,
+      });
+    });
+
+    it("is full at exactly the room inside the image's padding", () => {
+      expect(
+        image(
+          { width: "560px", "padding-left": "20px", "padding-right": "20px" },
+          600,
+        ).width,
+      ).toBe("full");
+      expect(
+        image(
+          { width: "559px", "padding-left": "20px", "padding-right": "20px" },
+          600,
+        ).width,
+      ).toBe(559);
+    });
+
+    it("is full when missing, unreadable or 100%", () => {
+      expect(image({}, 600).width).toBe("full");
+      expect(image({ width: "wide" }, 600).width).toBe("full");
+      expect(image({ width: "100%" }, 600).width).toBe("full");
+    });
+
+    it("keeps a px width as stated when the column is unknown", () => {
+      expect(image({ width: "900px" }).width).toBe(900);
+    });
+
+    it("turns a percentage into px of the room, with a note", () => {
+      expect(image({ width: "50%" }, 600)).toEqual({
+        width: 300,
+        status: "approximated",
+        note: "Image width 50% imported as 300px, which keeps its size on a phone.",
+      });
+      expect(image({ width: "50%" })).toEqual({
+        width: "full",
+        status: "approximated",
+        note: "Image width 50% has no known column to resolve against; imported as full width.",
+      });
+    });
+  });
+
   it("skips placeholder with no entry", () => {
     const { blocks, entries } = map({
       type: "placeholder",

@@ -7,6 +7,7 @@ import type {
   MediaResult,
 } from "@templatical/types";
 import type { OnRequestMedia } from "../index";
+import { toNaturalSize } from "../utils/imageNaturalSize";
 
 export interface UseMediaFeatureOptions {
   /** Storage backend. Absent with a callback-only config (a host widget). */
@@ -118,7 +119,7 @@ export function useMediaFeature(
   }
 
   function select(asset: MediaAsset): void {
-    settle({ url: asset.url, alt: asset.alt });
+    settle(toMediaResult(asset));
   }
 
   function close(): void {
@@ -159,7 +160,7 @@ export function useMediaFeature(
               } catch (err) {
                 onError?.(toError(err));
               }
-              return { url: asset.url, alt: asset.alt };
+              return toMediaResult(asset);
             } catch (err) {
               onError?.(toError(err));
               return null;
@@ -187,5 +188,19 @@ export function useMediaFeature(
     select,
     templateId,
     onError,
+  };
+}
+
+/**
+ * What an image field receives for a library asset: its URL and alt, plus the
+ * file's size when the store knows both dimensions, for the image block's
+ * aspect-ratio lock.
+ */
+function toMediaResult(asset: MediaAsset): MediaResult {
+  const size = toNaturalSize(asset.width, asset.height);
+  return {
+    url: asset.url,
+    alt: asset.alt,
+    ...(size ? { width: size.width, height: size.height } : {}),
   };
 }

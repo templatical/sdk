@@ -34,6 +34,8 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 
 Ein Überschriften-Block mit festen Größenstufen. Verwenden Sie Titel für Überschriften, Sektionsüberschriften und andere prominente Texte.
 
+Titel sind fett (Schriftstärke 700): auf der Arbeitsfläche, während Sie sie bearbeiten, und in der E-Mail. Fettdruck innerhalb eines Titels verlangt eine noch kräftigere Schriftstärke. Websichere Schriften wie Arial haben keine, deshalb ist er nur in einer Schrift sichtbar, die eine besitzt.
+
 | Eigenschaft | Typ | Beschreibung |
 |----------|------|-------------|
 | `content` | `string` | HTML-Inhalt |
@@ -58,7 +60,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 |----------|------|-------------|
 | `src` | `string` | Bild-URL |
 | `alt` | `string` | Alternativtext |
-| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `borderRadius` | `BorderRadiusValue` | Eckenradius in px oder `{ topLeft, topRight, bottomRight, bottomLeft }` pro Ecke. Ohne Angabe oder 0 bleiben die Ecken eckig |
@@ -67,6 +69,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `linkUrl` | `string` | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` | Verhalten des Linkziels |
 | `placeholderUrl` | `string` | Platzhalter, der im Editor angezeigt wird, wenn `src` ein Merge-Tag verwendet |
+| `naturalWidth` / `naturalHeight` | `number` | Die eigene Größe der Bilddatei, für die [Seitenverhältnis-Sperre](/de/guide/images#aspect-ratio-lock). Wird nie gerendert |
 
 ## Button
 
@@ -203,7 +206,7 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 | `url` | `string` | Video-URL (YouTube, Vimeo usw.) |
 | `thumbnailUrl` | `string` | URL des Thumbnail-Bildes |
 | `alt` | `string` | Alternativtext für das Thumbnail |
-| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100%. Siehe [Breite auf Smartphones](/de/guide/images#width-on-phones) |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |

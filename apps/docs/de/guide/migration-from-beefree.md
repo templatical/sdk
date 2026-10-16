@@ -103,6 +103,18 @@ BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 
 Unbekannte Modultypen — Formulare eingeschlossen — werden als Fallback in HTML-Blöcke konvertiert und als `html-fallback` gemeldet. Inhalt des Blocks ist `descriptor.text.html`, `descriptor.html.html` oder `descriptor.heading.text` des Moduls, das erste gesetzte Feld. Fehlen alle drei, ist es ein Kommentar `<!-- Unsupported BeeFree module: <type> -->`, der nichts rendert.
 
+### Bildbreite {#image-width}
+
+| BeeFree-Bild | `ImageBlock.width` | Status |
+|---|---|---|
+| `computedStyle.class` enthält `autowidth` | `"full"` | Konvertiert |
+| `computedStyle.width` schmaler als der Platz des Bildes | die px-Zahl, gerundet | Konvertiert |
+| `computedStyle.width` so breit wie der Platz oder breiter | `"full"` | Konvertiert |
+| kein `computedStyle` | `image.width`, nach derselben Regel | Konvertiert |
+| gar keine Breite | `"full"` | Konvertiert |
+
+`image.width` und `image.height` sind die Größe der Bilddatei, `computedStyle.width` ist die Breite, in der BeeFree das Bild zeigt. Der Platz des Bildes ist die Inhaltsbreite seiner Spalte abzüglich des linken und rechten Paddings des Bildes. `image.height` wird nicht importiert, sodass das Bild in der angezeigten Breite das Seitenverhältnis der Datei behält. Ein Bild ohne `text-align` übernimmt seine Ausrichtung aus `computedStyle.class` (`left`, `center` oder `right`).
+
 ### Divider-Breite
 
 | BeeFree-`width` | `DividerBlock.width` | Status |
