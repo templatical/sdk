@@ -1,7 +1,9 @@
-import type { Block, SectionBlock } from "@templatical/types";
-import { isSection } from "@templatical/types";
+import type { AppliedHero, Block, SectionBlock } from "@templatical/types";
+import { isSection, resolveHero } from "@templatical/types";
 import type { BlockRenderer, RenderContext } from "../render-context";
 import { getWidthPercentages, getWidthPixels } from "../columns";
+import { escapeAttr } from "../escape";
+import { heroGeometry } from "../hero-geometry";
 import { toPaddingString } from "../padding";
 import {
   backgroundImageAttrs,
@@ -28,6 +30,11 @@ export function renderSection(
 ): string {
   if (isHiddenOnAll(block)) {
     return "";
+  }
+
+  const hero = resolveHero(block);
+  if (hero?.applied) {
+    return renderHero(block, hero, context, renderBlock);
   }
 
   const columnsLayout = block.columns;
@@ -96,6 +103,49 @@ ${columns}
   return `<mj-section${bgColor}${bgImage} padding="${padding}"${borderAttrStr}${borderRadiusAttrStr}${visibilityAttr}${dirAttr}>
 ${body}
 </mj-section>`;
+}
+
+/**
+ * Render a section `resolveHero` applies as an `<mj-hero>`. `context`'s width
+ * is the hero box's own: `renderTopLevelBlock` narrows it inside padded
+ * bands. The content is column 0's blocks, filtered as a column's are;
+ * mj-hero takes content elements directly, with no `mj-column`.
+ *
+ * Left out on purpose: `border` (mj-hero has none), `background-size` and
+ * `background-repeat` (it always paints `cover`, unrepeated) and `direction`
+ * (it inlines none, so its text keeps the body's `dir`). An unset fill is
+ * `transparent`, since mj-hero's own default is white.
+ */
+function renderHero(
+  block: SectionBlock,
+  hero: AppliedHero,
+  context: RenderContext,
+  renderBlock: BlockRenderer,
+): string {
+  const geometry = heroGeometry(hero, context.containerWidth);
+  const height =
+    geometry.height === undefined ? "" : ` height="${geometry.height}px"`;
+  const bgColor =
+    bgAttr(block.styles.backgroundColor, "native") ||
+    ' background-color="transparent"';
+  const padding = toPaddingString(block.styles.padding);
+  const borderRadiusAttrStr = borderRadiusAttr(block.borderRadius);
+  const visibilityAttr = getCssClassAttr(block);
+
+  const content = filterHtmlBlocks(
+    block.children[0] ?? [],
+    context.allowHtmlBlocks,
+  )
+    .filter((child) => !isSection(child))
+    .map((child) =>
+      wrapWithDisplayCondition(child, renderBlock(child, context)),
+    )
+    .filter((value) => value !== "")
+    .join("\n");
+
+  return `<mj-hero mode="${geometry.mode}"${height} background-url="${escapeAttr(hero.image.url)}" background-width="${geometry.backgroundWidth}px" background-height="${geometry.backgroundHeight}px" background-position="${hero.image.position}"${bgColor} padding="${padding}" vertical-align="${hero.verticalAlign}"${borderRadiusAttrStr}${visibilityAttr}>
+${content}
+</mj-hero>`;
 }
 
 /**
