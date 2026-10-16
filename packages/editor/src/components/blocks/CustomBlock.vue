@@ -132,7 +132,7 @@ watch(
   <div class="tpl:w-full">
     <div
       v-if="!hasDefinition"
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-warning)] tpl:bg-[var(--tpl-warning-light)]"
+      class="tpl:flex tpl:box-border tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-warning)] tpl:bg-[var(--tpl-warning-light)]"
     >
       <Puzzle :size="24" class="tpl:text-[var(--tpl-warning)]" />
       <span class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
@@ -142,7 +142,7 @@ watch(
 
     <div
       v-else-if="hasError"
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-danger-light)]"
+      class="tpl:flex tpl:box-border tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-danger-light)]"
     >
       <TriangleAlert :size="24" class="tpl:text-[var(--tpl-danger)]" />
       <span class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">

@@ -26,9 +26,16 @@ export default defineConfig({
         }),
         tailwindcss(),
         // Editor consumes `virtual:editor-css`; playground resolves workspace
-        // editor source directly so it needs the plugin too.
+        // editor source directly so it needs the plugin too. `ownedRoots`
+        // keeps the playground's own CSS (Tailwind preflight included) out of
+        // the editor's shadow root, so the canvas renders as it does for npm
+        // and CDN installs. The media library renders inside the editor.
         inlineStyleCssPlugin({
             fallbackSourcePath: resolve(packagesDir, 'editor/src/styles/index.css'),
+            ownedRoots: [
+                resolve(packagesDir, 'editor/src'),
+                resolve(packagesDir, 'media-library/src'),
+            ],
         }),
     ],
     resolve: {

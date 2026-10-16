@@ -295,10 +295,12 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
 </script>
 
 <template>
+  <!-- `box-border` keeps the border inside the 48px the canvas body leaves
+       for the collapsed rail (`left-12`). -->
   <aside
     ref="railEl"
     :aria-label="t.sidebarNav.palette"
-    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:flex tpl:flex-col tpl:overflow-hidden"
+    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:box-border tpl:flex tpl:flex-col tpl:overflow-hidden"
     :style="{
       width: isExpanded ? '200px' : '48px',
       backgroundColor: 'var(--tpl-bg-elevated)',

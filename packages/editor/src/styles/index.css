@@ -7,7 +7,8 @@
 
 @import url('https://fonts.bunny.net/css?family=geist:400,500,600');
 @import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
-/* Preflight deliberately omitted — SDK must not reset consumer styles */
+/* Global preflight deliberately omitted — SDK must not reset consumer styles.
+   A copy scoped to the editor chrome is in `@layer base` below. */
 /* Utilities are intentionally NOT in a @layer so they won't be overridden
    by unlayered consumer CSS resets (e.g. * { margin: 0 }). */
 @import 'tailwindcss/utilities.css' prefix(tpl);
@@ -333,16 +334,247 @@
     text-shadow: none;
 }
 
-/* Form element reset - Preflight is omitted so form elements use browser
-   defaults. `:where()` keeps the scope but drops specificity to the bare
-   element selector so per-button Tailwind utilities (e.g. `tpl:bg-[…]`)
-   always win. Without :where, `.tpl button` would beat single-class
-   utilities and silently strip explicit backgrounds, borders, etc.
+/* Chrome reset: Tailwind's preflight (tailwindcss@4.3.3), scoped to the editor
+   chrome. The chrome is designed against preflight: border-box everywhere, no
+   UA margins on headings and paragraphs, unstyled lists, form controls that
+   inherit the editor's font. Without it, dialog panels overrun their size caps
+   by their padding, help text and titles pick up `margin: 1em 0`, and buttons
+   fall back to the browser's 13.33px font with `line-height: normal`.
 
-   `box-sizing: border-box` is required here because Tailwind preflight
-   (which would set it universally) is disabled. Without it, `tpl:w-full`
-   on a padded input resolves to `width: 100%` + horizontal padding,
-   overflowing the parent — see issue #115. */
+   The global preflight stays out, so nothing here can reach the host page:
+   every selector sits under `:where(.tpl)`. Nothing reaches the email either:
+   `.tpl-email-surface` marks the subtree that renders it, and the canvas must
+   keep the cascade email clients have (content-box, UA margins), so every
+   rule excludes it. `@layer base` plus `:where()` put every editor utility and
+   every unlayered rule above these. `html, :host` is omitted: `.tpl` sets the
+   editor's own typography.
+
+   Locked by `tests/chrome-reset-scope.test.ts`, which also pins the preflight
+   it mirrors, so a Tailwind bump that changes preflight fails until this copy
+   follows. `apps/playground/e2e/tests/canvas-editor-css-only.spec.ts` proves
+   the email subtree computes the same with and without it. */
+@layer base {
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::after,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::before,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::backdrop,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::file-selector-button {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border: 0 solid;
+    }
+
+    :where(.tpl) :where(hr):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        height: 0;
+        color: inherit;
+        border-top-width: 1px;
+    }
+
+    :where(.tpl) :where(abbr:is([title])):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        -webkit-text-decoration: underline dotted;
+        text-decoration: underline dotted;
+    }
+
+    :where(.tpl) :where(h1):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(h2):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(h3):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(h4):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(h5):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(h6):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    :where(.tpl) :where(a):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        color: inherit;
+        -webkit-text-decoration: inherit;
+        text-decoration: inherit;
+    }
+
+    :where(.tpl) :where(b):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(strong):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-weight: bolder;
+    }
+
+    :where(.tpl) :where(code):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(kbd):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(samp):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(pre):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-feature-settings: normal;
+        font-variation-settings: normal;
+        font-size: 1em;
+    }
+
+    :where(.tpl) :where(small):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-size: 80%;
+    }
+
+    :where(.tpl) :where(sub):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(sup):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-size: 75%;
+        line-height: 0;
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    :where(.tpl) :where(sub):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        bottom: -0.25em;
+    }
+
+    :where(.tpl) :where(sup):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        top: -0.5em;
+    }
+
+    :where(.tpl) :where(table):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        text-indent: 0;
+        border-color: inherit;
+        border-collapse: collapse;
+    }
+
+    :where(.tpl) :where(:-moz-focusring:is(:not(iframe))):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        outline: auto;
+    }
+
+    :where(.tpl) :where(progress):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        vertical-align: baseline;
+    }
+
+    :where(.tpl) :where(summary):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        display: list-item;
+    }
+
+    :where(.tpl) :where(ol):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(ul):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(menu):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        list-style: none;
+    }
+
+    :where(.tpl) :where(img):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(svg):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(video):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(canvas):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(audio):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(iframe):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(embed):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(object):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        display: block;
+        vertical-align: middle;
+    }
+
+    :where(.tpl) :where(img):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(video):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        max-width: 100%;
+        height: auto;
+    }
+
+    :where(.tpl) :where(button):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(input):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(select):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(optgroup):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(textarea):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::file-selector-button {
+        font: inherit;
+        font-feature-settings: inherit;
+        font-variation-settings: inherit;
+        letter-spacing: inherit;
+        color: inherit;
+        border-radius: 0;
+        background-color: transparent;
+        opacity: 1;
+    }
+
+    :where(.tpl) :where(select:is([multiple], [size]) optgroup):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        font-weight: bolder;
+    }
+
+    :where(.tpl) :where(select:is([multiple], [size]) optgroup option):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        padding-inline-start: 20px;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::file-selector-button {
+        margin-inline-end: 4px;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::placeholder {
+        opacity: 1;
+    }
+
+    @supports (not (-webkit-appearance: -apple-pay-button)) or (contain-intrinsic-size: 1px) {
+        :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::placeholder {
+            color: color-mix(in oklab, currentcolor 50%, transparent);
+        }
+    }
+
+    :where(.tpl) :where(textarea):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        resize: vertical;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-search-decoration {
+        -webkit-appearance: none;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-date-and-time-value {
+        min-height: 1lh;
+        text-align: inherit;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit {
+        display: inline-flex;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-fields-wrapper {
+        padding: 0;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-year-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-month-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-day-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-hour-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-minute-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-second-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-millisecond-field,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-datetime-edit-meridiem-field {
+        padding-block: 0;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-calendar-picker-indicator {
+        line-height: 1;
+    }
+
+    :where(.tpl) :where(:-moz-ui-invalid):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        box-shadow: none;
+    }
+
+    :where(.tpl) :where(button):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(input:is([type='button'], [type='reset'], [type='submit'])):not(:where(.tpl-email-surface, .tpl-email-surface *)),
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::file-selector-button {
+        appearance: button;
+    }
+
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-inner-spin-button,
+    :where(.tpl) :where(*):not(:where(.tpl-email-surface, .tpl-email-surface *))::-webkit-outer-spin-button {
+        height: auto;
+    }
+
+    :where(.tpl) :where([hidden]:is(:not([hidden='until-found']))):not(:where(.tpl-email-surface, .tpl-email-surface *)) {
+        display: none !important;
+    }
+}
+
+/* Form element reset. `:where()` keeps the scope but drops specificity to
+   the bare element selector so per-button Tailwind utilities (e.g.
+   `tpl:bg-[…]`) always win. Without :where, `.tpl button` would beat
+   single-class utilities and silently strip explicit backgrounds, borders,
+   etc.
+
+   The chrome reset above sets `box-sizing: border-box` too, but layered, so
+   any unlayered host rule outranks it in a light-DOM mount. This unlayered
+   copy keeps it on form controls regardless. Without it, `tpl:w-full` on a
+   padded input resolves to `width: 100%` + horizontal padding, overflowing
+   the parent — see issue #115. */
 :where(.tpl) button,
 :where(.tpl) input,
 :where(.tpl) select,

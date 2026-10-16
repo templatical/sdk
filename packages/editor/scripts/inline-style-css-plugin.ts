@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
-import type { Plugin } from 'vite'
+import type { Plugin, Rolldown } from 'vite'
+
+type OutputAsset = Rolldown.OutputAsset
+type OutputChunk = Rolldown.OutputChunk
 
 /**
  * Inlines the editor's *fully-bundled* library CSS as a JS string export so
@@ -25,14 +28,31 @@ import type { Plugin } from 'vite'
  * preserves `:deep()` and scoped-attribute semantics, and avoids touching
  * 30+ `.vue` files. The plugin localizes the workaround to one ~70-line
  * file alongside `bundleStatsPlugin`.
+ *
+ * A host app that compiles the editor from source (the playground) runs this
+ * plugin in its own build, where the bundle also holds the host's CSS. Pass
+ * `ownedRoots` there: only CSS from modules under those directories (plus the
+ * third-party CSS they import) reaches the shadow root, and the module also
+ * exports the roots so the dev mirror in `src/index.ts` applies the same rule.
+ * Without it, the playground's Tailwind preflight rendered every canvas title
+ * at 400 where real installs and the exported email show 700.
  */
 export function inlineStyleCssPlugin(opts: {
   /** Absolute path to the source CSS used as a dev/test fallback. */
   fallbackSourcePath: string
+  /**
+   * Absolute directories whose CSS is the editor's. Omit in the editor's own
+   * builds, where every emitted CSS asset is the editor's. Set it in a host
+   * app build that compiles the editor from source, so the host's CSS stays
+   * out of the shadow root.
+   */
+  ownedRoots?: string[]
 }): Plugin {
   const VIRTUAL_ID = 'virtual:editor-css'
   const RESOLVED_ID = '\0virtual:editor-css'
   const PLACEHOLDER = '__TPL_INLINE_EDITOR_CSS__'
+  const ownedRoots = opts.ownedRoots?.map(toRootPrefix) ?? null
+  const rootsExport = `export const ownedStyleRoots = ${JSON.stringify(ownedRoots)};\n`
 
   let isServeMode = false
 
@@ -67,25 +87,43 @@ export function inlineStyleCssPlugin(opts: {
         // document.head separately via HMR — those don't cross the shadow
         // boundary). For full-fidelity shadow DOM testing, run a production
         // build and exercise the packed output. Acceptable trade-off for dev.
-        return `import css from '${opts.fallbackSourcePath.replace(/\\/g, '\\\\')}?inline';\nexport default css;\n`
+        return `import css from '${opts.fallbackSourcePath.replace(/\\/g, '\\\\')}?inline';\nexport default css;\n${rootsExport}`
       }
       // Build mode — emit the placeholder. generateBundle replaces it.
-      return `export default ${JSON.stringify(PLACEHOLDER)};`
+      return `export default ${JSON.stringify(PLACEHOLDER)};\n${rootsExport}`
     },
 
     generateBundle(_, bundle) {
-      // Find every emitted CSS asset and concatenate (Vite library mode with
+      // Concatenate the emitted CSS assets (Vite library mode with
       // cssCodeSplit: false produces one; CDN build with code-splitting can
-      // produce multiple — both are shadow-DOM-relevant).
+      // produce multiple — both are shadow-DOM-relevant). With `ownedRoots`,
+      // only the editor's own assets.
+      const cssAssets = Object.values(bundle).filter(
+        (file): file is OutputAsset =>
+          file.type === 'asset' && file.fileName.endsWith('.css'),
+      )
+      const chunks = Object.values(bundle).filter(
+        (file): file is OutputChunk => file.type === 'chunk',
+      )
       const cssParts: string[] = []
-      for (const file of Object.values(bundle)) {
-        if (file.type === 'asset' && file.fileName.endsWith('.css')) {
-          const source =
-            typeof file.source === 'string'
-              ? file.source
-              : new TextDecoder().decode(file.source)
-          cssParts.push(source)
+      let hostAssets = 0
+      for (const file of cssAssets) {
+        if (ownedRoots) {
+          const verdict = attributeCssAsset(file.fileName, chunks, ownedRoots)
+          if (verdict.error) {
+            this.error?.(verdict.error)
+            return
+          }
+          if (!verdict.owned) {
+            hostAssets++
+            continue
+          }
         }
+        const source =
+          typeof file.source === 'string'
+            ? file.source
+            : new TextDecoder().decode(file.source)
+        cssParts.push(source)
       }
 
       if (cssParts.length === 0) {
@@ -146,7 +184,8 @@ export function inlineStyleCssPlugin(opts: {
       }
 
       this.info?.(
-        `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${chunksTouched} chunk(s)`,
+        `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${chunksTouched} chunk(s)` +
+          (ownedRoots ? `, left out ${hostAssets} host CSS asset(s)` : ''),
       )
 
       // Self-check: if the placeholder still appears in any chunk after the
@@ -171,5 +210,74 @@ export function inlineStyleCssPlugin(opts: {
         )
       }
     },
+  }
+}
+
+/** Same matcher as Vite's own `CSS_LANGS_RE`, plus Vue's style blocks. */
+const CSS_MODULE_RE =
+  /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)|[?&]type=style(?:&|$)/
+
+type Owner = 'owned' | 'host' | 'neutral'
+
+function toRootPrefix(root: string): string {
+  return root.replace(/\\/g, '/').replace(/\/?$/, '/')
+}
+
+function ownerOf(moduleId: string, roots: string[]): Owner {
+  const path = moduleId.replace(/\\/g, '/')
+  if (roots.some((root) => path.startsWith(root))) return 'owned'
+  if (path.includes('/node_modules/')) return 'neutral'
+  return 'host'
+}
+
+function sideOf(owners: Set<Owner>): 'owned' | 'host' | 'mixed' | null {
+  if (owners.has('owned') && owners.has('host')) return 'mixed'
+  if (owners.has('owned')) return 'owned'
+  if (owners.has('host')) return 'host'
+  return null
+}
+
+/**
+ * Decides whether one emitted CSS asset is the editor's. Vite records which
+ * chunk imports each asset (`viteMetadata.importedCss`), and the chunk lists
+ * the modules it was built from, so the asset's CSS modules say whose it is.
+ * Third-party CSS takes the side of the first-party code in its chunk. An
+ * asset that holds both sides, or that can't be attributed, fails the build:
+ * it can't be split, and either answer would put CSS in the wrong place.
+ */
+function attributeCssAsset(
+  fileName: string,
+  chunks: OutputChunk[],
+  roots: string[],
+): { owned: boolean; error?: undefined } | { owned?: undefined; error: string } {
+  const importers = chunks.filter((chunk) =>
+    chunk.viteMetadata?.importedCss.has(fileName),
+  )
+  if (importers.length === 0) {
+    return {
+      error: `inline-style-css: no chunk imports ${fileName}, so it can't be attributed to the editor or the host app.`,
+    }
+  }
+
+  const cssOwners = new Set<Owner>()
+  const codeOwners = new Set<Owner>()
+  for (const chunk of importers) {
+    for (const id of chunk.moduleIds) {
+      // Virtual modules (`\0plugin-vue:export-helper`) belong to no one.
+      if (id.startsWith('\0')) continue
+      const owner = ownerOf(id, roots)
+      if (CSS_MODULE_RE.test(id)) cssOwners.add(owner)
+      else if (owner !== 'neutral') codeOwners.add(owner)
+    }
+  }
+
+  const side = sideOf(cssOwners) ?? sideOf(codeOwners)
+  if (side === 'owned') return { owned: true }
+  if (side === 'host') return { owned: false }
+  return {
+    error:
+      side === 'mixed'
+        ? `inline-style-css: ${fileName} mixes the editor's CSS with the host app's. Keep the editor in chunks of its own (a dynamic import), or adjust ownedRoots.`
+        : `inline-style-css: ${fileName} holds only third-party CSS, and its chunk has no first-party code to attribute it by.`,
   }
 }

@@ -484,21 +484,18 @@ test.describe("saved blocks — crowded card confirm", () => {
     const measureRow = (text?: { label: string; stamp: string }) =>
       confirm.evaluate((button, text) => {
         const row = button.parentElement as HTMLElement;
+        if (text) button.textContent = text.label;
+        // The height this label gives the button on one line, measured with
+        // wrapping off rather than summed from computed values: the button's
+        // `line-height` is `normal` without a host reset, so the line box
+        // follows the fonts the label uses (Japanese makes it 2px taller).
+        button.style.whiteSpace = "nowrap";
+        const oneLine = button.getBoundingClientRect().height;
+        button.style.whiteSpace = "";
         if (text) {
-          button.textContent = text.label;
           row.querySelector('[data-testid="saved-block-updated"]')!.textContent =
             text.stamp;
         }
-        // The height one line of text gives the button: its line box plus
-        // vertical padding and border.
-        const style = getComputedStyle(button);
-        const oneLine = [
-          "line-height",
-          "padding-top",
-          "padding-bottom",
-          "border-top-width",
-          "border-bottom-width",
-        ].reduce((sum, prop) => sum + parseFloat(style.getPropertyValue(prop)), 0);
         const box = button.getBoundingClientRect();
         return {
           height: box.height,

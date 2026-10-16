@@ -18,4 +18,13 @@ declare module "virtual:editor-css" {
    */
   const css: string;
   export default css;
+
+  /**
+   * The directories whose CSS is the editor's, as `/`-separated prefixes with
+   * a trailing slash, or `null` when the build that compiles the editor set
+   * none (the editor's own builds). Set from the plugin's `ownedRoots` by a
+   * host app that compiles the editor from source; the dev style mirror uses
+   * it to keep the host's styles out of the shadow root.
+   */
+  export const ownedStyleRoots: readonly string[] | null;
 }

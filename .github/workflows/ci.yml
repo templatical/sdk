@@ -107,6 +107,14 @@ jobs:
       # tsx can't evaluate `import.meta.glob` from source.
       - if: env.IS_VP != 'true'
         run: pnpm --filter @templatical/playground run lint:templates
+      # The playground's production build (what play.templatical.com serves) is
+      # otherwise only built by the deploy, and e2e runs `vite dev`. It compiles
+      # the editor from source, so this is where its own CSS could reach the
+      # editor's shadow root. See apps/playground/scripts/verify-shadow-sheet.mjs.
+      - if: env.IS_VP != 'true'
+        run: pnpm --filter @templatical/playground run build
+      - if: env.IS_VP != 'true'
+        run: pnpm --filter @templatical/playground run verify:shadow-sheet
       - if: env.IS_VP != 'true'
         uses: actions/upload-artifact@v7
         with:

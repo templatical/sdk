@@ -393,7 +393,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           <span>{{ t.templateSettings.tips }}</span>
         </div>
         <ul
-          class="tpl:m-0 tpl:pl-[18px] tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:m-0 tpl:list-disc tpl:pl-[18px] tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
         >
           <li class="tpl:mb-1 tpl:last:mb-0">
             {{ t.templateSettings.tip1 }}

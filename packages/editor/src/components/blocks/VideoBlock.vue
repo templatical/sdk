@@ -64,7 +64,9 @@ const thumbnailStyle = computed(() => {
 // The thumbnail styles sit on the wrapper (it also positions the play button),
 // so the height has to reach the <img> itself as well — that is where MJML puts
 // it, and the img would otherwise keep its intrinsic aspect ratio inside a
-// wrapper the recipient's client won't have.
+// wrapper the recipient's client won't have. Each img is `tpl:block` for the
+// same reason: `mj-image` renders it `display: block`, and an inline image
+// leaves a descender gap below it that the email doesn't have.
 const thumbnailImageStyle = computed(() => ({
   height: props.block.height ? `${props.block.height}px` : undefined,
 }));
@@ -85,7 +87,7 @@ const mergeTagValue = computed(() =>
       :style="thumbnailStyle"
     >
       <img
-        class="tpl:w-full tpl:border-0"
+        class="tpl:block tpl:w-full tpl:border-0"
         :src="displayPlaceholderUrl"
         :alt="block.alt"
         :style="thumbnailImageStyle"
@@ -95,7 +97,7 @@ const mergeTagValue = computed(() =>
     <!-- Placeholder visual (no preview image) -->
     <div
       v-else-if="hasMergeTagUrl"
-      class="tpl:relative tpl:!flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
+      class="tpl:relative tpl:!flex tpl:box-border tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
       style="
         border-color: color-mix(in srgb, var(--tpl-primary) 40%, transparent);
       "
@@ -126,7 +128,7 @@ const mergeTagValue = computed(() =>
         @click.prevent
       >
         <img
-          class="tpl:w-full tpl:border-0"
+          class="tpl:block tpl:w-full tpl:border-0"
           :src="effectiveThumbnail"
           :alt="block.alt"
           :style="thumbnailImageStyle"
@@ -135,7 +137,7 @@ const mergeTagValue = computed(() =>
       </a>
       <div v-else class="tpl:relative tpl:inline-block" :style="thumbnailStyle">
         <img
-          class="tpl:w-full tpl:border-0"
+          class="tpl:block tpl:w-full tpl:border-0"
           :src="effectiveThumbnail"
           :alt="block.alt"
           :style="thumbnailImageStyle"
@@ -146,7 +148,7 @@ const mergeTagValue = computed(() =>
     <!-- Empty state -->
     <div
       v-else
-      class="tpl:flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
+      class="tpl:flex tpl:box-border tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
     >
       <Video
         :size="40"

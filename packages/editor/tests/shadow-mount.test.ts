@@ -115,6 +115,7 @@ describe("editor shadow mount (Phase 1.5)", () => {
     vi.doMock("virtual:editor-css", () => ({
       default:
         '@import"https://fonts.bunny.net/css?family=geist:400,500,600";.tpl{color:red}',
+      ownedStyleRoots: null,
     }));
     const pageStyle = document.createElement("style");
     pageStyle.textContent =
@@ -138,6 +139,57 @@ describe("editor shadow mount (Phase 1.5)", () => {
     } finally {
       replaceSync.mockRestore();
       pageStyle.remove();
+      vi.doUnmock("virtual:editor-css");
+    }
+  });
+
+  // A host that compiles the editor from source (the playground) also has its
+  // own styles in <head>. Its Tailwind preflight, mirrored into the shadow
+  // root, rendered canvas titles at 400 instead of the 700 real installs show.
+  it("with owned roots, the dev mirror leaves the host's Vite styles out", async () => {
+    vi.resetModules();
+    vi.doMock("virtual:editor-css", () => ({
+      default: ".tpl{color:red}",
+      ownedStyleRoots: ["/repo/packages/editor/src/"],
+    }));
+    const styles = [
+      [
+        "/repo/packages/editor/src/components/Canvas.vue?vue&type=style&index=0&scoped=ab12&lang.css",
+        ".tpl-canvas{color:green}",
+      ],
+      ["/repo/apps/playground/src/style.css", "h2{font-weight:inherit}"],
+      [
+        "/repo/node_modules/vue-advanced-cropper/dist/style.css",
+        ".vue-advanced-cropper{position:relative}",
+      ],
+      // Injected at runtime, not by Vite: TipTap's base styles.
+      [null, ".ProseMirror{white-space:pre-wrap}"],
+    ].map(([devId, css]) => {
+      const el = document.createElement("style");
+      if (devId) el.setAttribute("data-vite-dev-id", devId);
+      el.textContent = css;
+      document.head.appendChild(el);
+      return el;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const replaceSync = vi.spyOn(CSSStyleSheet.prototype, "replaceSync");
+
+    try {
+      const { init } = await import("../src/index");
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      await init({ container, shadowDom: true });
+
+      expect(replaceSync.mock.calls.map(([css]) => css)).toEqual([
+        ".tpl{color:red}",
+        ".tpl-canvas{color:green}",
+        ".vue-advanced-cropper{position:relative}",
+        ".ProseMirror{white-space:pre-wrap}",
+      ]);
+      expect(container.shadowRoot!.adoptedStyleSheets).toHaveLength(4);
+    } finally {
+      replaceSync.mockRestore();
+      styles.forEach((el) => el.remove());
       vi.doUnmock("virtual:editor-css");
     }
   });

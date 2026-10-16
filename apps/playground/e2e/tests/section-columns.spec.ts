@@ -143,8 +143,10 @@ test.describe("Section columns", () => {
     // The email fills an empty column with a one-line placeholder, 34px tall.
     await expect(dropHint).toHaveCount(0);
     await expect.poll(() => heightOf(column)).toBe(34);
-    // Preflight's `border: 0 solid` is what's left once the class goes.
-    expect(await borderOf(column)).toBe("0px solid");
+    // No border, as in the email. The style left once the class goes is the
+    // page's: `none` in a bare shadow root, `solid` under the playground
+    // document's preflight in light DOM.
+    expect(await borderOf(column)).toMatch(/^0px (none|solid)$/);
 
     await editorPage.togglePreview();
 

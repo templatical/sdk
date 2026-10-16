@@ -76,10 +76,14 @@ import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // `Editor.vue`, which injects styles into `document.head` for light-DOM mode and
 // survives untouched.
 //
+// `ownedStyleRoots` tells the dev style mirror which `document.head` styles are
+// the editor's when a host app compiles it from source (see
+// `attachDevStyleMirror`).
+//
 // Ambient declaration for `virtual:editor-css` lives in `virtual-modules.d.ts`
 // referenced at the top of this file via triple-slash so it's visible to any
 // consumer typechecking through the workspace path alias.
-import editorStylesInline from "virtual:editor-css";
+import editorStylesInline, { ownedStyleRoots } from "virtual:editor-css";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
@@ -826,6 +830,26 @@ interface MountTarget {
 }
 
 /**
+ * Whether the dev mirror copies one `document.head` style. Vite tags each
+ * style it injects with `data-vite-dev-id`, the source path, so with
+ * `ownedStyleRoots` set only the editor's styles and the third-party CSS it
+ * imports pass. An untagged style was injected at runtime (TipTap's
+ * `<style data-tiptap-style>`) and stays mirrored: in production it never
+ * reaches the shadow root, and that gap is #869, which waits on an upstream
+ * TipTap fix.
+ */
+function isMirroredStyle(el: HTMLStyleElement): boolean {
+  if (!ownedStyleRoots) return true;
+  const devId = el.getAttribute("data-vite-dev-id");
+  if (devId === null) return true;
+  const path = devId.replace(/\\/g, "/");
+  return (
+    ownedStyleRoots.some((root) => path.startsWith(root)) ||
+    path.includes("/node_modules/")
+  );
+}
+
+/**
  * Dev-only: mirror every `<style>` tag in `document.head` into the
  * shadow root's `adoptedStyleSheets`, and observe `document.head` so
  * Vite's HMR-injected style updates flow through to the shadow root
@@ -847,12 +871,12 @@ interface MountTarget {
  * observer + filter logic is stripped from production bundles entirely.
  *
  * Caveats:
- *   - In a real consumer's Vite-dev environment, this would also adopt
- *     the consumer's page-level styles (whatever they put in
- *     `document.head`). That's harmless when consumers install the
- *     editor from npm dist (the dev branch is dead-coded out). It only
- *     matters when a consumer source-resolves this package, which is
- *     unusual outside this repo's own playground.
+ *   - A host app that compiles the editor from source has its own styles
+ *     in `document.head` too. It passes `ownedRoots` to the CSS plugin,
+ *     and then only the editor's styles are mirrored (`isMirroredStyle`).
+ *     Without that option, the host's page-level styles are adopted as
+ *     well. That's harmless when consumers install the editor from npm
+ *     dist (the dev branch is dead-coded out).
  *   - A constructed sheet cannot hold `@import`: `replaceSync` drops each
  *     such rule and logs a warning, so they are stripped before the call.
  */
@@ -863,6 +887,7 @@ function attachDevStyleMirror(shadowRoot: ShadowRoot): () => void {
     const sheets: CSSStyleSheet[] = [];
     // shadow-ok: dev-only HMR style mirror (production path is plugin-driven via adoptedStyleSheets)
     document.head.querySelectorAll("style").forEach((el) => {
+      if (!isMirroredStyle(el)) return;
       const text = el.textContent;
       if (!text) return;
       try {

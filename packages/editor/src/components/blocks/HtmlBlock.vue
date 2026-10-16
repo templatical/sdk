@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
     />
     <div
       v-else
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)]"
+      class="tpl:flex tpl:box-border tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)]"
     >
       <Code :size="24" class="tpl:text-[var(--tpl-text-dim)]" />
       <span

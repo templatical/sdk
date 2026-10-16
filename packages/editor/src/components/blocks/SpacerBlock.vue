@@ -26,7 +26,11 @@ const spacerStyle = computed(() => ({
       :style="spacerStyle"
       class="tpl:relative tpl:flex tpl:items-center tpl:justify-center"
       :class="{
-        'tpl:border-y tpl:border-dashed': !editor.state.previewMode,
+        // The guide sits inside the spacer's height, which the email renders
+        // exactly. `border-dashed` styles all four sides, so the side widths
+        // are zeroed rather than left at the browser's `medium`.
+        'tpl:box-border tpl:border-y tpl:border-x-0 tpl:border-dashed':
+          !editor.state.previewMode,
       }"
     >
       <span

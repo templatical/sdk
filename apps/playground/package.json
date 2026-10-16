@@ -53,7 +53,8 @@
     "lint:templates": "tsx --tsconfig scripts/tsconfig.json scripts/lint-templates.ts",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "verify:shadow-sheet": "node scripts/verify-shadow-sheet.mjs"
   },
   "type": "module"
 }

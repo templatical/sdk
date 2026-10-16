@@ -5,12 +5,14 @@ import { join } from "node:path";
 /**
  * Form-element reset invariants for `styles/index.css`.
  *
- * Tailwind preflight is intentionally disabled — Tailwind 4's `prefix()`
- * does not scope preflight selectors, so enabling it would reset host page
- * typography. That makes the hand-rolled
- * `:where(.tpl) button, input, select, textarea` block the
- * only source of cross-cutting form defaults. Any change there has a long
- * blast radius — every input/select/textarea in the editor depends on it.
+ * Tailwind's global preflight is intentionally disabled — Tailwind 4's
+ * `prefix()` does not scope preflight selectors, so enabling it would reset
+ * host page typography. The chrome gets a scoped copy instead, in `@layer base`
+ * (`chrome-reset-scope.test.ts`), but a layered rule loses to any unlayered
+ * host rule in a light-DOM mount. The unlayered
+ * `:where(.tpl) button, input, select, textarea` block is what holds there.
+ * Any change to it has a long blast radius — every input/select/textarea in
+ * the editor depends on it.
  *
  * Regression locked: issue #115 — `box-sizing: border-box` is required on
  * form elements. Without it, `tpl:w-full` + horizontal padding utilities

@@ -74,8 +74,10 @@ function handleKeydown(event: KeyboardEvent): void {
            The padding belongs here and not on the wrapper: preflight is
            omitted, so non-form elements keep `content-box` and padding on an
            `h-full` element would add to 100% and overflow by exactly the
-           padding (the trap behind issue #115). Insets size the backdrop's
-           border box, so padding here safely shrinks the content box instead. -->
+           padding (the trap behind issue #115). The backdrop is `h-full` too,
+           through the bare `tpl` class, so it is `box-border`: the gutter then
+           shrinks its content box instead of making it 32px taller than the
+           box it covers. -->
       <!-- `z-10` is the one z-index inside `.tpl-popover-root` that has to be
            real. The root is a single stacking context, so its residents
            otherwise paint in teleport-anchor order — and this modal's anchor is
@@ -88,7 +90,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:box-border tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="
           background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);

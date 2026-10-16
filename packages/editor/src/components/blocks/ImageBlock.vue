@@ -142,7 +142,7 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
     <!-- Placeholder visual (no preview image) -->
     <div
       v-else-if="block.src && hasMergeTagSrc"
-      class="tpl:!flex tpl:min-h-[120px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
+      class="tpl:!flex tpl:box-border tpl:min-h-[120px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
       style="
         border-color: color-mix(in srgb, var(--tpl-primary) 40%, transparent);
       "
@@ -189,7 +189,7 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
     <!-- Empty state -->
     <div
       v-else
-      class="tpl:flex tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
+      class="tpl:flex tpl:box-border tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
     >
       <button
         v-if="canBrowse"
