@@ -239,11 +239,13 @@ function backgroundAxisPoint<T extends string>(
 }
 
 /**
- * An Unlayer row or body `backgroundImage`, `null` when its `url` is blank.
- * Unset fields take Unlayer's editor defaults: `custom` size, which is the
- * image at its own size (`auto`), `center`, and `no-repeat`. A `custom`
- * position reads `customPosition` as CSS. A value with no exact keyword
- * takes the nearest one and adds a note naming it.
+ * An Unlayer row's `backgroundImage`, `null` when its `url` is blank. Unset
+ * fields take Unlayer's editor defaults: `custom` size, which is the image at
+ * its own size (`auto`), `center`, and `no-repeat`. A `custom` position reads
+ * `customPosition` as CSS. A value with no exact keyword takes the nearest
+ * one and adds a note naming it. Older designs carry `cover` and `center`
+ * booleans instead of `size` and `position`; they map exactly, and only when
+ * the string field is absent.
  */
 export function readUnlayerBackgroundImage(
   bg: UnlayerBackgroundImage | undefined,
@@ -268,6 +270,8 @@ export function readUnlayerBackgroundImage(
     const parsed = backgroundSizeKeyword(rawSize, boxWidth);
     size = parsed.size;
     if (!parsed.exact) lossy("backgroundImage.size", rawSize, size);
+  } else if (!rawSize && typeof bg.cover === "boolean") {
+    size = bg.cover ? "cover" : "auto";
   }
 
   let x: BackgroundPositionX = "center";
@@ -298,6 +302,9 @@ export function readUnlayerBackgroundImage(
     } else {
       lossy("backgroundImage.position", rawPosition, `${x} ${y}`);
     }
+  } else if (typeof bg.center === "boolean") {
+    x = bg.center ? "center" : "left";
+    y = "top";
   }
 
   let repeat = false;

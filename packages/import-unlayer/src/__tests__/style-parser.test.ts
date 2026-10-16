@@ -270,6 +270,49 @@ describe("readUnlayerBackgroundImage", () => {
     expect(read({ url: "u", size: "contain" })?.image.size).toBe("contain");
   });
 
+  it("reads the legacy cover and center flags when size and position are absent", () => {
+    expect(read({ url: "u", cover: true, center: true })).toEqual({
+      image: {
+        url: "u",
+        size: "cover",
+        position: { x: "center", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+    expect(
+      read({ url: "u", cover: false, center: false, repeat: false }),
+    ).toEqual({
+      image: {
+        url: "u",
+        size: "auto",
+        position: { x: "left", y: "top" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
+  it("lets the new-style size and position win over the legacy flags", () => {
+    expect(
+      read({
+        url: "u",
+        size: "contain",
+        cover: true,
+        position: "bottom-right",
+        center: true,
+      }),
+    ).toEqual({
+      image: {
+        url: "u",
+        size: "contain",
+        position: { x: "right", y: "bottom" },
+        repeat: false,
+      },
+      notes: [],
+    });
+  });
+
   it("reads repeat, a boolean from older designs too", () => {
     expect(read({ url: "u", repeat: "repeat" })).toMatchObject({
       image: { repeat: true },

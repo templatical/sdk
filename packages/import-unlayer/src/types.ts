@@ -34,6 +34,18 @@ export interface UnlayerBackgroundImage {
   position?: string;
   /** `[x, y]` as CSS lengths or percentages; read when `position` is `"custom"`. */
   customPosition?: [string, string];
+  /**
+   * Older designs only: `true` is `cover`, `false` the image at its own size.
+   * Read only when `size` is absent. Assumed from Unlayer's legacy exports,
+   * not verified against a real legacy HTML export.
+   */
+  cover?: boolean;
+  /**
+   * Older designs only: `true` is centre top, `false` left top. Read only
+   * when `position` is absent. Assumed from Unlayer's legacy exports, not
+   * verified against a real legacy HTML export.
+   */
+  center?: boolean;
 }
 
 export interface UnlayerFontFamily {

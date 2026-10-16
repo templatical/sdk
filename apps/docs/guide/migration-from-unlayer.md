@@ -161,7 +161,7 @@ A row's `backgroundImage` becomes the section's `backgroundImage`:
 | `true`, `columnsBackgroundColor` unset | The section's image, painted at the content width, and `report.warnings` says so. |
 | `true`, `columnsBackgroundColor` set | Dropped, since in Unlayer the content colour covers it inside the content width, and `report.warnings` names it. |
 
-`size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Each value with no exact keyword adds a line to `report.warnings`.
+`size` `cover` and `contain` carry over, and `custom` is the image at its own size (`auto`). The nine `position` keywords map to the matching grid point. A `custom` position's `customPosition` percentage snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x` and `repeat-y` become `repeat`. Older designs' `cover` and `center` flags are read when `size` and `position` are absent: `cover` maps to `cover` (`false` to `auto`), and `center` to center top (`false` to left top). Each value with no exact keyword adds a line to `report.warnings`.
 
 ## Template Settings
 

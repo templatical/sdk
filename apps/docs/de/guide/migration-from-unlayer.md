@@ -159,7 +159,7 @@ Das `backgroundImage` einer Reihe wird zum `backgroundImage` der Section:
 | `true`, `columnsBackgroundColor` nicht gesetzt | Das Bild der Section, in Inhaltsbreite gezeichnet; `report.warnings` vermerkt das. |
 | `true`, `columnsBackgroundColor` gesetzt | Verworfen, da in Unlayer die Inhaltsfarbe es innerhalb der Inhaltsbreite verdeckt; `report.warnings` nennt es. |
 
-`size` `cover` und `contain` werden übernommen, `custom` ist das Bild in Originalgröße (`auto`). Die neun `position`-Schlüsselwörter werden auf den passenden Rasterpunkt abgebildet. Bei einer `custom`-Position rastet ein Prozentwert in `customPosition` auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x` und `repeat-y` werden zu `repeat`. Jeder Wert ohne exaktes Schlüsselwort fügt `report.warnings` eine Zeile hinzu.
+`size` `cover` und `contain` werden übernommen, `custom` ist das Bild in Originalgröße (`auto`). Die neun `position`-Schlüsselwörter werden auf den passenden Rasterpunkt abgebildet. Bei einer `custom`-Position rastet ein Prozentwert in `customPosition` auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x` und `repeat-y` werden zu `repeat`. Die Flags `cover` und `center` älterer Designs werden gelesen, wenn `size` und `position` fehlen: `cover` wird zu `cover` (`false` zu `auto`), `center` zu oben mittig (`false` zu links oben). Jeder Wert ohne exaktes Schlüsselwort fügt `report.warnings` eine Zeile hinzu.
 
 ## Template-Einstellungen
 
