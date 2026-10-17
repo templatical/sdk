@@ -11,8 +11,8 @@
   "dependencies": {
     "@templatical/editor": "^0.48.0",
     "@templatical/renderer": "^0.48.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@templatical/types": "^0.48.0",
