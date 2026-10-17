@@ -24,6 +24,10 @@ describe("canDropInSectionColumn", () => {
     );
   });
 
+  it("rejects the Hero shortcut, which inserts a section", () => {
+    expect(canDropInSectionColumn(dragEl({ paletteType: "hero" }))).toBe(false);
+  });
+
   it("allows a non-section block from the canvas", () => {
     expect(canDropInSectionColumn(dragEl({ blockType: "paragraph" }))).toBe(
       true,

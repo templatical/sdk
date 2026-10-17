@@ -216,9 +216,11 @@ export interface TemplaticalCloudEditorConfig {
    * Allowlist + order for the block palette. When non-empty, only the listed
    * block types appear in the sidebar palette, in this order; unlisted
    * built-ins are hidden. Built-ins use their bare type (`'image'`), custom
-   * blocks the `custom:`-prefixed type (`'custom:qrcode'`). Unknown entries are
-   * warned and skipped. Omit it or pass `[]` for the full default palette. See
-   * `paletteBlocks` on the OSS editor config for details.
+   * blocks the `custom:`-prefixed type (`'custom:qrcode'`). `'hero'` is a
+   * shortcut, not a block type: it inserts a one-column section in hero mode
+   * with starter content. Unknown entries are warned and skipped. Omit it or
+   * pass `[]` for the full default palette. See `paletteBlocks` on the OSS
+   * editor config for details.
    */
   paletteBlocks?: string[];
 

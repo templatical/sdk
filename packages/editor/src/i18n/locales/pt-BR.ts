@@ -62,6 +62,7 @@ const ptBR: typeof en = {
   // Sidebar - Block types
   blocks: {
     section: "Seção",
+    hero: "Hero",
     image: "Imagem",
     title: "Título",
     paragraph: "Parágrafo",

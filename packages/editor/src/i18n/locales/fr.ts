@@ -56,6 +56,7 @@ const fr: typeof en = {
   },
   blocks: {
     section: "Section",
+    hero: "Hero",
     image: "Image",
     title: "Titre",
     paragraph: "Paragraphe",

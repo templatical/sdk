@@ -56,6 +56,7 @@ const nl: typeof en = {
   },
   blocks: {
     section: "Sectie",
+    hero: "Hero",
     image: "Afbeelding",
     title: "Titel",
     paragraph: "Alinea",

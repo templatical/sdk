@@ -87,6 +87,7 @@ describe('Sidebar', () => {
     // Countdown is only present when `caps.plan` is configured (cloud mode).
     expect(types).toEqual([
       'section',
+      'hero',
       'image',
       'title',
       'paragraph',
@@ -378,6 +379,18 @@ describe('Sidebar', () => {
     expect(inserted.type).toBe('title');
     expect(inserted.id).toBeTruthy();
     expect(selectBlock).toHaveBeenCalledWith(inserted.id);
+  });
+
+  it('inserts a hero-mode section from the Hero shortcut', async () => {
+    const { editor, addBlock } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    await wrapper.find('button[data-palette-type="hero"]').trigger('click');
+    expect(addBlock).toHaveBeenCalledTimes(1);
+    expect(addBlock.mock.calls[0][0]).toMatchObject({
+      type: 'section',
+      columns: '1',
+      hero: { height: 'image', verticalAlign: 'middle' },
+    });
   });
 
   describe('localized placeholder text', () => {
@@ -774,6 +787,15 @@ describe('Sidebar — blocks (palette allowlist + order)', () => {
     expect(paletteTypes(wrapper)).toEqual(['button', 'section', 'image']);
   });
 
+  it('accepts "hero" in paletteBlocks', () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [PALETTE_BLOCKS_KEY]: ['hero', 'section'],
+    });
+    expect(paletteTypes(wrapper)).toEqual(['hero', 'section']);
+  });
+
   it('treats an empty blocks array as the full default palette', () => {
     const { editor } = makeEditor();
     const wrapper = mountSidebar({
@@ -782,6 +804,7 @@ describe('Sidebar — blocks (palette allowlist + order)', () => {
     });
     expect(paletteTypes(wrapper)).toEqual([
       'section',
+      'hero',
       'image',
       'title',
       'paragraph',

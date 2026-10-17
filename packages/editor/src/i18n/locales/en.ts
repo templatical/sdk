@@ -60,6 +60,7 @@ export default {
   // Sidebar - Block types
   blocks: {
     section: "Section",
+    hero: "Hero",
     image: "Image",
     title: "Title",
     paragraph: "Paragraph",

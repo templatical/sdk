@@ -46,6 +46,7 @@ const translations: typeof en = {
   },
   blocks: {
     section: "セクション",
+    hero: "ヒーロー",
     image: "画像",
     title: "見出し",
     paragraph: "テキスト",

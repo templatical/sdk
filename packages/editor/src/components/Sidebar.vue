@@ -8,6 +8,7 @@ import { VueDraggable } from "vue-draggable-plus";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { createHeroSection, HERO_PALETTE_TYPE } from "../utils/heroShortcut";
 import { resolvePaletteBlocks } from "../utils/resolvePaletteBlocks";
 import { insertBlockAtSelection } from "../utils/insertBlockAtSelection";
 import { useScrollToBlock } from "../composables/useScrollToBlock";
@@ -177,6 +178,7 @@ function handleDragEnd(): void {
 
 const builtInBlockTypeOrder: string[] = [
   "section",
+  HERO_PALETTE_TYPE,
   "image",
   "title",
   "paragraph",
@@ -258,6 +260,11 @@ function createBlockFromItem(item: BlockTypeItem): Block {
     if (definition) {
       return createCustomBlock(definition);
     }
+  }
+
+  // A shortcut, not a block type: a hero-mode section with starter content.
+  if (item.type === HERO_PALETTE_TYPE) {
+    return createHeroSection(blockDefaults?.value, t.blockDefaults.paragraph);
   }
 
   // `.value` at insert time, never destructured at setup: the recipient-facing

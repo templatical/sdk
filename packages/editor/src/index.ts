@@ -393,6 +393,9 @@ export interface TemplaticalEditorConfig {
    * paletteBlocks: ['section', 'title', 'image', 'custom:qrcode', 'button']
    * ```
    *
+   * `'hero'` is a shortcut, not a block type: it inserts a one-column section
+   * in hero mode with starter content.
+   *
    * Unknown entries — a typo, an unregistered custom block, or `countdown`
    * outside a Cloud plan — are logged with a warning and skipped. Filtering
    * the palette never affects rendering: existing content using a hidden

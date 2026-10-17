@@ -1,3 +1,8 @@
+import { HERO_PALETTE_TYPE } from "./heroShortcut";
+
+/** Palette entries that insert a section: the Section block and the Hero shortcut. */
+const SECTION_PALETTE_TYPES = new Set(["section", HERO_PALETTE_TYPE]);
+
 /**
  * Drop-guard for a section column's VueDraggable `put` predicate.
  *
@@ -9,10 +14,12 @@
  * canvas blocks carry `data-block-type` (set by `BlockWrapper`), palette items
  * carry `data-palette-type` (set by `Sidebar`). The guard must check BOTH —
  * checking only `data-block-type` lets a section dragged from the palette slip
- * through, which was the exact hole behind #292.
+ * through, which was the exact hole behind #292. The Hero shortcut's palette
+ * item (`data-palette-type="hero"`) inserts a section too.
  */
 export function canDropInSectionColumn(el: HTMLElement): boolean {
   return (
-    el.dataset.blockType !== "section" && el.dataset.paletteType !== "section"
+    el.dataset.blockType !== "section" &&
+    !SECTION_PALETTE_TYPES.has(el.dataset.paletteType ?? "")
   );
 }

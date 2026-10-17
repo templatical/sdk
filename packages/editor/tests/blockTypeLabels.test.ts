@@ -7,6 +7,7 @@ import type { Translations } from '../src/i18n';
 const mockTranslations = {
   blocks: {
     section: 'Section',
+    hero: 'Hero',
     image: 'Image',
     title: 'Title',
     paragraph: 'Paragraph',
@@ -29,6 +30,7 @@ describe('getBlockTypeLabel', () => {
     expect(getBlockTypeLabel('html', mockTranslations)).toBe('HTML');
     expect(getBlockTypeLabel('countdown', mockTranslations)).toBe('Countdown');
     expect(getBlockTypeLabel('video', mockTranslations)).toBe('Video');
+    expect(getBlockTypeLabel('hero', mockTranslations)).toBe('Hero');
   });
 
   it('falls back to the raw type string for unknown block types', () => {

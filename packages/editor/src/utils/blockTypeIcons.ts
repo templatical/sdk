@@ -3,6 +3,7 @@ import {
   Columns3,
   Heading,
   Image,
+  LayoutPanelTop,
   Minus,
   MoveVertical,
   Navigation,
@@ -17,6 +18,7 @@ import type { Component } from "vue";
 
 export const blockTypeIcons: Record<string, Component> = {
   section: Columns3,
+  hero: LayoutPanelTop,
   title: Heading,
   paragraph: Pilcrow,
   image: Image,

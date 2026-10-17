@@ -63,6 +63,7 @@ const es: typeof en = {
   // Sidebar - Block types
   blocks: {
     section: "Sección",
+    hero: "Hero",
     image: "Imagen",
     title: "Título",
     paragraph: "Párrafo",

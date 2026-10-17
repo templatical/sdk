@@ -4,11 +4,13 @@
  *
  * Each `paletteBlocks` entry is a block-type key that must match a candidate's
  * `type`: a bare built-in type (e.g. `"image"`) or a prefixed custom type
- * (e.g. `"custom:qrcode"`). The result's `items` contains exactly the
- * candidates named in `paletteBlocks`, in that order. Entries with no matching
- * candidate (a typo, an unregistered custom block, or a plan-gated built-in
- * like `countdown` outside Cloud) are collected into `unknown` so the caller
- * can warn and skip. A type listed more than once is rendered once.
+ * (e.g. `"custom:qrcode"`). `"hero"` is a shortcut, not a block type: it
+ * inserts a one-column section in hero mode with starter content. The
+ * result's `items` contains exactly the candidates named in `paletteBlocks`, in
+ * that order. Entries with no matching candidate (a typo, an unregistered
+ * custom block, or a plan-gated built-in like `countdown` outside Cloud) are
+ * collected into `unknown` so the caller can warn and skip. A type listed more
+ * than once is rendered once.
  *
  * When `paletteBlocks` is `undefined` or empty the candidates are returned
  * unchanged (the default full palette). An empty allowlist is treated as "not

@@ -62,6 +62,7 @@ const ca: typeof en = {
   // Sidebar - Block types
   blocks: {
     section: "Secció",
+    hero: "Hero",
     image: "Imatge",
     title: "Títol",
     paragraph: "Paràgraf",
