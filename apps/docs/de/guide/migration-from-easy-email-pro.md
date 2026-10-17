@@ -168,7 +168,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` ist der Standard-Textblock; beide werden gleich abgebildet, einschließlich der Attribut-Kaskade. Inhalt aus Slate-Kindern. Bleibt ein Paragraph, auch bei großer `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 aus dem Typ. |
 | `standard-button` | `ButtonBlock` | Beschriftung aus den Kindern, nicht `data.content`. `href` → `url`. Ungesetztes Fill plus `border-enabled` ist outlined — Fill wird `#ffffff` (nicht das Factory-`#333333`), `approximated`. |
-| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
+| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. `width`: fehlend oder `100%` → `"full"`; px bleibt px und wird `"full"`, sobald es die Inhaltsbreite der Spalte abzüglich des Paddings des Bildes füllt; ein Prozentwert unter `100%` wird zu px dieses Platzes, `approximated`. |
 | `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: fehlend oder `100%` → `"full"`; ein anderer Prozentwert bleibt ein Prozentwert, begrenzt auf 0–100; px bleibt px und wird `"full"`, sobald es die Inhaltsbreite der Spalte abzüglich des Paddings des Dividers ausfüllt. |
 | `standard-spacer` | `SpacerBlock` | Höhe aus `height` in px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Linktext aus den Kindern; `href` → `url`; `target === "_blank"` → `openInNewTab`. |

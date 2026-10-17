@@ -121,10 +121,18 @@ export interface UnlayerLinkAction {
   values?: { href?: string; target?: string };
 }
 
+/**
+ * `width` and `height` are the uploaded file's own size, not the size the
+ * image is shown at. `autoWidth` (Unlayer's default when absent) shows it at
+ * that size, capped at the column; `autoWidth: false` shows it at `maxWidth`,
+ * a percentage of the column.
+ */
 export interface UnlayerImageSrc {
   url?: string;
   width?: number;
   height?: number;
+  autoWidth?: boolean;
+  maxWidth?: string;
 }
 
 export interface UnlayerButtonColors {

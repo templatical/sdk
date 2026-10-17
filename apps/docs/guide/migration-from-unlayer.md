@@ -91,7 +91,7 @@ Unlayer content types map to Templatical equivalents:
 |---|---|---|
 | Text | `paragraph` | Converted |
 | Heading | `title` | Converted |
-| Image | `image` | Converted |
+| Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
 | Button | `button` | Converted |
 | Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
@@ -103,6 +103,22 @@ Unlayer content types map to Templatical equivalents:
 | Form | — | Skipped |
 
 Unknown content types are converted to HTML blocks as a fallback.
+
+### Image width {#image-width}
+
+| Unlayer image | `ImageBlock.width` | Status |
+|---|---|---|
+| `autoWidth` (the default), `src.width` narrower than the image's room | the px number | Converted |
+| `autoWidth`, `src.width` as wide as the room or wider, or missing | `"full"` | Converted |
+| `autoWidth: false`, `maxWidth` `100%` or missing | `"full"` | Converted |
+| `autoWidth: false`, `maxWidth` under `100%`, such as `75%` | that share of the room in px | Approximated |
+| `autoWidth: false`, unreadable `maxWidth` | `"full"` | Approximated |
+
+`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
+
+::: tip
+A px width keeps its size on a phone, where a percentage shrinks with the column, so a `maxWidth` under `100%` is approximated.
+:::
 
 ### Divider width
 

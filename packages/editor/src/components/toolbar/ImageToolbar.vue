@@ -2,6 +2,7 @@
 import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import BorderControl from "./BorderControl.vue";
+import LinkToggle from "./LinkToggle.vue";
 import RadiusControl from "./RadiusControl.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
@@ -24,8 +25,17 @@ import {
 } from "@templatical/types";
 import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import { MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { EDITOR_KEY, LAYOUT_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { useMediaDropField } from "../../composables/useMediaDropField";
+import { useImageAspectLock } from "../../composables/useImageAspectLock";
+import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
+import { useNaturalImageSize } from "../../composables/useNaturalImageSize";
+import { imageRoom } from "../../utils/imageRoom";
+import {
+  naturalSizeFields,
+  naturalSizeOf,
+  toNaturalSize,
+} from "../../utils/imageNaturalSize";
 import { useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
@@ -36,8 +46,10 @@ const emit = defineEmits<{
   (e: "update", updates: Partial<ImageBlock>): void;
 }>();
 
-const { t } = useI18n();
+const { t, format } = useI18n();
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+const editor = inject(EDITOR_KEY, null);
+const layout = inject(LAYOUT_KEY, undefined);
 
 const pulseSrc = ref(false);
 const pulseAlt = ref(false);
@@ -76,11 +88,14 @@ function updateWidthMode(value: string): void {
   if (value === "custom") {
     const w = props.block.width;
     if (typeof w !== "number" || WIDTH_PRESETS.includes(w)) {
-      updateField("width", DEFAULT_CUSTOM_WIDTH);
+      emit("update", aspectLock.widthUpdates(DEFAULT_CUSTOM_WIDTH));
     }
     return;
   }
-  updateField("width", value === "full" ? "full" : Number(value));
+  emit(
+    "update",
+    aspectLock.widthUpdates(value === "full" ? "full" : Number(value)),
+  );
 }
 
 function updateHeightMode(value: string): void {
@@ -119,11 +134,23 @@ function updateCustomWidth(raw: string): void {
   // width; the canvas still updates live on each valid keystroke.
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) return;
-  updateField("width", n);
+  emit("update", aspectLock.widthUpdates(n));
+}
+
+/**
+ * A new `src` carries its file's size, or clears the old one, so a ratio
+ * from the previous file never drives the lock.
+ */
+function updateSrc(value: string): void {
+  if (value === props.block.src) return;
+  emit("update", { src: value, ...naturalSizeFields(null) });
 }
 
 function applyMedia(result: MediaResult): void {
-  updateField("src", result.url);
+  emit("update", {
+    src: result.url,
+    ...naturalSizeFields(toNaturalSize(result.width, result.height)),
+  });
   if (result.alt) {
     updateField("alt", result.alt);
     pulseAlt.value = true;
@@ -143,6 +170,44 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
     blocked: hasMergeTagSrc,
     apply: applyMedia,
   });
+
+// Measured only when the block stores no size, and never for a merge-tag
+// `src`, which names no file. The resolved URL is the one the canvas shows.
+const displaySrc = useResolvedImageSrc(() =>
+  hasMergeTagSrc.value || !props.block.src || naturalSizeOf(props.block)
+    ? undefined
+    : props.block.src,
+);
+const measuredSize = useNaturalImageSize(() => displaySrc.value);
+const room = computed(() =>
+  editor ? imageRoom(editor.content.value, props.block.id, layout) : null,
+);
+const aspectLock = useImageAspectLock({
+  block: () => props.block,
+  room: () => room.value,
+  measured: () => measuredSize.value,
+});
+const {
+  available: aspectLockAvailable,
+  locked: aspectLocked,
+  derivedHeight,
+  cappedHeight,
+} = aspectLock;
+
+function toggleAspectLock(): void {
+  const updates = aspectLock.setLocked(!aspectLocked.value);
+  if (updates) emit("update", updates);
+}
+
+// What the locked height field shows while it has focus: the typed value,
+// even when the width it gives is capped at the column.
+const lockedHeightDraft = ref<string | null>(null);
+
+function updateLockedHeight(raw: string): void {
+  lockedHeightDraft.value = raw;
+  const updates = aspectLock.heightUpdates(Number(raw));
+  if (updates) emit("update", updates);
+}
 </script>
 
 <template>
@@ -155,7 +220,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
         type="url"
         :placeholder="t.image.imageUrlPlaceholder"
         :pulse="pulseSrc"
-        @update:model-value="updateField('src', $event)"
+        @update:model-value="updateSrc($event)"
       />
       <button
         v-if="canBrowse"
@@ -218,6 +283,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
     <label :class="labelClass">{{ t.image.width }}</label>
     <select
       :class="inputClass"
+      data-testid="image-width-mode"
       :value="widthMode"
       @change="updateWidthMode(($event.target as HTMLSelectElement).value)"
     >
@@ -233,6 +299,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
     >
       <input
         type="number"
+        data-testid="image-width-input"
         :class="inputGroupInputClass"
         :value="
           typeof block.width === 'number' ? block.width : DEFAULT_CUSTOM_WIDTH
@@ -244,8 +311,47 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
     </div>
   </div>
   <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.image.height }}</label>
+    <div
+      v-if="aspectLockAvailable"
+      class="tpl:mb-1.5 tpl:flex tpl:items-center tpl:justify-between"
+    >
+      <span
+        class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+        >{{ t.image.height }}</span
+      >
+      <LinkToggle
+        :linked="aspectLocked"
+        :link-label="t.image.lockAspectRatio"
+        :unlink-label="t.image.unlockAspectRatio"
+        testid="image-aspect-lock"
+        @toggle="toggleAspectLock"
+      />
+    </div>
+    <label v-else :class="labelClass">{{ t.image.height }}</label>
+    <template v-if="aspectLocked">
+      <div class="tpl:flex tpl:items-stretch">
+        <input
+          type="number"
+          data-testid="image-locked-height-input"
+          :class="inputGroupInputClass"
+          :value="lockedHeightDraft ?? derivedHeight ?? ''"
+          min="1"
+          @input="updateLockedHeight(($event.target as HTMLInputElement).value)"
+          @blur="lockedHeightDraft = null"
+        />
+        <span :class="inputSuffixClass">px</span>
+      </div>
+      <p
+        v-if="cappedHeight !== null"
+        class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+        role="status"
+        data-testid="image-height-capped"
+      >
+        {{ format(t.image.heightCapped, { height: cappedHeight }) }}
+      </p>
+    </template>
     <select
+      v-if="!aspectLocked"
       :class="inputClass"
       data-testid="image-height-mode"
       :value="heightMode"
@@ -255,7 +361,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
       <option value="custom">{{ t.image.heightCustom }}</option>
     </select>
     <div
-      v-if="heightMode === 'custom'"
+      v-if="!aspectLocked && heightMode === 'custom'"
       class="tpl:mt-2 tpl:flex tpl:items-stretch"
     >
       <input

@@ -121,7 +121,7 @@ Plugin-Speicher ist ein Tabellenbaum mit `esd-*`-Klassen. Jedes `esd-structure` 
 | `esd-structure` mit 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames sind die Spalten. Das Padding kommt von `es-p*` an der Structure (Standard 0); ein Inline-`padding` überschreibt die Seiten, die es nennt. |
 | `esd-structure` mit 4+ Frames | `SectionBlock` `columns: "1"` | Auf eine Spalte reduziert; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generisches HTML-Mapping des inneren Markups. |
-| `esd-block-image` | `image` | Generisches HTML-Mapping des inneren `<img>`. |
+| `esd-block-image` | `image` | Generisches HTML-Mapping des inneren `<img>`, einschließlich seiner [Breitenregel](/de/guide/migration-from-html#image-width). |
 | `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. |
 | `esd-block-menu` (2+ Item-Zellen) | `menu` | Ein `MenuItemData` je Item-Zelle. |
 | `esd-block-menu` (1 Item-Zelle) | `paragraph` (oder das innere Mapping) | Ein gestapelter Schritt, keine Navigation — Password-Reset-Zeilen bleiben Fließtext. |

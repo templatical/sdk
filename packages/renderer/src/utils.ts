@@ -17,13 +17,17 @@ import type {
   BackgroundImage,
   BorderRadiusValue,
   BorderValue,
+  ImageBlock,
+  SpacingValue,
 } from "@templatical/types";
 import {
   resolveBackgroundImage,
+  toBorderCss,
   toBorderDeclarations,
   toBorderRadiusCss,
 } from "@templatical/types";
 import { escapeAttr, escapeCssValue } from "./escape";
+import type { RenderContext } from "./render-context";
 
 /**
  * Where the MJML element accepts a background-color attribute.
@@ -67,6 +71,50 @@ export function heightAttr(height: number | undefined): string {
   }
 
   return ` height="${height}px"`;
+}
+
+/**
+ * The width an element's side padding and drawn side borders take from its
+ * box. MJML subtracts exactly these when it sizes a wrapper's, a section's or
+ * an image's content, so a side `toBorderCss` would not draw counts for 0.
+ */
+export function horizontalInset(
+  padding: SpacingValue | undefined,
+  border?: BorderValue,
+): number {
+  const drawn = (side: BorderValue["left"] | undefined) =>
+    toBorderCss(side) === null ? 0 : side!.width;
+  return (
+    (padding?.left ?? 0) +
+    (padding?.right ?? 0) +
+    drawn(border?.left) +
+    drawn(border?.right)
+  );
+}
+
+/**
+ * `fluid-on-mobile` for an `mj-image`, set only on an image that fills its
+ * column on desktop: `"full"`, or a pixel width MJML caps at the room it gives
+ * the image (the column less the image's own side padding and border). On a
+ * phone the attribute widens the image to the stacked column, so an image set
+ * narrower must not carry it: a 120px logo would grow to the whole column, and
+ * one with a set height would stretch out of shape. An image wider than the
+ * phone shrinks to fit without it.
+ *
+ * Exported for `blockRenderers` entries that emit their own `mj-image`. Pass
+ * the context the renderer received, whose `contentWidth` already excludes the
+ * wrappers and sections around the column.
+ */
+export function fluidOnMobileAttr(
+  block: Pick<ImageBlock, "width" | "styles" | "border">,
+  context: RenderContext,
+): string {
+  const room =
+    Math.floor(context.contentWidth) -
+    horizontalInset(block.styles.padding, block.border);
+  return block.width === "full" || block.width >= room
+    ? ' fluid-on-mobile="true"'
+    : "";
 }
 
 /**

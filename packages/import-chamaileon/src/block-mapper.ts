@@ -274,7 +274,15 @@ function convertImage(
   const { style, attrs } = readNode(node, ctx);
   const sourceTag = node.type ?? "image";
   const src = asString(attrs.src) ?? asString(styleValue(style, "src")) ?? "";
-  const width = resolvedWidth(style, ctx.columnWidth);
+  const padding = paddingStyles(style);
+  // MJML caps an image at its column less its own side padding, so a px width
+  // that reaches that renders as "full" does.
+  const width = resolvedWidth(
+    style,
+    ctx.columnWidth -
+      padding.styles.padding.left -
+      padding.styles.padding.right,
+  );
   const linkUrl = asString(attrs.link);
   const borderRadius = parsePx(styleValue(style, "borderRadius"));
 
@@ -316,7 +324,13 @@ function convertDivider(node: ChamaileonNode, ctx: MapContext): Converted {
 
 function convertVideo(node: ChamaileonNode, ctx: MapContext): Converted {
   const { style, attrs } = readNode(node, ctx);
-  const width = resolvedWidth(style, ctx.columnWidth);
+  const padding = paddingStyles(style);
+  const width = resolvedWidth(
+    style,
+    ctx.columnWidth -
+      padding.styles.padding.left -
+      padding.styles.padding.right,
+  );
   const alt = asString(attrs.altText);
 
   return finish(
@@ -442,11 +456,11 @@ function firstSetContent(...values: unknown[]): string {
 
 function resolvedWidth(
   style: Record<string, unknown>,
-  columnWidth: number,
+  room: number,
 ): number | "full" | undefined {
   const px = parsePx(styleValue(style, "width"));
   if (px === undefined) return undefined;
-  return px >= columnWidth ? "full" : px;
+  return px >= room ? "full" : px;
 }
 
 function asLineStyle(

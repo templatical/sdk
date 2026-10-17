@@ -204,6 +204,9 @@ interface ImageBlock extends BaseBlock {
   width: number | 'full';
   /** Ohne Angabe wird die Höhe aus der Breite abgeleitet, das Seitenverhältnis bleibt erhalten. */
   height?: number;
+  /** Die eigene Größe der Bilddatei, für die Seitenverhältnis-Sperre. Wird nie gerendert. */
+  naturalWidth?: number;
+  naturalHeight?: number;
   align: 'left' | 'center' | 'right';
   /** Eckenradius in px. Ohne Angabe oder 0 bleiben die Ecken eckig. */
   borderRadius?: BorderRadiusValue;

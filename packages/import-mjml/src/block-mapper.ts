@@ -25,6 +25,7 @@ import {
 import {
   baseFields,
   convertHtmlFallback,
+  horizontalInset,
   isNewTab,
   readBorder,
   readBorderRadius,
@@ -80,16 +81,32 @@ function convertImage(
   const notes: string[] = [];
   const borderRadius = readBorderRadius(attrs, "Image", notes);
   const border = readBorder(attrs, "Image", notes);
+  const base = baseFields(attrs);
+  // MJML caps an image at `room`, its column less its own side padding and
+  // border, so a px width that reaches it renders as `width: "full"` does
+  // (the renderer writes "full" as the column's px width). Restore the flag
+  // rather than freezing the number, or the image stops resizing with the
+  // template.
+  const room =
+    Math.floor(ctx.contentWidth) - horizontalInset(base.styles.padding, border);
+  const width = !pxWidth || pxWidth >= room ? "full" : pxWidth;
+  // The renderer makes an image fill its column on phones only when it fills
+  // the column on desktop (`fluidOnMobileAttr`); an image set narrower has no
+  // field to ask for it.
+  if (
+    (attrs["fluid-on-mobile"] ?? "").trim().toLowerCase() === "true" &&
+    width !== "full"
+  ) {
+    notes.push(
+      `fluid-on-mobile on a ${width}px image narrower than its column has no Templatical equivalent: the image keeps its width on phones instead of filling the column.`,
+    );
+  }
 
   return {
     block: createImageBlock({
       src,
       alt: decorative ? "" : (attrs.alt ?? ""),
-      // A px width equal to the container is how `width: "full"` renders
-      // (renderer/src/renderers/image.ts), so restore the flag rather than
-      // freezing the number — otherwise a full-width image stops resizing with
-      // the template.
-      width: pxWidth === ctx.containerWidth ? "full" : pxWidth || "full",
+      width,
       align: parseAlignment(attrs.align, "center"),
       ...(height > 0 ? { height } : {}),
       ...(borderRadius ? { borderRadius } : {}),
@@ -97,7 +114,7 @@ function convertImage(
       ...(href ? { linkUrl: href } : {}),
       ...(href && isNewTab(attrs) ? { linkOpenInNewTab: true } : {}),
       ...(decorative ? { decorative: true } : {}),
-      ...baseFields(attrs),
+      ...base,
     }),
     entry: {
       sourceTag: "mj-image",

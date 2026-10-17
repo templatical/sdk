@@ -136,7 +136,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (see [Image width](#image-width)), padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). `fluid-on-mobile` holds on an image that fills its column; on a narrower one it is `approximated`, since the image [keeps its width on phones](/guide/images#width-on-phones). |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
@@ -149,6 +149,10 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
+
+### Image width {#image-width}
+
+A px `width` becomes `"full"` once it reaches the image's room: its column less its own side padding and border, which is where MJML caps it. A narrower px width stays px, and an image with no `width` is `"full"`.
 
 ### Divider width
 

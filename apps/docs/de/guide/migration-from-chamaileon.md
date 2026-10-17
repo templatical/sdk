@@ -157,7 +157,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Chamaileon-JSON, und di
 | `text` | `TitleBlock` oder `ParagraphBlock` | Abgeleitet aus dem HTML in `attrs.text`: eine einzelne Überschrift, die den gesamten Inhalt umschließt, wird zum Title; alles andere zum Paragraph. |
 | `typed-text` | `TitleBlock` oder `ParagraphBlock` | `style.subType === "title"` → Title; `"list"` → Paragraph, `approximated`; sonst Paragraph. |
 | `button` | `ButtonBlock` | `href` → `url`; Beschriftung ohne Tags. Ein ungesetztes Fill ist ein Outlined-Button — Fill wird `#ffffff` (nicht das Factory-`#333333`), der Eintrag ist `approximated`. |
-| `image` | `ImageBlock` | `src` aus `attrs`, dann `style`; `altText` → `alt`. |
+| `image` | `ImageBlock` | `src` aus `attrs`, dann `style`; `altText` → `alt`. Eine px-`style.width` wird `"full"`, sobald sie die Spalte abzüglich des seitlichen Paddings des Bildes erreicht. |
 | `dynamic-image` | `ImageBlock` | `approximated`; die `note` nennt den Quelltyp. |
 | `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` und 4.1 `style.width` / `type` / `color` (Linienstärke, nicht Blockbreite). |
 | `social` | `SocialIconsBlock` | `elements[]` ist die Quelle der Wahrheit. Unbekannte Plattformnamen werden zu `website`. Icon-Größe rastet auf 24 / 32 / 48 px. |

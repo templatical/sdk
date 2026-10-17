@@ -144,10 +144,10 @@ describe("convertModule", () => {
       expect(entry.status).toBe("converted");
     });
 
-    // Height has no default, unlike width: absent means "derive it from the
-    // width" all the way down to the renderer, so inventing one would pin a
-    // box the source template never asked for.
-    it("carries an explicit height, and leaves it unset otherwise", () => {
+    // `image.width` × `image.height` is the file BeeFree was given (1920 × 466
+    // for the hero in a real export), so carrying the height over pins the
+    // file's height under a narrower shown width and stretches the image.
+    it("never carries image.height over", () => {
       const warnings: string[] = [];
       const withHeight = convertModule(
         makeModule("mailup-bee-newsletter-modules-image", {
@@ -155,14 +155,6 @@ describe("convertModule", () => {
         }),
         warnings,
       ).block;
-      const withoutHeight = convertModule(
-        makeModule("mailup-bee-newsletter-modules-image", {
-          image: { src: "https://x/p.jpg", width: "300px" },
-        }),
-        warnings,
-      ).block;
-      // BeeFree writes these as strings, and "auto" is how a responsive
-      // template says "no fixed height" — parsing it as 0 would collapse it.
       const auto = convertModule(
         makeModule("mailup-bee-newsletter-modules-image", {
           image: { src: "https://x/p.jpg", height: "auto" },
@@ -170,15 +162,140 @@ describe("convertModule", () => {
         warnings,
       ).block;
 
-      if (
-        withHeight.type !== "image" ||
-        withoutHeight.type !== "image" ||
-        auto.type !== "image"
-      )
+      if (withHeight.type !== "image" || auto.type !== "image")
         throw new Error("expected image blocks");
-      expect(withHeight.height).toBe(180);
-      expect(withoutHeight.height).toBeUndefined();
+      expect(withHeight.width).toBe(300);
+      expect(withHeight.height).toBeUndefined();
       expect(auto.height).toBeUndefined();
+    });
+
+    describe("shown width", () => {
+      function shown(
+        descriptor: BeeFreeeModule["descriptor"],
+        columnWidth?: number,
+      ) {
+        const block = convertModule(
+          makeModule("mailup-bee-newsletter-modules-image", descriptor),
+          [],
+          { columnWidth },
+        ).block;
+        if (block.type !== "image") throw new Error("expected an image block");
+        return block;
+      }
+
+      // The two images of the real export in fixtures/example-1.json.
+      it("reads computedStyle, not the file's size", () => {
+        const logo = shown(
+          {
+            image: { src: "l.png", width: "254px", height: "59px" },
+            computedStyle: { class: "left fixedwidth", width: "172.5px" },
+          },
+          600,
+        );
+        expect([logo.width, logo.height, logo.align]).toEqual([
+          173,
+          undefined,
+          "left",
+        ]);
+
+        const hero = shown(
+          {
+            image: { src: "h.jpg", width: "1920px", height: "466px" },
+            computedStyle: { class: "center autowidth", width: "600px" },
+          },
+          600,
+        );
+        expect([hero.width, hero.height, hero.align]).toEqual([
+          "full",
+          undefined,
+          "center",
+        ]);
+      });
+
+      it("stores the file's size as the natural size, only when both are stated", () => {
+        const both = shown({
+          image: { src: "p.jpg", width: "1920px", height: "466px" },
+        });
+        expect([both.naturalWidth, both.naturalHeight]).toEqual([1920, 466]);
+        const auto = shown({
+          image: { src: "p.jpg", width: "1920px", height: "auto" },
+        });
+        expect([auto.naturalWidth, auto.naturalHeight]).toEqual([
+          undefined,
+          undefined,
+        ]);
+      });
+
+      it("an autowidth image is full whatever its computed width", () => {
+        expect(
+          shown({
+            image: { src: "h.jpg", width: "200px" },
+            computedStyle: { class: "autowidth", width: "200px" },
+          }).width,
+        ).toBe("full");
+      });
+
+      it("is full at exactly the room inside the image's padding", () => {
+        const at = (px: number) =>
+          shown(
+            {
+              style: { "padding-left": "20px", "padding-right": "20px" },
+              image: { src: "p.jpg", width: "1200px" },
+              computedStyle: { class: "fixedwidth", width: `${px}px` },
+            },
+            600,
+          ).width;
+        expect(at(560)).toBe("full");
+        expect(at(559)).toBe(559);
+      });
+
+      it("falls back to image.width without computedStyle", () => {
+        expect(
+          shown({ image: { src: "p.jpg", width: "300px" } }, 600).width,
+        ).toBe(300);
+        expect(
+          shown({ image: { src: "p.jpg", width: "600px" } }, 600).width,
+        ).toBe("full");
+      });
+
+      it("keeps a px width as stated when the column is unknown", () => {
+        expect(shown({ image: { src: "p.jpg", width: "900px" } }).width).toBe(
+          900,
+        );
+      });
+
+      it("imports an image with no width as full width", () => {
+        expect(shown({ image: { src: "p.jpg" } }, 600).width).toBe("full");
+      });
+
+      it("prefers the image style's alignment over the class", () => {
+        expect(
+          shown({
+            image: {
+              src: "p.jpg",
+              width: "100px",
+              style: { "text-align": "right" },
+            },
+            computedStyle: { class: "left fixedwidth", width: "100px" },
+          }).align,
+        ).toBe("right");
+      });
+
+      it("resolves a percentage radius against the shown size", () => {
+        const avatar = shown(
+          {
+            image: {
+              src: "a.png",
+              width: "400px",
+              height: "400px",
+              style: { "border-radius": "50%" },
+            },
+            computedStyle: { class: "center fixedwidth", width: "120px" },
+          },
+          600,
+        );
+        expect(avatar.borderRadius).toBe(60);
+      });
     });
 
     // BeeFree keeps the radius in the image's own `style` map rather than

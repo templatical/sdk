@@ -649,6 +649,13 @@
           "type": "number",
           "description": "Height in pixels. Absent means the height is derived from the width, so the image keeps its aspect ratio — setting both stretches it, since email clients don't support `object-fit`."
         },
+        "naturalWidth": {
+          "type": "number",
+          "description": "The image file's own size in px, when known: given by the media library, read by an importer, or measured in the editor during an edit. Both or neither; one without the other reads as unknown. It drives the editor's aspect-ratio lock and is never rendered. Cleared when `src` changes without a new size alongside it."
+        },
+        "naturalHeight": {
+          "type": "number"
+        },
         "align": {
           "type": "string",
           "enum": [

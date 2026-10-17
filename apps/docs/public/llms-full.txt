@@ -59,7 +59,7 @@ unmount();
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
-| `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
+| `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt?, width?, height? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for the background image URLs of sections, section wrappers and layout wrapper bands (never for a merge-tag URL): maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                  |
 | `mergeTags`          | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. `showRawValue: false` keeps the raw token out of the authoring UI. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                                                                                                       |
 | `resolvePreview`     | `ResolvePreview`                                                  | No       | Resolves the template for preview surfaces — typically evaluating logic tags against real data on your backend. Display-only: never in `getContent()`, a send or an export. See [Preview Rendering](/guide/preview-rendering)                                                                                                                                                                                                                                                                                                  |
@@ -846,6 +846,7 @@ import {
   getCssClasses,
   getWidthPercentages,
   getWidthPixels,
+  fluidOnMobileAttr,
   DEFAULT_SOCIAL_ICONS_BASE_URL,
   RenderContext,
 } from '@templatical/renderer';
@@ -912,7 +913,30 @@ Renders a single block to its MJML representation. Used internally by `renderToM
 
 ### `RenderContext`
 
-The context object passed to block renderers. Contains render options and font configuration.
+The context object passed to block renderers. Contains render options, font configuration and two widths:
+
+| Field | Value |
+|---|---|
+| `containerWidth` | The column's share of the body width, ignoring the padding and borders around it. A `'full'` image or video is emitted at this width, and MJML caps it at its real box. |
+| `contentWidth` | The whole pixels MJML gives the column's content: the body width less the side padding and border of the wrapper band and the section, then the column's percentage, floored. Width-aware decisions read this one. |
+
+`withContainerWidth(width, contentWidth = width)` returns a copy for a narrower container.
+
+### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
+
+Returns `' fluid-on-mobile="true"'` for an image that fills its column on desktop, and `''` otherwise. An image fills its column when its `width` is `'full'`, or a pixel width at or above `context.contentWidth` less the block's side padding and border. See [Width on phones](/guide/images#width-on-phones).
+
+The built-in image and video renderers use it. A `blockRenderers` override that emits its own `mj-image` calls it too; without the attribute, the image keeps its desktop width on a phone:
+
+```ts
+blockRenderers: {
+  image: (block, ctx) => {
+    const image = block as ImageBlock;
+    const width = image.width === 'full' ? ctx.containerWidth : image.width;
+    return `<mj-image src="${escapeAttr(image.src)}" width="${width}px"${fluidOnMobileAttr(image, ctx)} />`;
+  },
+},
+```
 
 ### `getCssClassAttr(block)` / `getCssClasses(block)`
 
@@ -1402,6 +1426,9 @@ interface ImageBlock extends BaseBlock {
   width: number | 'full';
   /** Absent derives the height from the width, keeping the aspect ratio. */
   height?: number;
+  /** The image file's own size, for the aspect-ratio lock. Never rendered. */
+  naturalWidth?: number;
+  naturalHeight?: number;
   align: 'left' | 'center' | 'right';
   /** Corner radius in px. Omitted/0 = square corners. */
   borderRadius?: BorderRadiusValue;
@@ -2870,7 +2897,7 @@ const mjml = await renderToMjml(content, {
 
 It generalises `renderCustomBlock` from one block type to any. A backend whose output is a *superset* of the browser's can inject exactly that delta instead of forking the renderer, and parity for every other block type then holds by construction. Templatical Cloud uses it for two blocks: a server-generated animated countdown GIF and a composited video play button.
 
-An override owns everything the built-in did, including the hidden-on-all-viewports early return.
+An override owns everything the built-in did, including the hidden-on-all-viewports early return and `fluid-on-mobile`: an override that emits an `mj-image` adds it with [`fluidOnMobileAttr`](/api/renderer-typescript#fluid-on-mobile-attr), or the image keeps its desktop width on a phone.
 
 ### Blocks with no renderer
 
@@ -6807,7 +6834,7 @@ Displays an image with optional link wrapping.
 |----------|------|-------------|
 | `src` | `string` | Image URL |
 | `alt` | `string` | Alt text |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or `{ topLeft, topRight, bottomRight, bottomLeft }` per corner. Omit or 0 for square corners |
@@ -6816,6 +6843,7 @@ Displays an image with optional link wrapping.
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Placeholder shown in the editor when `src` uses a merge tag |
+| `naturalWidth` / `naturalHeight` | `number` | The image file's own size, for the [aspect-ratio lock](/guide/images#aspect-ratio-lock). Never rendered |
 
 ## Button
 
@@ -6952,7 +6980,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `url` | `string` | Video URL (YouTube, Vimeo, etc.) |
 | `thumbnailUrl` | `string` | Thumbnail image URL |
 | `alt` | `string` | Alt text for thumbnail |
-| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100%. See [Width on phones](/guide/images#width-on-phones) |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `openInNewTab` | `boolean` | Link target behavior |
@@ -8481,6 +8509,9 @@ The type signature:
 interface MediaResult {
   url: string;
   alt?: string;
+  /** The file's size in px, when known. Feeds the image's aspect-ratio lock. */
+  width?: number;
+  height?: number;
 }
 
 interface MediaRequestContext {
@@ -8580,12 +8611,35 @@ The `ImageBlock` type defines all configurable properties:
 | `linkUrl` | `string` (optional) | Wraps the image in a link |
 | `linkOpenInNewTab` | `boolean` (optional) | Opens the link in a new tab |
 | `placeholderUrl` | `string` (optional) | Design-time preview image when `src` uses a merge tag |
+| `naturalWidth` / `naturalHeight` | `number` (optional) | The image file's own size, for the [aspect-ratio lock](#aspect-ratio-lock). Never rendered |
 
 ### Height
 
 `height` is optional, and leaving it out is usually right: the height is then derived from the width and the image keeps its aspect ratio. Set it when the layout needs a fixed box -- a banner slot of a known size, or a row of images that must line up.
 
 Setting both `width` and `height` **stretches** the image to that box. It does not crop, because `object-fit` is unsupported in Outlook and most email clients, so the editor canvas stretches identically rather than promising a crop the inbox won't deliver. Match the ratio of the source image, or resize the asset before uploading it.
+
+### Aspect-ratio lock {#aspect-ratio-lock}
+
+When the image file's size is known, the Height row in the image settings has a link toggle that keeps the image's proportions, on by default. Under the lock, typing a height sets the width (the height times the file's ratio) and the stored `height` stays unset, so the image keeps its ratio on every screen. A height that would make the image wider than its column sets the width to Full, and the field notes the height the image lands at.
+
+The file's size is `naturalWidth` / `naturalHeight` on the block. A media pick fills them from the asset's `width` / `height`, or from the `width` / `height` an `onRequestMedia` result returns. The Unlayer and BeeFree importers fill them from the source file. Otherwise the editor measures the image while it is selected, and stores the size only with the edit that uses it. A merge-tag `src` names no file, so it gets no lock unless the block already stores a size. An image whose stored `height` stretches it opens unlocked, and turning the lock on clears that height.
+
+::: tip
+A stored height under a px width squashes the image on any phone narrower than that width: MJML shrinks the width to fit and keeps the stated height. That is why the lock leaves the height on Auto.
+:::
+
+### Width on phones {#width-on-phones}
+
+A `'full'` image fills its column on every screen. A pixel width keeps that width on a phone, as the editor's mobile preview draws it, and shrinks only to fit a phone column narrower than it. A 120px logo stays 120px.
+
+A pixel width at or above the room its column gives it renders like `'full'`: at the column's width on desktop, and across the whole column on a phone. That room is the column less the side padding and border of the wrapper band, the section and the image itself.
+
+Video thumbnails follow the same rule.
+
+::: tip
+When a section's columns stack on a phone, each column there is wider than on desktop. An image whose width falls between the two fills the phone's column, while the mobile preview draws it at its set width.
+:::
 
 ### Corner radius
 
@@ -9546,6 +9600,18 @@ BeeFree block types map to Templatical equivalents:
 
 Unknown module types — forms included — are converted to HTML blocks as a fallback, reported `html-fallback`. The block's content is the module's `descriptor.text.html`, `descriptor.html.html` or `descriptor.heading.text`, the first one set. With none of them, it is a `<!-- Unsupported BeeFree module: <type> -->` comment and renders nothing.
 
+### Image width {#image-width}
+
+| BeeFree image | `ImageBlock.width` | Status |
+|---|---|---|
+| `computedStyle.class` includes `autowidth` | `"full"` | Converted |
+| `computedStyle.width` narrower than the image's room | the px number, rounded | Converted |
+| `computedStyle.width` as wide as the room or wider | `"full"` | Converted |
+| no `computedStyle` | `image.width`, by the same rule | Converted |
+| no width at all | `"full"` | Converted |
+
+`image.width` and `image.height` are the image file's size, and `computedStyle.width` is the width BeeFree shows it at. The image's room is its column's content width less the image's left and right padding. `image.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at. An image with no `text-align` takes its alignment from `computedStyle.class` (`left`, `center` or `right`).
+
 ### Divider width
 
 | BeeFree `width` | `DividerBlock.width` | Status |
@@ -9763,7 +9829,7 @@ There is no round-trip oracle. Templatical does not render Chamaileon JSON, and 
 | `text` | `TitleBlock` or `ParagraphBlock` | Inferred from `attrs.text` HTML: a sole heading wrapping the whole content becomes a title; anything else becomes a paragraph. |
 | `typed-text` | `TitleBlock` or `ParagraphBlock` | `style.subType === "title"` → title; `"list"` → paragraph, `approximated`; otherwise paragraph. |
 | `button` | `ButtonBlock` | `href` → `url`; label stripped of tags. An unset fill is an outlined button — fill becomes `#ffffff` (not the factory `#333333`) and the entry is `approximated`. |
-| `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. |
+| `image` | `ImageBlock` | `src` from `attrs` then `style`; `altText` → `alt`. A px `style.width` becomes `"full"` once it reaches the column less the image's side padding. |
 | `dynamic-image` | `ImageBlock` | `approximated`; the note names the source type. |
 | `divider` | `DividerBlock` | 2.0 `attrs.lineStyle` and 4.1 `style.width` / `type` / `color` (line thickness, not block width). |
 | `social` | `SocialIconsBlock` | `elements[]` is the source of truth. Unknown platform names become `website`. Icon size snaps to 24 / 32 / 48 px. |
@@ -9989,7 +10055,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
 | `standard-h1`–`h4` | `TitleBlock` | `level` 1–4 from the type. |
 | `standard-button` | `ButtonBlock` | Label from children, not `data.content`. `href` → `url`. Unset fill plus `border-enabled` is outlined — fill becomes `#ffffff` (not the factory `#333333`), `approximated`. |
-| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. |
+| `standard-image` | `ImageBlock` | `src`, `alt`; `href` → `linkUrl`. `width`: missing or `100%` → `"full"`; px stays px, and becomes `"full"` once it fills the column's content width less the image's padding; a percentage under `100%` becomes px of that room, `approximated`. |
 | `standard-divider` | `DividerBlock` | `border-color` / `border-width` / `border-style`. `width`: missing or `100%` → `"full"`; another percentage stays a percentage, clamped to 0–100; px stays px, and becomes `"full"` once it fills the column's content width less the divider's padding. |
 | `standard-spacer` | `SpacerBlock` | Height from `height` px. |
 | `standard-navbar` + `standard-navbar-link` | `MenuBlock` | Link text from children; `href` → `url`; `target === "_blank"` → `openInNewTab`. |
@@ -10135,7 +10201,7 @@ HTML elements map to Templatical equivalents:
 | `<p>` / text-only `<div>` / `<span>` | `paragraph` | Converted |
 | Text-only `<td>` in a layout table | `paragraph` | Converted |
 | Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
-| `<img>` | `image` | Converted |
+| `<img>` | `image` | Converted (approximated when a percentage width becomes px; see [Image width](#image-width)) |
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
@@ -10153,6 +10219,19 @@ A cell mixing copy with a link becomes one `paragraph` holding both, with the `<
 A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
 
 A text-only wrapper's `text-align` applies to each `<p>` inside it that states no `text-align` of its own. A `<p>` that states one keeps it.
+
+### Image width {#image-width}
+
+| `<img>` width | `ImageBlock.width` | Status |
+|---|---|---|
+| missing, or `100%` | `"full"` | Converted |
+| px, narrower than the image's room | the px number | Converted |
+| px, as wide as the room or wider | `"full"` | Converted |
+| a percentage under `100%`, such as `50%` | that share of the room in px | Approximated |
+
+The `width` attribute is read first, then the `width` style. The image's room is its column's width less the image's left and right padding. Where the room is unknown (an image inside a link that also holds text), a px width stays as written and a percentage is `"full"`, approximated.
+
+A `height` style overrides the `height` attribute, as it does in a browser, so `height: auto` leaves the height unset and the image keeps its aspect ratio.
 
 ### Divider width
 
@@ -10474,7 +10553,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
 | `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. A paragraph's `align`, `color` and `font-size` go into its markup: `text-align` on each `<p>`, color and size on one `<span>` inside it (`ParagraphBlock` has no field for them). Alignment to the start edge (`left`, or `right` in an RTL template) and a 14px size are left out. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width` (see [Image width](#image-width)), padding, `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). `fluid-on-mobile` holds on an image that fills its column; on a narrower one it is `approximated`, since the image [keeps its width on phones](/guide/images#width-on-phones). |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, `font-size`, `font-family`, padding, `width` (see [Button width](#button-width)), `border-radius`, `border` (see [Borders and corners](#borders-and-corners)). |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `width` (see [Divider width](#divider-width)), padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
@@ -10487,6 +10566,10 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
+
+### Image width {#image-width}
+
+A px `width` becomes `"full"` once it reaches the image's room: its column less its own side padding and border, which is where MJML caps it. A narrower px width stays px, and an image with no `width` is `"full"`.
 
 ### Divider width
 
@@ -10694,7 +10777,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-structure` with 1–3 `esd-container-frame`s | `SectionBlock` (`columns` `"1"` / `"2"` / `"3"`) | Frames are the columns. Padding comes from `es-p*` on the structure (default 0); an inline `padding` overrides the sides it states. |
 | `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
-| `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`. |
+| `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`, including its [width rule](/guide/migration-from-html#image-width). |
 | `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
@@ -10903,7 +10986,7 @@ A visual comparison catches what the report can't. Several of the losses below a
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. `width` is `"full"` at `widthPercent` 100, when missing, or once it reaches the column less the image's side padding. |
 | `mj-gif` | `ImageBlock` | Same fields as `mj-image` — Templatical has no dedicated GIF block. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
@@ -11039,7 +11122,7 @@ Unlayer content types map to Templatical equivalents:
 |---|---|---|
 | Text | `paragraph` | Converted |
 | Heading | `title` | Converted |
-| Image | `image` | Converted |
+| Image | `image` | Converted (approximated when a `maxWidth` under 100% becomes px; see [Image width](#image-width)) |
 | Button | `button` | Converted |
 | Divider | `divider` | Converted (approximated when a partial-width divider is aligned left or right) |
 | Spacer | `spacer` | Converted |
@@ -11051,6 +11134,22 @@ Unlayer content types map to Templatical equivalents:
 | Form | — | Skipped |
 
 Unknown content types are converted to HTML blocks as a fallback.
+
+### Image width {#image-width}
+
+| Unlayer image | `ImageBlock.width` | Status |
+|---|---|---|
+| `autoWidth` (the default), `src.width` narrower than the image's room | the px number | Converted |
+| `autoWidth`, `src.width` as wide as the room or wider, or missing | `"full"` | Converted |
+| `autoWidth: false`, `maxWidth` `100%` or missing | `"full"` | Converted |
+| `autoWidth: false`, `maxWidth` under `100%`, such as `75%` | that share of the room in px | Approximated |
+| `autoWidth: false`, unreadable `maxWidth` | `"full"` | Approximated |
+
+`src.width` and `src.height` are the uploaded file's size. The image's room is its column's width less its left and right `containerPadding`. `src.height` is not imported, so the image keeps the file's aspect ratio at the width it is shown at.
+
+::: tip
+A px width keeps its size on a phone, where a percentage shrinks with the column, so a `maxWidth` under `100%` is approximated.
+:::
 
 ### Divider width
 

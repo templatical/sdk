@@ -147,6 +147,12 @@ export const SELECTORS = {
   // Media library (BYO; playground's localStorage provider is on by default)
   imageDropZone: '[data-testid="image-drop-zone"]',
   imageBrowseMedia: 'button[aria-label="Browse Media"]',
+  imageWidthMode: '[data-testid="image-width-mode"]',
+  imageWidthInput: '[data-testid="image-width-input"]',
+  imageHeightMode: '[data-testid="image-height-mode"]',
+  imageAspectLock: '[data-testid="image-aspect-lock"]',
+  imageLockedHeightInput: '[data-testid="image-locked-height-input"]',
+  imageHeightCapped: '[data-testid="image-height-capped"]',
   mediaLibraryModal: '[data-testid="media-library-modal"]',
   mediaLibraryItem: '[data-testid="media-library-item"]',
   mediaConfirm: '[data-testid="media-confirm"]',

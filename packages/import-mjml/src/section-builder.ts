@@ -29,6 +29,7 @@ import { convertElement } from "./block-mapper";
 import {
   baseFields,
   convertHtmlFallback,
+  horizontalInset,
   readBorder,
   readBorderRadius,
   type ConvertContext,
@@ -121,6 +122,19 @@ const COLUMN_COUNT: Record<ColumnLayout, number> = {
   "3": 3,
   "2-1": 2,
   "1-2": 2,
+};
+
+/**
+ * Column percentages per layout, exactly as `getWidthPercentages` in
+ * `renderer/src/columns.ts` emits them. MJML sizes a column from the emitted
+ * string, so 33.33% of 600 is 199, not a third.
+ */
+const COLUMN_PERCENTS: Record<ColumnLayout, number[]> = {
+  "1": [100],
+  "2": [50, 50],
+  "3": [33.33, 33.33, 33.34],
+  "1-2": [33.33, 66.67],
+  "2-1": [66.67, 33.33],
 };
 
 /** Column pixel widths per layout, mirroring `renderer/src/columns.ts`. */
@@ -299,6 +313,12 @@ export function buildSection(
     ctx.containerWidth,
   );
   if (background) notes.push(...background.notes);
+  const sectionFields = baseFields(attrs, "native");
+  // The room the renderer will give each converted column, so an image can
+  // tell whether it fills its column on phones (`fluidOnMobileAttr`).
+  const sectionBox =
+    Math.floor(ctx.contentWidth) -
+    horizontalInset(sectionFields.styles.padding, border);
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
@@ -316,6 +336,9 @@ export function buildSection(
     const columnCtx: ConvertContext = {
       ...ctx,
       containerWidth: Math.round(pixels[slot] ?? ctx.containerWidth),
+      contentWidth: Math.floor(
+        (sectionBox * COLUMN_PERCENTS[layout][slot]) / 100,
+      ),
       columnPadding: left + right,
     };
     children[slot].push(...convertColumnChildren($column, columnCtx, entries));
@@ -332,7 +355,7 @@ export function buildSection(
     // "native": mj-section is the one element whose own background-color
     // attribute is its container fill (renderers/section.ts:32) — every other
     // baseFields caller reads container-background-color instead.
-    ...baseFields(attrs, "native"),
+    ...sectionFields,
   });
 
   return [section];
@@ -510,9 +533,14 @@ export function buildWrapper(
     });
   }
 
+  const bandCtx: ConvertContext = {
+    ...ctx,
+    contentWidth:
+      Math.floor(ctx.contentWidth) - horizontalInset(wrapper.padding),
+  };
   return sections.flatMap(($section) =>
     tagOf($section[0]) === "mj-hero"
-      ? buildHero($section, ctx, entries, copyWrapper(wrapper))
-      : buildSection($section, ctx, entries, copyWrapper(wrapper)),
+      ? buildHero($section, bandCtx, entries, copyWrapper(wrapper))
+      : buildSection($section, bandCtx, entries, copyWrapper(wrapper)),
   );
 }

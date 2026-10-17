@@ -73,51 +73,6 @@ async function readComputedStyle(
 }
 
 test.describe("Custom block stylesheet (#155)", () => {
-  test.beforeEach(async ({ page }) => {
-    // Suppress overlays so the editor reaches a stable state and the canvas
-    // is laid out before we sample computed styles. Also hook
-    // `navigator.clipboard.writeText` to capture the playground's copy-button
-    // payload into a window variable — reading the OS clipboard directly
-    // via `navigator.clipboard.readText()` is unreliable in headless
-    // Chromium on Linux CI (no X11, plus the focus requirement is racy
-    // under parallel workers). The playground's copy is driven by
-    // VueUse's `useClipboard` which calls `writeText`; intercepting it
-    // here gives us the exact string the user would have copied without
-    // any OS-clipboard involvement.
-    await page.addInitScript(() => {
-      // VueUse's `useClipboard` checks `clipboard-write` permission first.
-      // In headless Chromium without `grantPermissions`, that permission is
-      // denied → useClipboard falls back to its `legacyCopy` path:
-      // creates a hidden `<textarea>`, selects its value, calls
-      // `document.execCommand("copy")`. Hooking `execCommand("copy")` is
-      // the most reliable interception point — works regardless of
-      // permission state, no OS-clipboard involvement, no permission
-      // ceremony in the test. At execCommand-call time the textarea's
-      // value is in `getSelection().toString()`.
-      (window as { __capturedClipboardWrite?: string }).__capturedClipboardWrite =
-        "";
-      const originalExec = document.execCommand.bind(document);
-      document.execCommand = function (
-        command: string,
-        ...rest: unknown[]
-      ): boolean {
-        if (command === "copy") {
-          const selected = document.getSelection()?.toString() ?? "";
-          if (selected) {
-            (
-              window as { __capturedClipboardWrite?: string }
-            ).__capturedClipboardWrite = selected;
-          }
-        }
-        // The Function.prototype.apply signature accepts the rest as an
-        // array — execCommand's optional args (showUI, value) pass through.
-        return (
-          originalExec as (cmd: string, ...args: unknown[]) => boolean
-        )(command, ...rest);
-      };
-    });
-  });
-
   test("emits a <style data-tpl-custom-block-stylesheet> with the definition's CSS in the editor root", async ({
     scenePage,
     editorPage,

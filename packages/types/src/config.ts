@@ -120,6 +120,13 @@ export interface MergeTag {
 export interface MediaResult {
   url: string;
   alt?: string;
+  /**
+   * The file's own size in px, when the source knows it. An image block stores
+   * it as `naturalWidth` / `naturalHeight` for its aspect-ratio lock. Both or
+   * neither.
+   */
+  width?: number;
+  height?: number;
 }
 
 /**

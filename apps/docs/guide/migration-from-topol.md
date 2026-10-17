@@ -145,7 +145,7 @@ A visual comparison catches what the report can't. Several of the losses below a
 | `mj-column` | Section column | Holds a list of nested blocks. |
 | `mj-text` | `TitleBlock` or `ParagraphBlock` | A single heading wrapping the whole content becomes a `TitleBlock`; anything else becomes a `ParagraphBlock`. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, and `padding` as the block's outer spacing — its `margin` does not survive. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
+| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. `width` is `"full"` at `widthPercent` 100, when missing, or once it reaches the column less the image's side padding. |
 | `mj-gif` | `ImageBlock` | Same fields as `mj-image` — Templatical has no dedicated GIF block. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, `border-style`, padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |

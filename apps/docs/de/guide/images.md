@@ -42,6 +42,9 @@ Die Typsignatur:
 interface MediaResult {
   url: string;
   alt?: string;
+  /** Die Größe der Datei in px, falls bekannt. Speist die Seitenverhältnis-Sperre des Bildes. */
+  width?: number;
+  height?: number;
 }
 
 interface MediaRequestContext {
@@ -142,12 +145,35 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 | `linkUrl` | `string` (optional) | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` (optional) | Öffnet den Link in einem neuen Tab |
 | `placeholderUrl` | `string` (optional) | Vorschaubild zur Entwurfszeit, wenn `src` ein Merge-Tag verwendet |
+| `naturalWidth` / `naturalHeight` | `number` (optional) | Die eigene Größe der Bilddatei, für die [Seitenverhältnis-Sperre](#aspect-ratio-lock). Wird nie gerendert |
 
 ### Höhe
 
 `height` ist optional, und es weglassen ist meist richtig: Die Höhe wird dann aus der Breite abgeleitet und das Bild behält sein Seitenverhältnis. Setzen Sie sie, wenn das Layout eine feste Box braucht -- einen Banner-Platz mit bekannter Größe oder eine Reihe von Bildern, die auf einer Linie liegen müssen.
 
 Werden `width` und `height` gemeinsam gesetzt, wird das Bild auf diese Box **gestreckt**. Es wird nicht beschnitten, denn `object-fit` wird von Outlook und den meisten E-Mail-Clients nicht unterstützt -- die Editor-Leinwand streckt deshalb genauso, statt einen Beschnitt zu versprechen, den der Posteingang nicht liefert. Passen Sie das Verhältnis an das Quellbild an oder skalieren Sie das Asset vor dem Upload.
+
+### Seitenverhältnis-Sperre {#aspect-ratio-lock}
+
+Ist die Größe der Bilddatei bekannt, hat die Zeile „Höhe“ in den Bildeinstellungen einen Verknüpfungsschalter, der die Proportionen des Bildes beibehält. Er ist standardmäßig an. Bei aktiver Sperre setzt eine eingegebene Höhe die Breite (die Höhe mal das Verhältnis der Datei), und die gespeicherte `height` bleibt leer, sodass das Bild auf jedem Bildschirm sein Verhältnis behält. Eine Höhe, die das Bild breiter als seine Spalte machen würde, setzt die Breite auf „Volle Breite“, und das Feld nennt die Höhe, die das Bild dann hat.
+
+Die Größe der Datei ist `naturalWidth` / `naturalHeight` am Block. Eine Auswahl aus der Mediathek füllt sie aus `width` / `height` des Assets oder aus `width` / `height` eines `onRequestMedia`-Ergebnisses. Die Importer für Unlayer und BeeFree füllen sie aus der Quelldatei. Andernfalls misst der Editor das Bild, solange es ausgewählt ist, und speichert die Größe nur mit der Bearbeitung, die sie nutzt. Eine Merge-Tag-`src` benennt keine Datei und erhält daher keine Sperre, außer der Block speichert bereits eine Größe. Ein Bild, das seine gespeicherte `height` streckt, öffnet ohne Sperre; das Einschalten der Sperre entfernt diese Höhe.
+
+::: tip
+Eine gespeicherte Höhe unter einer px-Breite staucht das Bild auf jedem Smartphone, das schmaler als diese Breite ist: MJML verkleinert die Breite und behält die angegebene Höhe. Deshalb lässt die Sperre die Höhe auf Automatisch.
+:::
+
+### Breite auf Smartphones {#width-on-phones}
+
+Ein Bild mit `'full'` füllt seine Spalte auf jedem Bildschirm. Eine Pixelbreite bleibt auf dem Smartphone erhalten, so wie die mobile Vorschau des Editors sie zeichnet, und schrumpft nur, wenn die Spalte des Smartphones schmaler ist. Ein 120px breites Logo bleibt 120px breit.
+
+Eine Pixelbreite, die den Platz ihrer Spalte erreicht oder überschreitet, wird wie `'full'` gerendert: auf dem Desktop in Spaltenbreite, auf dem Smartphone über die ganze Spalte. Dieser Platz ist die Spalte abzüglich des seitlichen Paddings und Rahmens von Wrapper-Band, Sektion und Bild.
+
+Video-Thumbnails folgen derselben Regel.
+
+::: tip
+Wenn die Spalten einer Sektion auf dem Smartphone untereinander rutschen, ist jede Spalte dort breiter als auf dem Desktop. Ein Bild, dessen Breite zwischen beiden liegt, füllt die Spalte auf dem Smartphone, während die mobile Vorschau es in seiner eingestellten Breite zeigt.
+:::
 
 ### Eckenradius
 

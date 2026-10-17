@@ -20,6 +20,7 @@ function ctxFor(mjml: string): { ctx: ConvertContext; $: CheerioAPI } {
       $,
       cascade: buildAttributeCascade($),
       containerWidth: 600,
+      contentWidth: 600,
       columnPadding: 0,
       direction: "ltr",
       warnings: [],
@@ -64,6 +65,32 @@ describe("mj-image", () => {
       "mj-image",
     );
     expect((result!.block as ImageBlock).width).toBe("full");
+  });
+
+  // MJML caps the image at its column less its own side padding and border,
+  // so any px width that reaches that room renders as "full" does.
+  it('restores width "full" from the room, not only an exact match', () => {
+    const width = (mjml: string, overrides: Partial<ConvertContext> = {}) =>
+      (convert(mjml, "mj-image", overrides).result!.block as ImageBlock).width;
+
+    expect(width('<mj-image src="a.png" width="900px" />')).toBe("full");
+    expect(
+      width('<mj-image src="a.png" width="550px" padding="10px 25px" />'),
+    ).toBe("full");
+    expect(
+      width('<mj-image src="a.png" width="549px" padding="10px 25px" />'),
+    ).toBe(549);
+    expect(
+      width(
+        '<mj-image src="a.png" width="542px" padding="10px 25px" border="4px solid #000" />',
+      ),
+    ).toBe("full");
+    expect(
+      width('<mj-image src="a.png" width="280px" />', {
+        containerWidth: 300,
+        contentWidth: 280,
+      }),
+    ).toBe("full");
   });
 
   it("reads a link and its new-tab target", () => {
