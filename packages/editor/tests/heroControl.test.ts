@@ -6,11 +6,14 @@ import {
   createBackgroundImage,
   createDefaultTemplateContent,
   createSectionBlock,
+  createSlotBlock,
+  createWrapperBlock,
   type BackgroundImage,
   type SectionBlock,
+  type TemplateContent,
 } from "@templatical/types";
 import HeroControl from "../src/components/toolbar/HeroControl.vue";
-import { EDITOR_KEY, TRANSLATIONS_KEY } from "../src/keys";
+import { EDITOR_KEY, LAYOUT_KEY, TRANSLATIONS_KEY } from "../src/keys";
 import en from "../src/i18n/locales/en";
 import { mountEditor } from "./helpers/mount";
 import { FAKE_IMAGE_LOAD_MS, stubImages } from "./helpers/fakeImage";
@@ -22,7 +25,7 @@ const MEASURED: BackgroundImage = {
   height: 800,
 };
 
-function mountHero(section: SectionBlock) {
+function mountHero(section: SectionBlock, layout?: TemplateContent) {
   const content = createDefaultTemplateContent();
   content.blocks = [section];
   return mountEditor(HeroControl, {
@@ -30,8 +33,21 @@ function mountHero(section: SectionBlock) {
     provides: {
       [TRANSLATIONS_KEY]: en,
       [EDITOR_KEY]: useEditor({ content }),
+      [LAYOUT_KEY]: layout,
     },
   });
+}
+
+/** A layout whose slot sits inside a card with `inset` px left and right. */
+function cardLayout(inset: number): TemplateContent {
+  const layout = createDefaultTemplateContent();
+  layout.blocks = [
+    createWrapperBlock({
+      children: [createSlotBlock()],
+      styles: { padding: { top: 0, right: inset, bottom: 0, left: inset } },
+    }),
+  ];
+  return layout;
 }
 
 function updates(wrapper: ReturnType<typeof mountHero>) {
@@ -111,6 +127,31 @@ describe("HeroControl", () => {
     ]);
   });
 
+  it("measures the box inside the padding of a layout card around the slot", async () => {
+    const wrapper = mountHero(
+      createSectionBlock({ backgroundImage: MEASURED }),
+      cardLayout(20),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightFixed).trigger("click");
+    expect(updates(wrapper)).toEqual([
+      { hero: { height: 373, verticalAlign: "middle" } },
+    ]);
+  });
+
+  it("measures the box inside the layout card and the section's own wrapper", async () => {
+    const wrapper = mountHero(
+      createSectionBlock({
+        backgroundImage: MEASURED,
+        wrapper: { padding: { top: 0, right: 30, bottom: 0, left: 30 } },
+      }),
+      cardLayout(20),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightFixed).trigger("click");
+    expect(updates(wrapper)).toEqual([
+      { hero: { height: 333, verticalAlign: "middle" } },
+    ]);
+  });
+
   it("starts a fixed height at 300 when the image's size is unknown", async () => {
     const wrapper = mountHero(
       createSectionBlock({ backgroundImage: createBackgroundImage(HERO) }),
@@ -119,6 +160,48 @@ describe("HeroControl", () => {
     expect(updates(wrapper)).toEqual([
       { hero: { height: 300, verticalAlign: "middle" } },
     ]);
+  });
+
+  it("keeps a typed fixed height when Fixed is clicked again", async () => {
+    const wrapper = mountHero(
+      createSectionBlock({
+        backgroundImage: MEASURED,
+        hero: { height: 500, verticalAlign: "middle" },
+      }),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightFixed).trigger("click");
+    expect(updates(wrapper)).toEqual([]);
+  });
+
+  it("emits nothing when Fit content is clicked with no hero", async () => {
+    const wrapper = mountHero(createSectionBlock({ backgroundImage: MEASURED }));
+    await heightPill(wrapper, en.blockSettings.heroHeightFit).trigger("click");
+    expect(updates(wrapper)).toEqual([]);
+  });
+
+  it("emits no hero update when Match image is clicked again, but retries a missing measurement", async () => {
+    vi.useFakeTimers();
+    stubImages({ [HERO]: { width: 1200, height: 800 } });
+    const wrapper = mountHero(
+      createSectionBlock({
+        backgroundImage: createBackgroundImage(HERO),
+        hero: { height: "image", verticalAlign: "bottom" },
+      }),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightImage).trigger("click");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    expect(updates(wrapper)).toEqual([{ backgroundImage: MEASURED }]);
+  });
+
+  it("emits nothing when Match image is clicked again on a measured image", async () => {
+    const wrapper = mountHero(
+      createSectionBlock({
+        backgroundImage: MEASURED,
+        hero: { height: "image", verticalAlign: "middle" },
+      }),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightImage).trigger("click");
+    expect(updates(wrapper)).toEqual([]);
   });
 
   it("turns the hero off with Fit content", async () => {

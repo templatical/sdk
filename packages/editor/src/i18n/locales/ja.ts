@@ -140,7 +140,7 @@ const translations: typeof en = {
       "このエディタはすでにメール全体に外枠を付けています。このセクションに外枠を追加することはできないため、プレビューと出力は失敗します。",
     stackOnMobile: "モバイルでは縦に並べる",
     heroNeedsOneColumn:
-      "ヒーローモードには 1 列が必要です。列が複数の場合、このセクションは通常のセクションとして表示されます。",
+      "ヒーローモードには1列が必要です。列が複数の場合、このセクションは通常のセクションとして表示されます。",
   },
   linkDialog: {
     editLink: "リンクを編集",
@@ -426,7 +426,7 @@ const translations: typeof en = {
     heroAlignMiddle: "中央",
     heroAlignBottom: "下",
     heroMatchImageMergeTag:
-      "「画像に合わせる」には画像の直接 URL が必要です。差し込み項目からはサイズを読み取れません。",
+      "「画像に合わせる」には画像の直接URLが必要です。差し込み項目からはサイズを読み取れません。",
     heroSizeUnknown:
       "この画像のサイズを読み取れなかったため、セクションは内容の高さで表示されます。",
     display: "表示",

@@ -8,19 +8,37 @@ import {
   containsMergeTag,
   heroBoxWidth,
   imageAspectRatio,
+  isSlot,
+  isWrapper,
   SYNTAX_PRESETS,
+  type Block,
   type HeroVerticalAlign,
   type SectionBlock,
+  type SpacingValue,
 } from "@templatical/types";
 import { computed, inject } from "vue";
-import { EDITOR_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { EDITOR_KEY, LAYOUT_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { getEmailFrameWidth } from "../../utils/emailFrameWidth";
 
 type HeightMode = "fit" | "image" | "fixed";
 
 /** A fixed height's starting value when the image's size is unknown. */
 const FALLBACK_FIXED_HEIGHT = 300;
-/** `TemplateSettings.width`'s default, for a surface with no editor. */
-const DEFAULT_CONTENT_WIDTH = 600;
+
+/**
+ * The padding of each layout wrapper around the slot, outermost first; `null`
+ * when `blocks` has no slot.
+ */
+function slotFramePaddings(blocks: Block[]): SpacingValue[] | null {
+  for (const block of blocks) {
+    if (isSlot(block)) return [];
+    if (isWrapper(block)) {
+      const inner = slotFramePaddings(block.children);
+      if (inner) return [block.styles.padding, ...inner];
+    }
+  }
+  return null;
+}
 
 const props = defineProps<{
   section: SectionBlock;
@@ -33,6 +51,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const editor = inject(EDITOR_KEY, null);
+const layout = inject(LAYOUT_KEY, undefined);
 const measure = useImageMeasure();
 
 const url = computed(() =>
@@ -83,23 +102,36 @@ const sizeUnknown = computed(
     imageAspectRatio(props.section.backgroundImage) === null,
 );
 
-/** The hero box's width, as the renderer sizes it (`heroBoxWidth`). */
+/**
+ * The hero box's width, as the renderer sizes it: the content width less the
+ * padding of every band around the section (`heroBoxWidth`), the layout's
+ * wrappers and the section's own wrapper.
+ */
 function boxWidth(): number {
-  const contentWidth =
-    editor?.state.content.settings.width ?? DEFAULT_CONTENT_WIDTH;
-  return heroBoxWidth(contentWidth, [props.section.wrapper?.padding]);
+  const contentWidth = getEmailFrameWidth(editor?.state.content.settings);
+  const layoutFrames = layout ? (slotFramePaddings(layout.blocks) ?? []) : [];
+  return heroBoxWidth(contentWidth, [
+    ...layoutFrames,
+    props.section.wrapper?.padding,
+  ]);
 }
 
 function setHeightMode(mode: string): void {
   const verticalAlign: HeroVerticalAlign =
     hero.value?.verticalAlign ?? "middle";
-  if (mode === "fit") {
-    emit("update", { hero: undefined });
+  if (mode === "image") {
+    // Choosing Match image again keeps the hero but retries a size that was
+    // never stored, so a dropped measurement has a way back.
+    if (heightMode.value !== "image") {
+      emit("update", { hero: { height: "image", verticalAlign } });
+    }
+    void measureIfUnknown();
     return;
   }
-  if (mode === "image") {
-    emit("update", { hero: { height: "image", verticalAlign } });
-    void measureIfUnknown();
+  // Re-choosing the current mode must not reset what the author typed.
+  if (mode === heightMode.value) return;
+  if (mode === "fit") {
+    emit("update", { hero: undefined });
     return;
   }
   // Start where the image ends now, so switching doesn't make the hero jump.
