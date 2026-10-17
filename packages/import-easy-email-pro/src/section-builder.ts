@@ -122,8 +122,9 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
 /**
  * A `standard-hero` as a one-column section: its children walk into the one
  * column, and its mode, height and background map onto `hero` and
- * `backgroundImage` (`readMjmlHero`). Its fill follows `paintSection`, and
- * where that finds none it is mj-hero's own white.
+ * `backgroundImage` (`readMjmlHero`). Its fill follows `paintSection`; where
+ * that finds none and the source leaves `background-color` out, it is
+ * mj-hero's own white.
  */
 function buildHero(node: EasyEmailProNode, map: MapContext): Converted {
   const entries: ImportReportEntry[] = [];
@@ -137,7 +138,15 @@ function buildHero(node: EasyEmailProNode, map: MapContext): Converted {
   section.columns = "1";
   section.children = [inner.blocks];
   paintSection(section, node, map);
-  if (!section.styles.backgroundColor) {
+  // An explicit `transparent` stays unset because `isUnset` reads it as no
+  // colour, so the hero paints nothing, as its MJML does. Only a source that
+  // leaves `background-color` out takes mj-hero's white.
+  const ownFill = readAttr(node, "background-color", map.resolve);
+  const fillAbsent =
+    ownFill === undefined ||
+    ownFill === null ||
+    (typeof ownFill === "string" && ownFill.trim() === "");
+  if (!section.styles.backgroundColor && fillAbsent) {
     section.styles.backgroundColor = "#ffffff";
   }
 

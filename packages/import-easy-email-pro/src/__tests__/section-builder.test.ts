@@ -239,6 +239,45 @@ describe("buildTopLevel", () => {
     });
   });
 
+  it("gives a hero with no background-color mj-hero's white", () => {
+    const { blocks } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: {},
+      children: [],
+    });
+    expect((blocks[0] as SectionBlock).styles.backgroundColor).toBe("#ffffff");
+  });
+
+  it("leaves a hero with an explicit transparent background-color unfilled", () => {
+    const { blocks } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: { "background-color": "transparent" },
+      children: [],
+    });
+    expect((blocks[0] as SectionBlock).styles.backgroundColor).toBeUndefined();
+  });
+
+  it("takes the page content colour for a hero with no background-color", () => {
+    const p: EasyEmailProNode = {
+      type: "page",
+      data: {},
+      attributes: { "content-background-color": "#263D29" },
+      children: [],
+    };
+    const { blocks } = build(
+      {
+        type: "standard-hero",
+        data: {},
+        attributes: {},
+        children: [],
+      },
+      p,
+    );
+    expect((blocks[0] as SectionBlock).styles.backgroundColor).toBe("#263D29");
+  });
+
   it("flattens a nested group inside a column", () => {
     const { blocks, entries } = build({
       type: "standard-section",
