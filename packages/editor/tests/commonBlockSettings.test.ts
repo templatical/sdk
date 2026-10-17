@@ -221,6 +221,30 @@ describe("CommonBlockSettings background image", () => {
     });
   });
 
+  it("hides size and repeat while the section renders as a hero", async () => {
+    const section = createSectionBlock({
+      backgroundImage: {
+        ...createBackgroundImage("https://cdn.test/hero.jpg"),
+        width: 1200,
+        height: 800,
+      },
+      hero: { height: "image", verticalAlign: "middle" },
+    });
+    const wrapper = mountEditor(CommonBlockSettings, {
+      props: { block: section },
+      provides: { [TRANSLATIONS_KEY]: en },
+      global: { stubs: pickerStubs },
+    });
+    await wrapper
+      .get('[data-testid="block-settings-background"]')
+      .trigger("click");
+    expect(wrapper.find('[data-testid="section-bg-size"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="section-bg-repeat"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="section-hero"]').exists()).toBe(true);
+  });
+
   it("does not offer a background image for other blocks", async () => {
     const wrapper = mountSettings(createTitleBlock());
     await wrapper

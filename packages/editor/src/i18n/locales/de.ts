@@ -174,6 +174,8 @@ const de: typeof en = {
     wrapperLayoutConflict:
       "Dieser Editor rahmt die E-Mail bereits ein. Ein zusätzlicher Rahmen für diesen Abschnitt wird nicht unterstützt — Vorschau und Export schlagen fehl.",
     stackOnMobile: "Auf Mobilgeräten stapeln",
+    heroNeedsOneColumn:
+      "Der Hero-Modus braucht eine Spalte. Mit mehr Spalten wird dieser Abschnitt als normaler Abschnitt angezeigt.",
   },
 
   // Text editor link dialog
@@ -483,6 +485,18 @@ const de: typeof en = {
     backgroundPositionBottomCenter: "Unten mittig",
     backgroundPositionBottomRight: "Unten rechts",
     backgroundRepeat: "Bild wiederholen",
+    heroHeight: "Höhe",
+    heroHeightFit: "Wie Inhalt",
+    heroHeightImage: "Wie Bild",
+    heroHeightFixed: "Fest",
+    heroAlign: "Position des Inhalts",
+    heroAlignTop: "Oben",
+    heroAlignMiddle: "Mitte",
+    heroAlignBottom: "Unten",
+    heroMatchImageMergeTag:
+      "„Wie Bild“ braucht eine direkte Bild-URL: Bei einem Merge-Tag lässt sich keine Größe auslesen.",
+    heroSizeUnknown:
+      "Die Größe dieses Bilds konnte nicht gelesen werden, daher wird der Abschnitt in der Höhe seines Inhalts angezeigt.",
     display: "Anzeige",
     showOnDesktop: "Auf Desktop anzeigen",
     showOnMobile: "Auf Mobilgerät anzeigen",

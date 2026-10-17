@@ -4,13 +4,18 @@ import SpacingControl from "../SpacingControl.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import BackgroundImageControl from "./BackgroundImageControl.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
+import HeroControl from "./HeroControl.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   labelClass,
   monoTextareaClass,
   primaryBtnClass,
 } from "../../constants/styleConstants";
-import type { Block, DisplayCondition } from "@templatical/types";
+import {
+  resolveHero,
+  type Block,
+  type DisplayCondition,
+} from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
 import {
@@ -117,6 +122,13 @@ const groupedDisplayConditions = computed(() => {
   return groups;
 });
 
+// A hero paints its image cover and unrepeated, so those controls hide while it applies.
+const heroApplied = computed(
+  () =>
+    props.block.type === "section" &&
+    resolveHero(props.block)?.applied === true,
+);
+
 function updateStyle(field: string, value: unknown): void {
   emit("update", {
     styles: { ...props.block.styles, [field]: value },
@@ -171,7 +183,14 @@ function toggleVisibility(key: VisibilityKey): void {
         class="tpl:mt-3.5"
         :model-value="block.backgroundImage"
         testid-prefix="section"
+        measure
+        :hero-mode="heroApplied"
         @update:model-value="emit('update', { backgroundImage: $event })"
+      />
+      <HeroControl
+        v-if="block.type === 'section'"
+        :section="block"
+        @update="emit('update', $event)"
       />
     </CollapsibleSection>
 

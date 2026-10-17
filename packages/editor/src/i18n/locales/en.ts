@@ -171,6 +171,8 @@ export default {
     wrapperLayoutConflict:
       "This editor already frames the email. An extra frame on this section isn't supported — preview and export will fail.",
     stackOnMobile: "Stack on mobile",
+    heroNeedsOneColumn:
+      "Hero mode needs one column. With more, this section shows as a regular section.",
   },
 
   // Text editor link dialog
@@ -479,6 +481,18 @@ export default {
     backgroundPositionBottomCenter: "Bottom center",
     backgroundPositionBottomRight: "Bottom right",
     backgroundRepeat: "Repeat image",
+    heroHeight: "Height",
+    heroHeightFit: "Fit content",
+    heroHeightImage: "Match image",
+    heroHeightFixed: "Fixed",
+    heroAlign: "Content position",
+    heroAlignTop: "Top",
+    heroAlignMiddle: "Middle",
+    heroAlignBottom: "Bottom",
+    heroMatchImageMergeTag:
+      "Match image needs a direct image URL: a merge tag has no size to read.",
+    heroSizeUnknown:
+      "This image's size couldn't be read, so the section shows at its content height.",
     display: "Display",
     showOnDesktop: "Show on desktop",
     showOnMobile: "Show on mobile",

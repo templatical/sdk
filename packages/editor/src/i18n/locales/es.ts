@@ -172,6 +172,8 @@ const es: typeof en = {
     wrapperLayoutConflict:
       "Este editor ya enmarca el correo. Un marco extra en esta sección no es compatible — la vista previa y la exportación fallarán.",
     stackOnMobile: "Apilar en móvil",
+    heroNeedsOneColumn:
+      "El modo hero necesita una sola columna. Con más, esta sección se muestra como una sección normal.",
   },
 
   // Text editor link dialog
@@ -481,6 +483,18 @@ const es: typeof en = {
     backgroundPositionBottomCenter: "Abajo en el centro",
     backgroundPositionBottomRight: "Abajo a la derecha",
     backgroundRepeat: "Repetir imagen",
+    heroHeight: "Altura",
+    heroHeightFit: "Ajustar al contenido",
+    heroHeightImage: "Igual que la imagen",
+    heroHeightFixed: "Fija",
+    heroAlign: "Posición del contenido",
+    heroAlignTop: "Arriba",
+    heroAlignMiddle: "Centro",
+    heroAlignBottom: "Abajo",
+    heroMatchImageMergeTag:
+      "«Igual que la imagen» necesita una URL de imagen directa: una etiqueta de combinación no tiene tamaño que leer.",
+    heroSizeUnknown:
+      "No se pudo leer el tamaño de esta imagen, así que la sección se muestra con la altura de su contenido.",
     display: "Visualización",
     showOnDesktop: "Mostrar en escritorio",
     showOnMobile: "Mostrar en móvil",

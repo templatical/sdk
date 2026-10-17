@@ -139,6 +139,8 @@ const translations: typeof en = {
     wrapperLayoutConflict:
       "このエディタはすでにメール全体に外枠を付けています。このセクションに外枠を追加することはできないため、プレビューと出力は失敗します。",
     stackOnMobile: "モバイルでは縦に並べる",
+    heroNeedsOneColumn:
+      "ヒーローモードには 1 列が必要です。列が複数の場合、このセクションは通常のセクションとして表示されます。",
   },
   linkDialog: {
     editLink: "リンクを編集",
@@ -415,6 +417,18 @@ const translations: typeof en = {
     backgroundPositionBottomCenter: "中央下",
     backgroundPositionBottomRight: "右下",
     backgroundRepeat: "画像を繰り返す",
+    heroHeight: "高さ",
+    heroHeightFit: "内容に合わせる",
+    heroHeightImage: "画像に合わせる",
+    heroHeightFixed: "固定",
+    heroAlign: "コンテンツの位置",
+    heroAlignTop: "上",
+    heroAlignMiddle: "中央",
+    heroAlignBottom: "下",
+    heroMatchImageMergeTag:
+      "「画像に合わせる」には画像の直接 URL が必要です。差し込み項目からはサイズを読み取れません。",
+    heroSizeUnknown:
+      "この画像のサイズを読み取れなかったため、セクションは内容の高さで表示されます。",
     display: "表示",
     showOnDesktop: "デスクトップで表示",
     showOnMobile: "モバイルで表示",

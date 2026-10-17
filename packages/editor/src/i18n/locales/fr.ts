@@ -153,6 +153,8 @@ const fr: typeof en = {
     wrapperLayoutConflict:
       "Cet éditeur encadre déjà l'e-mail. Un cadre supplémentaire sur cette section n'est pas pris en charge — l'aperçu et l'export échoueront.",
     stackOnMobile: "Empiler sur mobile",
+    heroNeedsOneColumn:
+      "Le mode hero nécessite une seule colonne. Avec plus de colonnes, cette section s'affiche comme une section normale.",
   },
   linkDialog: {
     editLink: "Modifier le lien",
@@ -426,6 +428,18 @@ const fr: typeof en = {
     backgroundPositionBottomCenter: "En bas au centre",
     backgroundPositionBottomRight: "En bas à droite",
     backgroundRepeat: "Répéter l'image",
+    heroHeight: "Hauteur",
+    heroHeightFit: "Ajuster au contenu",
+    heroHeightImage: "Comme l'image",
+    heroHeightFixed: "Fixe",
+    heroAlign: "Position du contenu",
+    heroAlignTop: "Haut",
+    heroAlignMiddle: "Milieu",
+    heroAlignBottom: "Bas",
+    heroMatchImageMergeTag:
+      "« Comme l'image » nécessite une URL d'image directe : une balise de fusion n'a pas de taille à lire.",
+    heroSizeUnknown:
+      "La taille de cette image n'a pas pu être lue, la section s'affiche donc à la hauteur de son contenu.",
     display: "Affichage",
     showOnDesktop: "Afficher sur ordinateur",
     showOnMobile: "Afficher sur mobile",

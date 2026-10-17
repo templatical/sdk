@@ -154,6 +154,8 @@ const nl: typeof en = {
     wrapperLayoutConflict:
       "Deze editor kadert de e-mail al in. Een extra kader op deze sectie wordt niet ondersteund — voorbeeld en export zullen mislukken.",
     stackOnMobile: "Stapelen op mobiel",
+    heroNeedsOneColumn:
+      "De hero-modus heeft één kolom nodig. Met meer kolommen wordt deze sectie als gewone sectie getoond.",
   },
   linkDialog: {
     editLink: "Link bewerken",
@@ -427,6 +429,18 @@ const nl: typeof en = {
     backgroundPositionBottomCenter: "Midden onder",
     backgroundPositionBottomRight: "Rechtsonder",
     backgroundRepeat: "Afbeelding herhalen",
+    heroHeight: "Hoogte",
+    heroHeightFit: "Passend bij inhoud",
+    heroHeightImage: "Zoals afbeelding",
+    heroHeightFixed: "Vast",
+    heroAlign: "Positie van inhoud",
+    heroAlignTop: "Boven",
+    heroAlignMiddle: "Midden",
+    heroAlignBottom: "Onder",
+    heroMatchImageMergeTag:
+      "‘Zoals afbeelding’ heeft een directe afbeeldings-URL nodig: van een samenvoegveld is geen grootte te lezen.",
+    heroSizeUnknown:
+      "De grootte van deze afbeelding kon niet worden gelezen, dus de sectie wordt getoond op de hoogte van de inhoud.",
     display: "Weergave",
     showOnDesktop: "Tonen op desktop",
     showOnMobile: "Tonen op mobiel",

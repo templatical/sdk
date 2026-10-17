@@ -279,3 +279,37 @@ describe("SectionToolbar wrapper background image", () => {
     ).toBe(false);
   });
 });
+
+describe("SectionToolbar in hero mode", () => {
+  const measured = {
+    ...createBackgroundImage("https://cdn.test/hero.jpg"),
+    width: 1200,
+    height: 800,
+  };
+
+  it("hides the border while the hero applies, without clearing it", () => {
+    const section = createSectionBlock({
+      backgroundImage: measured,
+      hero: { height: "image", verticalAlign: "middle" },
+      border: uniformBorder({ width: 2, style: "solid", color: "#ff0000" }),
+    });
+    const wrapper = mountToolbar(section);
+    expect(
+      wrapper.find('[data-testid="section-border-width-input"]').exists(),
+    ).toBe(false);
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("shows the border when the hero doesn't apply", () => {
+    const section = createSectionBlock({
+      columns: "2",
+      children: [[], []],
+      backgroundImage: measured,
+      hero: { height: "image", verticalAlign: "middle" },
+    });
+    const wrapper = mountToolbar(section);
+    expect(
+      wrapper.find('[data-testid="section-border-width-input"]').exists(),
+    ).toBe(true);
+  });
+});

@@ -9,6 +9,7 @@ import BorderControl from "./BorderControl.vue";
 import RadiusControl from "./RadiusControl.vue";
 import {
   layoutWrapsSlot,
+  resolveHero,
   type BorderRadiusValue,
   type ColumnLayout,
   type SectionBlock,
@@ -39,6 +40,9 @@ const showWrapperPanel = computed(
 );
 const disableTurnOn = computed(() => wrapsSlot && !props.block.wrapper);
 const showNote = computed(() => wrapsSlot && showWrapperPanel.value);
+
+// mj-hero draws no border: hidden while the hero applies, kept for when it doesn't.
+const heroApplied = computed(() => resolveHero(props.block)?.applied === true);
 
 const columnOptions = computed(() => [
   { value: "1" as ColumnLayout, label: t.section.column1 },
@@ -116,6 +120,7 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
     @update:model-value="handleBorderRadiusChange"
   />
   <BorderControl
+    v-if="!heroApplied"
     :model-value="block.border"
     testid-prefix="section"
     @update:model-value="emit('update', { border: $event })"
