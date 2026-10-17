@@ -1,4 +1,4 @@
-import { createImageBlock, createSectionBlock } from "@templatical/types";
+import { createSectionBlock } from "@templatical/types";
 import type {
   Block,
   BlockVisibility,
@@ -10,6 +10,7 @@ import {
   parsePercent,
   parsePx,
   readMjmlBackgroundImage,
+  readMjmlHero,
   readPadding,
 } from "./attribute-parser";
 import { convertLeaf, type Converted, type MapContext } from "./block-mapper";
@@ -118,36 +119,43 @@ function buildSection(node: EasyEmailProNode, map: MapContext): Converted {
   return { blocks: [section], entries };
 }
 
+/**
+ * A `standard-hero` as a one-column section: its children walk into the one
+ * column, and its mode, height and background map onto `hero` and
+ * `backgroundImage` (`readMjmlHero`). Its fill follows `paintSection`, and
+ * where that finds none it is mj-hero's own white.
+ */
 function buildHero(node: EasyEmailProNode, map: MapContext): Converted {
-  const slot: Block[] = [];
   const entries: ImportReportEntry[] = [];
-  const url = readAttr(node, "background-url", map.resolve);
-  if (typeof url === "string" && !isUnset(url)) {
-    slot.push(createImageBlock({ src: url }));
-    entries.push({
-      sourceTag: "standard-hero",
-      templaticalBlockType: "image",
-      status: "approximated",
-      note: "hero background-url stacked as a leading image (overlay is the loss)",
-    });
-  }
   const inner = convertFlow(
     node.children ?? [],
     withContentWidth(map, insideWidth(map.contentWidth, node, map)),
   );
-  slot.push(...inner.blocks);
   for (const entry of inner.entries) entries.push(entry);
 
   const section = createSectionBlock();
   section.columns = "1";
-  section.children = [slot];
+  section.children = [inner.blocks];
   paintSection(section, node, map);
-  entries.unshift({
-    sourceTag: "standard-hero",
-    templaticalBlockType: "section",
-    status: "approximated",
-    note: "standard-hero overlay is stacked as a 1-column section; background-url becomes a leading image.",
-  });
+  if (!section.styles.backgroundColor) {
+    section.styles.backgroundColor = "#ffffff";
+  }
+
+  const read = readMjmlHero(
+    (name) => readAttr(node, name, map.resolve),
+    "Hero",
+    map.contentWidth,
+  );
+  if (read.image) section.backgroundImage = read.image;
+  if (read.hero) section.hero = read.hero;
+
+  entries.unshift(
+    sectionEntry(
+      node,
+      read.notes.length > 0 ? "approximated" : "converted",
+      read.notes.length > 0 ? read.notes.join(" ") : undefined,
+    ),
+  );
   return { blocks: [section], entries };
 }
 

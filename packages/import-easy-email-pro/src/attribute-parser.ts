@@ -3,6 +3,7 @@ import type {
   BackgroundPositionX,
   BackgroundPositionY,
   BackgroundSize,
+  SectionHero,
 } from "@templatical/types";
 import { isUnset } from "./normalize";
 
@@ -253,4 +254,120 @@ export function readMjmlBackgroundImage(
   }
 
   return { image: { url, size, position: { x, y }, repeat }, notes };
+}
+
+/** A section hero read from a `standard-hero`, with a note for each value it couldn't carry. */
+export interface ReadHero {
+  /** `null` for a content-height hero, which a regular section paints exactly. */
+  hero: SectionHero | null;
+  image: BackgroundImage | null;
+  notes: string[];
+}
+
+const HERO_ALIGNS = ["top", "middle", "bottom"] as const;
+
+const HERO_DROPPED_ATTRIBUTES = [
+  "inner-padding",
+  "inner-padding-top",
+  "inner-padding-right",
+  "inner-padding-bottom",
+  "inner-padding-left",
+  "inner-background-color",
+];
+
+/**
+ * A `standard-hero`'s mode, height and background. Easy Email Pro renders it
+ * as an MJML `mj-hero`, so unset attributes take mj-hero's defaults
+ * (`fixed-height`, `0px`, `center center`, `vertical-align: top`), and its
+ * image is always `cover` and unrepeated. `background-width` /
+ * `background-height` are kept as the image's size: only their ratio is used.
+ * A `fixed-height` hero without a positive `height` is as tall as its content,
+ * exactly what a regular section with the same background paints, so it comes
+ * back without `hero`.
+ */
+export function readMjmlHero(
+  read: (name: string) => unknown,
+  label: string,
+  boxWidth: number | undefined,
+): ReadHero {
+  const value = (name: string): string | undefined => {
+    const raw = read(name);
+    return isUnset(raw) ? undefined : String(raw).trim();
+  };
+  const notes: string[] = [];
+
+  const background = readMjmlBackgroundImage(
+    (name) => {
+      if (name === "background-size") return "cover";
+      if (name === "background-repeat") return "no-repeat";
+      if (name === "background-position") {
+        return value(name) ?? "center center";
+      }
+      if (
+        name === "background-position-x" ||
+        name === "background-position-y"
+      ) {
+        return undefined;
+      }
+      return read(name);
+    },
+    label,
+    boxWidth,
+  );
+  if (background) notes.push(...background.notes);
+
+  const width = parsePx(value("background-width"));
+  const height = parsePx(value("background-height"));
+  const sized =
+    width !== undefined && height !== undefined && width > 0 && height > 0;
+  const image = background
+    ? { ...background.image, ...(sized ? { width, height } : {}) }
+    : null;
+
+  const rawAlign = value("vertical-align");
+  const verticalAlign =
+    HERO_ALIGNS.find((align) => align === rawAlign?.toLowerCase()) ?? "top";
+  if (rawAlign && verticalAlign !== rawAlign.toLowerCase()) {
+    notes.push(
+      `${label} vertical-align "${rawAlign}" has no Templatical equivalent; imported as "top".`,
+    );
+  }
+
+  const rawMode = value("mode");
+  const mode = rawMode ? rawMode.toLowerCase() : "fixed-height";
+  let hero: SectionHero | null = null;
+  if (mode === "fluid-height") {
+    hero = { height: "image", verticalAlign };
+    if (!sized) {
+      notes.push(
+        `${label} fluid-height has no background-width / background-height, so its image size is unknown; it renders as a regular section until it has a size or a fixed height.`,
+      );
+    }
+  } else {
+    if (mode !== "fixed-height") {
+      notes.push(
+        `${label} mode "${rawMode}" has no Templatical equivalent; imported as "fixed-height".`,
+      );
+    }
+    const fixed = parsePx(value("height"));
+    if (fixed !== undefined && fixed > 0) {
+      hero = { height: Math.round(fixed), verticalAlign };
+    }
+  }
+
+  if (hero && !image) {
+    notes.push(
+      `${label} has no background-url, so it renders as a regular section until it has a background image.`,
+    );
+  }
+
+  for (const name of HERO_DROPPED_ATTRIBUTES) {
+    const raw = value(name);
+    if (raw === undefined) continue;
+    notes.push(
+      `${label} ${name} "${raw}" has no Templatical equivalent; dropped.`,
+    );
+  }
+
+  return { hero, image, notes };
 }
