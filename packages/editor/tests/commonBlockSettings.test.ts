@@ -225,8 +225,8 @@ describe("CommonBlockSettings background image", () => {
     const section = createSectionBlock({
       backgroundImage: {
         ...createBackgroundImage("https://cdn.test/hero.jpg"),
-        width: 1200,
-        height: 800,
+        naturalWidth: 1200,
+        naturalHeight: 800,
       },
       hero: { height: "image", verticalAlign: "middle" },
     });

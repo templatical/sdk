@@ -347,12 +347,13 @@
           "type": "boolean",
           "description": "`false` paints the image once; `true` tiles it."
         },
-        "width": {
+        "naturalWidth": {
           "type": "number",
-          "description": "The image's size in px: measured by the editor when the author sets the URL, or read from an importer's source. Only the ratio is used: a section hero with `height: \"image\"` keeps its box at `height / width`."
+          "description": "The image file's own width in px, when known: given by the media library, measured by the editor when the author sets the URL, or read by an importer (from MJML, the hero's `background-width`, which may be the box's size rather than the file's). Only the ratio with `naturalHeight` is used: a section hero with `height: \"image\"` keeps its box at that shape. Both or neither; one without the other reads as unknown."
         },
-        "height": {
-          "type": "number"
+        "naturalHeight": {
+          "type": "number",
+          "description": "The image file's own height in px, when known; it pairs with `naturalWidth`, and only their ratio is used. Both or neither."
         }
       },
       "required": [
@@ -402,7 +403,7 @@
               "type": "number"
             }
           ],
-          "description": "`\"image\"` keeps the box at the image's aspect ratio at every width, and needs the image's size on `backgroundImage.width` / `height`. A number is the box's fixed height in px, padding included."
+          "description": "`\"image\"` keeps the box at the image's aspect ratio at every width, and needs the image's size on `backgroundImage.naturalWidth` / `naturalHeight`. A number is the box's fixed height in px, padding included."
         },
         "verticalAlign": {
           "$ref": "#/definitions/HeroVerticalAlign"
@@ -413,7 +414,7 @@
         "verticalAlign"
       ],
       "additionalProperties": false,
-      "description": "Draws a one-column section as an MJML `mj-hero`: its background image fills the box (always `cover`, never tiled) and the content sits on top of it. A hero applies only to a one-column section with a background image; otherwise the section renders as a regular one (see `resolveHero`)."
+      "description": "Draws a one-column section as an MJML `mj-hero`: its background image fills the box (always `cover`, never tiled) and the content sits on top of it. A hero applies only to a one-column section with a background image; otherwise the section renders as a regular one."
     },
     "HeroVerticalAlign": {
       "type": "string",

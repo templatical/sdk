@@ -23,7 +23,7 @@ const en = {
   "structure.hero-not-applied.image":
     "Hero mode needs a background image, so this section renders as a regular one until it has one.",
   "structure.hero-not-applied.size":
-    "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image's width and height.",
+    "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image file's size.",
 };
 
 export default en;

@@ -21,8 +21,8 @@ import { FAKE_IMAGE_LOAD_MS, stubImages } from "./helpers/fakeImage";
 const HERO = "https://cdn.test/hero.jpg";
 const MEASURED: BackgroundImage = {
   ...createBackgroundImage(HERO),
-  width: 1200,
-  height: 800,
+  naturalWidth: 1200,
+  naturalHeight: 800,
 };
 
 function mountHero(section: SectionBlock, layout?: TemplateContent) {

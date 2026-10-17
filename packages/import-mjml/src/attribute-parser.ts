@@ -536,8 +536,10 @@ const HERO_DROPPED_ATTRIBUTES = [
  * it leaves out (`fixed-height`, `0px`, `center center`, `vertical-align:
  * top`). mj-hero always paints its image `cover` and unrepeated and has no
  * position longhands, so those are fixed rather than read.
- * `background-width` / `background-height` are kept as the image's size: only
- * their ratio is used. A `fixed-height` hero without a positive `height` is as
+ * `background-width` / `background-height` are stored as the image's
+ * `naturalWidth` / `naturalHeight`, though they are often the hero box's size
+ * (Templatical's renderer writes them so) rather than the file's: only their
+ * ratio is used. A `fixed-height` hero without a positive `height` is as
  * tall as its content — exactly what a regular section with the same
  * background paints — so it comes back without `hero`.
  */
@@ -572,7 +574,10 @@ export function readMjmlHero(
   const height = parseDefinitePx(read("background-height"));
   const sized = width !== null && height !== null && width > 0 && height > 0;
   const image = background
-    ? { ...background.image, ...(sized ? { width, height } : {}) }
+    ? {
+        ...background.image,
+        ...(sized ? { naturalWidth: width, naturalHeight: height } : {}),
+      }
     : null;
 
   const rawAlign = read("vertical-align")?.trim();

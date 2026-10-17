@@ -450,8 +450,8 @@ describe("BackgroundImageControl image size", () => {
   it("drops the old image's size when the url changes", async () => {
     const wrapper = mountIt({
       ...createBackgroundImage(HERO),
-      width: 1200,
-      height: 800,
+      naturalWidth: 1200,
+      naturalHeight: 800,
     });
     await wrapper.find('[data-testid="t-bg-url"] input').setValue(OTHER);
     expect(lastEmitted(wrapper)).toEqual(createBackgroundImage(OTHER));
@@ -470,8 +470,8 @@ describe("BackgroundImageControl image size", () => {
     expect(images.requested).toEqual([HERO]);
     expect(lastEmitted(wrapper)).toEqual({
       ...createBackgroundImage(HERO),
-      width: 1200,
-      height: 800,
+      naturalWidth: 1200,
+      naturalHeight: 800,
     });
   });
 
@@ -486,7 +486,10 @@ describe("BackgroundImageControl image size", () => {
       RESOLVE_IMAGE_DEBOUNCE_MS + FAKE_IMAGE_LOAD_MS,
     );
     expect(images.requested).toEqual([`blob:${HERO}`]);
-    expect(lastEmitted(wrapper)).toMatchObject({ width: 600, height: 300 });
+    expect(lastEmitted(wrapper)).toMatchObject({
+      naturalWidth: 600,
+      naturalHeight: 300,
+    });
   });
 
   it("drops a size measured for a url the author has since replaced", async () => {
@@ -499,7 +502,7 @@ describe("BackgroundImageControl image size", () => {
     await wrapper.setProps({ modelValue: createBackgroundImage(OTHER) });
     await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
     const emitted = wrapper.emitted("update:modelValue")!;
-    expect(emitted.some(([value]) => (value as BackgroundImage).width)).toBe(
+    expect(emitted.some(([value]) => (value as BackgroundImage).naturalWidth)).toBe(
       false,
     );
   });

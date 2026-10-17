@@ -31,8 +31,8 @@ import { renderToMjml, type RenderOptions } from "../src";
 const HERO_URL = "https://cdn.test/hero.jpg";
 const MEASURED: BackgroundImage = {
   ...createBackgroundImage(HERO_URL),
-  width: 1200,
-  height: 800,
+  naturalWidth: 1200,
+  naturalHeight: 800,
 };
 const MATCH: SectionHero = { height: "image", verticalAlign: "middle" };
 const BAND = { top: 0, right: 20, bottom: 0, left: 20 };

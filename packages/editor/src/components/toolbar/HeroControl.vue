@@ -130,7 +130,11 @@ async function measureIfUnknown(): Promise<void> {
   // The author may have picked another image while this one loaded.
   if (!size || !current || current.url !== measuredUrl) return;
   emit("update", {
-    backgroundImage: { ...current, width: size.width, height: size.height },
+    backgroundImage: {
+      ...current,
+      naturalWidth: size.width,
+      naturalHeight: size.height,
+    },
   });
 }
 

@@ -222,8 +222,8 @@ describe("getBlockWrapperStyle for a hero", () => {
     ...createBackgroundImage("https://cdn.test/hero.jpg"),
     size: "contain" as const,
     repeat: true,
-    width: 1200,
-    height: 800,
+    naturalWidth: 1200,
+    naturalHeight: 800,
   };
   const border = uniformBorder({ width: 2, style: "solid", color: "#ff0000" });
   const drawsBorder = (style: Record<string, string>) =>

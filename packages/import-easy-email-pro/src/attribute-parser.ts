@@ -280,10 +280,11 @@ const HERO_DROPPED_ATTRIBUTES = [
  * as an MJML `mj-hero`, so unset attributes take mj-hero's defaults
  * (`fixed-height`, `0px`, `center center`, `vertical-align: top`), and its
  * image is always `cover` and unrepeated. `background-width` /
- * `background-height` are kept as the image's size: only their ratio is used.
- * A `fixed-height` hero without a positive `height` is as tall as its content,
- * exactly what a regular section with the same background paints, so it comes
- * back without `hero`.
+ * `background-height` are stored as the image's `naturalWidth` /
+ * `naturalHeight`, though they are often the hero box's size rather than the
+ * file's: only their ratio is used. A `fixed-height` hero without a positive
+ * `height` is as tall as its content, exactly what a regular section with the
+ * same background paints, so it comes back without `hero`.
  */
 export function readMjmlHero(
   read: (name: string) => unknown,
@@ -321,7 +322,10 @@ export function readMjmlHero(
   const sized =
     width !== undefined && height !== undefined && width > 0 && height > 0;
   const image = background
-    ? { ...background.image, ...(sized ? { width, height } : {}) }
+    ? {
+        ...background.image,
+        ...(sized ? { naturalWidth: width, naturalHeight: height } : {}),
+      }
     : null;
 
   const rawAlign = value("vertical-align");

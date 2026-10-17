@@ -17,13 +17,14 @@ export const HERO_VERTICAL_ALIGNS: readonly HeroVerticalAlign[] = [
  * Draws a one-column section as an MJML `mj-hero`: its background image
  * fills the box (always `cover`, never tiled) and the content sits on top of
  * it. A hero applies only to a one-column section with a background image;
- * otherwise the section renders as a regular one (see `resolveHero`).
+ * otherwise the section renders as a regular one.
  */
 export interface SectionHero {
   /**
    * `"image"` keeps the box at the image's aspect ratio at every width, and
-   * needs the image's size on `backgroundImage.width` / `height`. A number is
-   * the box's fixed height in px, padding included.
+   * needs the image's size on `backgroundImage.naturalWidth` /
+   * `naturalHeight`. A number is the box's fixed height in px, padding
+   * included.
    */
   height: "image" | number;
   verticalAlign: HeroVerticalAlign;
@@ -63,8 +64,8 @@ export interface HeroCandidate {
  * this, so the email, the warning and the canvas agree. Checked in order:
  * one column, a usable background image, then — for `height: "image"` — the
  * image's size. Values from tampered JSON fall back instead of reaching MJML:
- * a height that isn't a positive number reads as `"image"`, an unknown
- * `verticalAlign` as `"middle"`.
+ * a height that isn't a finite number of at least 1 reads as `"image"`, an
+ * unknown `verticalAlign` as `"middle"`.
  */
 export function resolveHero(section: HeroCandidate): ResolvedHero | null {
   const hero = section.hero;
@@ -97,8 +98,8 @@ function isFixedHeight(value: unknown): value is number {
 export function imageAspectRatio(
   bg: BackgroundImage | undefined,
 ): number | null {
-  const width = bg?.width;
-  const height = bg?.height;
+  const width = bg?.naturalWidth;
+  const height = bg?.naturalHeight;
   if (typeof width !== "number" || typeof height !== "number") return null;
   if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
   if (width <= 0 || height <= 0) return null;

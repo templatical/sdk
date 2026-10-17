@@ -153,15 +153,15 @@ const banner = createSectionBlock({
   columns: '1',
   backgroundImage: {
     ...createBackgroundImage('https://cdn.example.com/hero.jpg'),
-    width: 1200,
-    height: 800,
+    naturalWidth: 1200,
+    naturalHeight: 800,
   },
   hero: { height: 'image', verticalAlign: 'middle' },
 });
 banner.styles.backgroundColor = '#1f2937';
 ```
 
-`height: 'image'` hält die Box bei jeder Bildschirmbreite in der Form des Bilds; dafür braucht es die Größe des Bilds in `backgroundImage.width` / `height`, die der Editor misst, wenn Sie das Bild auswählen. Eine Zahl ist eine feste Höhe in px, Innenabstand eingeschlossen. Im Editor wechselt **Höhe** im Panel **Hintergrund** zwischen **Wie Inhalt** (kein Hero), **Wie Bild** und **Fest**, und **Position des Inhalts** platziert den Inhalt. Die Verknüpfung **Hero** in der Palette fügt einen Hero zum Ausfüllen ein: eine Sektion im Hero-Modus mit Titel, Absatz und Button auf dunkler Füllung. Die Hinweise zu E-Mail-Clients stehen beim [Sektionsblock](/de/guide/blocks#section).
+`height: 'image'` hält die Box bei jeder Bildschirmbreite in der Form des Bilds; dafür braucht es die Größe der Bilddatei in `backgroundImage.naturalWidth` / `naturalHeight`. Eine Auswahl aus der Mediathek, die die Größe kennt (`width` / `height` am Asset oder am `onRequestMedia`-Ergebnis), speichert sie mit der URL; andernfalls misst der Editor das Bild. Eine Zahl ist eine feste Höhe in px, Innenabstand eingeschlossen. Im Editor wechselt **Höhe** im Panel **Hintergrund** zwischen **Wie Inhalt** (kein Hero), **Wie Bild** und **Fest**, und **Position des Inhalts** platziert den Inhalt. Die Verknüpfung **Hero** in der Palette fügt einen Hero zum Ausfüllen ein: eine Sektion im Hero-Modus mit Titel, Absatz und Button auf dunkler Füllung. Die Hinweise zu E-Mail-Clients stehen beim [Sektionsblock](/de/guide/blocks#section).
 
 ### Äußerer Rahmen (Wrapper)
 

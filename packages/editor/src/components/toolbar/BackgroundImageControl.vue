@@ -68,8 +68,8 @@ function scheduleMeasure(url: string): void {
     if (!size || current?.url !== url) return;
     emit("update:modelValue", {
       ...current,
-      width: size.width,
-      height: size.height,
+      naturalWidth: size.width,
+      naturalHeight: size.height,
     });
   }, RESOLVE_IMAGE_DEBOUNCE_MS);
 }
@@ -85,7 +85,7 @@ function setUrl(value: string): void {
     return;
   }
   if (props.modelValue) {
-    const { width, height, ...image } = props.modelValue;
+    const { naturalWidth, naturalHeight, ...image } = props.modelValue;
     emit("update:modelValue", { ...image, url: value });
   } else {
     emit("update:modelValue", createBackgroundImage(value));

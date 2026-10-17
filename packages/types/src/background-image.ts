@@ -22,12 +22,19 @@ export interface BackgroundImage {
   /** `false` paints the image once; `true` tiles it. */
   repeat: boolean;
   /**
-   * The image's size in px: measured by the editor when the author sets the
-   * URL, or read from an importer's source. Only the ratio is used: a section
-   * hero with `height: "image"` keeps its box at `height / width`.
+   * The image file's own width in px, when known: given by the media library,
+   * measured by the editor when the author sets the URL, or read by an
+   * importer (from MJML, the hero's `background-width`, which may be the box's
+   * size rather than the file's). Only the ratio with `naturalHeight` is used:
+   * a section hero with `height: "image"` keeps its box at that shape. Both or
+   * neither; one without the other reads as unknown.
    */
-  width?: number;
-  height?: number;
+  naturalWidth?: number;
+  /**
+   * The image file's own height in px, when known; it pairs with
+   * `naturalWidth`, and only their ratio is used. Both or neither.
+   */
+  naturalHeight?: number;
 }
 
 /**

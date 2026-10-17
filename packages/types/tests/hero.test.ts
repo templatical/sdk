@@ -10,8 +10,8 @@ import type { BackgroundImage, SectionHero } from "../src";
 const URL = "https://cdn.test/hero.jpg";
 const MEASURED: BackgroundImage = {
   ...createBackgroundImage(URL),
-  width: 1200,
-  height: 800,
+  naturalWidth: 1200,
+  naturalHeight: 800,
 };
 const MATCH: SectionHero = { height: "image", verticalAlign: "middle" };
 
@@ -101,10 +101,10 @@ describe("resolveHero", () => {
   );
 
   it.each([
-    { width: undefined, height: undefined },
-    { width: 0, height: 800 },
-    { width: 1200, height: Number.NaN },
-    { width: Number.POSITIVE_INFINITY, height: 800 },
+    { naturalWidth: undefined, naturalHeight: undefined },
+    { naturalWidth: 0, naturalHeight: 800 },
+    { naturalWidth: 1200, naturalHeight: Number.NaN },
+    { naturalWidth: Number.POSITIVE_INFINITY, naturalHeight: 800 },
   ])("does not match an image whose size is unknown (%j)", (size) => {
     expect(
       resolveHero(
@@ -117,7 +117,7 @@ describe("resolveHero", () => {
   });
 
   it.each([-5, 0, 0.4, "300"])(
-    "reads a height that isn't a positive number (%j) as matching the image",
+    "reads a height that isn't a number of at least 1 (%j) as matching the image",
     (height) => {
       const hero = resolveHero(
         createSectionBlock({
@@ -148,9 +148,9 @@ describe("imageAspectRatio", () => {
   it.each([
     undefined,
     createBackgroundImage(URL),
-    { ...MEASURED, width: 0 },
-    { ...MEASURED, height: -1 },
-    { ...MEASURED, height: Number.NaN },
+    { ...MEASURED, naturalWidth: 0 },
+    { ...MEASURED, naturalHeight: -1 },
+    { ...MEASURED, naturalHeight: Number.NaN },
   ])("is null without a positive, finite size (%j)", (bg) => {
     expect(imageAspectRatio(bg)).toBeNull();
   });

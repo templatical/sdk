@@ -13,8 +13,8 @@ import type { LintOptions } from "../../src";
 const RULE = "structure.hero-not-applied";
 const MEASURED: BackgroundImage = {
   ...createBackgroundImage("https://cdn.test/hero.jpg"),
-  width: 1200,
-  height: 800,
+  naturalWidth: 1200,
+  naturalHeight: 800,
 };
 const MATCH: SectionHero = { height: "image", verticalAlign: "middle" };
 
@@ -78,7 +78,7 @@ describe(RULE, () => {
       }),
     ]);
     expect(issues[0].message).toBe(
-      "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image's width and height.",
+      "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image file's size.",
     );
   });
 

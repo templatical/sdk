@@ -212,8 +212,8 @@ describe("buildTopLevel", () => {
       size: "cover",
       position: { x: "center", y: "center" },
       repeat: false,
-      width: 1200,
-      height: 800,
+      naturalWidth: 1200,
+      naturalHeight: 800,
     });
     expect(entries[0]).toEqual({
       sourceTag: "standard-hero",

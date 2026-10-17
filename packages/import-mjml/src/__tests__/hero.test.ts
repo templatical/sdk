@@ -32,8 +32,8 @@ describe("mj-hero import", () => {
         size: "cover",
         position: { x: "center", y: "center" },
         repeat: false,
-        width: 1200,
-        height: 800,
+        naturalWidth: 1200,
+        naturalHeight: 800,
       },
       styles: {
         padding: { top: 48, right: 24, bottom: 48, left: 24 },

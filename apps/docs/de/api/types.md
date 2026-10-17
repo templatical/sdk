@@ -266,8 +266,8 @@ interface BackgroundImage {
     y: 'top' | 'center' | 'bottom';
   };
   repeat: boolean; // false: einmal gezeichnet
-  width?: number;   // Größe des Bilds in px; die Höhe 'image' eines Heros übernimmt diese Form
-  height?: number;
+  naturalWidth?: number;   // eigene Größe der Bilddatei in px; die Höhe 'image' eines Heros übernimmt diese Form
+  naturalHeight?: number;
 }
 
 interface SectionHero {

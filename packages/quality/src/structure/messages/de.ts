@@ -20,7 +20,7 @@ const de: typeof en = {
   "structure.hero-not-applied.image":
     "Der Hero-Modus braucht ein Hintergrundbild, deshalb wird diese Sektion als normale Sektion dargestellt, bis sie eines hat.",
   "structure.hero-not-applied.size":
-    "Der Hero-Modus kann die Form dieses Hintergrundbilds nicht übernehmen, weil seine Größe unbekannt ist (eine Merge-Tag-URL oder ein Bild, das der Editor nicht vermessen hat), deshalb wird die Sektion als normale Sektion dargestellt. Gib ihr eine feste Höhe oder trage Breite und Höhe des Bilds ein.",
+    "Der Hero-Modus kann die Form dieses Hintergrundbilds nicht übernehmen, weil seine Größe unbekannt ist (eine Merge-Tag-URL oder ein Bild, das der Editor nicht vermessen hat), deshalb wird die Sektion als normale Sektion dargestellt. Gib ihr eine feste Höhe oder trage die Größe der Bilddatei ein.",
 };
 
 export default de;

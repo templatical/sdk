@@ -283,8 +283,8 @@ describe("SectionToolbar wrapper background image", () => {
 describe("SectionToolbar in hero mode", () => {
   const measured = {
     ...createBackgroundImage("https://cdn.test/hero.jpg"),
-    width: 1200,
-    height: 800,
+    naturalWidth: 1200,
+    naturalHeight: 800,
   };
 
   it("hides the border while the hero applies, without clearing it", () => {

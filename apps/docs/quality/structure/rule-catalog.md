@@ -25,7 +25,7 @@ The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 |---|---|---|---|
 | `structure.empty-section` | warning | yes | A section has no columns, or every column is empty. Renders as a blank table row in most clients — wasted whitespace and an occasional visible padding gap. Auto-fix removes the section. |
 | `structure.empty-column` | warning | — | A multi-column section has at least one column with no blocks. Renders awkwardly (uneven gaps, collapsed columns on mobile) and almost always means the author intended fewer columns. No auto-fix because the right answer (merge into a sibling vs. drop the section vs. change the `columns` layout) depends on intent. |
-| `structure.hero-not-applied` | warning | — | A section has `hero` set but renders as a regular section: it has more than one column, no background image, or `height: "image"` without the image's size (a merge-tag URL, or an image added outside the editor). The message names which. Switch to one column, add the image, set a fixed height, or give the image its `width` and `height`. |
+| `structure.hero-not-applied` | warning | — | A section has `hero` set but renders as a regular section: it has more than one column, no background image, or `height: "image"` without the image's size (a merge-tag URL, or an image added outside the editor). The message names which. Switch to one column, add the image, set a fixed height, or give the image its `naturalWidth` and `naturalHeight`. |
 
 ## Email client compatibility
 
