@@ -120,10 +120,15 @@ ${body}
 }
 
 /**
- * Render a section `resolveHero` applies as an `<mj-hero>`. `context`'s width
- * is the hero box's own: `renderTopLevelBlock` narrows it inside padded
- * bands. The content is column 0's blocks, filtered as a column's are;
- * mj-hero takes content elements directly, with no `mj-column`.
+ * Render a section `resolveHero` applies as an `<mj-hero>`. The content is
+ * column 0's blocks, filtered as a column's are; mj-hero takes content
+ * elements directly, with no `mj-column`.
+ *
+ * The hero's box is the room its bands leave it, `context.contentWidth`
+ * floored as MJML floors every band; Outlook draws the image at exactly that
+ * width. Its content renders `"full"` at the box and gets the box less the
+ * hero's own side padding as its room, as mj-hero gives it: no border comes
+ * off, since a hero draws none.
  *
  * Left out on purpose: `border` (mj-hero has none), `background-size` and
  * `background-repeat` (it always paints `cover`, unrepeated) and `direction`
@@ -136,7 +141,8 @@ function renderHero(
   context: RenderContext,
   renderBlock: BlockRenderer,
 ): string {
-  const geometry = heroGeometry(hero, context.containerWidth);
+  const boxWidth = Math.floor(context.contentWidth);
+  const geometry = heroGeometry(hero, boxWidth);
   const height =
     geometry.height === undefined ? "" : ` height="${geometry.height}px"`;
   const bgColor =
@@ -145,6 +151,10 @@ function renderHero(
   const padding = toPaddingString(block.styles.padding);
   const borderRadiusAttrStr = borderRadiusAttr(block.borderRadius);
   const visibilityAttr = getCssClassAttr(block);
+  const contentContext = context.withContainerWidth(
+    boxWidth,
+    boxWidth - horizontalInset(block.styles.padding),
+  );
 
   const content = filterHtmlBlocks(
     block.children[0] ?? [],
@@ -152,7 +162,7 @@ function renderHero(
   )
     .filter((child) => !isSection(child))
     .map((child) =>
-      wrapWithDisplayCondition(child, renderBlock(child, context)),
+      wrapWithDisplayCondition(child, renderBlock(child, contentContext)),
     )
     .filter((value) => value !== "")
     .join("\n");

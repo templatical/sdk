@@ -187,6 +187,40 @@ describe("mj-hero import", () => {
     },
   );
 
+  it.each([
+    [
+      "a fixed-height hero",
+      `<mj-hero mode="fixed-height" height="300px" background-url="${URL}" padding="40px 50px">`,
+      "",
+    ],
+    [
+      "a fixed-height hero in a padded wrapper",
+      `<mj-hero mode="fixed-height" height="300px" background-url="${URL}" padding="40px 50px">`,
+      "0 20px",
+    ],
+    [
+      "a content-height hero in a padded wrapper",
+      `<mj-hero background-url="${URL}" padding="40px 50px">`,
+      "0 20px",
+    ],
+  ])(
+    "measures an image in %s against the room inside the hero's padding",
+    (_name, open, band) => {
+      // The band's room less the hero's 50px side padding: 500, or 460 inside
+      // the wrapper. The image's own padding is 0.
+      const room = band ? 460 : 500;
+      const hero = `${open}<mj-image src="https://cdn.test/a.png" width="${room}px" padding="0" /><mj-image src="https://cdn.test/b.png" width="${room - 1}px" padding="0" /></mj-hero>`;
+      const section = onlySection(
+        band ? `<mj-wrapper padding="${band}">${hero}</mj-wrapper>` : hero,
+      );
+      expect(
+        section.children[0].map(
+          (block) => block.type === "image" && block.width,
+        ),
+      ).toEqual(["full", room - 1]);
+    },
+  );
+
   it("measures a section in the same wrapper against the full content width", () => {
     const section = onlySection(
       `<mj-wrapper padding="0 20px"><mj-section><mj-column><mj-image src="https://cdn.test/a.png" width="600px" /></mj-column></mj-section></mj-wrapper>`,

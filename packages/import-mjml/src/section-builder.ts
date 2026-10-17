@@ -1,10 +1,6 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
-import {
-  createSectionBlock,
-  heroBoxWidth,
-  resolveHero,
-} from "@templatical/types";
+import { createSectionBlock, resolveHero } from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
@@ -389,27 +385,33 @@ export function buildHero(
     ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
   });
 
-  // The renderer narrows an applied hero's box, and so its content's width, by
-  // each enclosing band's padding (`sectionContext` in renderer/src/index.ts),
-  // and an import measures it the same way. A hero the renderer draws as a
-  // regular section is measured like one, at the full content width.
+  // The room the renderer gives the content, measured as buildSection
+  // measures a section's: the band's floored width less the hero's side
+  // padding. No border comes off: mj-hero draws none, and the section built
+  // here has none to draw if the renderer falls back to a regular section.
+  // `containerWidth` follows the renderer too: an applied hero renders a
+  // `"full"` image at its box (`renderHero` in renderers/section.ts), a
+  // fallback section at the nominal width.
+  const fields = baseFields(attrs, "native");
+  const heroBox = Math.floor(ctx.contentWidth);
+  const heroPadding = horizontalInset(fields.styles.padding);
   const applied = resolveHero({
     columns: "1",
     hero: read.hero ?? undefined,
     backgroundImage: read.image ?? undefined,
   })?.applied;
-  const containerWidth = applied
-    ? heroBoxWidth(ctx.containerWidth, [wrapper?.padding])
-    : ctx.containerWidth;
 
-  const { left, right } = parsePaddingShorthand(attrs.padding);
   const children = convertColumnChildren(
     $el,
-    { ...ctx, containerWidth, columnPadding: left + right },
+    {
+      ...ctx,
+      containerWidth: applied ? heroBox : ctx.containerWidth,
+      contentWidth: heroBox - heroPadding,
+      columnPadding: heroPadding,
+    },
     entries,
   );
 
-  const fields = baseFields(attrs, "native");
   if (attrs["background-color"] === undefined) {
     fields.styles.backgroundColor = "#ffffff";
   }

@@ -920,6 +920,8 @@ The context object passed to block renderers. Contains render options, font conf
 | `containerWidth` | The column's share of the body width, ignoring the padding and borders around it. A `'full'` image or video is emitted at this width, and MJML caps it at its real box. |
 | `contentWidth` | The whole pixels MJML gives the column's content: the body width less the side padding and border of the wrapper band and the section, then the column's percentage, floored. Width-aware decisions read this one. |
 
+In a [hero section](/guide/sections-and-columns#hero), the content has no column: `containerWidth` is the hero's box (the body width less the bands around it) and `contentWidth` is that box less the hero's side padding. A hero draws no border, so none is subtracted.
+
 `withContainerWidth(width, contentWidth = width)` returns a copy for a narrower container.
 
 ### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}

@@ -4,7 +4,6 @@ import type {
   CustomBlock,
   TemplateContent,
   CustomFont,
-  SectionBlock,
   SectionWrapper,
   SpacingValue,
 } from "@templatical/types";
@@ -12,12 +11,10 @@ import {
   applyLayout,
   assertNoSlotInContent,
   assertNoWrapperInContent,
-  heroBoxWidth,
   isCustomBlock,
   isSection,
   isWrapper,
   resolveContentDirection,
-  resolveHero,
 } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import type { BlockRendererMap } from "./render-context";
@@ -248,23 +245,13 @@ ${bodyContent}
 /**
  * Render a top-level block. Wrappers emit `mj-wrapper` around their children.
  * Sections are rendered directly; other blocks are wrapped in a default
- * section/column. `frames` is the padding of each band around `block`, which
- * a hero's box is narrowed by.
+ * section/column.
  */
-function renderTopLevelBlock(
-  block: Block,
-  context: RenderContext,
-  frames: ReadonlyArray<SpacingValue | undefined> = [],
-): string {
+function renderTopLevelBlock(block: Block, context: RenderContext): string {
   if (isWrapper(block)) {
     const innerContext = insideWrapper(context, block.styles.padding);
     const inner = filterHtmlBlocks(block.children, context.allowHtmlBlocks)
-      .map((child) =>
-        renderTopLevelBlock(child, innerContext, [
-          ...frames,
-          block.styles.padding,
-        ]),
-      )
+      .map((child) => renderTopLevelBlock(child, innerContext))
       .filter((value) => value !== "")
       .join("\n");
     const framed = renderMjWrapper(
@@ -283,11 +270,7 @@ function renderTopLevelBlock(
   if (isSection(block)) {
     const rendered = renderBlock(
       block,
-      sectionContext(
-        block,
-        block.wrapper ? insideWrapper(context, block.wrapper.padding) : context,
-        [...frames, block.wrapper?.padding],
-      ),
+      block.wrapper ? insideWrapper(context, block.wrapper.padding) : context,
     );
     // An empty render (hidden section) stays empty — never emit a bare wrapper.
     const framed =
@@ -300,21 +283,6 @@ function renderTopLevelBlock(
   const content = renderBlock(block, context);
   const wrapped = wrapInSection(content, context.contentDirection);
   return wrapWithDisplayCondition(block, wrapped);
-}
-
-/**
- * The context a section renders in. A hero's is as wide as its box, which
- * MJML narrows by each enclosing band's padding and which Outlook draws the
- * image at; a regular section's is left as it is.
- */
-function sectionContext(
-  section: SectionBlock,
-  context: RenderContext,
-  frames: ReadonlyArray<SpacingValue | undefined>,
-): RenderContext {
-  return resolveHero(section)?.applied
-    ? context.withContainerWidth(heroBoxWidth(context.containerWidth, frames))
-    : context;
 }
 
 /**

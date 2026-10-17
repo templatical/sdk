@@ -296,3 +296,80 @@ describe("hero round-trip through MJML", () => {
     expect(mjml).not.toContain("<mj-hero");
   });
 });
+
+describe("hero content width", () => {
+  // mj-hero gives its content the box less its own side padding, and draws no
+  // border. `fluid-on-mobile` goes only on an image that fills that room, so
+  // the renderer has to measure it the same way. Each room is read back from
+  // MJML by compiling a 9999px probe image.
+  const PROBE = "https://cdn.test/probe.png";
+  const SECTION_PADDING = { top: 48, right: 24, bottom: 48, left: 24 };
+
+  function probe(width: number | "full"): Block {
+    return createImageBlock({ src: PROBE, alt: "probe", width });
+  }
+
+  function heroWith(width: number | "full", overrides: Partial<SectionBlock> = {}): Block[] {
+    return [hero({ wrapper: { padding: BAND }, children: [[probe(width)]], ...overrides })];
+  }
+
+  function sectionWith(width: number | "full", band = BAND): Block[] {
+    return [
+      createSectionBlock({
+        children: [[probe(width)]],
+        wrapper: { padding: band },
+        styles: { padding: SECTION_PADDING },
+      }),
+    ];
+  }
+
+  function probeTag(markup: string, tag: "<mj-image" | "<img"): string {
+    const at = markup.indexOf(`src="${PROBE}"`);
+    expect(at).toBeGreaterThan(-1);
+    return markup.slice(markup.lastIndexOf(tag, at), markup.indexOf(">", at) + 1);
+  }
+
+  async function roomOf(build: (width: number) => Block[]): Promise<number> {
+    const { html } = await render(build(9999));
+    const width = /\bwidth="(\d+)"/.exec(probeTag(html, "<img"));
+    expect(width).not.toBeNull();
+    return Number(width![1]);
+  }
+
+  async function isFluid(blocks: Block[]): Promise<boolean> {
+    const { mjml } = await render(blocks);
+    return probeTag(mjml, "<mj-image").includes('fluid-on-mobile="true"');
+  }
+
+  it("gives an image in a padded hero the room a section with the same padding gives it", async () => {
+    // 600 − 40 (band) − 48 (hero padding) − 20 (image padding).
+    expect(await roomOf((w) => heroWith(w))).toBe(492);
+    expect(await roomOf(sectionWith)).toBe(492);
+    expect(await isFluid(heroWith(492))).toBe(true);
+    expect(await isFluid(sectionWith(492))).toBe(true);
+    expect(await isFluid(heroWith(491))).toBe(false);
+    expect(await isFluid(sectionWith(491))).toBe(false);
+  });
+
+  it("leaves the hidden section border out of the hero's content room", async () => {
+    const side: BorderSideValue = { width: 3, style: "solid", color: "#ff0000" };
+    const border = { top: side, right: side, bottom: side, left: side };
+    expect(await roomOf((w) => heroWith(w, { border }))).toBe(492);
+    expect(await isFluid(heroWith(492, { border }))).toBe(true);
+  });
+
+  it("floors a fractional band as a section does, so no half pixel reaches the export", async () => {
+    const band = { top: 0, right: 20, bottom: 0, left: 20.5 };
+    const inBand = (width: number | "full") =>
+      heroWith(width, { wrapper: { padding: band } });
+    const { mjml } = await render(inBand("full"));
+    expect(heroTag(mjml)).toContain('background-width="559px"');
+    expect(probeTag(mjml, "<mj-image")).toContain('width="559px"');
+    expect(probeTag(mjml, "<mj-image")).toContain('fluid-on-mobile="true"');
+    // floor(600 − 40.5) − 48 (hero padding) − 20 (image padding).
+    expect(await isFluid(inBand(491))).toBe(true);
+    expect(await isFluid(sectionWith(491, band))).toBe(true);
+    expect(await isFluid(inBand(490))).toBe(false);
+    expect(await isFluid(sectionWith(490, band))).toBe(false);
+  });
+});

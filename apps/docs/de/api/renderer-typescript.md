@@ -217,6 +217,8 @@ Das an Block-Renderer übergebene Kontextobjekt. Enthält Rendering-Optionen, Sc
 | `containerWidth` | Der Anteil der Spalte an der Body-Breite, ohne Padding und Rahmen um sie herum. Ein Bild oder Video mit `'full'` wird in dieser Breite ausgegeben, und MJML begrenzt es auf seine tatsächliche Box. |
 | `contentWidth` | Die ganzen Pixel, die MJML dem Inhalt der Spalte gibt: die Body-Breite abzüglich des seitlichen Paddings und Rahmens von Wrapper-Band und Sektion, davon der Prozentanteil der Spalte, abgerundet. Breitenabhängige Entscheidungen lesen diesen Wert. |
 
+In einer [Hero-Sektion](/de/guide/sections-and-columns#hero) hat der Inhalt keine Spalte: `containerWidth` ist die Box des Heros (die Body-Breite abzüglich der Bänder um ihn herum) und `contentWidth` diese Box abzüglich des seitlichen Paddings des Heros. Ein Hero zeichnet keinen Rahmen, daher wird keiner abgezogen.
+
 `withContainerWidth(width, contentWidth = width)` gibt eine Kopie für einen schmaleren Container zurück.
 
 ### `fluidOnMobileAttr(block, context)` {#fluid-on-mobile-attr}
