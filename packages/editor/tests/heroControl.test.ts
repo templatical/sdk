@@ -224,6 +224,26 @@ describe("HeroControl", () => {
     expect(wrapper.text()).toContain(en.blockSettings.heroSizeUnknown);
   });
 
+  it.each([0, 0.4, -5, Number.NaN])(
+    "reads a hand-edited height of %s as Match image, as the renderer does",
+    (height) => {
+      const wrapper = mountHero(
+        createSectionBlock({
+          backgroundImage: MEASURED,
+          hero: { height, verticalAlign: "middle" },
+        }),
+      );
+      expect(
+        heightPill(wrapper, en.blockSettings.heroHeightImage).attributes(
+          "aria-checked",
+        ),
+      ).toBe("true");
+      expect(
+        wrapper.find('[data-testid="section-hero-height-px"]').exists(),
+      ).toBe(false);
+    },
+  );
+
   it("edits a fixed height, rounding it and ignoring a non-positive one", async () => {
     const wrapper = mountHero(
       createSectionBlock({

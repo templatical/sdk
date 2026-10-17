@@ -444,7 +444,7 @@ const fr: typeof en = {
     heroMatchImageMergeTag:
       "« Comme l'image » nécessite une URL d'image directe : une balise de fusion n'a pas de taille à lire.",
     heroSizeUnknown:
-      "La taille de cette image n'a pas pu être lue, la section s'affiche donc à la hauteur de son contenu.",
+      "La taille de cette image n'est pas encore connue, la section s'affiche donc à la hauteur de son contenu.",
     display: "Affichage",
     showOnDesktop: "Afficher sur ordinateur",
     showOnMobile: "Afficher sur mobile",

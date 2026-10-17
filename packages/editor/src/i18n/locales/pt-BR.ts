@@ -498,7 +498,7 @@ const ptBR: typeof en = {
     heroMatchImageMergeTag:
       "“Igual à imagem” precisa de uma URL de imagem direta: uma merge tag não tem tamanho para ler.",
     heroSizeUnknown:
-      "Não foi possível ler o tamanho desta imagem, então a seção aparece com a altura do seu conteúdo.",
+      "O tamanho desta imagem ainda não é conhecido, então a seção aparece com a altura do seu conteúdo.",
     display: "Exibição",
     showOnDesktop: "Mostrar no desktop",
     showOnMobile: "Mostrar no mobile",

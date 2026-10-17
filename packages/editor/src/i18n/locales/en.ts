@@ -497,7 +497,7 @@ export default {
     heroMatchImageMergeTag:
       "Match image needs a direct image URL: a merge tag has no size to read.",
     heroSizeUnknown:
-      "This image's size couldn't be read, so the section shows at its content height.",
+      "This image's size isn't known yet, so the section shows at its content height.",
     display: "Display",
     showOnDesktop: "Show on desktop",
     showOnMobile: "Show on mobile",

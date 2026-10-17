@@ -499,7 +499,7 @@ const ca: typeof en = {
     heroMatchImageMergeTag:
       "«Com la imatge» necessita una URL d'imatge directa: una etiqueta de fusió no té cap mida per llegir.",
     heroSizeUnknown:
-      "No s'ha pogut llegir la mida d'aquesta imatge, així que la secció es mostra amb l'alçada del seu contingut.",
+      "La mida d'aquesta imatge encara no es coneix, així que la secció es mostra amb l'alçada del seu contingut.",
     display: "Visualització",
     showOnDesktop: "Mostra a l'escriptori",
     showOnMobile: "Mostra al mòbil",

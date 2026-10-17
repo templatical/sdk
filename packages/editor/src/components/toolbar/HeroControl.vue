@@ -22,6 +22,15 @@ type HeightMode = "fit" | "image" | "fixed";
 /** A fixed height's starting value when the image's size is unknown. */
 const FALLBACK_FIXED_HEIGHT = 300;
 
+/**
+ * Whether a stored height is a fixed one, read as `resolveHero` reads it: a
+ * finite number of at least 1. Anything else in hand-edited JSON renders as
+ * matching the image, so the control shows it that way.
+ */
+function isFixedHeight(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 1;
+}
+
 const props = defineProps<{
   section: SectionBlock;
 }>();
@@ -50,13 +59,11 @@ const oneColumn = computed(() => props.section.columns === "1");
 
 const heightMode = computed<HeightMode>(() => {
   if (!hero.value) return "fit";
-  return typeof hero.value.height === "number" ? "fixed" : "image";
+  return isFixedHeight(hero.value.height) ? "fixed" : "image";
 });
 
 const fixedHeight = computed(() =>
-  typeof hero.value?.height === "number"
-    ? hero.value.height
-    : FALLBACK_FIXED_HEIGHT,
+  isFixedHeight(hero.value?.height) ? hero.value.height : FALLBACK_FIXED_HEIGHT,
 );
 
 const heightOptions = computed(() => [

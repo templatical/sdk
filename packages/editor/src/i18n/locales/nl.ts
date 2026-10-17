@@ -445,7 +445,7 @@ const nl: typeof en = {
     heroMatchImageMergeTag:
       "‘Zoals afbeelding’ heeft een directe afbeeldings-URL nodig: van een samenvoegveld is geen grootte te lezen.",
     heroSizeUnknown:
-      "De grootte van deze afbeelding kon niet worden gelezen, dus de sectie wordt getoond op de hoogte van de inhoud.",
+      "De grootte van deze afbeelding is nog niet bekend, dus de sectie wordt getoond op de hoogte van de inhoud.",
     display: "Weergave",
     showOnDesktop: "Tonen op desktop",
     showOnMobile: "Tonen op mobiel",

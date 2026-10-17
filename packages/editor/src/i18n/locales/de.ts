@@ -501,7 +501,7 @@ const de: typeof en = {
     heroMatchImageMergeTag:
       "„Wie Bild“ braucht eine direkte Bild-URL: Bei einem Merge-Tag lässt sich keine Größe auslesen.",
     heroSizeUnknown:
-      "Die Größe dieses Bilds konnte nicht gelesen werden, daher wird der Abschnitt in der Höhe seines Inhalts angezeigt.",
+      "Die Größe dieses Bilds ist noch nicht bekannt, daher wird der Abschnitt in der Höhe seines Inhalts angezeigt.",
     display: "Anzeige",
     showOnDesktop: "Auf Desktop anzeigen",
     showOnMobile: "Auf Mobilgerät anzeigen",

@@ -433,7 +433,7 @@ const translations: typeof en = {
     heroMatchImageMergeTag:
       "「画像に合わせる」には画像の直接URLが必要です。差し込み項目からはサイズを読み取れません。",
     heroSizeUnknown:
-      "この画像のサイズを読み取れなかったため、セクションは内容の高さで表示されます。",
+      "この画像のサイズはまだ分からないため、セクションは内容の高さで表示されます。",
     display: "表示",
     showOnDesktop: "デスクトップで表示",
     showOnMobile: "モバイルで表示",

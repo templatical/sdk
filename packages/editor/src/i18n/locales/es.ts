@@ -499,7 +499,7 @@ const es: typeof en = {
     heroMatchImageMergeTag:
       "«Igual que la imagen» necesita una URL de imagen directa: una etiqueta de combinación no tiene tamaño que leer.",
     heroSizeUnknown:
-      "No se pudo leer el tamaño de esta imagen, así que la sección se muestra con la altura de su contenido.",
+      "El tamaño de esta imagen aún no se conoce, así que la sección se muestra con la altura de su contenido.",
     display: "Visualización",
     showOnDesktop: "Mostrar en escritorio",
     showOnMobile: "Mostrar en móvil",
