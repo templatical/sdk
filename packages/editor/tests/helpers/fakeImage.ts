@@ -4,7 +4,7 @@ import { vi } from "vitest";
 export const FAKE_IMAGE_LOAD_MS = 50;
 
 /**
- * Replace the global `Image` so `measureImage` resolves from `sizes`, keyed
+ * Replace the global `Image` so `loadNaturalSize` resolves from `sizes`, keyed
  * by URL; any other URL fails to load. happy-dom never loads images itself.
  * Undo with `vi.unstubAllGlobals()`.
  */

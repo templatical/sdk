@@ -42,7 +42,7 @@ The type signature:
 interface MediaResult {
   url: string;
   alt?: string;
-  /** The file's size in px, when known. Feeds the image's aspect-ratio lock. */
+  /** The file's size in px, when known. Feeds the image's aspect-ratio lock and a hero's shape. */
   width?: number;
   height?: number;
 }

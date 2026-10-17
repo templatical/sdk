@@ -14,3 +14,9 @@ export const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
  * mounted block resolves immediately (template load shouldn't wait).
  */
 export const RESOLVE_IMAGE_DEBOUNCE_MS = 300;
+
+/**
+ * How long a measurement of an image's natural size waits for the image to
+ * load before it gives up and reports no size.
+ */
+export const NATURAL_SIZE_TIMEOUT_MS = 10000;

@@ -122,8 +122,8 @@ export interface MediaResult {
   alt?: string;
   /**
    * The file's own size in px, when the source knows it. An image block stores
-   * it as `naturalWidth` / `naturalHeight` for its aspect-ratio lock. Both or
-   * neither.
+   * it as `naturalWidth` / `naturalHeight` for its aspect-ratio lock, and a
+   * section's background image for a hero's shape. Both or neither.
    */
   width?: number;
   height?: number;

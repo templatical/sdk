@@ -1,11 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { effectScope, nextTick, ref } from "vue";
-import { useNaturalImageSize } from "../src/composables/useNaturalImageSize";
+import { createApp, effectScope, nextTick, ref } from "vue";
 import {
+  useMeasureNaturalSize,
+  useNaturalImageSize,
+} from "../src/composables/useNaturalImageSize";
+import {
+  createImageUrlResolver,
+  type ResolveImageUrl,
+} from "../src/composables/useImageUrlResolver";
+import { NATURAL_SIZE_TIMEOUT_MS } from "../src/constants/timeouts";
+import { IMAGE_URL_RESOLVER_KEY } from "../src/keys";
+import {
+  measureNaturalSize,
   naturalSizeFields,
   naturalSizeOf,
   toNaturalSize,
 } from "../src/utils/imageNaturalSize";
+import { FAKE_IMAGE_LOAD_MS, stubImages } from "./helpers/fakeImage";
 
 // Records every image the composable loads, so a test decides when (and in
 // what order) they finish.
@@ -103,5 +114,112 @@ describe("imageNaturalSize", () => {
       naturalWidth: undefined,
       naturalHeight: undefined,
     });
+  });
+});
+
+describe("measureNaturalSize", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("resolves the image's natural size", async () => {
+    vi.useFakeTimers();
+    stubImages({ "https://cdn.test/a.jpg": { width: 1200, height: 800 } });
+    const size = measureNaturalSize("https://cdn.test/a.jpg");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toEqual({ width: 1200, height: 800 });
+  });
+
+  it("resolves null when the image fails to load", async () => {
+    vi.useFakeTimers();
+    stubImages({});
+    const size = measureNaturalSize("https://cdn.test/missing.jpg");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toBeNull();
+  });
+
+  it("resolves null for an image that reports no size", async () => {
+    vi.useFakeTimers();
+    stubImages({ "https://cdn.test/empty.svg": { width: 0, height: 0 } });
+    const size = measureNaturalSize("https://cdn.test/empty.svg");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toBeNull();
+  });
+
+  it("gives up on an image that never loads", async () => {
+    vi.useFakeTimers();
+    let settled: unknown = "pending";
+    vi.stubGlobal(
+      "Image",
+      class {
+        onload: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        src = "";
+      },
+    );
+    void measureNaturalSize("https://cdn.test/stalled.jpg").then((size) => {
+      settled = size;
+    });
+    await vi.advanceTimersByTimeAsync(NATURAL_SIZE_TIMEOUT_MS - 1);
+    expect(settled).toBe("pending");
+    await vi.advanceTimersByTimeAsync(1);
+    expect(settled).toBeNull();
+  });
+});
+
+describe("useMeasureNaturalSize", () => {
+  const STORED = "logo.png";
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function measurer(resolve?: ResolveImageUrl) {
+    const app = createApp({});
+    if (resolve) app.provide(IMAGE_URL_RESOLVER_KEY, createImageUrlResolver(resolve));
+    return app.runWithContext(() => useMeasureNaturalSize());
+  }
+
+  it("measures the stored url without a resolver", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ [STORED]: { width: 40, height: 20 } });
+    const size = measurer()(STORED);
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toEqual({ width: 40, height: 20 });
+    expect(images.requested).toEqual([STORED]);
+  });
+
+  it("measures the url a resolver displays", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ "blob:logo": { width: 40, height: 20 } });
+    const size = measurer(() => "blob:logo")(STORED);
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toEqual({ width: 40, height: 20 });
+    expect(images.requested).toEqual(["blob:logo"]);
+  });
+
+  it("waits for an async resolver before loading", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ "blob:logo": { width: 40, height: 20 } });
+    let answer: (url: string) => void = () => {};
+    const size = measurer(
+      () => new Promise<string>((resolve) => (answer = resolve)),
+    )(STORED);
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    expect(images.requested).toEqual([]);
+
+    answer("blob:logo");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toEqual({ width: 40, height: 20 });
+    expect(images.requested).toEqual(["blob:logo"]);
+  });
+
+  it("measures the stored url when the resolver opts out", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ [STORED]: { width: 40, height: 20 } });
+    const size = measurer(async () => null)(STORED);
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    await expect(size).resolves.toEqual({ width: 40, height: 20 });
+    expect(images.requested).toEqual([STORED]);
   });
 });

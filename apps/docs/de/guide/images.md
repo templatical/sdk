@@ -42,7 +42,7 @@ Die Typsignatur:
 interface MediaResult {
   url: string;
   alt?: string;
-  /** Die Größe der Datei in px, falls bekannt. Speist die Seitenverhältnis-Sperre des Bildes. */
+  /** Die Größe der Datei in px, falls bekannt. Speist die Seitenverhältnis-Sperre des Bildes und die Form eines Heros. */
   width?: number;
   height?: number;
 }

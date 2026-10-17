@@ -2,7 +2,7 @@
 import NumberWithSuffix from "./NumberWithSuffix.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
-import { useImageMeasure } from "../../composables/useImageMeasure";
+import { useMeasureNaturalSize } from "../../composables/useNaturalImageSize";
 import { labelClass } from "../../constants/styleConstants";
 import {
   containsMergeTag,
@@ -15,6 +15,7 @@ import { computed, inject } from "vue";
 import { EDITOR_KEY, LAYOUT_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { getEmailFrameWidth } from "../../utils/emailFrameWidth";
 import { sectionBandWidth } from "../../utils/imageRoom";
+import { naturalSizeFields } from "../../utils/imageNaturalSize";
 
 type HeightMode = "fit" | "image" | "fixed";
 
@@ -33,7 +34,7 @@ const { t } = useI18n();
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const editor = inject(EDITOR_KEY, null);
 const layout = inject(LAYOUT_KEY, undefined);
-const measure = useImageMeasure();
+const measure = useMeasureNaturalSize();
 
 const url = computed(() =>
   typeof props.section.backgroundImage?.url === "string"
@@ -130,11 +131,7 @@ async function measureIfUnknown(): Promise<void> {
   // The author may have picked another image while this one loaded.
   if (!size || !current || current.url !== measuredUrl) return;
   emit("update", {
-    backgroundImage: {
-      ...current,
-      naturalWidth: size.width,
-      naturalHeight: size.height,
-    },
+    backgroundImage: { ...current, ...naturalSizeFields(size) },
   });
 }
 

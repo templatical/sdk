@@ -507,6 +507,109 @@ describe("BackgroundImageControl image size", () => {
     );
   });
 
+  it("stores a browsed image's size with its url, and measures nothing", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({});
+    const onRequestMedia = vi.fn(async () => ({
+      url: HERO,
+      width: 1200,
+      height: 800,
+    }));
+    const wrapper = mountMeasuring(undefined, {
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+    });
+    await wrapper.get('[data-testid="t-bg-browse"]').trigger("click");
+    await flushPromises();
+    await wrapper.setProps({ modelValue: lastEmitted(wrapper) });
+    await vi.advanceTimersByTimeAsync(
+      RESOLVE_IMAGE_DEBOUNCE_MS + FAKE_IMAGE_LOAD_MS,
+    );
+    expect(wrapper.emitted("update:modelValue")).toEqual([
+      [{ ...createBackgroundImage(HERO), naturalWidth: 1200, naturalHeight: 800 }],
+    ]);
+    expect(images.requested).toEqual([]);
+  });
+
+  it("measures a browsed image whose size the media library doesn't give", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ [HERO]: { width: 1200, height: 800 } });
+    const onRequestMedia = vi.fn(async () => ({ url: HERO }));
+    const wrapper = mountMeasuring(undefined, {
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+    });
+    await wrapper.get('[data-testid="t-bg-browse"]').trigger("click");
+    await flushPromises();
+    await wrapper.setProps({ modelValue: lastEmitted(wrapper) });
+    await vi.advanceTimersByTimeAsync(
+      RESOLVE_IMAGE_DEBOUNCE_MS + FAKE_IMAGE_LOAD_MS,
+    );
+    expect(images.requested).toEqual([HERO]);
+    expect(wrapper.emitted("update:modelValue")).toEqual([
+      [createBackgroundImage(HERO)],
+      [{ ...createBackgroundImage(HERO), naturalWidth: 1200, naturalHeight: 800 }],
+    ]);
+  });
+
+  it("stores a dropped image's size with its url", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({});
+    const onRequestMedia = vi.fn(async () => ({
+      url: HERO,
+      width: 600,
+      height: 300,
+    }));
+    const wrapper = mountMeasuring(undefined, {
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+    });
+    await flushPromises();
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    const file = new File(["data"], "hero.png", { type: "image/png" });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { files: [file], items: [{ type: file.type }] },
+    });
+    wrapper.get('[data-testid="t-bg-url"]').element.dispatchEvent(event);
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(
+      RESOLVE_IMAGE_DEBOUNCE_MS + FAKE_IMAGE_LOAD_MS,
+    );
+    expect(wrapper.emitted("update:modelValue")).toEqual([
+      [{ ...createBackgroundImage(HERO), naturalWidth: 600, naturalHeight: 300 }],
+    ]);
+    expect(images.requested).toEqual([]);
+  });
+
+  it("cancels a pending measurement when the url is cleared", async () => {
+    vi.useFakeTimers();
+    const images = stubImages({ [HERO]: { width: 1200, height: 800 } });
+    const wrapper = mountMeasuring(undefined);
+    await typeUrl(wrapper, HERO);
+    await typeUrl(wrapper, "");
+    await vi.advanceTimersByTimeAsync(
+      RESOLVE_IMAGE_DEBOUNCE_MS + FAKE_IMAGE_LOAD_MS,
+    );
+    expect(images.requested).toEqual([]);
+    expect(wrapper.emitted("update:modelValue")).toEqual([
+      [createBackgroundImage(HERO)],
+      [undefined],
+    ]);
+  });
+
+  it("keeps a picked size off an image that doesn't track it", async () => {
+    const onRequestMedia = vi.fn(async () => ({
+      url: HERO,
+      width: 1200,
+      height: 800,
+    }));
+    const wrapper = mountIt(undefined, {
+      [ON_REQUEST_MEDIA_KEY]: onRequestMedia,
+    });
+    await wrapper.get('[data-testid="t-bg-browse"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.emitted("update:modelValue")).toEqual([
+      [createBackgroundImage(HERO)],
+    ]);
+  });
+
   it("does not measure without `measure`", async () => {
     vi.useFakeTimers();
     const images = stubImages({ [HERO]: { width: 1200, height: 800 } });
