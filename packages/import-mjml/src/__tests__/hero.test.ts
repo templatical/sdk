@@ -161,6 +161,32 @@ describe("mj-hero import", () => {
     expect(entries.map((e) => e.status)).toEqual(["converted", "converted"]);
   });
 
+  it.each([
+    [
+      "a content-height hero",
+      `<mj-hero background-url="${URL}" background-color="#000000">`,
+    ],
+    [
+      "a fixed-height hero with no background-url",
+      `<mj-hero mode="fixed-height" height="300px" background-color="#000000">`,
+    ],
+    [
+      "a fluid-height hero with no image size",
+      `<mj-hero mode="fluid-height" background-url="${URL}" background-color="#000000">`,
+    ],
+  ])(
+    "measures %s in a wrapper against the full content width, as the renderer draws it as a regular section",
+    (_name, open) => {
+      const section = onlySection(
+        `<mj-wrapper padding="0 20px">${open}<mj-image src="https://cdn.test/a.png" width="600px" /></mj-hero></mj-wrapper>`,
+      );
+      expect(section.children[0][0]).toMatchObject({
+        type: "image",
+        width: "full",
+      });
+    },
+  );
+
   it("measures a section in the same wrapper against the full content width", () => {
     const section = onlySection(
       `<mj-wrapper padding="0 20px"><mj-section><mj-column><mj-image src="https://cdn.test/a.png" width="600px" /></mj-column></mj-section></mj-wrapper>`,

@@ -1,6 +1,10 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
-import { createSectionBlock, heroBoxWidth } from "@templatical/types";
+import {
+  createSectionBlock,
+  heroBoxWidth,
+  resolveHero,
+} from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
@@ -362,10 +366,23 @@ export function buildHero(
     ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
   });
 
+  // The renderer narrows an applied hero's box, and so its content's width, by
+  // each enclosing band's padding (`sectionContext` in renderer/src/index.ts),
+  // and an import measures it the same way. A hero the renderer draws as a
+  // regular section is measured like one, at the full content width.
+  const applied = resolveHero({
+    columns: "1",
+    hero: read.hero ?? undefined,
+    backgroundImage: read.image ?? undefined,
+  })?.applied;
+  const containerWidth = applied
+    ? heroBoxWidth(ctx.containerWidth, [wrapper?.padding])
+    : ctx.containerWidth;
+
   const { left, right } = parsePaddingShorthand(attrs.padding);
   const children = convertColumnChildren(
     $el,
-    { ...ctx, columnPadding: left + right },
+    { ...ctx, containerWidth, columnPadding: left + right },
     entries,
   );
 
@@ -493,18 +510,9 @@ export function buildWrapper(
     });
   }
 
-  // The renderer narrows a hero's box, and so its content's width, by the
-  // wrapper's padding (`sectionContext` in renderer/src/index.ts), and an
-  // import measures it the same way. A section keeps the full content width:
-  // the renderer leaves its widths alone inside a padded band.
-  const heroCtx: ConvertContext = {
-    ...ctx,
-    containerWidth: heroBoxWidth(ctx.containerWidth, [wrapper.padding]),
-  };
-
   return sections.flatMap(($section) =>
     tagOf($section[0]) === "mj-hero"
-      ? buildHero($section, heroCtx, entries, copyWrapper(wrapper))
+      ? buildHero($section, ctx, entries, copyWrapper(wrapper))
       : buildSection($section, ctx, entries, copyWrapper(wrapper)),
   );
 }
