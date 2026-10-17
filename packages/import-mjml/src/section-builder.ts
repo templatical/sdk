@@ -24,7 +24,7 @@ import { convertElement } from "./block-mapper";
 import {
   baseFields,
   convertHtmlFallback,
-  horizontalInset,
+  mjmlHorizontalInset,
   readBorder,
   readBorderRadius,
   type ConvertContext,
@@ -306,9 +306,7 @@ export function buildSection(
   const sectionFields = baseFields(attrs, "native");
   // The room the renderer will give each converted column, so an image can
   // tell whether it fills its column on phones (`fluidOnMobileAttr`).
-  const sectionBox =
-    Math.floor(ctx.contentWidth) -
-    horizontalInset(sectionFields.styles.padding, border);
+  const sectionBox = Math.floor(ctx.contentWidth) - mjmlHorizontalInset(attrs);
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",
@@ -458,8 +456,7 @@ export function buildWrapper(
 
   const bandCtx: ConvertContext = {
     ...ctx,
-    contentWidth:
-      Math.floor(ctx.contentWidth) - horizontalInset(wrapper.padding),
+    contentWidth: Math.floor(ctx.contentWidth) - mjmlHorizontalInset(attrs),
   };
   return sections.flatMap(($section) =>
     buildSection($section, bandCtx, entries, copyWrapper(wrapper)),

@@ -288,3 +288,77 @@ describe("custom block renderers", () => {
     expect(isFluid(await compile(content))).toBe(true);
   });
 });
+
+describe("fractional padding and borders, which MJML reads in whole pixels", () => {
+  // MJML parses each padding side and each border width with parseInt
+  // (`shorthandParser`, `borderParser`), so 20.5px of padding takes 20px from
+  // the room and a 2.5px border takes 2px.
+  const ZERO = { top: 0, right: 0, bottom: 0, left: 0 };
+
+  it("section padding", async () => {
+    const partial: Partial<SectionBlock> = {
+      styles: { padding: { top: 0, right: 20.5, bottom: 0, left: 20.5 } },
+    };
+    // 600 − 20 − 20, less the image's 20px of padding.
+    expect(
+      await boundary((w) => doc([section("1", 0, probeImage(w), partial)])),
+    ).toEqual({ room: 540, atRoom: true, underRoom: false });
+  });
+
+  it("a section border", async () => {
+    const partial: Partial<SectionBlock> = {
+      styles: { padding: ZERO },
+      border: uniformBorder({ width: 2.5, style: "solid", color: "#000000" }),
+    };
+    // 600 − 2 − 2 − 20.
+    expect(
+      await boundary((w) => doc([section("1", 0, probeImage(w), partial)])),
+    ).toEqual({ room: 576, atRoom: true, underRoom: false });
+  });
+
+  it("a section's wrapper band", async () => {
+    const partial: Partial<SectionBlock> = {
+      styles: { padding: ZERO },
+      wrapper: { padding: { top: 0, right: 30.5, bottom: 0, left: 30.5 } },
+    };
+    // 600 − 30 − 30 − 20.
+    expect(
+      await boundary((w) => doc([section("1", 0, probeImage(w), partial)])),
+    ).toEqual({ room: 520, atRoom: true, underRoom: false });
+  });
+
+  it("a layout wrapper", async () => {
+    const layout = doc([
+      createWrapperBlock({
+        styles: { padding: { top: 0, right: 15.5, bottom: 0, left: 15.5 } },
+        children: [createSlotBlock()],
+      }),
+    ]);
+    // 600 − 15 − 15 − 20.
+    expect(await boundary((w) => doc([probeImage(w)]), layout)).toEqual({
+      room: 550,
+      atRoom: true,
+      underRoom: false,
+    });
+  });
+
+  it("the image's own padding", async () => {
+    const styles = { padding: { top: 10, right: 10.5, bottom: 10, left: 10.5 } };
+    // 600 − 10 − 10.
+    expect(
+      await boundary((w) => doc([probeImage(w, { styles })])),
+    ).toEqual({ room: 580, atRoom: true, underRoom: false });
+  });
+
+  it("the image's own border", async () => {
+    const border = uniformBorder({
+      width: 1.5,
+      style: "solid",
+      color: "#000000",
+    });
+    // 600 − 20 − 1 − 1.
+    expect(
+      await boundary((w) => doc([probeImage(w, { border })])),
+    ).toEqual({ room: 578, atRoom: true, underRoom: false });
+  });
+});

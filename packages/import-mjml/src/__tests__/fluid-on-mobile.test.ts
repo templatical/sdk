@@ -165,6 +165,60 @@ describe("the renderer's own output re-imports as converted at the room", () => 
           ),
         ]),
     ],
+    // MJML reads each padding side and border width as a whole pixel, so the
+    // fractions below take 20, 30 and 2 px from the room.
+    [
+      "fractional section padding",
+      540,
+      (w) =>
+        doc([
+          section(
+            "1",
+            createImageBlock({ src: "https://cdn.test/a.png", width: w }),
+            {
+              styles: {
+                padding: { top: 0, right: 20.5, bottom: 0, left: 20.5 },
+              },
+            },
+          ),
+        ]),
+    ],
+    [
+      "fractional wrapper band",
+      520,
+      (w) =>
+        doc([
+          section(
+            "1",
+            createImageBlock({ src: "https://cdn.test/a.png", width: w }),
+            {
+              styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+              wrapper: {
+                padding: { top: 0, right: 30.5, bottom: 0, left: 30.5 },
+              },
+            },
+          ),
+        ]),
+    ],
+    [
+      "fractional section border",
+      576,
+      (w) =>
+        doc([
+          section(
+            "1",
+            createImageBlock({ src: "https://cdn.test/a.png", width: w }),
+            {
+              styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+              border: uniformBorder({
+                width: 2.5,
+                style: "solid",
+                color: "#000000",
+              }),
+            },
+          ),
+        ]),
+    ],
     [
       "first of three columns, 33.33% of 600",
       179,

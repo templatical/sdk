@@ -25,7 +25,7 @@ import {
 import {
   baseFields,
   convertHtmlFallback,
-  horizontalInset,
+  mjmlHorizontalInset,
   isNewTab,
   readBorder,
   readBorderRadius,
@@ -87,8 +87,7 @@ function convertImage(
   // (the renderer writes "full" as the column's px width). Restore the flag
   // rather than freezing the number, or the image stops resizing with the
   // template.
-  const room =
-    Math.floor(ctx.contentWidth) - horizontalInset(base.styles.padding, border);
+  const room = Math.floor(ctx.contentWidth) - mjmlHorizontalInset(attrs);
   const width = !pxWidth || pxWidth >= room ? "full" : pxWidth;
   // The renderer makes an image fill its column on phones only when it fills
   // the column on desktop (`fluidOnMobileAttr`); an image set narrower has no

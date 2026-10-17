@@ -1,6 +1,6 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
-import { BORDER_SIDES, createHtmlBlock, toBorderCss } from "@templatical/types";
+import { BORDER_SIDES, createHtmlBlock } from "@templatical/types";
 import type {
   Block,
   BlockStyles,
@@ -10,7 +10,6 @@ import type {
   BorderSideValue,
   BorderValue,
   ContentDirection,
-  SpacingValue,
 } from "@templatical/types";
 import {
   parseBorderDeclaration,
@@ -105,22 +104,37 @@ export function baseFields(
 }
 
 /**
- * The width side padding and drawn side borders take from a box, mirroring
- * `horizontalInset` in `renderer/src/utils.ts`: what MJML subtracts when it
- * sizes a wrapper's, a section's or an image's content.
+ * The width side padding and side borders take from a box, read from the
+ * element's own attributes exactly as MJML reads them when it sizes the box
+ * (`getBoxWidths`): `padding-left` / `-right` over the `padding` shorthand and
+ * `border-left` / `-right` over `border`, each as a whole pixel (`parseInt`).
+ * Read from the source rather than the converted block, whose padding and
+ * border widths are rounded, so a room matches MJML's to the pixel.
  */
-export function horizontalInset(
-  padding: SpacingValue | undefined,
-  border?: BorderValue,
-): number {
-  const drawn = (side: BorderValue["left"] | undefined) =>
-    toBorderCss(side) === null ? 0 : side!.width;
-  return (
-    (padding?.left ?? 0) +
-    (padding?.right ?? 0) +
-    drawn(border?.left) +
-    drawn(border?.right)
-  );
+export function mjmlHorizontalInset(attrs: Attrs): number {
+  const padding = (side: "left" | "right"): number => {
+    const own = attrs[`padding-${side}`];
+    if (own) return parseInt(own, 10) || 0;
+    return attrs.padding ? shorthandSide(attrs.padding, side) : 0;
+  };
+  const border = (side: "left" | "right"): number => {
+    const raw = attrs[`border-${side}`] || attrs.border || "0";
+    const width = /(?:^| )(\d+)/.exec(raw);
+    return width ? parseInt(width[1], 10) : 0;
+  };
+  return padding("left") + padding("right") + border("left") + border("right");
+}
+
+/** One side of a CSS padding shorthand, as MJML's `shorthandParser` reads it. */
+function shorthandSide(value: string, side: "left" | "right"): number {
+  const parts = value.trim().replace(/\s+/g, " ").split(" ", 4);
+  const raw =
+    parts.length === 1
+      ? value
+      : parts.length === 4 && side === "left"
+        ? parts[3]
+        : parts[1];
+  return parseInt(raw, 10) || 0;
 }
 
 /**

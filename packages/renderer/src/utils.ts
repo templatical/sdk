@@ -77,16 +77,19 @@ export function heightAttr(height: number | undefined): string {
  * The width an element's side padding and drawn side borders take from its
  * box. MJML subtracts exactly these when it sizes a wrapper's, a section's or
  * an image's content, so a side `toBorderCss` would not draw counts for 0.
+ * MJML reads each side as a whole pixel (`parseInt` in its `shorthandParser`
+ * and `borderParser`), so 20.5px of padding takes 20px and a 2.5px border 2px.
  */
 export function horizontalInset(
   padding: SpacingValue | undefined,
   border?: BorderValue,
 ): number {
+  const whole = (value: number | undefined) => Math.trunc(value ?? 0);
   const drawn = (side: BorderValue["left"] | undefined) =>
-    toBorderCss(side) === null ? 0 : side!.width;
+    toBorderCss(side) === null ? 0 : Math.trunc(side!.width);
   return (
-    (padding?.left ?? 0) +
-    (padding?.right ?? 0) +
+    whole(padding?.left) +
+    whole(padding?.right) +
     drawn(border?.left) +
     drawn(border?.right)
   );
