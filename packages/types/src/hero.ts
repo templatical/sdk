@@ -3,7 +3,6 @@ import {
   type BackgroundImage,
   type ResolvedBackgroundImage,
 } from "./background-image";
-import type { SpacingValue } from "./blocks";
 
 /** Where a hero's content sits in its box. */
 export type HeroVerticalAlign = "top" | "middle" | "bottom";
@@ -104,21 +103,4 @@ export function imageAspectRatio(
   if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
   if (width <= 0 || height <= 0) return null;
   return height / width;
-}
-
-/**
- * The width of a hero's box: the email's content width less the left and
- * right padding of each band around it (a `section.wrapper`, a layout
- * wrapper). MJML narrows an `mj-hero` inside a padded `mj-wrapper` the same
- * way, and Outlook draws the image at exactly this width.
- */
-export function heroBoxWidth(
-  contentWidth: number,
-  frames: ReadonlyArray<SpacingValue | undefined> = [],
-): number {
-  const inset = frames.reduce(
-    (sum, padding) => sum + (padding ? padding.left + padding.right : 0),
-    0,
-  );
-  return Math.max(1, contentWidth - inset);
 }

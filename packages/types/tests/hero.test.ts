@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   createBackgroundImage,
   createSectionBlock,
-  heroBoxWidth,
   imageAspectRatio,
   resolveHero,
 } from "../src";
@@ -154,31 +153,5 @@ describe("imageAspectRatio", () => {
     { ...MEASURED, height: Number.NaN },
   ])("is null without a positive, finite size (%j)", (bg) => {
     expect(imageAspectRatio(bg)).toBeNull();
-  });
-});
-
-describe("heroBoxWidth", () => {
-  const band = (left: number, right: number) => ({
-    top: 10,
-    right,
-    bottom: 10,
-    left,
-  });
-
-  it("is the content width with no band", () => {
-    expect(heroBoxWidth(600)).toBe(600);
-  });
-
-  it("subtracts each band's left and right padding", () => {
-    expect(heroBoxWidth(600, [band(20, 20)])).toBe(560);
-    expect(heroBoxWidth(600, [band(20, 20), band(10, 30)])).toBe(520);
-  });
-
-  it("ignores a band without padding", () => {
-    expect(heroBoxWidth(600, [undefined, band(0, 40)])).toBe(560);
-  });
-
-  it("never drops below 1px", () => {
-    expect(heroBoxWidth(100, [band(80, 80)])).toBe(1);
   });
 });

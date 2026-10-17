@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getWidthPercentages, renderToMjml } from "@templatical/renderer";
 import {
+  createBackgroundImage,
   createDefaultTemplateContent,
   createImageBlock,
   createSectionBlock,
@@ -15,7 +16,7 @@ import type {
   SectionBlock,
   TemplateContent,
 } from "@templatical/types";
-import { imageRoom } from "../src/utils/imageRoom";
+import { imageRoom, sectionBandWidth } from "../src/utils/imageRoom";
 
 /**
  * `imageRoom` must agree with the renderer to the pixel: the aspect-ratio lock
@@ -120,6 +121,36 @@ const cases: Array<
         ),
       ]),
   ],
+  [
+    // A hero hides its section's border (and draws none), so only the band
+    // and the hero's padding narrow its content: 600 − 40 − 48 − 20.
+    "padded, bordered hero in a band",
+    492,
+    (w) =>
+      doc([
+        section("1", 0, image(w), {
+          styles: { padding: { top: 48, right: 24, bottom: 48, left: 24 } },
+          border: uniformBorder({ width: 3, style: "solid", color: "#000" }),
+          wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+          backgroundImage: createBackgroundImage("https://cdn.test/hero.jpg"),
+          hero: { height: 300, verticalAlign: "middle" },
+        }),
+      ]),
+  ],
+  [
+    // Without an image the hero doesn't apply: a regular, bordered section.
+    "hero that doesn't apply",
+    486,
+    (w) =>
+      doc([
+        section("1", 0, image(w), {
+          styles: { padding: { top: 48, right: 24, bottom: 48, left: 24 } },
+          border: uniformBorder({ width: 3, style: "solid", color: "#000" }),
+          wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+          hero: { height: 300, verticalAlign: "middle" },
+        }),
+      ]),
+  ],
   ["body width 640", 280, (w) => doc([section("2", 0, image(w))], 640)],
   [
     // The band is searched first and holds no image, so its padding must not
@@ -180,5 +211,66 @@ describe("imageRoom", () => {
         );
       });
     }
+  });
+});
+
+describe("sectionBandWidth", () => {
+  const band = (left: number, right = left) => ({
+    top: 0,
+    right,
+    bottom: 0,
+    left,
+  });
+  const card = (padding: ReturnType<typeof band>, children: Block[]) =>
+    createWrapperBlock({ styles: { padding }, children });
+
+  function heroDoc(partial: Partial<SectionBlock> = {}): TemplateContent {
+    return doc([
+      createSectionBlock({
+        id: "hero",
+        children: [[]],
+        backgroundImage: createBackgroundImage("https://cdn.test/hero.jpg"),
+        hero: { height: 300, verticalAlign: "middle" },
+        ...partial,
+      }),
+    ]);
+  }
+
+  async function rendererBox(
+    content: TemplateContent,
+    layout?: TemplateContent,
+  ): Promise<number> {
+    const mjml = await renderToMjml(content, { layout });
+    const width = /<mj-hero[^>]*background-width="(\d+)px"/.exec(mjml);
+    expect(width).not.toBeNull();
+    return Number(width![1]);
+  }
+
+  const cases: Array<[string, number, TemplateContent, TemplateContent?]> = [
+    ["top level", 600, heroDoc()],
+    ["section wrapper", 560, heroDoc({ wrapper: { padding: band(20) } })],
+    [
+      "layout card",
+      540,
+      heroDoc(),
+      doc([card(band(30), [createSlotBlock()])]),
+    ],
+    [
+      "a fractional band, floored",
+      559,
+      heroDoc({ wrapper: { padding: band(20.5, 20) } }),
+    ],
+  ];
+
+  it.each(cases)(
+    "%s matches the renderer's hero box",
+    async (_name, width, content, layout) => {
+      expect(sectionBandWidth(content, "hero", layout)).toBe(width);
+      expect(await rendererBox(content, layout)).toBe(width);
+    },
+  );
+
+  it("is null for a section that isn't in the content", () => {
+    expect(sectionBandWidth(heroDoc(), "missing")).toBeNull();
   });
 });

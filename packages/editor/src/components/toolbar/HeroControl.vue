@@ -6,39 +6,20 @@ import { useImageMeasure } from "../../composables/useImageMeasure";
 import { labelClass } from "../../constants/styleConstants";
 import {
   containsMergeTag,
-  heroBoxWidth,
   imageAspectRatio,
-  isSlot,
-  isWrapper,
   SYNTAX_PRESETS,
-  type Block,
   type HeroVerticalAlign,
   type SectionBlock,
-  type SpacingValue,
 } from "@templatical/types";
 import { computed, inject } from "vue";
 import { EDITOR_KEY, LAYOUT_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { getEmailFrameWidth } from "../../utils/emailFrameWidth";
+import { sectionBandWidth } from "../../utils/imageRoom";
 
 type HeightMode = "fit" | "image" | "fixed";
 
 /** A fixed height's starting value when the image's size is unknown. */
 const FALLBACK_FIXED_HEIGHT = 300;
-
-/**
- * The padding of each layout wrapper around the slot, outermost first; `null`
- * when `blocks` has no slot.
- */
-function slotFramePaddings(blocks: Block[]): SpacingValue[] | null {
-  for (const block of blocks) {
-    if (isSlot(block)) return [];
-    if (isWrapper(block)) {
-      const inner = slotFramePaddings(block.children);
-      if (inner) return [block.styles.padding, ...inner];
-    }
-  }
-  return null;
-}
 
 const props = defineProps<{
   section: SectionBlock;
@@ -103,17 +84,14 @@ const sizeUnknown = computed(
 );
 
 /**
- * The hero box's width, as the renderer sizes it: the content width less the
- * padding of every band around the section (`heroBoxWidth`), the layout's
- * wrappers and the section's own wrapper.
+ * The hero box's width, as the renderer sizes it: the room the layout's
+ * wrappers and the section's own wrapper leave the section.
  */
 function boxWidth(): number {
-  const contentWidth = getEmailFrameWidth(editor?.state.content.settings);
-  const layoutFrames = layout ? (slotFramePaddings(layout.blocks) ?? []) : [];
-  return heroBoxWidth(contentWidth, [
-    ...layoutFrames,
-    props.section.wrapper?.padding,
-  ]);
+  const banded = editor
+    ? sectionBandWidth(editor.content.value, props.section.id, layout)
+    : null;
+  return banded ?? getEmailFrameWidth(editor?.state.content.settings);
 }
 
 function setHeightMode(mode: string): void {

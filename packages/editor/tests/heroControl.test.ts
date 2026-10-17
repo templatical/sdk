@@ -138,20 +138,6 @@ describe("HeroControl", () => {
     ]);
   });
 
-  it("measures the box inside the layout card and the section's own wrapper", async () => {
-    const wrapper = mountHero(
-      createSectionBlock({
-        backgroundImage: MEASURED,
-        wrapper: { padding: { top: 0, right: 30, bottom: 0, left: 30 } },
-      }),
-      cardLayout(20),
-    );
-    await heightPill(wrapper, en.blockSettings.heroHeightFixed).trigger("click");
-    expect(updates(wrapper)).toEqual([
-      { hero: { height: 333, verticalAlign: "middle" } },
-    ]);
-  });
-
   it("starts a fixed height at 300 when the image's size is unknown", async () => {
     const wrapper = mountHero(
       createSectionBlock({ backgroundImage: createBackgroundImage(HERO) }),

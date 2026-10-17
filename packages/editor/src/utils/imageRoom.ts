@@ -9,6 +9,7 @@ import {
   applyLayout,
   isSection,
   isWrapper,
+  resolveHero,
   toBorderCss,
 } from "@templatical/types";
 
@@ -41,6 +42,11 @@ function horizontalInset(
   );
 }
 
+/** What an `mj-wrapper` band leaves its content: floored, less its side padding. */
+function insideBand(width: number, padding: SpacingValue | undefined): number {
+  return Math.floor(width) - horizontalInset(padding);
+}
+
 function blockRoom(block: Block, columnContent: number): number {
   const border = "border" in block ? (block.border as BorderValue) : undefined;
   return (
@@ -48,27 +54,70 @@ function blockRoom(block: Block, columnContent: number): number {
   );
 }
 
-function findRoom(
+/**
+ * Each section and top-level leaf in `blocks`, with the width the bands around
+ * it leave it: every layout wrapper's and the section's own `wrapper`'s side
+ * padding taken off, floored at each band as the renderer's `insideWrapper`
+ * does.
+ */
+function* bandedBlocks(
   blocks: Block[],
-  blockId: string,
-  contentWidth: number,
-): number | null {
+  width: number,
+): Generator<{ block: Block; bandWidth: number }> {
   for (const block of blocks) {
     if (isWrapper(block)) {
-      const inner =
-        Math.floor(contentWidth) - horizontalInset(block.styles.padding);
-      const found = findRoom(block.children, blockId, inner);
-      if (found !== null) return found;
+      yield* bandedBlocks(
+        block.children,
+        insideBand(width, block.styles.padding),
+      );
       continue;
     }
+    const bandWidth =
+      isSection(block) && block.wrapper
+        ? insideBand(width, block.wrapper.padding)
+        : width;
+    yield { block, bandWidth };
+  }
+}
 
+/**
+ * The content with the layout shell (`init({ layout })`) applied, as the
+ * export does; a layout that fails to apply is ignored.
+ */
+function documentOf(
+  content: TemplateContent,
+  layout: TemplateContent | undefined,
+): TemplateContent {
+  if (!layout) return content;
+  try {
+    return applyLayout(layout, content);
+  } catch {
+    return content;
+  }
+}
+
+/**
+ * The px an image can span on desktop: what MJML gives its column's content,
+ * less the image's own side padding and drawn side borders. It mirrors the
+ * renderer's `RenderContext.contentWidth` and `fluidOnMobileAttr`, so a width
+ * at or above it renders as `"full"` does. A hero's content takes the box
+ * less the hero's padding only: the hero hides its section's border. `null`
+ * when the block is not in the content.
+ */
+export function imageRoom(
+  content: TemplateContent,
+  blockId: string,
+  layout?: TemplateContent,
+): number | null {
+  const doc = documentOf(content, layout);
+  for (const { block, bandWidth } of bandedBlocks(
+    doc.blocks,
+    doc.settings.width,
+  )) {
     if (isSection(block)) {
-      const banded = block.wrapper
-        ? Math.floor(contentWidth) - horizontalInset(block.wrapper.padding)
-        : contentWidth;
+      const border = resolveHero(block)?.applied ? undefined : block.border;
       const sectionBox =
-        Math.floor(banded) -
-        horizontalInset(block.styles.padding, block.border);
+        Math.floor(bandWidth) - horizontalInset(block.styles.padding, border);
       const percents = COLUMN_PERCENTS[block.columns] ?? [100];
       for (let index = 0; index < block.children.length; index++) {
         const column = Math.floor(
@@ -81,31 +130,29 @@ function findRoom(
     }
 
     // A top-level leaf renders in a default section with no padding.
-    if (block.id === blockId) return blockRoom(block, contentWidth);
+    if (block.id === blockId) return blockRoom(block, bandWidth);
   }
   return null;
 }
 
 /**
- * The px an image can span on desktop: what MJML gives its column's content,
- * less the image's own side padding and drawn side borders. It mirrors the
- * renderer's `RenderContext.contentWidth` and `fluidOnMobileAttr`, so a width
- * at or above it renders as `"full"` does. The layout shell (`init({ layout })`)
- * is applied first, as the export does; a layout that fails to apply is
- * ignored. `null` when the block is not in the content.
+ * The width the bands around a top-level section leave it, which is the box
+ * MJML draws a hero at and Outlook paints its image across: the body width
+ * less the side padding of every layout wrapper and of the section's own
+ * `wrapper`, floored at each band. `null` when the section is not in the
+ * content.
  */
-export function imageRoom(
+export function sectionBandWidth(
   content: TemplateContent,
-  blockId: string,
+  sectionId: string,
   layout?: TemplateContent,
 ): number | null {
-  let doc = content;
-  if (layout) {
-    try {
-      doc = applyLayout(layout, content);
-    } catch {
-      doc = content;
-    }
+  const doc = documentOf(content, layout);
+  for (const { block, bandWidth } of bandedBlocks(
+    doc.blocks,
+    doc.settings.width,
+  )) {
+    if (block.id === sectionId) return Math.floor(bandWidth);
   }
-  return findRoom(doc.blocks, blockId, doc.settings.width);
+  return null;
 }
