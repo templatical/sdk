@@ -166,6 +166,71 @@ const cases: Array<
       createSlotBlock(),
     ]),
   ],
+  // MJML reads each padding side and border width as a whole pixel
+  // (parseInt), so a fraction never takes from the room.
+  [
+    "fractional section padding",
+    540,
+    (w) =>
+      doc([
+        section("1", 0, image(w), {
+          styles: { padding: { top: 0, right: 20.5, bottom: 0, left: 20.5 } },
+        }),
+      ]),
+  ],
+  [
+    "fractional section border",
+    576,
+    (w) =>
+      doc([
+        section("1", 0, image(w), {
+          styles: { padding: ZERO },
+          border: uniformBorder({ width: 2.5, style: "solid", color: "#000" }),
+        }),
+      ]),
+  ],
+  [
+    "fractional section wrapper band",
+    520,
+    (w) =>
+      doc([
+        section("1", 0, image(w), {
+          styles: { padding: ZERO },
+          wrapper: { padding: { top: 0, right: 30.5, bottom: 0, left: 30.5 } },
+        }),
+      ]),
+  ],
+  [
+    "fractional image padding",
+    580,
+    (w) =>
+      doc([
+        image(w, {
+          styles: { padding: { top: 10, right: 10.5, bottom: 10, left: 10.5 } },
+        }),
+      ]),
+  ],
+  [
+    "fractional image border",
+    578,
+    (w) =>
+      doc([
+        image(w, {
+          border: uniformBorder({ width: 1.5, style: "solid", color: "#000" }),
+        }),
+      ]),
+  ],
+  [
+    "inside a fractional layout wrapper",
+    550,
+    (w) => doc([image(w)]),
+    doc([
+      createWrapperBlock({
+        styles: { padding: { top: 0, right: 15.5, bottom: 0, left: 15.5 } },
+        children: [createSlotBlock()],
+      }),
+    ]),
+  ],
   [
     "inside a layout wrapper",
     230,

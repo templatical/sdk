@@ -27,16 +27,20 @@ const COLUMN_PERCENTS: Record<ColumnLayout, number[]> = {
   "2-1": [66.67, 33.33],
 };
 
-/** Side padding plus drawn side borders: what MJML takes off a box's content. */
+/**
+ * Side padding plus drawn side borders: what MJML takes off a box's content,
+ * each side read as a whole pixel as MJML's `parseInt` reads it.
+ */
 function horizontalInset(
   padding: SpacingValue | undefined,
   border?: BorderValue,
 ): number {
+  const whole = (value: number | undefined) => Math.trunc(value ?? 0);
   const drawn = (side: BorderValue["left"] | undefined) =>
-    toBorderCss(side) === null ? 0 : side!.width;
+    toBorderCss(side) === null ? 0 : Math.trunc(side!.width);
   return (
-    (padding?.left ?? 0) +
-    (padding?.right ?? 0) +
+    whole(padding?.left) +
+    whole(padding?.right) +
     drawn(border?.left) +
     drawn(border?.right)
   );
