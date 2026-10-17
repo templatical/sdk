@@ -217,6 +217,83 @@ describe("getBlockWrapperStyle", () => {
   });
 });
 
+describe("getBlockWrapperStyle for a hero", () => {
+  const image = {
+    ...createBackgroundImage("https://cdn.test/hero.jpg"),
+    size: "contain" as const,
+    repeat: true,
+    width: 1200,
+    height: 800,
+  };
+  const border = uniformBorder({ width: 2, style: "solid", color: "#ff0000" });
+  const drawsBorder = (style: Record<string, string>) =>
+    Object.keys(style).some((key) => /^border(?!Radius)/.test(key));
+
+  it("draws a matching hero at the image's shape, cover and unrepeated, with no border", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        backgroundImage: image,
+        hero: { height: "image", verticalAlign: "bottom" },
+        border,
+        borderRadius: 12,
+      }),
+    );
+    expect(style).toMatchObject({
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-end",
+      boxSizing: "border-box",
+      aspectRatio: `1 / ${800 / 1200}`,
+      backgroundSize: "cover",
+      backgroundRepeat: "no-repeat",
+      borderRadius: "12px",
+    });
+    expect(style).not.toHaveProperty("minHeight");
+    expect(drawsBorder(style)).toBe(false);
+  });
+
+  it("draws a fixed hero at least as tall as its height", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        backgroundImage: createBackgroundImage("https://cdn.test/hero.jpg"),
+        hero: { height: 320, verticalAlign: "middle" },
+      }),
+    );
+    expect(style).toMatchObject({
+      minHeight: "320px",
+      justifyContent: "center",
+    });
+    expect(style).not.toHaveProperty("aspectRatio");
+  });
+
+  it("draws a hero that doesn't apply as a regular section", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        columns: "2",
+        children: [[], []],
+        backgroundImage: image,
+        hero: { height: "image", verticalAlign: "middle" },
+        border,
+      }),
+    );
+    expect(style).not.toHaveProperty("display");
+    expect(style.backgroundSize).toBe("contain");
+    expect(drawsBorder(style)).toBe(true);
+  });
+
+  it("lays out a merge-tag hero without painting its image", () => {
+    const style = getBlockWrapperStyle(
+      createSectionBlock({
+        backgroundImage: createBackgroundImage("{{ hero_url }}"),
+        hero: { height: 300, verticalAlign: "top" },
+      }),
+      { backgroundImageUrl: null },
+    );
+    expect(style).toMatchObject({ minHeight: "300px" });
+    expect(style).not.toHaveProperty("backgroundImage");
+  });
+});
+
 describe("getSectionWrapperStyle", () => {
   it("rounds only the chosen corners of the wrapper", () => {
     const style = getSectionWrapperStyle(

@@ -1,7 +1,9 @@
 import type {
+  AppliedHero,
   BackgroundImage,
   Block,
   BorderValue,
+  HeroVerticalAlign,
   SyntaxPreset,
   TemplateSettings,
 } from "@templatical/types";
@@ -9,6 +11,7 @@ import {
   RICH_TEXT_SPACING,
   encodeCssUrl,
   resolveBackgroundImage,
+  resolveHero,
   toBorderDeclarations,
   toBorderRadiusCss,
 } from "@templatical/types";
@@ -145,6 +148,32 @@ export function backgroundImageHostClass(
     : undefined;
 }
 
+const HERO_JUSTIFY: Record<HeroVerticalAlign, string> = {
+  top: "flex-start",
+  middle: "center",
+  bottom: "flex-end",
+};
+
+/**
+ * Canvas declarations for a hero's box, the way `mj-hero` sizes it: the
+ * image's aspect ratio for `height: "image"`, a fixed height otherwise, padding
+ * included either way. It grows with content taller than that, and places the
+ * content by `verticalAlign`.
+ */
+export function getHeroStyle(hero: AppliedHero): Record<string, string> {
+  const size: Record<string, string> =
+    typeof hero.height === "number"
+      ? { minHeight: `${hero.height}px` }
+      : { aspectRatio: `1 / ${hero.aspectRatio ?? 1}` };
+  return {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: HERO_JUSTIFY[hero.verticalAlign],
+    boxSizing: "border-box",
+    ...size,
+  };
+}
+
 /**
  * Computes inline styles for a block wrapper from its styles config.
  */
@@ -181,19 +210,33 @@ export function getBlockWrapperStyle(
   // Same for the section border, which exports as `border` (or per-side
   // `border-<side>`) on the `mj-section`. The background image follows the
   // same rule, painted with the resolved display URL when the caller has one.
+  // A hero box follows mj-hero instead (`getHeroStyle`).
   if (block.type === "section") {
     const radius = toBorderRadiusCss(block.borderRadius);
     if (radius !== null) {
       style.borderRadius = radius;
     }
-    Object.assign(style, getBorderStyle(block.border));
-    Object.assign(
-      style,
-      getBackgroundImageStyle(
-        block.backgroundImage,
-        options.backgroundImageUrl,
-      ),
-    );
+    const hero = resolveHero(block);
+    if (hero?.applied && block.backgroundImage) {
+      // mj-hero draws no border and always paints its image cover, unrepeated.
+      Object.assign(style, getHeroStyle(hero));
+      Object.assign(
+        style,
+        getBackgroundImageStyle(
+          { ...block.backgroundImage, size: "cover", repeat: false },
+          options.backgroundImageUrl,
+        ),
+      );
+    } else {
+      Object.assign(style, getBorderStyle(block.border));
+      Object.assign(
+        style,
+        getBackgroundImageStyle(
+          block.backgroundImage,
+          options.backgroundImageUrl,
+        ),
+      );
+    }
   }
   return style;
 }

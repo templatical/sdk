@@ -9,6 +9,7 @@ import ParagraphBlock from "./ParagraphBlock.vue";
 import { useI18n } from "../../composables";
 import { resolveBlockComponent } from "../../utils/blockComponentResolver";
 import { canDropInSectionColumn } from "../../utils/sectionColumnDrop";
+import { resolveHero } from "@templatical/types";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -131,6 +132,14 @@ function holdsDropHeight(colIndex: number): boolean {
   );
 }
 
+// A hero waiting for its image (the Hero shortcut inserts one without) says
+// what's missing. Edit-only, like the drop hints.
+const showsHeroImageHint = computed(() => {
+  if (editor.state.previewMode) return false;
+  const hero = resolveHero(props.block);
+  return hero !== null && !hero.applied && hero.reason === "image";
+});
+
 // Gates the dashed border and the drop hint, mirroring Canvas's `isEmptyCanvas`.
 function isEmptyColumn(colIndex: number): boolean {
   return getColumnBlocks(colIndex).length === 0 && !editor.state.previewMode;
@@ -183,7 +192,15 @@ function handleFetchData(
 </script>
 
 <template>
-  <div class="tpl:w-full">
+  <div class="tpl:relative tpl:w-full">
+    <!-- In the section's top padding, above the content, so it covers none of it. -->
+    <div
+      v-if="showsHeroImageHint"
+      data-testid="hero-image-hint"
+      class="tpl:pointer-events-none tpl:absolute tpl:inset-x-0 tpl:bottom-full tpl:mb-2 tpl:flex tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-chrome-text-dim)]"
+    >
+      <span>{{ t.section.heroAddImage }}</span>
+    </div>
     <div
       class="tpl:flex tpl:gap-0"
       :class="{ 'tpl:flex-col': isMobileStacked }"

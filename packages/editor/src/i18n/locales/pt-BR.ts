@@ -173,6 +173,7 @@ const ptBR: typeof en = {
     stackOnMobile: "Empilhar no celular",
     heroNeedsOneColumn:
       "O modo hero precisa de uma coluna. Com mais colunas, esta seção aparece como uma seção normal.",
+    heroAddImage: "Adicione uma imagem de fundo",
   },
 
   // Text editor link dialog

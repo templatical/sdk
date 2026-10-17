@@ -141,6 +141,7 @@ const translations: typeof en = {
     stackOnMobile: "モバイルでは縦に並べる",
     heroNeedsOneColumn:
       "ヒーローモードには1列が必要です。列が複数の場合、このセクションは通常のセクションとして表示されます。",
+    heroAddImage: "背景画像を追加",
   },
   linkDialog: {
     editLink: "リンクを編集",

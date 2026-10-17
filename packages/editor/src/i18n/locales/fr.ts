@@ -155,6 +155,7 @@ const fr: typeof en = {
     stackOnMobile: "Empiler sur mobile",
     heroNeedsOneColumn:
       "Le mode hero nécessite une seule colonne. Avec plus de colonnes, cette section s'affiche comme une section normale.",
+    heroAddImage: "Ajoutez une image de fond",
   },
   linkDialog: {
     editLink: "Modifier le lien",

@@ -174,6 +174,7 @@ const ca: typeof en = {
     stackOnMobile: "Apila en mòbil",
     heroNeedsOneColumn:
       "El mode hero necessita una sola columna. Amb més, aquesta secció es mostra com una secció normal.",
+    heroAddImage: "Afegeix una imatge de fons",
   },
 
   // Text editor link dialog

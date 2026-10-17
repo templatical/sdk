@@ -173,6 +173,7 @@ export default {
     stackOnMobile: "Stack on mobile",
     heroNeedsOneColumn:
       "Hero mode needs one column. With more, this section shows as a regular section.",
+    heroAddImage: "Add a background image",
   },
 
   // Text editor link dialog

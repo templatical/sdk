@@ -176,6 +176,7 @@ const de: typeof en = {
     stackOnMobile: "Auf Mobilgeräten stapeln",
     heroNeedsOneColumn:
       "Der Hero-Modus braucht eine Spalte. Mit mehr Spalten wird dieser Abschnitt als normaler Abschnitt angezeigt.",
+    heroAddImage: "Hintergrundbild hinzufügen",
   },
 
   // Text editor link dialog

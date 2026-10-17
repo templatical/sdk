@@ -156,6 +156,7 @@ const nl: typeof en = {
     stackOnMobile: "Stapelen op mobiel",
     heroNeedsOneColumn:
       "De hero-modus heeft één kolom nodig. Met meer kolommen wordt deze sectie als gewone sectie getoond.",
+    heroAddImage: "Voeg een achtergrondafbeelding toe",
   },
   linkDialog: {
     editLink: "Link bewerken",
