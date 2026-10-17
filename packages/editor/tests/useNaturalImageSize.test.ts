@@ -223,3 +223,14 @@ describe("useMeasureNaturalSize", () => {
     expect(images.requested).toEqual([STORED]);
   });
 });
+
+describe("measuring without an Image constructor", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports no size, as on a server render", async () => {
+    vi.stubGlobal("Image", undefined);
+    await expect(
+      measureNaturalSize("https://cdn.test/a.jpg"),
+    ).resolves.toBeNull();
+  });
+});

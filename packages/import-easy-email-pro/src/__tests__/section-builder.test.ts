@@ -641,4 +641,59 @@ describe("background images", () => {
       note: "Hero fluid-height has no background-width / background-height, so its image size is unknown; it renders as a regular section until it has a size or a fixed height.",
     });
   });
+
+  it("notes an unknown mode and vertical-align", () => {
+    const { blocks, entries } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: {
+        "background-url": "https://cdn.test/hero.png",
+        mode: "sideways",
+        height: "300px",
+        "vertical-align": "baseline",
+      },
+      children: [],
+    });
+    expect((blocks[0] as SectionBlock).hero).toEqual({
+      height: 300,
+      verticalAlign: "top",
+    });
+    expect(entries[0].note).toBe(
+      'Hero vertical-align "baseline" has no Templatical equivalent; imported as "top". Hero mode "sideways" has no Templatical equivalent; imported as "fixed-height".',
+    );
+  });
+
+  it("notes a hero with a height but no background-url", () => {
+    const { blocks, entries } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: { mode: "fixed-height", height: "300px" },
+      children: [],
+    });
+    expect((blocks[0] as SectionBlock).hero).toEqual({
+      height: 300,
+      verticalAlign: "top",
+    });
+    expect(entries[0].note).toBe(
+      "Hero has no background-url, so it renders as a regular section until it has a background image.",
+    );
+  });
+
+  it("drops inner-padding and inner-background-color with a note", () => {
+    const { entries } = build({
+      type: "standard-hero",
+      data: {},
+      attributes: {
+        "background-url": "https://cdn.test/hero.png",
+        mode: "fixed-height",
+        height: "300px",
+        "inner-padding": "10px",
+        "inner-background-color": "#ffffff",
+      },
+      children: [],
+    });
+    expect(entries[0].note).toBe(
+      'Hero inner-padding "10px" has no Templatical equivalent; dropped. Hero inner-background-color "#ffffff" has no Templatical equivalent; dropped.',
+    );
+  });
 });

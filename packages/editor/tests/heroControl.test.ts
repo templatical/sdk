@@ -106,6 +106,27 @@ describe("HeroControl", () => {
     ]);
   });
 
+  it("stores no size when the matched image fails to load", async () => {
+    vi.useFakeTimers();
+    stubImages({});
+    const wrapper = mountHero(
+      createSectionBlock({ backgroundImage: createBackgroundImage(HERO) }),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightImage).trigger("click");
+    await vi.advanceTimersByTimeAsync(FAKE_IMAGE_LOAD_MS);
+    expect(updates(wrapper)).toEqual([
+      { hero: { height: "image", verticalAlign: "middle" } },
+    ]);
+  });
+
+  it("measures nothing when Match image is clicked again on a hero with no image", async () => {
+    const wrapper = mountHero(
+      createSectionBlock({ hero: { height: "image", verticalAlign: "middle" } }),
+    );
+    await heightPill(wrapper, en.blockSettings.heroHeightImage).trigger("click");
+    expect(updates(wrapper)).toEqual([]);
+  });
+
   it("starts a fixed height where the image ends in the box", async () => {
     const wrapper = mountHero(createSectionBlock({ backgroundImage: MEASURED }));
     await heightPill(wrapper, en.blockSettings.heroHeightFixed).trigger("click");
