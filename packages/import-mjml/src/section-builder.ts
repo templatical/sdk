@@ -1,6 +1,6 @@
 import type { Cheerio } from "cheerio";
 import type { Element } from "domhandler";
-import { createSectionBlock } from "@templatical/types";
+import { createSectionBlock, heroBoxWidth } from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
@@ -493,9 +493,18 @@ export function buildWrapper(
     });
   }
 
+  // The renderer narrows a hero's box, and so its content's width, by the
+  // wrapper's padding (`sectionContext` in renderer/src/index.ts), and an
+  // import measures it the same way. A section keeps the full content width:
+  // the renderer leaves its widths alone inside a padded band.
+  const heroCtx: ConvertContext = {
+    ...ctx,
+    containerWidth: heroBoxWidth(ctx.containerWidth, [wrapper.padding]),
+  };
+
   return sections.flatMap(($section) =>
     tagOf($section[0]) === "mj-hero"
-      ? buildHero($section, ctx, entries, copyWrapper(wrapper))
+      ? buildHero($section, heroCtx, entries, copyWrapper(wrapper))
       : buildSection($section, ctx, entries, copyWrapper(wrapper)),
   );
 }

@@ -149,6 +149,28 @@ describe("mj-hero import", () => {
     });
   });
 
+  it("measures a wrapper-framed hero's content against the box the wrapper's padding leaves", () => {
+    const { blocks, entries } = convert(
+      `<mj-wrapper padding="0 20px"><mj-hero mode="fluid-height" background-url="${URL}" background-width="560px" background-height="373px"><mj-image src="https://cdn.test/a.png" width="560px" /></mj-hero></mj-wrapper>`,
+    );
+    const section = blocks[0] as SectionBlock;
+    expect(section.children[0][0]).toMatchObject({
+      type: "image",
+      width: "full",
+    });
+    expect(entries.map((e) => e.status)).toEqual(["converted", "converted"]);
+  });
+
+  it("measures a section in the same wrapper against the full content width", () => {
+    const section = onlySection(
+      `<mj-wrapper padding="0 20px"><mj-section><mj-column><mj-image src="https://cdn.test/a.png" width="600px" /></mj-column></mj-section></mj-wrapper>`,
+    );
+    expect(section.children[0][0]).toMatchObject({
+      type: "image",
+      width: "full",
+    });
+  });
+
   it("keeps a hero inside a column as html, since MJML forbids it there", () => {
     const { entries } = convert(
       `<mj-section><mj-column><mj-hero><mj-text>x</mj-text></mj-hero></mj-column></mj-section>`,

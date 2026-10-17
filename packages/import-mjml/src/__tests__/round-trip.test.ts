@@ -17,6 +17,7 @@ import {
 import type {
   Block,
   ParagraphBlock,
+  SectionBlock,
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
@@ -410,6 +411,47 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     const hidden = JSON.stringify(content).match(/"mobile":false/g);
 
     expect(hidden).toHaveLength(1);
+  });
+
+  it("reads a full-width image in a wrapper-framed hero back as full", async () => {
+    const original: TemplateContent = {
+      blocks: [
+        createSectionBlock({
+          columns: "1",
+          children: [
+            [
+              createImageBlock({
+                src: "https://cdn.test/inner.png",
+                alt: "Inner",
+                width: "full",
+              }),
+            ],
+          ],
+          backgroundImage: {
+            url: "https://cdn.test/hero-banner.jpg",
+            size: "cover",
+            position: { x: "center", y: "top" },
+            repeat: false,
+            width: 560,
+            height: 373,
+          },
+          hero: { height: "image", verticalAlign: "top" },
+          wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+        }),
+      ],
+      settings: buildFixtureTemplate().settings,
+    };
+    const mjml = await renderToMjml(original);
+
+    // The renderer narrows the hero's box by the wrapper's padding, so a full
+    // image is 560px here; this case cannot pass because it stopped.
+    expect(mjml).toMatch(/<mj-image[^>]*width="560px"/);
+
+    const { content, report } = convertMjmlTemplate(mjml);
+    const hero = content.blocks[0] as SectionBlock;
+    expect(hero.children[0][0]).toMatchObject({ type: "image", width: "full" });
+    expect(report.summary.approximated).toBe(0);
+    expect(report.summary.converted).toBe(report.summary.total);
   });
 
   it("preserves a hard <br> line break without duplicating or mis-nesting it", async () => {
