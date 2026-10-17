@@ -110,8 +110,9 @@ const editor = await init({
 });
 ```
 
-- **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
+- **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `hero`, `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
 - **Reference built-ins by their bare type** (`"section"`, `"image"`, …) and **custom blocks by their `custom:`-prefixed type** (`"custom:qrcode"`), so the two can be interleaved freely.
+- **`"hero"` is a shortcut, not a block type.** It inserts a one-column section in hero mode with a title, a paragraph and a button (see [Hero](/guide/sections-and-columns#hero)). List it like a built-in.
 - **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` outside a Cloud plan is logged to the console with a warning and left out of the palette.
 - **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 

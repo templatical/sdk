@@ -110,8 +110,9 @@ const editor = await init({
 });
 ```
 
-- **Strikte Allowlist + Reihenfolge.** Es werden nur die aufgeführten Typen angezeigt, in genau dieser Reihenfolge. Jeder nicht aufgeführte integrierte Block (hier `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) wird aus der Palette ausgeblendet.
+- **Strikte Allowlist + Reihenfolge.** Es werden nur die aufgeführten Typen angezeigt, in genau dieser Reihenfolge. Jeder nicht aufgeführte integrierte Block (hier `hero`, `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) wird aus der Palette ausgeblendet.
 - **Integrierte Blöcke über ihren reinen Typ** (`"section"`, `"image"`, …) und **benutzerdefinierte Blöcke über ihren `custom:`-präfixierten Typ** (`"custom:qrcode"`) referenzieren, sodass beide frei vermischt werden können.
+- **`"hero"` ist eine Verknüpfung, kein Blocktyp.** Sie fügt eine einspaltige Sektion im Hero-Modus mit Titel, Absatz und Button ein (siehe [Hero](/de/guide/sections-and-columns#hero)). Führen Sie sie wie einen integrierten Block auf.
 - **Unbekannte Einträge werden übersprungen.** Ein Tippfehler, ein nicht registrierter benutzerdefinierter Block oder `countdown` außerhalb eines Cloud-Plans wird mit einer Warnung in der Konsole protokolliert und nicht in die Palette aufgenommen.
 - **Das Filtern der Palette wirkt sich nie auf das Rendering aus.** Das Ausblenden eines Blocktyps entfernt ihn nur aus der Palette — vorhandener Inhalt, der diesen Typ bereits verwendet, wird weiterhin korrekt gerendert. `paletteBlocks` steuert, was Benutzer _einfügen_ können, nicht, was der Editor _anzeigen_ kann.
 

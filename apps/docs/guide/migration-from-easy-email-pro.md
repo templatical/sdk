@@ -149,7 +149,7 @@ import { renderToMjml } from '@templatical/renderer';
 const mjml = await renderToMjml(content);
 ```
 
-A visual comparison against Easy Email Pro's own preview catches what the report cannot. Several of the losses below — `mobileAttributes`, hero overlay, page `fonts[]` — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
+A visual comparison against Easy Email Pro's own preview catches what the report cannot. Several of the losses below — `mobileAttributes`, page `fonts[]` — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
 
 There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, and this package does not consume `EditorCore.toMJML()`.
 
@@ -162,7 +162,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
-| `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
+| `standard-hero` | 1-col `SectionBlock` with `hero` | Children walk as h1 / paragraph / button. `background-color` onto the section, `background-url` onto its `backgroundImage`, behind the content. `mode`, `height`, `background-width` / `background-height` and `vertical-align` map onto `hero` as for an MJML `mj-hero`; a hero with no `mode` or `height` is a regular section with the background image. |
 | `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / `background-url` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
@@ -195,13 +195,12 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 
 A value with no exact Templatical keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
 
-`standard-hero` keeps its current mapping: its `background-url` is a leading `ImageBlock`.
+A `standard-hero`'s `background-url` becomes its section's `backgroundImage`, painted `cover` and unrepeated behind the content.
 
 ## Lossy conversions
 
 - **`$var` unresolved leftovers** — `$var(name)` resolves against widget `data.input`, then page `variables[]`. A name with no value is unset (`""` / leftover `$var(…)` do not become merge tags). One document-level warning names how many values resolved and how many were left unresolved.
 - **`mobileAttributes`** — a second attribute bag for the mobile viewport. Templatical has no per-viewport padding. Dropped. One document-level warning when any node carried them.
-- **Hero overlay** — `standard-hero` has no block equivalent. Children walk into a 1-col section; `background-url` becomes a leading `ImageBlock`, stacked, not overlaid. Overlay-on-image is the loss; editable CTAs survive. `approximated`.
 - **Outlined buttons** — `border-enabled: true` plus an unset fill has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column section folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
 - **Nested group flatten** — a `standard-group` inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested group flattened (N columns)"`. Leaves convert; geometry is the loss.
@@ -212,7 +211,7 @@ A value with no exact Templatical keyword maps to the nearest one, `approximated
 - **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip
-Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk rather than html-fallback the whole subtree so editable CTAs survive; overlay-on-image is what Templatical cannot express. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
+Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk into the hero section, so editable CTAs survive with the image behind them. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
 :::
 
 ## Unmapped fields

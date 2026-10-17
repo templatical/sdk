@@ -247,6 +247,7 @@ interface SectionBlock extends BaseBlock {
   columns: ColumnLayout;
   border?: BorderValue;     // ohne Angabe: kein Rahmen
   backgroundImage?: BackgroundImage; // ohne Angabe: kein Bild; styles.backgroundColor dient als Fallback
+  hero?: SectionHero;       // ohne Angabe: normale Sektion; gilt mit einer Spalte und einem Bild
   children: Block[][];      // Array von Spalten, die jeweils Blöcke enthalten
   stackOnMobile?: boolean;  // fehlt/true: Spalten stapeln auf Mobilgeräten (MJML-Standard).
                             // false: als <mj-group> gerendert, bleiben nebeneinander.
@@ -262,6 +263,13 @@ interface BackgroundImage {
     y: 'top' | 'center' | 'bottom';
   };
   repeat: boolean; // false: einmal gezeichnet
+  width?: number;   // Größe des Bilds in px; die Höhe 'image' eines Heros übernimmt diese Form
+  height?: number;
+}
+
+interface SectionHero {
+  height: 'image' | number; // 'image': die Box behält die Form des Bilds; eine Zahl: feste Höhe in px, Innenabstand eingeschlossen
+  verticalAlign: 'top' | 'middle' | 'bottom';
 }
 ```
 

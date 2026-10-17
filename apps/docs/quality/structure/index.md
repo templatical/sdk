@@ -1,10 +1,10 @@
 ---
-description: lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, empty sections or columns, and background images Outlook can't layer.
+description: lintStructure catches template JSON that can't safely render — duplicate block IDs, section-column mismatches, nested sections, empty sections or columns, heroes that render as regular sections, and background images Outlook can't layer.
 ---
 
 # Structure linter
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, and background images Outlook on Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, and background images Outlook on Windows can't layer.
 
 ## Purpose
 
@@ -17,6 +17,7 @@ The structure linter catches these before save / before send:
 - **Nested section.** The renderer rejects sections inside columns. If one ends up there, MJML output silently drops it.
 - **Empty section.** A section with no blocks renders as a blank table row — wasted whitespace, sometimes a visible padding gap.
 - **Empty column.** A multi-column section with one empty column renders awkwardly in most clients and almost always means the author intended fewer columns.
+- **Hero not applied.** A section with `hero` set that renders as a regular section: more than one column, no background image, or `height: "image"` without the image's size. The message says which.
 - **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.

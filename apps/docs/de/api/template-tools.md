@@ -45,7 +45,7 @@ Mit `--json` gibt jeder Befehl ein einzelnes, parsebares JSON-Dokument auf stdou
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Strukturelle Validierung gegen das generierte JSON-Schema — diskriminator-bewusst, sodass ein fehlerhafter Button `blocks[2] (button) must have required property 'url'` meldet statt eines rohen `anyOf`-Fehlers. Sobald die Struktur besteht, läuft darauf der vollständige Lint von `@templatical/quality` (Barrierefreiheit, Struktur, Links — 34 Regeln). Keine befehlsspezifischen Flags.
+Strukturelle Validierung gegen das generierte JSON-Schema — diskriminator-bewusst, sodass ein fehlerhafter Button `blocks[2] (button) must have required property 'url'` meldet statt eines rohen `anyOf`-Fehlers. Sobald die Struktur besteht, läuft darauf der vollständige Lint von `@templatical/quality` (Barrierefreiheit, Struktur, Links — 35 Regeln). Keine befehlsspezifischen Flags.
 
 ### `schema [--out <file> | -o <file>]`
 

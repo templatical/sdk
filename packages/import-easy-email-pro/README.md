@@ -36,9 +36,9 @@ Each entry in `report.entries` carries a `status`:
 - `converted` — mapped to a Templatical block with no loss of fidelity.
 - `approximated` — mapped to a Templatical block, but something had to be
   resolved or clamped (e.g. a 4+ column row folded to three, an outlined
-  button, a hero overlay stacked as a leading image, a countdown GIF, a
-  widget whose children converted without its chrome, logic whose children
-  converted without their expression).
+  button, a hero's `inner-padding` dropped, a countdown GIF, a widget whose
+  children converted without its chrome, logic whose children converted
+  without their expression).
 - `html-fallback` — no Templatical block exists for this `type`; the raw node
   is preserved as JSON inside an `HtmlBlock`.
 - `skipped` — empty `logic`; there were no children to convert.

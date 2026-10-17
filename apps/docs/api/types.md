@@ -247,6 +247,7 @@ interface SectionBlock extends BaseBlock {
   columns: ColumnLayout;
   border?: BorderValue;     // absent: no border
   backgroundImage?: BackgroundImage; // absent: no image; styles.backgroundColor is its fallback
+  hero?: SectionHero;       // absent: a regular section; applies with one column and an image
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
@@ -262,6 +263,13 @@ interface BackgroundImage {
     y: 'top' | 'center' | 'bottom';
   };
   repeat: boolean; // false: painted once
+  width?: number;   // the image's size in px; a hero's 'image' height keeps this shape
+  height?: number;
+}
+
+interface SectionHero {
+  height: 'image' | number; // 'image': the box keeps the image's shape; a number: fixed px, padding included
+  verticalAlign: 'top' | 'middle' | 'bottom';
 }
 ```
 

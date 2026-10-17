@@ -113,8 +113,9 @@ const editor = await init({
 });
 ```
 
-- **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
+- **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `hero`, `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
 - **Reference built-ins by their bare type** (`"section"`, `"image"`, …) and **custom blocks by their `custom:`-prefixed type** (`"custom:qrcode"`), so the two can be interleaved freely.
+- **`"hero"` is a shortcut, not a block type.** It inserts a one-column section in hero mode with a title, a paragraph and a button (see [Hero](/guide/sections-and-columns#hero)). List it like a built-in.
 - **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` outside a Cloud plan is logged to the console with a warning and left out of the palette.
 - **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 
@@ -987,7 +988,7 @@ Add `--json` to any command for a single parseable JSON document on stdout. Inst
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 34 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 35 rules) runs on top. No command-specific flags.
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -1444,6 +1445,7 @@ interface SectionBlock extends BaseBlock {
   columns: ColumnLayout;
   border?: BorderValue;     // absent: no border
   backgroundImage?: BackgroundImage; // absent: no image; styles.backgroundColor is its fallback
+  hero?: SectionHero;       // absent: a regular section; applies with one column and an image
   children: Block[][];      // Array of columns, each containing blocks
   stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
                             // false: rendered as <mj-group> so they stay side-by-side.
@@ -1459,6 +1461,13 @@ interface BackgroundImage {
     y: 'top' | 'center' | 'bottom';
   };
   repeat: boolean; // false: painted once
+  width?: number;   // the image's size in px; a hero's 'image' height keeps this shape
+  height?: number;
+}
+
+interface SectionHero {
+  height: 'image' | number; // 'image': the box keeps the image's shape; a number: fixed px, padding included
+  verticalAlign: 'top' | 'middle' | 'bottom';
 }
 ```
 
@@ -6985,7 +6994,8 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `stackOnMobile` | `boolean` | Omit or `true`: columns stack on mobile (MJML default). `false`: stay side by side (`mj-group`) |
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
-| `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. |
+| `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. `width` / `height` (optional) are the image's size in px; a hero uses them to match its shape. |
+| `hero` | `SectionHero` | Optional. Renders a one-column section with a background image as an `mj-hero`, the image filling the box behind the content: `{ height, verticalAlign }`. `height` is `"image"` (the box keeps the image's shape, from `backgroundImage.width` / `height`) or a fixed height in px, padding included; `verticalAlign` is `"top"`, `"middle"` or `"bottom"`. The image always fills the box (`size` and `repeat` don't apply) and no `border` is drawn. With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the `structure.hero-not-applied` warning says why. |
 | `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
@@ -6999,6 +7009,11 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 - A merge tag works as the URL (for example <code v-pre>{{ hero_url }}</code>). The canvas shows the fallback color for it, since there is no image to load yet. Quotes inside the tag are percent-encoded, so avoid quoted arguments (<code v-pre>{{ hero | default: 'x.jpg' }}</code>).
 - Outlook on Windows draws the image with VML, where an image at its original size (`auto`) tiles from the top center whatever `position` and `repeat` say.
 - In Outlook on Windows, a wrapper's background color paints over the section's background image, and an image on both the wrapper and the section breaks the layout. The `structure` linter warns about both.
+:::
+
+::: tip Email client note: heroes
+- Outlook on Windows draws a hero's image with VML at the box's width and at the image's own height for that width, whatever the hero's height. Where the box ends up shorter than the image, the image can run past it, so check a hero in Outlook before sending.
+- A merge-tag URL works with a fixed height. **Match image** needs the image's size, which a merge tag can't give until the email is sent.
 :::
 
 ## Custom
@@ -9955,7 +9970,7 @@ import { renderToMjml } from '@templatical/renderer';
 const mjml = await renderToMjml(content);
 ```
 
-A visual comparison against Easy Email Pro's own preview catches what the report cannot. Several of the losses below — `mobileAttributes`, hero overlay, page `fonts[]` — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
+A visual comparison against Easy Email Pro's own preview catches what the report cannot. Several of the losses below — `mobileAttributes`, page `fonts[]` — are dropped at the site they are read, with a note when the converter has somewhere to attach one.
 
 There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, and this package does not consume `EditorCore.toMJML()`.
 
@@ -9968,7 +9983,7 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 | `standard-column` | Section `columns` / `children[i]` | Percent widths (`"50%"`, `"33.33%"`) match Templatical's five layouts. No report entry of its own. |
 | `standard-group` | Flattened columns; `stackOnMobile: false` | A group of columns on a section is that section's column structure. Nested group-in-column flattens, `approximated`. |
 | `standard-wrapper` | Inner section(s) `wrapper` | Outer `background-color` / `background-url` / padding → `section.wrapper`. One inner section → converted. Several inners → wrapper copied onto each, `approximated`. |
-| `standard-hero` | 1-col `SectionBlock` | Children walk as h1 / paragraph / button. `background-color` onto the section; `background-url` prepends an `ImageBlock` (stacked, not overlay), `approximated`. |
+| `standard-hero` | 1-col `SectionBlock` with `hero` | Children walk as h1 / paragraph / button. `background-color` onto the section, `background-url` onto its `backgroundImage`, behind the content. `mode`, `height`, `background-width` / `background-height` and `vertical-align` map onto `hero` as for an MJML `mj-hero`; a hero with no `mode` or `height` is a regular section with the background image. |
 | `page-header` / `page-footer` | Their content's sections, band as `section.wrapper` | `data.content` converts in order the way page children do; a bare leaf lands in a 1-col section. The band's `background-color` / `background-url` / padding → `section.wrapper` on each resulting section. Several sections → wrapper copied onto each, `approximated`. Empty → `skipped`. |
 | `placeholder` | Skip | Editor chrome. No entry. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` is the default text block; both map the same way, attribute cascade included. Content from Slate children. Stays a paragraph even at a large `font-size`. |
@@ -10001,13 +10016,12 @@ There is no round-trip oracle. Templatical does not render Easy Email Pro JSON, 
 
 A value with no exact Templatical keyword maps to the nearest one, `approximated` with a note. A size that fills a side (`100%`, `100% auto`, `auto 100%`, or a px width at least the email's) becomes `cover`, and any other length or percentage becomes `auto`. A percentage position snaps to the nearest of left, center and right (top, center and bottom), and a length to the left or top edge. `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
 
-`standard-hero` keeps its current mapping: its `background-url` is a leading `ImageBlock`.
+A `standard-hero`'s `background-url` becomes its section's `backgroundImage`, painted `cover` and unrepeated behind the content.
 
 ## Lossy conversions
 
 - **`$var` unresolved leftovers** — `$var(name)` resolves against widget `data.input`, then page `variables[]`. A name with no value is unset (`""` / leftover `$var(…)` do not become merge tags). One document-level warning names how many values resolved and how many were left unresolved.
 - **`mobileAttributes`** — a second attribute bag for the mobile viewport. Templatical has no per-viewport padding. Dropped. One document-level warning when any node carried them.
-- **Hero overlay** — `standard-hero` has no block equivalent. Children walk into a 1-col section; `background-url` becomes a leading `ImageBlock`, stacked, not overlaid. Overlay-on-image is the loss; editable CTAs survive. `approximated`.
 - **Outlined buttons** — `border-enabled: true` plus an unset fill has no Templatical equivalent. After `createButtonBlock`, fill is written `#ffffff` so the factory `#333333` does not turn a ghost button into a dark pill. The outline is dropped; the entry is `approximated`.
 - **4+ columns** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). A 4-, 5-, or 6-column section folds to `"3"`; overflow children append onto the last slot, `approximated`, original widths in the note.
 - **Nested group flatten** — a `standard-group` inside a column cannot become a nested `SectionBlock`. Inner column children splice into the parent column in document order, `approximated`, note `"nested group flattened (N columns)"`. Leaves convert; geometry is the loss.
@@ -10018,7 +10032,7 @@ A value with no exact Templatical keyword maps to the nearest one, `approximated
 - **Header and footer lock** — `page-header` / `page-footer` content becomes ordinary sections. The fixed position and the `editable` flag have no Templatical equivalent.
 
 ::: tip
-Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk rather than html-fallback the whole subtree so editable CTAs survive; overlay-on-image is what Templatical cannot express. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
+Nested groups flatten because MJML forbids a section inside a column, and `addBlock` does too. Inventing a nested `SectionBlock` would fail to render. Hero children walk into the hero section, so editable CTAs survive with the image behind them. Empty logic skips rather than become one opaque `HtmlBlock`, so a populated branch of product rows stays as converted children. Countdown stays an image so an OSS renderer does not blank the block.
 :::
 
 ## Unmapped fields
@@ -10469,7 +10483,8 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
 | `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `background-url` (with its size, position and repeat), `padding` and `border-radius` carry over; a `border` is dropped and reported. |
-| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
+| `mj-hero` | `SectionBlock` with `hero` | A one-column hero section. `fluid-height` → `height: "image"`, with `background-width` / `background-height` as the image's size; `fixed-height` → that `height`. A `fixed-height` hero without a `height` (MJML's default) is a regular section with the background image. `background-position` carries over; `inner-padding` and `inner-background-color` are dropped and reported. Inside an `mj-wrapper`, the hero takes the wrapper's band. |
+| `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
 
@@ -10531,7 +10546,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 - **Position** — a percentage snaps to the nearest of left, center and right (top, center and bottom); a length is an offset from the left or top edge and maps there.
 - **Repeat** — `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
 
-`mj-column` has no `background-url` in MJML, so there is no column image to import. `mj-hero` still imports as an HTML block.
+`mj-column` has no `background-url` in MJML, so there is no column image to import. An `mj-hero`'s image becomes its hero section's `backgroundImage`, always `cover` and unrepeated, as mj-hero paints it.
 
 ## Where the mapping is lossy
 
@@ -11779,6 +11794,25 @@ card.styles.backgroundColor = '#ffffff';
 
 A section's `backgroundImage` paints an image behind its columns. Set `styles.backgroundColor` as well, as the fallback while the image loads and in clients that don't show background images. In the editor's **Background** panel you also choose the size (Fill, Fit or Original), a nine-point position and whether the image repeats. See the [Section block](/guide/blocks#section) for the email client notes on background images.
 
+### Hero
+
+A one-column section with a background image can render as a hero — an `mj-hero`, where the image fills the box and the content sits on top of it. Set `hero`:
+
+```ts
+const banner = createSectionBlock({
+  columns: '1',
+  backgroundImage: {
+    ...createBackgroundImage('https://cdn.example.com/hero.jpg'),
+    width: 1200,
+    height: 800,
+  },
+  hero: { height: 'image', verticalAlign: 'middle' },
+});
+banner.styles.backgroundColor = '#1f2937';
+```
+
+`height: 'image'` keeps the box at the image's shape at every screen width, which needs the image's size in `backgroundImage.width` / `height`; the editor measures it when you pick the image. A number is a fixed height in px, padding included. In the editor, the **Background** panel's **Height** switches between **Fit content** (no hero), **Match image** and **Fixed**, and **Content position** places the content. The palette's **Hero** shortcut inserts one to fill in: a hero-mode section with a title, a paragraph and a button on a dark fill. See the [Section block](/guide/blocks#section) for the email client notes.
+
 ### Outer frame (wrapper)
 
 To frame a section in a colored band — e.g. a white card sitting on a blue background — set `wrapper`. It renders an `mj-wrapper` around the section, with its own background, padding, and corner radius. The band is as wide as the email body (`settings.width`), not the recipient's whole window:
@@ -12991,7 +13025,7 @@ Source: https://docs.templatical.com/quality/
 | Linter | What it catches | Default severities |
 |---|---|---|
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
-| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, background images Outlook on Windows can't layer | mostly error; some warning |
+| **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, heroes that render as regular sections, background images Outlook on Windows can't layer | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
 All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
@@ -13565,7 +13599,7 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, and background images Outlook on Windows can't layer.
+`lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), empty sections / columns, heroes that render as regular sections, and background images Outlook on Windows can't layer.
 
 ## Purpose
 
@@ -13578,6 +13612,7 @@ The structure linter catches these before save / before send:
 - **Nested section.** The renderer rejects sections inside columns. If one ends up there, MJML output silently drops it.
 - **Empty section.** A section with no blocks renders as a blank table row — wasted whitespace, sometimes a visible padding gap.
 - **Empty column.** A multi-column section with one empty column renders awkwardly in most clients and almost always means the author intended fewer columns.
+- **Hero not applied.** A section with `hero` set that renders as a regular section: more than one column, no background image, or `height: "image"` without the image's size. The message says which.
 - **Background images Outlook can't layer.** Outlook on Windows paints a wrapper's background color over its section's background image, and can't layer a wrapper image and a section image. These two rules are compatibility warnings rather than corruption checks: every other client renders these combinations correctly.
 
 These rules are deterministic and locale-agnostic — they fire on JSON shapes, not phrases. Only the message text needs translating.
@@ -13616,7 +13651,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 
 Source: https://docs.templatical.com/quality/structure/rule-catalog
 
-The 7 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
+The 8 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
 
@@ -13637,6 +13672,7 @@ The 7 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 |---|---|---|---|
 | `structure.empty-section` | warning | yes | A section has no columns, or every column is empty. Renders as a blank table row in most clients — wasted whitespace and an occasional visible padding gap. Auto-fix removes the section. |
 | `structure.empty-column` | warning | — | A multi-column section has at least one column with no blocks. Renders awkwardly (uneven gaps, collapsed columns on mobile) and almost always means the author intended fewer columns. No auto-fix because the right answer (merge into a sibling vs. drop the section vs. change the `columns` layout) depends on intent. |
+| `structure.hero-not-applied` | warning | — | A section has `hero` set but renders as a regular section: it has more than one column, no background image, or `height: "image"` without the image's size (a merge-tag URL, or an image added outside the editor). The message names which. Switch to one column, add the image, set a fixed height, or give the image its `width` and `height`. |
 
 ## Email client compatibility
 

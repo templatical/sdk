@@ -149,7 +149,7 @@ import { renderToMjml } from '@templatical/renderer';
 const mjml = await renderToMjml(content);
 ```
 
-Ein visueller Vergleich mit Easy Email Pros eigener Vorschau zeigt, was der Bericht nicht zeigen kann. Mehrere der unten genannten Verluste — `mobileAttributes`, Hero-Overlay, Seiten-`fonts[]` — werden an der Stelle verworfen, an der sie gelesen werden, mit einer `note`, wenn der Konverter irgendwo andocken kann.
+Ein visueller Vergleich mit Easy Email Pros eigener Vorschau zeigt, was der Bericht nicht zeigen kann. Mehrere der unten genannten Verluste — `mobileAttributes`, Seiten-`fonts[]` — werden an der Stelle verworfen, an der sie gelesen werden, mit einer `note`, wenn der Konverter irgendwo andocken kann.
 
 Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, und dieses Paket verarbeitet `EditorCore.toMJML()` nicht.
 
@@ -162,7 +162,7 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 | `standard-column` | Section-`columns` / `children[i]` | Prozentbreiten (`"50%"`, `"33.33%"`) werden auf Templaticals fünf Layouts gematcht. Kein eigener Berichtseintrag. |
 | `standard-group` | Abgeflachte Spalten; `stackOnMobile: false` | Eine Group aus Spalten auf einer Sektion ist die Spaltenstruktur dieser Sektion. Eine verschachtelte Group in einer Spalte wird abgeflacht, `approximated`. |
 | `standard-wrapper` | Innere Sektion(en) `wrapper` | Äußeres `background-color` / `background-url` / Padding → `section.wrapper`. Eine innere Sektion → converted. Mehrere Innere → Wrapper auf jede kopiert, `approximated`. |
-| `standard-hero` | 1-Spalten-`SectionBlock` | Kinder werden als h1 / Paragraph / Button durchlaufen. `background-color` auf die Sektion; `background-url` stellt einen `ImageBlock` voran (gestapelt, nicht Overlay), `approximated`. |
+| `standard-hero` | 1-Spalten-`SectionBlock` mit `hero` | Kinder werden als h1 / Paragraph / Button durchlaufen. `background-color` auf die Sektion, `background-url` auf ihr `backgroundImage`, hinter dem Inhalt. `mode`, `height`, `background-width` / `background-height` und `vertical-align` werden wie bei einem MJML-`mj-hero` auf `hero` abgebildet; ein Hero ohne `mode` oder `height` wird eine normale Sektion mit dem Hintergrundbild. |
 | `page-header` / `page-footer` | Die Sektionen ihres Inhalts, das Band als `section.wrapper` | `data.content` wird in Reihenfolge so konvertiert wie Seiten-Kinder; ein nacktes Blatt landet in einer 1-Spalten-Sektion. `background-color` / `background-url` / Padding des Bands → `section.wrapper` auf jeder entstehenden Sektion. Mehrere Sektionen → Wrapper auf jede kopiert, `approximated`. Leer → `skipped`. |
 | `placeholder` | Übersprungen | Editor-Chrome. Kein Eintrag. |
 | `standard-text` / `standard-paragraph` | `ParagraphBlock` | `standard-text` ist der Standard-Textblock; beide werden gleich abgebildet, einschließlich der Attribut-Kaskade. Inhalt aus Slate-Kindern. Bleibt ein Paragraph, auch bei großer `font-size`. |
@@ -195,13 +195,12 @@ Es gibt kein Round-Trip-Orakel. Templatical rendert kein Easy-Email-Pro-JSON, un
 
 Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende abgebildet, `approximated` mit einer Notiz. Eine Größe, die eine Seite füllt (`100%`, `100% auto`, `auto 100%` oder eine px-Breite mindestens so groß wie die E-Mail), wird `cover`, jede andere Länge oder Prozentangabe `auto`. Eine Prozent-Position rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein, eine Länge auf den linken bzw. oberen Rand. `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`.
 
-`standard-hero` behält seine bisherige Abbildung: Sein `background-url` wird ein vorangestellter `ImageBlock`.
+Das `background-url` eines `standard-hero` wird zum `backgroundImage` seiner Sektion, `cover` und nicht wiederholt hinter dem Inhalt gemalt.
 
 ## Verlustbehaftete Konvertierung
 
 - **Nicht aufgelöste `$var`-Reste** — `$var(name)` wird gegen Widget-`data.input`, dann gegen `variables[]` der Seite aufgelöst. Ein Name ohne Wert bleibt ungesetzt (`""` / übrig gebliebenes `$var(…)` werden keine Merge-Tags). Eine Warnung auf Dokumentebene nennt, wie viele Werte aufgelöst wurden und wie viele unaufgelöst blieben.
 - **`mobileAttributes`** — eine zweite Attributtasche für das mobile Viewport. Templatical hat kein Padding je Viewport. Verworfen. Eine Warnung auf Dokumentebene, wenn irgendein Knoten sie trug.
-- **Hero-Overlay** — `standard-hero` hat keine Block-Entsprechung. Kinder laufen in eine 1-Spalten-Sektion; `background-url` wird zu einem führenden `ImageBlock`, gestapelt, nicht überlagert. Overlay-auf-Bild ist der Verlust; editierbare CTAs bleiben. `approximated`.
 - **Outlined-Buttons** — `border-enabled: true` plus ungesetztes Fill hat keine Templatical-Entsprechung. Nach `createButtonBlock` wird Fill als `#ffffff` geschrieben, damit das Factory-`#333333` einen Ghost-Button nicht in eine dunkle Pille verwandelt. Der Outline entfällt; der Eintrag ist `approximated`.
 - **4+ Spalten** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). Eine Sektion mit 4, 5 oder 6 Spalten wird auf `"3"` gefaltet; überzählige Kinder hängen an den letzten Slot, `approximated`, Originalbreiten in der `note`.
 - **Abflachen verschachtelter Groups** — ein `standard-group` innerhalb einer Spalte kann kein verschachtelter `SectionBlock` werden. Die Kinder der inneren Spalten werden in Dokumentreihenfolge in die Elternspalte eingefügt, `approximated`, `note` `"nested group flattened (N columns)"`. Blätter werden konvertiert; die Geometrie ist der Verlust.
@@ -212,7 +211,7 @@ Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende ab
 - **Sperre von Header und Footer** — Der Inhalt von `page-header` / `page-footer` wird zu gewöhnlichen Sektionen. Die feste Position und das `editable`-Flag haben keine Templatical-Entsprechung.
 
 ::: tip
-Verschachtelte Groups werden abgeflacht, weil MJML eine Sektion innerhalb einer Spalte verbietet und `addBlock` das ebenfalls tut. Ein erfundener verschachtelter `SectionBlock` würde nicht rendern. Hero-Kinder werden durchlaufen, statt den ganzen Teilbaum als `html-fallback` zu legen, damit editierbare CTAs erhalten bleiben; Overlay-auf-Bild kann Templatical nicht ausdrücken. Leeres `logic` wird übersprungen statt zu einem undurchsichtigen `HtmlBlock`, sodass ein gefüllter Zweig aus Produktzeilen als konvertierte Kinder erhalten bleibt. Der Countdown bleibt ein Bild, damit ein OSS-Renderer den Block nicht leer lässt.
+Verschachtelte Groups werden abgeflacht, weil MJML eine Sektion innerhalb einer Spalte verbietet und `addBlock` das ebenfalls tut. Ein erfundener verschachtelter `SectionBlock` würde nicht rendern. Hero-Kinder laufen in die Hero-Sektion, sodass editierbare CTAs mit dem Bild dahinter erhalten bleiben. Leeres `logic` wird übersprungen statt zu einem undurchsichtigen `HtmlBlock`, sodass ein gefüllter Zweig aus Produktzeilen als konvertierte Kinder erhalten bleibt. Der Countdown bleibt ein Bild, damit ein OSS-Renderer den Block nicht leer lässt.
 :::
 
 ## Nicht abgebildete Felder

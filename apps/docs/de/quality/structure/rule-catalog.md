@@ -1,6 +1,6 @@
 # Regelkatalog Struktur
 
-Die 7 Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/quality/src/structure/rules/`; Schweregrad ist pro Regel über die [Optionen](../options) anpassbar.
+Die 8 Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/quality/src/structure/rules/`; Schweregrad ist pro Regel über die [Optionen](../options) anpassbar.
 
 ## Baum-Integrität
 
@@ -21,6 +21,7 @@ Die 7 Regeln, die `lintStructure` mitliefert. Jede Regel liegt in `packages/qual
 |---|---|---|---|
 | `structure.empty-section` | warning | ja | Eine Sektion hat keine Spalten, oder jede Spalte ist leer. Rendert in den meisten Clients als leere Tabellenzeile — verschwendeter Whitespace und gelegentlich eine sichtbare Padding-Lücke. Auto-Fix entfernt die Sektion. |
 | `structure.empty-column` | warning | — | Eine Mehrspalten-Sektion hat mindestens eine Spalte ohne Blöcke. Rendert unglücklich (ungleichmäßige Lücken, kollabierte Spalten auf Mobilgeräten) und bedeutet fast immer, dass der Autor weniger Spalten meinte. Kein Auto-Fix, weil die richtige Antwort (in Nachbar-Spalte zusammenführen vs. Sektion entfernen vs. `columns`-Layout ändern) von der Intention abhängt. |
+| `structure.hero-not-applied` | warning | — | Eine Sektion hat `hero` gesetzt, wird aber als normale Sektion dargestellt: sie hat mehr als eine Spalte, kein Hintergrundbild oder `height: "image"` ohne die Größe des Bilds (eine Merge-Tag-URL oder ein Bild, das außerhalb des Editors hinzugefügt wurde). Die Meldung nennt den Grund. Stelle auf eine Spalte um, füge das Bild hinzu, setze eine feste Höhe oder gib dem Bild `width` und `height`. |
 
 ## E-Mail-Client-Kompatibilität
 
