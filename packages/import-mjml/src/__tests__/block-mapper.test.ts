@@ -816,27 +816,6 @@ describe("the fallback ladder", () => {
     });
   });
 
-  it("falls back to an html block for mj-hero, keeping the outer markup", () => {
-    const { result } = convert(
-      '<mj-hero background-color="#000000"><mj-text>hi</mj-text></mj-hero>',
-      "mj-hero",
-    );
-
-    expect(result!.block!.type).toBe("html");
-    const content = (result!.block as { content: string }).content;
-    // Outer serialization: the mj-hero element's own attribute must survive
-    // alongside its children. `$el.html()` (inner-only) would drop it, which
-    // is exactly the bug this assertion catches.
-    expect(content).toContain('background-color="#000000"');
-    expect(content).toContain("<mj-text>hi</mj-text>");
-    expect(result!.entry).toEqual({
-      sourceTag: "mj-hero",
-      templaticalBlockType: "html",
-      status: "html-fallback",
-      note: "<mj-hero> has no Templatical block equivalent; the original markup is preserved.",
-    });
-  });
-
   it("falls back for mj-carousel and mj-accordion too", () => {
     expect(convert("<mj-carousel />", "mj-carousel").result!.entry.status).toBe(
       "html-fallback",

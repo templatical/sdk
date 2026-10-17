@@ -29,7 +29,7 @@ import { convertMjmlTemplate } from "../converter";
  * inside a section column, a paragraph carrying a hard `<br>` line break, a
  * button at each width (fit to content, full and px), and per-corner radii and
  * borders on a button, an image, a section and a wrapper, and a section
- * background image and a wrapper background image.
+ * background image, a hero section and a wrapper background image.
  *
  * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
@@ -175,6 +175,28 @@ function buildFixtureTemplate(): TemplateContent {
             }),
           ]),
         ],
+      }),
+      createSectionBlock({
+        columns: "1",
+        children: [
+          col([createParagraphBlock({ content: "<p>Hero copy</p>" })]),
+        ],
+        // A box-sized image: the renderer writes background-width as the box
+        // width and the height at that width, so only this size reads back
+        // equal. Any size with the same ratio renders the same hero.
+        backgroundImage: {
+          url: "https://cdn.test/hero-banner.jpg",
+          size: "cover",
+          position: { x: "center", y: "top" },
+          repeat: false,
+          width: 600,
+          height: 400,
+        },
+        hero: { height: "image", verticalAlign: "middle" },
+        styles: {
+          padding: { top: 48, right: 24, bottom: 48, left: 24 },
+          backgroundColor: "#0f172a",
+        },
       }),
       createSectionBlock({
         columns: "1-2",
@@ -354,6 +376,7 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(mjml).toContain('css-class="tpl-button-full"');
     expect(mjml).toContain('background-url="https://cdn.test/hero.jpg"');
     expect(mjml).toContain('background-url="https://cdn.test/band.png"');
+    expect(mjml).toContain('<mj-hero mode="fluid-height"');
     expect(report.summary.approximated).toBe(0);
     expect(report.summary.htmlFallback).toBe(0);
     expect(report.summary.skipped).toBe(0);

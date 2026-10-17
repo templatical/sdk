@@ -17,7 +17,7 @@ import { convertElement } from "./block-mapper";
 import type { ConvertContext } from "./block-base";
 import { planSiblings } from "./display-condition";
 import { extractSettings } from "./head-parser";
-import { buildSection, buildWrapper } from "./section-builder";
+import { buildHero, buildSection, buildWrapper } from "./section-builder";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
 const EMPTY_DOCUMENT_WARNING =
@@ -56,12 +56,14 @@ function walkBody(
   for (const unit of planSiblings(childElements($body, ctx.$))) {
     const tag = tagOf(unit.$el[0]);
 
-    if (tag === "mj-wrapper" || tag === "mj-section") {
+    if (tag === "mj-wrapper" || tag === "mj-section" || tag === "mj-hero") {
       flushLoose();
       const produced =
         tag === "mj-wrapper"
           ? buildWrapper(unit.$el, ctx, entries)
-          : buildSection(unit.$el, ctx, entries);
+          : tag === "mj-hero"
+            ? buildHero(unit.$el, ctx, entries)
+            : buildSection(unit.$el, ctx, entries);
 
       // A condition brackets one element, so it lands on every block that
       // element produced — which is more than one only for a multi-section

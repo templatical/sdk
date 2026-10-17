@@ -13,6 +13,7 @@ import {
   parsePaddingShorthand,
   parsePercent,
   readMjmlBackgroundImage,
+  readMjmlHero,
 } from "./attribute-parser";
 import {
   childElements,
@@ -187,16 +188,21 @@ function convertColumnChildren(
   for (const unit of planSiblings(childElements($column, ctx.$))) {
     const tag = tagOf(unit.$el[0]);
 
-    // MJML forbids mj-section inside mj-column, and `addBlock` in
-    // @templatical/core refuses a section into a column too, so producing one
-    // here would be dropped downstream without a trace.
-    if (tag === "mj-section" || tag === "mj-wrapper") {
+    // MJML forbids mj-section, mj-wrapper and mj-hero inside mj-column, and
+    // `addBlock` in @templatical/core refuses a section into a column too, so
+    // producing one here would be dropped downstream without a trace.
+    if (tag === "mj-section" || tag === "mj-wrapper" || tag === "mj-hero") {
       const attrs = resolveAttributes(unit.$el, ctx.cascade);
       const fallback = convertHtmlFallback(unit.$el, ctx, attrs);
       if (unit.displayCondition)
         fallback.displayCondition = unit.displayCondition;
       blocks.push(fallback);
-      const noun = tag === "mj-section" ? "section" : "wrapper";
+      const noun =
+        tag === "mj-section"
+          ? "section"
+          : tag === "mj-hero"
+            ? "hero"
+            : "wrapper";
       entries.push({
         sourceTag: tag,
         templaticalBlockType: "html",
@@ -328,6 +334,59 @@ export function buildSection(
   return [section];
 }
 
+/**
+ * Build a one-column `SectionBlock` from an `mj-hero`, whose content elements
+ * sit directly under it (no `mj-column`). Its mode, height and background map
+ * onto `hero` and `backgroundImage` (`readMjmlHero`). mj-hero paints white
+ * where its source sets no `background-color`, so an absent colour imports as
+ * `#ffffff`; an explicit `transparent` stays unset.
+ */
+export function buildHero(
+  $el: Cheerio<Element>,
+  ctx: ConvertContext,
+  entries: ImportReportEntry[],
+  wrapper?: SectionWrapper,
+): Block[] {
+  const attrs = resolveAttributes($el, ctx.cascade);
+  const notes: string[] = [];
+  const read = readMjmlHero((name) => attrs[name], "Hero", ctx.containerWidth);
+  notes.push(...read.notes);
+  const borderRadius = readBorderRadius(attrs, "Hero", notes);
+
+  // Pushed before the children convert, as in buildSection, so the hero's
+  // entry lands ahead of its own content in the shared report.
+  entries.push({
+    sourceTag: "mj-hero",
+    templaticalBlockType: "section",
+    status: notes.length > 0 ? "approximated" : "converted",
+    ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+  });
+
+  const { left, right } = parsePaddingShorthand(attrs.padding);
+  const children = convertColumnChildren(
+    $el,
+    { ...ctx, columnPadding: left + right },
+    entries,
+  );
+
+  const fields = baseFields(attrs, "native");
+  if (attrs["background-color"] === undefined) {
+    fields.styles.backgroundColor = "#ffffff";
+  }
+
+  const section = createSectionBlock({
+    columns: "1",
+    children: [children],
+    ...(borderRadius ? { borderRadius } : {}),
+    ...(read.image ? { backgroundImage: read.image } : {}),
+    ...(read.hero ? { hero: read.hero } : {}),
+    ...(wrapper ? { wrapper } : {}),
+    ...fields,
+  });
+
+  return [section];
+}
+
 const WRAPPER_BORDER_ATTRIBUTES = [
   "border",
   "border-top",
@@ -402,16 +461,17 @@ export function buildWrapper(
   const notes: string[] = [];
   const wrapper = readWrapper(attrs, notes, ctx.containerWidth);
 
-  const sections = childElements($el, ctx.$).filter(
-    ($k) => tagOf($k[0]) === "mj-section",
-  );
+  const sections = childElements($el, ctx.$).filter(($k) => {
+    const tag = tagOf($k[0]);
+    return tag === "mj-section" || tag === "mj-hero";
+  });
 
   if (sections.length === 0) {
     entries.push({
       sourceTag: "mj-wrapper",
       templaticalBlockType: null,
       status: "skipped",
-      note: "An <mj-wrapper> with no <mj-section> children produces nothing.",
+      note: "An <mj-wrapper> with no <mj-section> or <mj-hero> children produces nothing.",
     });
     return [];
   }
@@ -434,6 +494,8 @@ export function buildWrapper(
   }
 
   return sections.flatMap(($section) =>
-    buildSection($section, ctx, entries, copyWrapper(wrapper)),
+    tagOf($section[0]) === "mj-hero"
+      ? buildHero($section, ctx, entries, copyWrapper(wrapper))
+      : buildSection($section, ctx, entries, copyWrapper(wrapper)),
   );
 }

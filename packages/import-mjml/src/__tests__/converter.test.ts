@@ -73,7 +73,7 @@ describe("convertMjmlTemplate end to end", () => {
       "section", // the mj-wrapper's section
       "section", // the two-column section
       "section", // the conditional section
-      "html", // mj-hero fallback, wrapped in a section-less top-level block
+      "section", // the mj-hero
       "section", // the loose mj-text, wrapped
     ]);
   });
@@ -120,8 +120,9 @@ describe("convertMjmlTemplate end to end", () => {
   it("summarises the report over every produced block", () => {
     const { report } = convertMjmlTemplate(fixture("newsletter.mjml"));
 
-    expect(report.summary.total).toBe(11);
-    expect(report.summary.htmlFallback).toBe(1);
+    expect(report.summary.total).toBe(12);
+    expect(report.summary.converted).toBe(12);
+    expect(report.summary.htmlFallback).toBe(0);
     expect(report.summary.skipped).toBe(0);
     expect(report.entries.filter((e) => e.sourceTag === "mj-raw")).toEqual([]);
     expect(report.entries.filter((e) => e.sourceTag === "mj-column")).toEqual(

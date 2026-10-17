@@ -16,7 +16,7 @@ export type ConversionStatus =
  * A single entry in the import report.
  */
 export interface ImportReportEntry {
-  /** The source MJML tag name (e.g. "mj-section", "mj-image", "mj-hero"). */
+  /** The source MJML tag name (e.g. "mj-section", "mj-image", "mj-carousel"). */
   sourceTag: string;
   /** The Templatical block type produced, or null if skipped. */
   templaticalBlockType: string | null;

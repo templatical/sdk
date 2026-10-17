@@ -62,7 +62,7 @@ const STRUCTURAL_TAGS = new Set([
 ]);
 
 /** Tags with no Templatical equivalent that keep their markup verbatim. */
-const NO_EQUIVALENT_TAGS = new Set(["mj-hero", "mj-carousel", "mj-accordion"]);
+const NO_EQUIVALENT_TAGS = new Set(["mj-carousel", "mj-accordion"]);
 
 function convertImage(
   $el: Cheerio<Element>,
