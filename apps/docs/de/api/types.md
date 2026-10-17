@@ -608,6 +608,7 @@ import {
   createImageBlock,
   createButtonBlock,
   createSectionBlock,
+  createBackgroundImage,
   createDividerBlock,
   createVideoBlock,
   createSpacerBlock,
@@ -636,6 +637,11 @@ const heading = createTitleBlock({
 
 // Beliebigen Block per Typ-String erstellen
 const block = createBlock('button');
+
+// Ein Hintergrundbild einer Sektion aus seiner URL: zentriert, cover, nicht gekachelt
+const section = createSectionBlock({
+  backgroundImage: createBackgroundImage('https://cdn.example.com/hero.jpg'),
+});
 
 // Deep Clone mit neuen IDs, auch für verschachtelte Zeilen, Einträge und Icons
 const copy = cloneBlock(existingBlock);

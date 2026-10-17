@@ -103,6 +103,8 @@ Arrays are **replaced**, not merged. For example, setting `table.rows` replaces 
 
 Custom blocks are not affected by `blockDefaults`. They use their own `default` values defined in the `CustomBlockDefinition` field configuration.
 
+The palette's [Hero](/guide/sections-and-columns#hero) shortcut keeps your `blockDefaults` styling for its title and button, centred and with the title in white to read on its dark fill, but not `blockDefaults.section` or `paragraph.content`: the shortcut sets its own section and starter paragraph.
+
 ### TypeScript Type
 
 ```ts

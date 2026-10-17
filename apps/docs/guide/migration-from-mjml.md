@@ -145,7 +145,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-table` | `TableBlock` | Maps `<tr>`/`<td>`/`<th>` rows and cells to Templatical's table data; a leading `<th>` row sets `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inner markup preserved verbatim. |
 | `mj-wrapper` | `SectionBlock.wrapper` | The section's outer band, **not a section of its own**. One section inside folds into its `wrapper`; several share the same band, flagged `approximated`. `background-color`, `background-url` (with its size, position and repeat), `padding` and `border-radius` carry over; a `border` is dropped and reported. |
-| `mj-hero` | `SectionBlock` with `hero` | A one-column hero section. `fluid-height` → `height: "image"`, with `background-width` / `background-height` as the image's `naturalWidth` / `naturalHeight`; `fixed-height` → that `height`. A `fixed-height` hero without a `height` (MJML's default) is a regular section with the background image. `background-position` carries over; `inner-padding` and `inner-background-color` are dropped and reported. Inside an `mj-wrapper`, the hero takes the wrapper's band. |
+| `mj-hero` | `SectionBlock` with `hero` | A one-column hero section. `fluid-height` → `height: "image"`, with `background-width` / `background-height` as the image's `naturalWidth` / `naturalHeight`; `fixed-height` → that `height`. A `fluid-height` hero without `background-width` / `background-height` still imports as `height: "image"`, with a note: until its image has a size it renders as a regular section, and the `structure.hero-not-applied` warning gives the size as the reason. A `fixed-height` hero without a `height` (MJML's default) is a regular section with the background image. `background-position` carries over; `inner-padding` and `inner-background-color` are dropped and reported. Inside an `mj-wrapper`, the hero takes the wrapper's band. |
 | `mj-carousel`, `mj-accordion` | `HtmlBlock` | Converted to an HTML block with the original markup preserved. |
 | `mjml` | Template `settings` | `lang` → `locale`; `dir` → `direction`, kept only when it differs from the direction the language implies. |
 | `mj-head` content | Template `settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` set the document's font, text color, and link color/underline. `mj-title` has no settings equivalent and is dropped with a warning. |
@@ -212,7 +212,7 @@ A value with no exact Templatical keyword maps to the nearest one, and the entry
 - **Position** — a percentage snaps to the nearest of left, center and right (top, center and bottom); a length is an offset from the left or top edge and maps there.
 - **Repeat** — `repeat-x`, `repeat-y`, `round` and `space` become `repeat`.
 
-`mj-column` has no `background-url` in MJML, so there is no column image to import. An `mj-hero`'s image becomes its hero section's `backgroundImage`, always `cover` and unrepeated, as mj-hero paints it.
+`mj-column` has no `background-url` in MJML, so there is no column image to import. An `mj-hero`'s image becomes the `backgroundImage` of the section it imports as, always `cover` and unrepeated, as mj-hero paints it: a hero section, or a regular one for a hero as tall as its content.
 
 ## Where the mapping is lossy
 

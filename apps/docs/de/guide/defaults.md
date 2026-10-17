@@ -104,6 +104,8 @@ Arrays werden **ersetzt**, nicht zusammengeführt. Beispielsweise ersetzt das Se
 
 Benutzerdefinierte Blöcke sind von `blockDefaults` nicht betroffen. Sie verwenden ihre eigenen `default`-Werte, die in der `CustomBlockDefinition`-Feldkonfiguration definiert sind.
 
+Die Verknüpfung [Hero](/de/guide/sections-and-columns#hero) in der Palette übernimmt Ihr `blockDefaults`-Styling für Titel und Button, zentriert und mit weißem Titel, damit beides auf der dunklen Füllung lesbar ist, aber nicht `blockDefaults.section` oder `paragraph.content`: Sektion und Start-Absatz legt die Verknüpfung selbst fest.
+
 ### TypeScript-Typ
 
 ```ts

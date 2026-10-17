@@ -443,8 +443,9 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     };
     const mjml = await renderToMjml(original);
 
-    // The renderer narrows the hero's box by the wrapper's padding, so a full
-    // image is 560px here; this case cannot pass because it stopped.
+    // The renderer emits a full image at the hero's box, 560px inside the
+    // wrapper's padding; the import has to read that width back as "full",
+    // not freeze it at 560px.
     expect(mjml).toMatch(/<mj-image[^>]*width="560px"/);
 
     const { content, report } = convertMjmlTemplate(mjml);

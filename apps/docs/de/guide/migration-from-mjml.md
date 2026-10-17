@@ -145,7 +145,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-table` | `TableBlock` | Bildet `<tr>`/`<td>`/`<th>`-Zeilen und -Zellen auf Templaticals Tabellen-Daten ab; eine führende `<th>`-Zeile setzt `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inneres Markup bleibt wortgetreu erhalten. |
 | `mj-wrapper` | `SectionBlock.wrapper` | Das äußere Band der Section, **keine eigene Section**. Eine einzelne Section darin fließt in deren `wrapper`; mehrere teilen sich dasselbe Band und werden als `approximated` markiert. `background-color`, `background-url` (mit Größe, Position und Wiederholung), `padding` und `border-radius` werden übernommen; ein `border` wird verworfen und gemeldet. |
-| `mj-hero` | `SectionBlock` mit `hero` | Eine einspaltige Hero-Sektion. `fluid-height` → `height: "image"`, mit `background-width` / `background-height` als `naturalWidth` / `naturalHeight` des Bilds; `fixed-height` → diese `height`. Ein `fixed-height`-Hero ohne `height` (MJMLs Standard) wird eine normale Sektion mit dem Hintergrundbild. `background-position` wird übernommen; `inner-padding` und `inner-background-color` werden verworfen und gemeldet. In einem `mj-wrapper` erhält der Hero das Band des Wrappers. |
+| `mj-hero` | `SectionBlock` mit `hero` | Eine einspaltige Hero-Sektion. `fluid-height` → `height: "image"`, mit `background-width` / `background-height` als `naturalWidth` / `naturalHeight` des Bilds; `fixed-height` → diese `height`. Ein `fluid-height`-Hero ohne `background-width` / `background-height` wird trotzdem als `height: "image"` importiert, mit einer Notiz: Solange sein Bild keine Größe hat, wird er als normale Sektion dargestellt, und die Warnung `structure.hero-not-applied` nennt die Größe als Grund. Ein `fixed-height`-Hero ohne `height` (MJMLs Standard) wird eine normale Sektion mit dem Hintergrundbild. `background-position` wird übernommen; `inner-padding` und `inner-background-color` werden verworfen und gemeldet. In einem `mj-wrapper` erhält der Hero das Band des Wrappers. |
 | `mj-carousel`, `mj-accordion` | `HtmlBlock` | Wird in einen HTML-Block mit erhaltenem Original-Markup konvertiert. |
 | `mjml` | Template-`settings` | `lang` → `locale`; `dir` → `direction`, nur wenn es von der Schreibrichtung abweicht, die die Sprache vorgibt. |
 | `mj-head`-Inhalte | Template-`settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` setzen Schriftart, Textfarbe und Link-Farbe/-Unterstreichung des Dokuments. `mj-title` hat keine Entsprechung in den Settings und wird mit einer Warnung verworfen. |
@@ -212,7 +212,7 @@ Ein Wert ohne exaktes Templatical-Schlüsselwort wird auf das nächstliegende ab
 - **Position** — eine Prozentangabe rastet auf das nächste von links, Mitte und rechts (oben, Mitte und unten) ein; eine Länge ist ein Versatz vom linken bzw. oberen Rand und wird dort verankert.
 - **Wiederholung** — `repeat-x`, `repeat-y`, `round` und `space` werden zu `repeat`.
 
-`mj-column` kennt in MJML kein `background-url`, es gibt also kein Spaltenbild zu importieren. Das Bild eines `mj-hero` wird zum `backgroundImage` seiner Hero-Sektion, immer `cover` und nicht wiederholt, wie mj-hero es malt.
+`mj-column` kennt in MJML kein `background-url`, es gibt also kein Spaltenbild zu importieren. Das Bild eines `mj-hero` wird zum `backgroundImage` der Sektion, als die er importiert wird, immer `cover` und nicht wiederholt, wie mj-hero es malt: einer Hero-Sektion oder, bei einem Hero in der Höhe seines Inhalts, einer normalen Sektion.
 
 ## Wo das Mapping verlustbehaftet ist
 
