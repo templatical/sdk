@@ -83,9 +83,10 @@ Container that arranges blocks into columns.
 - `hero` draws a one-column section with a `backgroundImage` as a hero
   banner: `{ height, verticalAlign }`. The image always fills the box (`size`
   and `repeat` are ignored) and `border` isn't drawn. `height` is `"image"` —
-  the box keeps the image's shape at every width, so set
-  `backgroundImage.naturalWidth` and `naturalHeight` to the image's size in px
-  — or a number, a fixed height in px with padding included. With more than
+  the box is as tall as the image drawn across its desktop width (a phone
+  keeps that height), so set `backgroundImage.naturalWidth` and
+  `naturalHeight` to the image's size in px — or a number, a fixed height in
+  px with padding included. With more than
   one column, no image, or `"image"` without the size, the section renders as
   a regular one.
 - `verticalAlign` (inside `hero`) is one of `"top"`, `"middle"`, `"bottom"`.

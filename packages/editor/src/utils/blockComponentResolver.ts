@@ -96,6 +96,13 @@ export interface CanvasStyleOptions {
    * browser would request the literal token), so the fallback colour shows.
    */
   backgroundImageUrl?: string | null;
+  /**
+   * The desktop width of a "match image" hero's box (`matchImageBoxWidth`).
+   * Its height follows that width on every viewport, as the email's fixed
+   * height does; without it the box takes the image's shape at its current
+   * width, the same height at the desktop width.
+   */
+  heroBoxWidth?: number;
 }
 
 /**
@@ -155,16 +162,21 @@ const HERO_JUSTIFY: Record<HeroVerticalAlign, string> = {
 };
 
 /**
- * Canvas declarations for a hero's box, the way `mj-hero` sizes it: the
- * image's aspect ratio for `height: "image"`, a fixed height otherwise, padding
- * included either way. It grows with content taller than that, and places the
- * content by `verticalAlign`.
+ * Canvas declarations for a hero's box, the way the renderer sizes its
+ * `mj-hero`: a fixed height, padding included — for `height: "image"` the
+ * image's own height across the desktop `boxWidth` (`heroGeometry`). It grows
+ * with content taller than that, and places the content by `verticalAlign`.
  */
-export function getHeroStyle(hero: AppliedHero): Record<string, string> {
+export function getHeroStyle(
+  hero: AppliedHero,
+  boxWidth?: number,
+): Record<string, string> {
   const size: Record<string, string> =
     typeof hero.height === "number"
       ? { minHeight: `${hero.height}px` }
-      : { aspectRatio: `1 / ${hero.aspectRatio ?? 1}` };
+      : boxWidth !== undefined && hero.aspectRatio !== null
+        ? { minHeight: `${matchImageHeight(boxWidth, hero.aspectRatio)}px` }
+        : { aspectRatio: `1 / ${hero.aspectRatio ?? 1}` };
   return {
     display: "flex",
     flexDirection: "column",
@@ -172,6 +184,14 @@ export function getHeroStyle(hero: AppliedHero): Record<string, string> {
     boxSizing: "border-box",
     ...size,
   };
+}
+
+/** The renderer's `heroGeometry` height for a "match image" hero. */
+function matchImageHeight(boxWidth: number, aspectRatio: number): number {
+  return Math.max(
+    1,
+    Math.round(Math.max(1, Math.round(boxWidth)) * aspectRatio),
+  );
 }
 
 /**
@@ -219,7 +239,7 @@ export function getBlockWrapperStyle(
     const hero = resolveHero(block);
     if (hero?.applied && block.backgroundImage) {
       // mj-hero draws no border and always paints its image cover, unrepeated.
-      Object.assign(style, getHeroStyle(hero));
+      Object.assign(style, getHeroStyle(hero, options.heroBoxWidth));
       Object.assign(
         style,
         getBackgroundImageStyle(
@@ -252,6 +272,7 @@ export function getCachedBlockWrapperStyle(
   block: Block,
   resolver: ImageUrlResolver | null,
   syntax: SyntaxPreset,
+  heroBoxWidth?: number,
 ): Record<string, string> {
   if (block.type !== "section") return getBlockWrapperStyle(block);
   return getBlockWrapperStyle(block, {
@@ -260,6 +281,7 @@ export function getCachedBlockWrapperStyle(
       block.backgroundImage,
       syntax,
     ),
+    heroBoxWidth,
   });
 }
 

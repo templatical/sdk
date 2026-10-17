@@ -377,7 +377,7 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(mjml).toContain('css-class="tpl-button-full"');
     expect(mjml).toContain('background-url="https://cdn.test/hero.jpg"');
     expect(mjml).toContain('background-url="https://cdn.test/band.png"');
-    expect(mjml).toContain('<mj-hero mode="fluid-height"');
+    expect(mjml).toContain('<mj-hero mode="fixed-height"');
     expect(report.summary.approximated).toBe(0);
     expect(report.summary.htmlFallback).toBe(0);
     expect(report.summary.skipped).toBe(0);

@@ -142,9 +142,7 @@ function renderHero(
   renderBlock: BlockRenderer,
 ): string {
   const boxWidth = Math.floor(context.contentWidth);
-  const geometry = heroGeometry(hero, boxWidth);
-  const height =
-    geometry.height === undefined ? "" : ` height="${geometry.height}px"`;
+  const geometry = heroGeometry(hero, boxWidth, block.styles.padding);
   const bgColor =
     bgAttr(block.styles.backgroundColor, "native") ||
     ' background-color="transparent"';
@@ -167,7 +165,7 @@ function renderHero(
     .filter((value) => value !== "")
     .join("\n");
 
-  return `<mj-hero mode="${geometry.mode}"${height} background-url="${escapeAttr(hero.image.url)}" background-width="${geometry.backgroundWidth}px" background-height="${geometry.backgroundHeight}px" background-position="${hero.image.position}"${bgColor} padding="${padding}" vertical-align="${hero.verticalAlign}"${borderRadiusAttrStr}${visibilityAttr}>
+  return `<mj-hero mode="${geometry.mode}" height="${geometry.height}px" background-url="${escapeAttr(hero.image.url)}" background-width="${geometry.backgroundWidth}px" background-height="${geometry.backgroundHeight}px" background-position="${hero.image.position}"${bgColor} padding="${padding}" vertical-align="${hero.verticalAlign}"${borderRadiusAttrStr}${visibilityAttr}>
 ${content}
 </mj-hero>`;
 }

@@ -34,6 +34,7 @@ import {
   EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
+import { matchImageBoxWidth } from "../utils/imageRoom";
 import {
   SYNTAX_PRESETS,
   resolveContentDirection,
@@ -216,7 +217,16 @@ function getBlockComponent(block: Block): Component | null {
 // nested components (e.g. `ImageBlock`, a layout `WrapperBlock`) may resolve
 // their own images.
 function previewBlockStyle(block: Block): Record<string, string> {
-  return getCachedBlockWrapperStyle(block, imageUrlResolver, mergeTagSyntax);
+  const settings = previewSettings.value;
+  return getCachedBlockWrapperStyle(
+    block,
+    imageUrlResolver,
+    mergeTagSyntax,
+    matchImageBoxWidth(
+      block,
+      settings ? { blocks: props.blocks, settings } : undefined,
+    ),
+  );
 }
 </script>
 

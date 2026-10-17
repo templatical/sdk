@@ -56,6 +56,64 @@ describe("mj-hero import", () => {
     expect(section.hero).toEqual({ height: 320, verticalAlign: "top" });
   });
 
+  // The renderer writes Match image as a fixed height: the image drawn across
+  // the hero box, the box at the image's own height, or at the vertical
+  // padding where the image is shorter. Read back as Match image, it
+  // re-renders identically.
+  describe("reads the renderer's Match image shape back as height: image", () => {
+    it("reads a box at its image's height, the image across the box", () => {
+      const section = onlySection(
+        `<mj-hero mode="fixed-height" height="400px" background-url="${URL}" background-width="600px" background-height="400px" padding="48px 24px" vertical-align="middle"><mj-text>x</mj-text></mj-hero>`,
+      );
+      expect(section.hero).toEqual({
+        height: "image",
+        verticalAlign: "middle",
+      });
+      expect(section.backgroundImage).toMatchObject({
+        naturalWidth: 600,
+        naturalHeight: 400,
+      });
+    });
+
+    it("reads a box at the vertical padding, for an image shorter than it", () => {
+      const section = onlySection(
+        `<mj-hero mode="fixed-height" height="96px" background-url="${URL}" background-width="600px" background-height="60px" padding="48px 24px"><mj-text>x</mj-text></mj-hero>`,
+      );
+      expect(section.hero?.height).toBe("image");
+    });
+
+    it("reads a box in a wrapper's band, the image across the narrower box", () => {
+      const { blocks } = convert(
+        `<mj-wrapper padding="0 20px"><mj-hero mode="fixed-height" height="373px" background-url="${URL}" background-width="560px" background-height="373px"><mj-text>x</mj-text></mj-hero></mj-wrapper>`,
+      );
+      expect((blocks[0] as SectionBlock).hero?.height).toBe("image");
+    });
+
+    it.each([
+      [
+        "a height other than the image's",
+        `<mj-hero mode="fixed-height" height="300px" background-url="${URL}" background-width="600px" background-height="400px">`,
+        300,
+      ],
+      [
+        "an image drawn wider than the box",
+        `<mj-wrapper padding="0 20px"><mj-hero mode="fixed-height" height="400px" background-url="${URL}" background-width="600px" background-height="400px">`,
+        400,
+      ],
+      [
+        "a box taller than both the image and the padding",
+        `<mj-hero mode="fixed-height" height="120px" background-url="${URL}" background-width="600px" background-height="60px" padding="48px 24px">`,
+        120,
+      ],
+    ])("keeps the fixed height for %s", (_name, open, height) => {
+      const close = open.startsWith("<mj-wrapper")
+        ? "</mj-hero></mj-wrapper>"
+        : "</mj-hero>";
+      const { blocks } = convert(`${open}<mj-text>x</mj-text>${close}`);
+      expect((blocks[0] as SectionBlock).hero?.height).toBe(height);
+    });
+  });
+
   it("reads MJML's default mode, fixed-height with no height, as a regular section", () => {
     const { blocks, entries } = convert(
       `<mj-hero background-url="${URL}" background-color="#000000"><mj-text>x</mj-text></mj-hero>`,

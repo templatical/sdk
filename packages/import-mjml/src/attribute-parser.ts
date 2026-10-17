@@ -542,11 +542,18 @@ const HERO_DROPPED_ATTRIBUTES = [
  * ratio is used. A `fixed-height` hero without a positive `height` is as
  * tall as its content — exactly what a regular section with the same
  * background paints — so it comes back without `hero`.
+ *
+ * Templatical's renderer writes "match image" as `fixed-height`: the image
+ * drawn across the hero box (`background-width` = `boxWidth`) and the box at
+ * the image's own height, or at the hero's `verticalPadding` where the image
+ * is shorter. That exact shape comes back as `height: "image"`, which
+ * re-renders identically.
  */
 export function readMjmlHero(
   read: (name: string) => string | undefined,
   label: string,
-  boxWidth: number | undefined,
+  boxWidth: number,
+  verticalPadding: number,
 ): ReadHero {
   const notes: string[] = [];
 
@@ -607,7 +614,14 @@ export function readMjmlHero(
     }
     const fixed = parseDefinitePx(read("height"));
     if (fixed !== null && fixed > 0) {
-      hero = { height: Math.round(fixed), verticalAlign };
+      const matchesImage =
+        sized &&
+        width === boxWidth &&
+        fixed === Math.max(height, verticalPadding);
+      hero = {
+        height: matchesImage ? "image" : Math.round(fixed),
+        verticalAlign,
+      };
     }
   }
 

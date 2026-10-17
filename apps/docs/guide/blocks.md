@@ -249,7 +249,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 | `borderRadius` | `BorderRadiusValue` | Corner radius in px, or one per corner (optional; omit or `0` for square corners) |
 | `border` | `BorderValue` | `{ top, right, bottom, left }`, each `{ width, style, color }`, drawn around the section box (optional; omit for no border) |
 | `backgroundImage` | `BackgroundImage` | Optional image behind the section — `{ url, size, position: { x, y }, repeat }` — rendered as `background-url` plus size, position and repeat on the `mj-section`. `size` is `"cover"`, `"contain"` or `"auto"`; `x` is `"left"`, `"center"` or `"right"`; `y` is `"top"`, `"center"` or `"bottom"`. `styles.backgroundColor` is its fallback. `naturalWidth` / `naturalHeight` (optional) are the image file's own size in px; a hero uses them to match its shape. |
-| `hero` | `SectionHero` | Optional. Renders a one-column section with a background image as an `mj-hero`, the image filling the box behind the content: `{ height, verticalAlign }`. `height` is `"image"` (the box keeps the image's shape, from `backgroundImage.naturalWidth` / `naturalHeight`) or a fixed height in px, padding included; `verticalAlign` is `"top"`, `"middle"` or `"bottom"`. The image always fills the box (`size` and `repeat` don't apply) and no `border` is drawn. With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the `structure.hero-not-applied` warning says why. |
+| `hero` | `SectionHero` | Optional. Renders a one-column section with a background image as an `mj-hero`, the image filling the box behind the content: `{ height, verticalAlign }`. `height` is `"image"` (the box is as tall as the image drawn across its desktop width, from `backgroundImage.naturalWidth` / `naturalHeight`) or a fixed height in px, padding included; `verticalAlign` is `"top"`, `"middle"` or `"bottom"`. The image always fills the box (`size` and `repeat` don't apply) and no `border` is drawn. With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the `structure.hero-not-applied` warning says why. |
 | `wrapper` | `SectionWrapper` | Optional outer frame — `{ backgroundColor?, padding?, borderRadius?, backgroundImage? }` — rendered as an `mj-wrapper` band around the section. An embedder-owned card around the authored sections is a [layout](/guide/layout) overlay. |
 
 ::: tip Email client note: borders and corners in Outlook
@@ -266,8 +266,9 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 :::
 
 ::: tip Email client note: heroes
-- Outlook on Windows draws a hero's image with VML at the box's width and at the image's own height for that width, whatever the hero's height. Where the box ends up shorter than the image, the image can run past it, so check a hero in Outlook before sending.
-- A merge-tag URL works with a fixed height. **Match image** needs the image's size, which a merge tag can't give until the email is sent.
+- A hero always renders at a fixed height: classic Outlook on Windows ignores MJML's fluid height and would shrink the box to its content. **Match image** sets that height to the image's own height across the box, so on a phone the box keeps its desktop height and the image is cropped at the sides to cover it.
+- Outlook on Windows draws the image with VML from the top of the box, at the box's width and the image's own height for that width, clipped to the box. A box shorter than the image shows the image's top, whatever `position` says.
+- A merge-tag URL works with a fixed height. **Match image** needs the image's size, which a merge tag can't give until the email is sent. Without the size, Outlook on Windows stretches the image to the box's height.
 :::
 
 ## Custom

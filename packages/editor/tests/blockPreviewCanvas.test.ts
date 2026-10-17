@@ -407,3 +407,31 @@ describe('BlockPreviewCanvas background images', () => {
     expect(resolve).not.toHaveBeenCalled();
   });
 });
+
+describe('BlockPreviewCanvas hero box', () => {
+  it('keeps a Match image hero at its desktop box height on the mobile viewport, as the email does', () => {
+    const hero = createSectionBlock({
+      backgroundImage: {
+        ...createBackgroundImage('hero.jpg'),
+        naturalWidth: 1200,
+        naturalHeight: 800,
+      },
+      hero: { height: 'image', verticalAlign: 'middle' },
+      wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+    });
+    const wrapper = mountEditor(BlockPreviewCanvas, {
+      props: {
+        blocks: [hero],
+        settings: createDefaultTemplateContent().settings,
+        viewport: 'mobile',
+      },
+    } as never);
+
+    const style =
+      wrapper
+        .get('[data-testid="block-preview-canvas"] > div')
+        .attributes('style') ?? '';
+    expect(style).toContain('min-height: 373px');
+    expect(style).not.toContain('aspect-ratio');
+  });
+});

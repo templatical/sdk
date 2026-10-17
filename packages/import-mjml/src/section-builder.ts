@@ -26,6 +26,7 @@ import {
   baseFields,
   convertHtmlFallback,
   mjmlHorizontalInset,
+  mjmlVerticalPadding,
   readBorder,
   readBorderRadius,
   type ConvertContext,
@@ -370,7 +371,14 @@ export function buildHero(
 ): Block[] {
   const attrs = resolveAttributes($el, ctx.cascade);
   const notes: string[] = [];
-  const read = readMjmlHero((name) => attrs[name], "Hero", ctx.containerWidth);
+  // The box the renderer draws the hero at: the band's floored width.
+  const heroBox = Math.floor(ctx.contentWidth);
+  const read = readMjmlHero(
+    (name) => attrs[name],
+    "Hero",
+    heroBox,
+    mjmlVerticalPadding(attrs),
+  );
   notes.push(...read.notes);
   const borderRadius = readBorderRadius(attrs, "Hero", notes);
 
@@ -391,7 +399,6 @@ export function buildHero(
   // `"full"` image at its box (`renderHero` in renderers/section.ts), a
   // fallback section at the nominal width.
   const fields = baseFields(attrs, "native");
-  const heroBox = Math.floor(ctx.contentWidth);
   const heroPadding = mjmlHorizontalInset(attrs);
   const applied = resolveHero({
     columns: "1",

@@ -161,7 +161,7 @@ const banner = createSectionBlock({
 banner.styles.backgroundColor = '#1f2937';
 ```
 
-`height: 'image'` keeps the box at the image's shape at every screen width, which needs the image file's size in `backgroundImage.naturalWidth` / `naturalHeight`. A media pick that knows the size (`width` / `height` on the asset or the `onRequestMedia` result) stores it with the URL; otherwise the editor measures the image. A number is a fixed height in px, padding included. In the editor, the **Background** panel's **Height** switches between **Fit content** (no hero), **Match image** and **Fixed**, and **Content position** places the content. The palette's **Hero** shortcut inserts one to fill in: a hero-mode section with a title, a paragraph and a button on a dark fill. See the [Section block](/guide/blocks#section) for the email client notes.
+`height: 'image'` makes the box as tall as the image drawn across its desktop width, which needs the image file's size in `backgroundImage.naturalWidth` / `naturalHeight`. A phone keeps that height and crops the image at the sides to cover the narrower box. A media pick that knows the size (`width` / `height` on the asset or the `onRequestMedia` result) stores it with the URL; otherwise the editor measures the image. A number is a fixed height in px, padding included. In the editor, the **Background** panel's **Height** switches between **Fit content** (no hero), **Match image** and **Fixed**, and **Content position** places the content. The palette's **Hero** shortcut inserts one to fill in: a hero-mode section with a title, a paragraph and a button on a dark fill. See the [Section block](/guide/blocks#section) for the email client notes.
 
 ### Outer frame (wrapper)
 

@@ -14,9 +14,12 @@ import { SYNTAX_PRESETS } from "@templatical/types";
 import { computed, inject, watch } from "vue";
 import {
   BLOCK_REGISTRY_KEY,
+  EDITOR_KEY,
   IMAGE_URL_RESOLVER_KEY,
+  LAYOUT_KEY,
   MERGE_TAG_SYNTAX_KEY,
 } from "../../keys";
+import { matchImageBoxWidth } from "../../utils/imageRoom";
 import {
   getBackgroundLookupUrl,
   useResolvedBackgroundUrl,
@@ -32,6 +35,8 @@ const props = defineProps<{
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 const imageUrlResolver = inject(IMAGE_URL_RESOLVER_KEY, null);
 const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+const editor = inject(EDITOR_KEY, null);
+const layout = inject(LAYOUT_KEY, undefined);
 
 const bandBackgroundUrl = useResolvedBackgroundUrl(
   () => props.block.backgroundImage,
@@ -70,7 +75,12 @@ if (imageUrlResolver) {
 const childBoxes = computed(() =>
   props.block.children.map((child) => ({
     child,
-    style: getCachedBlockWrapperStyle(child, imageUrlResolver, syntax),
+    style: getCachedBlockWrapperStyle(
+      child,
+      imageUrlResolver,
+      syntax,
+      matchImageBoxWidth(child, editor?.content.value, layout),
+    ),
   })),
 );
 

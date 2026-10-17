@@ -2,15 +2,21 @@
 import { describe, expect, it, vi } from "vitest";
 import { h } from "vue";
 import { flushPromises } from "@vue/test-utils";
+import { useEditor } from "@templatical/core";
 import {
   SYNTAX_PRESETS,
   createBackgroundImage,
+  createDefaultTemplateContent,
   createSectionBlock,
   type SectionBlock,
 } from "@templatical/types";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
 import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
-import { IMAGE_URL_RESOLVER_KEY, MERGE_TAG_SYNTAX_KEY } from "../src/keys";
+import {
+  EDITOR_KEY,
+  IMAGE_URL_RESOLVER_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+} from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
 /**
@@ -144,5 +150,36 @@ describe("BlockWrapper background images", () => {
     expect(wrapper.get(".tpl-block-content").classes()).not.toContain(
       "tpl-has-bg-image",
     );
+  });
+});
+
+describe("BlockWrapper hero box", () => {
+  it("keeps a Match image hero at its desktop box's height on the mobile viewport, as the email does", () => {
+    const hero = createSectionBlock({
+      backgroundImage: {
+        ...createBackgroundImage("hero.jpg"),
+        naturalWidth: 1200,
+        naturalHeight: 800,
+      },
+      hero: { height: "image", verticalAlign: "middle" },
+      wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+    });
+    const content = createDefaultTemplateContent();
+    content.blocks = [hero];
+    const wrapper = mountEditor(BlockWrapper, {
+      props: {
+        block: hero,
+        isSelected: false,
+        viewport: "mobile" as const,
+        previewMode: false,
+      },
+      slots: { default: () => h("div", "child") },
+      provides: { [EDITOR_KEY]: useEditor({ content }) },
+    } as never);
+
+    // The wrapper's band leaves a 560px box: 560 × 800 / 1200.
+    const style = wrapper.get(".tpl-block-content").attributes("style");
+    expect(style).toContain("min-height: 373px");
+    expect(style).not.toContain("aspect-ratio");
   });
 });

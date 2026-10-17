@@ -112,29 +112,49 @@ export function baseFields(
  * border widths are rounded, so a room matches MJML's to the pixel.
  */
 export function mjmlHorizontalInset(attrs: Attrs): number {
-  const padding = (side: "left" | "right"): number => {
-    const own = attrs[`padding-${side}`];
-    if (own) return parseInt(own, 10) || 0;
-    return attrs.padding ? shorthandSide(attrs.padding, side) : 0;
-  };
   const border = (side: "left" | "right"): number => {
     const raw = attrs[`border-${side}`] || attrs.border || "0";
     const width = /(?:^| )(\d+)/.exec(raw);
     return width ? parseInt(width[1], 10) : 0;
   };
-  return padding("left") + padding("right") + border("left") + border("right");
+  return (
+    mjmlPaddingSide(attrs, "left") +
+    mjmlPaddingSide(attrs, "right") +
+    border("left") +
+    border("right")
+  );
 }
 
+/**
+ * Top plus bottom padding, read from the element's own attributes exactly as
+ * MJML reads them when it sizes a fixed-height hero's cell: `padding-top` /
+ * `-bottom` over the `padding` shorthand, each as a whole pixel.
+ */
+export function mjmlVerticalPadding(attrs: Attrs): number {
+  return mjmlPaddingSide(attrs, "top") + mjmlPaddingSide(attrs, "bottom");
+}
+
+type Side = "top" | "right" | "bottom" | "left";
+
+/** One side's padding as MJML's `getShorthandAttrValue` reads it. */
+function mjmlPaddingSide(attrs: Attrs, side: Side): number {
+  const own = attrs[`padding-${side}`];
+  if (own) return parseInt(own, 10) || 0;
+  return attrs.padding ? shorthandSide(attrs.padding, side) : 0;
+}
+
+/** Which value of a 2-, 3- or 4-value shorthand each side takes. */
+const SHORTHAND_INDEX: Record<number, Record<Side, number>> = {
+  2: { top: 0, right: 1, bottom: 0, left: 1 },
+  3: { top: 0, right: 1, bottom: 2, left: 1 },
+  4: { top: 0, right: 1, bottom: 2, left: 3 },
+};
+
 /** One side of a CSS padding shorthand, as MJML's `shorthandParser` reads it. */
-function shorthandSide(value: string, side: "left" | "right"): number {
+function shorthandSide(value: string, side: Side): number {
   const parts = value.trim().replace(/\s+/g, " ").split(" ", 4);
-  const raw =
-    parts.length === 1
-      ? value
-      : parts.length === 4 && side === "left"
-        ? parts[3]
-        : parts[1];
-  return parseInt(raw, 10) || 0;
+  const index = SHORTHAND_INDEX[parts.length]?.[side];
+  return parseInt(index === undefined ? value : parts[index], 10) || 0;
 }
 
 /**

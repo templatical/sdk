@@ -16,7 +16,11 @@ import type {
   SectionBlock,
   TemplateContent,
 } from "@templatical/types";
-import { imageRoom, sectionBandWidth } from "../src/utils/imageRoom";
+import {
+  imageRoom,
+  matchImageBoxWidth,
+  sectionBandWidth,
+} from "../src/utils/imageRoom";
 
 /**
  * `imageRoom` must agree with the renderer to the pixel: the aspect-ratio lock
@@ -338,5 +342,53 @@ describe("sectionBandWidth", () => {
 
   it("is null for a section that isn't in the content", () => {
     expect(sectionBandWidth(heroDoc(), "missing")).toBeNull();
+  });
+});
+
+describe("matchImageBoxWidth", () => {
+  const MEASURED = {
+    ...createBackgroundImage("https://cdn.test/hero.jpg"),
+    naturalWidth: 1200,
+    naturalHeight: 800,
+  };
+  const matching = (partial: Partial<SectionBlock> = {}) =>
+    createSectionBlock({
+      id: "hero",
+      children: [[]],
+      backgroundImage: MEASURED,
+      hero: { height: "image", verticalAlign: "middle" },
+      ...partial,
+    });
+
+  it("is the band width a Match image hero is drawn at", () => {
+    const hero = matching({
+      wrapper: { padding: { top: 0, right: 20, bottom: 0, left: 20 } },
+    });
+    expect(matchImageBoxWidth(hero, doc([hero]))).toBe(560);
+  });
+
+  it("takes the layout's bands off", () => {
+    const hero = matching();
+    const layout = doc([
+      createWrapperBlock({
+        styles: { padding: { top: 0, right: 30, bottom: 0, left: 30 } },
+        children: [createSlotBlock()],
+      }),
+    ]);
+    expect(matchImageBoxWidth(hero, doc([hero]), layout)).toBe(540);
+  });
+
+  it("is the body width for a hero outside the content", () => {
+    expect(matchImageBoxWidth(matching(), doc([], 640))).toBe(640);
+    expect(matchImageBoxWidth(matching(), undefined)).toBe(600);
+  });
+
+  it.each([
+    ["a fixed hero", matching({ hero: { height: 300, verticalAlign: "top" } })],
+    ["a hero that isn't applied", matching({ columns: "2", children: [[], []] })],
+    ["a section without a hero", createSectionBlock({ id: "hero" })],
+    ["a block that isn't a section", image("full")],
+  ])("is undefined for %s", (_name, block) => {
+    expect(matchImageBoxWidth(block, doc([block]))).toBeUndefined();
   });
 });

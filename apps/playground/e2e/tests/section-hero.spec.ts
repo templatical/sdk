@@ -57,15 +57,20 @@ test.describe("section hero", () => {
     await panel.locator('[data-testid="block-settings-background"]').click();
     await panel.locator('[data-testid="section-bg-url"] input').fill(HERO);
 
-    // Measured after typing settles: the box takes the image's 3:2 shape.
+    // Measured after typing settles: a 600px body draws the 1200×800 image
+    // 400px tall, and the box takes that height.
     const box = section.locator(".tpl-block-content").first();
-    await expect(box).toHaveAttribute("style", /aspect-ratio: 1 \/ 0\.666/);
+    await expect(box).toHaveAttribute("style", /min-height: 400px/);
     await expect(section.getByTestId("hero-image-hint")).toHaveCount(0);
 
+    // A fixed height classic Outlook keeps: 400 less the 48px top and bottom
+    // padding, with the image drawn at its own 600×400.
     await editorPage.openExport();
-    await expect(page.locator(SELECTORS.exportPreviewFrame)).toHaveAttribute(
+    const frame = page.locator(SELECTORS.exportPreviewFrame);
+    await expect(frame).toHaveAttribute("srcdoc", /height="304"/);
+    await expect(frame).toHaveAttribute(
       "srcdoc",
-      /padding-bottom:67%/,
+      /<v:image style="border:0;height:400px;[^"]*width:600px;/,
     );
   });
 
@@ -83,7 +88,7 @@ test.describe("section hero", () => {
       .first()
       .locator(".tpl-block-content")
       .first();
-    await expect(box).toHaveAttribute("style", /aspect-ratio/);
+    await expect(box).toHaveAttribute("style", /min-height: 400px/);
 
     await panel
       .locator('[data-testid="section-hero-height"]')

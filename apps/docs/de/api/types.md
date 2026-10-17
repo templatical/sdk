@@ -271,7 +271,7 @@ interface BackgroundImage {
 }
 
 interface SectionHero {
-  height: 'image' | number; // 'image': die Box behält die Form des Bilds; eine Zahl: feste Höhe in px, Innenabstand eingeschlossen
+  height: 'image' | number; // 'image': so hoch wie das Bild über die Desktop-Box; eine Zahl: feste Höhe in px, Innenabstand eingeschlossen
   verticalAlign: 'top' | 'middle' | 'bottom';
 }
 ```

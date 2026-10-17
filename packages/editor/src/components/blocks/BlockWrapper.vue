@@ -25,8 +25,11 @@ import {
   BLOCK_ACTIONS_KEY,
   CONDITION_PREVIEW_KEY,
   CAPABILITIES_KEY,
+  EDITOR_KEY,
   KEYBOARD_REORDER_KEY,
+  LAYOUT_KEY,
 } from "../../keys";
+import { matchImageBoxWidth } from "../../utils/imageRoom";
 
 const props = defineProps<{
   block: Block;
@@ -189,9 +192,17 @@ const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
 // across, which silently dropped the paragraph-spacing variable — the control
 // moved the number and the canvas never changed, while a unit test on
 // `getBlockWrapperStyle` still passed.
+const editor = inject(EDITOR_KEY, null);
+const layout = inject(LAYOUT_KEY, undefined);
+
 const contentStyle = computed(() =>
   getBlockWrapperStyle(props.block, {
     backgroundImageUrl: sectionBackgroundUrl.value,
+    heroBoxWidth: matchImageBoxWidth(
+      props.block,
+      editor?.content.value,
+      layout,
+    ),
   }),
 );
 

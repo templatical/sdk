@@ -21,10 +21,10 @@ export const HERO_VERTICAL_ALIGNS: readonly HeroVerticalAlign[] = [
  */
 export interface SectionHero {
   /**
-   * `"image"` keeps the box at the image's aspect ratio at every width, and
-   * needs the image's size on `backgroundImage.naturalWidth` /
-   * `naturalHeight`. A number is the box's fixed height in px, padding
-   * included.
+   * `"image"` makes the box as tall as the image drawn across its desktop
+   * width, and needs the image's size on `backgroundImage.naturalWidth` /
+   * `naturalHeight`; a phone keeps that height and crops the image's sides.
+   * A number is the box's fixed height in px, padding included.
    */
   height: "image" | number;
   verticalAlign: HeroVerticalAlign;

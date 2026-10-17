@@ -2,19 +2,26 @@
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
+import { useEditor } from "@templatical/core";
 import {
   SYNTAX_PRESETS,
+  applyLayout,
   createBackgroundImage,
+  createDefaultTemplateContent,
   createSectionBlock,
+  createSlotBlock,
   createTitleBlock,
   createWrapperBlock,
   type Block,
+  type WrapperBlock as WrapperBlockType,
 } from "@templatical/types";
 import WrapperBlock from "../src/components/blocks/WrapperBlock.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
 import {
   BLOCK_REGISTRY_KEY,
+  EDITOR_KEY,
   IMAGE_URL_RESOLVER_KEY,
+  LAYOUT_KEY,
   MERGE_TAG_SYNTAX_KEY,
 } from "../src/keys";
 import { createImageUrlResolver } from "../src/composables/useImageUrlResolver";
@@ -280,5 +287,44 @@ describe("WrapperBlock background images", () => {
     expect(style).not.toContain("background-image");
     expect(style).toContain("background-color: #0f172a");
     expect(resolve).not.toHaveBeenCalled();
+  });
+});
+
+describe("WrapperBlock hero box", () => {
+  it("keeps a child Match image hero at its desktop box's height on the mobile viewport, as the email does", () => {
+    const hero = createSectionBlock({
+      backgroundImage: {
+        ...createBackgroundImage("hero.jpg"),
+        naturalWidth: 1200,
+        naturalHeight: 800,
+      },
+      hero: { height: "image", verticalAlign: "middle" },
+    });
+    const content = createDefaultTemplateContent();
+    content.blocks = [hero];
+    const layout = createDefaultTemplateContent();
+    layout.blocks = [
+      createWrapperBlock({
+        styles: { padding: { top: 0, right: 30, bottom: 0, left: 30 } },
+        children: [createSlotBlock()],
+      }),
+    ];
+    const band = applyLayout(layout, content).blocks[0] as WrapperBlockType;
+
+    const wrapper = mountEditor(WrapperBlock, {
+      props: { block: band, viewport: "mobile" },
+      provides: {
+        [BLOCK_REGISTRY_KEY]: titleRegistry(),
+        [EDITOR_KEY]: useEditor({ content }),
+        [LAYOUT_KEY]: layout,
+      },
+    });
+
+    // The band leaves a 540px box: 540 × 800 / 1200.
+    const style = wrapper
+      .get(`[data-block-id="${hero.id}"]`)
+      .attributes("style");
+    expect(style).toContain("min-height: 360px");
+    expect(style).not.toContain("aspect-ratio");
   });
 });

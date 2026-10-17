@@ -82,16 +82,20 @@ function heroTag(mjml: string): string {
 }
 
 describe("hero round-trip through MJML", () => {
-  it("matches the image: fluid-height, the box at the image's shape", async () => {
+  // fluid-height's spacer cells carry `mso-padding-bottom-alt:0`, so classic
+  // Outlook would shrink the box to its content and show the image's top strip.
+  it("matches the image: a fixed height at the image's own height, padding included", async () => {
     const { mjml, html } = await render([hero()]);
     expect(heroTag(mjml)).toBe(
-      `<mj-hero mode="fluid-height" background-url="${HERO_URL}" background-width="600px" background-height="400px" background-position="center center" background-color="#0f172a" padding="48px 24px 48px 24px" vertical-align="middle">`,
+      `<mj-hero mode="fixed-height" height="400px" background-url="${HERO_URL}" background-width="600px" background-height="400px" background-position="center center" background-color="#0f172a" padding="48px 24px 48px 24px" vertical-align="middle">`,
     );
     expect(bodyOf(mjml)).not.toContain("<mj-section");
     expect(html).toContain(
       `background:#0f172a url('${HERO_URL}') no-repeat center center / cover`,
     );
-    expect(html).toContain("padding-bottom:67%");
+    // 400 less the 48px top and bottom padding.
+    expect(html).toContain('height="304"');
+    expect(html).not.toContain("mso-padding-bottom-alt");
     expect(html).toContain(
       `<v:image style="border:0;height:400px;mso-position-horizontal:center;position:absolute;top:0;width:600px;z-index:-3;" src="${HERO_URL}"`,
     );
@@ -254,9 +258,24 @@ describe("hero round-trip through MJML", () => {
     expect(mjml).toContain("<mj-button");
   });
 
+  it("never compiles a negative cell height for an image shorter than the padding", async () => {
+    const { mjml, html } = await render([
+      hero({
+        backgroundImage: { ...MEASURED, naturalWidth: 1200, naturalHeight: 120 },
+      }),
+    ]);
+    // A 60px strip in a hero with 48px top and bottom padding.
+    expect(heroTag(mjml)).toContain(
+      'mode="fixed-height" height="96px" background-url',
+    );
+    expect(heroTag(mjml)).toContain('background-height="60px"');
+    expect(html).toContain('height="0"');
+    expect(html).not.toMatch(/height[:=]"?-/);
+  });
+
   it("compiles a hero with no content", async () => {
     const { mjml } = await render([hero({ children: [[]] })]);
-    expect(heroTag(mjml)).toContain('mode="fluid-height"');
+    expect(heroTag(mjml)).toContain('mode="fixed-height" height="400px"');
   });
 
   it("keeps a merge-tag URL intact on a fixed-height hero", async () => {
