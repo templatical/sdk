@@ -1,5 +1,7 @@
+// @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
+import { mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import SlidingPillSelect from "../src/components/SlidingPillSelect.vue";
 
@@ -61,5 +63,22 @@ describe("SlidingPillSelect", () => {
 
     const html = await renderToString(h(App));
     expect(readPillTransform(html)).toBe("200%");
+  });
+
+  it("disables an option marked disabled and ignores clicks on it", async () => {
+    const wrapper = mount(SlidingPillSelect, {
+      props: {
+        options: [
+          { value: "a", label: "A" },
+          { value: "b", label: "B", disabled: true },
+        ],
+        modelValue: "a",
+      },
+    });
+    const b = wrapper.findAll('[role="radio"]')[1];
+    expect(b.attributes("disabled")).toBeDefined();
+    expect(b.attributes("aria-disabled")).toBe("true");
+    await b.trigger("click");
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
   });
 });

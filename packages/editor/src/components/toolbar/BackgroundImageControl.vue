@@ -17,13 +17,25 @@ import {
   type BackgroundSize,
 } from "@templatical/types";
 import { Image } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, onScopeDispose, ref } from "vue";
 import { MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { RESOLVE_IMAGE_DEBOUNCE_MS } from "../../constants/timeouts";
+import { useImageMeasure } from "../../composables/useImageMeasure";
 import { useMediaDropField } from "../../composables/useMediaDropField";
 
 const props = defineProps<{
   modelValue: BackgroundImage | undefined;
   testidPrefix: string;
+  /**
+   * Measure the natural size of an image the author sets and store it on the
+   * image: a section's image, whose shape a hero can match.
+   */
+  measure?: boolean;
+  /**
+   * The section renders as a hero, which always paints its image `cover`,
+   * unrepeated: size and repeat are hidden, and keep their values.
+   */
+  heroMode?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -39,18 +51,46 @@ const url = computed(() =>
 );
 const hasImage = computed(() => url.value.trim() !== "");
 
-/** A blank url removes the image; the first url creates one with defaults. */
+const measureImageSize = useImageMeasure();
+let measureTimer: ReturnType<typeof setTimeout> | undefined;
+onScopeDispose(() => clearTimeout(measureTimer));
+
+/**
+ * Measure `url` once typing settles. A result for a url the author has since
+ * replaced is dropped.
+ */
+function scheduleMeasure(url: string): void {
+  clearTimeout(measureTimer);
+  if (!props.measure || containsMergeTag(url, mergeTagSyntax)) return;
+  measureTimer = setTimeout(async () => {
+    const size = await measureImageSize(url);
+    const current = props.modelValue;
+    if (!size || current?.url !== url) return;
+    emit("update:modelValue", {
+      ...current,
+      width: size.width,
+      height: size.height,
+    });
+  }, RESOLVE_IMAGE_DEBOUNCE_MS);
+}
+
+/**
+ * A blank url removes the image; the first url creates one with defaults. A
+ * new url's size is unknown until it is measured, so the previous image's
+ * never carries over.
+ */
 function setUrl(value: string): void {
   if (value.trim() === "") {
     emit("update:modelValue", undefined);
     return;
   }
-  emit(
-    "update:modelValue",
-    props.modelValue
-      ? { ...props.modelValue, url: value }
-      : createBackgroundImage(value),
-  );
+  if (props.modelValue) {
+    const { width, height, ...image } = props.modelValue;
+    emit("update:modelValue", { ...image, url: value });
+  } else {
+    emit("update:modelValue", createBackgroundImage(value));
+  }
+  scheduleMeasure(value);
 }
 
 function patch(update: Partial<Omit<BackgroundImage, "url">>): void {
@@ -149,7 +189,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
     </div>
 
     <template v-if="hasImage && modelValue">
-      <div :data-testid="`${testidPrefix}-bg-size`">
+      <div v-if="!heroMode" :data-testid="`${testidPrefix}-bg-size`">
         <label :class="labelClass">{{ t.blockSettings.backgroundSize }}</label>
         <SlidingPillSelect
           :options="sizeOptions"
@@ -196,7 +236,7 @@ const { canBrowse, isUploading, showOverlay, openMediaBrowser } =
         </div>
       </div>
 
-      <div :data-testid="`${testidPrefix}-bg-repeat`">
+      <div v-if="!heroMode" :data-testid="`${testidPrefix}-bg-repeat`">
         <ToggleSwitch
           class="tpl:text-xs tpl:text-[var(--tpl-text)]"
           :model-value="modelValue.repeat"

@@ -6,6 +6,8 @@ export interface PillOption {
   value: string;
   label: string;
   icon?: Component;
+  /** Shown but not selectable. */
+  disabled?: boolean;
 }
 
 const props = defineProps<{
@@ -57,16 +59,19 @@ const pillOffset = computed(
       role="radio"
       :aria-checked="modelValue === option.value"
       :aria-label="option.label"
-      class="tpl:relative tpl:z-10 tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:py-[5px] tpl:text-xs tpl:font-medium"
+      :disabled="option.disabled"
+      :aria-disabled="option.disabled ? 'true' : undefined"
+      class="tpl:relative tpl:z-10 tpl:flex tpl:cursor-pointer tpl:disabled:cursor-not-allowed tpl:items-center tpl:justify-center tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:py-[5px] tpl:text-xs tpl:font-medium"
       :style="{
-        color:
-          modelValue === option.value
+        color: option.disabled
+          ? 'var(--tpl-text-dim)'
+          : modelValue === option.value
             ? 'var(--tpl-primary)'
             : 'var(--tpl-text-muted)',
         transition: 'color 120ms cubic-bezier(0.16, 1, 0.3, 1)',
       }"
       :title="option.label"
-      @click="emit('update:modelValue', option.value)"
+      @click="option.disabled || emit('update:modelValue', option.value)"
     >
       <component
         :is="option.icon"
