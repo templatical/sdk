@@ -1,5 +1,51 @@
 # @templatical/import-mjml
 
+## 0.48.0
+
+### Minor Changes
+
+- d329c13: Sections can render as heroes
+
+  A one-column section with a background image can render as an MJML `mj-hero`: the image fills the box and the content sits on top. Set `section.hero`:
+
+  - `height: "image"` makes the box as tall as the image drawn across its desktop width; a phone keeps that height and crops the image's sides. It needs the image file's size, which `backgroundImage` carries as optional `naturalWidth` / `naturalHeight`, as an image block does. A media pick that knows the size stores it with the URL; otherwise the editor measures the image when the author sets it.
+  - A number is a fixed height in px, padding included.
+  - Either way the email carries a fixed height, which classic Outlook on Windows keeps; it ignores MJML's fluid height and would show only the top of the image.
+  - `verticalAlign` places the content: `"top"`, `"middle"` or `"bottom"`.
+
+  In the editor, a section's Background panel gains **Height** (Fit content, Match image, Fixed) and **Content position**, and the palette gains a **Hero** shortcut that inserts a hero-mode section with a title, a paragraph and a button. A hero has no border and always paints its image `cover`, unrepeated, so those controls hide while it applies and keep their values. `paletteBlocks` accepts `"hero"`.
+
+  With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the new `structure.hero-not-applied` warning says which. `@templatical/types` exports `resolveHero`, which the renderer, the linter and the editor share. The template JSON schema in `@templatical/template-tools` gains `section.hero` and the background image's size.
+
+  The MJML importer reads `mj-hero` as a hero section instead of an HTML block, and reads Templatical's own exported **Match image** heroes back as `height: "image"`. Easy Email Pro's `standard-hero` keeps its image behind the content instead of stacking it as a leading image block.
+
+### Patch Changes
+
+- f1c1955: An image set narrower than its column keeps its width on phones (#861). The renderer set `fluid-on-mobile` on every `mj-image` through `<mj-attributes>`, so a 120px logo grew to the whole column on a phone while the editor's mobile preview showed it at 120px, and an image with a set height was stretched out of shape (120×40 became 355×40 on a 375px phone). The attribute is now set per image, only on one that fills its column on desktop: `width: "full"`, or a pixel width at or above the room MJML gives it, which is the column less the side padding and border of the wrapper band, the section and the image. Images wider than the phone still shrink to fit, and video thumbnails follow the same rule.
+
+  `RenderContext` gains `contentWidth`, the whole pixels MJML gives a column's content. `containerWidth` keeps its value, the column's share of the body width. The rule is exported as `fluidOnMobileAttr(block, context)`.
+
+  A `blockRenderers` entry that emits its own `mj-image` no longer inherits `fluid-on-mobile`. Add `${fluidOnMobileAttr(block, ctx)}` to it, or `fluid-on-mobile="true"`, if the image should fill its column on phones.
+
+  `convertMjmlTemplate` reports an `mj-image` as `approximated` when it asks for `fluid-on-mobile` but is narrower than its column, since Templatical keeps such an image at its width on phones. That includes the attribute set for every image through `<mj-attributes>`, as MJML exported from earlier versions of the renderer has it.
+
+- f1c1955: Imported images come in at the width the source email shows them, and every importer decides `width: "full"` by one rule. A missing width, `100%`, or a px width that reaches the image's room (its column less its own side padding, and border where the importer reads one) is `"full"`; a narrower px width stays px; a percentage under `100%` becomes px of the room and is reported `approximated`, since a px width keeps its size on a phone.
+
+  - **Unlayer** read `src.width`, the uploaded file's size, so every image imported at that size: a logo Unlayer shows at `maxWidth: "11%"` of a 700px body came in at 1600px, full width. It now reads `autoWidth` and `maxWidth`. `src.height`, the file's height, is no longer imported, so the image keeps its aspect ratio, and a missing width is `"full"` instead of 600px.
+  - **BeeFree** read `image.width` and `image.height`, the file's size, so a 1920 × 466 hero shown across a 600px column imported as 600 × 466, stretched to more than three times its height, and a logo shown at 172.5px imported at 254px. It now reads `computedStyle` (`autowidth` is `"full"`, otherwise `computedStyle.width`), never imports the file's height, and takes the alignment from `computedStyle.class` when the image has no `text-align`.
+  - **Easy Email Pro** ignored an image's `width`, so every sized image imported as full width.
+  - **HTML** (and **Stripo**, which uses it) imported a missing or `100%` width as 600px, and let the `height` attribute win over a `height: auto` style, pinning a height the email doesn't show.
+  - **MJML** turned a px width into `"full"` only when it equalled the column exactly; **Topol** and **Chamaileon** compared against the column without the image's padding.
+
+- 636b863: Fractional padding and borders no longer shift which images fill their column on phones
+
+  MJML reads each side's padding and border width as a whole pixel when it sizes a box, so 20.5px of padding takes 20px. The renderer took the full 20.5, which made the room it worked out a pixel smaller than MJML's. In a section, wrapper band or image with fractional side padding or borders, an image one pixel narrower than its column was still stretched to the phone column (`fluid-on-mobile`). The renderer, the MJML importer's "fills its column" check and the editor's aspect-lock limit now read each side the way MJML does.
+
+- Updated dependencies [10ca348]
+- Updated dependencies [d329c13]
+- Updated dependencies [d6641bc]
+  - @templatical/types@0.48.0
+
 ## 0.47.0
 
 ### Minor Changes

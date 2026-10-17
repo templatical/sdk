@@ -1,5 +1,42 @@
 # @templatical/editor
 
+## 0.48.0
+
+### Minor Changes
+
+- 10ca348: Size an image by its height with the aspect ratio locked. When the image file's size is known, the image settings show a link toggle on the Height row, on by default: typing a height sets the width from the file's ratio, and a height that would make the image wider than its column sets it to Full width, with a note of the height it lands at. Under the lock the stored `height` stays unset, because a stored height squashes an image on any phone narrower than its width (MJML shrinks the width and keeps the height).
+
+  `ImageBlock` gains optional `naturalWidth` / `naturalHeight`, the file's own size, which is never rendered. A media pick fills them from the asset's `width` / `height`, and `MediaResult` gains optional `width` / `height` so an `onRequestMedia` widget can pass them too. The Unlayer and BeeFree importers fill them from the source file. Without them the editor measures the image while it is selected and stores the size only with the edit that uses it, so opening a template never marks it dirty. Editing `src` clears a stored size. An image whose stored height stretches it opens unlocked, and turning the lock on clears that height.
+
+- d329c13: Sections can render as heroes
+
+  A one-column section with a background image can render as an MJML `mj-hero`: the image fills the box and the content sits on top. Set `section.hero`:
+
+  - `height: "image"` makes the box as tall as the image drawn across its desktop width; a phone keeps that height and crops the image's sides. It needs the image file's size, which `backgroundImage` carries as optional `naturalWidth` / `naturalHeight`, as an image block does. A media pick that knows the size stores it with the URL; otherwise the editor measures the image when the author sets it.
+  - A number is a fixed height in px, padding included.
+  - Either way the email carries a fixed height, which classic Outlook on Windows keeps; it ignores MJML's fluid height and would show only the top of the image.
+  - `verticalAlign` places the content: `"top"`, `"middle"` or `"bottom"`.
+
+  In the editor, a section's Background panel gains **Height** (Fit content, Match image, Fixed) and **Content position**, and the palette gains a **Hero** shortcut that inserts a hero-mode section with a title, a paragraph and a button. A hero has no border and always paints its image `cover`, unrepeated, so those controls hide while it applies and keep their values. `paletteBlocks` accepts `"hero"`.
+
+  With more than one column, no image, or `"image"` without the size, the section renders as a regular one, and the new `structure.hero-not-applied` warning says which. `@templatical/types` exports `resolveHero`, which the renderer, the linter and the editor share. The template JSON schema in `@templatical/template-tools` gains `section.hero` and the background image's size.
+
+  The MJML importer reads `mj-hero` as a hero section instead of an HTML block, and reads Templatical's own exported **Match image** heroes back as `height: "image"`. Easy Email Pro's `standard-hero` keeps its image behind the content instead of stacking it as a leading image block.
+
+### Patch Changes
+
+- d6641bc: Titles stay bold while you edit them. A title showed at weight 700 on the canvas and in the email, but its edit surface showed it at 400, so the text turned lighter, and could rewrap, the moment editing started. The canvas, the edit surface and the exported heading now all use 700, which `@templatical/types` exports as `TITLE_FONT_WEIGHT`. The renderer writes it onto the heading as `font-weight:700`, so emails look as before in clients that already bold headings, and a page that resets heading styles (Tailwind's preflight, for one) no longer shows the email's titles at regular weight. With `shadowDom: false` on such a page, the canvas title was regular too; it is now bold.
+- 636b863: Fractional padding and borders no longer shift which images fill their column on phones
+
+  MJML reads each side's padding and border width as a whole pixel when it sizes a box, so 20.5px of padding takes 20px. The renderer took the full 20.5, which made the room it worked out a pixel smaller than MJML's. In a section, wrapper band or image with fractional side padding or borders, an image one pixel narrower than its column was still stretched to the phone column (`fluid-on-mobile`). The renderer, the MJML importer's "fills its column" check and the editor's aspect-lock limit now read each side the way MJML does.
+
+- Updated dependencies [f1c1955]
+- Updated dependencies [d329c13]
+- Updated dependencies [d6641bc]
+- Updated dependencies [636b863]
+  - @templatical/renderer@0.48.0
+  - @templatical/quality@0.48.0
+
 ## 0.47.0
 
 ### Minor Changes
