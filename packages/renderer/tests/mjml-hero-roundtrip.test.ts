@@ -358,18 +358,19 @@ describe("hero content width", () => {
     expect(await isFluid(heroWith(492, { border }))).toBe(true);
   });
 
-  it("floors a fractional band as a section does, so no half pixel reaches the export", async () => {
+  it("reads a fractional band in whole pixels, as MJML does, for a hero as for a section", async () => {
     const band = { top: 0, right: 20, bottom: 0, left: 20.5 };
     const inBand = (width: number | "full") =>
       heroWith(width, { wrapper: { padding: band } });
     const { mjml } = await render(inBand("full"));
-    expect(heroTag(mjml)).toContain('background-width="559px"');
-    expect(probeTag(mjml, "<mj-image")).toContain('width="559px"');
+    // MJML reads each side as a whole pixel: 600 − 20 − 20.
+    expect(heroTag(mjml)).toContain('background-width="560px"');
+    expect(probeTag(mjml, "<mj-image")).toContain('width="560px"');
     expect(probeTag(mjml, "<mj-image")).toContain('fluid-on-mobile="true"');
-    // floor(600 − 40.5) − 48 (hero padding) − 20 (image padding).
-    expect(await isFluid(inBand(491))).toBe(true);
-    expect(await isFluid(sectionWith(491, band))).toBe(true);
-    expect(await isFluid(inBand(490))).toBe(false);
-    expect(await isFluid(sectionWith(490, band))).toBe(false);
+    // 560 − 48 (hero padding) − 20 (image padding).
+    expect(await isFluid(inBand(492))).toBe(true);
+    expect(await isFluid(sectionWith(492, band))).toBe(true);
+    expect(await isFluid(inBand(491))).toBe(false);
+    expect(await isFluid(sectionWith(491, band))).toBe(false);
   });
 });

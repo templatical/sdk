@@ -321,8 +321,9 @@ describe("sectionBandWidth", () => {
       doc([card(band(30), [createSlotBlock()])]),
     ],
     [
-      "a fractional band, floored",
-      559,
+      // MJML reads each side as a whole pixel: 600 − 20 − 20.
+      "a fractional band, read in whole pixels",
+      560,
       heroDoc({ wrapper: { padding: band(20.5, 20) } }),
     ],
   ];

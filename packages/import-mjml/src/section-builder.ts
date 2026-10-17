@@ -392,7 +392,7 @@ export function buildHero(
   // fallback section at the nominal width.
   const fields = baseFields(attrs, "native");
   const heroBox = Math.floor(ctx.contentWidth);
-  const heroPadding = horizontalInset(fields.styles.padding);
+  const heroPadding = mjmlHorizontalInset(attrs);
   const applied = resolveHero({
     columns: "1",
     hero: read.hero ?? undefined,
