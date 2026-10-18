@@ -26,6 +26,19 @@
   },
   "ignorePaths": ["**/node_modules/**", "**/dist/**"],
   "ignoreDeps": [],
+  "customManagers": [
+    {
+      "description": "CONTRIBUTING.md states the Node floor from engines.node, and packages/editor/tests/repo-policy-docs.test.ts fails when they differ. This rewrites that line in the same Node.js PR as .nvmrc and engines.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^CONTRIBUTING\\.md$/"],
+      "matchStrings": [
+        "Node\\.js >= (?<currentValue>\\d+\\.\\d+\\.\\d+) \\(the engine requirement\\)"
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
+    }
+  ],
   "packageRules": [
     {
       "description": "Never bump internal workspace packages",
