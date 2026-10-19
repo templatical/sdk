@@ -43,7 +43,7 @@
   "engines": {
     "node": ">=24.22.0"
   },
-  "packageManager": "pnpm@12.13.0+sha512.1e55719bf26e809dce5c5084fdebaa64efb3da9038ae5d68a9f8a68311f1a45841c8c3b76a37298c3b66f6bcc80409a9b7f33c78a7168a3e90fb65a5d8235ae4",
+  "packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html --filter @templatical/import-mjml --filter @templatical/import-topol --filter @templatical/import-stripo --filter @templatical/import-chamaileon --filter @templatical/import-easy-email-pro run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/template-tools run build && pnpm --filter @templatical/editor run build:all",
