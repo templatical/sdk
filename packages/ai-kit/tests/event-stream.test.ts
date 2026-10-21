@@ -80,6 +80,28 @@ describe("aiEventStream (D32)", () => {
     expect(seen!.aborted).toBe(true);
   });
 
+  it("forwards an external abort and its reason to an active producer", async () => {
+    const external = new AbortController();
+    let seen!: AbortSignal;
+    const response = aiEventStream(
+      (stream) => {
+        seen = stream.signal;
+        return new Promise<void>((resolve) => {
+          stream.signal.addEventListener("abort", () => resolve(), {
+            once: true,
+          });
+        });
+      },
+      { signal: external.signal },
+    );
+
+    external.abort("Server shutdown");
+
+    expect(await response.text()).toBe("");
+    expect(seen.aborted).toBe(true);
+    expect(seen.reason).toBe("Server shutdown");
+  });
+
   it("stops forwarding external aborts after normal completion", async () => {
     const external = new AbortController();
     let seen!: AbortSignal;
@@ -121,6 +143,25 @@ describe("aiEventStream (D32)", () => {
 });
 
 describe("errors before the stream", () => {
+  it.each([
+    ["rate_limited", 429],
+    ["custom_failure", 400],
+    [undefined, 400],
+  ] as const)(
+    "uses the status fallback for code %s when no status was supplied",
+    async (code, status) => {
+      const response = aiErrorResponse(
+        new SdkError("Please retry.", undefined, code),
+      );
+      expect(response.status).toBe(status);
+      expect(response.headers.get("Templatical-AI-Wire")).toBe("1");
+      expect(await response.json()).toEqual({
+        message: "Please retry.",
+        ...(code === undefined ? {} : { code }),
+      });
+    },
+  );
+
   it("answers an AI code with its status, body and headers", async () => {
     const response = aiErrorResponse(
       new ThrottledError("Too many AI requests. Try again in a moment.", 2500, "rate_limited"),

@@ -49,4 +49,51 @@ describe("merge tags in AI input and output (S7 Y5)", () => {
     ).toEqual(["{{b}}", "{{c}}"]);
     expect(unknownMergeTags("custom", ["{{b}}"], [])).toEqual([]);
   });
+
+  it.each([
+    [
+      "a span-like name",
+      '<p><spanx data-merge-tag="{{x}}">X</spanx></p>',
+      '<p><spanx data-merge-tag="{{x}}">X</spanx></p>',
+    ],
+    [
+      "an unclosed opening tag",
+      '<p>Hi <span data-merge-tag="{{x}}"',
+      '<p>Hi <span data-merge-tag="{{x}}"',
+    ],
+    [
+      "a span without a merge-tag attribute",
+      '<span class="plain">Hi</span>',
+      '<span class="plain">Hi</span>',
+    ],
+    [
+      "a missing closing span",
+      '<p>Hi <span data-merge-tag="{{x}}">X',
+      '<p>Hi <span data-merge-tag="{{x}}">X',
+    ],
+    [
+      "a plain span before a merge-tag span",
+      '<span>Hi</span> <span data-merge-tag="{{x}}">X</span>',
+      "<span>Hi</span> {{x}}",
+    ],
+    [
+      "a span-like name before a merge-tag span",
+      '<spanx>X</spanx><span data-merge-tag="{{x}}">X</span>',
+      "<spanx>X</spanx>{{x}}",
+    ],
+  ])(
+    "preserves %s while flattening complete merge tags",
+    (_label, html, expected) => {
+      expect(flattenMergeTags(html)).toBe(expected);
+    },
+  );
+
+  it.each([" ", "\t", "\n", "\r", "\f"])(
+    "recognizes %j after the span tag name",
+    (space) => {
+      expect(
+        flattenMergeTags(`<span${space}data-merge-tag="{{x}}">X</span>`),
+      ).toBe("{{x}}");
+    },
+  );
 });

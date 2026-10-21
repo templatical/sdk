@@ -34,6 +34,49 @@ describe("checkRewrite", () => {
 });
 
 describe("normalizeScoringResult", () => {
+  it("defaults malformed message and suggestion values to empty strings while preserving known blocks", () => {
+    expect(
+      normalizeScoringResult(
+        {
+          score: 50,
+          categories: {
+            spam: {
+              score: 50,
+              findings: [
+                {
+                  id: "f1",
+                  severity: "high",
+                  message: 7,
+                  blockId: "p1",
+                  suggestion: null,
+                },
+              ],
+            },
+          },
+        },
+        ["p1"],
+      ),
+    ).toEqual({
+      score: 50,
+      categories: {
+        spam: {
+          score: 50,
+          findings: [
+            {
+              id: "f1",
+              severity: "high",
+              message: "",
+              blockId: "p1",
+              suggestion: "",
+            },
+          ],
+        },
+        readability: { score: 0, findings: [] },
+        bestPractices: { score: 0, findings: [] },
+      },
+    });
+  });
+
   it("clamps scores, defaults severities and ids, and forgets unknown blocks", () => {
     expect(
       normalizeScoringResult(

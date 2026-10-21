@@ -330,3 +330,255 @@ it.each(["early", "never", "repeat", "refused"] as const)("fails a provider with
   expect(report.ok).toBe(false);
   expect(report.checks.some((check) => !check.ok && /replay/.test(check.name))).toBe(true);
 });
+
+describe("runAiProviderConformance: precise diagnostics", () => {
+  it.each([undefined, null, 42])(
+    "reports an invalid feature declaration %j",
+    async (chat) => {
+      const report = await runAiProviderConformance({
+        ...disabled,
+        chat,
+      } as never);
+      expect(failed(report)).toEqual([
+        {
+          name: "declares at least one feature",
+          ok: false,
+          detail: "declared: none",
+        },
+        {
+          name: "chat: false or a function",
+          ok: false,
+          detail: `got ${typeof chat}`,
+        },
+      ]);
+    },
+  );
+
+  it("describes null chat text in its failed check", async () => {
+    const report = await runAiProviderConformance({
+      ...disabled,
+      chat: async (_request, _handlers, signal) => {
+        signal.throwIfAborted();
+        return { messageId: null, text: null } as never;
+      },
+    });
+    expect(failed(report)).toEqual([
+      {
+        name: "chat: streams text and resolves with it",
+        ok: false,
+        detail: 'streamed "", resolved null',
+      },
+    ]);
+  });
+
+  it.each([
+    {
+      label: "increasing revisions",
+      batches: [
+        { batchId: "a", revision: 1, operationCount: 1 },
+        { batchId: "b", revision: 2, operationCount: 1 },
+      ],
+      ok: true,
+      detail: "revisions 1, 2",
+    },
+    {
+      label: "repeated revisions",
+      batches: [
+        { batchId: "a", revision: 1, operationCount: 1 },
+        { batchId: "b", revision: 1, operationCount: 1 },
+      ],
+      ok: false,
+      detail: "revisions 1, 1",
+    },
+    {
+      label: "fractional revision",
+      batches: [{ batchId: "a", revision: 1.5, operationCount: 1 }],
+      ok: false,
+      detail: "revisions 1.5",
+    },
+    {
+      label: "empty batch",
+      batches: [{ batchId: "a", revision: 1, operationCount: 0 }],
+      ok: false,
+      detail: "revisions 1",
+    },
+    {
+      label: "missing batch id",
+      batches: [{ batchId: null, revision: 1, operationCount: 1 }],
+      ok: false,
+      detail: "revisions 1",
+    },
+  ])("reports $label in applied events", async ({ batches, ok, detail }) => {
+    const report = await runAiProviderConformance(
+      createMockAiProvider({
+        chat: [
+          {
+            events: [
+              ...batches.map((batch) => ({ type: "applied", ...batch })),
+              { type: "done", messageId: null },
+            ] as never,
+          },
+        ],
+      }),
+    );
+    const check = {
+      name: "applied events carry increasing revisions",
+      ok,
+      detail,
+    };
+    expect(report.checks.find((row) => row.name === check.name)).toEqual(check);
+    expect(failed(report)).toEqual(ok ? [] : [check]);
+  });
+
+  it("skips replay when a conversation has no assistant changes", async () => {
+    const report = await runAiProviderConformance(
+      createMockAiProvider({
+        suggestions: ["Add a footer"],
+        conversation: true,
+      }),
+    );
+    expect(failed(report)).toEqual([]);
+    expect(
+      report.checks.find(
+        (check) => check.name === "conversation: undo and redo replay",
+      ),
+    ).toEqual({
+      name: "conversation: undo and redo replay",
+      ok: true,
+      detail: "nothing to undo, or undo/redo are false",
+    });
+  });
+
+  it("requires a settlement method for an editor-applied replay", async () => {
+    const provider = createMockAiProvider({
+      ...AI_RECORDINGS,
+      delayMs: 0,
+      conversation: true,
+    });
+    provider.conversation = {
+      ...provider.conversation!,
+      settleReplay: undefined as never,
+    };
+    const report = await runAiProviderConformance(provider);
+    expect(failed(report)).toEqual([
+      {
+        name: "conversation: undo and redo replay",
+        ok: false,
+        detail: "settleReplay is required",
+      },
+    ]);
+  });
+
+  it("fails each replay state check when later history stops being a list", async () => {
+    const provider = createMockAiProvider({
+      ...AI_RECORDINGS,
+      delayMs: 0,
+      conversation: true,
+    });
+    const conversation = provider.conversation!;
+    let listed = false;
+    provider.conversation = {
+      ...conversation,
+      list: async (templateId) => {
+        if (listed) return null as never;
+        listed = true;
+        return conversation.list(templateId);
+      },
+      clear: false,
+    };
+    const report = await runAiProviderConformance(provider);
+    expect(failed(report)).toEqual([
+      ...["undo", "redo"].flatMap((direction) => [
+        {
+          name: `conversation: ${direction} replay waits for settlement`,
+          ok: false,
+          detail: "ok",
+        },
+        {
+          name: `conversation: ${direction} refused replay keeps its state`,
+          ok: false,
+          detail: "ok",
+        },
+        {
+          name: `conversation: ${direction} replay settlement is idempotent`,
+          ok: false,
+          detail: "ok",
+        },
+        {
+          name: `conversation: ${direction} accepted replay changes its state`,
+          ok: false,
+          detail: "ok",
+        },
+        {
+          name: `conversation: ${direction} accepted replay settles only once`,
+          ok: false,
+          detail: "ok",
+        },
+      ]),
+      {
+        name: "conversation: undo and redo replay",
+        ok: false,
+        detail: "a replay was malformed, refused or settled incorrectly",
+      },
+    ]);
+  });
+
+  it.each([
+    {
+      label: "valid",
+      applied: { batchId: "server-batch", revision: 4 },
+      ok: true,
+    },
+    { label: "missing applied batch", applied: null, ok: false },
+    {
+      label: "non-string batch id",
+      applied: { batchId: 4, revision: 4 },
+      ok: false,
+    },
+    {
+      label: "fractional revision",
+      applied: { batchId: "server-batch", revision: 4.5 },
+      ok: false,
+    },
+  ])("checks a $label server-applied replay", async ({ applied, ok }) => {
+    const provider = createMockAiProvider({ suggestions: ["Add a footer"] });
+    provider.conversation = {
+      list: async () => [assistant] as never,
+      undo: async () => ({ applied }) as never,
+      redo: async () => ({ applied }) as never,
+      settleReplay: async () => {},
+      clear: false,
+    };
+    const report = await runAiProviderConformance(provider);
+    const check = {
+      name: "conversation: undo and redo replay",
+      ok,
+      detail: ok
+        ? "ok"
+        : "a replay was malformed, refused or settled incorrectly",
+    };
+    expect(report.checks.find((row) => row.name === check.name)).toEqual(check);
+    expect(failed(report)).toEqual(ok ? [] : [check]);
+  });
+
+  it("accepts rewrite text emitted before checking an already-aborted signal", async () => {
+    const report = await runAiProviderConformance({
+      ...disabled,
+      rewrite: async (_request, handlers, signal) => {
+        handlers.onText("<p>Rewritten.</p>");
+        signal.throwIfAborted();
+        return { html: "<p>Rewritten.</p>" };
+      },
+    });
+    expect(failed(report)).toEqual([]);
+    expect(
+      report.checks.find(
+        (check) => check.name === "rewrite: answers with html",
+      ),
+    ).toEqual({
+      name: "rewrite: answers with html",
+      ok: true,
+      detail: '"<p>Rewritten.</p>"',
+    });
+  });
+});

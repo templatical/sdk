@@ -475,3 +475,120 @@ it("delivers received applied facts after Stop while suppressing buffered text a
   expect(on.onOperations).not.toHaveBeenCalled();
   expect(on.onApplied).toHaveBeenCalledWith({ batchId: "a", revision: 2, operationCount: 1 });
 });
+
+describe("createHttpAiProvider: transport edge cases", () => {
+  it.each([new TypeError("broken stream"), "broken stream"])(
+    "maps an unreadable stream rejection to the provider error: %s",
+    async (error) => {
+      fakeFetch(() =>
+        streamResponse(
+          new ReadableStream({
+            start(controller) {
+              controller.error(error);
+            },
+          }),
+        ),
+      );
+      await expect(
+        (provider().chat as Function)(
+          chat,
+          handlers(),
+          new AbortController().signal,
+        ),
+      ).rejects.toMatchObject({
+        name: "SdkError",
+        message: "AI is unavailable right now. Try again later.",
+        statusCode: 502,
+        code: "ai_provider_error",
+      });
+    },
+  );
+
+  it("rejects history whose response is not JSON", async () => {
+    fakeFetch(
+      () =>
+        new Response("{", { headers: { "Content-Type": "application/json" } }),
+    );
+    await expect(provider().conversation!.list("t-1")).rejects.toMatchObject({
+      name: "SdkError",
+      message: "AI is unavailable right now. Try again later.",
+      statusCode: 502,
+      code: "ai_provider_error",
+    });
+  });
+
+  it("disables every requested feature", () => {
+    expect(
+      provider({
+        chat: false,
+        fixFinding: false,
+        design: false,
+        rewrite: false,
+        score: false,
+        suggestions: false,
+        conversation: false,
+      }),
+    ).toEqual({
+      chat: false,
+      fixFinding: false,
+      design: false,
+      rewrite: false,
+      score: false,
+      suggestions: false,
+    });
+  });
+
+  it("sends an image design's prompt and omits a null revision", async () => {
+    const seen = fakeFetch(() =>
+      streamResponse(sse({ type: "done", messageId: null })),
+    );
+    await expect(
+      (provider().design as Function)(
+        {
+          ...base,
+          revision: null,
+          prompt: "Use a blue background",
+          file: new Blob(["image"], { type: "image/png" }),
+          fileKind: "image",
+        },
+        handlers(),
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual({ messageId: null, text: "" });
+    const form = seen[0].body as FormData;
+    expect(form.get("prompt")).toBe("Use a blue background");
+    expect(await (form.get("image_upload") as Blob).text()).toBe("image");
+    expect(form.get("pdf_upload")).toBe(null);
+    expect(form.get("revision")).toBe(null);
+  });
+
+  it("accepts progress text before scoring and suggestions finish", async () => {
+    const result = {
+      score: 80,
+      categories: {
+        spam: { score: 90, findings: [] },
+        readability: { score: 70, findings: [] },
+        bestPractices: { score: 80, findings: [] },
+      },
+    };
+    fakeFetch((request) =>
+      streamResponse(
+        sse(
+          { type: "text", text: "Thinking" },
+          request.url.endsWith("/score")
+            ? { type: "done", result }
+            : { type: "done", suggestions: ["Add a footer"] },
+        ),
+      ),
+    );
+    await expect(
+      (provider().score as Function)(
+        { ...base, lintFindings: [] },
+        new AbortController().signal,
+      ),
+    ).resolves.toEqual(result);
+    await expect(
+      (provider().suggestions as Function)(base, new AbortController().signal),
+    ).resolves.toEqual(["Add a footer"]);
+  });
+});

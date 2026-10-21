@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStandInEditor, runAiWireConformance } from "../src/testing";
 import { createHttpAiProvider } from "../src/client";
 import { createReferenceHandler } from "./helpers/reference-server";
 import { serve } from "./helpers/serve";
+import { fakeFetch, streamResponse } from "./helpers/fake-fetch";
 
 let server: Awaited<ReturnType<typeof serve>> | null = null;
 async function within<T>(pending: Promise<T>, ms = 1000): Promise<T | null> {
@@ -16,6 +17,7 @@ async function within<T>(pending: Promise<T>, ms = 1000): Promise<T | null> {
   }
 }
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await server?.close();
   server = null;
 });
@@ -158,4 +160,73 @@ it("passes a backend without history or design and reports disabled checks as sk
   expect(report.checks.find((check) => check.name === "conversation: off")?.detail).toMatch(/skipped/);
   expect(report.checks.find((check) => check.name === "design: off")?.detail).toMatch(/skipped/);
   expect(requests.some((path) => /conversation|messages|generate-from-design/.test(path))).toBe(false);
+});
+
+it("skips chat and suggestions probes when those features are disabled", async () => {
+  const reference = createReferenceHandler();
+  const requests: string[] = [];
+  server = await serve((request) => {
+    requests.push(new URL(request.url).pathname);
+    return reference(request);
+  });
+  const report = await runAiWireConformance({
+    baseUrl: server.baseUrl,
+    features: { chat: false, suggestions: false },
+  });
+  expect(report.checks.filter((check) => !check.ok)).toEqual([]);
+  expect(
+    report.checks.find(
+      (check) =>
+        check.name ===
+        "refuses an invalid turn before the stream with a JSON error",
+    ),
+  ).toEqual({
+    name: "refuses an invalid turn before the stream with a JSON error",
+    ok: true,
+    detail: "skipped: chat is disabled",
+  });
+  expect(
+    requests.filter((path) => /\/ai\/(generate|suggestions)$/.test(path)),
+  ).toEqual([]);
+});
+
+it("reports an unreadable response body without leaking the transport TypeError", async () => {
+  fakeFetch(() =>
+    streamResponse(
+      new ReadableStream({
+        pull() {
+          throw new TypeError("connection lost");
+        },
+      }),
+    ),
+  );
+  const report = await runAiWireConformance({
+    baseUrl: "https://api.example.com",
+    features: {
+      chat: false,
+      fixFinding: false,
+      design: false,
+      rewrite: false,
+      score: false,
+      suggestions: true,
+      conversation: false,
+    },
+  });
+  expect(report.checks.filter((check) => !check.ok)).toEqual([
+    {
+      name: "suggestions: answers",
+      ok: false,
+      detail:
+        "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
+    },
+  ]);
+  expect(
+    report.checks.find(
+      (check) => check.name === "responses carry Templatical-AI-Wire: 1",
+    ),
+  ).toEqual({
+    name: "responses carry Templatical-AI-Wire: 1",
+    ok: true,
+    detail: "2 response(s)",
+  });
 });

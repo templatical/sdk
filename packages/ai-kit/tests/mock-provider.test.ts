@@ -112,4 +112,225 @@ describe("createMockAiProvider (D35)", () => {
     expect(await (ai.rewrite as Function)({ ...base, html: "<p>a</p>", preset: "shorten", language: null, instruction: null }, { onText }, signal)).toEqual({ html: "<p>a</p>!" });
     expect(onText).toHaveBeenCalledWith("<p>X");
   });
+
+  it("normalizes a non-Error abort reason and preserves a supplied AbortError", async () => {
+    const ai = createMockAiProvider({ suggestions: ["One"] });
+    const stopped = new AbortController();
+    stopped.abort("Stop now");
+    await expect(
+      (ai.suggestions as Function)(base, stopped.signal),
+    ).rejects.toMatchObject({
+      name: "AbortError",
+      message: "The AI request was stopped.",
+    });
+    const supplied = new DOMException("Stopped by the caller.", "AbortError");
+    const preserve = new AbortController();
+    preserve.abort(supplied);
+    await expect(
+      (ai.suggestions as Function)(base, preserve.signal),
+    ).rejects.toBe(supplied);
+  });
+
+  it("rejects unmatched recordings and streams that end without done with the provider error", async () => {
+    const error = {
+      name: "SdkError",
+      code: "ai_provider_error",
+      statusCode: 502,
+      message: "AI is unavailable right now. Try again later.",
+    };
+    for (const chat of [
+      [
+        {
+          match: /other/,
+          events: [{ type: "done" as const, messageId: null }],
+        },
+      ],
+      [{ events: [{ type: "text" as const, text: "Unfinished" }] }],
+    ]) {
+      const ai = createMockAiProvider({ chat });
+      const handlers = createStandInEditor(content).handlers();
+      await expect(
+        (ai.chat as Function)(
+          { ...base, message: "Hello", selectedBlockId: null },
+          handlers,
+          new AbortController().signal,
+        ),
+      ).rejects.toMatchObject(error);
+      expect(handlers.text).toBe(
+        chat[0].events[0].type === "text" ? "Unfinished" : "",
+      );
+    }
+  });
+
+  it("requires rewrite's done event to contain HTML", async () => {
+    const ai = createMockAiProvider({
+      rewrite: [{ type: "done", messageId: null }],
+    });
+    await expect(
+      (ai.rewrite as Function)(
+        {
+          ...base,
+          html: "<p>Hi</p>",
+          preset: "shorten",
+          language: null,
+          instruction: null,
+        },
+        { onText: () => {} },
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({
+      name: "SdkError",
+      code: "ai_provider_error",
+      statusCode: 502,
+      message: "AI is unavailable right now. Try again later.",
+    });
+  });
+
+  it("forwards server-applied batches and records their exact metadata in history", async () => {
+    const ai = createMockAiProvider({
+      conversation: true,
+      chat: [
+        {
+          events: [
+            {
+              type: "applied",
+              batchId: "server-batch",
+              revision: 12,
+              operationCount: 3,
+            },
+            { type: "text", text: "Saved." },
+            { type: "done", messageId: "server-message" },
+          ],
+        },
+      ],
+    });
+    const editor = createStandInEditor(content);
+    const result = await (ai.chat as Function)(
+      { ...base, message: "Save it", selectedBlockId: null },
+      editor.handlers(),
+      new AbortController().signal,
+    );
+    const batch = { batchId: "server-batch", revision: 12, operationCount: 3 };
+    expect(editor.serverBatches).toEqual([batch]);
+    expect(editor.applied).toEqual([]);
+    expect(editor.content).toEqual(content);
+    const messages = await ai.conversation!.list("t-1");
+    expect(
+      messages.map((message) => ({
+        role: message.role,
+        text: message.text,
+        batches: message.batches,
+      })),
+    ).toEqual([
+      { role: "user", text: "Save it", batches: [] },
+      { role: "assistant", text: "Saved.", batches: [batch] },
+    ]);
+    expect(result).toEqual({ messageId: messages[1].id, text: "Saved." });
+  });
+
+  it("refuses undo and redo for a message outside the conversation", async () => {
+    const ai = createMockAiProvider({ conversation: true });
+    const error = {
+      name: "SdkError",
+      statusCode: 404,
+      code: "not_found",
+      message: "That message isn't in this conversation.",
+    };
+    await expect(
+      (ai.conversation!.undo as Function)("t-1", "missing", { sessionId: "s" }),
+    ).rejects.toMatchObject(error);
+    await expect(
+      (ai.conversation!.redo as Function)("t-1", "missing", { sessionId: "s" }),
+    ).rejects.toMatchObject(error);
+    expect(await ai.conversation!.list("t-1")).toEqual([]);
+  });
+
+  it.each([null, "Use a bright header."])(
+    "records the design instruction in conversation history: %s",
+    async (prompt) => {
+      const ai = createMockAiProvider({
+        conversation: true,
+        design: [
+          { type: "text", text: "Built." },
+          { type: "done", messageId: null },
+        ],
+      });
+      const result = await (ai.design as Function)(
+        {
+          ...base,
+          prompt,
+          file: new Blob(["image"], { type: "image/png" }),
+          fileKind: "image",
+        },
+        createStandInEditor(content).handlers(),
+        new AbortController().signal,
+      );
+      const messages = await ai.conversation!.list("t-1");
+      expect(
+        messages.map((message) => ({
+          role: message.role,
+          kind: message.kind,
+          text: message.text,
+        })),
+      ).toEqual([
+        {
+          role: "user",
+          kind: "design",
+          text: prompt ? `Built from design\n${prompt}` : "Built from design",
+        },
+        { role: "assistant", kind: "design", text: "Built." },
+      ]);
+      expect(result).toEqual({ messageId: messages[1].id, text: "Built." });
+    },
+  );
+
+  it("plays explicit pauses before continuing the recorded text", async () => {
+    const ai = createMockAiProvider({
+      chat: [
+        {
+          events: [
+            { delayMs: 1 },
+            { type: "text", text: "After the pause." },
+            { type: "done", messageId: "m-1" },
+          ],
+        },
+      ],
+    });
+    const handlers = createStandInEditor(content).handlers();
+    expect(
+      await (ai.chat as Function)(
+        { ...base, message: "Hello", selectedBlockId: null },
+        handlers,
+        new AbortController().signal,
+      ),
+    ).toEqual({ messageId: "m-1", text: "After the pause." });
+    expect(handlers.text).toBe("After the pause.");
+  });
+
+  it("ignores an unknown runtime recording event without treating it as an applied batch", async () => {
+    const ai = createMockAiProvider({
+      chat: [
+        {
+          events: [
+            { type: "unexpected" } as never,
+            { type: "text", text: "Kept going." },
+            { type: "done", messageId: "m-1" },
+          ],
+        },
+      ],
+    });
+    const editor = createStandInEditor(content);
+    const handlers = editor.handlers();
+    expect(
+      await (ai.chat as Function)(
+        { ...base, message: "Hello", selectedBlockId: null },
+        handlers,
+        new AbortController().signal,
+      ),
+    ).toEqual({ messageId: "m-1", text: "Kept going." });
+    expect(handlers.text).toBe("Kept going.");
+    expect(editor.applied).toEqual([]);
+    expect(editor.serverBatches).toEqual([]);
+    expect(editor.content).toEqual(content);
+  });
 });

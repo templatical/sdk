@@ -1,9 +1,18 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
-import { flushPromises, mount } from "@vue/test-utils";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import {
   createDefaultTemplateContent,
+  createImageBlock,
+  createParagraphBlock,
+  type AiChatRequest,
+  type AiScoreRequest,
+  type AiTurnHandlers,
+  type MergeTag,
+  type ParagraphBlock,
+  type ScoringResult,
   type Template,
+  type TemplateContent,
 } from "@templatical/types";
 import Editor from "../src/Editor.vue";
 import { useFonts } from "../src/composables";
@@ -38,6 +47,30 @@ async function mountWithAi(extra: Record<string, unknown> = {}) {
     global: { stubs: { teleport: true } },
   });
   return wrapper;
+}
+
+async function openAiPanel(wrapper: VueWrapper, panel: "chat" | "scoring") {
+  await (
+    wrapper.vm as unknown as { load: (id: string) => Promise<Template> }
+  ).load("tpl-1");
+  await vi.waitFor(() =>
+    expect(wrapper.find('[data-testid="ai-menu-trigger"]').exists()).toBe(true),
+  );
+  await wrapper.get('[data-testid="ai-menu-trigger"]').trigger("click");
+  await wrapper.get(`[data-testid="ai-menu-item-${panel}"]`).trigger("click");
+  await vi.waitFor(() =>
+    expect(wrapper.find(`[data-testid="ai-panel-${panel}"]`).exists()).toBe(
+      true,
+    ),
+  );
+}
+
+async function sendChat(wrapper: VueWrapper, prompt: string, reply: string) {
+  await wrapper.get('[data-testid="ai-chat-input"]').setValue(prompt);
+  await wrapper.get('[data-testid="ai-chat-send"]').trigger("click");
+  await vi.waitFor(() =>
+    expect(wrapper.get('[data-testid="ai-chat-reply"]').text()).toBe(reply),
+  );
 }
 
 describe("Editor.vue with an AI provider", () => {
@@ -94,4 +127,265 @@ describe("Editor.vue with an AI provider", () => {
       false,
     );
   });
+
+  it("sends the current merge tags and normalizes a chat edit through the editor's history", async () => {
+    const content = {
+      ...createDefaultTemplateContent(),
+      blocks: [createParagraphBlock({ id: "p1", content: "<p>Before</p>" })],
+    };
+    const chat = vi.fn(
+      async (_request: AiChatRequest, handlers: AiTurnHandlers) => {
+        const applied = await handlers.onOperations([
+          {
+            op: "updateBlock",
+            blockId: "p1",
+            set: { content: "<p>Hi {{first_name}}</p>" },
+            expect: { content: "<p>Before</p>" },
+          },
+        ]);
+        expect(applied).toEqual({
+          applied: true,
+          inverse: [
+            {
+              op: "updateBlock",
+              blockId: "p1",
+              set: { content: "<p>Before</p>" },
+              expect: {
+                content:
+                  '<p>Hi <span data-merge-tag="{{first_name}}">First Name</span></p>',
+              },
+            },
+          ],
+        });
+        return { messageId: null, text: "Personalized." };
+      },
+    );
+    const wrapper = await mountWithAi({
+      templates: {
+        load: async (id: string): Promise<Template> => ({ id, content }),
+        create: false,
+        save: false,
+      },
+      mergeTags: {
+        tags: [{ value: "{{first_name}}", label: "First Name", sample: "Ada" }],
+      },
+      ai: { chat },
+    });
+    onTestFinished(() => wrapper.unmount());
+    await openAiPanel(wrapper, "chat");
+    const api = wrapper.vm as unknown as {
+      getContent: () => TemplateContent;
+      setMergeTags: (tags: MergeTag[]) => void;
+    };
+    api.setMergeTags([
+      {
+        value: "{{first_name}}",
+        label: "First Name",
+        sample: "Private sample",
+        group: "Contact",
+        description: "Recipient name",
+      },
+    ]);
+
+    await sendChat(wrapper, "Personalize the greeting", "Personalized.");
+
+    expect(chat.mock.calls[0][0]).toMatchObject({
+      templateId: "tpl-1",
+      message: "Personalize the greeting",
+      selectedBlockId: null,
+      revision: null,
+      content,
+      mergeTags: {
+        syntax: "liquid",
+        tags: [
+          {
+            value: "{{first_name}}",
+            label: "First Name",
+            group: "Contact",
+            description: "Recipient name",
+          },
+        ],
+      },
+    });
+    expect(chat.mock.calls[0][0].mergeTags).toEqual({
+      syntax: "liquid",
+      tags: [
+        {
+          value: "{{first_name}}",
+          label: "First Name",
+          group: "Contact",
+          description: "Recipient name",
+        },
+      ],
+    });
+    expect((api.getContent().blocks[0] as ParagraphBlock).content).toBe(
+      '<p>Hi <span data-merge-tag="{{first_name}}">First Name</span></p>',
+    );
+    expect(wrapper.get('[data-testid="ai-chat-applied"]').text()).toContain(
+      "Applied 1 change",
+    );
+    await wrapper.get('[data-testid="ai-chat-undo"]').trigger("click");
+    await vi.waitFor(() => expect(api.getContent()).toEqual(content));
+  });
+
+  it("reloads a server-applied turn through the templates provider", async () => {
+    const original = {
+      ...createDefaultTemplateContent(),
+      blocks: [createParagraphBlock({ id: "p1", content: "<p>Before</p>" })],
+    };
+    const updated = {
+      ...original,
+      blocks: [
+        createParagraphBlock({ id: "p1", content: "<p>Saved by AI</p>" }),
+      ],
+    };
+    let stored = original;
+    const load = vi.fn(async (id: string): Promise<Template> => ({
+      id,
+      content: stored,
+    }));
+    const chat = vi.fn(
+      async (_request: AiChatRequest, handlers: AiTurnHandlers) => {
+        stored = updated;
+        handlers.onApplied({
+          batchId: "batch-1",
+          revision: 1,
+          operationCount: 1,
+        });
+        return { messageId: null, text: "Saved." };
+      },
+    );
+    const wrapper = await mountWithAi({
+      templates: { load, create: false, save: false },
+      ai: { chat },
+    });
+    onTestFinished(() => wrapper.unmount());
+    await openAiPanel(wrapper, "chat");
+
+    await sendChat(wrapper, "Update the saved template", "Saved.");
+
+    const api = wrapper.vm as unknown as {
+      getContent: () => TemplateContent;
+      isDirty: () => boolean;
+    };
+    await vi.waitFor(() => expect(api.getContent()).toEqual(updated));
+    expect(api.isDirty()).toBe(false);
+    expect(load.mock.calls).toEqual([["tpl-1"], ["tpl-1"]]);
+    expect(chat.mock.calls[0][0].mergeTags).toBeNull();
+    expect(wrapper.get('[data-testid="ai-chat-applied"]').text()).toContain(
+      "Applied 1 change",
+    );
+  });
+
+  it("keeps AI unavailable when no templates provider can open a template", async () => {
+    const chat = vi.fn(async () => ({ messageId: null, text: "Hi." }));
+    const wrapper = await mountWithAi({ templates: undefined, ai: { chat } });
+    onTestFinished(() => wrapper.unmount());
+    await flushPromises();
+
+    await expect(
+      (
+        wrapper.vm as unknown as { load: (id: string) => Promise<Template> }
+      ).load("tpl-1"),
+    ).rejects.toMatchObject({
+      name: "SdkError",
+      message:
+        "[Templatical] Templates: load() needs a templates provider. Pass one as `init({ templates })` to enable saving and loading.",
+    });
+    expect(wrapper.find('[data-testid="ai-menu-trigger"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="ai-panel-chat"]').exists()).toBe(false);
+    expect(
+      (
+        wrapper.vm as unknown as { getContent: () => TemplateContent }
+      ).getContent(),
+    ).toEqual(createDefaultTemplateContent());
+  });
+
+  it.each([false, true])(
+    "passes live lint findings to scoring and opens Issues (lint disabled: %s)",
+    async (disabled) => {
+      const content = {
+        ...createDefaultTemplateContent(),
+        blocks: [
+          createImageBlock({
+            id: "image-1",
+            src: "https://example.com/banner.png",
+            alt: "",
+          }),
+        ],
+      };
+      const result: ScoringResult = {
+        score: 90,
+        categories: {
+          spam: { score: 90, findings: [] },
+          readability: { score: 90, findings: [] },
+          bestPractices: { score: 90, findings: [] },
+        },
+      };
+      const score = vi.fn(async (_request: AiScoreRequest) => result);
+      const wrapper = await mountWithAi({
+        content,
+        templates: {
+          load: async (id: string): Promise<Template> => ({ id, content }),
+          create: false,
+          save: false,
+        },
+        ai: { score },
+        lint: {
+          disabled,
+          structure: false,
+          links: false,
+          accessibility: { rules: { "a11y.missing-preheader": "off" } },
+        },
+      });
+      onTestFinished(() => wrapper.unmount());
+      if (!disabled) {
+        await vi.waitFor(() =>
+          expect(wrapper.get("#tpl-tab-issues").text()).toContain("1"),
+        );
+      }
+      await openAiPanel(wrapper, "scoring");
+      await vi.waitFor(() =>
+        expect(wrapper.get('[data-testid="scoring-overall"]').text()).toContain(
+          "90",
+        ),
+      );
+
+      expect(score.mock.calls[0][0].lintFindings).toEqual(
+        disabled
+          ? []
+          : [
+              {
+                ruleId: "a11y.img-missing-alt",
+                blockId: "image-1",
+                message:
+                  "Image is missing alt text. Add a short description, or mark the image as decorative.",
+              },
+            ],
+      );
+      if (disabled) {
+        expect(
+          wrapper.find('[data-testid="scoring-open-issues"]').exists(),
+        ).toBe(false);
+        expect(wrapper.find("#tpl-tab-issues").exists()).toBe(false);
+      } else {
+        expect(
+          wrapper.get("#tpl-tab-content").attributes("aria-selected"),
+        ).toBe("true");
+        await wrapper
+          .get('[data-testid="scoring-open-issues"]')
+          .trigger("click");
+        expect(wrapper.get("#tpl-tab-issues").attributes("aria-selected")).toBe(
+          "true",
+        );
+        await vi.waitFor(() =>
+          expect(wrapper.get("#tpl-tabpanel-issues").text()).toContain(
+            "Image is missing alt text.",
+          ),
+        );
+      }
+    },
+  );
 });

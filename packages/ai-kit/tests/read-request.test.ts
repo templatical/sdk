@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readAiRequest } from "../src/server";
+import { readAiRequest, SdkError } from "../src/server";
 
 const content = { blocks: [], settings: { width: 600 } };
 
@@ -295,5 +295,247 @@ describe("final fix: request boundaries", () => {
     expect(await readAiRequest(post("/templates/t/ai/fix-finding", { content, finding: { id: emoji.repeat(64), message: emoji.repeat(1000), suggestion: emoji.repeat(1000), category: "spam", blockId: null } }))).toMatchObject({ route: "fixFinding" });
     expect(await readAiRequest(post("/templates/t/ai/score", { content, lintFindings: [{ ruleId: emoji.repeat(100), message: emoji.repeat(500), blockId: null }] }))).toMatchObject({ route: "score" });
     expect(await readAiRequest(post("/templates/t/ai/rewrite-text", { html: emoji.repeat(20_000), instruction: emoji.repeat(500) }))).toMatchObject({ route: "rewriteText" });
+  });
+});
+
+describe("readAiRequest validation messages", () => {
+  async function validation(request: Request, message: string): Promise<void> {
+    const error = await readAiRequest(request).catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(SdkError);
+    expect(error).toMatchObject({ statusCode: 422, code: undefined, message });
+  }
+
+  it.each([
+    ["null", null],
+    ["non-object", "template"],
+    ["missing blocks", { settings: {} }],
+    ["non-list blocks", { blocks: {}, settings: {} }],
+    ["missing settings", { blocks: [] }],
+    ["non-object settings", { blocks: [], settings: [] }],
+  ])(
+    "rejects %s content with the exact validation error",
+    async (_label, content) => {
+      await validation(
+        post("/templates/t/ai/suggestions", { content }),
+        "content must be the template's content.",
+      );
+    },
+  );
+
+  it.each([-1, 1.5, "NaN", {}, true])(
+    "rejects revision %j with the exact validation error",
+    async (revision) => {
+      await validation(
+        post("/templates/t/ai/generate", { message: "Hi", content, revision }),
+        "revision must be a whole number or null.",
+      );
+    },
+  );
+
+  it.each([
+    ["a non-string instruction", 7],
+    ["an oversized instruction", "x".repeat(501)],
+  ])(
+    "rejects %s with the exact validation error",
+    async (_label, instruction) => {
+      await validation(
+        post("/templates/t/ai/rewrite-text", {
+          html: "<p>Hi</p>",
+          preset: "shorten",
+          instruction,
+        }),
+        "The instruction must be at most 500 characters.",
+      );
+    },
+  );
+
+  it.each([
+    ["non-object", null],
+    [
+      "missing id",
+      { message: "m", suggestion: "s", category: "spam", blockId: null },
+    ],
+    [
+      "non-string message",
+      { id: "f", message: 7, suggestion: "s", category: "spam", blockId: null },
+    ],
+    [
+      "non-string suggestion",
+      { id: "f", message: "m", suggestion: 7, category: "spam", blockId: null },
+    ],
+    [
+      "unknown category",
+      {
+        id: "f",
+        message: "m",
+        suggestion: "s",
+        category: "accessibility",
+        blockId: null,
+      },
+    ],
+    [
+      "non-string block id",
+      { id: "f", message: "m", suggestion: "s", category: "spam", blockId: 7 },
+    ],
+  ])(
+    "rejects a %s finding with the exact validation error",
+    async (_label, finding) => {
+      await validation(
+        post("/templates/t/ai/fix-finding", { finding, content }),
+        "finding must be { id, message, suggestion, category, blockId }.",
+      );
+    },
+  );
+
+  it.each([
+    ["missing", undefined],
+    ["empty", ""],
+    ["non-string", 7],
+    ["oversized", "x".repeat(20_001)],
+  ])(
+    "rejects %s rewrite HTML with the exact validation error",
+    async (_label, html) => {
+      await validation(
+        post("/templates/t/ai/rewrite-text", { html, preset: "shorten" }),
+        "html must be 1 to 20,000 characters.",
+      );
+    },
+  );
+
+  it("rejects an unknown rewrite preset with the exact validation error", async () => {
+    await validation(
+      post("/templates/t/ai/rewrite-text", {
+        html: "<p>Hi</p>",
+        preset: "poetic",
+      }),
+      "Unknown preset.",
+    );
+  });
+
+  it("rejects a non-multipart design request with the exact validation error", async () => {
+    await validation(
+      post("/templates/t/ai/generate-from-design", { content }),
+      "Send the design as multipart form data.",
+    );
+  });
+
+  it.each([
+    "no file",
+    "a text file field",
+    "both upload fields",
+    "unsupported image type",
+    "unsupported PDF type",
+    "oversized image",
+    "malformed content JSON",
+    "malformed mergeTags JSON",
+    "oversized prompt",
+  ])(
+    "rejects a design with %s and the exact validation error",
+    async (scenario) => {
+      const form = new FormData();
+      form.set("content", JSON.stringify(content));
+      form.set(
+        "image_upload",
+        new Blob(["png"], { type: "image/png" }),
+        "design.png",
+      );
+      let message: string;
+      switch (scenario) {
+        case "no file":
+          form.delete("image_upload");
+          message = "Upload one image or one PDF.";
+          break;
+        case "a text file field":
+          form.set("image_upload", "design.png");
+          message = "Upload one image or one PDF.";
+          break;
+        case "both upload fields":
+          form.set(
+            "pdf_upload",
+            new Blob(["pdf"], { type: "application/pdf" }),
+            "design.pdf",
+          );
+          message = "Upload one image or one PDF.";
+          break;
+        case "unsupported image type":
+          form.set(
+            "image_upload",
+            new Blob(["svg"], { type: "image/svg+xml" }),
+            "design.svg",
+          );
+          message = "Upload a PNG, JPEG, WebP or GIF image, or a PDF.";
+          break;
+        case "unsupported PDF type":
+          form.delete("image_upload");
+          form.set(
+            "pdf_upload",
+            new Blob(["text"], { type: "text/plain" }),
+            "design.txt",
+          );
+          message = "Upload a PNG, JPEG, WebP or GIF image, or a PDF.";
+          break;
+        case "oversized image":
+          form.set(
+            "image_upload",
+            new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], {
+              type: "image/png",
+            }),
+            "large.png",
+          );
+          message = "The file must be 5 MB or smaller.";
+          break;
+        case "malformed content JSON":
+          form.set("content", "{broken");
+          message = "content must be JSON.";
+          break;
+        case "malformed mergeTags JSON":
+          form.set("mergeTags", "{broken");
+          message = "mergeTags must be JSON.";
+          break;
+        default:
+          form.set("prompt", "x".repeat(2001));
+          message = "The prompt must be at most 2,000 characters.";
+      }
+      await validation(
+        new Request("https://x.test/templates/t/ai/generate-from-design", {
+          method: "POST",
+          body: form,
+        }),
+        message,
+      );
+    },
+  );
+
+  it("reads a PDF design with omitted optional fields", async () => {
+    const form = new FormData();
+    form.set(
+      "pdf_upload",
+      new Blob(["PDF content"], { type: "application/pdf" }),
+      "design.pdf",
+    );
+    form.set("content", JSON.stringify(content));
+    const result = await readAiRequest(
+      new Request("https://x.test/templates/t/ai/generate-from-design", {
+        method: "POST",
+        body: form,
+      }),
+    );
+
+    expect(result).toMatchObject({
+      route: "generateFromDesign",
+      template: "t",
+      sessionId: null,
+      body: {
+        prompt: null,
+        fileKind: "pdf",
+        content,
+        mergeTags: null,
+        revision: null,
+      },
+    });
+    if (result?.route !== "generateFromDesign")
+      throw new Error("Expected a design request");
+    expect(result.body.file.type).toBe("application/pdf");
+    expect(await result.body.file.text()).toBe("PDF content");
   });
 });

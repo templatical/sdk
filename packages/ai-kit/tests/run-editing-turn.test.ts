@@ -136,4 +136,32 @@ describe("runEditingTurn (D31)", () => {
     ).rejects.toMatchObject({ name: "AbortError" });
     expect(events.map((event) => event.type)).toEqual(["operations"]);
   });
+
+  it.each(["null", "7", '"ops"', "[invalid"])(
+    "refuses malformed tool arguments %s and feeds the refusal back",
+    async (input) => {
+      const model = scriptedModel([
+        [{ type: "tool-call", id: "bad", name: "apply_operations", input }],
+        [{ type: "text", text: "Please send operations." }],
+      ]);
+      const events: AiWireEvent[] = [];
+      const result = await runEditingTurn({
+        request: request("Edit"),
+        model,
+        write: (event) => void events.push(event),
+      });
+
+      expect(model.calls[1].messages.at(-1)).toEqual({
+        role: "tool",
+        toolCallId: "bad",
+        name: "apply_operations",
+        content: 'Refused: "ops" must be a non-empty JSON array of operations.',
+      });
+      expect(result.content).toEqual(content());
+      expect(result.batches).toEqual([]);
+      expect(events).toEqual([
+        { type: "text", text: "Please send operations." },
+      ]);
+    },
+  );
 });
