@@ -16,7 +16,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 
 ## Is Templatical open source?
 
-The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
+The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai-kit` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
 
 ## What is FSL-1.1-MIT?
 
@@ -48,9 +48,9 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/ai` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai` server kit) is permissive MIT and free of any future-license consideration.
+The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai-kit` server kit) is permissive MIT and free of any future-license consideration.
 
 ## Can I use Templatical commercially?
 

@@ -34,12 +34,12 @@ reports another session's edits.
 (`chat`, `fixFinding`, `design`, `rewrite`, `score`, `suggestions`), plus
 an optional `conversation` (`list`, `clear`, `undo`, `redo`,
 `settleReplay`) for stored history, whose Undo and Redo are settled in two
-phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai/client`
-speaks the documented wire, and `@templatical/ai/server` builds that
+phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai-kit/client`
+speaks the documented wire, and `@templatical/ai-kit/server` builds that
 backend on any Fetch-API runtime with your model and keys. AI needs a
 loaded template (`templates` or `collaboration`); with `collaboration`, its
 edits travel as the user's batches marked `origin: 'ai'`. The contract and
-`@templatical/ai` are MIT.
+`@templatical/ai-kit` are MIT.
 
 The editor has no template browser of its own. After wiring `templates`, the
 host still calls `editor.load(id)` or `editor.create(...)` — a missing Save

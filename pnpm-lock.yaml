@@ -326,9 +326,9 @@ importers:
       '@lucide/vue':
         specifier: ^1.59.0
         version: 1.59.0(vue@3.5.44(typescript@6.0.3))
-      '@templatical/ai':
+      '@templatical/ai-kit':
         specifier: workspace:*
-        version: link:../../packages/ai
+        version: link:../../packages/ai-kit
       '@templatical/editor':
         specifier: workspace:*
         version: link:../../packages/editor
@@ -412,7 +412,7 @@ importers:
         specifier: ^3.3.13
         version: 3.3.13(typescript@6.0.3)
 
-  packages/ai:
+  packages/ai-kit:
     dependencies:
       '@templatical/types':
         specifier: workspace:*

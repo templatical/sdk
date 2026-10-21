@@ -7,13 +7,13 @@ description: Chat mit Template-Bearbeitung, Umformulieren, Bewertung mit Korrekt
 
 Geben Sie dem Editor einen KI-Provider, und Ihre Nutzenden erhalten einen Assistenten, der das geöffnete Template bearbeitet: einen Chat mit Rückgängig, „Rewrite with AI“ in der Absatz-Werkzeugleiste, eine Template-Bewertung mit Korrekturen per Klick, Vorschläge zum Einstieg und ein Template aus einem Screenshot oder einer PDF. Ihr Backend spricht mit dem Modell — mit Ihren Schlüsseln, Ihren Vereinbarungen zur Datenverarbeitung und Ihren Regeln.
 
-Der Editor übernimmt die Oberflächen, das Streaming, das Anwenden der KI-Änderungen mit Rückgängig und die Kennzeichnung der Inhalte als KI-generiert. Sie übernehmen den Modellaufruf: eine Funktion pro Feature oder einige HTTP-Endpunkte, deren Großteil `@templatical/ai` bereitstellt.
+Der Editor übernimmt die Oberflächen, das Streaming, das Anwenden der KI-Änderungen mit Rückgängig und die Kennzeichnung der Inhalte als KI-generiert. Sie übernehmen den Modellaufruf: eine Funktion pro Feature oder einige HTTP-Endpunkte, deren Großteil `@templatical/ai-kit` bereitstellt.
 
 ## Schnellstart
 
 ```ts
 import { init } from '@templatical/editor';
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const editor = await init({
   container: '#editor',
@@ -27,7 +27,7 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`createHttpAiProvider` spricht ein dokumentiertes REST- und Server-Sent-Events-Protokoll. [Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai) baut die Serverseite mit `@templatical/ai/server` in etwa hundert Zeilen auf; die [KI-API-Referenz](/de/api/ai#das-protokoll) dokumentiert das Protokoll für Backends in jeder Sprache.
+`createHttpAiProvider` spricht ein dokumentiertes REST- und Server-Sent-Events-Protokoll. [Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai) baut die Serverseite mit `@templatical/ai-kit/server` in etwa hundert Zeilen auf; die [KI-API-Referenz](/de/api/ai-kit#das-protokoll) dokumentiert das Protokoll für Backends in jeder Sprache.
 
 **KI braucht ein geladenes Template.** Jede Anfrage benennt es, daher erscheinen die Einstiegspunkte, sobald `create()` oder `load()` abgeschlossen ist. **Lassen Sie `ai` weg, fehlt das Feature**: kein Menü, keine Schaltfläche in der Werkzeugleiste, und kein Code seiner Oberfläche wird geladen.
 
@@ -123,7 +123,7 @@ Fehler erreichen `init({ onError })`. Batches aus einer anderen Sitzung, auch di
 
 ## Headless-Nutzung
 
-Der Provider ist ein einfaches Objekt: Rufen Sie `chat`, `score` oder `rewrite` aus Ihrem eigenen Code mit denselben Anfragen auf, und wenden Sie die Operationen mit `applyOperations` aus `@templatical/types` an. `@templatical/ai/testing` bietet `createMockAiProvider` für Oberflächentests und `runAiProviderConformance` zum Prüfen eines selbst geschriebenen Providers.
+Der Provider ist ein einfaches Objekt: Rufen Sie `chat`, `score` oder `rewrite` aus Ihrem eigenen Code mit denselben Anfragen auf, und wenden Sie die Operationen mit `applyOperations` aus `@templatical/types` an. `@templatical/ai-kit/testing` bietet `createMockAiProvider` für Oberflächentests und `runAiProviderConformance` zum Prüfen eines selbst geschriebenen Providers.
 
 ## Im Playground
 

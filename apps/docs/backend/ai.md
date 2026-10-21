@@ -7,13 +7,13 @@ description: Chat that edits the template, rewrite, scoring with fixes and desig
 
 Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, a template score with one-click fixes, starter suggestions, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
-The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai` writes most of.
+The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
 ## Quick start
 
 ```ts
 import { init } from '@templatical/editor';
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const editor = await init({
   container: '#editor',
@@ -27,7 +27,7 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai/server` in about a hundred lines, and the [AI API reference](/api/ai#the-wire) documents the wire for a backend in any language.
+`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` in about a hundred lines, and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
 
 **AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no menu, no toolbar button, and none of its UI is downloaded.
 
@@ -123,7 +123,7 @@ Failures reach `init({ onError })`. Batches from another session, an AI's includ
 
 ## Headless use
 
-The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
+The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
 
 ## In the playground
 

@@ -1,26 +1,26 @@
 ---
-title: "@templatical/ai"
+title: "@templatical/ai-kit"
 description: Das KI-Protokoll, ein HTTP-Provider, ein Server-Kit mit Prompts und Tools und eine Konformitätssuite. MIT.
 ---
 
-# @templatical/ai
+# @templatical/ai-kit
 
 ::: code-group
 
 ```bash [npm]
-npm install @templatical/ai
+npm install @templatical/ai-kit
 ```
 
 ```bash [pnpm]
-pnpm add @templatical/ai
+pnpm add @templatical/ai-kit
 ```
 
 ```bash [yarn]
-yarn add @templatical/ai
+yarn add @templatical/ai-kit
 ```
 
 ```bash [bun]
-bun add @templatical/ai
+bun add @templatical/ai-kit
 ```
 
 :::
@@ -30,7 +30,7 @@ MIT, ohne LLM-SDK und ohne reine Node-API: Web Streams und `fetch`, sodass derse
 ## Client
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -64,7 +64,7 @@ import {
   parseSuggestions,
   readAiRequest,
   runEditingTurn,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 ```
 
 | Export | |
@@ -112,7 +112,7 @@ import {
   runAiEvalSet,
   runAiProviderConformance,
   runAiWireConformance,
-} from '@templatical/ai/testing';
+} from '@templatical/ai-kit/testing';
 
 const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' });
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
@@ -124,7 +124,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Dateien
 
-`@templatical/ai/prompts/*.md`, `@templatical/ai/schema/*.json` und `@templatical/ai/eval/*.json` (mit `MANIFEST.sha256`) sind Prompts, Schemas und Testsatz als Dateien für ein Backend in einer anderen Sprache. Der System-Prompt zum Bearbeiten besteht aus `editing.md`, dann `"\n\n# Operations\n\n"` und `operations.md`, dann `"\n\n# Template content schema\n\n"` und `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` und `@templatical/ai-kit/eval/*.json` (mit `MANIFEST.sha256`) sind Prompts, Schemas und Testsatz als Dateien für ein Backend in einer anderen Sprache. Der System-Prompt zum Bearbeiten besteht aus `editing.md`, dann `"\n\n# Operations\n\n"` und `operations.md`, dann `"\n\n# Template content schema\n\n"` und `template-content.schema.json`.
 
 ## Das Protokoll
 

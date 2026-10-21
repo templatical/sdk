@@ -2,7 +2,7 @@
 // sorted by file name. Templatical Cloud's `cloud:ai-eval` copies the folder
 // and checks every file against this list, so run it after any edit:
 //
-//   pnpm --filter @templatical/ai run eval:manifest
+//   pnpm --filter @templatical/ai-kit run eval:manifest
 //
 // `--check` exits 1 instead of writing when the committed manifest is stale.
 import { createHash } from "node:crypto";
@@ -33,7 +33,7 @@ if (process.argv[1] === import.meta.filename) {
     const committed = readFileSync(manifestPath, "utf8");
     if (committed !== manifest) {
       console.error(
-        "MANIFEST.sha256 is stale. Run: pnpm --filter @templatical/ai run eval:manifest",
+        "MANIFEST.sha256 is stale. Run: pnpm --filter @templatical/ai-kit run eval:manifest",
       );
       process.exit(1);
     }

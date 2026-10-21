@@ -11,7 +11,7 @@ Live: https://play.templatical.com/scenes/ai
 
 ```ts
 import { init } from "@templatical/editor";
-import { createHttpAiProvider } from "@templatical/ai/client";
+import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import "@templatical/editor/style.css";
 
 const editor = await init({

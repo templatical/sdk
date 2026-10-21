@@ -22,9 +22,9 @@ import {
 import { useCollaborationFeature } from "../src/composables/useCollaborationFeature";
 import { normalizeRemoteOperations } from "../src/utils/normalizeMergeTagMarkup";
 
-import { createHttpAiProvider } from "../../ai/src/client";
-import { createMockAiProvider } from "../../ai/src/testing";
-import { createReferenceHandler } from "../../ai/tests/helpers/reference-server";
+import { createHttpAiProvider } from "../../ai-kit/src/client";
+import { createMockAiProvider } from "../../ai-kit/src/testing";
+import { createReferenceHandler } from "../../ai-kit/tests/helpers/reference-server";
 
 const CONTENT = {
   blocks: [

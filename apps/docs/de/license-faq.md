@@ -16,7 +16,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 
 ## Ist Templatical Open Source?
 
-Die MIT-Teile sind es. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai` und jeder Importer sind schon heute MIT-lizenziertes Open Source. Editor, Core und Media-Library sind Source-Available unter FSL-1.1-MIT: kostenlos für kommerzielles Einbetten ohne Lizenzschlüssel, und jede Version wird zwei Jahre nach ihrer Veröffentlichung zu MIT.
+Die MIT-Teile sind es. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai-kit` und jeder Importer sind schon heute MIT-lizenziertes Open Source. Editor, Core und Media-Library sind Source-Available unter FSL-1.1-MIT: kostenlos für kommerzielles Einbetten ohne Lizenzschlüssel, und jede Version wird zwei Jahre nach ihrer Veröffentlichung zu MIT.
 
 ## Was ist FSL-1.1-MIT?
 
@@ -48,9 +48,9 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/ai` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer, die CLI `@templatical/template-tools`, das Server-Kit `@templatical/ai`), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
+Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer, die CLI `@templatical/template-tools`, das Server-Kit `@templatical/ai-kit`), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
 ## Darf ich Templatical kommerziell nutzen?
 

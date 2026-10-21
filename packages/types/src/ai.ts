@@ -307,7 +307,7 @@ export interface AiLimitDetails extends Readonly<Record<string, unknown>> {
  * aborts it, and the rejection is an `AbortError`.
  *
  * Reject with an `SdkError` whose `code` is an `AiErrorCode` and whose
- * message the user can read. `@templatical/ai/client`'s
+ * message the user can read. `@templatical/ai-kit/client`'s
  * `createHttpAiProvider` implements this over a documented REST and SSE wire;
  * Templatical Cloud is one backend for it.
  */

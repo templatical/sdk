@@ -1,31 +1,31 @@
-# @templatical/ai
+# @templatical/ai-kit
 
 > Bring your own AI backend to the [Templatical](https://templatical.com) email editor.
 
-[![npm version](https://img.shields.io/npm/v/@templatical/ai?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/ai)
+[![npm version](https://img.shields.io/npm/v/@templatical/ai-kit?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/ai-kit)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
 
 The editor's AI (a chat that edits the template with Undo, rewrite, scoring with fixes, starter suggestions and design-to-template) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
 
 | Entry | What it is |
 |---|---|
-| `@templatical/ai` | The wire: routes, headers, events, bodies, error statuses, limits; the contract types |
-| `@templatical/ai/client` | `createHttpAiProvider()`: an `AiProvider` over the wire, for the browser |
-| `@templatical/ai/server` | Prompts, the `apply_operations` tool, `createEditingSession`, `runEditingTurn`, `aiEventStream`, output checks |
-| `@templatical/ai/testing` | `runAiProviderConformance`, `runAiWireConformance`, `createMockAiProvider`, the test set and `runAiEvalSet` |
-| `@templatical/ai/prompts/*`, `/schema/*`, `/eval/*` | The prompt files, the JSON schemas and the test set, for backends in any language |
+| `@templatical/ai-kit` | The wire: routes, headers, events, bodies, error statuses, limits; the contract types |
+| `@templatical/ai-kit/client` | `createHttpAiProvider()`: an `AiProvider` over the wire, for the browser |
+| `@templatical/ai-kit/server` | Prompts, the `apply_operations` tool, `createEditingSession`, `runEditingTurn`, `aiEventStream`, output checks |
+| `@templatical/ai-kit/testing` | `runAiProviderConformance`, `runAiWireConformance`, `createMockAiProvider`, the test set and `runAiEvalSet` |
+| `@templatical/ai-kit/prompts/*`, `/schema/*`, `/eval/*` | The prompt files, the JSON schemas and the test set, for backends in any language |
 
 ## Install
 
 ```bash
-npm install @templatical/ai
+npm install @templatical/ai-kit
 ```
 
 ## In the editor
 
 ```ts
 import { init } from "@templatical/editor";
-import { createHttpAiProvider } from "@templatical/ai/client";
+import { createHttpAiProvider } from "@templatical/ai-kit/client";
 
 await init({
   container: "#editor",

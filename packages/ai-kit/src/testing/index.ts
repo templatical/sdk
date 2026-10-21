@@ -1,4 +1,4 @@
-// @templatical/ai/testing — verification shipped with the package (A1 §6).
+// @templatical/ai-kit/testing — verification shipped with the package (A1 §6).
 export { runAiProviderConformance } from "./conformance";
 export type {
   AiConformanceCheck,

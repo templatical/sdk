@@ -1,5 +1,5 @@
 {
-  "name": "@templatical/ai",
+  "name": "@templatical/ai-kit",
   "description": "Bring your own AI backend to the Templatical email editor: the wire, an HTTP provider, a server kit with prompts and tools, and a conformance suite",
   "version": "0.49.0",
   "bugs": "https://github.com/templatical/sdk/issues",
@@ -57,7 +57,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/templatical/sdk.git",
-    "directory": "packages/ai"
+    "directory": "packages/ai-kit"
   },
   "scripts": {
     "build": "tsdown",

@@ -1,4 +1,4 @@
-// @templatical/ai — bring your own AI backend to the Templatical editor (A1).
+// @templatical/ai-kit — bring your own AI backend to the Templatical editor (A1).
 //
 // This entry is the wire: routes, headers, events, bodies, error statuses and
 // limits, plus the contract types from @templatical/types. The client is

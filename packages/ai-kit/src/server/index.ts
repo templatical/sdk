@@ -1,4 +1,4 @@
-// @templatical/ai/server — the server kit (A1 §5). Isomorphic: Web Streams and
+// @templatical/ai-kit/server — the server kit (A1 §5). Isomorphic: Web Streams and
 // fetch only. No HTML sanitizer here: the editor sanitizes everything it shows
 // or applies.
 

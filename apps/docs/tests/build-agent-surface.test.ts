@@ -167,7 +167,7 @@ describe("groupOf", () => {
 describe("collectPages", () => {
   it.each([
     "https://docs.templatical.com/backend/ai",
-    "https://docs.templatical.com/api/ai",
+    "https://docs.templatical.com/api/ai-kit",
     "https://docs.templatical.com/guide/bring-your-own-ai",
   ])("publishes the bring-your-own AI page %s in both agent outputs", (url) => {
     const { index, full } = buildOutputs();

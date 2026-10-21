@@ -651,7 +651,7 @@ export interface TemplaticalEditorConfig {
    * editor hides its entry point:
    *
    * ```ts
-   * import { createHttpAiProvider } from "@templatical/ai/client";
+   * import { createHttpAiProvider } from "@templatical/ai-kit/client";
    *
    * const editor = await init({
    *   container,

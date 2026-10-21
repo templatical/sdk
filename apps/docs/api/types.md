@@ -709,6 +709,6 @@ unsubscribe(); // Remove listener
 
 ## AI
 
-`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai) covers the HTTP client, server kit and wire.
+`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai-kit) covers the HTTP client, server kit and wire.
 
 `SdkError(message, statusCode?, code?, details?)` carries AI error codes and optional `details`. `ThrottledError` extends it with `retryAfterMs`, status 429 and code `rate_limited`. `invertOperations(content, ops)` returns a batch's guarded inverse; it lives in `@templatical/types` and is re-exported by `@templatical/core`.

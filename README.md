@@ -130,7 +130,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML renderer (browser + Node)                            | [MIT](./LICENSE-MIT)     |
 | [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Template quality linter — accessibility, structure, and link rules (browser + Node) | [MIT](./LICENSE-MIT)     |
 | [`@templatical/template-tools`](https://www.npmjs.com/package/@templatical/template-tools) | CLI and library: validate, render (MJML/HTML), edit, import, live-preview templates | [MIT](./LICENSE-MIT)     |
-| [`@templatical/ai`](https://www.npmjs.com/package/@templatical/ai) | Bring your own AI backend: the wire, an HTTP provider, a server kit and a conformance suite | [MIT](./LICENSE-MIT)     |
+| [`@templatical/ai-kit`](https://www.npmjs.com/package/@templatical/ai-kit) | Bring your own AI backend: the wire, an HTTP provider, a server kit and a conformance suite | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
@@ -148,7 +148,7 @@ Editor packages (`@templatical/editor`, `@templatical/core`, `@templatical/media
 - ✅ Self-host, modify, fork for internal use
 - ✅ Use it commercially without paying anything
 
-The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality, the import-* converters, the `@templatical/template-tools` CLI, and `@templatical/ai` — are pure MIT.
+The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality, the import-* converters, the `@templatical/template-tools` CLI, and `@templatical/ai-kit` — are pure MIT.
 
 [Full license FAQ →](https://docs.templatical.com/license-faq)
 
@@ -198,4 +198,4 @@ Templatical is built and maintained by a solo developer. If your company uses it
 ## License
 
 - **Editor packages** (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`) — [FSL-1.1-MIT](./LICENSE)
-- **Types, renderer, quality, importers, the `@templatical/template-tools` CLI and `@templatical/ai`** — [MIT](./LICENSE-MIT)
+- **Types, renderer, quality, importers, the `@templatical/template-tools` CLI and `@templatical/ai-kit`** — [MIT](./LICENSE-MIT)

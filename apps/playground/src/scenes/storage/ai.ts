@@ -1,4 +1,7 @@
-import { AI_RECORDINGS, createMockAiProvider } from "@templatical/ai/testing";
+import {
+  AI_RECORDINGS,
+  createMockAiProvider,
+} from "@templatical/ai-kit/testing";
 import { createSharedCollaboration } from "../../host/collaboration/client";
 import { templatesProviderFor } from "../../host/providers";
 import type { Scene } from "../types";
@@ -50,7 +53,7 @@ export const ai: Scene = {
     }
   },
   snippet: `import { init } from "@templatical/editor";
-import { createHttpAiProvider } from "@templatical/ai/client";
+import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import "@templatical/editor/style.css";
 
 const editor = await init({

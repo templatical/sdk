@@ -5,7 +5,7 @@
 //
 // This script writes SIX files: this package's own schema.json,
 // skills/templatical/reference/schema.json,
-// packages/ai/schema/template-content.schema.json, the per-type field lists inside
+// packages/ai-kit/schema/template-content.schema.json, the per-type field lists inside
 // skills/templatical/reference/block-guide.md, and custom-block-schema.json
 // (this package's copy plus skills/templatical/reference/custom-block-schema.json). The skill
 // needs its schema copy committed in the repo because the agent reads it in
@@ -47,12 +47,12 @@ export const SKILL_SCHEMA_PATH = resolve(
   repoRoot,
   "skills/templatical/reference/schema.json",
 );
-// @templatical/ai ships the schema as a file for AI backends in any language
+// @templatical/ai-kit ships the schema as a file for AI backends in any language
 // and builds its editing prompt from it (A1). A third copy of the one
 // artifact, written here so it can never be generated apart.
 export const AI_SCHEMA_PATH = resolve(
   repoRoot,
-  "packages/ai/schema/template-content.schema.json",
+  "packages/ai-kit/schema/template-content.schema.json",
 );
 
 // The block guide's per-type field lists are generated into marker pairs in

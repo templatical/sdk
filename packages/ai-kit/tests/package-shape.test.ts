@@ -16,7 +16,7 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-describe("@templatical/ai's shape", () => {
+describe("@templatical/ai-kit's shape", () => {
   it("is MIT, with the licence text in the package", () => {
     expect(pkg.license).toBe("MIT");
     expect(readFileSync(join(PKG, "LICENSE"), "utf8")).toBe(

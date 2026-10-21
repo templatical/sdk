@@ -1,26 +1,26 @@
 ---
-title: "@templatical/ai"
+title: "@templatical/ai-kit"
 description: The AI wire, an HTTP provider, a server kit with prompts and tools, and a conformance suite. MIT.
 ---
 
-# @templatical/ai
+# @templatical/ai-kit
 
 ::: code-group
 
 ```bash [npm]
-npm install @templatical/ai
+npm install @templatical/ai-kit
 ```
 
 ```bash [pnpm]
-pnpm add @templatical/ai
+pnpm add @templatical/ai-kit
 ```
 
 ```bash [yarn]
-yarn add @templatical/ai
+yarn add @templatical/ai-kit
 ```
 
 ```bash [bun]
-bun add @templatical/ai
+bun add @templatical/ai-kit
 ```
 
 :::
@@ -30,7 +30,7 @@ MIT, with no LLM SDK and no Node-only API: Web Streams and `fetch`, so the same 
 ## Client
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -64,7 +64,7 @@ import {
   parseSuggestions,
   readAiRequest,
   runEditingTurn,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 ```
 
 | Export | |
@@ -112,7 +112,7 @@ import {
   runAiEvalSet,
   runAiProviderConformance,
   runAiWireConformance,
-} from '@templatical/ai/testing';
+} from '@templatical/ai-kit/testing';
 
 const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' });
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
@@ -124,7 +124,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Files
 
-`@templatical/ai/prompts/*.md`, `@templatical/ai/schema/*.json` and `@templatical/ai/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 
 ## The wire
 

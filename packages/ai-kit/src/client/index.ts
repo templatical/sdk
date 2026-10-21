@@ -1,4 +1,4 @@
-// @templatical/ai/client — an AiProvider over the wire (A1 §4, §5).
+// @templatical/ai-kit/client — an AiProvider over the wire (A1 §4, §5).
 export { createHttpAiProvider } from "./http-provider";
 export type { HttpAiFeatures, HttpAiProviderOptions } from "./http-provider";
 export { readSse } from "./sse";

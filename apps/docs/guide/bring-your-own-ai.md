@@ -1,16 +1,16 @@
 ---
 title: Bring your own AI backend
-description: Serve the editor's AI from your own backend and model with @templatical/ai — a Fetch-API server, model adapters, and how to check it works.
+description: Serve the editor's AI from your own backend and model with @templatical/ai-kit — a Fetch-API server, model adapters, and how to check it works.
 ---
 
 # Bring your own AI backend
 
-The editor's [AI](/backend/ai) talks to your backend through `createHttpAiProvider`. This page builds that backend with `@templatical/ai/server` on any Fetch-API runtime (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun; Express through an adapter) and one model adapter.
+The editor's [AI](/backend/ai) talks to your backend through `createHttpAiProvider`. This page builds that backend with `@templatical/ai-kit/server` on any Fetch-API runtime (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun; Express through an adapter) and one model adapter.
 
 ## The server
 
 ```ts
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
 import {
   aiErrorResponse,
   aiEventStream,
@@ -33,7 +33,7 @@ import {
   SdkError,
   suggestionsInstructions,
   type AiModelAdapter,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
 
 async function complete(system: string, prompt: string, signal: AbortSignal, onText?: (t: string) => void) {
@@ -134,7 +134,7 @@ Each adapter maps the kit's neutral messages and tools to one SDK and back. Inst
 The Vercel AI SDK and OpenAI adapters below are text-only: they do not forward image or PDF uploads to the model. Use this client configuration with either adapter to turn off design-to-template and stored conversation history:
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -148,7 +148,7 @@ For design-to-template, use the [Anthropic example](#anthropic), which maps imag
 
 ```ts
 import { jsonSchema, streamText, tool } from 'ai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 import { myModel } from './provider'; // e.g. anthropic('…') or openai('…') from the AI SDK
 
 export const model: AiModelAdapter = {
@@ -180,7 +180,7 @@ export const model: AiModelAdapter = {
 
 ```ts
 import OpenAI from 'openai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 
 const client = new OpenAI();
 
@@ -224,8 +224,8 @@ export const model: AiModelAdapter = {
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk';
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
-import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai/server';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
+import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai-kit/server';
 
 const client = new Anthropic();
 
@@ -291,7 +291,7 @@ export const model: AiModelAdapter = {
 ## Check it
 
 ```ts
-import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai/testing';
+import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai-kit/testing';
 import { model } from './model';
 
 const wire = await runAiWireConformance({
@@ -310,4 +310,4 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 
 ## Other languages
 
-A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
+A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.

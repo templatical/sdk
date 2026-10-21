@@ -4,26 +4,26 @@
 
 ---
 
-# @templatical/ai
+# @templatical/ai-kit
 
-Source: https://docs.templatical.com/api/ai
+Source: https://docs.templatical.com/api/ai-kit
 
 ::: code-group
 
 ```bash [npm]
-npm install @templatical/ai
+npm install @templatical/ai-kit
 ```
 
 ```bash [pnpm]
-pnpm add @templatical/ai
+pnpm add @templatical/ai-kit
 ```
 
 ```bash [yarn]
-yarn add @templatical/ai
+yarn add @templatical/ai-kit
 ```
 
 ```bash [bun]
-bun add @templatical/ai
+bun add @templatical/ai-kit
 ```
 
 :::
@@ -33,7 +33,7 @@ MIT, with no LLM SDK and no Node-only API: Web Streams and `fetch`, so the same 
 ## Client
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -67,7 +67,7 @@ import {
   parseSuggestions,
   readAiRequest,
   runEditingTurn,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 ```
 
 | Export | |
@@ -115,7 +115,7 @@ import {
   runAiEvalSet,
   runAiProviderConformance,
   runAiWireConformance,
-} from '@templatical/ai/testing';
+} from '@templatical/ai-kit/testing';
 
 const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' });
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
@@ -127,7 +127,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Files
 
-`@templatical/ai/prompts/*.md`, `@templatical/ai/schema/*.json` and `@templatical/ai/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 
 ## The wire
 
@@ -2236,7 +2236,7 @@ unsubscribe(); // Remove listener
 
 ## AI
 
-`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai) covers the HTTP client, server kit and wire.
+`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai-kit) covers the HTTP client, server kit and wire.
 
 `SdkError(message, statusCode?, code?, details?)` carries AI error codes and optional `details`. `ThrottledError` extends it with `retryAfterMs`, status 429 and code `rate_limited`. `invertOperations(content, ops)` returns a batch's guarded inverse; it lives in `@templatical/types` and is re-exported by `@templatical/core`.
 
@@ -2248,13 +2248,13 @@ Source: https://docs.templatical.com/backend/ai
 
 Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, a template score with one-click fixes, starter suggestions, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
-The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai` writes most of.
+The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
 ## Quick start
 
 ```ts
 import { init } from '@templatical/editor';
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const editor = await init({
   container: '#editor',
@@ -2268,7 +2268,7 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai/server` in about a hundred lines, and the [AI API reference](/api/ai#the-wire) documents the wire for a backend in any language.
+`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` in about a hundred lines, and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
 
 **AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no menu, no toolbar button, and none of its UI is downloaded.
 
@@ -2364,7 +2364,7 @@ Failures reach `init({ onError })`. Batches from another session, an AI's includ
 
 ## Headless use
 
-The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
+The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
 
 ## In the playground
 
@@ -6660,7 +6660,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
 | `@templatical/template-tools`  | CLI and library for validating, rendering, editing, importing, and live-previewing templates outside the editor.                        | Optional — run via `npx`, nothing to install; for CI checks, scripts, or generating templates without a mounted editor |
-| `@templatical/ai`             | AI over your own backend: `createHttpAiProvider` for `init({ ai })`, plus a server kit and a test kit for your backend. MIT. | Optional — install where you use AI (client and server) |
+| `@templatical/ai-kit`             | AI over your own backend: `createHttpAiProvider` for `init({ ai })`, plus a server kit and a test kit for your backend. MIT. | Optional — install where you use AI (client and server) |
 | `@templatical/import-beefree`  | Converts BeeFree JSON templates to Templatical format.                                                                                   | Optional                                                                                            |
 | `@templatical/import-unlayer`  | Converts Unlayer JSON design templates to Templatical format.                                                                            | Optional                                                                                            |
 | `@templatical/import-html`     | Converts existing HTML email templates (table-based) to Templatical format.                                                              | Optional                                                                                            |
@@ -7343,7 +7343,7 @@ npx skills add templatical/sdk
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
 ::: tip AI inside the editor
-In-editor [AI chat](/backend/ai) works over any bring-your-own provider on `init()`. The provider contract (`@templatical/types`) and the `@templatical/ai` kit are MIT; the editor UI remains source-available (FSL-1.1-MIT). This Agent Skill lets you bring your own coding agent too.
+In-editor [AI chat](/backend/ai) works over any bring-your-own provider on `init()`. The provider contract (`@templatical/types`) and the `@templatical/ai-kit` kit are MIT; the editor UI remains source-available (FSL-1.1-MIT). This Agent Skill lets you bring your own coding agent too.
 :::
 
 ## Examples
@@ -7729,12 +7729,12 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 
 Source: https://docs.templatical.com/guide/bring-your-own-ai
 
-The editor's [AI](/backend/ai) talks to your backend through `createHttpAiProvider`. This page builds that backend with `@templatical/ai/server` on any Fetch-API runtime (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun; Express through an adapter) and one model adapter.
+The editor's [AI](/backend/ai) talks to your backend through `createHttpAiProvider`. This page builds that backend with `@templatical/ai-kit/server` on any Fetch-API runtime (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun; Express through an adapter) and one model adapter.
 
 ## The server
 
 ```ts
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
 import {
   aiErrorResponse,
   aiEventStream,
@@ -7757,7 +7757,7 @@ import {
   SdkError,
   suggestionsInstructions,
   type AiModelAdapter,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
 
 async function complete(system: string, prompt: string, signal: AbortSignal, onText?: (t: string) => void) {
@@ -7858,7 +7858,7 @@ Each adapter maps the kit's neutral messages and tools to one SDK and back. Inst
 The Vercel AI SDK and OpenAI adapters below are text-only: they do not forward image or PDF uploads to the model. Use this client configuration with either adapter to turn off design-to-template and stored conversation history:
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -7872,7 +7872,7 @@ For design-to-template, use the [Anthropic example](#anthropic), which maps imag
 
 ```ts
 import { jsonSchema, streamText, tool } from 'ai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 import { myModel } from './provider'; // e.g. anthropic('…') or openai('…') from the AI SDK
 
 export const model: AiModelAdapter = {
@@ -7904,7 +7904,7 @@ export const model: AiModelAdapter = {
 
 ```ts
 import OpenAI from 'openai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 
 const client = new OpenAI();
 
@@ -7948,8 +7948,8 @@ export const model: AiModelAdapter = {
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk';
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
-import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai/server';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
+import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai-kit/server';
 
 const client = new Anthropic();
 
@@ -8015,7 +8015,7 @@ export const model: AiModelAdapter = {
 ## Check it
 
 ```ts
-import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai/testing';
+import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai-kit/testing';
 import { model } from './model';
 
 const wire = await runAiWireConformance({
@@ -8034,7 +8034,7 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 
 ## Other languages
 
-A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
+A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
 
 ---
 
@@ -13579,7 +13579,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 
 ## Is Templatical open source?
 
-The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
+The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai-kit` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
 
 ## What is FSL-1.1-MIT?
 
@@ -13611,9 +13611,9 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
-| `@templatical/ai` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai` server kit) is permissive MIT and free of any future-license consideration.
+The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai-kit` server kit) is permissive MIT and free of any future-license consideration.
 
 ## Can I use Templatical commercially?
 

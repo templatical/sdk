@@ -1,16 +1,16 @@
 ---
 title: Eigenes KI-Backend anbinden
-description: Stellen Sie die KI des Editors über Ihr eigenes Backend und Modell mit @templatical/ai bereit — Fetch-API-Server, Modell-Adapter und Prüfung der Integration.
+description: Stellen Sie die KI des Editors über Ihr eigenes Backend und Modell mit @templatical/ai-kit bereit — Fetch-API-Server, Modell-Adapter und Prüfung der Integration.
 ---
 
 # Eigenes KI-Backend anbinden
 
-Die [KI des Editors](/de/backend/ai) spricht über `createHttpAiProvider` mit Ihrem Backend. Diese Seite baut das Backend mit `@templatical/ai/server` auf einer beliebigen Fetch-API-Laufzeit auf (Next.js Route Handlers, Hono, Cloudflare Workers, Deno, Bun; Express über einen Adapter) und bindet einen Modell-Adapter an.
+Die [KI des Editors](/de/backend/ai) spricht über `createHttpAiProvider` mit Ihrem Backend. Diese Seite baut das Backend mit `@templatical/ai-kit/server` auf einer beliebigen Fetch-API-Laufzeit auf (Next.js Route Handlers, Hono, Cloudflare Workers, Deno, Bun; Express über einen Adapter) und bindet einen Modell-Adapter an.
 
 ## Der Server
 
 ```ts
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
 import {
   aiErrorResponse,
   aiEventStream,
@@ -33,7 +33,7 @@ import {
   SdkError,
   suggestionsInstructions,
   type AiModelAdapter,
-} from '@templatical/ai/server';
+} from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
 
 async function complete(system: string, prompt: string, signal: AbortSignal, onText?: (t: string) => void) {
@@ -134,7 +134,7 @@ Jeder Adapter übersetzt die neutralen Nachrichten und Tools des Kits für ein S
 Die unten gezeigten Adapter für das Vercel AI SDK und OpenAI verarbeiten nur Text: Sie leiten keine Bild- oder PDF-Uploads an das Modell weiter. Verwenden Sie für beide diese Client-Konfiguration, die Design zu Template und den gespeicherten Gesprächsverlauf ausschaltet:
 
 ```ts
-import { createHttpAiProvider } from '@templatical/ai/client';
+import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
@@ -148,7 +148,7 @@ Für Design zu Template verwenden Sie das [Anthropic-Beispiel](#anthropic), das 
 
 ```ts
 import { jsonSchema, streamText, tool } from 'ai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 import { myModel } from './provider'; // e.g. anthropic('…') or openai('…') from the AI SDK
 
 export const model: AiModelAdapter = {
@@ -180,7 +180,7 @@ export const model: AiModelAdapter = {
 
 ```ts
 import OpenAI from 'openai';
-import type { AiModelAdapter } from '@templatical/ai/server';
+import type { AiModelAdapter } from '@templatical/ai-kit/server';
 
 const client = new OpenAI();
 
@@ -224,8 +224,8 @@ export const model: AiModelAdapter = {
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk';
-import { AI_ERROR_MESSAGES } from '@templatical/ai';
-import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai/server';
+import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
+import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai-kit/server';
 
 const client = new Anthropic();
 
@@ -291,7 +291,7 @@ export const model: AiModelAdapter = {
 ## Prüfen
 
 ```ts
-import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai/testing';
+import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai-kit/testing';
 import { model } from './model';
 
 const wire = await runAiWireConformance({
@@ -310,4 +310,4 @@ Die KI läuft bei Ihrem Provider unter Ihren Vereinbarungen mit ihm. Templatical
 
 ## Andere Sprachen
 
-Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai#das-protokoll) und liest Prompts, Schemas und Testsatz aus den Paketdateien (`prompts/*.md`, `schema/*.json`, `eval/*.json`), die Sie kopieren können. Nur `eval/` enthält `MANIFEST.sha256`. `runAiWireConformance` prüft es von Node aus.
+Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai-kit#das-protokoll) und liest Prompts, Schemas und Testsatz aus den Paketdateien (`prompts/*.md`, `schema/*.json`, `eval/*.json`), die Sie kopieren können. Nur `eval/` enthält `MANIFEST.sha256`. `runAiWireConformance` prüft es von Node aus.

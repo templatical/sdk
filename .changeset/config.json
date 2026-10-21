@@ -19,7 +19,7 @@
       "@templatical/import-chamaileon",
       "@templatical/import-easy-email-pro",
       "@templatical/template-tools",
-      "@templatical/ai"
+      "@templatical/ai-kit"
     ]
   ],
   "linked": [],
