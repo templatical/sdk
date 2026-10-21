@@ -30,4 +30,13 @@ describe("schema parity", () => {
       readFileSync(OWN_SCHEMA, "utf8"),
     );
   });
+
+  it("@templatical/ai's committed schema is byte-identical to this package's", () => {
+    expect(
+      readFileSync(
+        resolve(REPO_ROOT, "packages/ai/schema/template-content.schema.json"),
+        "utf8",
+      ),
+    ).toBe(readFileSync(OWN_SCHEMA, "utf8"));
+  });
 });

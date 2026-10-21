@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScoringResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["score", "categories"],
+  "properties": {
+    "score": { "type": "integer" },
+    "categories": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spam", "readability", "bestPractices"],
+      "properties": {
+        "spam": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["score", "findings"],
+          "properties": {
+            "score": { "type": "integer" },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "severity", "message", "blockId", "suggestion"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+                  "message": { "type": "string" },
+                  "blockId": { "type": ["string", "null"] },
+                  "suggestion": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "readability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["score", "findings"],
+          "properties": {
+            "score": { "type": "integer" },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "severity", "message", "blockId", "suggestion"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+                  "message": { "type": "string" },
+                  "blockId": { "type": ["string", "null"] },
+                  "suggestion": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "bestPractices": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["score", "findings"],
+          "properties": {
+            "score": { "type": "integer" },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "severity", "message", "blockId", "suggestion"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+                  "message": { "type": "string" },
+                  "blockId": { "type": ["string", "null"] },
+                  "suggestion": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
