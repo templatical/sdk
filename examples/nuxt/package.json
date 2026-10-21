@@ -14,7 +14,7 @@
     "@templatical/renderer": "^0.48.0",
     "@templatical/types": "^0.48.0",
     "mjml": "^5.4.1",
-    "nuxt": "^4.6.1",
+    "nuxt": "^4.6.2",
     "vue": "^3.5.44"
   },
   "devDependencies": {
