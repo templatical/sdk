@@ -8,6 +8,9 @@ export default defineConfig({
     alias: {
       // Workspace packages export dist/; tests run without a prior build.
       "@templatical/types": resolve(packagesDir, "types/src/index.ts"),
+      "@templatical/ai/client": resolve(packagesDir, "ai/src/client/index.ts"),
+      "@templatical/ai/testing": resolve(packagesDir, "ai/src/testing/index.ts"),
+      "@templatical/ai": resolve(packagesDir, "ai/src/index.ts"),
       "@templatical/core": resolve(packagesDir, "core/src/index.ts"),
       "@templatical/quality": resolve(packagesDir, "quality/src/index.ts"),
       "@templatical/import-unlayer": resolve(

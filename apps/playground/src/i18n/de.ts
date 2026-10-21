@@ -208,6 +208,12 @@ export default {
       seeIt:
         "Öffnen Sie diese Seite in einem zweiten Tab: Änderungen, Auswahl und Rückgängig wirken zwischen beiden.",
     },
+    ai: {
+      title: "KI",
+      seeIt:
+        "Öffnen Sie „AI“ und bitten Sie, den Titel zu ändern, oder doppelklicken Sie einen Absatz und formulieren Sie ihn um.",
+      note: "KI",
+    },
     "saved-blocks": {
       title: "Gespeicherte Blöcke",
       seeIt:

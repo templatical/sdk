@@ -209,6 +209,12 @@ export default {
       seeIt:
         "Open this page in a second tab: edits, selections and undo travel between them.",
     },
+    ai: {
+      title: "AI",
+      seeIt:
+        "Open AI and ask to change the title, or double-click a paragraph and rewrite it.",
+      note: "AI",
+    },
     "saved-blocks": {
       title: "Saved blocks",
       seeIt:

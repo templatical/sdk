@@ -15,7 +15,7 @@ function segments(key: string): string[] {
 
 describe("catalog init keys", () => {
   it("every setup row names its init() key", () => {
-    expect(setups).toHaveLength(23);
+    expect(setups).toHaveLength(24);
     for (const scene of setups) {
       expect(scene.initKey, scene.id).toMatch(/^[a-zA-Z]/);
     }
@@ -40,6 +40,7 @@ describe("catalog init keys", () => {
     // Both snippets also configure `templates`; the row names the feature.
     expect(byId("version-history").initKey).toBe("versionHistory");
     expect(byId("comments").initKey).toBe("comments");
+    expect(byId("ai").initKey).toBe("ai");
     expect(byId("merge-tags-on-request").initKey).toBe("mergeTags.onRequest");
   });
 

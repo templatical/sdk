@@ -53,6 +53,15 @@ export default defineConfig({
             ),
             '@templatical/core': resolve(packagesDir, 'core/src/index.ts'),
             '@templatical/types': resolve(packagesDir, 'types/src/index.ts'),
+            '@templatical/ai/client': resolve(
+                packagesDir,
+                'ai/src/client/index.ts',
+            ),
+            '@templatical/ai/testing': resolve(
+                packagesDir,
+                'ai/src/testing/index.ts',
+            ),
+            '@templatical/ai': resolve(packagesDir, 'ai/src/index.ts'),
             '@templatical/renderer': resolve(
                 packagesDir,
                 'renderer/src/index.ts',

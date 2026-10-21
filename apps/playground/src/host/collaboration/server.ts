@@ -74,7 +74,7 @@ export interface SessionIdentity {
 /** What the server pushes to one session. */
 export type ServerEvent =
   | { type: "batch"; batch: RevisionedBatch }
-  | { type: "resync"; revision: number }
+  | { type: "resync"; revision: number; actor: CollaborationActor }
   | { type: "lock"; lock: BlockLock }
   | { type: "unlock"; blockId: string; sessionId: string }
   | { type: "members"; members: CollaborationMember[] };
@@ -148,9 +148,17 @@ function memberOf(who: SessionIdentity): CollaborationMember {
   };
 }
 
-function actorOf(who: SessionIdentity): CollaborationActor {
+/**
+ * Who made a batch. A batch an AI turn produced (`origin: "ai"`, BY9) is the
+ * `ai` actor for the same person and session, so other editors name it
+ * "AI (for Ada)" and the one that asked shows only its outline.
+ */
+function actorOf(
+  who: SessionIdentity,
+  origin?: OperationBatch["origin"],
+): CollaborationActor {
   return {
-    type: who.user ? "user" : "guest",
+    type: origin === "ai" ? "ai" : who.user ? "user" : "guest",
     id: identityOf(who),
     name: who.user?.name ?? "Guest",
     sessionId: who.sessionId,
@@ -322,7 +330,7 @@ export class SharedCollaborationServer {
     const entry: RevisionedBatch = {
       revision: state.revision,
       batchId: batch.batchId,
-      actor: actorOf(who),
+      actor: actorOf(who, batch.origin),
       ops: batch.ops,
       createdAt: new Date(this.now()).toISOString(),
     };
@@ -344,7 +352,7 @@ export class SharedCollaborationServer {
       state,
       who.sessionId,
       replaced || size > BROADCAST_MAX_BYTES
-        ? { type: "resync", revision: state.revision }
+        ? { type: "resync", revision: state.revision, actor: entry.actor }
         : { type: "batch", batch: safeClone(entry) },
     );
     return { revision: state.revision };
