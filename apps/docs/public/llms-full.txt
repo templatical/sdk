@@ -4,6 +4,159 @@
 
 ---
 
+# @templatical/ai
+
+Source: https://docs.templatical.com/api/ai
+
+::: code-group
+
+```bash [npm]
+npm install @templatical/ai
+```
+
+```bash [pnpm]
+pnpm add @templatical/ai
+```
+
+```bash [yarn]
+yarn add @templatical/ai
+```
+
+```bash [bun]
+bun add @templatical/ai
+```
+
+:::
+
+MIT, with no LLM SDK and no Node-only API: Web Streams and `fetch`, so the same code runs in Node, Deno, Bun, Cloudflare Workers and browsers.
+
+## Client
+
+```ts
+import { createHttpAiProvider } from '@templatical/ai/client';
+
+const ai = createHttpAiProvider({
+  baseUrl: '/api/ai',
+  headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
+  credentials: 'include',
+  features: { design: false, conversation: false },
+});
+```
+
+| Option | |
+| --- | --- |
+| `baseUrl` | Where the wire's routes live |
+| `headers` | Your auth headers, or a function (async for a token refresh) called per request |
+| `credentials` | `fetch`'s `credentials`, for cookie auth |
+| `features` | `false` turns a member off, `conversation` included |
+
+It parses the event stream, rejects with `SdkError`s (`ThrottledError` for a 429, `CollaborationConflict` for an operation refusal), and, because a stream is one-way, ends a turn whose operations the editor refused by aborting the request: the turn rejects with that operation's code and "The template changed while the AI was working."
+
+## Server
+
+```ts
+import {
+  aiErrorResponse,
+  aiEventStream,
+  applyOperationsTool,
+  buildChatRequest,
+  checkRewrite,
+  createEditingSession,
+  editingInstructions,
+  normalizeScoringResult,
+  parseSuggestions,
+  readAiRequest,
+  runEditingTurn,
+} from '@templatical/ai/server';
+```
+
+| Export | |
+| --- | --- |
+| `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
+| `rewriteInstructions`, `scoreInstructions`, `suggestionsInstructions`, `designInstructions` | The other prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildScorePrompt`, `buildSuggestionsPrompt` | Per-request prompts |
+| `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
+| `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
+| `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
+| `aiEventStream` | The event-stream `Response` for any Fetch-API server |
+| `aiErrorResponse`, `aiJsonResponse` | Errors before the stream, and JSON answers, with the wire's header |
+| `readAiRequest` | A wire request, parsed and checked |
+| `checkRewrite`, `buildRewriteRepairPrompt`, `normalizeScoringResult`, `parseSuggestions` | Output checks |
+| `scoringResultSchema`, `suggestionsSchema` | JSON schemas for structured output |
+
+There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview and the HTML applied by Replace. HTML blocks the AI writes keep their markup unchanged; follow the [server-side sanitizing advice before saving or sending](/guide/blocks#html).
+
+### Model adapters
+
+`runEditingTurn` calls your model through one method:
+
+```ts
+interface AiModelAdapter {
+  stream(input: {
+    system: string;
+    messages: AiModelMessage[];
+    tools: AiToolDefinition[];
+    signal?: AbortSignal;
+  }): AsyncIterable<
+    | { type: 'text'; text: string }
+    | { type: 'tool-call'; id: string; name: string; input: string | Record<string, unknown> }
+    | { type: 'usage'; inputTokens: number; outputTokens: number }
+  >;
+}
+```
+
+[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. The Vercel AI SDK and OpenAI examples are text-only; their client configuration turns off design and stored conversation history. The Anthropic example also maps image and PDF attachments.
+
+## Testing
+
+```ts
+import {
+  createMockAiProvider,
+  runAiEvalSet,
+  runAiProviderConformance,
+  runAiWireConformance,
+} from '@templatical/ai/testing';
+
+const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' });
+for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
+```
+
+- `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features })` does the same over the wire, plus the wire's own rules, for a backend in any language.
+- `createMockAiProvider(script)` plays recorded streams, for your UI tests; `AI_RECORDINGS` is the playground's.
+- `runAiEvalSet({ runTurn, model })` runs the 32-case test set and reports a pass rate; `evalTurnWith(adapter)` builds `runTurn` from the kit's own loop.
+
+## Files
+
+`@templatical/ai/prompts/*.md`, `@templatical/ai/schema/*.json` and `@templatical/ai/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+
+## The wire
+
+Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo and replay settlement carry `X-Templatical-Session`. A cross-origin backend allows `Templatical-AI-Wire`, `X-Templatical-Session` and its auth header in `Access-Control-Allow-Headers` for preflight, and exposes `Templatical-AI-Wire` in `Access-Control-Expose-Headers`. Routes are relative to your base URL; `{t}` is the template id.
+
+| Route | Request | Response |
+| --- | --- | --- |
+| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
+| `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{t}/ai/score` | JSON `{ lintFindings, content }` | SSE: `done { result }` |
+| `POST /templates/{t}/ai/suggestions` | JSON `{ mergeTags, content }` | SSE: `done { suggestions }` |
+| `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
+| `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
+| `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
+| `DELETE /templates/{t}/ai/conversation` | — | 204 |
+
+**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite), `done { result }` (score) or `done { suggestions }` (suggestions); `error { code, message }`. `done` or `error` is the last event.
+
+**Errors before the stream** are JSON `{ message, code, …details }` with the status of the code: `feature_unavailable` and `limit_reached` 403, `rate_limited` 429 with `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, an operation's code 409 (`invalid_operation` 422). A validation failure is a 422 `{ message }`.
+
+A message's `batches` are `{ batchId, revision, operationCount }`; a batch the editor applied itself has no backend revision, so store `revision: null` for it.
+
+
+`AI_LIMITS.contentMaxBytes` caps JSON-serialized template content at 200,000 UTF-8 bytes; `readAiRequest` refuses larger content with `content_too_large` (413). `selectedBlockId` and the session id are limited to 200 characters. Character limits count Unicode code points.
+
+---
+
 # Editor API
 
 Source: https://docs.templatical.com/api/editor
@@ -55,6 +208,7 @@ unmount();
 | `onDirtyChange`      | `(isDirty: boolean) => void`                                      | No       | Called whenever the unsaved-changes state flips. Works with or without a `templates` provider — use it to guard a client-side router, which `beforeunload` cannot cover. See [Saving & Loading](/backend/templates#unsaved-changes)                                                                                                                                                                                                                                                                                            |
 | `templates`          | `TemplatesProvider`                                               | No       | Storage backend for the template itself — the save/load lifecycle. The same object also carries `autoSave`, `unsavedChangesGuard` and `nameField` config, plus the `onSaved` / `onCreated` / `onLoaded` events — none of it means anything without somewhere to save to. The editor provides the name field, save button, save status and Cmd+S; you provide persistence. Omit `templates` and the feature is off entirely: no name field, no save button, no status indicator. See [Saving & Loading](/backend/templates)     |
 | `render`             | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render)                                                                                                                                                                                                                                  |
+| `ai` | `AiProvider` | No | AI over your own backend: chat with Undo, rewrite, scoring with fixes, design to template and suggestions. Each member is a function or `false`; entry points appear after `create()` or `load()`. Omit to disable the feature and its UI chunks. See [AI](/backend/ai). |
 | `versionHistory`     | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. The same object also carries the `onCreated` and `onRestored` events. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history)                                                                              |
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `collaboration`      | `CollaborationProvider`                                           | No       | Real-time collaboration over your backend: every edit is sent as a batch of [operations](/api/operations) through `submit`, other sessions' batches are applied in revision order, selecting a block takes its lock, the header shows who else is here, and undo sends inverse operations your backend can refuse. **Requires `templates`**, whose `load` returns the template's `revision`; `templates.save` then receives only renames. The three lock methods are optional together. See [Collaboration](/backend/collaboration) |
@@ -2080,6 +2234,144 @@ unsubscribe(); // Remove listener
 
 `Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
 
+## AI
+
+`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai) covers the HTTP client, server kit and wire.
+
+`SdkError(message, statusCode?, code?, details?)` carries AI error codes and optional `details`. `ThrottledError` extends it with `retryAfterMs`, status 429 and code `rate_limited`. `invertOperations(content, ops)` returns a batch's guarded inverse; it lives in `@templatical/types` and is re-exported by `@templatical/core`.
+
+---
+
+# AI
+
+Source: https://docs.templatical.com/backend/ai
+
+Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, a template score with one-click fixes, starter suggestions, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+
+The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai` writes most of.
+
+## Quick start
+
+```ts
+import { init } from '@templatical/editor';
+import { createHttpAiProvider } from '@templatical/ai/client';
+
+const editor = await init({
+  container: '#editor',
+  templates: myTemplateStore,
+  ai: createHttpAiProvider({
+    baseUrl: '/api/ai',
+    headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
+  }),
+});
+
+await editor.load('tpl_123');
+```
+
+`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai/server` in about a hundred lines, and the [AI API reference](/api/ai#the-wire) documents the wire for a backend in any language.
+
+**AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no menu, no toolbar button, and none of its UI is downloaded.
+
+## The contract
+
+```ts
+import type { AiProvider } from '@templatical/types';
+
+interface AiProvider {
+  chat: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
+  fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
+  design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
+  rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
+  score: false | ((request, signal: AbortSignal) => Promise<ScoringResult>);
+  suggestions: false | ((request, signal: AbortSignal) => Promise<string[]>);
+  conversation?: {
+    settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
+    list(templateId: string): Promise<AiChatMessage[]>;
+    clear: false | ((templateId: string) => Promise<void>);
+    undo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
+    redo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
+  };
+}
+
+type AiReplay = { operations: Operation[]; replayId: string } | { applied: { batchId: string; revision: number } };
+interface AiReplayOutcome {
+  replayId: string;
+  direction: 'undo' | 'redo';
+  applied: boolean;
+  sessionId: string;
+}
+```
+
+Every request carries `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+
+### Turns: chat, fix and design
+
+A turn streams its reply through `on.onText` and hands its edits over in one of two ways:
+
+- **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
+- **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
+
+`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a scoring `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+
+### Rewrite, scoring and suggestions
+
+`rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML. `score` gets the linter's findings (`lintFindings`) so it doesn't repeat them, and answers three categories (`spam`, `readability`, `bestPractices`) of integer scores 0–100 with findings. `suggestions` answers up to four short requests for the chat's empty state.
+
+### History
+
+`conversation` is optional. With it, the chat loads the stored messages when it opens, and each message's Undo and Redo call your backend, which answers the operations to apply (`{ operations, replayId }`) or a batch it applied (`{ applied: { batchId, revision } }`). Without it, the chat lives in memory for the session, and a message's Undo applies the turn's own inverse, refused when someone changed those blocks since.
+
+After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
+
+## Controlling features
+
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `score: false` the template score, `design: false` design to template, `suggestions: false` the starters. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+
+## Errors
+
+Reject with an `SdkError` whose `code` the editor knows, and whose message the user can read:
+
+| `code` | When |
+| --- | --- |
+| `feature_unavailable` | The feature is off for this user |
+| `limit_reached` | An allowance is used up; `details: { limit, resetsAt }` |
+| `rate_limited` | Too many requests; a `ThrottledError` with `retryAfterMs` |
+| `ai_turn_running` | A turn is already running on this template |
+| `content_too_large` | The template is too large for the model |
+| `ai_output_invalid` | The model's rewrite broke the rules after a repair |
+| `ai_provider_error` | The model provider failed |
+
+Undo and Redo may reject with an operation's code (`precondition_failed`, …) as a `CollaborationConflict`. An `AbortError` means the user stopped the call and is never shown. The editor says each failure in words and passes it to `init({ onError })` too.
+
+## In the editor
+
+- **Header:** an **AI** menu with the assistant, design to template and the template score.
+- **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, starter suggestions. Cmd/Ctrl+Z undoes a whole turn.
+- **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
+- **Template score:** three categories, a link to the Issues panel (accessibility is the linter's), and **Fix with AI** on every finding, with Undo.
+- **Design to template:** PNG, JPEG, WebP, GIF or PDF up to 5 MB; the build is one undoable turn.
+- **The empty canvas:** shortcuts to the assistant and to design to template.
+
+AI content is always marked as AI, as the EU AI Act's Article 50 asks of systems that interact with people.
+
+## With collaboration
+
+With a [collaboration provider](/backend/collaboration), the AI's operations travel as the user's own batches with `origin: 'ai'`. A backend that honours it broadcasts the batch with an `ai` actor, and other editors show "AI (for Ada) changed 3 blocks" with an outline on those blocks; the editor that asked shows the outline only.
+
+## Events
+
+Failures reach `init({ onError })`. Batches from another session, an AI's included, reach `init({ onRemoteChange })` as for any collaboration batch.
+
+## Headless use
+
+The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
+
+## In the playground
+
+The **AI** setup plays recorded turns through `createMockAiProvider`: no model and no keys. Ask to change the title, double-click a paragraph and rewrite it, or score the template and fix a finding. `?history=1` keeps a conversation; `?collaboration=1&user=Ada` in two tabs shows the AI's edits arriving elsewhere.
+
+[Open in playground](https://play.templatical.com/scenes/ai)
+
 ---
 
 # Collaboration
@@ -2134,6 +2426,7 @@ await editor.load('tpl_123');
 - **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
 - **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
 - **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
+- **Shows the AI's edits.** A batch or re-sync whose actor has `type: 'ai'` shows "AI (for Ada) changed 3 blocks" (or "… updated the template") and outlines the blocks, like an agent's. The editor whose session the actor names, the one that asked, shows the outline only. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
 - **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
 - **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
 - **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
@@ -2180,7 +2473,7 @@ interface CollaborationHandlers {
 }
 ```
 
-The shapes: `OperationBatch` is `{ batchId, baseRevision, ops }`; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
+The shapes: `OperationBatch` is `{ batchId, baseRevision, ops, origin? }`, where `origin` is `'ai'` on a batch an AI turn produced; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api' | 'ai', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
 
 ### `join`
 
@@ -2194,7 +2487,7 @@ Apply the batch's operations to the template, in order and all or nothing, then 
 
 ### `operationsAfter`
 
-Answer with every batch after `revision`, in order. When you no longer have them all, answer `{ revision, resync: true }` and the editor reloads the template through `templates.load`. Call `onResync(revision, actor)` for a change batches can't describe, such as a `setContent`, a restored version or a broadcast too large for your transport. `actor` is who made the change, in the shape of a batch's; the editor uses it only for an agent's notice, and leaving it out changes nothing else.
+Answer with every batch after `revision`, in order. When you no longer have them all, answer `{ revision, resync: true }` and the editor reloads the template through `templates.load`. Call `onResync(revision, actor)` for a change batches can't describe, such as a `setContent`, a restored version or a broadcast too large for your transport. `actor` is who made the change, in the shape of a batch's; the editor uses it only for an agent's or the AI's notice, and leaving it out changes nothing else.
 
 ### Locks
 
@@ -2220,6 +2513,8 @@ With a collaboration provider, `templates.load` must return the template's `revi
 ## Building a backend
 
 ### Applying a batch
+
+When a batch carries `origin: 'ai'`, broadcast it with `actor.type: 'ai'`, the same `id`, `name` and `sessionId`; the editors name it as the AI's. The playground's host does this.
 
 ```ts
 import { applyOperations, OperationError } from '@templatical/types';
@@ -2575,10 +2870,12 @@ await init({
   templates: myTemplateStore, // save and load
   versionHistory: myVersionStore, // past states — browse, preview, restore
   comments: myCommentStore, // threaded review, anchored per block
+  collaboration: myCollaborationBackend, // live edits, presence and block locks
   savedBlocks: myBlockLibrary, // reusable groups of blocks
   media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
+  ai: myAiBackend, // chat, rewrite, scoring, design
 });
 ```
 
@@ -2599,6 +2896,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
+| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, template score with fixes, design to template, starter suggestions, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite` · `score` · `suggestions`, and optionally `conversation` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
@@ -7043,8 +7341,8 @@ npx skills add templatical/sdk
 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
-::: tip Prefer a hosted experience?
-An in-editor AI chat, tuned prompts, and a hosted MCP server are a hosted-tier path. This skill is the open, self-hosted path — bring your own agent, keep full control.
+::: tip AI inside the editor
+In-editor [AI chat](/backend/ai) works over any bring-your-own provider on `init()`. The provider contract (`@templatical/types`) and the `@templatical/ai` kit are MIT; the editor UI remains source-available (FSL-1.1-MIT). This Agent Skill lets you bring your own coding agent too.
 :::
 
 ## Examples
@@ -7423,6 +7721,319 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 | `renderedHtml` | `string` | Cached rendered output |
 | `renderedStylesheet` | `string` | The definition's `stylesheet`, copied in alongside `renderedHtml` |
 | `dataSourceFetched` | `boolean` | Whether the data source has been fetched |
+
+---
+
+# Bring your own AI backend
+
+Source: https://docs.templatical.com/guide/bring-your-own-ai
+
+The editor's [AI](/backend/ai) talks to your backend through `createHttpAiProvider`. This page builds that backend with `@templatical/ai/server` on any Fetch-API runtime (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun; Express through an adapter) and one model adapter.
+
+## The server
+
+```ts
+import { AI_ERROR_MESSAGES } from '@templatical/ai';
+import {
+  aiErrorResponse,
+  aiEventStream,
+  aiJsonResponse,
+  blockIds,
+  buildChatRequest,
+  buildDesignRequest,
+  buildFixRequest,
+  buildRewritePrompt,
+  buildRewriteRepairPrompt,
+  buildScorePrompt,
+  buildSuggestionsPrompt,
+  checkRewrite,
+  normalizeScoringResult,
+  parseSuggestions,
+  readAiRequest,
+  rewriteInstructions,
+  runEditingTurn,
+  scoreInstructions,
+  SdkError,
+  suggestionsInstructions,
+  type AiModelAdapter,
+} from '@templatical/ai/server';
+import { model } from './model'; // one of the adapters below
+
+async function complete(system: string, prompt: string, signal: AbortSignal, onText?: (t: string) => void) {
+  let text = '';
+  for await (const part of model.stream({ system, messages: [{ role: 'user', content: prompt }], tools: [], signal })) {
+    if (part.type === 'text') {
+      text += part.text;
+      onText?.(part.text);
+    }
+  }
+  return text;
+}
+
+export async function handle(request: Request): Promise<Response> {
+  // Authenticate the signed-in user before reading the request.
+  let read;
+  try {
+    read = await readAiRequest(request);
+  } catch (error) {
+    return aiErrorResponse(error);
+  }
+  if (!read) return aiJsonResponse({ message: 'Not found.', code: 'not_found' }, 404);
+  // Authorize read.template and any message id for this user on every AI route.
+
+  switch (read.route) {
+    case 'generate':
+    case 'fixFinding':
+    case 'generateFromDesign': {
+      const turn = read;
+      return aiEventStream(async (stream) => {
+        await runEditingTurn({
+          request: {
+            content: turn.body.content,
+            revision: turn.body.revision,
+            mergeTags: turn.body.mergeTags,
+            sessionId: turn.sessionId,
+            selectedBlockId: turn.route === 'generate' ? turn.body.selectedBlockId : null,
+            request:
+              turn.route === 'generate'
+                ? buildChatRequest(turn.body.message)
+                : turn.route === 'fixFinding'
+                  ? buildFixRequest(turn.body.finding)
+                  : buildDesignRequest(turn.body.prompt),
+            ...(turn.route === 'generateFromDesign'
+              ? { attachments: [{ kind: turn.body.fileKind, mediaType: turn.body.file.type, data: turn.body.file }] }
+              : {}),
+          },
+          model,
+          write: stream.send,
+          signal: stream.signal,
+        });
+        stream.send({ type: 'done', messageId: null });
+      });
+    }
+    case 'rewriteText': {
+      const body = read.body;
+      const prompt = buildRewritePrompt(body);
+      return aiEventStream(async (stream) => {
+        let check = checkRewrite(await complete(rewriteInstructions, prompt, stream.signal, (text) => stream.send({ type: 'text', text })), body.html, body.mergeTags);
+        if (!check.ok) {
+          check = checkRewrite(await complete(rewriteInstructions, buildRewriteRepairPrompt(prompt, check.reason), stream.signal), body.html, body.mergeTags);
+        }
+        if (!check.ok) throw new SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 422, 'ai_output_invalid');
+        stream.send({ type: 'done', html: check.html });
+      });
+    }
+    case 'score': {
+      const body = read.body;
+      return aiEventStream(async (stream) => {
+        const answer = await complete(scoreInstructions, buildScorePrompt(body), stream.signal);
+        stream.send({ type: 'done', result: normalizeScoringResult(answer, blockIds(body.content.blocks)) });
+      });
+    }
+    case 'suggestions': {
+      const body = read.body;
+      return aiEventStream(async (stream) => {
+        const answer = await complete(suggestionsInstructions, buildSuggestionsPrompt(body), stream.signal);
+        stream.send({ type: 'done', suggestions: parseSuggestions(answer) });
+      });
+    }
+    default:
+      // No stored history here: the editor keeps the chat in memory.
+      return aiJsonResponse({ message: 'Not found.', code: 'not_found' }, 404);
+  }
+}
+```
+
+In the editor, turn history off to match: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. To store history, keep each turn's messages and `result.batches[].inverse` (last batch first) and implement the conversation routes including `settleReplay`, as described under [History](/backend/ai#history). Authorize the template id and message ids against the signed-in user before answering every AI route, conversation routes included.
+
+With structured output, pass `scoringResultSchema` and `suggestionsSchema` to your model instead of asking for JSON in prose; the kit's checks normalize either.
+
+Set your framework's whole-body request limit to about 6 MB with design uploads, or about 300 kB otherwise. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
+
+## Model adapters
+
+Each adapter maps the kit's neutral messages and tools to one SDK and back. Install only the one you use.
+
+The Vercel AI SDK and OpenAI adapters below are text-only: they do not forward image or PDF uploads to the model. Use this client configuration with either adapter to turn off design-to-template and stored conversation history:
+
+```ts
+import { createHttpAiProvider } from '@templatical/ai/client';
+
+const ai = createHttpAiProvider({
+  baseUrl: '/api/ai',
+  features: { design: false, conversation: false },
+});
+```
+
+For design-to-template, use the [Anthropic example](#anthropic), which maps image and PDF attachments to the model.
+
+### Vercel AI SDK
+
+```ts
+import { jsonSchema, streamText, tool } from 'ai';
+import type { AiModelAdapter } from '@templatical/ai/server';
+import { myModel } from './provider'; // e.g. anthropic('…') or openai('…') from the AI SDK
+
+export const model: AiModelAdapter = {
+  async *stream({ system, messages, tools, signal }) {
+    const result = streamText({
+      model: myModel,
+      system,
+      abortSignal: signal,
+      tools: Object.fromEntries(tools.map((t) => [t.name, tool({ description: t.description, inputSchema: jsonSchema(t.inputSchema) })])),
+      messages: messages.map((m) =>
+        m.role === 'tool'
+          ? { role: 'tool', content: [{ type: 'tool-result', toolCallId: m.toolCallId, toolName: m.name, output: { type: 'text', value: m.content } }] }
+          : m.role === 'assistant'
+            ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
+            : { role: 'user', content: m.content },
+      ),
+    });
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') yield { type: 'text', text: part.text };
+      else if (part.type === 'tool-call') yield { type: 'tool-call', id: part.toolCallId, name: part.toolName, input: part.input as Record<string, unknown> };
+      else if (part.type === 'finish') yield { type: 'usage', inputTokens: part.totalUsage.inputTokens ?? 0, outputTokens: part.totalUsage.outputTokens ?? 0 };
+      else if (part.type === 'error') throw part.error;
+    }
+  },
+};
+```
+
+### OpenAI
+
+```ts
+import OpenAI from 'openai';
+import type { AiModelAdapter } from '@templatical/ai/server';
+
+const client = new OpenAI();
+
+export const model: AiModelAdapter = {
+  async *stream({ system, messages, tools, signal }) {
+    const stream = await client.chat.completions.create(
+      {
+        model: process.env.OPENAI_MODEL!,
+        stream: true,
+        stream_options: { include_usage: true },
+        tools: tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema } })),
+        messages: [
+          { role: 'system', content: system },
+          ...messages.map((m) =>
+            m.role === 'tool'
+              ? { role: 'tool' as const, tool_call_id: m.toolCallId, content: m.content }
+              : m.role === 'assistant'
+                ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
+                : { role: 'user' as const, content: m.content },
+          ),
+        ],
+      },
+      { signal },
+    );
+    const calls = new Map<number, { id: string; name: string; args: string }>();
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      if (delta?.content) yield { type: 'text', text: delta.content };
+      for (const call of delta?.tool_calls ?? []) {
+        const seen = calls.get(call.index) ?? { id: '', name: '', args: '' };
+        calls.set(call.index, { id: call.id ?? seen.id, name: call.function?.name ?? seen.name, args: seen.args + (call.function?.arguments ?? '') });
+      }
+      if (chunk.usage) yield { type: 'usage', inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens };
+    }
+    for (const call of calls.values()) yield { type: 'tool-call', id: call.id, name: call.name, input: call.args };
+  },
+};
+```
+
+### Anthropic
+
+```ts
+import Anthropic from '@anthropic-ai/sdk';
+import { AI_ERROR_MESSAGES } from '@templatical/ai';
+import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai/server';
+
+const client = new Anthropic();
+
+async function toAnthropic(messages: AiModelMessage[]): Promise<Anthropic.MessageParam[]> {
+  const out: Anthropic.MessageParam[] = [];
+  for (const m of messages) {
+    if (m.role === 'tool') {
+      const result: Anthropic.ToolResultBlockParam = { type: 'tool_result', tool_use_id: m.toolCallId, content: m.content };
+      const last = out.at(-1);
+      // All results of one turn go back in one user message.
+      if (last?.role === 'user' && Array.isArray(last.content) && last.content.every((b) => b.type === 'tool_result')) last.content.push(result);
+      else out.push({ role: 'user', content: [result] });
+    } else if (m.role === 'assistant') {
+      out.push({
+        role: 'assistant',
+        content: [
+          ...(m.content ? [{ type: 'text' as const, text: m.content }] : []),
+          ...(m.toolCalls ?? []).map((c) => ({ type: 'tool_use' as const, id: c.id, name: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input })),
+        ],
+      });
+    } else {
+      const files = await Promise.all(
+        (m.attachments ?? []).map(async (a) => {
+          const data = Buffer.from(await a.data.arrayBuffer()).toString('base64');
+          return a.kind === 'pdf'
+            ? ({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } } as const)
+            : ({ type: 'image', source: { type: 'base64', media_type: a.mediaType as 'image/png', data } } as const);
+        }),
+      );
+      out.push({ role: 'user', content: [...files, { type: 'text', text: m.content }] });
+    }
+  }
+  return out;
+}
+
+export const model: AiModelAdapter = {
+  async *stream({ system, messages, tools, signal }) {
+    const stream = client.messages.stream(
+      {
+        model: 'claude-opus-5-5',
+        max_tokens: 16000,
+        system,
+        tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema as Anthropic.Tool.InputSchema })),
+        messages: await toAnthropic(messages),
+      },
+      { signal },
+    );
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') yield { type: 'text', text: event.delta.text };
+    }
+    const final = await stream.finalMessage();
+    if (final.stop_reason === 'refusal') throw new SdkError(AI_ERROR_MESSAGES.ai_provider_error, 502, 'ai_provider_error');
+    for (const block of final.content) {
+      if (block.type === 'tool_use') yield { type: 'tool-call', id: block.id, name: block.name, input: block.input as Record<string, unknown> };
+    }
+    yield { type: 'usage', inputTokens: final.usage.input_tokens, outputTokens: final.usage.output_tokens };
+  },
+};
+```
+
+(The tool calls arrive with the final message, whole: the kit applies them after the text, as a turn would.)
+
+## Check it
+
+```ts
+import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai/testing';
+import { model } from './model';
+
+const wire = await runAiWireConformance({
+  baseUrl: 'http://localhost:8787/ai',
+  features: { conversation: false, design: false }, // text-only adapters
+});
+const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
+console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
+```
+
+The wire suite checks your routes as the editor uses them; the test set runs 32 editing requests on three templates (a prompt-injection case included) against your model and reports how many it gets right. Every eval run calls your model: it costs real tokens.
+
+## Data and responsibility
+
+The AI runs on your provider, under your terms with it. Templatical sends nothing anywhere: the editor talks to your backend only, and your backend decides what reaches which model. The template content, the merge-tag list and the user's prompts go to the model you call; tell your users so in your privacy notice, and pick a provider and region your data-processing agreements cover.
+
+## Other languages
+
+A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
 
 ---
 
@@ -8832,7 +9443,7 @@ export default translations;
 
 ### Cloud strings are optional
 
-Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — AI, template scoring, the lint save gate, and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
+Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. AI chat, rewrite, scoring and design strings live in the main chunk too. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 
@@ -12967,7 +13578,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 
 ## Is Templatical open source?
 
-The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
+The MIT parts are. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai` and every importer are MIT-licensed open source today. The editor, core and media library are source-available under FSL-1.1-MIT: free for commercial embedding with no license key, and each release becomes MIT two years after it is published.
 
 ## What is FSL-1.1-MIT?
 
@@ -12999,8 +13610,9 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/ai` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI) is permissive MIT and free of any future-license consideration.
+The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, linter, importers, the `@templatical/template-tools` CLI, the `@templatical/ai` server kit) is permissive MIT and free of any future-license consideration.
 
 ## Can I use Templatical commercially?
 
@@ -13094,7 +13706,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
 
-Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, media, and real-time collaboration are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
+Cloud is optional hosted infrastructure for real-time collaboration and managed storage; its AI provider arrives in a later release. Comments, saved blocks, version history, test email, media, real-time collaboration and [AI](/backend/ai) are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 

@@ -5,6 +5,10 @@ description: Erzeugen Sie E-Mail-Inhalte, schreiben Sie Texte um und wandeln Sie
 
 # KI-Assistent
 
+::: info
+Die KI von Cloud kommt in einer späteren Version; bis dahin ignoriert `initCloud()` den Schlüssel `ai`. Um KI schon jetzt zu nutzen, [binden Sie Ihr eigenes KI-Backend an](/de/backend/ai).
+:::
+
 Templatical Cloud enthält KI-gestützte Funktionen zum Erzeugen von E-Mail-Inhalten, zum Umschreiben von Texten, zur Bewertung von Templates und zur Umwandlung von Designs in bearbeitbare Templates.
 
 ## KI aktivieren

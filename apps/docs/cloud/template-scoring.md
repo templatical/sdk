@@ -5,6 +5,10 @@ description: Automated quality checks for deliverability, accessibility, and bes
 
 # Template Scoring
 
+::: info
+Cloud's AI arrives in a later release; until then `initCloud()` ignores the `ai` key. To use AI today, [bring your own AI backend](/backend/ai).
+:::
+
 Template scoring runs automated quality checks on your email template and provides actionable feedback across deliverability, accessibility, and design best practices.
 
 ## How It Works

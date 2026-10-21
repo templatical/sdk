@@ -1,6 +1,6 @@
 ---
 title: Backend anbinden
-description: Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Medien, Test-E-Mails und Rendering sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
+description: Speichern, Versionsverlauf, Kommentare, Zusammenarbeit, gespeicherte Blöcke, Medien, Test-E-Mails, Rendering und KI sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
 ---
 
 # Backend anbinden
@@ -20,10 +20,12 @@ await init({
   templates: myTemplateStore, // speichern und laden
   versionHistory: myVersionStore, // frühere Stände — ansehen, Vorschau, wiederherstellen
   comments: myCommentStore, // Review in Threads, pro Block verankert
+  collaboration: myCollaborationBackend, // Live-Änderungen, Präsenz und Block-Sperren
   savedBlocks: myBlockLibrary, // wiederverwendbare Blockgruppen
   media: myGallery, // Bilder, Ordner, Upload
   testEmail: mySender, // diese Vorlage an eine Person mailen
   render: myRenderer, // MJML- und HTML-Ausgabe
+  ai: myAiBackend, // Chat, Umformulieren, Bewertung, Design
 });
 ```
 
@@ -44,6 +46,7 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 | [Medien](/de/backend/media) | Durchsuchen an Bildfeldern, Drop-Upload, Zuschnitt, Ordner, Suche | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test-E-Mails](/de/backend/test-email) | Auslöser im Header, Empfängersteuerung, Formatprüfung, exakte Vorschau, Versand- und Fehlerzustände | `send` |
 | [Rendering & Export](/de/backend/render) | `toMjml()` und `toHtml()`, vorab aufgelöste Custom Blocks, aufgelöste Schriften | eines von `toMjml` · `toHtml` · `compileMjml` |
+| [KI](/de/backend/ai) | ein Chat, der die Vorlage mit Rückgängig bearbeitet, Umformulieren in der Absatz-Werkzeugleiste, Vorlagenbewertung mit Korrekturen, Design zu Vorlage, Vorschläge zum Einstieg, KI-Kennzeichnung | eines von `chat` · `fixFinding` · `design` · `rewrite` · `score` · `suggestions`, optional `conversation` |
 
 Der Editor behält, was kleinteilig und für alle gleich ist: Änderungsverfolgung, ein verzögertes Autosave, das während Undo pausiert, eine Vorschau, die Anzeigebedingungen respektiert, die Rückfrage, bevor ein Wiederherstellen ungespeicherte Arbeit verwirft. Ihnen bleibt, wohin die Daten gehen, wer sie lesen darf und wie Ihre API aussieht.
 

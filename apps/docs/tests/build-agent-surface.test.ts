@@ -165,6 +165,16 @@ describe("groupOf", () => {
 });
 
 describe("collectPages", () => {
+  it.each([
+    "https://docs.templatical.com/backend/ai",
+    "https://docs.templatical.com/api/ai",
+    "https://docs.templatical.com/guide/bring-your-own-ai",
+  ])("publishes the bring-your-own AI page %s in both agent outputs", (url) => {
+    const { index, full } = buildOutputs();
+    expect(indexEntryUrls(index)).toContain(url);
+    expect(full).toContain(`Source: ${url}\n`);
+  });
+
   it("finds every English page except the generated changelog", () => {
     const pages = collectPages(DOCS);
     const paths = pages.map((p) => p.path);
@@ -294,7 +304,7 @@ describe("the committed artifacts", () => {
     // The cap sits between the corpus without the changelog, which carries the
     // inlined example code, and the corpus with it.
     expect(full).not.toContain("Version Packages");
-    expect(full.length).toBeLessThan(750_000);
+    expect(full.length).toBeLessThan(850_000);
   });
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {

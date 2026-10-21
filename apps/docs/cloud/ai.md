@@ -5,6 +5,10 @@ description: Generate email content, rewrite text, and convert designs to templa
 
 # AI Assistant
 
+::: info
+Cloud's AI arrives in a later release; until then `initCloud()` ignores the `ai` key. To use AI today, [bring your own AI backend](/backend/ai).
+:::
+
 Templatical Cloud includes AI-powered features for generating email content, rewriting text, scoring templates, and converting designs into editable templates.
 
 ## Enable AI

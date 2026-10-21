@@ -105,7 +105,6 @@ const editor = await initCloud({
   },
 
   // Cloud features (all optional)
-  ai: {},                       // Enable all AI features
   collaboration: {             // Enable real-time collaboration
     enabled: true,
   },

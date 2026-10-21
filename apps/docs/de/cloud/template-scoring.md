@@ -5,6 +5,10 @@ description: Automatische Qualitätsprüfungen für Zustellbarkeit, Barrierefrei
 
 # Template-Bewertung
 
+::: info
+Die KI von Cloud kommt in einer späteren Version; bis dahin ignoriert `initCloud()` den Schlüssel `ai`. Um KI schon jetzt zu nutzen, [binden Sie Ihr eigenes KI-Backend an](/de/backend/ai).
+:::
+
 Die Template-Bewertung führt automatische Qualitätsprüfungen Ihres E-Mail-Templates durch und liefert umsetzbares Feedback zu Zustellbarkeit, Barrierefreiheit und Design-Best-Practices.
 
 ## So funktioniert es

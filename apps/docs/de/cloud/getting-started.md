@@ -105,7 +105,6 @@ const editor = await initCloud({
   },
 
   // Cloud-Funktionen (alle optional)
-  ai: {},                       // Alle KI-Funktionen aktivieren
   collaboration: {             // Echtzeit-Zusammenarbeit aktivieren
     enabled: true,
   },

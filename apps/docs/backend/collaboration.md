@@ -53,6 +53,7 @@ await editor.load('tpl_123');
 - **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
 - **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
 - **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
+- **Shows the AI's edits.** A batch or re-sync whose actor has `type: 'ai'` shows "AI (for Ada) changed 3 blocks" (or "… updated the template") and outlines the blocks, like an agent's. The editor whose session the actor names, the one that asked, shows the outline only. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
 - **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
 - **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
 - **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
@@ -99,7 +100,7 @@ interface CollaborationHandlers {
 }
 ```
 
-The shapes: `OperationBatch` is `{ batchId, baseRevision, ops }`; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
+The shapes: `OperationBatch` is `{ batchId, baseRevision, ops, origin? }`, where `origin` is `'ai'` on a batch an AI turn produced; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api' | 'ai', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
 
 ### `join`
 
@@ -113,7 +114,7 @@ Apply the batch's operations to the template, in order and all or nothing, then 
 
 ### `operationsAfter`
 
-Answer with every batch after `revision`, in order. When you no longer have them all, answer `{ revision, resync: true }` and the editor reloads the template through `templates.load`. Call `onResync(revision, actor)` for a change batches can't describe, such as a `setContent`, a restored version or a broadcast too large for your transport. `actor` is who made the change, in the shape of a batch's; the editor uses it only for an agent's notice, and leaving it out changes nothing else.
+Answer with every batch after `revision`, in order. When you no longer have them all, answer `{ revision, resync: true }` and the editor reloads the template through `templates.load`. Call `onResync(revision, actor)` for a change batches can't describe, such as a `setContent`, a restored version or a broadcast too large for your transport. `actor` is who made the change, in the shape of a batch's; the editor uses it only for an agent's or the AI's notice, and leaving it out changes nothing else.
 
 ### Locks
 
@@ -139,6 +140,8 @@ With a collaboration provider, `templates.load` must return the template's `revi
 ## Building a backend
 
 ### Applying a batch
+
+When a batch carries `origin: 'ai'`, broadcast it with `actor.type: 'ai'`, the same `id`, `name` and `sessionId`; the editors name it as the AI's. The playground's host does this.
 
 ```ts
 import { applyOperations, OperationError } from '@templatical/types';
