@@ -13,9 +13,9 @@
     "prepare": "svelte-kit sync || echo ''"
   },
   "dependencies": {
-    "@templatical/editor": "^0.48.0",
-    "@templatical/renderer": "^0.48.0",
-    "@templatical/types": "^0.48.0",
+    "@templatical/editor": "^0.49.0",
+    "@templatical/renderer": "^0.49.0",
+    "@templatical/types": "^0.49.0",
     "mjml": "^5.4.1"
   },
   "devDependencies": {

@@ -17,8 +17,50 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.48.0",
+  "latest": "0.49.0",
   "versions": [
+    {
+      "version": "0.49.0",
+      "date": "2026-10-21",
+      "changes": [
+        {
+          "hash": "588b367",
+          "level": "minor",
+          "title": "`edit` speaks operations vocabulary v2",
+          "body": "`template-tools edit` applies the operations the editor, collaboration backends and Templatical Cloud share — `{\"op\": \"updateBlock\", \"blockId\": \"…\", \"set\": {…}}` and the rest — with the engine from `@templatical/types`, and a refusal names the operation, its code and the reason. The package re-exports `applyOperations`, `OperationError` and `getColumnCount`.\n\nBreaking changes:\n\n- The `{ \"operation\", \"data\" }` form is refused, with a pointer to the new one.\n- `applyOperation` and `OperationResult` are removed; use `applyOperations` and catch `OperationError`.\n- `updateBlockStyle` is gone: `updateBlock`'s `set` replaces `styles` whole, so send the block's full `styles` object with the property changed.",
+          "packages": [
+            "@templatical/template-tools"
+          ]
+        },
+        {
+          "hash": "588b367",
+          "level": "minor",
+          "title": "Operations vocabulary v2, the engine that applies it, and the collaboration contract",
+          "body": "- `applyOperations(content, ops, { locks, session })` applies a batch of operations — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings`, `setContent` — to a copy, in order and all or nothing, and throws an `OperationError` (`code`, `opIndex`) at the first one it refuses. Positions are anchored to a sibling id, `updateBlock`/`updateSettings` take `set` and `unset`, and `expect` preconditions guard a change against the content having moved on. `applyOperationsInPlace`, `getColumnCount` and `deepEqual` come with it. Templatical Cloud's engine follows the same rules, pinned by the shared cases in `tests/fixtures/operations/` (regenerate their manifest with `pnpm --filter @templatical/types run fixtures:manifest`).\n- The bring-your-own collaboration contract: `CollaborationProvider` (`join`, `submit`, `operationsAfter`, and optionally `acquireLock`/`renewLock`/`releaseLock`), `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationRemoteChange`, and `CollaborationConflict`, an `SdkError` with `code`, `opIndex`, `holder` and `holders`.\n- `CollaborationActor.client` is the agent's name on an `mcp` actor (`Claude`, `Cursor`, …). A collaboration backend that lets agents edit sends it with each agent batch, and the editor names it in a notice.\n- `CollaborationHandlers.onResync(revision, actor?)`: the optional `actor` is who caused the re-sync. The editor names an agent's re-sync in a notice.\n- `Template` gains `revision` and `locks`.\n- `SdkError` takes an optional third argument, `code` (`SdkErrorCode`): the error's code, as `CollaborationConflict` carries it. `SdkErrorCode` is exported from `@templatical/types` and `@templatical/editor`.\n\nBreaking changes:\n\n- `TemplateOperation` and `TemplateOperationPayload` (the v1 vocabulary) are removed; use `Operation`.",
+          "packages": [
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "588b367",
+          "level": "minor",
+          "title": "Real-time collaboration in the editor over your backend, and agents' edits named",
+          "body": "- `init({ collaboration })` collaborates over any `CollaborationProvider` (it needs `templates`, whose `load` returns the template's `revision`). Every edit is sent as operations; other people's edits appear on the canvas in order; selecting a block locks it, and others' locked blocks show their holder's name and colour and can't be selected; the header shows who else is here, one avatar per person; undo and redo cover your own edits and skip, with a notice, a step someone else has overtaken. `init({ onRemoteChange })` reports another session's edits.\n- With a collaboration provider, `templates.save` receives only renames, after the editor's batches are confirmed; a version preview pauses collaboration, and a restore re-syncs from the backend and names the people whose locks refuse it.\n- The merge-tag tokens in another session's batch — an AI agent's, another editor's, a server's — become tags as the batch arrives, the way loaded content's do, and nothing is sent back for it.\n- A batch from an agent (`actor.type: \"mcp\"`) shows a notice — \"Claude for Ada changed 3 blocks\", or the template settings — and outlines the changed blocks for 2 seconds, held still under reduced motion. An agent's re-sync reads \"Claude for Ada updated the template\". Batches and re-syncs from one agent within 2 seconds share a notice.\n- The bar, lock outlines and notices are translated into all eight locales.\n- The collaboration contract's types (`CollaborationProvider`, `CollaborationHandlers`, `Operation`, `OperationBatch`, `RevisionedBatch`, `BlockLock`, …) are re-exported from `@templatical/editor`.\n\nBreaking changes:\n\n- The `history.collabWarning` string is gone.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "588b367",
+          "level": "minor",
+          "title": "Real-time collaboration over a provider",
+          "body": "- `useCollaboration({ provider, loadTemplate })` runs a collaboration session over any `CollaborationProvider`: it captures the editor's changes as operation batches (`diffContent`), sends one batch at a time with retries under the same `batchId`, applies other sessions' batches strictly in revision order with its own pending ones replayed on top, catches up through `operationsAfter`, takes the selected block's lock, tracks presence, and keeps undo and redo as guarded inverse batches (`invertOperations`) that a backend can refuse.\n- `diffContent(before, after)` and `invertOperations(before, ops)` are exported for headless use.\n- `useCollaboration({ normalizeRemoteOperations })` rewrites another session's batch, live or from a catch-up, just before it is applied, given the content it applies to. The editor uses it to turn merge-tag tokens into tags. `onRemoteChange` receives the batch as the backend sent it.\n- Other sessions' batches apply without their `expect` preconditions: the backend already checked them against its own copy, which can differ from this one in merge-tag markup alone. Any other refusal re-syncs.\n- `useCollaboration({ onRemoteResync })` says who caused a re-sync, when the backend passes `onResync` an actor, before the editor catches up.\n\nBreaking changes:\n\n- `useHistory` no longer takes `isRemoteOperation`.",
+          "packages": [
+            "@templatical/core"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.48.0",
       "date": "2026-10-17",

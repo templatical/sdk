@@ -1,5 +1,34 @@
 # @templatical/template-tools
 
+## 0.49.0
+
+### Minor Changes
+
+- 588b367: `edit` speaks operations vocabulary v2
+
+  `template-tools edit` applies the operations the editor, collaboration backends and Templatical Cloud share — `{"op": "updateBlock", "blockId": "…", "set": {…}}` and the rest — with the engine from `@templatical/types`, and a refusal names the operation, its code and the reason. The package re-exports `applyOperations`, `OperationError` and `getColumnCount`.
+
+  Breaking changes:
+
+  - The `{ "operation", "data" }` form is refused, with a pointer to the new one.
+  - `applyOperation` and `OperationResult` are removed; use `applyOperations` and catch `OperationError`.
+  - `updateBlockStyle` is gone: `updateBlock`'s `set` replaces `styles` whole, so send the block's full `styles` object with the property changed.
+
+### Patch Changes
+
+- Updated dependencies [588b367]
+  - @templatical/types@0.49.0
+  - @templatical/import-beefree@0.49.0
+  - @templatical/import-chamaileon@0.49.0
+  - @templatical/import-easy-email-pro@0.49.0
+  - @templatical/import-html@0.49.0
+  - @templatical/import-mjml@0.49.0
+  - @templatical/import-stripo@0.49.0
+  - @templatical/import-topol@0.49.0
+  - @templatical/import-unlayer@0.49.0
+  - @templatical/quality@0.49.0
+  - @templatical/renderer@0.49.0
+
 ## 0.48.0
 
 ### Minor Changes
