@@ -6,7 +6,7 @@ the one matching the key being configured
 
 Optional config keys, each a plain object of methods: `templates`,
 `versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`,
-`collaboration`. Every key stands alone — a feature is absent until its key
+`collaboration`, `ai`. Every key stands alone — a feature is absent until its key
 is passed, not merely disabled: no half-rendered panel, no dead button.
 
 **On the storage providers (`templates`, `versionHistory`, `comments`,
@@ -29,6 +29,17 @@ renames, and undo sends inverse operations the backend may refuse. The
 backend applies operations with `applyOperations` from `@templatical/types`
 and owns a lock by session id and user identity together. `onRemoteChange`
 reports another session's edits.
+
+`ai` brings your own AI backend: one `false | fn` member per feature
+(`chat`, `fixFinding`, `design`, `rewrite`, `score`, `suggestions`), plus
+an optional `conversation` (`list`, `clear`, `undo`, `redo`,
+`settleReplay`) for stored history, whose Undo and Redo are settled in two
+phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai/client`
+speaks the documented wire, and `@templatical/ai/server` builds that
+backend on any Fetch-API runtime with your model and keys. AI needs a
+loaded template (`templates` or `collaboration`); with `collaboration`, its
+edits travel as the user's batches marked `origin: 'ai'`. The contract and
+`@templatical/ai` are MIT.
 
 The editor has no template browser of its own. After wiring `templates`, the
 host still calls `editor.load(id)` or `editor.create(...)` — a missing Save

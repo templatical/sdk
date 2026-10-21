@@ -90,7 +90,7 @@ describe("init() config keys reach the skill", () => {
   it("names every non-exempt key in a skill island", () => {
     const missing = keys.filter((key) => {
       if (EXEMPT.has(key)) return false;
-      return !corpus.includes(key);
+      return !new RegExp(`\\b${key}\\b`).test(corpus);
     });
     expect(
       missing,
