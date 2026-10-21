@@ -3,6 +3,7 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
+  AiProvider,
   Block,
   BlockDefaults,
   CollaborationProvider,
@@ -642,6 +643,33 @@ export interface TemplaticalEditorConfig {
    * not for a re-sync that reloads the whole template.
    */
   onRemoteChange?: (change: CollaborationRemoteChange) => void;
+
+  /**
+   * Your AI backend: a chat that edits the template with Undo, rewrite in the
+   * paragraph toolbar, scoring with one-click fixes, starter suggestions and
+   * design-to-template. One member per feature; `false` leaves it out and the
+   * editor hides its entry point:
+   *
+   * ```ts
+   * import { createHttpAiProvider } from "@templatical/ai/client";
+   *
+   * const editor = await init({
+   *   container,
+   *   templates,
+   *   ai: createHttpAiProvider({ baseUrl: "/api/ai" }),
+   * });
+   * await editor.load("tpl_123");
+   * ```
+   *
+   * **Needs a loaded template**: every AI request names it, so the entry
+   * points show once `create()` or `load()` has resolved. With
+   * `collaboration`, the AI's edits travel as this user's batches marked
+   * `origin: "ai"`; without it they apply here. Either way a turn is one
+   * Cmd/Ctrl+Z. Failures reach `onError`.
+   *
+   * **Omitted by default.** See AI under Connect your backend.
+   */
+  ai?: AiProvider;
 
   /**
    * Who is using the editor — needed by any feature that attributes work to a
@@ -1422,10 +1450,10 @@ function createEditorInstance({
  * still surface as an overlay, because by then there is an editor to cover.
  *
  * `templates`, `comments` and `versionHistory` are all keyed to a template
- * id Cloud issued, which also anchors collaboration, AI rewrite, scoring and
- * the server-side export — a store Cloud never issued ids for would degrade
- * all of them silently. Cloud therefore keeps each key's storage, but each
- * key is still accepted, for its configuration and events:
+ * id Cloud issued, which also anchors the server-side export — a store Cloud
+ * never issued ids for would degrade all of them silently. Cloud therefore
+ * keeps each key's storage, but each key is still accepted, for its
+ * configuration and events:
  * `templates.load`/`create`/`save`,
  * `comments.list`/`create`/`update`/`delete`/`setResolved`, and
  * `versionHistory.list`/`get`/`create`/`restore` are ignored with a warning
@@ -1613,6 +1641,29 @@ export type {
   OperationBatch,
   OperationsAfterResult,
   RevisionedBatch,
+  AiAppliedBatch,
+  AiChatMessage,
+  AiChatRequest,
+  AiConversationProvider,
+  AiDesignRequest,
+  AiFeatureName,
+  AiFixFinding,
+  AiFixRequest,
+  AiLintFinding,
+  AiMergeTags,
+  AiMessageBatch,
+  AiOperationsResult,
+  AiProvider,
+  AiReplay,
+  AiReplayContext,
+  AiReplayOutcome,
+  AiRequestBase,
+  AiRewriteRequest,
+  AiScoreRequest,
+  AiSuggestionsRequest,
+  AiTurnHandlers,
+  AiTurnResult,
+  ScoringResult,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks / media providers. Re-exported here

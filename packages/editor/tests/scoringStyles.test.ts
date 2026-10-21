@@ -4,7 +4,7 @@ import {
   scoreBgColor,
   severityColor,
   severityBgColor,
-} from '../src/cloud/utils/scoringStyles';
+} from '../src/components/ai/scoringStyles';
 
 describe('scoreColor', () => {
   it('returns success color for score 100 (max)', () => {

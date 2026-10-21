@@ -80,7 +80,7 @@ export interface CloudReadyContext {
   core: UseEditorCoreReturn;
   /**
    * The same object `useEditorCore` was handed and provided, mutated in place so
-   * Cloud's entries (plan, ai, comments) reach components on their first render —
+   * Cloud's entries (plan) reach components on their first render —
    * the pattern `versionHistory` already uses in `Editor.vue`.
    */
   capabilities: EditorCapabilities;

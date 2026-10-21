@@ -1,5 +1,4 @@
 import type {
-  AiConfig,
   BlockDefaults,
   ColorsConfig,
   CommentsOptions,
@@ -106,7 +105,6 @@ export interface TemplaticalCloudEditorConfig {
    */
   smallScreenNotice?: boolean;
 
-  ai?: AiConfig | false;
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
 
@@ -153,8 +151,8 @@ export interface TemplaticalCloudEditorConfig {
   /**
    * Configuration and events for the template lifecycle. **The same key and
    * the same type as `init()`'s `templates`** — minus the storage methods,
-   * which Cloud owns: the id it issues is the join key for collaboration,
-   * version history, comments, AI rewrite, scoring and the server-side export.
+   * which Cloud owns: the id it issues is the join key for version history,
+   * comments and the server-side export.
    *
    * Passing a full provider is not an error: `load` / `create` / `save` are
    * ignored with a warning naming them, while `autoSave`, `unsavedChangesGuard`,
@@ -321,11 +319,11 @@ export interface TemplaticalCloudEditorConfig {
   // There is no full `versionHistory` provider here, unlike `init()` — only
   // its config and events (see `versionHistory` above), the same restriction
   // `templates` and `comments` carry. All three are keyed to the Cloud
-  // template id, which anchors collaboration, AI rewrite, scoring, the
-  // server-side export — and version history and comments themselves. A store
-  // Cloud never issued ids for would degrade all of them silently, and a
-  // consumer-supplied history would run alongside the automatic versions Cloud's
-  // templates adapter keeps recording: two stores, one invisible and billable.
+  // template id, which anchors version history, comments and the server-side
+  // export. A store Cloud never issued ids for would degrade all of them
+  // silently, and a consumer-supplied history would run alongside the
+  // automatic versions Cloud's templates adapter keeps recording: two stores,
+  // one invisible and billable.
   // `bootstrapCloud` warns and ignores a full provider's methods if any arrive
   // from JavaScript. Bring your own with `init()`, where the whole set is yours.
   //

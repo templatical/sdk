@@ -554,12 +554,6 @@ const nl: typeof en = {
     noBlocks: "Nog geen blokken",
     dragHint: "Begin vanaf nul door blokken vanuit de zijbalk te slepen",
     dropHere: "Hier neerzetten",
-    aiHintChat: "of laat",
-    aiHintChatSuffix:
-      "in enkele seconden een volledig sjabloon voor u genereren",
-    aiHintDesign:
-      "Heeft u al een ontwerp? Upload een schermafbeelding, afbeelding of PDF en",
-    aiHintDesignSuffix: "maakt het direct na",
   },
   savedBlocks: {
     title: "Opgeslagen blokken",
@@ -656,15 +650,152 @@ const nl: typeof en = {
     reconnectingNotice: "Opnieuw verbinden… Je kunt gewoon verder bewerken.",
     dismiss: "Verbergen",
     anAgent: "Een agent",
-    agentChangedBlock: "{client} voor {name} heeft een blok gewijzigd.",
-    agentChangedBlocks: "{client} voor {name} heeft {count} blokken gewijzigd.",
-    agentChangedSettings:
-      "{client} voor {name} heeft de template-instellingen gewijzigd.",
+    agentFor: "{client} voor {name}",
+    aiFor: "AI (voor {name})",
+    agentChangedBlock: "{who} heeft een blok gewijzigd.",
+    agentChangedBlocks: "{who} heeft {count} blokken gewijzigd.",
+    agentChangedSettings: "{who} heeft de template-instellingen gewijzigd.",
     agentChangedBlockAndSettings:
-      "{client} voor {name} heeft een blok en de template-instellingen gewijzigd.",
+      "{who} heeft een blok en de template-instellingen gewijzigd.",
     agentChangedBlocksAndSettings:
-      "{client} voor {name} heeft {count} blokken en de template-instellingen gewijzigd.",
-    agentUpdatedTemplate: "{client} voor {name} heeft de template bijgewerkt.",
+      "{who} heeft {count} blokken en de template-instellingen gewijzigd.",
+    agentUpdatedTemplate: "{who} heeft de template bijgewerkt.",
+  },
+  ai: {
+    rewrite: {
+      tooLarge:
+        "Deze alinea is te lang voor AI. Kies een alinea met maximaal 20.000 tekens.",
+      title: "Herschrijven met AI",
+      close: "Sluiten",
+      suggestionLabel: "AI-suggestie",
+      presets: {
+        shorten: "Inkorten",
+        expand: "Uitbreiden",
+        friendlier: "Vriendelijker",
+        formal: "Formeler",
+        fixGrammar: "Grammatica corrigeren",
+        translate: "Vertalen",
+      },
+      language: "Taal",
+      instructionLabel: "Uw instructie",
+      instructionPlaceholder: "Of geef aan hoe u de tekst wilt herschrijven…",
+      run: "Herschrijven",
+      rewriting: "Bezig met herschrijven…",
+      stop: "Stoppen",
+      replaceAction: "Vervangen",
+      discard: "Verwerpen",
+    },
+    errors: {
+      historyError: "Het gesprek kon niet worden geladen. Probeer het opnieuw.",
+      missingProvider:
+        "Deze AI-backend heeft een sjabloon- of samenwerkingsprovider nodig om wijzigingen te tonen.",
+      featureUnavailable: "Deze AI-functie is niet beschikbaar.",
+      limitReached: "U heeft uw AI-tegoed voorlopig opgebruikt.",
+      limitReachedUntil: "U heeft uw AI-tegoed tot {date} opgebruikt.",
+      rateLimited: "Te veel AI-verzoeken. Probeer het zo opnieuw.",
+      turnRunning: "Er wordt al een AI-verzoek uitgevoerd voor dit sjabloon.",
+      contentTooLarge: "Dit sjabloon is te groot voor AI.",
+      outputInvalid:
+        "De AI kon geen geldig resultaat maken. Probeer het opnieuw.",
+      providerError:
+        "AI is momenteel niet beschikbaar. Probeer het later opnieuw.",
+      templateChanged: "Het sjabloon is gewijzigd terwijl de AI bezig was.",
+      blockLocked: "Iemand bewerkt een blok dat de AI nodig had.",
+      undoRefused:
+        "Iemand heeft deze blokken sindsdien gewijzigd, dus dit kan niet ongedaan worden gemaakt.",
+      redoRefused:
+        "Iemand heeft deze blokken sindsdien gewijzigd, dus dit kan niet opnieuw worden uitgevoerd.",
+      messageGone: "Dit bericht staat niet meer in het gesprek.",
+      generic: "Er is iets misgegaan. Probeer het opnieuw.",
+    },
+    menu: {
+      button: "AI",
+      chat: "AI-assistent",
+      chatDescription: "Chat met AI om uw sjabloon te maken of te wijzigen",
+      design: "Van ontwerp naar sjabloon",
+      designDescription: "Maak een sjabloon van een afbeelding of PDF",
+      scoring: "Sjabloonscore",
+      scoringDescription:
+        "Controleer spamrisico, leesbaarheid en aanbevolen werkwijzen",
+    },
+    chat: {
+      title: "AI-assistent",
+      notice: "Antwoorden en wijzigingen komen van AI.",
+      close: "Sluiten",
+      newChat: "Nieuw gesprek",
+      inputPlaceholder: "Beschrijf de gewenste wijziging...",
+      send: "Verzenden",
+      stop: "Stoppen",
+      placeholder:
+        "Beschrijf de gewenste e-mail of vraag om een wijziging aan deze e-mail.",
+      loadingHistory: "Gesprek laden...",
+      appliedChange: "1 wijziging toegepast",
+      appliedChanges: "{count} wijzigingen toegepast",
+      undone: "Ongedaan gemaakt",
+      undo: "Ongedaan maken",
+      redo: "Opnieuw uitvoeren",
+      disclaimer: "AI kan fouten maken. Controleer de wijzigingen.",
+    },
+    design: {
+      title: "Van ontwerp naar sjabloon",
+      close: "Sluiten",
+      remove: "Bestand verwijderen",
+      dropHint:
+        "Sleep een afbeelding of PDF hierheen, of klik om er een te kiezen",
+      accepted: "PNG, JPEG, WebP, GIF of PDF, tot 5 MB",
+      promptLabel: "Notities (optioneel)",
+      promptPlaceholder: "Wat de AI over het ontwerp moet weten...",
+      generate: "Maken vanuit ontwerp",
+      generating: "Je ontwerp wordt gelezen en het sjabloon wordt gemaakt...",
+      replaceWarning:
+        "Een sjabloon maken vanuit een ontwerp vervangt de inhoud van het canvas. Je kunt dit ongedaan maken.",
+      replaceConfirm: "Vervangen en maken",
+      replaceCancel: "Annuleren",
+      fileTooLarge: "Dit bestand is groter dan 5 MB.",
+      invalidFileType:
+        "Upload een PNG-, JPEG-, WebP- of GIF-afbeelding, of een PDF.",
+      built: "Sjabloon gemaakt vanuit je ontwerp.",
+      undo: "Ongedaan maken",
+      redo: "Opnieuw uitvoeren",
+      buildAnother: "Nog een maken",
+    },
+    scoring: {
+      title: "Sjabloonscore",
+      close: "Sluiten",
+      rescore: "Opnieuw beoordelen",
+      scoring: "Het sjabloon wordt beoordeeld...",
+      overallScore: "Totaalscore",
+      categories: {
+        spam: "Spamrisico",
+        readability: "Leesbaarheid",
+        bestPractices: "Goede praktijken",
+      },
+      severity: {
+        high: "Hoog",
+        medium: "Gemiddeld",
+        low: "Laag",
+      },
+      fix: "Herstellen met AI",
+      fixing: "Bezig met herstellen...",
+      fixed: "Hersteld",
+      undoFix: "Ongedaan maken",
+      finding: "1 bevinding",
+      findings: "{count} bevindingen",
+      noFindings: "Geen problemen gevonden",
+      accessibilityNote:
+        "Toegankelijkheid wordt gecontroleerd in het paneel Problemen.",
+      openIssues: "Problemen openen ({count})",
+      emptyState:
+        "Beoordeel uw sjabloon op spamrisico, leesbaarheid en goede praktijken.",
+    },
+    canvas: {
+      chatHint: "of laat",
+      chatHintSuffix:
+        "in enkele seconden een volledig sjabloon voor u genereren",
+      designHint:
+        "Heeft u al een ontwerp? Upload een schermafbeelding, afbeelding of PDF en",
+      designHintSuffix: "maakt het direct na",
+    },
   },
   versionHistory: {
     tooltip: "Versiegeschiedenis",

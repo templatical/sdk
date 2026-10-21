@@ -45,10 +45,6 @@ vi.mock("@templatical/core/cloud", () => {
       auth: { ok: true },
       websocket: { ok: true },
     }),
-    useAiConfig: vi.fn(() => ({
-      enabled: computed(() => false),
-      hasAnyMenuFeature: computed(() => false),
-    })),
     createCloudCommentsProvider: vi.fn(() => ({
       list: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
@@ -126,7 +122,6 @@ vi.mock("@templatical/core/cloud", () => {
         },
       }),
     ),
-    useTemplateScoring: vi.fn(() => ({ fixError: ref(null) })),
     useTestEmail: vi.fn(() => ({
       isEnabled: computed(() => true),
       allowedEmails: computed(() => ["qa@templatical.test"]),
@@ -392,6 +387,19 @@ describe("bootstrapCloud — providers handed to init()", () => {
     expect(
       warn.mock.calls.some((a) =>
         a.join(" ").includes("does not accept a `render` provider"),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("ignores an ai key until Cloud's AI ships, and says so", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await bootstrap({ ai: { chat: true } });
+
+    expect(
+      warn.mock.calls.some((a) =>
+        a.join(" ").includes("initCloud does not take an `ai` key yet"),
       ),
     ).toBe(true);
     warn.mockRestore();
@@ -952,11 +960,12 @@ describe("CloudRuntime.ready — what must run after useEditorCore", () => {
     runtime.ready({ core: fakeCore(), capabilities });
 
     expect(capabilities.plan).toBeTypeOf("object");
-    expect(capabilities.ai).toBeTypeOf("object");
+    expect(capabilities.ai).toBe(undefined);
     // `capabilities.comments` is deliberately NOT one of them any more. Comments
     // became a shared provider-backed feature, so `Editor.vue` builds that
     // capability from `useCommentsFeature` exactly as it does for saved blocks and
-    // test email; Cloud contributes only `plan` and `ai`, asserted above.
+    // test email; Cloud contributes only `plan`; AI is a provider the open-source
+    // editor builds from `init({ ai })` (A1), and Cloud's arrives with S7.
     expect(capabilities.comments).toBe(undefined);
   });
 

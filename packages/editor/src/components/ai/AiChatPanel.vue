@@ -1,0 +1,389 @@
+<script setup lang="ts">
+import {
+  CircleAlert,
+  LoaderCircle,
+  MessageSquarePlus,
+  Redo2,
+  Send,
+  Sparkles,
+  Square,
+  Undo2,
+} from "@lucide/vue";
+import { computed, inject, nextTick, ref, watch } from "vue";
+import { useIntervalFn, useTimeoutFn } from "@vueuse/core";
+import LoadingTrack from "../LoadingTrack.vue";
+import AiPanelShell from "./AiPanelShell.vue";
+import type {
+  AiChatItem,
+  UseAiFeatureReturn,
+} from "../../composables/useAiFeature";
+import { useI18n } from "../../composables/useI18n";
+import { secondaryBtnCompactClass } from "../../constants/styleConstants";
+import { UI_LOCALE_KEY } from "../../keys";
+import { aiErrorMessage } from "../../utils/aiErrors";
+
+const props = defineProps<{ feature: UseAiFeatureReturn }>();
+const emit = defineEmits<{ (e: "close"): void }>();
+
+const { t, format } = useI18n();
+const uiLocale = inject(UI_LOCALE_KEY, undefined);
+
+const promptInput = ref("");
+const messagesContainer = ref<HTMLElement | null>(null);
+const visibleSuggestionCount = ref(0);
+
+const messages = computed(() => props.feature.messages.value);
+const isBusy = computed(() => props.feature.isRunning.value);
+const failureText = computed(() => {
+  const failure = props.feature.failure.value;
+  return failure
+    ? aiErrorMessage(
+        failure.error,
+        t.ai.errors,
+        format,
+        uiLocale,
+        failure.context,
+      )
+    : "";
+});
+
+const { pause: pauseReveal, resume: resumeReveal } = useIntervalFn(
+  () => {
+    if (visibleSuggestionCount.value < props.feature.suggestions.value.length) {
+      visibleSuggestionCount.value++;
+    } else {
+      pauseReveal();
+    }
+  },
+  150,
+  { immediate: false },
+);
+const { start: startReveal } = useTimeoutFn(() => resumeReveal(), 100, {
+  immediate: false,
+});
+
+watch(
+  () => props.feature.suggestions.value.length,
+  (count) => {
+    pauseReveal();
+    visibleSuggestionCount.value = 0;
+    if (count > 0) startReveal();
+  },
+  { immediate: true },
+);
+
+function scrollToBottom(): void {
+  void nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+    }
+  });
+}
+
+watch(() => messages.value.length, scrollToBottom);
+
+// A failed turn gives its prompt back (D15).
+watch(
+  () => props.feature.failedPrompt.value,
+  (prompt) => {
+    if (prompt) promptInput.value = prompt;
+  },
+);
+
+async function send(): Promise<void> {
+  const prompt = promptInput.value.trim();
+  if (!prompt || isBusy.value) return;
+  promptInput.value = "";
+  scrollToBottom();
+  await props.feature.send(prompt);
+  scrollToBottom();
+}
+
+function appliedLabel(item: AiChatItem): string {
+  if (item.undone) return t.ai.chat.undone;
+  return item.operationCount === 1
+    ? t.ai.chat.appliedChange
+    : format(t.ai.chat.appliedChanges, { count: item.operationCount });
+}
+
+function itemFailure(item: AiChatItem): string {
+  return item.failure
+    ? aiErrorMessage(
+        item.failure.error,
+        t.ai.errors,
+        format,
+        uiLocale,
+        item.failure.context,
+      )
+    : "";
+}
+
+function toggleUndo(item: AiChatItem): void {
+  if (item.undone) void props.feature.redoMessage(item.id);
+  else void props.feature.undoMessage(item.id);
+}
+
+function chooseSuggestion(suggestion: string): void {
+  pauseReveal();
+  promptInput.value = suggestion;
+  void send();
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.isComposing || event.keyCode === 229) return;
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    void send();
+  }
+}
+</script>
+
+<template>
+  <AiPanelShell
+    :title="t.ai.chat.title"
+    :subtitle="t.ai.chat.notice"
+    testid="ai-panel-chat"
+    :close-label="t.ai.chat.close"
+    @close="emit('close')"
+  >
+    <template #actions>
+      <button
+        v-if="feature.canClear && messages.length > 0"
+        type="button"
+        data-testid="ai-chat-new"
+        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)] tpl:disabled:opacity-40"
+        :aria-label="t.ai.chat.newChat"
+        :title="t.ai.chat.newChat"
+        :disabled="isBusy"
+        @click="feature.newChat()"
+      >
+        <MessageSquarePlus :size="14" :stroke-width="2" aria-hidden="true" />
+      </button>
+    </template>
+
+    <div ref="messagesContainer" class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
+      <div
+        v-if="feature.isLoadingHistory.value"
+        class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+      >
+        <LoaderCircle
+          class="tpl-spinner tpl:text-[var(--tpl-text-muted)]"
+          :size="24"
+          :stroke-width="2"
+          aria-hidden="true"
+        />
+        <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
+          {{ t.ai.chat.loadingHistory }}
+        </p>
+      </div>
+
+      <div
+        v-else-if="messages.length === 0"
+        class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+      >
+        <Sparkles
+          :size="32"
+          :stroke-width="1.5"
+          class="tpl:text-[var(--tpl-text-dim)]"
+          aria-hidden="true"
+        />
+        <p
+          class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
+        >
+          {{ t.ai.chat.placeholder }}
+        </p>
+      </div>
+
+      <!-- Text is interpolated, never `v-html`. -->
+      <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
+        <div
+          v-for="item in messages"
+          :key="item.id"
+          class="tpl:flex tpl:flex-col tpl:gap-2"
+        >
+          <div
+            v-if="item.role === 'user'"
+            data-testid="ai-chat-prompt"
+            class="tpl:self-end tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm tpl:whitespace-pre-wrap"
+            style="
+              background-color: var(--tpl-primary-light);
+              color: var(--tpl-text);
+              max-width: 85%;
+              box-shadow: var(--tpl-shadow);
+            "
+          >
+            {{ item.text }}
+          </div>
+
+          <div v-else class="tpl:flex tpl:flex-col tpl:gap-2">
+            <LoadingTrack
+              v-if="item.text === '' && item.status === 'streaming'"
+            />
+            <div
+              v-else-if="item.text !== ''"
+              data-testid="ai-chat-reply"
+              class="tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm tpl:whitespace-pre-wrap"
+              style="
+                max-width: 85%;
+                background-color: var(--tpl-bg);
+                color: var(--tpl-text);
+                box-shadow: var(--tpl-shadow);
+              "
+            >
+              {{ item.text }}
+            </div>
+            <div
+              v-if="item.operationCount > 0"
+              data-testid="ai-chat-applied"
+              class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+            >
+              <span>{{ appliedLabel(item) }}</span>
+              <button
+                v-if="item.undone ? item.canRedo : item.canUndo"
+                type="button"
+                data-testid="ai-chat-undo"
+                :class="secondaryBtnCompactClass"
+                :disabled="isBusy"
+                @click="toggleUndo(item)"
+              >
+                <Redo2
+                  v-if="item.undone"
+                  :size="12"
+                  :stroke-width="2"
+                  aria-hidden="true"
+                />
+                <Undo2 v-else :size="12" :stroke-width="2" aria-hidden="true" />
+                {{ item.undone ? t.ai.chat.redo : t.ai.chat.undo }}
+              </button>
+            </div>
+            <p
+              v-if="item.failure"
+              role="alert"
+              data-testid="ai-chat-item-error"
+              class="tpl:m-0 tpl:text-xs tpl:text-[var(--tpl-danger)]"
+            >
+              {{ itemFailure(item) }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Starter prompts, over the empty state (D21). -->
+    <div
+      v-if="messages.length === 0 && feature.suggestions.value.length > 0"
+      class="tpl:absolute tpl:right-0 tpl:bottom-0 tpl:left-0 tpl:z-10 tpl:px-3 tpl:pb-3"
+      style="
+        background-color: color-mix(in srgb, var(--tpl-bg) 50%, transparent);
+        backdrop-filter: blur(2px);
+      "
+    >
+      <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
+        <button
+          v-for="(suggestion, index) in feature.suggestions.value"
+          :key="index"
+          type="button"
+          data-testid="ai-chat-suggestion"
+          class="tpl-suggestion-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
+          :class="
+            feature.suggestions.value.length - 1 - index <
+            visibleSuggestionCount
+              ? 'tpl:translate-y-0 tpl:opacity-100'
+              : 'tpl:pointer-events-none tpl:-translate-y-2 tpl:opacity-0'
+          "
+          style="
+            border-color: var(--tpl-border);
+            color: var(--tpl-primary);
+            background-color: var(--tpl-bg);
+            box-shadow: var(--tpl-shadow);
+          "
+          @click="chooseSuggestion(suggestion)"
+        >
+          {{ suggestion }}
+        </button>
+      </div>
+    </div>
+
+    <template #footer>
+      <div class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]">
+        <div
+          v-if="failureText"
+          role="alert"
+          data-testid="ai-chat-error"
+          class="tpl:mx-3 tpl:mb-2 tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
+          style="
+            background-color: var(--tpl-danger-light);
+            color: var(--tpl-danger);
+          "
+        >
+          <CircleAlert
+            :size="14"
+            :stroke-width="2"
+            class="tpl:mt-0.5 tpl:shrink-0"
+            aria-hidden="true"
+          />
+          <span>{{ failureText }}</span>
+        </div>
+        <div
+          class="tpl-ai-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+        >
+          <textarea
+            v-model="promptInput"
+            data-testid="ai-chat-input"
+            class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none tpl:text-[var(--tpl-text)]"
+            :placeholder="t.ai.chat.inputPlaceholder"
+            :aria-label="t.ai.chat.inputPlaceholder"
+            :disabled="isBusy"
+            maxlength="4000"
+            rows="3"
+            @keydown="onKeydown"
+          />
+          <button
+            v-if="isBusy"
+            type="button"
+            data-testid="ai-chat-stop"
+            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-primary)]"
+            :aria-label="t.ai.chat.stop"
+            :title="t.ai.chat.stop"
+            @click="feature.stop()"
+          >
+            <Square :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+          <button
+            v-else
+            type="button"
+            data-testid="ai-chat-send"
+            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+            :aria-label="t.ai.chat.send"
+            :title="t.ai.chat.send"
+            :disabled="!promptInput.trim()"
+            @click="send"
+          >
+            <Send :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+        </div>
+        <p
+          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
+        >
+          {{ t.ai.chat.disclaimer }}
+        </p>
+      </div>
+    </template>
+  </AiPanelShell>
+</template>
+
+<style scoped>
+.tpl-ai-input-wrapper:focus-within {
+  border-color: var(--tpl-primary);
+  box-shadow: var(--tpl-ring);
+}
+
+.tpl-ai-send-btn:not(:disabled):hover {
+  transform: scale(1.05);
+}
+
+.tpl-suggestion-btn:hover {
+  border-color: var(--tpl-primary) !important;
+  background-color: var(--tpl-primary-light) !important;
+}
+</style>

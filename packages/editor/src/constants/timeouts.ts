@@ -1,9 +1,6 @@
 /** Timeout in ms for editor initialization before giving up. */
 export const INIT_TIMEOUT_MS = 30000;
 
-/** Maximum upload file size in bytes (10 MB). */
-export const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
-
 /**
  * Debounce in ms before an edited image src is sent to `resolveImageUrl`.
  * The src input commits per keystroke, so this is what turns "per keystroke"

@@ -1,0 +1,1494 @@
+import {
+  computed,
+  ref,
+  shallowRef,
+  toRaw,
+  watch,
+  type ComputedRef,
+  type Ref,
+} from "vue";
+import type { UseHistoryReturn } from "@templatical/core";
+import type {
+  AiChatMessage,
+  AiFeatureName,
+  AiFixFinding,
+  AiLintFinding,
+  AiMergeTags,
+  AiMessageKind,
+  AiOperationsResult,
+  AiProvider,
+  AiRequestBase,
+  AiRewriteRequest,
+  AiTurnHandlers,
+  AiTurnResult,
+  Block,
+  Operation,
+  ScoringResult,
+  TemplateContent,
+} from "@templatical/types";
+import {
+  applyOperationsInPlace,
+  CollaborationConflict,
+  invertOperations,
+  OperationError,
+  safeClone,
+  SdkError,
+} from "@templatical/types";
+import {
+  AI_MISSING_PROVIDER_MESSAGE,
+  type AiErrorContext,
+} from "../utils/aiErrors";
+import type { EditorCapabilities } from "../types/editor-capabilities";
+import {
+  AGENT_HIGHLIGHT_MS,
+  summarizeAgentEdit,
+  type UseCollaborationFeatureReturn,
+} from "./useCollaborationFeature";
+
+/** How long a turn waits for this editor's unsent edits to reach the backend. */
+export const AI_SETTLE_TIMEOUT_MS = 3000;
+/** How long a live channel gets to deliver a server-applied batch before a catch-up. */
+export const AI_BROADCAST_GRACE_MS = 1000;
+/** The largest design file (D24). */
+export const AI_DESIGN_MAX_BYTES = 5 * 1024 * 1024;
+export { AI_MISSING_PROVIDER_MESSAGE } from "../utils/aiErrors";
+/** UTF-8 bytes of serialized content, matching the wire's AI_LIMITS. */
+export const AI_CONTENT_MAX_BYTES = 200_000;
+
+const LINT_FINDINGS_MAX = 200;
+const RULE_ID_MAX = 100;
+const LINT_MESSAGE_MAX = 500;
+
+export type AiPanel = "chat" | "scoring" | "design";
+export type { AiErrorContext } from "../utils/aiErrors";
+
+export interface AiFailure {
+  error: Error;
+  context: AiErrorContext;
+}
+
+/** One row of the chat (D16). */
+export interface AiChatItem {
+  id: string;
+  role: "user" | "assistant";
+  kind: AiMessageKind;
+  text: string;
+  /** Operations this turn changed, client- and server-applied together. */
+  operationCount: number;
+  undone: boolean;
+  /** Undo is available for this not-undone message. */
+  canUndo: boolean;
+  /** Redo is available for this undone message. */
+  canRedo: boolean;
+  createdAt: string;
+  status: "streaming" | "done" | "failed";
+  /** Why the turn, or its last Undo or Redo, failed. */
+  failure?: AiFailure;
+}
+
+export interface AiTurnOutcome {
+  /** The assistant item's id, `null` when the turn left no message. */
+  messageId: string | null;
+  operationCount: number;
+  text: string;
+  failed: boolean;
+}
+
+/** The slice of the editor the feature reads and writes. */
+export interface AiFeatureEditor {
+  state: {
+    readonly template?: { readonly id: string } | null;
+    readonly selectedBlockId: string | null;
+    readonly isLoading?: boolean;
+  };
+  /** Committed create/load version from core; metadata edits leave it alone. */
+  loadVersion?: Readonly<Ref<number>>;
+  content: Ref<TemplateContent>;
+  selectBlock: (blockId: string | null) => void;
+  markDirty: () => void;
+}
+
+export interface UseAiFeatureOptions {
+  provider: AiProvider;
+  editor: AiFeatureEditor;
+  collaboration: Pick<UseCollaborationFeatureReturn, "core" | "outline"> | null;
+  /** The snapshot history; read at call time (core is built after this). */
+  history: () => Pick<UseHistoryReturn, "record">;
+  /** Reload after a server-applied turn; check the guard before committing. */
+  reload:
+    | ((templateId: string, shouldApply?: () => boolean) => Promise<unknown>)
+    | null;
+  mergeTags: () => AiMergeTags | null;
+  /** Bare merge tags to tags, as for remote batches (D8). */
+  normalize: (
+    ops: readonly Operation[],
+    content: TemplateContent,
+  ) => Operation[];
+  lintFindings: () => AiLintFinding[];
+  /** The comments panel's state: AI panels and comments are exclusive (D18). */
+  commentsOpen: Ref<boolean> | null;
+  onError?: (error: Error) => void;
+}
+
+interface TurnRecord {
+  /** Undoes the turn: each batch's inverse, the last batch's first. */
+  inverse: Operation[];
+  /** Redoes it after an Undo: the inverse of the Undo batch. */
+  redo: Operation[] | null;
+  serverApplied: boolean;
+  batchIds: Set<string>;
+}
+
+interface Memory {
+  items: AiChatItem[];
+  records: Map<string, TurnRecord>;
+  storedIds: Set<string>;
+  recoveries: Map<
+    string,
+    { item: AiChatItem; user?: AiChatItem; record: TurnRecord }
+  >;
+}
+
+const isAbort = (error: unknown): boolean =>
+  error instanceof Error && error.name === "AbortError";
+const asError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error(String(error));
+const sum = (message: AiChatMessage) =>
+  message.batches.reduce((total, batch) => total + batch.operationCount, 0);
+
+function hasBlock(blocks: readonly Block[], blockId: string): boolean {
+  return blocks.some(
+    (block) =>
+      block.id === blockId ||
+      (block.type === "section" &&
+        Array.isArray((block as { children?: unknown }).children) &&
+        (block as unknown as { children: Block[][] }).children.some(
+          (column) => Array.isArray(column) && hasBlock(column, blockId),
+        )),
+  );
+}
+
+function cut(text: string, max: number): string {
+  const points = Array.from(text);
+  return points.length > max ? points.slice(0, max).join("") : text;
+}
+
+/** The linter's issues as scoring's context: the first 200, cut (D23). */
+export function toAiLintFindings(
+  issues: readonly {
+    ruleId: string;
+    blockId: string | null;
+    message: string;
+  }[],
+): AiLintFinding[] {
+  return issues.slice(0, LINT_FINDINGS_MAX).map((issue) => ({
+    ruleId: cut(issue.ruleId, RULE_ID_MAX),
+    blockId: issue.blockId,
+    message: cut(issue.message, LINT_MESSAGE_MAX),
+  }));
+}
+
+function refusalOf(error: OperationError): AiOperationsResult {
+  return {
+    applied: false,
+    code: error.code,
+    opIndex: error.opIndex,
+    message: error.message,
+  };
+}
+
+export interface UseAiFeatureReturn {
+  capability: NonNullable<EditorCapabilities["ai"]>;
+  panel: Ref<AiPanel | null>;
+  open: (panel: AiPanel) => void;
+  close: () => void;
+  has: (feature: AiFeatureName) => boolean;
+  /** The loaded template's id: AI works on it, and panels reset when it changes. */
+  templateId: ComputedRef<string | null>;
+  isAvailable: ComputedRef<boolean>;
+  hasConversation: boolean;
+  canClear: boolean;
+  messages: Ref<AiChatItem[]>;
+  isLoadingHistory: Ref<boolean>;
+  /** True while any AI operation owns the serialized lane. */
+  busy: Ref<boolean>;
+  /** Alias of busy, retained for existing panels. */
+  isRunning: Ref<boolean>;
+  failure: Ref<AiFailure | null>;
+  failedPrompt: Ref<string | null>;
+  suggestions: Ref<string[]>;
+  send: (message: string) => Promise<AiTurnOutcome>;
+  fix: (finding: AiFixFinding) => Promise<AiTurnOutcome>;
+  design: (input: {
+    file: File;
+    prompt: string | null;
+  }) => Promise<AiTurnOutcome>;
+  stop: () => void;
+  newChat: () => Promise<void>;
+  undoMessage: (id: string) => Promise<void>;
+  redoMessage: (id: string) => Promise<void>;
+  loadSuggestions: () => Promise<void>;
+  score: (signal: AbortSignal) => Promise<ScoringResult>;
+  rewrite: (
+    input: Pick<
+      AiRewriteRequest,
+      "html" | "preset" | "language" | "instruction"
+    >,
+    onText: (text: string) => void,
+    signal: AbortSignal,
+  ) => Promise<{ html: string }>;
+  destroy: () => void;
+}
+
+/**
+ * The editor's side of `init({ ai })` (A1 §3): the capability its entry points
+ * read, the request each call carries, the edits a turn hands over (applied
+ * through the collaboration controller or through the engine and the snapshot
+ * history, one undo step per turn), server-applied batches followed or
+ * reloaded, the chat in `conversation` or in memory, and every failure to
+ * `onError`. Built before `useEditorCore`; reads core through getters.
+ */
+export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
+  const { provider, editor, collaboration } = options;
+  const conversation = provider.conversation ?? null;
+  const localSessionId = crypto.randomUUID();
+
+  const panel = ref<AiPanel | null>(null);
+  const memory = new Map<string, Memory>();
+  let destroyed = false;
+  type LaneKind =
+    "turn" | "replay" | "clear" | "history" | "read" | "reconcile";
+  interface Session {
+    id: string;
+    memory: Memory;
+    messages: Ref<AiChatItem[]>;
+    suggestions: Ref<string[]>;
+    isLoadingHistory: Ref<boolean>;
+    busy: Ref<boolean>;
+    failure: Ref<AiFailure | null>;
+    failedPrompt: Ref<string | null>;
+    loaded: boolean;
+    suggestionsLoaded: boolean;
+    historyGeneration: number;
+    pendingHistory: { generation: number; promise: Promise<void> } | null;
+    active: Job | null;
+    queue: Job[];
+    lifetime: AbortController;
+    committingReload: boolean;
+    lastRecordedTurn: string | null;
+    timers: Set<ReturnType<typeof setTimeout>>;
+    highlights: Ref<ReadonlyMap<string, number>>;
+    highlightSequence: number;
+  }
+  interface Job {
+    kind: LaneKind;
+    scope: Session;
+    controller: AbortController;
+    execute: () => Promise<void>;
+  }
+
+  function createSession(id: string): Session {
+    const saved = memoryFor(id);
+    return {
+      id,
+      memory: saved,
+      messages: ref(saved.items),
+      suggestions: ref([]),
+      isLoadingHistory: ref(false),
+      busy: ref(false),
+      failure: ref(null),
+      failedPrompt: ref(null),
+      loaded: false,
+      suggestionsLoaded: false,
+      historyGeneration: 0,
+      pendingHistory: null,
+      active: null,
+      queue: [],
+      lifetime: new AbortController(),
+      committingReload: false,
+      lastRecordedTurn: null,
+      timers: new Set(),
+      highlights: shallowRef(new Map()),
+      highlightSequence: 0,
+    };
+  }
+
+  const templateId = computed(() => editor.state.template?.id ?? null);
+  const currentSession = shallowRef<Session | null>(
+    templateId.value === null ? null : createSession(templateId.value),
+  );
+  const isAvailable = computed(
+    () =>
+      currentSession.value !== null && !destroyed && templateId.value !== null,
+  );
+  const has = (feature: AiFeatureName): boolean =>
+    typeof provider[feature] === "function";
+  const scopeOf = (): Session | null =>
+    destroyed ? null : currentSession.value;
+  const isCurrent = (scope: Session): boolean =>
+    !destroyed &&
+    currentSession.value === scope &&
+    !scope.lifetime.signal.aborted &&
+    templateId.value === scope.id;
+
+  // Stable public refs follow the current session, never an obsolete job's refs.
+  function sessionRef<T>(select: (scope: Session) => Ref<T>, empty: T): Ref<T> {
+    return computed({
+      get: () =>
+        currentSession.value ? select(currentSession.value).value : empty,
+      set: (value) => {
+        const scope = scopeOf();
+        if (scope) select(scope).value = value;
+      },
+    });
+  }
+  const messages = sessionRef((scope) => scope.messages, []);
+  const suggestions = sessionRef((scope) => scope.suggestions, []);
+  const isLoadingHistory = sessionRef((scope) => scope.isLoadingHistory, false);
+  const isRunning = sessionRef((scope) => scope.busy, false);
+  const failure = sessionRef((scope) => scope.failure, null);
+  const failedPrompt = sessionRef((scope) => scope.failedPrompt, null);
+
+  function invalidateHistory(scope: Session): void {
+    scope.historyGeneration++;
+    scope.pendingHistory = null;
+    scope.loaded = false;
+    scope.isLoadingHistory.value = false;
+  }
+
+  function enqueue<T>(
+    kind: LaneKind,
+    scope: Session,
+    run: (job: Job) => Promise<T>,
+    skipped: () => T | Promise<T>,
+  ): Promise<T> {
+    if (!isCurrent(scope)) return Promise.resolve().then(skipped);
+    return new Promise<T>((resolve, reject) => {
+      const job: Job = {
+        kind,
+        scope,
+        controller: new AbortController(),
+        execute: async () => {
+          let result: T;
+          try {
+            result = await (job.controller.signal.aborted || !isCurrent(scope)
+              ? skipped()
+              : run(job));
+          } catch (error) {
+            reject(error);
+            return;
+          } finally {
+            scope.active = null;
+            scope.busy.value = false;
+            pump(scope);
+          }
+          resolve(result);
+        },
+      };
+      scope.queue.push(job);
+      pump(scope);
+    });
+  }
+
+  function pump(scope: Session): void {
+    if (scope.active) return;
+    const job = scope.queue.shift();
+    if (!job) return;
+    scope.active = job;
+    // Abandoned queues drain their skipped results without reviving busy state.
+    if (isCurrent(scope)) scope.busy.value = true;
+    void job.execute();
+  }
+
+  function check(job: Job): void {
+    job.controller.signal.throwIfAborted();
+    if (!isCurrent(job.scope))
+      throw new DOMException("The template changed.", "AbortError");
+  }
+
+  async function abortable<T>(
+    promise: Promise<T>,
+    signal: AbortSignal,
+  ): Promise<T> {
+    signal.throwIfAborted();
+    let abort!: () => void;
+    const stopped = new Promise<never>((_, reject) => {
+      abort = () => reject(signal.reason);
+      signal.addEventListener("abort", abort, { once: true });
+    });
+    try {
+      return await Promise.race([promise, stopped]);
+    } finally {
+      signal.removeEventListener("abort", abort);
+    }
+  }
+
+  async function reloadCurrent(
+    job: Job,
+    recoverStopped = false,
+  ): Promise<void> {
+    const { scope } = job;
+    const valid = () =>
+      scope.active === job &&
+      isCurrent(scope) &&
+      (recoverStopped || !job.controller.signal.aborted);
+    if (!options.reload || !valid()) return;
+    try {
+      await abortable(
+        options.reload(scope.id, () => {
+          if (!valid()) return false;
+          scope.committingReload = true;
+          return true;
+        }),
+        scope.lifetime.signal,
+      );
+    } finally {
+      scope.committingReload = false;
+    }
+  }
+
+  function memoryFor(id: string): Memory {
+    let found = memory.get(id);
+    if (!found) {
+      found = {
+        items: [],
+        records: new Map(),
+        storedIds: new Set(),
+        recoveries: new Map(),
+      };
+      memory.set(id, found);
+    }
+    return found;
+  }
+
+  function later(scope: Session, run: () => void, ms: number): void {
+    const timer = setTimeout(() => {
+      scope.timers.delete(timer);
+      run();
+    }, ms);
+    scope.timers.add(timer);
+  }
+
+  function report(error: unknown): void {
+    if (!isAbort(error)) options.onError?.(asError(error));
+  }
+
+  // --- The asker's outline (D42) ---------------------------------------------
+
+  function outline(scope: Session, blockIds: readonly string[]): void {
+    if (blockIds.length === 0) return;
+    if (collaboration) {
+      collaboration.outline(blockIds);
+      return;
+    }
+    const sequence = ++scope.highlightSequence;
+    const next = new Map(scope.highlights.value);
+    for (const id of blockIds) next.set(id, sequence);
+    scope.highlights.value = next;
+    later(
+      scope,
+      () => {
+        const rest = new Map(scope.highlights.value);
+        for (const id of blockIds)
+          if (rest.get(id) === sequence) rest.delete(id);
+        scope.highlights.value = rest;
+      },
+      AGENT_HIGHLIGHT_MS,
+    );
+  }
+
+  // --- Requests (D12) --------------------------------------------------------
+
+  async function settle(scope: Session): Promise<void> {
+    if (!collaboration) return;
+    await Promise.race([
+      collaboration.core.settle().catch(() => {}),
+      new Promise<void>((resolve) =>
+        later(scope, resolve, AI_SETTLE_TIMEOUT_MS),
+      ),
+    ]);
+  }
+
+  function requestBase(id: string): AiRequestBase {
+    const content = safeClone(toRaw(editor.content.value));
+    if (
+      new TextEncoder().encode(JSON.stringify(content)).length >
+      AI_CONTENT_MAX_BYTES
+    )
+      throw new SdkError(
+        "This template is too large for AI.",
+        413,
+        "content_too_large",
+      );
+    return {
+      templateId: id,
+      content,
+      revision: collaboration ? collaboration.core.revision.value : null,
+      sessionId: collaboration ? collaboration.core.sessionId : localSessionId,
+      mergeTags: options.mergeTags(),
+    };
+  }
+
+  function selectedBlockId(): string | null {
+    const id = editor.state.selectedBlockId;
+    if (!id) return null;
+    if (collaboration)
+      return collaboration.core.hasConfirmedBlock(id) ? id : null;
+    return hasBlock(editor.content.value.blocks, id) ? id : null;
+  }
+
+  // --- Applying edits (D6, D7, D8) ---------------------------------------------
+
+  function applyOps(
+    ops: Operation[],
+    turn: string,
+    scope: Session,
+  ): AiOperationsResult {
+    const normalized = options.normalize(ops, toRaw(editor.content.value));
+    const summary = summarizeAgentEdit(normalized);
+    if (collaboration) {
+      const result = collaboration.core.applyOperations(normalized, {
+        origin: "ai",
+        turn,
+      });
+      if (!result.applied) return refusalOf(result.error);
+      if (!summary.templateUpdated) outline(scope, summary.blockIds);
+      return { applied: true, inverse: result.inverse };
+    }
+    let inverse: Operation[];
+    try {
+      // Also the check: it throws the engine's refusal for ops that don't apply.
+      inverse = invertOperations(toRaw(editor.content.value), normalized);
+    } catch (error) {
+      if (error instanceof OperationError) return refusalOf(error);
+      throw error;
+    }
+    if (scope.lastRecordedTurn !== turn) {
+      options.history().record();
+      scope.lastRecordedTurn = turn;
+    }
+    applyOperationsInPlace(editor.content.value, safeClone(normalized));
+    editor.markDirty();
+    const selected = editor.state.selectedBlockId;
+    if (selected && !hasBlock(editor.content.value.blocks, selected)) {
+      editor.selectBlock(null);
+    }
+    if (!summary.templateUpdated) outline(scope, summary.blockIds);
+    return { applied: true, inverse };
+  }
+
+  function followRevision(revision: number, scope: Session): void {
+    if (!collaboration || !isCurrent(scope)) return;
+    const core = collaboration.core;
+    if (core.revision.value >= revision) return;
+    if (core.connection.value !== "connected") {
+      void core.catchUp();
+      return;
+    }
+    later(
+      scope,
+      () => {
+        if (isCurrent(scope) && core.revision.value < revision)
+          void core.catchUp();
+      },
+      AI_BROADCAST_GRACE_MS,
+    );
+  }
+
+  // --- Turns (D15, D16) --------------------------------------------------------
+
+  function patch(
+    scope: Session,
+    key: string,
+    changes: Partial<AiChatItem>,
+  ): void {
+    const saved = scope.memory;
+    saved.items = saved.items.map((item) => {
+      if (item.id !== key) return item;
+      const next = { ...item, ...changes };
+      return { ...next, ...replayAvailability(next, saved) };
+    });
+    for (const recovery of saved.recoveries.values()) {
+      if (recovery.item.id === key) {
+        recovery.item =
+          saved.items.find((item) => item.id === (changes.id ?? key)) ??
+          recovery.item;
+      }
+    }
+    scope.messages.value = saved.items;
+  }
+
+  function replayAvailability(
+    item: AiChatItem,
+    saved: Memory,
+  ): Pick<AiChatItem, "canUndo" | "canRedo"> {
+    const eligible = item.role === "assistant" && item.operationCount > 0;
+    if (saved.storedIds.has(item.id)) {
+      return {
+        canUndo:
+          eligible && !item.undone && typeof conversation?.undo === "function",
+        canRedo:
+          eligible && item.undone && typeof conversation?.redo === "function",
+      };
+    }
+    const record = saved.records.get(item.id);
+    return {
+      canUndo:
+        eligible &&
+        !item.undone &&
+        !record?.serverApplied &&
+        (record?.inverse.length ?? 0) > 0,
+      canRedo:
+        eligible &&
+        item.undone &&
+        !record?.serverApplied &&
+        (record?.redo?.length ?? 0) > 0,
+    };
+  }
+
+  const emptyOutcome = (): AiTurnOutcome => ({
+    messageId: null,
+    operationCount: 0,
+    text: "",
+    failed: true,
+  });
+
+  function runTurn(
+    kind: AiMessageKind,
+    userText: string,
+    call: (
+      base: AiRequestBase,
+      handlers: AiTurnHandlers,
+      signal: AbortSignal,
+    ) => Promise<AiTurnResult>,
+  ): Promise<AiTurnOutcome> {
+    const scope = scopeOf();
+    if (
+      !scope ||
+      scope.active?.kind === "turn" ||
+      scope.queue.some((job) => job.kind === "turn")
+    )
+      return Promise.resolve(emptyOutcome());
+    return enqueue(
+      "turn",
+      scope,
+      async (job) => {
+        const { controller } = job;
+        const saved = scope.memory;
+        const turn = crypto.randomUUID();
+        const userKey = crypto.randomUUID();
+        let key: string = crypto.randomUUID();
+        let operationCount = 0;
+        let text = "";
+        let interrupted = false;
+        let refusal: SdkError | null = null;
+        const record: TurnRecord = {
+          inverse: [],
+          redo: null,
+          serverApplied: false,
+          batchIds: new Set(),
+        };
+        let outcome = emptyOutcome();
+        let completed = false;
+        let reconciling = false;
+        const update = (changes: Partial<AiChatItem>) =>
+          patch(scope, key, changes);
+        const rememberRecovery = () => {
+          const item = saved.items.find((item) => item.id === key);
+          if (conversation && item)
+            saved.recoveries.set(turn, {
+              item,
+              user: saved.items.find((item) => item.id === userKey),
+              record,
+            });
+        };
+        const reconcileLateApplied = () => {
+          if (
+            reconciling ||
+            (!conversation && (collaboration || !options.reload))
+          )
+            return;
+          reconciling = true;
+          // Stop cancels provider work immediately. Received server facts still
+          // enter the lane and reload only the session that requested the turn.
+          void enqueue(
+            "reconcile",
+            scope,
+            async (recovery) => {
+              try {
+                let observed: number;
+                do {
+                  observed = operationCount;
+                  if (!collaboration && options.reload)
+                    await reloadCurrent(recovery, true);
+                  if (conversation) await readHistory(recovery, true, true);
+                } while (isCurrent(scope) && observed !== operationCount);
+              } catch (error) {
+                if (isCurrent(scope)) report(error);
+              } finally {
+                reconciling = false;
+              }
+            },
+            () => {
+              reconciling = false;
+            },
+          );
+        };
+        const handlers: AiTurnHandlers = {
+          onText: (chunk) => {
+            check(job);
+            text += chunk;
+            update({ text });
+          },
+          onOperations: async (ops) => {
+            check(job);
+            const result = applyOps(ops, turn, scope);
+            if (result.applied) {
+              record.inverse = [...result.inverse, ...record.inverse];
+              operationCount += ops.length;
+              update({ operationCount });
+            }
+            return result;
+          },
+          onApplied: (batch) => {
+            // An applied batch is a fact, including one received during Stop.
+            if (!isCurrent(scope))
+              throw new DOMException("The template changed.", "AbortError");
+            if (!collaboration && !options.reload) {
+              refusal ??= new SdkError(
+                AI_MISSING_PROVIDER_MESSAGE,
+                undefined,
+                "ai_provider_error",
+              );
+              throw refusal;
+            }
+            record.serverApplied = true;
+            record.batchIds.add(batch.batchId);
+            operationCount += batch.operationCount;
+            update({ operationCount });
+            followRevision(batch.revision, scope);
+            if (completed) {
+              rememberRecovery();
+              reconcileLateApplied();
+            }
+          },
+        };
+        try {
+          try {
+            await readHistory(job);
+            check(job);
+            scope.failure.value = null;
+            scope.failedPrompt.value = null;
+            const now = new Date().toISOString();
+            saved.records.set(key, record);
+            saved.items = [
+              ...saved.items,
+              {
+                id: userKey,
+                role: "user",
+                kind,
+                text: userText,
+                operationCount: 0,
+                undone: false,
+                canUndo: false,
+                canRedo: false,
+                createdAt: now,
+                status: "done",
+              },
+              {
+                id: key,
+                role: "assistant",
+                kind,
+                text: "",
+                operationCount: 0,
+                undone: false,
+                canUndo: false,
+                canRedo: false,
+                createdAt: now,
+                status: "streaming",
+              },
+            ];
+            scope.messages.value = saved.items;
+            await abortable(settle(scope), job.controller.signal);
+            check(job);
+            const result = await abortable(
+              call(requestBase(scope.id), handlers, controller.signal),
+              controller.signal,
+            );
+            check(job);
+            if (refusal) throw refusal;
+            if (result.text !== "") text = result.text;
+            if (result.messageId !== null && conversation) {
+              const previousKey = key;
+              key = result.messageId;
+              saved.storedIds.add(key);
+              saved.records.delete(previousKey);
+              saved.records.set(key, record);
+              patch(scope, previousKey, { id: key });
+            }
+            update({ text, status: "done" });
+            outcome = { messageId: key, operationCount, text, failed: false };
+          } catch (caught) {
+            const error = refusal ?? caught;
+            interrupted = controller.signal.aborted || isAbort(error);
+            if (!interrupted) report(error);
+            if (operationCount === 0 && (!interrupted || text === "")) {
+              saved.items = saved.items.filter(
+                (item) => item.id !== key && item.id !== userKey,
+              );
+              if (isCurrent(scope)) {
+                scope.messages.value = saved.items;
+                if (!interrupted) {
+                  if (kind === "chat") scope.failedPrompt.value = userText;
+                  scope.failure.value = {
+                    error: asError(error),
+                    context: "turn",
+                  };
+                }
+              }
+              outcome = {
+                messageId: null,
+                operationCount: 0,
+                text: "",
+                failed: !interrupted,
+              };
+            } else {
+              update({
+                status: interrupted ? "done" : "failed",
+                failure: interrupted
+                  ? undefined
+                  : { error: asError(error), context: "turn" },
+              });
+              outcome = {
+                messageId: key,
+                operationCount,
+                text,
+                failed: !interrupted,
+              };
+            }
+          }
+
+          // Recovery belongs to the turn, even after Stop. Switching templates
+          // still discards it; a user Stop retains the changes already applied.
+          if (
+            conversation &&
+            outcome.messageId !== null &&
+            operationCount > 0 &&
+            (outcome.failed || interrupted)
+          ) {
+            rememberRecovery();
+          }
+          let observed: number;
+          do {
+            observed = operationCount;
+            if (
+              record.serverApplied &&
+              !collaboration &&
+              options.reload &&
+              isCurrent(scope)
+            ) {
+              await reloadCurrent(job, true).catch((error) => {
+                if (isCurrent(scope)) report(error);
+              });
+            }
+            if (
+              conversation &&
+              saved.recoveries.has(turn) &&
+              isCurrent(scope)
+            ) {
+              await readHistory(job, true, true);
+              const recovered = saved.recoveries.get(turn);
+              if (recovered) {
+                outcome.messageId = recovered.item.id;
+                outcome.text = recovered.item.text;
+              }
+            }
+          } while (
+            isCurrent(scope) &&
+            record.serverApplied &&
+            observed !== operationCount
+          );
+          outcome.operationCount = operationCount;
+          return outcome;
+        } finally {
+          completed = true;
+          scope.messages.value = saved.items;
+        }
+      },
+      () => ({ ...emptyOutcome(), failed: false }),
+    );
+  }
+
+  // --- Undo and Redo of a message (D13, D14) ------------------------------------
+
+  function replay(id: string, direction: "undo" | "redo"): Promise<void> {
+    const scope = scopeOf();
+    if (!scope || scope.busy.value) return Promise.resolve();
+    return enqueue(
+      "replay",
+      scope,
+      async (job) => {
+        const saved = scope.memory;
+        const item = saved.items.find((item) => item.id === id);
+        if (!item) return;
+        const remote = conversation?.[direction];
+        const record = saved.records.get(id);
+        try {
+          check(job);
+          if (saved.storedIds.has(id)) {
+            if (typeof remote !== "function") {
+              throw new SdkError(
+                `This AI backend does not support ${direction}.`,
+                undefined,
+                "feature_unavailable",
+              );
+            }
+            if (item.undone !== (direction === "redo")) return;
+            const answer = await abortable(
+              remote(scope.id, id, {
+                sessionId: collaboration
+                  ? collaboration.core.sessionId
+                  : localSessionId,
+              }),
+              scope.lifetime.signal,
+            );
+            if (!isCurrent(scope)) return;
+            if ("operations" in answer) {
+              if (job.controller.signal.aborted) return;
+              const result = applyOps(
+                answer.operations,
+                `${direction}:${id}:${crypto.randomUUID()}`,
+                scope,
+              );
+              if (result.applied) {
+                patch(scope, id, {
+                  undone: direction === "undo",
+                  failure: undefined,
+                });
+              }
+              try {
+                await abortable(
+                  conversation!.settleReplay(scope.id, id, {
+                    replayId: answer.replayId,
+                    direction,
+                    applied: result.applied,
+                    sessionId: collaboration
+                      ? collaboration.core.sessionId
+                      : localSessionId,
+                  }),
+                  scope.lifetime.signal,
+                );
+              } catch (error) {
+                if (!isCurrent(scope)) return;
+                report(error);
+                patch(scope, id, {
+                  failure: { error: asError(error), context: direction },
+                });
+              }
+              if (!isCurrent(scope)) return;
+              if (!result.applied)
+                throw new CollaborationConflict(result.message, {
+                  code: result.code,
+                  opIndex: result.opIndex,
+                });
+              return;
+            } else {
+              patch(scope, id, {
+                undone: direction === "undo",
+                failure: undefined,
+              });
+              if (collaboration) followRevision(answer.applied.revision, scope);
+              else if (options.reload) await reloadCurrent(job, true);
+              else
+                throw new SdkError(
+                  AI_MISSING_PROVIDER_MESSAGE,
+                  undefined,
+                  "ai_provider_error",
+                );
+              return;
+            }
+          } else {
+            if (item.undone !== (direction === "redo")) return;
+            const ops = direction === "undo" ? record?.inverse : record?.redo;
+            if (!record || record.serverApplied || !ops || ops.length === 0)
+              return;
+            const result = applyOps(
+              ops,
+              `${direction}:${id}:${crypto.randomUUID()}`,
+              scope,
+            );
+            if (!result.applied)
+              throw new CollaborationConflict(result.message, {
+                code: result.code,
+                opIndex: result.opIndex,
+              });
+            if (direction === "undo") record.redo = result.inverse;
+            else record.inverse = result.inverse;
+          }
+          patch(scope, id, {
+            undone: direction === "undo",
+            failure: undefined,
+          });
+        } catch (error) {
+          if (!isCurrent(scope) || isAbort(error)) return;
+          report(error);
+          patch(scope, id, {
+            failure: { error: asError(error), context: direction },
+          });
+        }
+      },
+      () => {},
+    );
+  }
+
+  // --- History (D14) -----------------------------------------------------------
+
+  function toItem(message: AiChatMessage, saved: Memory): AiChatItem {
+    const item: AiChatItem = {
+      id: message.id,
+      role: message.role,
+      kind: message.kind,
+      text: message.text,
+      operationCount: sum(message),
+      undone: message.undone,
+      canUndo: false,
+      canRedo: false,
+      createdAt: message.createdAt,
+      status: "done",
+    };
+    return { ...item, ...replayAvailability(item, saved) };
+  }
+
+  function mergeHistory(list: AiChatMessage[], saved: Memory): AiChatItem[] {
+    for (const message of list) saved.storedIds.add(message.id);
+    const previous = new Map(saved.items.map((item) => [item.id, item]));
+    let items = list.map((message) => {
+      const item = toItem(message, saved);
+      const old = previous.get(item.id);
+      return old?.status === "failed"
+        ? { ...item, status: old.status, failure: old.failure }
+        : item;
+    });
+    for (const recovery of saved.recoveries.values()) {
+      const { item, record } = recovery;
+      // Only persisted identity can associate a local failure with a stored
+      // message. Other sessions may append messages of the same kind at any time.
+      const matches = list.filter(
+        (message) =>
+          message.role === "assistant" &&
+          message.kind === item.kind &&
+          (message.id === item.id ||
+            (record.batchIds.size > 0 &&
+              [...record.batchIds].every((id) =>
+                message.batches.some((batch) => batch.batchId === id),
+              ))),
+      );
+      const persisted = matches.length === 1 ? matches[0] : undefined;
+      if (persisted) {
+        saved.records.delete(item.id);
+        saved.records.set(persisted.id, record);
+        const reconciled = {
+          ...toItem(persisted, saved),
+          status: item.status,
+          failure: item.failure,
+        };
+        recovery.item = reconciled;
+        items = items.map((row) =>
+          row.id === persisted.id ? reconciled : row,
+        );
+      } else {
+        if (recovery.user && !items.some((row) => row.id === recovery.user!.id))
+          items.push(recovery.user);
+        items.push({ ...item, ...replayAvailability(item, saved) });
+      }
+    }
+    return items;
+  }
+
+  async function readHistory(
+    job: Job,
+    force = false,
+    recoverStopped = false,
+    token = job.scope.historyGeneration,
+  ): Promise<void> {
+    const { scope } = job;
+    if (
+      !isCurrent(scope) ||
+      token !== scope.historyGeneration ||
+      (!recoverStopped && job.controller.signal.aborted)
+    )
+      return;
+    if (!force && scope.loaded) return;
+    const saved = scope.memory;
+    if (!conversation) {
+      scope.messages.value = saved.items;
+      scope.loaded = true;
+      return;
+    }
+    scope.isLoadingHistory.value = true;
+    scope.loaded = false;
+    try {
+      const request = conversation.list(scope.id).then((list) => {
+        if (
+          destroyed ||
+          token !== scope.historyGeneration ||
+          (!recoverStopped &&
+            (!isCurrent(scope) || job.controller.signal.aborted))
+        )
+          return;
+        // A late recovery can reconcile remembered A, but only A's session refs
+        // are published. The public refs may already belong to B or a new A.
+        saved.items = mergeHistory(list, saved);
+        scope.messages.value = saved.items;
+        scope.loaded = true;
+        if (scope.failure.value?.context === "history")
+          scope.failure.value = null;
+      });
+      await abortable(
+        request,
+        recoverStopped ? scope.lifetime.signal : job.controller.signal,
+      );
+    } catch (error) {
+      if (
+        !isCurrent(scope) ||
+        token !== scope.historyGeneration ||
+        isAbort(error)
+      )
+        return;
+      report(error);
+      scope.failure.value = { error: asError(error), context: "history" };
+    } finally {
+      if (token === scope.historyGeneration)
+        scope.isLoadingHistory.value = false;
+    }
+  }
+
+  function loadConversation(scope = scopeOf()): Promise<void> {
+    if (!scope || !isCurrent(scope)) return Promise.resolve();
+    if (scope.pendingHistory?.generation === scope.historyGeneration)
+      return scope.pendingHistory.promise;
+    if (scope.loaded) return Promise.resolve();
+    const token = scope.historyGeneration;
+    const pending = { generation: token, promise: Promise.resolve() };
+    const promise = enqueue(
+      "history",
+      scope,
+      (job) => readHistory(job, false, false, token),
+      () => {},
+    );
+    pending.promise = promise.finally(() => {
+      if (scope.pendingHistory === pending) scope.pendingHistory = null;
+    });
+    scope.pendingHistory = pending;
+    return pending.promise;
+  }
+
+  function newChat(): Promise<void> {
+    const scope = scopeOf();
+    if (
+      !scope ||
+      (conversation && typeof conversation.clear !== "function") ||
+      (scope.active &&
+        scope.active.kind !== "history" &&
+        scope.active.kind !== "read") ||
+      scope.queue.some((job) => job.kind !== "history" && job.kind !== "read")
+    )
+      return Promise.resolve();
+    invalidateHistory(scope);
+    scope.active?.controller.abort();
+    return enqueue(
+      "clear",
+      scope,
+      async () => {
+        try {
+          if (conversation && typeof conversation.clear === "function")
+            await conversation.clear(scope.id);
+          // The backend cleared this template even if another session is current.
+          memory.delete(scope.id);
+          scope.memory.items = [];
+          scope.memory.records.clear();
+          scope.memory.storedIds.clear();
+          scope.memory.recoveries.clear();
+          invalidateHistory(scope);
+          scope.messages.value = [];
+          scope.loaded = true;
+          scope.failure.value = null;
+          scope.failedPrompt.value = null;
+          if (isCurrent(scope)) memory.set(scope.id, scope.memory);
+        } catch (error) {
+          if (!isCurrent(scope)) return;
+          report(error);
+          scope.failure.value = { error: asError(error), context: "history" };
+        }
+      },
+      () => {},
+    );
+  }
+
+  async function loadSuggestions(scope = scopeOf()): Promise<void> {
+    const suggest = provider.suggestions;
+    if (
+      !scope ||
+      !isCurrent(scope) ||
+      typeof suggest !== "function" ||
+      scope.suggestionsLoaded
+    )
+      return;
+    scope.suggestionsLoaded = true;
+    await enqueue(
+      "read",
+      scope,
+      async (job) => {
+        try {
+          if (scope.messages.value.length > 0) return;
+          await abortable(settle(scope), job.controller.signal);
+          check(job);
+          const list = await abortable(
+            suggest(requestBase(scope.id), job.controller.signal),
+            job.controller.signal,
+          );
+          check(job);
+          scope.suggestions.value = list.slice(0, 4);
+        } catch (error) {
+          if (isCurrent(scope)) report(error);
+        }
+      },
+      () => {},
+    );
+  }
+
+  // --- Panels (D17, D18) -------------------------------------------------------------
+
+  function bootstrap(scope: Session): void {
+    if (!isCurrent(scope)) return;
+    void loadConversation(scope).then(() => {
+      if (
+        isCurrent(scope) &&
+        panel.value === "chat" &&
+        scope.messages.value.length === 0
+      )
+        void loadSuggestions(scope);
+    });
+  }
+
+  function open(next: AiPanel): void {
+    const scope = scopeOf();
+    if (!scope || !isCurrent(scope)) return;
+    if (panel.value !== next && scope.busy.value) stop();
+    panel.value = next;
+    if (options.commentsOpen) options.commentsOpen.value = false;
+    if (next === "chat") bootstrap(scope);
+  }
+
+  function stopSession(scope: Session): void {
+    scope.active?.controller.abort();
+    for (const job of scope.queue) {
+      if (job.kind !== "reconcile") job.controller.abort();
+    }
+  }
+
+  function abandon(scope: Session): void {
+    scope.lifetime.abort();
+    stopSession(scope);
+    scope.busy.value = false;
+    scope.isLoadingHistory.value = false;
+    for (const timer of scope.timers) clearTimeout(timer);
+    scope.timers.clear();
+  }
+
+  function stop(): void {
+    const scope = scopeOf();
+    if (scope) stopSession(scope);
+  }
+
+  function close(): void {
+    stop();
+    panel.value = null;
+  }
+
+  const watchers: (() => void)[] = [];
+  if (options.commentsOpen) {
+    watchers.push(
+      watch(options.commentsOpen, (isOpen) => {
+        if (isOpen) close();
+      }),
+    );
+  }
+
+  watchers.push(
+    watch(
+      () => editor.loadVersion?.value ?? templateId.value,
+      () => {
+        if (destroyed) return;
+        const previous = currentSession.value;
+        if (previous?.committingReload && isCurrent(previous)) {
+          previous.committingReload = false;
+          return;
+        }
+        if (previous) abandon(previous);
+        const id = templateId.value;
+        const next = id === null ? null : createSession(id);
+        currentSession.value = next;
+        if (next && panel.value === "chat") bootstrap(next);
+      },
+      { flush: "sync" },
+    ),
+  );
+
+  // --- The features ------------------------------------------------------------------
+
+  return {
+    capability: {
+      isFeatureEnabled: (feature) => isAvailable.value && has(feature),
+      open,
+      highlightOf: (blockId) =>
+        currentSession.value?.highlights.value.get(blockId) ?? null,
+    },
+    panel,
+    open,
+    close,
+    has,
+    templateId,
+    isAvailable,
+    hasConversation: conversation !== null,
+    canClear: conversation === null || typeof conversation.clear === "function",
+    messages,
+    isLoadingHistory,
+    isRunning,
+    busy: isRunning,
+    failure,
+    failedPrompt,
+    suggestions,
+    send: (message) => {
+      const chat = provider.chat;
+      return typeof chat === "function"
+        ? runTurn("chat", message, (base, handlers, signal) =>
+            chat(
+              { ...base, message, selectedBlockId: selectedBlockId() },
+              handlers,
+              signal,
+            ),
+          )
+        : Promise.resolve({
+            messageId: null,
+            operationCount: 0,
+            text: "",
+            failed: true,
+          });
+    },
+    fix: (finding) => {
+      const fixFinding = provider.fixFinding;
+      return typeof fixFinding === "function"
+        ? runTurn("fix", `Fix: ${finding.message}`, (base, handlers, signal) =>
+            fixFinding({ ...base, finding }, handlers, signal),
+          )
+        : Promise.resolve({
+            messageId: null,
+            operationCount: 0,
+            text: "",
+            failed: true,
+          });
+    },
+    design: ({ file, prompt }) => {
+      const design = provider.design;
+      const fileKind = file.type === "application/pdf" ? "pdf" : "image";
+      return typeof design === "function"
+        ? runTurn(
+            "design",
+            prompt ? `Built from design\n${prompt}` : "Built from design",
+            (base, handlers, signal) =>
+              design({ ...base, prompt, file, fileKind }, handlers, signal),
+          )
+        : Promise.resolve({
+            messageId: null,
+            operationCount: 0,
+            text: "",
+            failed: true,
+          });
+    },
+    stop,
+    newChat,
+    undoMessage: (id) => replay(id, "undo"),
+    redoMessage: (id) => replay(id, "redo"),
+    loadSuggestions: () => loadSuggestions(),
+    score: (signal) => {
+      const scope = scopeOf();
+      const score = provider.score;
+      if (!scope || typeof score !== "function")
+        return Promise.reject(new Error("Scoring isn't available."));
+      return enqueue(
+        "read",
+        scope,
+        async (job) => {
+          const abort = () => job.controller.abort(signal.reason);
+          signal.addEventListener("abort", abort, { once: true });
+          try {
+            signal.throwIfAborted();
+            await abortable(settle(scope), job.controller.signal);
+            check(job);
+            return await abortable(
+              score(
+                {
+                  ...requestBase(scope.id),
+                  lintFindings: options.lintFindings(),
+                },
+                job.controller.signal,
+              ),
+              job.controller.signal,
+            );
+          } finally {
+            signal.removeEventListener("abort", abort);
+          }
+        },
+        () => {
+          throw new DOMException("Scoring stopped.", "AbortError");
+        },
+      );
+    },
+    rewrite: (input, onText, signal) => {
+      const scope = scopeOf();
+      const rewrite = provider.rewrite;
+      if (!scope || typeof rewrite !== "function")
+        return Promise.reject(new Error("Rewrite isn't available."));
+      return enqueue(
+        "read",
+        scope,
+        async (job) => {
+          const abort = () => job.controller.abort(signal.reason);
+          signal.addEventListener("abort", abort, { once: true });
+          try {
+            signal.throwIfAborted();
+            check(job);
+            return await abortable(
+              rewrite(
+                { ...requestBase(scope.id), ...input },
+                {
+                  onText: (text) => {
+                    check(job);
+                    onText(text);
+                  },
+                },
+                job.controller.signal,
+              ),
+              job.controller.signal,
+            );
+          } finally {
+            signal.removeEventListener("abort", abort);
+          }
+        },
+        () => {
+          throw new DOMException("Rewrite stopped.", "AbortError");
+        },
+      );
+    },
+    destroy: () => {
+      if (destroyed) return;
+      destroyed = true;
+      const scope = currentSession.value;
+      if (scope) abandon(scope);
+      currentSession.value = null;
+      for (const unwatch of watchers) unwatch();
+      watchers.length = 0;
+    },
+  };
+}

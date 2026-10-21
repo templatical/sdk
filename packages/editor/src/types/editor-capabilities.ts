@@ -1,12 +1,31 @@
 import type { ComputedRef, Ref } from "vue";
-import type { BlockLock } from "@templatical/types";
+import type { AiFeatureName, BlockLock } from "@templatical/types";
 
 export interface EditorCapabilities {
   plan?: {
     hasFeature(feature: string): boolean;
   };
+  /**
+   * Present only when an `AiProvider` is configured via `init({ ai })`. A
+   * feature is enabled while its provider member is a function and a template
+   * is loaded; read it inside a computed, it is reactive.
+   */
   ai?: {
-    isFeatureEnabled(feature: string): boolean;
+    isFeatureEnabled(feature: AiFeatureName): boolean;
+    open(panel: "chat" | "scoring" | "design"): void;
+    /**
+     * While this editor's own AI turn outlines this block (no collaboration
+     * provider), a number that changes with each turn; `null` otherwise.
+     */
+    highlightOf(blockId: string): number | null;
+  };
+  /**
+   * Present while the template linter runs: open the right sidebar's Issues
+   * tab. The AI scoring panel links to it, because accessibility is the
+   * linter's (D23).
+   */
+  issues?: {
+    open(): void;
   };
   /**
    * Present only when a `CollaborationProvider` is configured — via

@@ -1,6 +1,6 @@
 import "./dom-stubs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useCloudFeatureFlags } from "../src/cloud/composables/useCloudFeatureFlags";
 
 function createMockPlanConfig(features: string[] = [], config: any = null) {
@@ -10,61 +10,14 @@ function createMockPlanConfig(features: string[] = [], config: any = null) {
   };
 }
 
-function createMockAiConfig(hasAny: boolean) {
-  return {
-    hasAnyMenuFeature: computed(() => hasAny),
-  };
-}
-
 describe("useCloudFeatureFlags", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("canUseAiGeneration is true when planConfig has aiGeneration AND aiConfig.hasAnyMenuFeature is true", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig(["aiGeneration"]) as any,
-      aiConfig: createMockAiConfig(true) as any,
-      getTemplateId: () => null,
-    });
-
-    expect(result.canUseAiGeneration.value).toBe(true);
-  });
-
-  it("canUseAiGeneration is false when aiGeneration feature missing", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig([]) as any,
-      aiConfig: createMockAiConfig(true) as any,
-      getTemplateId: () => null,
-    });
-
-    expect(result.canUseAiGeneration.value).toBe(false);
-  });
-
-  it("canUseAiGeneration is false when hasAnyMenuFeature is false", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig(["aiGeneration"]) as any,
-      aiConfig: createMockAiConfig(false) as any,
-      getTemplateId: () => null,
-    });
-
-    expect(result.canUseAiGeneration.value).toBe(false);
-  });
-
-  it("canUseAiGeneration is false when both conditions fail", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig([]) as any,
-      aiConfig: createMockAiConfig(false) as any,
-      getTemplateId: () => null,
-    });
-
-    expect(result.canUseAiGeneration.value).toBe(false);
-  });
-
   it("canSendTestEmail reflects planConfig.hasFeature('testEmail')", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig(["testEmail"]) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -74,7 +27,6 @@ describe("useCloudFeatureFlags", () => {
   it("canSendTestEmail is false when testEmail feature missing", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([]) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -84,7 +36,6 @@ describe("useCloudFeatureFlags", () => {
   it("hasTemplateSaved is true once a template id exists", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => "tmpl-123",
     });
 
@@ -94,7 +45,6 @@ describe("useCloudFeatureFlags", () => {
   it("hasTemplateSaved is false when no template", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -107,7 +57,6 @@ describe("useCloudFeatureFlags", () => {
         limits: { maxTemplates: 50 },
         templateCount: 10,
       }) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -117,7 +66,6 @@ describe("useCloudFeatureFlags", () => {
   it("templateLimit returns null when no config", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([], null) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -130,7 +78,6 @@ describe("useCloudFeatureFlags", () => {
         limits: { maxTemplates: 50 },
         templateCount: 7,
       }) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
@@ -140,14 +87,13 @@ describe("useCloudFeatureFlags", () => {
   it("templateCount returns 0 when no config", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([], null) as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
     expect(result.templateCount.value).toBe(0);
   });
 
-  // Three members must not exist here.
+  // Save status and footer branding must not exist here.
   //
   // Footer branding is not an entitlement: `config.branding !== false` decides it
   // on any plan, so an `isWhiteLabeled` flag would gate nothing.
@@ -156,16 +102,14 @@ describe("useCloudFeatureFlags", () => {
   // `useTemplatesFeature`, which the one shared header reads. They were never
   // entitlements, and a second copy here is how two headers come to show
   // different save states.
-  it("carries only the five members that are still entitlement business", () => {
+  it("carries only the four members that are still entitlement business", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
       getTemplateId: () => null,
     });
 
     expect(Object.keys(result).sort()).toEqual([
       "canSendTestEmail",
-      "canUseAiGeneration",
       "hasTemplateSaved",
       "templateCount",
       "templateLimit",

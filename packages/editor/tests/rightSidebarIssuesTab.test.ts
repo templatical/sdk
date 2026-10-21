@@ -81,4 +81,23 @@ describe("RightSidebar Issues tab", () => {
     // useEditorCore provides no linter at all when every lint key is false.
     expect(mountSidebar(null).find("#tpl-tab-issues").exists()).toBe(false);
   });
+
+  it("opens the tab its owner asks for (v-model:tab, D23)", async () => {
+    const wrapper = mountEditor(RightSidebar, {
+      props: {
+        selectedBlock: null,
+        settings: createDefaultTemplateContent().settings,
+        tab: "issues",
+      },
+      provides: {
+        [TEMPLATE_LINT_KEY]: lintState({ ready: true, unavailable: false }),
+      },
+    });
+    expect(wrapper.get("#tpl-tab-issues").attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    await wrapper.get("#tpl-tab-content").trigger("click");
+    expect(wrapper.emitted("update:tab")).toEqual([["content"]]);
+  });
 });

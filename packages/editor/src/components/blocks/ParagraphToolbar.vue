@@ -27,8 +27,9 @@ import {
   Superscript,
   Underline,
 } from "@lucide/vue";
-import { computed, inject } from "vue";
+import { computed, defineAsyncComponent, inject } from "vue";
 import {
+  CAPABILITIES_KEY,
   EDITOR_KEY,
   THEME_STYLES_KEY,
   UI_THEME_KEY,
@@ -45,6 +46,12 @@ import {
 } from "../../constants/styleConstants";
 import { resolveEffectiveTextColor } from "../../utils/richTextColor";
 
+// A chunk of its own: an editor without an `ai` provider never renders the
+// menu and never downloads it (D20).
+const AiRewriteMenu = defineAsyncComponent(
+  () => import("../ai/AiRewriteMenu.vue"),
+);
+
 const props = defineProps<{
   editor: Editor | null;
   toolbarPosition: { top: number; left: number };
@@ -52,6 +59,13 @@ const props = defineProps<{
   canRequestMergeTag: boolean;
   canInsertLogicTag: boolean;
 }>();
+
+const caps = inject(CAPABILITIES_KEY, {});
+// Rewrite acts on the whole paragraph (D22); the capability already waits
+// for a loaded template.
+const canRewriteWithAi = computed(
+  () => caps.ai?.isFeatureEnabled("rewrite") ?? false,
+);
 
 const emit = defineEmits<{
   (e: "open-link-dialog"): void;
@@ -389,6 +403,10 @@ function setHighlight(color: string): void {
               <Braces :size="16" :stroke-width="2" />
               {{ t.logicTag.insertShort }}
             </button>
+          </template>
+          <template v-if="canRewriteWithAi">
+            <ToolbarSeparator />
+            <AiRewriteMenu :editor="editor" />
           </template>
         </div>
       </template>

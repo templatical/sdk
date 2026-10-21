@@ -4,6 +4,7 @@ import {
   defineAsyncComponent,
   onMounted,
   onUnmounted,
+  provide,
   ref,
   toRaw,
   watch,
@@ -23,6 +24,8 @@ import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
+import { toAiLintFindings, useAiFeature } from "./composables/useAiFeature";
+import { toAiMergeTags } from "./utils/aiMergeTags";
 import { useMediaFeature } from "./composables/useMediaFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
 import { useTemplatesFeature } from "./composables/useTemplatesFeature";
@@ -37,12 +40,14 @@ import { insertBlockAtSelection } from "./utils/insertBlockAtSelection";
 import { withCollaborativeSave } from "./utils/withCollaborativeSave";
 import { logger } from "./utils/logger";
 import {
+  normalizeRemoteOperations,
   withNormalizedContentWrites,
   withNormalizedTemplateLoads,
 } from "./utils/normalizeMergeTagMarkup";
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
+import { AI_FEATURE_KEY } from "./keys";
 
 import { RotateCcw } from "@lucide/vue";
 import { warningBtnCompactClass } from "./constants/styleConstants";
@@ -50,6 +55,7 @@ import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";
+import type { RightSidebarTab } from "./components/RightSidebar.vue";
 import SmallScreenNotice from "./components/SmallScreenNotice.vue";
 import EditorFooter from "./components/EditorFooter.vue";
 import EditorHeader from "./components/EditorHeader.vue";
@@ -270,8 +276,8 @@ const comments = props.config.comments
       provider: props.config.comments,
       editor,
       user: props.config.user,
-      // Cloud keeps comments mutually exclusive with its AI and scoring sidebars:
-      // they share one 360px gutter, and two of them open at once would overlap.
+      // Cloud supplies its comments state; the open-source AI feature keeps
+      // comments and AI panels exclusive in their shared 360px gutter.
       isOpen: cloudAttachment?.panelState.commentsOpen,
       onError: props.config.onError,
       // Cloud folds in the `commenting` plan feature and "the template must be
@@ -290,6 +296,36 @@ const comments = props.config.comments
 const CommentsPanel = defineAsyncComponent(
   () => import("./components/CommentsPanel.vue"),
 );
+
+// The AI panels: lazy, mounted only with an `ai` provider; each panel is its
+// own chunk inside.
+const AiPanels = defineAsyncComponent(
+  () => import("./components/ai/AiPanels.vue"),
+);
+
+// --- AI (opt-in: an `ai` provider) ---
+// Built before `useEditorCore` so its capability is in the object core
+// provides. It reads core (the history, the merge tags, the linter) through
+// getters, at call time. Its UI is lazy: `AiPanels` and the header menu.
+const ai = props.config.ai
+  ? useAiFeature({
+      provider: props.config.ai,
+      editor,
+      collaboration,
+      history: () => core.history,
+      reload: templates
+        ? (id, shouldApply) => templates.load(id, shouldApply)
+        : null,
+      mergeTags: () => toAiMergeTags(core.mergeTags.value, core.mergeTagSyntax),
+      normalize: (ops, content) =>
+        normalizeRemoteOperations(ops, content, props.config.mergeTags),
+      lintFindings: () =>
+        toAiLintFindings(core.templateLint?.issues.value ?? []),
+      commentsOpen: comments?.isOpen ?? null,
+      onError: props.config.onError,
+    })
+  : null;
+if (ai) provide(AI_FEATURE_KEY, ai);
 
 // Lazy: an editor without a collaboration provider never downloads it.
 const CollaborationNotices = defineAsyncComponent(
@@ -390,6 +426,7 @@ const capabilities: EditorCapabilities = {
   ...(testEmail ? { testEmail: testEmail.capability } : {}),
   ...(comments ? { comments: comments.capability } : {}),
   ...(collaboration ? { collaboration: collaboration.capability } : {}),
+  ...(ai ? { ai: ai.capability } : {}),
 };
 
 const core = useEditorCore({
@@ -429,6 +466,18 @@ const core = useEditorCore({
   editorRoot: props.shadowRoot,
   history: collaboration?.history,
 });
+
+// The right sidebar's tab, owned here so other chrome can open one: the AI
+// scoring panel opens Issues through `capabilities.issues`. Set only while
+// the linter runs, because the tab exists only then.
+const rightSidebarTab = ref<RightSidebarTab>("content");
+if (core.templateLint) {
+  capabilities.issues = {
+    open: () => {
+      rightSidebarTab.value = "issues";
+    },
+  };
+}
 
 // Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
 // `core.templateLint`) and the capability entries Cloud contributes — mutated
@@ -492,16 +541,14 @@ if (versionHistory) capabilities.versionHistory = versionHistory.capability;
 /**
  * Left/right insets for the canvas body and the footer, which must always agree.
  *
- * Cloud's sidebars widen the right gutter when one is open; without a cloud
- * runtime `rightPanelOpen` is simply never true.
+ * Comments and the open-source AI panels widen the right gutter while open.
  */
 /**
  * Whether a 360px feature panel occupies the right-hand gutter.
  *
- * The comments panel is the one an OSS session can open, so it counts on its own.
- * In Cloud it also drives `rightPanelOpen` (they share the panel state, which is
- * what keeps comments mutually exclusive with the AI and scoring sidebars), so the
- * `||` is redundant there and load-bearing here.
+ * Comments and the open-source AI panels share this gutter; the AI feature
+ * keeps their open states mutually exclusive. Cloud also supplies its panel
+ * state, which shares the comments ref.
  *
  * Two things read this, and **both must**: the canvas/footer insets below, and
  * `RightSidebar`'s `shifted-left` — the properties panel sits at `right-0` too, so
@@ -510,6 +557,7 @@ if (versionHistory) capabilities.versionHistory = versionHistory.capability;
 const rightPanelOpen = computed(
   () =>
     comments?.isOpen.value === true ||
+    (ai !== null && ai.panel.value !== null) ||
     cloudAttachment?.panelState.rightPanelOpen.value === true,
 );
 
@@ -519,13 +567,6 @@ const bodyInsetClass = computed(() => {
     ? "tpl:left-12 tpl:right-[680px]"
     : "tpl:left-12 tpl:right-[320px]";
 });
-
-/** Canvas affordances that open a Cloud panel. No-ops without a runtime. */
-function openCloudPanel(panel: "ai-chat" | "design-reference"): void {
-  if (!cloudAttachment) return;
-  if (panel === "ai-chat") cloudAttachment.panelState.aiChatOpen.value = true;
-  else cloudAttachment.panelState.designReferenceOpen.value = true;
-}
 
 // --- Small-screen gate (#235) ---
 // Below ~768px the three-pane chrome can't lay out usably; show a notice
@@ -541,6 +582,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   props.fontsManager.cleanupFontLinks();
+  ai?.destroy();
   props.cloud?.destroy();
   core.destroy();
 });
@@ -622,6 +664,7 @@ defineExpose({
         :version-history="versionHistory"
         :comments="comments"
         :collaboration="collaboration"
+        :ai="ai"
       >
         <template v-if="cloudAttachment" #left-extras>
           <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
@@ -727,8 +770,6 @@ defineExpose({
             :dark-mode="editor.state.darkMode"
             :preview-mode="editor.state.previewMode"
             @select-block="editor.selectBlock"
-            @open-ai-chat="openCloudPanel('ai-chat')"
-            @open-design-reference="openCloudPanel('design-reference')"
           />
         </main>
       </div>
@@ -752,6 +793,7 @@ defineExpose({
       <!-- Right sidebar — persisted with v-show -->
       <RightSidebar
         v-show="!editor.state.previewMode"
+        v-model:tab="rightSidebarTab"
         :selected-block="editor.selectedBlock.value"
         :settings="editor.content.value.settings"
         :shifted-left="rightPanelOpen"
@@ -823,6 +865,10 @@ defineExpose({
     <!-- The comments sidebar. Only mounted when a provider and a `user` are
          configured; the sidebar's own chunk loads the first time it opens. -->
     <CommentsPanel v-if="comments?.isAvailable.value" :feature="comments" />
+
+    <!-- The AI panels: chat, scoring and design share the right gutter with
+         comments, one at a time (D18). -->
+    <AiPanels v-if="ai" :feature="ai" />
 
     <!-- Collaboration notices: a refused selection or edit, a skipped undo,
          a refused replace, reconnecting. -->

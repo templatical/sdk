@@ -10,6 +10,7 @@ import {
   type ComputedRef,
   type DeepReadonly,
   type Ref,
+  type ShallowRef,
 } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { registerEditorInstance } from "../utils/activeEditorTracker";
@@ -35,6 +36,7 @@ import type {
   LogicTagsConfig,
   MergeTag,
   MergeTagsConfig,
+  SyntaxPreset,
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
@@ -344,6 +346,9 @@ export interface UseEditorCoreReturn {
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   /** Replace the configured merge tags at runtime. */
   setMergeTags: (next: MergeTag[]) => void;
+  /** The live merge tags (`setMergeTags` replaces them) and their syntax. */
+  mergeTags: ShallowRef<MergeTag[]>;
+  mergeTagSyntax: SyntaxPreset;
   destroy: () => void;
 }
 
@@ -850,6 +855,8 @@ export function useEditorCore(
     appliesConditionFilter,
     registerCustomBlocks,
     setMergeTags,
+    mergeTags,
+    mergeTagSyntax,
     destroy,
   };
 }

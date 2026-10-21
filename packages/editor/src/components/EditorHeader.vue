@@ -6,6 +6,7 @@ import type {
   BaseEditorReturn,
   UseEditorCoreReturn,
 } from "../composables/useEditorCore";
+import type { UseAiFeatureReturn } from "../composables/useAiFeature";
 import type { UseCollaborationFeatureReturn } from "../composables/useCollaborationFeature";
 import type { UseCommentsFeatureReturn } from "../composables/useCommentsFeature";
 import type { UseTemplatesFeatureReturn } from "../composables/useTemplatesFeature";
@@ -30,6 +31,10 @@ const VersionHistoryMenu = defineAsyncComponent(
 // Lazy: an editor with no collaboration provider never downloads it.
 const CollaboratorBar = defineAsyncComponent(
   () => import("./collaboration/CollaboratorBar.vue"),
+);
+// Lazy: an editor without an `ai` provider never downloads it.
+const AiHeaderMenu = defineAsyncComponent(
+  () => import("./ai/AiHeaderMenu.vue"),
 );
 
 /**
@@ -65,6 +70,8 @@ defineProps<{
   comments: UseCommentsFeatureReturn | null;
   /** Null when no `CollaborationProvider` is configured. */
   collaboration: UseCollaborationFeatureReturn | null;
+  /** Null when no `AiProvider` is configured. */
+  ai: UseAiFeatureReturn | null;
 }>();
 </script>
 
@@ -181,7 +188,7 @@ defineProps<{
       />
     </div>
 
-    <!-- Right: save status → Comments → [cloud extras: AI] → test email → Save.
+    <!-- Right: save status → Comments → AI → [cloud extras] → test email → Save.
          Save is last: it is the primary action. `justify-end` anchors the row to
          the right edge, so a control appearing at its start extends the row
          leftward and moves nothing already in it — but note the row is already
@@ -234,6 +241,9 @@ defineProps<{
           {{ comments.unresolvedCount.value }}
         </span>
       </button>
+
+      <!-- AI: after Comments, before test email, as Cloud's AI button sat. -->
+      <AiHeaderMenu v-if="ai" :feature="ai" />
 
       <slot name="right-extras" />
 

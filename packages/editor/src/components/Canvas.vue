@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { useCloudI18n } from "../composables/useCloudI18n";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -83,12 +82,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "select-block", blockId: string | null): void;
-  (e: "open-ai-chat"): void;
-  (e: "open-design-reference"): void;
 }>();
 
 const { t } = useI18n();
-const { t: cloudT } = useCloudI18n();
 
 const editor = requireInject(EDITOR_KEY, "Canvas");
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "Canvas");
@@ -122,16 +118,8 @@ provide(
   ),
 );
 
-const canUseAiChat = computed(
-  () =>
-    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
-    (caps.ai?.isFeatureEnabled("chat") ?? false),
-);
-const canUseDesignToTemplate = computed(
-  () =>
-    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
-    (caps.ai?.isFeatureEnabled("designToTemplate") ?? false),
-);
+const canChat = computed(() => caps.ai?.isFeatureEnabled("chat") ?? false);
+const canDesign = computed(() => caps.ai?.isFeatureEnabled("design") ?? false);
 
 /**
  * Whether the hand-toggled display-condition filter applies here. Owned by
@@ -435,32 +423,36 @@ function handleFetchData(
               {{ t.canvas.dragHint }}
             </p>
             <p
-              v-if="canUseAiChat && cloudT"
+              v-if="canChat"
               class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
-              {{ t.canvas.aiHintChat }}
+              {{ t.ai.canvas.chatHint }}
               <button
+                type="button"
+                data-testid="canvas-ai-chat"
                 class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-                @click="emit('open-ai-chat')"
+                @click="caps.ai?.open('chat')"
               >
-                <Sparkles :size="14" :stroke-width="2" />
-                {{ cloudT.aiMenu.aiAssistant }}
+                <Sparkles :size="14" :stroke-width="2" aria-hidden="true" />
+                {{ t.ai.menu.chat }}
               </button>
-              {{ t.canvas.aiHintChatSuffix }}
+              {{ t.ai.canvas.chatHintSuffix }}
             </p>
             <p
-              v-if="canUseDesignToTemplate && cloudT"
+              v-if="canDesign"
               class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
-              {{ t.canvas.aiHintDesign }}
+              {{ t.ai.canvas.designHint }}
               <button
+                type="button"
+                data-testid="canvas-ai-design"
                 class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-                @click="emit('open-design-reference')"
+                @click="caps.ai?.open('design')"
               >
-                <ImageUp :size="14" :stroke-width="2" />
-                {{ cloudT.aiMenu.designToTemplate }}
+                <ImageUp :size="14" :stroke-width="2" aria-hidden="true" />
+                {{ t.ai.menu.design }}
               </button>
-              {{ t.canvas.aiHintDesignSuffix }}
+              {{ t.ai.canvas.designHintSuffix }}
             </p>
           </div>
           <div

@@ -623,11 +623,6 @@ const de: typeof en = {
     dragHint:
       "Beginnen Sie von Grund auf, indem Sie Blöcke aus der Seitenleiste ziehen",
     dropHere: "Hier ablegen",
-    aiHintChat: "oder lassen Sie",
-    aiHintChatSuffix: "in Sekunden eine komplette Vorlage für Sie erstellen",
-    aiHintDesign:
-      "Haben Sie ein bestehendes Design? Laden Sie einen Screenshot, ein Bild oder PDF hoch und",
-    aiHintDesignSuffix: "erstellt es sofort nach",
   },
 
   // Seitenleiste
@@ -727,15 +722,150 @@ const de: typeof en = {
       "Verbindung wird wiederhergestellt… Sie können weiter bearbeiten.",
     dismiss: "Ausblenden",
     anAgent: "Ein Agent",
-    agentChangedBlock: "{client} für {name} hat einen Block geändert.",
-    agentChangedBlocks: "{client} für {name} hat {count} Blöcke geändert.",
-    agentChangedSettings:
-      "{client} für {name} hat die Vorlageneinstellungen geändert.",
+    agentFor: "{client} für {name}",
+    aiFor: "KI (für {name})",
+    agentChangedBlock: "{who} hat einen Block geändert.",
+    agentChangedBlocks: "{who} hat {count} Blöcke geändert.",
+    agentChangedSettings: "{who} hat die Vorlageneinstellungen geändert.",
     agentChangedBlockAndSettings:
-      "{client} für {name} hat einen Block und die Vorlageneinstellungen geändert.",
+      "{who} hat einen Block und die Vorlageneinstellungen geändert.",
     agentChangedBlocksAndSettings:
-      "{client} für {name} hat {count} Blöcke und die Vorlageneinstellungen geändert.",
-    agentUpdatedTemplate: "{client} für {name} hat die Vorlage aktualisiert.",
+      "{who} hat {count} Blöcke und die Vorlageneinstellungen geändert.",
+    agentUpdatedTemplate: "{who} hat die Vorlage aktualisiert.",
+  },
+  ai: {
+    rewrite: {
+      tooLarge:
+        "Dieser Absatz ist zu lang für KI. Wählen Sie einen Absatz mit höchstens 20.000 Zeichen.",
+      title: "Mit KI umformulieren",
+      close: "Schließen",
+      suggestionLabel: "KI-Vorschlag",
+      presets: {
+        shorten: "Kürzen",
+        expand: "Erweitern",
+        friendlier: "Freundlicher",
+        formal: "Förmlicher",
+        fixGrammar: "Grammatik korrigieren",
+        translate: "Übersetzen",
+      },
+      language: "Sprache",
+      instructionLabel: "Ihre Anweisung",
+      instructionPlaceholder: "Oder sagen Sie, wie umformuliert werden soll…",
+      run: "Umformulieren",
+      rewriting: "Wird umformuliert…",
+      stop: "Stoppen",
+      replaceAction: "Ersetzen",
+      discard: "Verwerfen",
+    },
+    errors: {
+      historyError:
+        "Die Unterhaltung konnte nicht geladen werden. Versuchen Sie es erneut.",
+      missingProvider:
+        "Dieses KI-Backend benötigt einen Vorlagen- oder Kollaborationsanbieter, um seine Änderungen anzuzeigen.",
+      featureUnavailable: "Diese KI-Funktion ist nicht verfügbar.",
+      limitReached: "Ihr KI-Kontingent ist vorerst aufgebraucht.",
+      limitReachedUntil: "Ihr KI-Kontingent ist bis {date} aufgebraucht.",
+      rateLimited: "Zu viele KI-Anfragen. Versuchen Sie es gleich noch einmal.",
+      turnRunning: "Für diese Vorlage läuft bereits eine KI-Anfrage.",
+      contentTooLarge: "Diese Vorlage ist zu groß für die KI.",
+      outputInvalid:
+        "Die KI konnte kein gültiges Ergebnis liefern. Versuchen Sie es noch einmal.",
+      providerError:
+        "Die KI ist gerade nicht erreichbar. Versuchen Sie es später noch einmal.",
+      templateChanged:
+        "Die Vorlage hat sich geändert, während die KI gearbeitet hat.",
+      blockLocked: "Jemand bearbeitet einen Block, den die KI brauchte.",
+      undoRefused:
+        "Jemand hat diese Blöcke inzwischen geändert, deshalb lässt sich das nicht rückgängig machen.",
+      redoRefused:
+        "Jemand hat diese Blöcke inzwischen geändert, deshalb lässt sich das nicht wiederholen.",
+      messageGone: "Diese Nachricht ist nicht mehr im Verlauf.",
+      generic: "Etwas ist schiefgelaufen. Versuchen Sie es noch einmal.",
+    },
+    menu: {
+      button: "KI",
+      chat: "KI-Assistent",
+      chatDescription: "Mit der KI eine Vorlage erstellen oder ändern",
+      design: "Design zu Vorlage",
+      designDescription: "Eine Vorlage aus einem Bild oder PDF erstellen",
+      scoring: "Vorlagenbewertung",
+      scoringDescription: "Spam-Risiko, Lesbarkeit und Best Practices prüfen",
+    },
+    chat: {
+      title: "KI-Assistent",
+      notice: "Antworten und Änderungen stammen von einer KI.",
+      close: "Schließen",
+      newChat: "Neuer Chat",
+      inputPlaceholder: "Beschreiben Sie die gewünschte Änderung...",
+      send: "Senden",
+      stop: "Stoppen",
+      placeholder:
+        "Beschreiben Sie die gewünschte E-Mail oder bitten Sie um eine Änderung an dieser.",
+      loadingHistory: "Verlauf wird geladen...",
+      appliedChange: "1 Änderung angewendet",
+      appliedChanges: "{count} Änderungen angewendet",
+      undone: "Rückgängig gemacht",
+      undo: "Rückgängig",
+      redo: "Wiederholen",
+      disclaimer: "Die KI kann Fehler machen. Prüfen Sie die Änderungen.",
+    },
+    design: {
+      title: "Design zu Vorlage",
+      close: "Schließen",
+      remove: "Datei entfernen",
+      dropHint: "Bild oder PDF hier ablegen oder zum Auswählen klicken",
+      accepted: "PNG, JPEG, WebP, GIF oder PDF, bis 5 MB",
+      promptLabel: "Hinweise (optional)",
+      promptPlaceholder: "Was die KI über das Design wissen sollte...",
+      generate: "Aus Design erstellen",
+      generating: "Die KI liest Ihr Design und erstellt die Vorlage...",
+      replaceWarning:
+        "Das Erstellen aus einem Design ersetzt den Inhalt der Arbeitsfläche. Sie können es rückgängig machen.",
+      replaceConfirm: "Ersetzen und erstellen",
+      replaceCancel: "Abbrechen",
+      fileTooLarge: "Diese Datei ist größer als 5 MB.",
+      invalidFileType:
+        "Laden Sie ein PNG-, JPEG-, WebP- oder GIF-Bild oder ein PDF hoch.",
+      built: "Vorlage aus Ihrem Design erstellt.",
+      undo: "Rückgängig",
+      redo: "Wiederholen",
+      buildAnother: "Weiteres erstellen",
+    },
+    scoring: {
+      title: "Vorlagenbewertung",
+      close: "Schließen",
+      rescore: "Neu bewerten",
+      scoring: "Die Vorlage wird bewertet...",
+      overallScore: "Gesamtbewertung",
+      categories: {
+        spam: "Spam-Risiko",
+        readability: "Lesbarkeit",
+        bestPractices: "Best Practices",
+      },
+      severity: {
+        high: "Hoch",
+        medium: "Mittel",
+        low: "Niedrig",
+      },
+      fix: "Mit KI beheben",
+      fixing: "Wird behoben...",
+      fixed: "Behoben",
+      undoFix: "Rückgängig",
+      finding: "1 Ergebnis",
+      findings: "{count} Ergebnisse",
+      noFindings: "Keine Probleme gefunden",
+      accessibilityNote: "Die Barrierefreiheit prüft der Bereich „Probleme“.",
+      openIssues: "Probleme öffnen ({count})",
+      emptyState:
+        "Bewerten Sie Ihre Vorlage nach Spam-Risiko, Lesbarkeit und Best Practices.",
+    },
+    canvas: {
+      chatHint: "oder lassen Sie",
+      chatHintSuffix: "in Sekunden eine komplette Vorlage für Sie erstellen",
+      designHint:
+        "Haben Sie ein bestehendes Design? Laden Sie einen Screenshot, ein Bild oder PDF hoch und",
+      designHintSuffix: "erstellt es sofort nach",
+    },
   },
   versionHistory: {
     tooltip: "Versionsverlauf",

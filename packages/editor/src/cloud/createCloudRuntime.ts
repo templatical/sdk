@@ -3,7 +3,6 @@ import {
   AuthManager,
   isFatalAuthError,
   performHealthCheck,
-  useAiConfig,
   useExport,
   usePlanConfig,
   resolveExportFonts,
@@ -15,7 +14,6 @@ import {
   createCloudTemplatesProvider,
   createCloudTestEmailProvider,
   createCloudVersionHistoryProvider,
-  useTemplateScoring,
   useTestEmail,
   useWebSocket,
   type RealtimeChannel,
@@ -45,12 +43,7 @@ import type { CloudTranslations } from "../i18n";
 import { preRenderCustomBlocks } from "../utils/preRenderCustomBlocks";
 import { logger } from "../utils/logger";
 import type { UseEditorCoreReturn } from "../composables/useEditorCore";
-import {
-  AI_CONFIG_KEY,
-  AUTH_MANAGER_KEY,
-  CLOUD_TRANSLATIONS_KEY,
-  SCORING_KEY,
-} from "../keys";
+import { AUTH_MANAGER_KEY, CLOUD_TRANSLATIONS_KEY } from "../keys";
 
 import { useCloudFeatureFlags } from "./composables/useCloudFeatureFlags";
 import { useCloudPanelState } from "./composables/useCloudPanelState";
@@ -547,10 +540,9 @@ export async function bootstrapCloud(
     logger.warn(
       `initCloud ignores ${joinWithAnd(
         ignoredTemplateMethods.map((key) => `templates.${key}`),
-      )} — the template id is the join key for collaboration, ` +
-        "version history, comments, AI rewrite, scoring and the server-side " +
-        "export, so an id Cloud never issued would degrade all six. Your " +
-        "event handlers were kept. Use init() to bring your own storage.",
+      )} — the template id is the join key for version history, comments ` +
+        "and the server-side export, so an id Cloud never issued would break " +
+        "them. Your event handlers were kept. Use init() to bring your own storage.",
     );
   }
   const consumerVersionHistory = (
@@ -610,6 +602,17 @@ export async function bootstrapCloud(
         "would change only what you preview and export, never what Cloud " +
         "delivers. The supplied provider is ignored. For your own MJML, call " +
         "renderToMjml(editor.getContent()) from @templatical/renderer.",
+    );
+  }
+
+  // Cloud's AI becomes a provider on the bring-your-own contract (A1), pointed
+  // at Cloud's routes in S7. Until then there is none, and a key for the old
+  // panels would do nothing.
+  if ((config as { ai?: unknown }).ai !== undefined) {
+    logger.warn(
+      "initCloud does not take an `ai` key yet — Cloud's AI arrives as its own " +
+        "provider in a later release. The key is ignored. To bring your own AI " +
+        "backend, use init({ ai }).",
     );
   }
 
@@ -923,12 +926,8 @@ export async function bootstrapCloud(
 
   // --- Setup-time wiring ----------------------------------------------------
 
-  const aiConfig = useAiConfig(config.ai);
-  const scoringInstance = useTemplateScoring({ authManager, getTemplateId });
-
   const featureFlags = useCloudFeatureFlags({
     planConfigInstance,
-    aiConfig,
     getTemplateId,
   });
 
@@ -938,8 +937,6 @@ export async function bootstrapCloud(
 
     provide(CLOUD_TRANSLATIONS_KEY, cloudTranslations);
     provide(AUTH_MANAGER_KEY, authManager);
-    provide(AI_CONFIG_KEY, aiConfig);
-    provide(SCORING_KEY, scoringInstance);
 
     const websocket = useWebSocket({ authManager, onError: config.onError });
     websocketRef = websocket;
@@ -975,9 +972,9 @@ export async function bootstrapCloud(
     // `capabilities.comments` is *not* set here any more: comments became a shared
     // provider-backed feature, so `Editor.vue` builds the capability from
     // `useCommentsFeature` exactly as it does for saved blocks and test email, and
-    // Cloud contributes only the two predicates below.
+    // Cloud contributes only the plan below. AI is a provider the open-source
+    // editor builds from `init({ ai })` (A1); Cloud's arrives with S7.
     capabilities.plan = planConfigInstance;
-    capabilities.ai = aiConfig;
 
     // Registered unconditionally. `custom_blocks` and `theme_customization` used
     // to gate these — entitlements on editor capability the free editor grants,

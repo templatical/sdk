@@ -468,7 +468,7 @@ function collectBlockTypes(block: Block, into: Map<string, string>): void {
  *
  * The rich-text fields only, as for loads: an `addBlock`'s block (a section's
  * children included), an `updateBlock`'s `set.content` when the block it names
- * is a title or a paragraph — found in `content`, or among the blocks the batch
+ * is a title or a paragraph, its `expect.content`, and a deletion’s `expect.block` — found in `content`, or among the blocks the batch
  * itself added — and a `setContent`'s content. Returns `ops` itself when
  * nothing matched, and never changes it.
  */
@@ -491,16 +491,32 @@ export function normalizeRemoteOperations(
       changed = true;
       return { ...op, block };
     }
+    if (op.op === "deleteBlock" && op.expect?.block) {
+      const block = normalizeBlock(op.expect.block, tags, syntax);
+      if (block === op.expect.block) return op;
+      changed = true;
+      return { ...op, expect: { ...op.expect, block } };
+    }
     if (op.op === "updateBlock") {
-      const html = op.set?.content;
-      if (typeof html !== "string") return op;
       const type =
         added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
       if (type !== "title" && type !== "paragraph") return op;
-      const normalized = normalizeMergeTagsInHtml(html, tags, syntax);
-      if (normalized === html) return op;
+      const normalizeField = (fields: Record<string, unknown> | undefined) => {
+        if (typeof fields?.content !== "string") return fields;
+        const normalized = normalizeMergeTagsInHtml(
+          fields.content,
+          tags,
+          syntax,
+        );
+        return normalized === fields.content
+          ? fields
+          : { ...fields, content: normalized };
+      };
+      const set = normalizeField(op.set);
+      const expect = normalizeField(op.expect);
+      if (set === op.set && expect === op.expect) return op;
       changed = true;
-      return { ...op, set: { ...op.set, content: normalized } };
+      return { ...op, ...(set ? { set } : {}), ...(expect ? { expect } : {}) };
     }
     if (op.op === "setContent") {
       const normalized = normalizeMergeTagMarkup(op.content, tags, syntax);

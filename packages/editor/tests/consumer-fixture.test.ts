@@ -311,6 +311,7 @@ describe("the real workspace, fixtures and examples", () => {
 
   it("reads every published package", () => {
     expect([...manifests.keys()].sort()).toEqual([
+      "@templatical/ai",
       "@templatical/core",
       "@templatical/editor",
       "@templatical/import-beefree",
@@ -368,6 +369,7 @@ describe("the real workspace, fixtures and examples", () => {
       .map((m: any) => m.name)
       .sort();
     expect(externalizes).toEqual([
+      "@templatical/ai",
       "@templatical/core",
       "@templatical/import-beefree",
       "@templatical/import-chamaileon",

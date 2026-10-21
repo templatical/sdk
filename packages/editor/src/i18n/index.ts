@@ -72,9 +72,9 @@ export async function loadTranslations(locale: string): Promise<Translations> {
 
 /**
  * Load cloud translations for a given locale.
- * Cloud translations cover features available only via initCloud() —
- * AI, comments, scoring, snapshots, plan limits, etc. Collaboration's strings
- * are OSS: any `CollaborationProvider` shows them.
+ * Cloud translations cover loading and error overlays, header controls and
+ * the save gate. Collaboration's strings are OSS: any `CollaborationProvider`
+ * shows them.
  * OSS contributors don't need to translate these; cloud locales fall back
  * to English independently of the OSS locale.
  */

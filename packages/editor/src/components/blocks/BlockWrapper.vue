@@ -178,11 +178,15 @@ const lockHolderName = computed(() =>
     : (lock.value?.holder.name ?? ""),
 );
 
-// A block an AI agent just changed: an outline that fades out, so whoever is
+// A block an AI agent just changed, or this editor's own AI turn without
+// collaboration (D42): an outline that fades out, so whoever is
 // watching sees where the edit landed. Keyed by the highlight's number, so a
 // second edit restarts the fade instead of letting the first one finish.
 const agentHighlight = computed(
-  () => caps.collaboration?.agentHighlightOf(props.block.id) ?? null,
+  () =>
+    caps.collaboration?.agentHighlightOf(props.block.id) ??
+    caps.ai?.highlightOf(props.block.id) ??
+    null,
 );
 
 // Background images paint through `config.resolveImageUrl`, like ImageBlock's
