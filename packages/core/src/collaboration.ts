@@ -312,6 +312,8 @@ export function useCollaboration(
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
   let typingSince = 0;
   let destroyed = false;
+  /** The watchers `attach` set up; `destroy` stops them, scope or not. */
+  const stopWatching: (() => void)[] = [];
 
   // Locks: `wanted` follows the selection, `held` is what the backend granted.
   let wanted: { templateId: string; blockId: string } | null = null;
@@ -482,11 +484,12 @@ export function useCollaboration(
         return;
       }
     }
-    pushCapped(session.undo, { ops: invertOperations(session.view, ops) });
+    const entry: HistoryEntry = { ops: invertOperations(session.view, ops) };
+    pushCapped(session.undo, entry);
     session.redo = [];
     bumpHistory();
     session.view = next;
-    enqueue(session, ops, "edit", null);
+    enqueue(session, ops, "edit", entry);
   }
 
   function enqueue(
@@ -1127,18 +1130,20 @@ export function useCollaboration(
 
   function attach(target: CollaborationEditor): void {
     editor = target;
-    watch(
-      () => target.state.template,
-      (template) => switchTo(template),
-      {
-        immediate: true,
-      },
-    );
-    watch(() => target.content.value, scheduleCapture, { deep: true });
-    watch(() => target.state.selectedBlockId, onSelection);
-    watch(
-      () => target.state.isLoading,
-      (loading) => (loading ? capture(true, true) : scheduleCapture()),
+    stopWatching.push(
+      watch(
+        () => target.state.template,
+        (template) => switchTo(template),
+        {
+          immediate: true,
+        },
+      ),
+      watch(() => target.content.value, scheduleCapture, { deep: true }),
+      watch(() => target.state.selectedBlockId, onSelection),
+      watch(
+        () => target.state.isLoading,
+        (loading) => (loading ? capture(true, true) : scheduleCapture()),
+      ),
     );
     if (typeof window !== "undefined") {
       window.addEventListener("pagehide", onPageHide);
@@ -1169,6 +1174,7 @@ export function useCollaboration(
   function destroy(): void {
     if (destroyed) return;
     flush();
+    for (const stop of stopWatching.splice(0)) stop();
     clearTypingTimer();
     onPageHide();
     destroyed = true;
