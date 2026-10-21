@@ -29,8 +29,8 @@ export interface HistoryInterceptorEditor {
  * Wraps editor mutation methods to record history snapshots before each
  * operation. Mutates the editor object in place.
  *
- * Must be applied **after** any collaboration broadcast wrapping so the
- * call chain is: history.record() → broadcast → original mutation.
+ * Not installed with a collaboration provider: its controller captures
+ * changes by diffing the content and keeps its own undo history.
  */
 export function useHistoryInterceptor(
   editor: HistoryInterceptorEditor,

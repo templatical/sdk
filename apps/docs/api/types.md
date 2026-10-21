@@ -702,3 +702,7 @@ unsubscribe(); // Remove listener
 ## Storage contracts
 
 `Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` and the rest of the BYO storage shapes live under [Connect your backend](/backend/). This page is the block model and editor config.
+
+## Operations and collaboration
+
+`Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.

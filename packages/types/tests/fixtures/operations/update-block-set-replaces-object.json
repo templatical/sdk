@@ -1,0 +1,62 @@
+{
+  "name": "updateBlock set replaces an object value whole",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "styles": {
+          "padding": {
+            "top": 10,
+            "right": 0,
+            "bottom": 10,
+            "left": 0
+          },
+          "backgroundColor": "#eeeeee"
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "t1",
+      "set": {
+        "styles": {
+          "padding": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          }
+        }
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "styles": {
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            }
+          }
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

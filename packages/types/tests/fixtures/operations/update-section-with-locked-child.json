@@ -1,0 +1,100 @@
+{
+  "name": "updateBlock of a section checks only the section itself",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "p1",
+      "sessionId": "other"
+    }
+  ],
+  "session": "me",
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "s1",
+      "set": {
+        "backgroundColor": "#f5f5f5"
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "2",
+          "backgroundColor": "#f5f5f5",
+          "children": [
+            [
+              {
+                "id": "p1",
+                "type": "paragraph",
+                "content": "Left"
+              }
+            ],
+            [
+              {
+                "id": "b1",
+                "type": "button",
+                "text": "Go",
+                "url": "https://example.com"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "d1",
+          "type": "divider"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

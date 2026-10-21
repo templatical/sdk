@@ -204,6 +204,11 @@ export default {
       seeIt: "Open Comments, comment on a block and reply.",
       note: "comments",
     },
+    collaboration: {
+      title: "Collaboration",
+      seeIt:
+        "Open this page in a second tab: edits, selections and undo travel between them.",
+    },
     "saved-blocks": {
       title: "Saved blocks",
       seeIt:

@@ -33,7 +33,6 @@ export default {
 
   // History (undo/redo)
   history: {
-    collabWarning: "Undo may affect collaborators' recent changes",
     undo: "Undo",
     redo: "Redo",
   },
@@ -700,6 +699,34 @@ export default {
     replyMany: "{count} Replies",
     missingBlock: "Missing block",
     saveTemplateFirst: "Save the template before commenting on this block.",
+  },
+  collaboration: {
+    people: "People editing this template",
+    guest: "Guest",
+    connected: "Live",
+    reconnecting: "Reconnecting…",
+    offline: "Offline",
+    editing: "{name} is editing",
+    selectionRefused: "{name} is editing this block.",
+    editRefused:
+      "Your change wasn't saved: someone else changed this part first.",
+    editRefusedLocked:
+      "Your change wasn't saved: {name} is editing that block.",
+    editTooLarge: "Your change wasn't saved: it's too large.",
+    undoSkipped: "Couldn't undo that step: someone else has changed it since.",
+    replaceRefused:
+      "Can't replace the template while others are editing: {names}.",
+    reconnectingNotice: "Reconnecting… You can keep editing.",
+    dismiss: "Dismiss",
+    anAgent: "An agent",
+    agentChangedBlock: "{client} for {name} changed a block.",
+    agentChangedBlocks: "{client} for {name} changed {count} blocks.",
+    agentChangedSettings: "{client} for {name} changed the template settings.",
+    agentChangedBlockAndSettings:
+      "{client} for {name} changed a block and the template settings.",
+    agentChangedBlocksAndSettings:
+      "{client} for {name} changed {count} blocks and the template settings.",
+    agentUpdatedTemplate: "{client} for {name} updated the template.",
   },
   versionHistory: {
     tooltip: "Version history",

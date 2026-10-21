@@ -751,6 +751,9 @@ collaboration broadcast, so naming it after one transport was misleading.
 about MCP — and the Pusher event names (`mcp-operation`, `client-operation`) are
 untouched, so the wire protocol is unaffected.
 
+Operations vocabulary v2 has since replaced this vocabulary: six operations,
+broadcast as `template-operation`.
+
 ## 0.37.0
 
 <time datetime="2026-09-11">2026-09-11</time>

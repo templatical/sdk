@@ -354,7 +354,15 @@ describe("EditorHeader templates surface", () => {
       // wrapper, or `load()` and the header's capability disagree about which
       // provider is in play.
       expect(editorSource).toMatch(
-        /const templatesProvider = props\.config\.templates\s*\?\s*withNormalizedTemplateLoads\(/,
+        /const normalizedTemplates = props\.config\.templates\s*\?\s*withNormalizedTemplateLoads\(/,
+      );
+      // Collaboration wraps the normalized provider again (saves become
+      // rename-only); a re-sync loads through the normalized one too.
+      expect(editorSource).toMatch(
+        /const templatesProvider =\s*normalizedTemplates && collaboration\s*\?\s*withCollaborativeSave\(\s*normalizedTemplates,/,
+      );
+      expect(editorSource).toContain(
+        "loadTemplate: (id) => normalizedTemplates.load(id),",
       );
       expect(editorSource).toContain("templates: templatesProvider,");
       expect(editorSource).toContain("provider: templatesProvider,");

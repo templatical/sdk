@@ -702,3 +702,7 @@ unsubscribe(); // Listener entfernen
 ## Speicherverträge
 
 `Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` und die übrigen BYO-Speicherformen stehen unter [Backend anbinden](/de/backend/). Diese Seite ist das Blockmodell und die Editor-Config.
+
+## Operationen und Zusammenarbeit
+
+`Operation` und seine sechs Varianten, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.

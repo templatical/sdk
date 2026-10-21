@@ -23,6 +23,7 @@ import {
   Puzzle,
   Send,
   Type,
+  Users,
 } from "@lucide/vue";
 
 export const SCENE_ICONS: Record<string, Component> = {
@@ -45,6 +46,7 @@ export const SCENE_ICONS: Record<string, Component> = {
   templates: FileText,
   "version-history": History,
   comments: MessageSquare,
+  collaboration: Users,
   "saved-blocks": Bookmark,
   media: Image,
   "test-email": Send,

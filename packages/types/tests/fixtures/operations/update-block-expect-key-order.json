@@ -1,0 +1,65 @@
+{
+  "name": "expect compares nested objects ignoring key order",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "styles": {
+          "padding": {
+            "top": 10,
+            "right": 0,
+            "bottom": 10,
+            "left": 0
+          }
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "t1",
+      "set": {
+        "content": "Bye"
+      },
+      "expect": {
+        "styles": {
+          "padding": {
+            "left": 0,
+            "bottom": 10,
+            "right": 0,
+            "top": 10
+          }
+        }
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "styles": {
+            "padding": {
+              "top": 10,
+              "right": 0,
+              "bottom": 10,
+              "left": 0
+            }
+          },
+          "content": "Bye"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

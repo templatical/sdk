@@ -374,6 +374,7 @@ Sie müssen nichts aufrufen und nichts aktivieren. Das geschieht überall dort, 
 | `editor.create({ content })` | bevor der Inhalt zum Editor-Status wird |
 | `editor.load(id)` | sobald das Ergebnis des [`templates`](/de/backend/templates)-Providers zurückkommt |
 | Vorschau und Wiederherstellung der [Versionshistorie](/de/backend/version-history) | sobald eine Version die Arbeitsfläche erreicht |
+| Batches anderer Sitzungen bei der [Zusammenarbeit](/de/backend/collaboration), auch die eines KI-Agenten | sobald ein Batch angewendet wird |
 
 Die Erkennung richtet sich nach Ihrer konfigurierten `syntax`, nicht nach dem `tags`-Array — ein nicht deklariertes Token wird also ebenfalls zu einem Tag, beschriftet mit seinem eigenen Rohwert.
 

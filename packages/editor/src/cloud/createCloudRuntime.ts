@@ -1,13 +1,10 @@
-import { computed, provide, ref, watch } from "vue";
+import { provide, ref, watch } from "vue";
 import {
   AuthManager,
   isFatalAuthError,
   performHealthCheck,
   useAiConfig,
-  useCollaboration,
-  useCollaborationBroadcast,
   useExport,
-  useMcpListener,
   usePlanConfig,
   resolveExportFonts,
   resolveWebSocketConfig,
@@ -61,15 +58,10 @@ import {
   useCloudSaveGate,
   type UseCloudSaveGateReturn,
 } from "./composables/useCloudSaveGate";
-import {
-  useCollabUndoWarning,
-  type UseCollabUndoWarningReturn,
-} from "./composables/useCollabUndoWarning";
 import { collectSavedBlockIds } from "./collectSavedBlockIds";
 import type {
   CloudAttachContext,
   CloudAttachment,
-  CloudCollaborationInstance,
   CloudReady,
   CloudReadyContext,
   CloudRuntime,
@@ -458,12 +450,9 @@ export async function bootstrapCloud(
   let editorRef: UseEditorReturn | null = null;
   let coreRef: UseEditorCoreReturn | null = null;
   let websocketRef: ReturnType<typeof useWebSocket> | null = null;
-  let collaboration: CloudCollaborationInstance | null = null;
-  let collabWarning: UseCollabUndoWarningReturn | null = null;
   let saveGate: UseCloudSaveGateReturn | null = null;
 
   const sessionError = ref<Error | null>(null);
-  const lockedBlocks = ref<Map<string, unknown>>(new Map());
   /**
    * Cloud's presence channel, forward-declared for the comments adapter's
    * `subscribe`. `useWebSocket` can only be built in `attach()` (it needs the
@@ -943,12 +932,6 @@ export async function bootstrapCloud(
     getTemplateId,
   });
 
-  const isCollaborationEnabled = computed(
-    () =>
-      !!config.collaboration?.enabled &&
-      planConfigInstance.hasFeature("collaboration"),
-  );
-
   function attach(context: CloudAttachContext): CloudAttachment {
     const editor = context.editor;
     editorRef = editor;
@@ -971,50 +954,9 @@ export async function bootstrapCloud(
       { immediate: true },
     );
 
-    if (config.mcp?.enabled) {
-      useMcpListener({
-        editor,
-        channel: websocket.channel,
-        onOperation: config.mcp.onOperation,
-      });
-    }
-
-    // Order matters: the broadcast wrapper replaces the editor's mutators so they
-    // publish to peers, and `useEditorCore`'s history interceptor then wraps them
-    // again to push history entries. Reversing it would push history for remote
-    // operations and drift the two peers apart.
-    if (config.collaboration?.enabled) {
-      collaboration = useCollaboration({
-        authManager,
-        editor,
-        channel: websocket.channel,
-        onError: config.onError,
-        onCollaboratorJoined: config.collaboration.onCollaboratorJoined,
-        onCollaboratorLeft: config.collaboration.onCollaboratorLeft,
-        onBlockLocked: config.collaboration.onBlockLocked,
-        onBlockUnlocked: config.collaboration.onBlockUnlocked,
-      }) as CloudCollaborationInstance;
-
-      watch(
-        () => collaboration!.lockedBlocks.value,
-        (next) => {
-          lockedBlocks.value = next;
-        },
-        { immediate: true },
-      );
-
-      useCollaborationBroadcast(editor, collaboration);
-    }
-
     const panelState = useCloudPanelState();
 
-    return {
-      websocket,
-      panelState,
-      featureFlags,
-      collaboration,
-      isCollaborationEnabled,
-    };
+    return { websocket, panelState, featureFlags };
   }
 
   function ready(context: CloudReadyContext): CloudReady {
@@ -1024,13 +966,6 @@ export async function bootstrapCloud(
     saveGate = useCloudSaveGate({
       issues: core.templateLint ? core.templateLint.issues : ref([]),
       planConfig: planConfigInstance.config,
-    });
-
-    collabWarning = useCollabUndoWarning({
-      isCollaborationEnabled,
-      getCollaboratorCount: () =>
-        collaboration?.collaborators.value.length ?? 0,
-      canUndo: core.history.canUndo,
     });
 
     // Mutated in place rather than re-provided: `useEditorCore` already provided
@@ -1056,7 +991,6 @@ export async function bootstrapCloud(
 
     return {
       saveGate,
-      collabWarning,
       sessionError,
       retry: async () => {
         try {
@@ -1071,7 +1005,6 @@ export async function bootstrapCloud(
   }
 
   const runtime: CloudRuntime = {
-    lockedBlocks,
     isSavedBlocksAvailable: consumerSavedBlocks
       ? () => true
       : () =>
@@ -1104,9 +1037,6 @@ export async function bootstrapCloud(
     isBlockSaved: (blockId: string) =>
       collectSavedBlockIds(editorRef?.state.template ?? null).has(blockId),
     getSaveGate: () => saveGate,
-    isRemoteOperation: () =>
-      collaboration?._isProcessingRemoteOperation() ?? false,
-    onBeforeUndo: () => collabWarning?.showCollabUndoWarning(),
     attach,
     ready,
     destroy() {

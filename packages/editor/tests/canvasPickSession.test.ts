@@ -35,21 +35,17 @@ function setup(opts: {
   const editor = useEditor({ content });
   const togglePick = vi.fn();
 
-  const lockedBlocks = new Map(
-    opts.lockFirstBlock
-      ? [
-          [
-            first.id,
-            {
-              id: "peer",
-              name: "Peer",
-              color: "#f00",
-              selectedBlockId: first.id,
-            },
-          ] as const,
-        ]
-      : [],
-  );
+  const lock = {
+    blockId: first.id,
+    holder: {
+      sessionId: "peer-session",
+      type: "user" as const,
+      id: "peer",
+      name: "Peer",
+      color: "#ef4444",
+    },
+    expiresAt: "2026-10-19T12:00:30.000Z",
+  };
 
   const wrapper = mountEditor(Canvas, {
     props: {
@@ -58,11 +54,15 @@ function setup(opts: {
       selectedBlockId: editor.state.selectedBlockId,
       darkMode: false,
       previewMode: opts.previewMode ?? false,
-      lockedBlocks,
     },
     provides: {
       [EDITOR_KEY]: editor,
       [CAPABILITIES_KEY]: {
+        collaboration: {
+          lockOf: (blockId: string) =>
+            opts.lockFirstBlock && blockId === first.id ? lock : null,
+          agentHighlightOf: () => null,
+        },
         savedBlocks: {
           startPicking: vi.fn(),
           togglePick,

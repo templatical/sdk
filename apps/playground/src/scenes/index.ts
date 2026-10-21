@@ -30,6 +30,7 @@ import { importStripo } from "./import/import-stripo";
 import { importTopol } from "./import/import-topol";
 import { importUnlayer } from "./import/import-unlayer";
 import { minimum } from "./minimum";
+import { collaboration } from "./storage/collaboration";
 import { comments } from "./storage/comments";
 import { media } from "./storage/media";
 import { render } from "./storage/render";
@@ -69,6 +70,7 @@ export const SCENES: readonly Scene[] = [
   templates,
   versionHistory,
   comments,
+  collaboration,
   savedBlocks,
   media,
   testEmail,

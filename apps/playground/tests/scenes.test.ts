@@ -92,6 +92,7 @@ const BACKEND_IDS = [
   "templates",
   "version-history",
   "comments",
+  "collaboration",
   "saved-blocks",
   "media",
   "test-email",
@@ -177,6 +178,7 @@ describe("registry", () => {
     expect(getScene("templates")?.docs).toBe("/backend/templates");
     expect(getScene("version-history")?.docs).toBe("/backend/version-history");
     expect(getScene("comments")?.docs).toBe("/backend/comments");
+    expect(getScene("collaboration")?.docs).toBe("/backend/collaboration");
     expect(getScene("media")?.docs).toBe("/backend/media");
     expect(getScene("test-email")?.docs).toBe("/backend/test-email");
     expect(getScene("render")?.docs).toBe("/backend/render");

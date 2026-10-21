@@ -5,9 +5,6 @@ import { Sparkles } from "@lucide/vue";
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { CloudAttachment } from "../runtime";
 
-const CollaboratorBar = defineAsyncComponent(
-  () => import("./CollaboratorBar.vue"),
-);
 const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
 
 /**
@@ -24,9 +21,9 @@ const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
  *
  * The plan-usage readout and the AI button live here rather than in the shared
  * header because they render **cloud-chunk** strings; OSS translators never see
- * them. Comments are deliberately not here: that feature is shared and
- * provider-backed, so its trigger and its strings belong to the shared header and
- * the OSS chunk.
+ * them. Comments and the collaborator bar are deliberately not here: both are
+ * shared and provider-backed, so their controls and strings belong to the shared
+ * header and the OSS chunk.
  */
 defineProps<{
   part: "left" | "right";
@@ -37,12 +34,7 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
 </script>
 
 <template>
-  <!-- Left: the plan's template usage, then who else is in the template right
-       now. Presence sits with the template's identity rather than in the
-       header's centre track: that track's width must stay constant, and a
-       collaborator bar changes width every time somebody joins or leaves — which
-       used to slide the Preview button sideways under the cursor (#574). This
-       column packs from the left, so it grows rightward and moves nothing. -->
+  <!-- Left: the plan's template usage. -->
   <template v-if="part === 'left'">
     <!-- A plan *limit*, not a templates concern, which is why it sits here and
          its string stays in the cloud chunk. -->
@@ -58,11 +50,6 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
         })
       }}
     </span>
-    <CollaboratorBar
-      v-if="cloud.collaboration && cloud.isCollaborationEnabled.value"
-      :collaborators="cloud.collaboration.collaborators.value"
-      :is-connected="cloud.websocket.isConnected.value"
-    />
   </template>
 
   <!-- Right: AI — after the shared header's Comments button and before the

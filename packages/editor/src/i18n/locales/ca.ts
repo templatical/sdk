@@ -35,7 +35,6 @@ const ca: typeof en = {
 
   // History (undo/redo)
   history: {
-    collabWarning: "Desfer pot afectar els canvis recents dels col·laboradors",
     undo: "Desfer",
     redo: "Refer",
   },
@@ -702,6 +701,36 @@ const ca: typeof en = {
     replyMany: "{count} respostes",
     missingBlock: "Bloc no trobat",
     saveTemplateFirst: "Desa la plantilla abans de comentar en aquest bloc.",
+  },
+  collaboration: {
+    people: "Persones que editen aquesta plantilla",
+    guest: "Convidat",
+    connected: "En directe",
+    reconnecting: "S'està tornant a connectar…",
+    offline: "Sense connexió",
+    editing: "{name} està editant",
+    selectionRefused: "{name} està editant aquest bloc.",
+    editRefused:
+      "El vostre canvi no s'ha desat: algú altre ha canviat primer aquesta part.",
+    editRefusedLocked:
+      "El vostre canvi no s'ha desat: {name} està editant aquest bloc.",
+    editTooLarge: "El vostre canvi no s'ha desat: és massa gran.",
+    undoSkipped:
+      "No s'ha pogut desfer aquest pas: algú altre l'ha canviat mentrestant.",
+    replaceRefused:
+      "No es pot substituir la plantilla mentre altres persones l'editen: {names}.",
+    reconnectingNotice: "S'està tornant a connectar… Podeu continuar editant.",
+    dismiss: "Descarta",
+    anAgent: "Un agent",
+    agentChangedBlock: "{client} per a {name} ha canviat un bloc.",
+    agentChangedBlocks: "{client} per a {name} ha canviat {count} blocs.",
+    agentChangedSettings:
+      "{client} per a {name} ha canviat la configuració de la plantilla.",
+    agentChangedBlockAndSettings:
+      "{client} per a {name} ha canviat un bloc i la configuració de la plantilla.",
+    agentChangedBlocksAndSettings:
+      "{client} per a {name} ha canviat {count} blocs i la configuració de la plantilla.",
+    agentUpdatedTemplate: "{client} per a {name} ha actualitzat la plantilla.",
   },
   versionHistory: {
     tooltip: "Historial de versions",

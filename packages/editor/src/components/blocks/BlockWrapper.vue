@@ -30,6 +30,7 @@ import {
   LAYOUT_KEY,
 } from "../../keys";
 import { matchImageBoxWidth } from "../../utils/imageRoom";
+import { readableTextColor } from "../../utils/readableTextColor";
 
 const props = defineProps<{
   block: Block;
@@ -168,6 +169,22 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
+// Another collaborator's lock: an outline in their colour and their name, on
+// any block, a section's children included.
+const lock = computed(() => caps.collaboration?.lockOf(props.block.id) ?? null);
+const lockHolderName = computed(() =>
+  lock.value?.holder.type === "guest"
+    ? t.collaboration.guest
+    : (lock.value?.holder.name ?? ""),
+);
+
+// A block an AI agent just changed: an outline that fades out, so whoever is
+// watching sees where the edit landed. Keyed by the highlight's number, so a
+// second edit restarts the fade instead of letting the first one finish.
+const agentHighlight = computed(
+  () => caps.collaboration?.agentHighlightOf(props.block.id) ?? null,
+);
+
 // Background images paint through `config.resolveImageUrl`, like ImageBlock's
 // `src`; the resolved URL is display-only and never enters the content model.
 // A merge-tag URL is neither resolved nor painted (`null`), as on ImageBlock.
@@ -268,6 +285,33 @@ function handleConditionToggle(): void {
     @click="handleClick"
   >
     <BlockIssueBadge :block-id="block.id" />
+    <div
+      v-if="lock"
+      data-testid="block-lock"
+      :data-lock-holder="lock.holder.sessionId"
+      class="tpl-block-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
+      :style="{
+        outline: `2px solid ${lock.holder.color}`,
+        outlineOffset: '-1px',
+      }"
+    >
+      <span
+        class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:-translate-x-1/2 tpl:-translate-y-full tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:whitespace-nowrap"
+        :style="{
+          backgroundColor: lock.holder.color,
+          color: readableTextColor(lock.holder.color),
+        }"
+      >
+        {{ format(t.collaboration.editing, { name: lockHolderName }) }}
+      </span>
+    </div>
+    <div
+      v-if="agentHighlight !== null"
+      :key="agentHighlight"
+      data-testid="block-agent-highlight"
+      aria-hidden="true"
+      class="tpl-block-agent-highlight tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
+    />
     <!-- Floating action bar — positioned to the right of selected block -->
     <div
       v-if="showActions"
@@ -469,5 +513,30 @@ function handleConditionToggle(): void {
 /* Hidden block overlay — dims the block when hidden on current viewport */
 .tpl-block-hidden-overlay {
   background-color: color-mix(in srgb, var(--tpl-bg) 60%, transparent);
+}
+
+/* An AI agent's change: Compositor Teal, the information colour, since amber
+   means selection and intent. It fades over the highlight's 2 s; reduced
+   motion holds it still for that time. */
+.tpl-block-agent-highlight {
+  outline: 2px solid var(--tpl-secondary);
+  outline-offset: -1px;
+  animation: tpl-agent-highlight 2000ms ease-out forwards;
+}
+
+@keyframes tpl-agent-highlight {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpl-block-agent-highlight {
+    animation: none;
+  }
 }
 </style>

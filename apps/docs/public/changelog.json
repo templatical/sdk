@@ -928,7 +928,7 @@
           "hash": "67cd83d",
           "level": "minor",
           "title": "Rename `McpOperation` → `TemplateOperation` and `McpOperationPayload` →",
-          "body": "`TemplateOperationPayload`. The seven-operation vocabulary is shared by the\n`@templatical/template-tools` CLI's `edit` command, Cloud's MCP bridge and the\ncollaboration broadcast, so naming it after one transport was misleading.\n\n`McpConfig` and the editor's `mcp` config key are unchanged — those really are\nabout MCP — and the Pusher event names (`mcp-operation`, `client-operation`) are\nuntouched, so the wire protocol is unaffected.",
+          "body": "`TemplateOperationPayload`. The seven-operation vocabulary is shared by the\n`@templatical/template-tools` CLI's `edit` command, Cloud's MCP bridge and the\ncollaboration broadcast, so naming it after one transport was misleading.\n\n`McpConfig` and the editor's `mcp` config key are unchanged — those really are\nabout MCP — and the Pusher event names (`mcp-operation`, `client-operation`) are\nuntouched, so the wire protocol is unaffected.\n\nOperations vocabulary v2 has since replaced this vocabulary: six operations,\nbroadcast as `template-operation`.",
           "packages": [
             "@templatical/types"
           ]

@@ -1,4 +1,7 @@
-import type { TemplaticalEditorConfig } from "@templatical/editor";
+import type {
+  TemplaticalEditor,
+  TemplaticalEditorConfig,
+} from "@templatical/editor";
 import type { TemplateContent } from "@templatical/types";
 import type { GeneralNoteId, SceneNoteSide } from "../host/sceneNotes";
 
@@ -85,6 +88,12 @@ export interface Scene {
    */
   content?: (ctx: SceneContext) => TemplateContent;
   config: (ctx: SceneContext) => Omit<TemplaticalEditorConfig, "container">;
+  /**
+   * Opens the template once the editor is up. Absent, the host creates a
+   * template when the setup's provider can. A setup whose tabs share one
+   * template loads it here instead.
+   */
+  open?: (editor: TemplaticalEditor, ctx: SceneContext) => Promise<void>;
   /**
    * Where the setup's own note points; its text is `scenes.<id>.note` in the
    * playground strings. Absent when no one control shows the effect

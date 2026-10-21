@@ -70,8 +70,9 @@ const read = () => JSON.parse(readFileSync(file, "utf8"));
 describe("edit command", () => {
   it("applies a single operation and writes the file", () => {
     const op = JSON.stringify({
-      operation: "updateBlock",
-      data: { blockId: "button_1", updates: { text: "Shop now" } },
+      op: "updateBlock",
+      blockId: "button_1",
+      set: { text: "Shop now" },
     });
     expect(runEdit(parseArgs(["edit", file, "--op", op]))).toBe(0);
     expect(read().blocks[1].text).toBe("Shop now");
@@ -82,27 +83,32 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "One" } } },
-        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "Two" } } },
+        { op: "updateBlock", blockId: "title_1", set: { content: "One" } },
+        { op: "moveBlock", blockId: "title_1", parent: null, after: "button_1" },
+        { op: "updateBlock", blockId: "title_1", set: { content: "Two" } },
       ]),
     );
     expect(runEdit(parseArgs(["edit", file, "--ops", ops]))).toBe(0);
-    expect(read().blocks[0].content).toBe("Two");
+    expect(read().blocks.map((block: { id: string }) => block.id)).toEqual([
+      "button_1",
+      "title_1",
+    ]);
+    expect(read().blocks[1].content).toBe("Two");
   });
 
-  it("leaves the file byte-identical when an operation mid-batch is rejected", () => {
+  it("leaves the file byte-identical when an operation mid-batch is refused, naming it", () => {
     const before = readFileSync(file, "utf8");
     const ops = join(dir, "ops.json");
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "One" } } },
-        { operation: "updateBlock", data: { blockId: "does_not_exist", updates: { content: "x" } } },
-        { operation: "updateBlock", data: { blockId: "button_1", updates: { text: "Three" } } },
+        { op: "updateBlock", blockId: "title_1", set: { content: "One" } },
+        { op: "updateBlock", blockId: "does_not_exist", set: { content: "x" } },
+        { op: "updateBlock", blockId: "button_1", set: { text: "Three" } },
       ]),
     );
     expect(() => runEdit(parseArgs(["edit", file, "--ops", ops]))).toThrow(
-      /does_not_exist/,
+      /^Operation 2 \(updateBlock\) was refused: block_missing — .*does_not_exist/,
     );
     expect(readFileSync(file, "utf8")).toBe(before);
   });
@@ -118,21 +124,35 @@ describe("edit command", () => {
     writeFileSync(file, `${JSON.stringify(withSection, null, 2)}\n`, "utf8");
     const before = readFileSync(file, "utf8");
     const op = JSON.stringify({
-      operation: "addBlock",
-      data: {
-        targetSectionId: "sec_1",
-        block: { id: "sec_2", type: "section", columns: "1", children: [[]], styles: { padding: pad } },
-      },
+      op: "addBlock",
+      block: { id: "sec_2", type: "section", columns: "1", children: [[]], styles: { padding: pad } },
+      parent: { sectionId: "sec_1", column: 0 },
+      after: null,
     });
-    expect(() => runEdit(parseArgs(["edit", file, "--op", op]))).toThrow(/MJML/);
+    expect(() => runEdit(parseArgs(["edit", file, "--op", op]))).toThrow(
+      /Operation 1 \(addBlock\) was refused: invalid_operation/,
+    );
+    expect(readFileSync(file, "utf8")).toBe(before);
+  });
+
+  it("points an operation in the old vocabulary at the new one, writing nothing", () => {
+    const before = readFileSync(file, "utf8");
+    const op = JSON.stringify({
+      operation: "updateBlock",
+      data: { blockId: "title_1", updates: { content: "Old" } },
+    });
+    expect(() => runEdit(parseArgs(["edit", file, "--op", op]))).toThrow(
+      /Operation 1 uses the old \{"operation", "data"\} form/,
+    );
     expect(readFileSync(file, "utf8")).toBe(before);
   });
 
   it("writes nothing when the result fails structural validation", () => {
     const before = readFileSync(file, "utf8");
     const op = JSON.stringify({
-      operation: "updateBlock",
-      data: { blockId: "button_1", updates: { url: 42 } },
+      op: "updateBlock",
+      blockId: "button_1",
+      set: { url: 42 },
     });
     expect(() => runEdit(parseArgs(["edit", file, "--op", op]))).toThrow(
       InvalidTemplateError,
@@ -143,8 +163,9 @@ describe("edit command", () => {
   it("reports the applied count under --json", () => {
     setJsonMode(true);
     const op = JSON.stringify({
-      operation: "updateBlock",
-      data: { blockId: "title_1", updates: { content: "X" } },
+      op: "updateBlock",
+      blockId: "title_1",
+      set: { content: "X" },
     });
     runEdit(parseArgs(["edit", file, "--op", op, "--json"]));
     expect(JSON.parse(stdout.join(""))).toMatchObject({ applied: 1 });
@@ -170,7 +191,7 @@ describe("edit command", () => {
     writeFileSync(
       ops,
       JSON.stringify([
-        { operation: "updateBlock", data: { blockId: "title_1", updates: { content: "Should not apply" } } },
+        { op: "updateBlock", blockId: "title_1", set: { content: "Should not apply" } },
       ]),
     );
     expect(() =>

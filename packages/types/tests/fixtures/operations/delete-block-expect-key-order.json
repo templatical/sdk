@@ -1,0 +1,91 @@
+{
+  "name": "deleteBlock expect compares the whole block ignoring key order",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "deleteBlock",
+      "blockId": "s1",
+      "expect": {
+        "block": {
+          "children": [
+            [
+              {
+                "content": "Left",
+                "type": "paragraph",
+                "id": "p1"
+              }
+            ],
+            [
+              {
+                "url": "https://example.com",
+                "text": "Go",
+                "type": "button",
+                "id": "b1"
+              }
+            ]
+          ],
+          "columns": "2",
+          "type": "section",
+          "id": "s1"
+        }
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "d1",
+          "type": "divider"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

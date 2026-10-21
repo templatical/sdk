@@ -2,60 +2,104 @@
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
-import type { Collaborator } from "@templatical/types";
-import CollaboratorBar from "../src/cloud/components/CollaboratorBar.vue";
-import { CLOUD_TRANSLATIONS_KEY } from "../src/keys";
-import cloudEn from "../src/i18n/locales/cloud/en";
+import type { CollaborationConnectionState } from "@templatical/types";
+import CollaboratorBar from "../src/components/collaboration/CollaboratorBar.vue";
+import type { CollaborationPerson } from "../src/composables/useCollaborationFeature";
+import { TRANSLATIONS_KEY } from "../src/keys";
+import en from "../src/i18n/locales/en";
 
-function person(id: string, name: string, color = "#2563eb"): Collaborator {
-  return { id, name, color, selectedBlockId: null };
+function person(
+  key: string,
+  name: string,
+  extra: Partial<CollaborationPerson> = {},
+): CollaborationPerson {
+  return { key, type: "user", name, color: "#3b82f6", ...extra };
 }
 
-function mountBar(collaborators: Collaborator[], isConnected = true) {
+function mountBar(
+  people: CollaborationPerson[],
+  connection: CollaborationConnectionState | null = "connected",
+) {
   return mount(CollaboratorBar, {
-    props: { collaborators, isConnected },
-    global: {
-      provide: { [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn },
-    },
+    props: { people, connection },
+    global: { provide: { [TRANSLATIONS_KEY as symbol]: en } },
   });
 }
 
 describe("CollaboratorBar", () => {
-  it("names the connection state and hides avatars when nobody else is present", () => {
-    const on = mountBar([], true);
-    expect(on.get("[title]").attributes("title")).toBe(
-      cloudEn.collaboration.connected,
+  it.each([
+    ["connected", "Live"],
+    ["reconnecting", "Reconnecting…"],
+    ["offline", "Offline"],
+  ] as const)("names the %s state", (connection, label) => {
+    const indicator = mountBar([], connection).get(
+      '[data-testid="collaborator-connection"]',
     );
 
-    const off = mountBar([], false);
-    expect(off.get("[title]").attributes("title")).toBe(
-      cloudEn.collaboration.disconnected,
-    );
-    expect(off.find(".tpl-collaborator-avatar").exists()).toBe(false);
+    expect(indicator.attributes("title")).toBe(label);
+    expect(indicator.attributes("data-state")).toBe(connection);
   });
 
-  it("initials a single token and a two-word name", () => {
-    const wrapper = mountBar([person("a", "Ada"), person("b", "Grace Hopper")]);
-    const avatars = wrapper.findAll(".tpl-collaborator-avatar");
-    expect(avatars[0].text()).toBe("A");
-    expect(avatars[1].text()).toBe("GH");
-    expect(avatars[0].attributes("title")).toBe("Ada");
+  it("shows initials in the person's colour, or their avatar image", () => {
+    const wrapper = mountBar([
+      person("user:1", "Ada"),
+      person("user:2", "Grace Hopper", { color: "#ef4444" }),
+      person("user:3", "Alan", { avatarUrl: "https://example.com/alan.png" }),
+    ]);
+    const avatars = wrapper.findAll('[data-testid="collaborator-avatar"]');
+
+    expect(avatars.map((avatar) => avatar.attributes("title"))).toEqual([
+      "Ada",
+      "Grace Hopper",
+      "Alan",
+    ]);
+    expect(avatars[0].get('[aria-hidden="true"]').text()).toBe("A");
+    expect(avatars[1].get('[aria-hidden="true"]').text()).toBe("GH");
+    expect(avatars[1].attributes("style")).toContain("background-color");
+    expect(avatars[2].get("img").attributes("src")).toBe(
+      "https://example.com/alan.png",
+    );
+    expect(avatars[2].find('[aria-hidden="true"]').exists()).toBe(false);
+  });
+
+  it("calls every guest Guest, in the bar's own words", () => {
+    const wrapper = mountBar([
+      person("guest:g-1", "Guest", { type: "guest" }),
+      person("guest:g-2", "Gast", { type: "guest" }),
+    ]);
+    const avatars = wrapper.findAll('[data-testid="collaborator-avatar"]');
+
+    expect(avatars.map((avatar) => avatar.attributes("title"))).toEqual([
+      "Guest",
+      "Guest",
+    ]);
+    expect(
+      avatars.map((avatar) => avatar.attributes("data-person-type")),
+    ).toEqual(["guest", "guest"]);
   });
 
   it("caps the stack at three and lists the rest in the overflow title", () => {
     const wrapper = mountBar([
-      person("1", "Ada"),
-      person("2", "Grace"),
-      person("3", "Alan"),
-      person("4", "Barbara"),
-      person("5", "Donald"),
+      person("user:1", "Ada"),
+      person("user:2", "Grace"),
+      person("user:3", "Alan"),
+      person("user:4", "Barbara"),
+      person("guest:g-5", "Guest", { type: "guest" }),
     ]);
-    expect(wrapper.findAll(".tpl-collaborator-avatar")).toHaveLength(3);
-    expect(wrapper.text()).toContain("+2");
-    expect(wrapper.find("[title]").html()).toBeDefined();
-    const overflow = wrapper
-      .findAll("[title]")
-      .find((n) => n.text().includes("+2"))!;
-    expect(overflow.attributes("title")).toBe("Barbara\nDonald");
+
+    expect(wrapper.findAll('[data-testid="collaborator-avatar"]')).toHaveLength(
+      3,
+    );
+    const overflow = wrapper.get('[data-testid="collaborator-overflow"]');
+    expect(overflow.text()).toBe("+2");
+    expect(overflow.attributes("title")).toBe("Barbara\nGuest");
+  });
+
+  it("labels the group for assistive technology", () => {
+    expect(
+      mountBar([])
+        .get('[data-testid="collaborator-bar"]')
+        .attributes("aria-label"),
+    ).toBe("People editing this template");
   });
 });

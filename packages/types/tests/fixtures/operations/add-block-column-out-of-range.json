@@ -1,0 +1,62 @@
+{
+  "name": "addBlock into a column past the last is invalid",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "n1",
+        "type": "spacer"
+      },
+      "parent": {
+        "sectionId": "s1",
+        "column": 2
+      },
+      "after": null
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0
+    }
+  }
+}

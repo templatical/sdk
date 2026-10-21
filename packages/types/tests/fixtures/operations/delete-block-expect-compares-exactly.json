@@ -1,0 +1,40 @@
+{
+  "name": "deleteBlock expect compares the block exactly: a null inside it doesn't match an absent key",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "styles": {
+          "padding": 0
+        }
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "deleteBlock",
+      "blockId": "t1",
+      "expect": {
+        "block": {
+          "id": "t1",
+          "type": "title",
+          "styles": {
+            "padding": 0,
+            "backgroundColor": null
+          }
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "precondition_failed",
+      "opIndex": 0
+    }
+  }
+}

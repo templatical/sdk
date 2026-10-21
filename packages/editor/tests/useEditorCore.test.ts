@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
+  computed,
   defineComponent,
   h,
   nextTick,
@@ -220,20 +221,39 @@ describe('useEditorCore', () => {
       expect(editor.setUiTheme).toHaveBeenCalledWith('auto');
     });
 
-    it('calls useHistory with content, setContent, and historyOptions', () => {
-      mountCore({
-        historyOptions: { isRemoteOperation: () => true },
-      } as any);
+    it('calls useHistory with content and setContent', () => {
+      mountCore();
       expect(useHistory).toHaveBeenCalledOnce();
       const arg = vi.mocked(useHistory).mock.calls[0][0];
       expect(arg.content).toBeDefined();
       expect(typeof arg.setContent).toBe('function');
-      expect(typeof arg.isRemoteOperation).toBe('function');
+      expect(Object.keys(arg).sort()).toEqual(['content', 'setContent']);
     });
 
     it('wires history interceptor after history is created', () => {
       mountCore();
       expect(useHistoryInterceptor).toHaveBeenCalledOnce();
+    });
+
+    it("uses a supplied history instead of snapshots, without the interceptor", () => {
+      const history = {
+        canUndo: computed(() => true),
+        canRedo: computed(() => false),
+        isNavigating: ref(false),
+        undo: vi.fn(),
+        redo: vi.fn(),
+        record: vi.fn(),
+        recordDebounced: vi.fn(),
+        clear: vi.fn(),
+        destroy: vi.fn(),
+      };
+
+      const { captured } = mountCore({ history } as any);
+
+      expect(useHistory).not.toHaveBeenCalled();
+      expect(useHistoryInterceptor).not.toHaveBeenCalled();
+      expect(captured.core!.history).toBe(history);
+      expect(captured.injected!.history).toBe(history);
     });
 
     // Neither `toBe(blockDefaults)` nor a plain object any more: the config is

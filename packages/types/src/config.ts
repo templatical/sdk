@@ -270,10 +270,38 @@ export interface ThemeOverrides {
   dark?: Omit<ThemeOverrides, "dark">;
 }
 
+/**
+ * The `code` Templatical Cloud sends in a failed response's
+ * `{ message, code }` body. The named members are the codes Cloud sends
+ * today; any other string passes through, so a code Cloud adds later reaches
+ * `SdkError.code` without an SDK release.
+ */
+export type SdkErrorCode =
+  | "invalid_credentials"
+  | "token_invalid"
+  | "token_revoked"
+  | "browser_not_allowed"
+  | "token_scope_mismatch"
+  | "limit_reached"
+  | "feature_unavailable"
+  | "not_found"
+  | "user_required"
+  | "not_author"
+  | "mcp_not_allowed"
+  | "content_too_large"
+  | "recipient_not_allowed"
+  | "send_failed"
+  | (string & {});
+
 export class SdkError extends Error {
+  /**
+   * @param code The error body's `code`, as sent. Absent when the body has
+   * none, which includes every `422` validation failure.
+   */
   constructor(
     message: string,
     public readonly statusCode?: number,
+    public readonly code?: SdkErrorCode,
   ) {
     super(message);
     this.name = "SdkError";

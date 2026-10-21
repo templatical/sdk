@@ -4,7 +4,6 @@ import { computed, ref, type ComputedRef, type Ref } from "@vue/reactivity";
 export interface UseHistoryOptions {
   content: Ref<TemplateContent>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
-  isRemoteOperation?: () => boolean;
   maxSize?: number;
 }
 
@@ -30,12 +29,7 @@ const DEBOUNCE_MS = 300;
 const NAVIGATE_IDLE_MS = 1500;
 
 export function useHistory(options: UseHistoryOptions): UseHistoryReturn {
-  const {
-    content,
-    setContent,
-    isRemoteOperation,
-    maxSize = MAX_STACK_SIZE,
-  } = options;
+  const { content, setContent, maxSize = MAX_STACK_SIZE } = options;
 
   const undoStack = ref<TemplateContent[]>([]);
   const redoStack = ref<TemplateContent[]>([]);
@@ -70,20 +64,12 @@ export function useHistory(options: UseHistoryOptions): UseHistoryReturn {
   }
 
   function record(): void {
-    if (isRemoteOperation?.()) {
-      return;
-    }
-
     flushPendingDebounce();
     pushToUndoStack(cloneContent());
     redoStack.value = [];
   }
 
   function recordDebounced(blockId: string): void {
-    if (isRemoteOperation?.()) {
-      return;
-    }
-
     if (pendingDebounce && pendingDebounce.blockId === blockId) {
       clearTimeout(pendingDebounce.timeoutId);
       pendingDebounce.timeoutId = setTimeout(() => {

@@ -1,0 +1,43 @@
+{
+  "name": "expect compares numbers by value: 16.0 matches 16",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "fontSize": 16
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "t1",
+      "set": {
+        "fontSize": 18
+      },
+      "expect": {
+        "fontSize": 16.0
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "fontSize": 18
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

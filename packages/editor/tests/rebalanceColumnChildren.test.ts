@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createParagraphBlock } from "@templatical/types";
+import { diffContent } from "@templatical/core";
+import {
+  applyOperations,
+  createDefaultTemplateContent,
+  createParagraphBlock,
+  createSectionBlock,
+  getColumnCount,
+  type TemplateContent,
+} from "@templatical/types";
 import { rebalanceColumnChildren } from "../src/utils/rebalanceColumnChildren";
 
 describe("rebalanceColumnChildren", () => {
@@ -89,4 +97,48 @@ describe("rebalanceColumnChildren", () => {
     expect(regrown[0]).toEqual([a, b]);
     expect(regrown[1]).toEqual([]);
   });
+});
+
+describe("rebalanceColumnChildren under collaboration", () => {
+  // The section toolbar writes the rebalanced children and the new layout in
+  // one change; the collaboration controller sends that change as operations,
+  // so the engine must reproduce it from moves and a `columns` change alone.
+  it.each([
+    ["3", "1"],
+    ["3", "2"],
+    ["2", "1"],
+    ["1", "3"],
+    ["2-1", "3"],
+  ] as const)(
+    "%s → %s is reproduced by the operations sent for it",
+    (from, to) => {
+      const columns = Array.from(
+        { length: getColumnCount(from) },
+        (_, index) => [
+          createParagraphBlock({ content: `<p>${index}a</p>` }),
+          createParagraphBlock({ content: `<p>${index}b</p>` }),
+        ],
+      );
+      const section = createSectionBlock({ columns: from, children: columns });
+      const before: TemplateContent = {
+        ...createDefaultTemplateContent(),
+        blocks: [section],
+      };
+      const after: TemplateContent = {
+        ...before,
+        blocks: [
+          {
+            ...section,
+            columns: to,
+            children: rebalanceColumnChildren(section.children, to),
+          },
+        ],
+      };
+
+      const ops = diffContent(before, after);
+
+      expect(ops.map((op) => op.op)).not.toContain("setContent");
+      expect(applyOperations(before, ops)).toEqual(after);
+    },
+  );
 });

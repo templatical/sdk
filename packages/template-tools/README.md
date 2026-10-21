@@ -49,12 +49,12 @@ Install them wherever you run the command; they are resolved from your working d
 import {
   validateTemplate,
   runQualityLint,
-  applyOperation,
+  applyOperations,
   checkCustomBlock,
 } from "@templatical/template-tools";
 import { startBridge } from "@templatical/template-tools/live";
 ```
 
-`checkCustomBlock` runs the same checks as `custom-block validate`, on a JSON working file or the object a definition module exports; `validateCustomBlockDefinition` runs only the structural check. The JSON Schema for a custom block definition is at `@templatical/template-tools/custom-block-schema.json`.
+`applyOperations` is the operation engine `edit` runs, re-exported from `@templatical/types` with `OperationError` and `getColumnCount`. `checkCustomBlock` runs the same checks as `custom-block validate`, on a JSON working file or the object a definition module exports; `validateCustomBlockDefinition` runs only the structural check. The JSON Schema for a custom block definition is at `@templatical/template-tools/custom-block-schema.json`.
 
 MIT.

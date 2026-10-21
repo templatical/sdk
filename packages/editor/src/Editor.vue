@@ -5,16 +5,23 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toRaw,
   watch,
 } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
-import type { Block, TemplateContent, UiTheme } from "@templatical/types";
-import { cloneBlock } from "@templatical/types";
+import type {
+  Block,
+  Template,
+  TemplateContent,
+  UiTheme,
+} from "@templatical/types";
+import { cloneBlock, safeClone } from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
+import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
 import { useMediaFeature } from "./composables/useMediaFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
@@ -27,6 +34,7 @@ import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import { insertBlockAtSelection } from "./utils/insertBlockAtSelection";
+import { withCollaborativeSave } from "./utils/withCollaborativeSave";
 import { logger } from "./utils/logger";
 import {
   withNormalizedContentWrites,
@@ -93,9 +101,50 @@ const props = defineProps<{
 // to state itself — so the provider is wrapped here, on its way in. Wrapping
 // rather than normalizing after the load resolves is what keeps the load from
 // registering as an edit: core is handed content that is already correct.
-const templatesProvider = props.config.templates
+const normalizedTemplates = props.config.templates
   ? withNormalizedTemplateLoads(props.config.templates, props.config.mergeTags)
   : undefined;
+
+// --- Collaboration (opt-in: a collaboration provider and a templates provider) ---
+// Built before `useEditor()`, which reads others' locks from it, and attached
+// right after. A template id is what a session joins, so without a templates
+// provider there is nothing to collaborate on.
+if (props.config.collaboration && !normalizedTemplates) {
+  logger.warn(
+    "config.collaboration needs config.templates: collaboration runs on a " +
+      "loaded template, and only a templates provider loads one. " +
+      "Collaboration is off.",
+  );
+}
+const collaboration =
+  props.config.collaboration && normalizedTemplates
+    ? useCollaborationFeature({
+        provider: props.config.collaboration,
+        loadTemplate: (id) => normalizedTemplates.load(id),
+        user: props.config.user,
+        // The same source the load normalizer reads, so a tag arriving in a
+        // batch looks the way a loaded one does.
+        mergeTags: props.config.mergeTags,
+        onRemoteChange: props.config.onRemoteChange,
+        onError: props.config.onError,
+      })
+    : null;
+
+// With collaboration, content is saved as operations; `save` only renames.
+// A save answers with what is open: the loaded template with the canvas's
+// content, which the backend holds once `settle()` has resolved.
+const templatesProvider =
+  normalizedTemplates && collaboration
+    ? withCollaborativeSave(normalizedTemplates, collaboration.core, () => {
+        const template = editor.state.template;
+        return template
+          ? {
+              ...(toRaw(template) as Template),
+              content: safeClone(toRaw(editor.content.value)),
+            }
+          : null;
+      })
+    : normalizedTemplates;
 
 // --- Core editor state ---
 const editor = useEditor({
@@ -110,16 +159,12 @@ const editor = useEditor({
   templateDefaults: resolveTemplateDefaults(props.config),
   templates: templatesProvider,
   onError: props.config.onError,
-  // Cloud's collaborators lock the blocks they are editing. The map is
-  // forward-declared by the runtime because `useCollaboration` — which fills
-  // it — can only be built after this call.
-  lockedBlocks: props.cloud?.lockedBlocks,
+  // Blocks other collaborators hold: they can't be selected here.
+  lockedBlocks: collaboration?.locks,
 });
 
-// Collaboration wraps the editor's mutators so they broadcast; `useEditorCore`'s
-// history interceptor wraps them again below. Reversing that order would push
-// local history entries for remote operations and drift the peers apart, which
-// is the whole reason this runs here rather than alongside the rest.
+collaboration?.attach(editor);
+
 const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
 
 // --- Templates (opt-in: only when a storage provider is configured) ---
@@ -246,6 +291,11 @@ const CommentsPanel = defineAsyncComponent(
   () => import("./components/CommentsPanel.vue"),
 );
 
+// Lazy: an editor without a collaboration provider never downloads it.
+const CollaborationNotices = defineAsyncComponent(
+  () => import("./components/collaboration/CollaborationNotices.vue"),
+);
+
 // --- Cloud chrome (opt-in: only under `initCloud()`) ---
 // One lazy wrapper for every panel, overlay and modal Cloud adds, plus one for
 // its header controls. Same discipline as `SavedBlocksPanels` / `TestEmailPanel`:
@@ -339,6 +389,7 @@ const capabilities: EditorCapabilities = {
   ...(templates ? { templates: templates.capability } : {}),
   ...(testEmail ? { testEmail: testEmail.capability } : {}),
   ...(comments ? { comments: comments.capability } : {}),
+  ...(collaboration ? { collaboration: collaboration.capability } : {}),
 };
 
 const core = useEditorCore({
@@ -376,18 +427,13 @@ const core = useEditorCore({
   autoSaveOptions,
   capabilities,
   editorRoot: props.shadowRoot,
-  historyOptions: props.cloud
-    ? { isRemoteOperation: () => props.cloud!.isRemoteOperation() }
-    : undefined,
-  keyboardOptions: props.cloud
-    ? { onBeforeUndo: () => props.cloud!.onBeforeUndo() }
-    : undefined,
+  history: collaboration?.history,
 });
 
 // Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
-// `core.templateLint`), the collab undo warning (reads `core.history.canUndo`),
-// and the capability entries Cloud contributes — mutated into the very object
-// `useEditorCore` provided, so injecting components see them on first render.
+// `core.templateLint`) and the capability entries Cloud contributes — mutated
+// into the very object `useEditorCore` provided, so injecting components see
+// them on first render.
 const cloudReady =
   props.cloud && cloudAttachment
     ? props.cloud.ready({ core, capabilities })
@@ -412,6 +458,16 @@ const versionHistory = props.config.versionHistory
       history: core.history,
       conditionPreview: core.conditionPreview,
       autoSave: core.autoSave,
+      // A version on the canvas is a preview, not an edit: collaboration stops
+      // reading the canvas for it, and a restore re-syncs from the backend.
+      collaboration: collaboration
+        ? {
+            suspend: collaboration.core.suspend,
+            resume: collaboration.core.resume,
+            catchUp: collaboration.core.catchUp,
+            reportReplaceRefused: collaboration.reportReplaceRefused,
+          }
+        : null,
       // Lets the restore confirmation offer to persist unsaved work instead of
       // only warning about it. Without a templates provider — or with one whose
       // `save` is `false` — there is nowhere to put that work, and the
@@ -565,6 +621,7 @@ defineExpose({
         :test-email="testEmail"
         :version-history="versionHistory"
         :comments="comments"
+        :collaboration="collaboration"
       >
         <template v-if="cloudAttachment" #left-extras>
           <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
@@ -669,7 +726,6 @@ defineExpose({
             :selected-block-id="editor.state.selectedBlockId"
             :dark-mode="editor.state.darkMode"
             :preview-mode="editor.state.previewMode"
-            :locked-blocks="cloudAttachment?.collaboration?.lockedBlocks.value"
             @select-block="editor.selectBlock"
             @open-ai-chat="openCloudPanel('ai-chat')"
             @open-design-reference="openCloudPanel('design-reference')"
@@ -767,6 +823,10 @@ defineExpose({
     <!-- The comments sidebar. Only mounted when a provider and a `user` are
          configured; the sidebar's own chunk loads the first time it opens. -->
     <CommentsPanel v-if="comments?.isAvailable.value" :feature="comments" />
+
+    <!-- Collaboration notices: a refused selection or edit, a skipped undo,
+         a refused replace, reconnecting. -->
+    <CollaborationNotices v-if="collaboration" :feature="collaboration" />
 
     <!-- Version-history chrome outside the header (the preview banner). Only
          mounted when a provider is configured; the banner's chunk loads the

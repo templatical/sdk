@@ -131,34 +131,6 @@ describe('recordDebounced', () => {
         history.recordDebounced('block-1');
         expect(history.canRedo.value).toBe(false);
     });
-
-    it('skips recording when isRemoteOperation returns true', () => {
-        const content = ref(createDefaultTemplateContent());
-        const setContent = (c: any) => { content.value = c; };
-        const history = useHistory({
-            content,
-            setContent,
-            isRemoteOperation: () => true,
-        });
-
-        history.recordDebounced('block-1');
-        expect(history.canUndo.value).toBe(false);
-    });
-});
-
-describe('isRemoteOperation', () => {
-    it('record skips when isRemoteOperation returns true', () => {
-        const content = ref(createDefaultTemplateContent());
-        const setContent = (c: any) => { content.value = c; };
-        const history = useHistory({
-            content,
-            setContent,
-            isRemoteOperation: () => true,
-        });
-
-        history.record();
-        expect(history.canUndo.value).toBe(false);
-    });
 });
 
 describe('destroy', () => {

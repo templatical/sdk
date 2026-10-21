@@ -1,7 +1,5 @@
-import type {
-  TemplateContent,
-  TemplateOperationPayload,
-} from "@templatical/types";
+import type { Operation, TemplateContent } from "@templatical/types";
+import { applyOperations, OperationError } from "@templatical/types";
 import { flagValue, type ParsedArgs } from "../args";
 import { emit } from "../output";
 import {
@@ -11,15 +9,9 @@ import {
   UsageError,
   writeTemplateFile,
 } from "../io";
-import { applyOperation, validateTemplate } from "../../index";
+import { validateTemplate } from "../../index";
 
-/** What a caller supplies; `timestamp` is ours to fill. */
-interface OperationInput {
-  operation: TemplateOperationPayload["operation"];
-  data?: Record<string, unknown>;
-}
-
-function parseOperations(args: ParsedArgs, cwd: string): OperationInput[] {
+function parseOperations(args: ParsedArgs, cwd: string): unknown[] {
   const inline = flagValue(args, "op");
   const batchFile = flagValue(args, "ops");
   // !== undefined, not truthy: flagValue returns "" for an explicitly-empty
@@ -30,7 +22,7 @@ function parseOperations(args: ParsedArgs, cwd: string): OperationInput[] {
   }
   if (inline) {
     try {
-      return [JSON.parse(inline) as OperationInput];
+      return [JSON.parse(inline) as unknown];
     } catch (err) {
       throw new UsageError(`--op is not valid JSON: ${(err as Error).message}`);
     }
@@ -40,10 +32,20 @@ function parseOperations(args: ParsedArgs, cwd: string): OperationInput[] {
     if (!Array.isArray(parsed)) {
       throw new UsageError("--ops must point at a JSON array of operations.");
     }
-    return parsed as OperationInput[];
+    return parsed;
   }
   throw new UsageError(
     "edit needs --op '<json>' for one operation or --ops <file> for a batch.",
+  );
+}
+
+/** An object written in the old vocabulary: `{"operation": …, "data": …}`. */
+function isOldVocabulary(input: unknown): boolean {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "operation" in input &&
+    !("op" in input)
   );
 }
 
@@ -53,23 +55,27 @@ export function runEdit(args: ParsedArgs): number {
   const cwd = flagValue(args, "cwd") ?? process.cwd();
 
   const operations = parseOperations(args, cwd);
-  let content = readTemplateFile(file, cwd) as TemplateContent;
+  const oldIndex = operations.findIndex(isOldVocabulary);
+  if (oldIndex !== -1) {
+    throw new UsageError(
+      `Operation ${oldIndex + 1} uses the old {"operation", "data"} form. ` +
+        'Write {"op": "updateBlock", "blockId": …, "set": {…}} and the like: ' +
+        "see the operations reference.",
+    );
+  }
+  const before = readTemplateFile(file, cwd) as TemplateContent;
 
-  // All-or-nothing: applyOperation returns the unchanged input on rejection, so
-  // stopping at the first failure and discarding needs no rollback. Nothing is
-  // written until every operation has succeeded.
-  for (const [index, input] of operations.entries()) {
-    const result = applyOperation(content, {
-      operation: input.operation,
-      data: input.data ?? {},
-      timestamp: Date.now(),
-    });
-    if (!result.ok) {
-      throw new UsageError(
-        `Operation ${index + 1} (${String(input.operation)}) was rejected: ${result.error}`,
-      );
-    }
-    content = result.content;
+  // All or nothing: the engine throws at the first refused operation and
+  // nothing is written. A working file has one writer, so there are no locks.
+  let content: TemplateContent;
+  try {
+    content = applyOperations(before, operations as Operation[]);
+  } catch (error) {
+    if (!(error instanceof OperationError)) throw error;
+    const refused = operations[error.opIndex] as { op?: unknown } | undefined;
+    throw new UsageError(
+      `Operation ${error.opIndex + 1} (${String(refused?.op)}) was refused: ${error.code} — ${error.message}`,
+    );
   }
 
   // An operation can produce a structurally invalid document, so validate

@@ -72,7 +72,6 @@ function mountCanvas(previewMode: boolean, sampleMode = true) {
       selectedBlockId: editor.state.selectedBlockId,
       darkMode: false,
       previewMode,
-      lockedBlocks: new Map(),
     },
     provides: {
       [EDITOR_KEY]: editor,

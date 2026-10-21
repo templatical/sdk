@@ -9,7 +9,6 @@ import type { CloudAttachment, CloudReady, CloudRuntime } from "../runtime";
 import CloudErrorOverlay from "./CloudErrorOverlay.vue";
 import CloudLoadingOverlay from "./CloudLoadingOverlay.vue";
 import CloudSaveGateModal from "./CloudSaveGateModal.vue";
-import CollabUndoToast from "./CollabUndoToast.vue";
 
 const AiChatSidebar = defineAsyncComponent(() => import("./AiChatSidebar.vue"));
 const DesignReferenceSidebar = defineAsyncComponent(
@@ -91,19 +90,6 @@ function applyContent(content: TemplateContent): void {
     @cancel="ready.saveGate.cancel"
     @confirm="ready.saveGate.confirmAndSave"
   />
-
-  <Transition
-    enter-active-class="tpl:transition-all tpl:duration-200 tpl:ease-out"
-    enter-from-class="tpl:translate-y-[-8px] tpl:opacity-0"
-    enter-to-class="tpl:translate-y-0 tpl:opacity-100"
-    leave-active-class="tpl:transition-all tpl:duration-300 tpl:ease-in"
-    leave-from-class="tpl:translate-y-0 tpl:opacity-100"
-    leave-to-class="tpl:translate-y-[-8px] tpl:opacity-0"
-  >
-    <CollabUndoToast
-      :visible="ready.collabWarning.collabUndoWarningVisible.value"
-    />
-  </Transition>
 
   <AiChatSidebar
     :visible="cloud.panelState.aiChatOpen.value"

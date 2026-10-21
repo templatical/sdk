@@ -1,0 +1,95 @@
+{
+  "name": "updateSettings expect null matches an absent setting",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateSettings",
+      "set": {
+        "linkColor": "#000000"
+      },
+      "expect": {
+        "linkColor": null
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "2",
+          "children": [
+            [
+              {
+                "id": "p1",
+                "type": "paragraph",
+                "content": "Left"
+              }
+            ],
+            [
+              {
+                "id": "b1",
+                "type": "button",
+                "text": "Go",
+                "url": "https://example.com"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "d1",
+          "type": "divider"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff",
+        "linkColor": "#000000"
+      }
+    }
+  }
+}

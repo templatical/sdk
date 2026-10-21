@@ -3,6 +3,7 @@ import type {
   Block,
   MergeTag,
   MergeTagsConfig,
+  Operation,
   SectionBlock,
   SyntaxPreset,
   TemplateContent,
@@ -382,9 +383,8 @@ interface ContentWritingEditor {
  *
  * `markDirty` is forwarded untouched: every version-history write passes
  * `false`, and swallowing that would turn opening a preview into an unsaved
- * change. `setContent` is resolved per call rather than captured, because
- * collaboration replaces the editor's mutators with broadcasting versions
- * before this feature is built.
+ * change. `setContent` is resolved per call rather than captured, so a
+ * wrapper installed on the editor later still sees every write.
  */
 export function withNormalizedContentWrites<T extends ContentWritingEditor>(
   editor: T,
@@ -419,4 +419,97 @@ export function withNormalizedTemplateLoads(
       };
     },
   };
+}
+
+/**
+ * The type of the block `id` names — at the top level, in a section's columns
+ * or inside a wrapper — or `undefined` when no block has that id.
+ */
+function blockTypeOf(blocks: unknown, id: string): string | undefined {
+  if (!Array.isArray(blocks)) return undefined;
+  for (const block of blocks as Block[]) {
+    if (!block || typeof block !== "object") continue;
+    if (block.id === id) return block.type;
+    const children = (block as { children?: unknown }).children;
+    if (block.type === "section" && Array.isArray(children)) {
+      for (const column of children) {
+        const found = blockTypeOf(column, id);
+        if (found) return found;
+      }
+    } else if (block.type === "wrapper") {
+      const found = blockTypeOf(children, id);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+/** Every block id in `block`, a section's or a wrapper's children included, with its type. */
+function collectBlockTypes(block: Block, into: Map<string, string>): void {
+  if (typeof block.id === "string") into.set(block.id, block.type);
+  const children = (block as { children?: unknown }).children;
+  if (!Array.isArray(children)) return;
+  const nested =
+    block.type === "section" ? (children as unknown[]).flat() : children;
+  for (const child of nested) {
+    if (child && typeof child === "object") {
+      collectBlockTypes(child as Block, into);
+    }
+  }
+}
+
+/**
+ * Normalize the merge tags in a batch another session made, before the editor
+ * applies it — the collaboration counterpart of {@link withNormalizedTemplateLoads}.
+ * An agent writes `{{first_name}}` as text and a headless write stores it bare;
+ * both arrive as operations, and normalizing them on arrival turns each token
+ * into a tag at once. Nothing is sent back for it: the canvas and the
+ * controller's copy of the backend's content change together.
+ *
+ * The rich-text fields only, as for loads: an `addBlock`'s block (a section's
+ * children included), an `updateBlock`'s `set.content` when the block it names
+ * is a title or a paragraph — found in `content`, or among the blocks the batch
+ * itself added — and a `setContent`'s content. Returns `ops` itself when
+ * nothing matched, and never changes it.
+ */
+export function normalizeRemoteOperations(
+  ops: readonly Operation[],
+  content: TemplateContent,
+  mergeTags: MergeTagsConfig | undefined,
+): Operation[] {
+  const tags = mergeTags?.tags ?? [];
+  const syntax = resolveSyntax(mergeTags?.syntax);
+  const added = new Map<string, string>();
+  let changed = false;
+
+  const next = ops.map((op): Operation => {
+    if (op.op === "addBlock") {
+      if (!op.block || typeof op.block !== "object") return op;
+      collectBlockTypes(op.block, added);
+      const block = normalizeBlock(op.block, tags, syntax);
+      if (block === op.block) return op;
+      changed = true;
+      return { ...op, block };
+    }
+    if (op.op === "updateBlock") {
+      const html = op.set?.content;
+      if (typeof html !== "string") return op;
+      const type =
+        added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
+      if (type !== "title" && type !== "paragraph") return op;
+      const normalized = normalizeMergeTagsInHtml(html, tags, syntax);
+      if (normalized === html) return op;
+      changed = true;
+      return { ...op, set: { ...op.set, content: normalized } };
+    }
+    if (op.op === "setContent") {
+      const normalized = normalizeMergeTagMarkup(op.content, tags, syntax);
+      if (normalized === op.content) return op;
+      changed = true;
+      return { ...op, content: normalized };
+    }
+    return op;
+  });
+
+  return changed ? next : (ops as Operation[]);
 }

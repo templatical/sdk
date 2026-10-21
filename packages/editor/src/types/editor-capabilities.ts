@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from "vue";
+import type { BlockLock } from "@templatical/types";
 
 export interface EditorCapabilities {
   plan?: {
@@ -6,6 +7,19 @@ export interface EditorCapabilities {
   };
   ai?: {
     isFeatureEnabled(feature: string): boolean;
+  };
+  /**
+   * Present only when a `CollaborationProvider` is configured — via
+   * `init({ collaboration })`, and always under `initCloud()`.
+   */
+  collaboration?: {
+    /** The lock another session holds on this block, or `null`. */
+    lockOf(blockId: string): BlockLock | null;
+    /**
+     * While an AI agent's recent edit outlines this block, a number that
+     * changes with each such edit, so the fade restarts; `null` otherwise.
+     */
+    agentHighlightOf(blockId: string): number | null;
   };
   /**
    * Present only when a `CommentsProvider` **and** a `user` are configured — via

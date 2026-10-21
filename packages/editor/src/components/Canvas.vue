@@ -3,7 +3,6 @@ import { useI18n } from "../composables/useI18n";
 import { useCloudI18n } from "../composables/useCloudI18n";
 import type {
   Block,
-  Collaborator,
   CustomBlock as CustomBlockType,
   TemplateContent,
   ViewportSize,
@@ -33,7 +32,6 @@ import {
   EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
-import { readableTextColor } from "../utils/readableTextColor";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
 import SectionBlock from "./blocks/SectionBlock.vue";
@@ -81,7 +79,6 @@ const props = defineProps<{
   selectedBlockId: string | null;
   darkMode: boolean;
   previewMode: boolean;
-  lockedBlocks?: Map<string, Collaborator>;
 }>();
 
 const emit = defineEmits<{
@@ -246,8 +243,8 @@ function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, blockComponentMap);
 }
 
-function getBlockLock(blockId: string): Collaborator | null {
-  return props.lockedBlocks?.get(blockId) ?? null;
+function isLockedByOther(blockId: string): boolean {
+  return caps.collaboration?.lockOf(blockId) != null;
 }
 
 /**
@@ -256,7 +253,7 @@ function getBlockLock(blockId: string): Collaborator | null {
  * checked first, so a locked block can be neither selected nor picked.
  */
 function handleBlockSelect(blockId: string): void {
-  if (props.previewMode || getBlockLock(blockId)) return;
+  if (props.previewMode || isLockedByOther(blockId)) return;
   const savedBlocks = caps.savedBlocks;
   if (savedBlocks?.isPicking.value) {
     savedBlocks.togglePick(blockId);
@@ -476,37 +473,6 @@ function handleFetchData(
             "
           >
             <div class="tpl:relative">
-              <!-- Collaboration lock overlay -->
-              <div
-                v-if="getBlockLock(block.id)"
-                class="tpl-collab-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
-                :style="{
-                  outline: `2px solid ${getBlockLock(block.id)!.color}`,
-                  outlineOffset: '-1px',
-                }"
-              >
-                <span
-                  class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:whitespace-nowrap"
-                  :style="{
-                    backgroundColor: getBlockLock(block.id)!.color,
-                    color: readableTextColor(getBlockLock(block.id)!.color),
-                  }"
-                >
-                  <span
-                    class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-bold"
-                    style="
-                      background-color: color-mix(
-                        in srgb,
-                        var(--tpl-bg) 30%,
-                        transparent
-                      );
-                    "
-                  >
-                    {{ getBlockLock(block.id)!.name.charAt(0) }}
-                  </span>
-                  {{ getBlockLock(block.id)!.name }}
-                </span>
-              </div>
               <component
                 v-if="block.type === 'wrapper'"
                 :is="getBlockComponent(block)"
@@ -520,7 +486,7 @@ function handleFetchData(
                   !previewMode &&
                   !isPicking &&
                   selectedBlockId === block.id &&
-                  !getBlockLock(block.id)
+                  !isLockedByOther(block.id)
                 "
                 :picked="isPickedBlock(block.id)"
                 :viewport="viewport"

@@ -5,6 +5,8 @@ import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
   Block,
   BlockDefaults,
+  CollaborationProvider,
+  CollaborationRemoteChange,
   ColorsConfig,
   CommentsProvider,
   CustomBlock,
@@ -602,10 +604,49 @@ export interface TemplaticalEditorConfig {
   comments?: CommentsProvider;
 
   /**
+   * Real-time collaboration over your backend: ordered operations, presence and
+   * block locks.
+   *
+   * ```ts
+   * const editor = await init({
+   *   container,
+   *   templates,
+   *   collaboration: {
+   *     join: (templateId, session, handlers) => myRealtime.join(templateId, session, handlers),
+   *     submit: (templateId, batch) => post(`/api/templates/${templateId}/operations`, batch),
+   *     operationsAfter: (templateId, revision) =>
+   *       get(`/api/templates/${templateId}/operations?after=${revision}`),
+   *     acquireLock: (templateId, blockId) => post(`/api/templates/${templateId}/locks`, { blockId }),
+   *     renewLock: (templateId, blockId) => put(`/api/templates/${templateId}/locks/${blockId}`),
+   *     releaseLock: (templateId, blockId) => del(`/api/templates/${templateId}/locks/${blockId}`),
+   *   },
+   * });
+   * await editor.load("tpl_123");
+   * ```
+   *
+   * **Needs `templates`**: a session joins a loaded template, and `load` must
+   * return the template's `revision`. With a collaboration provider, every edit
+   * reaches your backend as an operation through `submit`, so `templates.save`
+   * receives only renames, and undo and redo send inverse operations that your
+   * backend can refuse. Selecting a block takes its lock; the three lock methods
+   * are optional together. Apply operations on your server with
+   * `applyOperations` from `@templatical/types`.
+   *
+   * **Omitted by default.** See the Collaboration page under Connect your backend.
+   */
+  collaboration?: CollaborationProvider;
+
+  /**
+   * A batch of edits from another session landed on the canvas: who made it
+   * (`actor`) and the operations. Not called for this editor's own edits, and
+   * not for a re-sync that reloads the whole template.
+   */
+  onRemoteChange?: (change: CollaborationRemoteChange) => void;
+
+  /**
    * Who is using the editor — needed by any feature that attributes work to a
-   * person. Today that is {@link comments}; collaboration presence will want the
-   * same answer, which is why this is a top-level key rather than part of the
-   * comments provider.
+   * person: {@link comments}, and the collaborator bar, which leaves this user's
+   * own sessions out. It is a top-level key rather than part of either provider.
    *
    * ```ts
    * init({ container, user: { id: "u_7", name: "Ada Lovelace" } });
@@ -1556,6 +1597,22 @@ export type {
   MediaOptions,
   MediaProvider,
   MediaRequestContext,
+  SdkErrorCode,
+  BlockLock,
+  BlockLockHolder,
+  BlockParent,
+  CollaborationActor,
+  CollaborationConflictCode,
+  CollaborationConnectionState,
+  CollaborationHandlers,
+  CollaborationJoin,
+  CollaborationMember,
+  CollaborationProvider,
+  CollaborationRemoteChange,
+  Operation,
+  OperationBatch,
+  OperationsAfterResult,
+  RevisionedBatch,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks / media providers. Re-exported here

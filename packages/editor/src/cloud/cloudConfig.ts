@@ -1,14 +1,12 @@
 import type {
   AiConfig,
   BlockDefaults,
-  CollaborationConfig,
   ColorsConfig,
   CommentsOptions,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
   LogicTagsConfig,
-  McpConfig,
   MediaOptions,
   MediaProvider,
   MediaRequestContext,
@@ -109,8 +107,6 @@ export interface TemplaticalCloudEditorConfig {
   smallScreenNotice?: boolean;
 
   ai?: AiConfig | false;
-  collaboration?: CollaborationConfig;
-  mcp?: McpConfig;
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
 

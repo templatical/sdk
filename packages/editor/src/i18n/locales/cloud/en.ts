@@ -64,10 +64,6 @@ const en = {
     templateScoreDesc: "Analyze quality, spam risk, and accessibility",
     disclaimer: "AI can make mistakes. Please verify before approving.",
   },
-  collaboration: {
-    connected: "Collaboration mode active",
-    disconnected: "Collaboration disconnected",
-  },
   designReference: {
     title: "Design Reference",
     close: "Close",

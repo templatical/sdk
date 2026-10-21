@@ -1,0 +1,43 @@
+{
+  "name": "expect null matches a null value",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "linkColor": null
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "t1",
+      "set": {
+        "linkColor": "#ff0000"
+      },
+      "expect": {
+        "linkColor": null
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "linkColor": "#ff0000"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

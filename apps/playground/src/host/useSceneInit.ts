@@ -42,7 +42,9 @@ export async function mountScene(
     // `?shadowDom=` must still win over a scene's own value.
     shadowDom: resolveShadowDom(config.shadowDom),
   });
-  if (typeof config.templates?.create === "function") {
+  if (scene.open) {
+    await scene.open(editor, ctx);
+  } else if (typeof config.templates?.create === "function") {
     try {
       await editor.create({ name: scene.title });
     } catch {

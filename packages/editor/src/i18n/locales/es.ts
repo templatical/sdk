@@ -35,8 +35,6 @@ const es: typeof en = {
 
   // History (undo/redo)
   history: {
-    collabWarning:
-      "Deshacer puede afectar a los cambios recientes de los colaboradores",
     undo: "Deshacer",
     redo: "Rehacer",
   },
@@ -701,6 +699,36 @@ const es: typeof en = {
     replyMany: "{count} respuestas",
     missingBlock: "Bloque no encontrado",
     saveTemplateFirst: "Guarda la plantilla antes de comentar en este bloque.",
+  },
+  collaboration: {
+    people: "Personas que editan esta plantilla",
+    guest: "Invitado",
+    connected: "En directo",
+    reconnecting: "Reconectando…",
+    offline: "Sin conexión",
+    editing: "{name} está editando",
+    selectionRefused: "{name} está editando este bloque.",
+    editRefused:
+      "Tu cambio no se guardó: otra persona cambió esta parte primero.",
+    editRefusedLocked:
+      "Tu cambio no se guardó: {name} está editando ese bloque.",
+    editTooLarge: "Tu cambio no se guardó: es demasiado grande.",
+    undoSkipped:
+      "No se pudo deshacer ese paso: otra persona lo ha cambiado desde entonces.",
+    replaceRefused:
+      "No se puede reemplazar la plantilla mientras otras personas la editan: {names}.",
+    reconnectingNotice: "Reconectando… Puedes seguir editando.",
+    dismiss: "Descartar",
+    anAgent: "Un agente",
+    agentChangedBlock: "{client} para {name} cambió un bloque.",
+    agentChangedBlocks: "{client} para {name} cambió {count} bloques.",
+    agentChangedSettings:
+      "{client} para {name} cambió la configuración de la plantilla.",
+    agentChangedBlockAndSettings:
+      "{client} para {name} cambió un bloque y la configuración de la plantilla.",
+    agentChangedBlocksAndSettings:
+      "{client} para {name} cambió {count} bloques y la configuración de la plantilla.",
+    agentUpdatedTemplate: "{client} para {name} actualizó la plantilla.",
   },
   versionHistory: {
     tooltip: "Historial de versiones",

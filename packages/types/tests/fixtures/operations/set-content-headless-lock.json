@@ -1,0 +1,65 @@
+{
+  "name": "setContent with no session is refused by any lock",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "p1",
+      "sessionId": "anyone"
+    }
+  ],
+  "ops": [
+    {
+      "op": "setContent",
+      "content": {
+        "blocks": [],
+        "settings": {
+          "width": 600
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "locked_by_others",
+      "opIndex": 0
+    }
+  }
+}

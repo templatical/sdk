@@ -9,6 +9,7 @@ import type {
   UseHistoryReturn,
 } from "@templatical/core";
 import type {
+  BlockLockHolder,
   TemplateContent,
   TemplateVersion,
   VersionHistoryProvider,
@@ -42,6 +43,19 @@ export interface SaveBeforeRestore {
   save: () => Promise<unknown>;
 }
 
+/**
+ * What a version preview and a restore need from collaboration. A previewed
+ * version is not an edit, so collaboration stops reading the canvas while one
+ * is on it; a restore replaces the template on the backend, which this editor
+ * then fetches like every other editor.
+ */
+export interface VersionHistoryCollaboration {
+  suspend: () => void;
+  resume: () => void;
+  catchUp: () => Promise<void>;
+  reportReplaceRefused: (holders: readonly BlockLockHolder[]) => void;
+}
+
 export interface UseVersionHistoryFeatureOptions {
   /** Storage backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
   provider: VersionHistoryProvider;
@@ -57,6 +71,8 @@ export interface UseVersionHistoryFeatureOptions {
   conditionPreview: UseConditionPreviewReturn;
   /** Paused for the duration of a preview, so previewed content is never saved. */
   autoSave: UseAutoSaveReturn | null;
+  /** Set with a collaboration provider. */
+  collaboration?: VersionHistoryCollaboration | null;
   onError?: (error: Error) => void;
   /**
    * Whether the feature may be used. Read reactively, so Cloud can defer to a
@@ -135,6 +151,7 @@ export function useVersionHistoryFeature(
   options: UseVersionHistoryFeatureOptions,
 ): UseVersionHistoryFeatureReturn {
   const { provider, editor, history, conditionPreview, autoSave } = options;
+  const collaboration = options.collaboration ?? null;
 
   const headless = useVersionHistory({
     provider,
@@ -221,6 +238,7 @@ export function useVersionHistoryFeature(
     contentBeforePreview.value = safeClone(editor.content.value);
 
     autoSave?.pause();
+    collaboration?.suspend();
     previewingVersion.value = version;
     editor.setContent(content, false);
   }
@@ -285,7 +303,16 @@ export function useVersionHistoryFeature(
     try {
       const template = await headless.restore(previewingVersion.value.id);
       if (destroyed) return;
-      applyRestored(template.content);
+      if (collaboration) {
+        // The backend replaced the content; fetch it like every other editor
+        // does. `resume()` below puts it on the canvas.
+        await collaboration.catchUp();
+        if (destroyed) return;
+        history.clear();
+        conditionPreview.reset();
+      } else {
+        applyRestored(template.content);
+      }
       // History is append-only: the restore added an entry, so the list the
       // dropdown shows is stale until it is re-read.
       await headless.load();
@@ -298,6 +325,14 @@ export function useVersionHistoryFeature(
       if (!destroyed && contentBeforePreview.value) {
         editor.setContent(contentBeforePreview.value, false);
       }
+      const refusal = error as { code?: unknown; holders?: unknown };
+      if (collaboration && refusal?.code === "locked_by_others") {
+        collaboration.reportReplaceRefused(
+          Array.isArray(refusal.holders)
+            ? (refusal.holders as BlockLockHolder[])
+            : [],
+        );
+      }
       throw error;
     } finally {
       if (!destroyed) {
@@ -305,6 +340,7 @@ export function useVersionHistoryFeature(
         contentBeforePreview.value = null;
         isConfirmingRestore.value = false;
         autoSave?.resume();
+        collaboration?.resume();
       }
     }
   }
@@ -325,6 +361,7 @@ export function useVersionHistoryFeature(
     isConfirmingRestore.value = false;
 
     autoSave?.resume();
+    collaboration?.resume();
   }
 
   return {

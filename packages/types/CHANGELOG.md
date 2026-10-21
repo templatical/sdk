@@ -218,6 +218,9 @@ No changes in this release.
   about MCP — and the Pusher event names (`mcp-operation`, `client-operation`) are
   untouched, so the wire protocol is unaffected.
 
+  Operations vocabulary v2 has since replaced this vocabulary: six operations,
+  broadcast as `template-operation`.
+
 ## 0.37.0
 
 No changes in this release.

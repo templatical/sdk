@@ -49,13 +49,6 @@ vi.mock("@templatical/core/cloud", () => {
       enabled: computed(() => false),
       hasAnyMenuFeature: computed(() => false),
     })),
-    useCollaboration: vi.fn(() => ({
-      lockedBlocks: ref(new Map()),
-      collaborators: ref([]),
-      _broadcastOperation: vi.fn(),
-      _isProcessingRemoteOperation: vi.fn(() => false),
-    })),
-    useCollaborationBroadcast: vi.fn(),
     createCloudCommentsProvider: vi.fn(() => ({
       list: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
@@ -73,7 +66,6 @@ vi.mock("@templatical/core/cloud", () => {
       defaultFallback: "Arial, sans-serif",
     })),
     resolveWebSocketConfig: vi.fn((c: unknown) => c),
-    useMcpListener: vi.fn(),
     usePlanConfig: vi.fn(() => ({
       config: ref({ websocket: { host: "h", port: 1, appKey: "k" } }),
       fetchConfig: vi.fn().mockResolvedValue(undefined),
@@ -157,13 +149,6 @@ vi.mock("../src/cloud/composables/useCloudPanelState", () => ({
   })),
 }));
 
-vi.mock("../src/cloud/composables/useCollabUndoWarning", () => ({
-  useCollabUndoWarning: vi.fn(() => ({
-    collabUndoWarningVisible: ref(false),
-    showCollabUndoWarning: vi.fn(),
-  })),
-}));
-
 vi.mock("../src/utils/preRenderCustomBlocks", () => ({
   preRenderCustomBlocks: vi.fn().mockResolvedValue(undefined),
 }));
@@ -178,8 +163,6 @@ import {
   createCloudTestEmailProvider,
   createCloudVersionHistoryProvider,
   performHealthCheck,
-  useCollaboration,
-  useCollaborationBroadcast,
   usePlanConfig,
   useWebSocket,
 } from "@templatical/core/cloud";
@@ -249,8 +232,6 @@ beforeEach(() => {
       auth: { ok: true },
       websocket: { ok: true },
     } as any);
-  vi.mocked(useCollaboration).mockClear();
-  vi.mocked(useCollaborationBroadcast).mockClear();
   vi.mocked(createCloudSavedBlocksProvider).mockClear();
   vi.mocked(createCloudCommentsProvider).mockClear();
   vi.mocked(createCloudRenderProvider).mockClear();
@@ -922,41 +903,16 @@ describe("bootstrapCloud — only a fatal auth failure raises the overlay", () =
 });
 
 describe("CloudRuntime.attach — what must run inside setup()", () => {
-  it("does not build collaboration when it is off", async () => {
+  it("builds the websocket, the panel state and the feature flags, and no collaboration", async () => {
     const { runtime } = await bootstrap();
     const { attachment } = attachInComponent(runtime);
 
-    expect(useCollaboration).not.toHaveBeenCalled();
-    expect(attachment.collaboration).toBe(null);
-  });
-
-  it("broadcasts *after* collaboration is built, so the history interceptor wraps last", async () => {
-    const { runtime } = await bootstrap({ collaboration: { enabled: true } });
-    attachInComponent(runtime);
-
-    expect(useCollaboration).toHaveBeenCalledTimes(1);
-    expect(useCollaborationBroadcast).toHaveBeenCalledTimes(1);
-    const collabOrder = vi.mocked(useCollaboration).mock.invocationCallOrder[0];
-    const broadcastOrder = vi.mocked(useCollaborationBroadcast).mock
-      .invocationCallOrder[0];
-    expect(collabOrder).toBeLessThan(broadcastOrder);
-  });
-
-  it("mirrors the collaborators' locked blocks into the map useEditor was given", async () => {
-    const locked = new Map([["block-1", {}]]);
-    vi.mocked(useCollaboration).mockReturnValueOnce({
-      lockedBlocks: ref(locked),
-      collaborators: ref([]),
-      _broadcastOperation: vi.fn(),
-      _isProcessingRemoteOperation: vi.fn(() => false),
-    } as any);
-
-    const { runtime } = await bootstrap({ collaboration: { enabled: true } });
-    expect(runtime.lockedBlocks.value.size).toBe(0);
-
-    attachInComponent(runtime);
-
-    expect(runtime.lockedBlocks.value.has("block-1")).toBe(true);
+    expect(Object.keys(attachment).sort()).toEqual([
+      "featureFlags",
+      "panelState",
+      "websocket",
+    ]);
+    expect("lockedBlocks" in runtime).toBe(false);
   });
 });
 

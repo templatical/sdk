@@ -6,6 +6,7 @@ import type {
   BaseEditorReturn,
   UseEditorCoreReturn,
 } from "../composables/useEditorCore";
+import type { UseCollaborationFeatureReturn } from "../composables/useCollaborationFeature";
 import type { UseCommentsFeatureReturn } from "../composables/useCommentsFeature";
 import type { UseTemplatesFeatureReturn } from "../composables/useTemplatesFeature";
 import type { UseTestEmailFeatureReturn } from "../composables/useTestEmailFeature";
@@ -25,6 +26,10 @@ import TemplateSaveStatus from "./TemplateSaveStatus.vue";
 // Lazy: an editor with no `versionHistory` provider never downloads the control.
 const VersionHistoryMenu = defineAsyncComponent(
   () => import("./VersionHistoryMenu.vue"),
+);
+// Lazy: an editor with no collaboration provider never downloads it.
+const CollaboratorBar = defineAsyncComponent(
+  () => import("./collaboration/CollaboratorBar.vue"),
 );
 
 /**
@@ -58,6 +63,8 @@ defineProps<{
   versionHistory: UseVersionHistoryFeatureReturn | null;
   /** Null when no `CommentsProvider` (or no `user`) is configured. */
   comments: UseCommentsFeatureReturn | null;
+  /** Null when no `CollaborationProvider` is configured. */
+  collaboration: UseCollaborationFeatureReturn | null;
 }>();
 </script>
 
@@ -128,6 +135,14 @@ defineProps<{
         :previewing-id="versionHistory.previewingVersion.value?.id ?? null"
         @open="versionHistory.refresh()"
         @navigate="versionHistory.navigate($event)"
+      />
+      <!-- Who else has the template open. Here, never in the centre track:
+           the bar changes width as people come and go, and the centre must
+           not (#574). This column packs from the left and moves nothing. -->
+      <CollaboratorBar
+        v-if="collaboration?.isLive.value"
+        :people="collaboration.people.value"
+        :connection="collaboration.connection.value"
       />
       <slot name="left-extras" />
     </div>

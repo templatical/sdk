@@ -24,7 +24,6 @@ function createMockHandlers(
     getSelectedBlockId: vi.fn().mockReturnValue(null),
     removeBlock: vi.fn(),
     onSave: vi.fn(),
-    onBeforeUndo: vi.fn(),
     ...overrides,
   };
 }
@@ -232,23 +231,6 @@ describe("handleEditorKeydown", () => {
       expect(handlers.history.undo).toHaveBeenCalledOnce();
     });
 
-    it("calls onBeforeUndo before undo", () => {
-      const callOrder: string[] = [];
-      const handlers = createMockHandlers({
-        onBeforeUndo: vi.fn(() => callOrder.push("beforeUndo")),
-        history: {
-          undo: vi.fn(() => callOrder.push("undo")),
-          redo: vi.fn(),
-          record: vi.fn(),
-        } as unknown as KeyboardShortcutHandlers["history"],
-      });
-      const e = createKeyEvent("z", { metaKey: true });
-
-      handleEditorKeydown(e, handlers);
-
-      expect(callOrder).toEqual(["beforeUndo", "undo"]);
-    });
-
     it("skips undo when editing text (contentEditable)", () => {
       const handlers = createMockHandlers();
       const e = createKeyEvent("z", { metaKey: true, contentEditable: true });
@@ -288,15 +270,6 @@ describe("handleEditorKeydown", () => {
       handleEditorKeydown(e, handlers);
 
       expect(handlers.history.redo).toHaveBeenCalledOnce();
-    });
-
-    it("does not call onBeforeUndo for redo", () => {
-      const handlers = createMockHandlers();
-      const e = createKeyEvent("z", { metaKey: true, shiftKey: true });
-
-      handleEditorKeydown(e, handlers);
-
-      expect(handlers.onBeforeUndo).not.toHaveBeenCalled();
     });
 
     it("skips redo when editing text", () => {

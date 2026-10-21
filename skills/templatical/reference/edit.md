@@ -3,7 +3,7 @@
 **Before:** [cli.md](cli.md)
 **Consult:** [rules.md](rules.md) before adding a block · [blocks.md](blocks.md)
 for field-level shape · [brand.md](brand.md) when restyling
-**After:** validation runs inside `edit` itself, so a rejected operation writes
+**After:** validation runs inside `edit` itself, so a refused operation writes
 nothing — see [validate.md](validate.md) for reading the failure
 **Then:** `live reload` if [live.md](live.md) is running
 
@@ -17,20 +17,39 @@ swap a headline, delete a block, reorder two sections — apply an operation
 instead of regenerating and rewriting the whole document:
 
 ```
-npx -y @templatical/template-tools@0.48.0 edit .templatical/<name>.json --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}' --json
+npx -y @templatical/template-tools@0.48.0 edit .templatical/<name>.json --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}' --json
 ```
 
 `edit` applies the operation, validates the result, and writes the file — all
 in one step, and nothing is written if the result isn't structurally valid.
-The vocabulary: `addBlock`, `updateBlock`, `updateBlockStyle`,
-`deleteBlock`, `moveBlock`, `updateSettings`, and `setContent` (a full
-replacement — the operation-shaped equivalent of a rewrite, not a scoped
-change). **Use `updateBlockStyle` for a block's `styles`** — it merges, so
-setting one property doesn't drop `padding`; `updateBlock`'s `updates`
-replaces whichever top-level keys you pass, `styles` included, so passing
-`styles` there clobbers the rest of it. Batch several operations with `--ops
-<file>` (a JSON array of the same objects) instead of one `--op` per call —
-the batch is all-or-nothing.
+The vocabulary is the one the editor, collaboration backends and Templatical
+Cloud share:
+
+| Operation | Shape |
+|---|---|
+| `addBlock` | `{"op":"addBlock","block":{…},"parent":null,"after":"<sibling id>"}` |
+| `moveBlock` | `{"op":"moveBlock","blockId":"…","parent":null,"after":null}` |
+| `deleteBlock` | `{"op":"deleteBlock","blockId":"…"}` (a section goes with its blocks) |
+| `updateBlock` | `{"op":"updateBlock","blockId":"…","set":{…},"unset":["…"]}` |
+| `updateSettings` | `{"op":"updateSettings","set":{…},"unset":["…"]}` |
+| `setContent` | `{"op":"setContent","content":{…}}` — a full replacement, not a scoped change |
+
+An agent connected to a template through Templatical Cloud's hosted MCP server
+edits with this same vocabulary through the server's `edit_template` tool, so
+the shapes and rules here hold there too.
+
+Positions name a sibling, never an index: `parent` is `null` for the top level
+or `{"sectionId":"…","column":0}` for a section column, and `after` is the id
+of the block to land after, or `null` for first. A section sits only at the
+top level. **`set` replaces each named key whole, `styles` included**: to
+change one style property, read the block's `styles` from the file and send
+the whole object with that property changed, or `padding` and the rest are
+dropped. `id`, `type` and `children` can't be set; a section's layout changes
+with `"set":{"columns":"1"}`, which only drops columns that are already empty,
+so move their blocks out first. Batch several operations with `--ops <file>` (a
+JSON array of the same objects) instead of one `--op` per call — the batch
+applies in order and all or nothing, and a refusal names the operation and why
+(`Operation 2 (updateBlock) was refused: block_missing — …`).
 
 **Prefer an operation over a whole-document rewrite whenever the change is
 scoped.** It matters most once [live mode](live.md) is running: a

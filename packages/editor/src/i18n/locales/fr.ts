@@ -36,8 +36,6 @@ const fr: typeof en = {
   },
 
   history: {
-    collabWarning:
-      "Annuler peut affecter les modifications récentes de vos collaborateurs",
     undo: "Annuler",
     redo: "Rétablir",
   },
@@ -635,6 +633,37 @@ const fr: typeof en = {
     replyMany: "{count} réponses",
     missingBlock: "Bloc introuvable",
     saveTemplateFirst: "Enregistrez le modèle avant de commenter ce bloc.",
+  },
+  collaboration: {
+    people: "Personnes qui modifient ce modèle",
+    guest: "Invité",
+    connected: "En direct",
+    reconnecting: "Reconnexion…",
+    offline: "Hors ligne",
+    editing: "{name} modifie",
+    selectionRefused: "{name} modifie ce bloc.",
+    editRefused:
+      "Votre modification n'a pas été enregistrée : quelqu'un d'autre a modifié cette partie avant vous.",
+    editRefusedLocked:
+      "Votre modification n'a pas été enregistrée : {name} modifie ce bloc.",
+    editTooLarge:
+      "Votre modification n'a pas été enregistrée : elle est trop volumineuse.",
+    undoSkipped:
+      "Impossible d'annuler cette étape : quelqu'un d'autre l'a modifiée entre-temps.",
+    replaceRefused:
+      "Impossible de remplacer le modèle pendant que d'autres le modifient : {names}.",
+    reconnectingNotice: "Reconnexion… Vous pouvez continuer à modifier.",
+    dismiss: "Masquer",
+    anAgent: "Un agent",
+    agentChangedBlock: "{client} pour {name} a modifié un bloc.",
+    agentChangedBlocks: "{client} pour {name} a modifié {count} blocs.",
+    agentChangedSettings:
+      "{client} pour {name} a modifié les paramètres du modèle.",
+    agentChangedBlockAndSettings:
+      "{client} pour {name} a modifié un bloc et les paramètres du modèle.",
+    agentChangedBlocksAndSettings:
+      "{client} pour {name} a modifié {count} blocs et les paramètres du modèle.",
+    agentUpdatedTemplate: "{client} pour {name} a mis à jour le modèle.",
   },
   versionHistory: {
     tooltip: "Historique des versions",

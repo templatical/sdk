@@ -57,7 +57,9 @@ unmount();
 | `render`             | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render)                                                                                                                                                                                                                                  |
 | `versionHistory`     | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. The same object also carries the `onCreated` and `onRestored` events. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history)                                                                              |
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
-| `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
+| `collaboration`      | `CollaborationProvider`                                           | No       | Real-time collaboration over your backend: every edit is sent as a batch of [operations](/api/operations) through `submit`, other sessions' batches are applied in revision order, selecting a block takes its lock, the header shows who else is here, and undo sends inverse operations your backend can refuse. **Requires `templates`**, whose `load` returns the template's `revision`; `templates.save` then receives only renames. The three lock methods are optional together. See [Collaboration](/backend/collaboration) |
+| `onRemoteChange`     | `(change: CollaborationRemoteChange) => void`                     | No       | Called with `{ actor, ops }` after another session's batch is applied on the canvas. Not called for this editor's own edits, nor for a re-sync that reloads the template |
+| `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person: `comments`, and `collaboration`, whose header bar leaves this user's own sessions out. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt?, width?, height? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for the background image URLs of sections, section wrappers and layout wrapper bands (never for a merge-tag URL): maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                  |
@@ -370,12 +372,35 @@ import { useHistory } from "@templatical/core";
 const history = useHistory({
   content: editor.content,
   setContent: editor.setContent,
-  isRemoteOperation: () => false, // skip recording during remote/collab updates
   maxSize: 50,
 });
 
 history.undo();
 history.redo();
+```
+
+### `useCollaboration(options)`
+
+Runs a collaboration session over a [`CollaborationProvider`](/backend/collaboration): it sends the editor's changes as operation batches, applies other sessions' batches in revision order, takes the selected block's lock, tracks who is here, and keeps undo and redo as inverse batches. `init({ collaboration })` builds it for you; call it yourself only for an editor of your own on `useEditor`.
+
+```ts
+import { useCollaboration, useEditor } from "@templatical/core";
+
+const collaboration = useCollaboration({
+  provider: myCollaborationProvider,
+  loadTemplate: (id) => myTemplatesProvider.load(id),
+  onNotice: (notice) => showNotice(notice),
+});
+const editor = useEditor({
+  content,
+  templates: myTemplatesProvider,
+  lockedBlocks: collaboration.locks,
+});
+collaboration.attach(editor);
+await editor.load("tpl_123");
+
+collaboration.undo();
+await collaboration.settle(); // resolves once every batch is confirmed
 ```
 
 ### `useBlockActions(options)`
@@ -701,6 +726,131 @@ const editor = await init({
 ```
 
 The editor already warns on tab close when a `templates` provider is configured — opt out with `templates: { unsavedChangesGuard: false }`. `onDirtyChange` is what you need for a client-side router, which `beforeunload` cannot see.
+
+---
+
+# Operations
+
+Source: https://docs.templatical.com/api/operations
+
+An operation is one change to a template: add, move, delete or update a block, update the settings, or replace the whole content. The same six operations travel everywhere a template changes outside a single editor:
+
+- **[Collaboration](/backend/collaboration)** — an editor with `init({ collaboration })` sends every edit to your backend as a batch of operations, and applies other people's batches.
+- **The CLI** — `template-tools edit` applies them to a template file.
+- **Templatical Cloud** — stores every batch with its revision, and AI agents connected to its MCP server edit with the same vocabulary through `edit_template`.
+
+`applyOperations` from `@templatical/types` (MIT) applies them. Templatical Cloud's server runs an engine with the same rules, and a shared set of test cases keeps the two identical.
+
+## The six operations
+
+```json
+{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>"}, "parent": null, "after": "b1"}
+{"op": "moveBlock",      "blockId": "b2", "parent": {"sectionId": "s1", "column": 0}, "after": null}
+{"op": "deleteBlock",    "blockId": "b2"}
+{"op": "updateBlock",    "blockId": "b1", "set": {"content": "<p>Hello</p>"}, "unset": ["visibility"]}
+{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheader"]}
+{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600}}}
+```
+
+A batch is a list of operations. It applies in order, each operation seeing the ones before it, and all or nothing: when one is refused, none of the batch applies.
+
+### Positions
+
+Positions name a sibling, never an index, so an operation means the same thing after someone else's change lands first.
+
+- `parent` is `null` for the top level, or `{"sectionId": "…", "column": 0}` for a column of a section. `column` is a 0-based index into the section's `children`.
+- `after` is the id of the block to land after, or `null` to land first. For `moveBlock`, the siblings are those of the target container with the moved block taken out.
+- `parent` and `after` are required on `addBlock` and `moveBlock`, even when they are `null`.
+
+### Sections and columns
+
+- A section sits only at the top level. Adding or moving a section into a column is refused, and so is a new section with a section among its children.
+- `deleteBlock` on a section deletes its blocks with it.
+- `updateBlock` replaces each key in `set` whole, a `styles` object included, and removes the keys in `unset`. `id`, `type` and `children` can't be set or unset, and neither can a section's `columns` be unset.
+- `set: {"columns": …}` on a section resizes its `children` to the layout's column count: `"1"` has one column, `"3"` has three, and every other layout (`"2"`, `"2-1"`, `"1-2"`) has two. Growing appends empty columns. Shrinking drops trailing columns only when they are empty, so move their blocks out first.
+- A new block needs a non-empty string `id` and a string `type`, and every id in it, a new section's children included, must be new to the template.
+
+### Preconditions
+
+Any operation but `addBlock` and `setContent` can carry `expect`, which must hold before it applies. A mismatch refuses the operation with `precondition_failed`. Undo uses this, so an undo that someone else's edit has overtaken is refused instead of overwriting it.
+
+- `updateBlock` and `updateSettings`: `expect` maps keys to their expected current values. `null` matches a `null` value or an absent key.
+- `moveBlock`: `expect.parent` and `expect.after` are the block's current position. A key left out counts as `null`.
+- `deleteBlock`: `expect.block` is the whole current block, children included, compared exactly.
+- Values compare as JSON: object key order is ignored, arrays compare in order, and numbers by value, so `1` equals `1.0`. `set`, `unset` and `expect` given as `null` count as absent.
+
+### Locks
+
+A backend passes the locks it holds and the acting session: `applyOperations(content, ops, { locks, session })`, with `locks` as `[{ blockId, sessionId }]`.
+
+- `updateBlock`, `moveBlock` and `deleteBlock` on a block another session holds are refused with `lock_held`. Moving or deleting a section also checks every block inside it.
+- `setContent` is refused with `locked_by_others` while any other session holds a lock.
+- With `session` set to `null` (a server-side change), every lock belongs to someone else.
+
+## Errors
+
+A refused batch throws an `OperationError` with `code` and `opIndex`, the 0-based index of the refused operation.
+
+| Code | When | Templatical Cloud answers |
+|---|---|---|
+| `block_exists` | A new block's id, or an id inside it, is already in the template | 409 |
+| `block_missing` | The block, or the parent section, isn't there | 409 |
+| `anchor_missing` | The `after` block isn't in the target container | 409 |
+| `precondition_failed` | `expect` doesn't hold | 409 |
+| `lock_held` | Another session holds the block | 409 |
+| `locked_by_others` | Another session holds a lock, for `setContent` | 409 |
+| `invalid_operation` | The operation is malformed or can never apply | 422 |
+
+### Which error wins
+
+When one operation breaks several rules, the first failing check decides:
+
+1. Its shape (`invalid_operation`): a malformed operation, a missing required key, a new section with a parent, `id`/`type`/`children` in `set` or `unset`, a section's `columns` in `unset`.
+2. The blocks it names (`block_missing`, `block_exists`).
+3. Locks (`lock_held`, `locked_by_others`).
+4. Preconditions (`precondition_failed`).
+5. Placement (`invalid_operation`): a section into a column, a block after itself.
+6. The target container: `block_missing` for a missing parent section; `invalid_operation` for a parent that isn't a section or a column out of range.
+7. The anchor (`anchor_missing`).
+8. The change itself (`invalid_operation`): a layout that would drop columns that still hold blocks.
+
+## Applying operations
+
+```ts
+import {
+  applyOperations,
+  OperationError,
+  type Operation,
+} from '@templatical/types';
+
+const ops: Operation[] = [
+  { op: 'updateBlock', blockId: 'b1', set: { content: '<p>Hello</p>' } },
+];
+
+try {
+  const next = applyOperations(template.content, ops, {
+    locks: [{ blockId: 'b4', sessionId: 'f7c1…' }],
+    session: requestSessionId,
+  });
+  // store `next`
+} catch (error) {
+  if (error instanceof OperationError) {
+    // error.code, error.opIndex
+  }
+  throw error;
+}
+```
+
+`applyOperations` returns a new document and never changes the one you pass. `applyOperationsInPlace` changes it directly, for a copy you can throw away. `getColumnCount(layout)` is the layout rule above.
+
+## In the CLI
+
+```bash
+npx -y @templatical/template-tools edit emails/welcome.json \
+  --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}'
+```
+
+`--ops <file>` takes a JSON array for a batch. See [Template Tools](/api/template-tools).
 
 ---
 
@@ -1036,12 +1186,12 @@ Defaults to `--format mjml`. `--format html` compiles that MJML further and need
 
 ```bash
 npx -y @templatical/template-tools edit emails/welcome.json \
-  --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}'
+  --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}'
 ```
 
-One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. Each operation is `{ "operation": "<name>", "data": {...} }`, where `operation` is one of the seven the editor itself uses: `addBlock`, `updateBlock`, `deleteBlock`, `moveBlock`, `updateSettings`, `setContent`, `updateBlockStyle`.
+One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor, collaboration backends and Templatical Cloud share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
 
-A batch is all-or-nothing: the first operation that would be rejected stops the whole batch, nothing is written, and the error names which operation (by index) and why. Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
+A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
 ### `import <file> [--format <fmt>] [--out <name>]` or `import --list-formats`
 
@@ -1175,14 +1325,14 @@ import {
   schema,
   validateTemplate,
   runQualityLint,
-  applyOperation,
+  applyOperations,
+  OperationError,
   getColumnCount,
   checkCustomBlock,
   validateCustomBlockDefinition,
   SPECIMEN_STATES,
   type ValidationResult,
   type QualityLintResult,
-  type OperationResult,
   type CustomBlockCheckResult,
   type CustomBlockWorkingFile,
 } from "@templatical/template-tools";
@@ -1191,8 +1341,7 @@ import {
 - **`schema`** — the generated JSON Schema for `TemplateContent`, as a plain object. Same content the `schema` command prints and the published `schema.json` file (below) contains.
 - **`validateTemplate(data: unknown): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step and no other workspace package.
 - **`runQualityLint(data: unknown): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw.
-- **`applyOperation(content: TemplateContent, payload: TemplateOperationPayload): OperationResult`** — the pure reducer behind `edit --op`. Never mutates `content`; returns `{ ok, content, error? }`, where `content` on a rejection is the same object passed in, provably untouched.
-- **`getColumnCount(layout: ColumnLayout): number`** — columns a section layout declares: `'1'` → `1`, `'3'` → `3`, everything else (`'2'`, `'2-1'`, `'1-2'`) → `2`. Mirrors the identical helper in `@templatical/core`'s own editor, reimplemented here because this package never imports core — see "How it relates to the other packages" below.
+- **`applyOperations(content, ops, context?)`**, **`OperationError`** and **`getColumnCount(layout)`** — the operation engine behind `edit`, re-exported from `@templatical/types`. `applyOperations` returns a new document and never changes `content`; a refused batch throws an `OperationError` carrying `code` and `opIndex`. See the [Operations reference](/api/operations).
 - **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — the checks `custom-block validate` runs, returning `{ valid, issues }`. It takes a JSON working file or the object a definition module exports, `dataSource` function included, so the same check can run in your own tests over the definitions you ship. Pass `compileMjml` in `options` to add the MJML compile check; without it that check is skipped.
 - **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — the structural check alone, synchronous. `checkCustomBlock` runs it first.
 - **`SPECIMEN_STATES`** — the specimen state names `custom-block render --state` accepts.
@@ -1211,7 +1360,7 @@ Node-only (`node:http`, `node:fs`) — a separate subpath so a bundler building 
 
 The raw generated JSON Schema as a `.json` file — importable anywhere your bundler or runtime can load JSON (`import schema from "@templatical/template-tools/schema.json"`, or read it with `fetch`/`fs.readFileSync` outside a bundler). Identical content to the `schema` export above and to what the `schema` command prints.
 
-**Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperation` and `./live` all assume you already have a structurally valid template to work with.
+**Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperations` and `./live` all assume you already have a structurally valid template to work with.
 
 ### `@templatical/template-tools/custom-block-schema.json`
 
@@ -1221,7 +1370,7 @@ The JSON Schema for a custom block working file — a `CustomBlockDefinition` wi
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
-It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
+It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit` runs the operation engine from `@templatical/types`, which is MIT: the same engine the editor's collaboration and Templatical Cloud apply, kept identical to Cloud's by shared fixtures. That keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
 
 ---
 
@@ -1927,6 +2076,215 @@ unsubscribe(); // Remove listener
 
 `Template`, `TemplatePatch`, `SavedBlockInput`, `CommentsProvider`, `MediaProvider` and the rest of the BYO storage shapes live under [Connect your backend](/backend/). This page is the block model and editor config.
 
+## Operations and collaboration
+
+`Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
+
+---
+
+# Collaboration
+
+Source: https://docs.templatical.com/backend/collaboration
+
+Give the editor a collaboration provider and several people can edit one template at once. Every edit reaches your backend as a batch of [operations](/api/operations), your backend puts the batches in one order, and every editor applies them in that order. Selecting a block locks it, so two people never type into the same block, and everyone sees who else has the template open.
+
+```ts
+import { init } from '@templatical/editor';
+
+const editor = await init({
+  container: '#editor',
+  user: { id: 'u_7', name: 'Ada Lovelace' },
+  templates: myTemplatesProvider, // `load` returns the template's `revision`
+  collaboration: {
+    join: (templateId, session, handlers) =>
+      myRealtime.join(templateId, session, handlers),
+    submit: (templateId, batch) =>
+      api(`/api/templates/${templateId}/operations`, {
+        method: 'POST',
+        body: JSON.stringify(batch),
+      }),
+    operationsAfter: (templateId, revision) =>
+      api(`/api/templates/${templateId}/operations?after=${revision}`),
+    acquireLock: (templateId, blockId) =>
+      api(`/api/templates/${templateId}/locks`, {
+        method: 'POST',
+        body: JSON.stringify({ blockId }),
+      }),
+    renewLock: (templateId, blockId) =>
+      api(`/api/templates/${templateId}/locks/${blockId}`, { method: 'PUT' }),
+    releaseLock: async (templateId, blockId) => {
+      await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
+        method: 'DELETE',
+        keepalive: true,
+      });
+    },
+  },
+});
+
+await editor.load('tpl_123');
+```
+
+`api` is your own fetch helper. When a request is refused, it must reject with an error that keeps the response's `code`, `holder` and `holders` (see [Refusals](#refusals)).
+
+## What the editor does
+
+- **Sends every edit as operations.** The editor compares the canvas with what it last sent and turns the difference into a batch: a drag becomes a `moveBlock`, typing an `updateBlock`. Typing into one block waits for a 300 ms pause, at most a second; everything else goes at once. One batch is in flight at a time, so a session's batches arrive in order, and a batch that fails in transit is sent again with the same `batchId`.
+- **Applies everyone's batches in revision order.** Batches from other sessions are buffered and applied strictly by revision, with this session's unconfirmed edits replayed on top. A gap that isn't filled within a second is fetched with `operationsAfter`.
+- **Locks the selected block.** Selecting a block takes its lock; another session's locked block shows its holder's name and colour and can't be selected. Locks renew every 10 seconds and are released on deselect, on loading another template and when the page closes.
+- **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
+- **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
+- **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
+- **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
+- **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
+- **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
+
+## The contract
+
+```ts
+import type {
+  CollaborationHandlers,
+  CollaborationProvider,
+} from '@templatical/types';
+
+interface CollaborationProvider {
+  join(
+    templateId: string,
+    session: { sessionId: string },
+    handlers: CollaborationHandlers,
+  ): Promise<{
+    revision: number;
+    locks: BlockLock[];
+    members: CollaborationMember[];
+    leave(): void;
+  }>;
+  submit(templateId: string, batch: OperationBatch): Promise<{ revision: number }>;
+  operationsAfter(
+    templateId: string,
+    revision: number,
+  ): Promise<
+    | { revision: number; batches: RevisionedBatch[] }
+    | { revision: number; resync: true }
+  >;
+  acquireLock?(templateId: string, blockId: string): Promise<BlockLock>;
+  renewLock?(templateId: string, blockId: string): Promise<BlockLock>;
+  releaseLock?(templateId: string, blockId: string): Promise<void>;
+}
+
+interface CollaborationHandlers {
+  onBatch(batch: RevisionedBatch): void;
+  onResync(revision: number, actor?: CollaborationActor): void;
+  onLock(lock: BlockLock): void;
+  onUnlock(blockId: string, sessionId: string): void;
+  onMembers(members: CollaborationMember[]): void;
+  onConnectionChange(state: 'connected' | 'reconnecting' | 'offline'): void;
+}
+```
+
+The shapes: `OperationBatch` is `{ batchId, baseRevision, ops }`; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
+
+### `join`
+
+Called when a template is loaded, with this editor's session id (a UUID the editor makes). Subscribe to the template's events, then answer with its current revision, the unexpired locks and everyone with it open, this session included. Call the handlers for everything that happens afterwards; `leave()` stops them.
+
+`join` is called again for the same template after a reconnect: answer with fresh state without subscribing twice. Call `onConnectionChange` when your realtime connection drops and comes back; the editor re-joins and catches up on `connected`.
+
+### `submit`
+
+Apply the batch's operations to the template, in order and all or nothing, then answer with the revision it produced. `baseRevision` is the last revision the editor had confirmed; batches are applied to the current content whatever it is, which is what the operations' sibling anchors and preconditions are for. A `batchId` you have already applied answers with that batch's revision and applies nothing, because the editor resends after a failure in transit. Send the batch to every other session with `onBatch`, with its revision and actor.
+
+### `operationsAfter`
+
+Answer with every batch after `revision`, in order. When you no longer have them all, answer `{ revision, resync: true }` and the editor reloads the template through `templates.load`. Call `onResync(revision, actor)` for a change batches can't describe, such as a `setContent`, a restored version or a broadcast too large for your transport. `actor` is who made the change, in the shape of a batch's; the editor uses it only for an agent's notice, and leaving it out changes nothing else.
+
+### Locks
+
+`acquireLock` grants the lock or refuses with `lock_held` and the holder; `renewLock` extends it or refuses with `lock_lost`; `releaseLock` lets it go and never fails. Send `onLock` and `onUnlock` to the other sessions. The three methods are optional together: without them the editor takes no locks.
+
+### Refusals
+
+The editor reads three fields off a rejected promise: `code`, and `holder` or `holders`. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
+
+| `code` | From | The editor |
+|---|---|---|
+| any of the [operation errors](/api/operations#errors) | `submit` | Drops the batch, puts back your backend's state and says the change wasn't saved, naming the holder for `lock_held` |
+| `content_too_large` | `submit` | Drops the batch and says the change was too large |
+| `lock_held` (with `holder`) | `acquireLock` | Deselects and says who is editing the block |
+| `lock_lost` | `renewLock` | Takes the lock again if the block is still selected |
+
+Network errors, 5xx, 408 and 429 are retried with the same `batchId` after 1, 2, 5, 10 and 30 seconds.
+
+## Templates
+
+With a collaboration provider, `templates.load` must return the template's `revision` along with its content, and may return its unexpired `locks`. `templates.save` receives only `{ name }`; the content is already on your backend. `create` works as usual and starts a template at revision 0.
+
+## Building a backend
+
+### Applying a batch
+
+```ts
+import { applyOperations, OperationError } from '@templatical/types';
+
+app.post('/api/templates/:id/operations', async (req, res) => {
+  const { batchId, ops } = req.body;
+  const sessionId = req.get('X-Session-Id') ?? null; // however you identify it
+  const template = await db.templates.lockForUpdate(req.params.id);
+
+  const known = await db.batches.find(template.id, batchId);
+  if (known) return res.json({ revision: known.revision });
+
+  const locks = await db.locks.unexpired(template.id);
+  let content;
+  try {
+    content = applyOperations(template.content, ops, {
+      locks: locks.map((lock) => ({ blockId: lock.blockId, sessionId: lock.owner })),
+      session: sessionId ? ownerOf(req.user, sessionId) : null,
+    });
+  } catch (error) {
+    if (!(error instanceof OperationError)) throw error;
+    return res.status(error.code === 'invalid_operation' ? 422 : 409).json({
+      message: error.message,
+      code: error.code,
+      opIndex: error.opIndex,
+    });
+  }
+
+  const revision = template.revision + 1;
+  await db.templates.update(template.id, { content, revision });
+  const batch = { revision, batchId, actor: actorOf(req.user, sessionId), ops };
+  await db.batches.insert(template.id, batch);
+  realtime.toOthers(template.id, sessionId, 'batch', batch);
+  res.json({ revision });
+});
+```
+
+Serialize the batches of one template: two applied at once would both read the same revision. Run the same `applyOperations` the editor runs, so a batch the editor considered valid is valid on your server too.
+
+### Locks and ownership
+
+A lock belongs to a session and to the identity behind it together: the user id, or `guest:<sessionId>` for a session without a user. Compare both, as `ownerOf` does above, so a session id borrowed from another user's request can't act on their lock. Give locks a short expiry (Templatical Cloud uses 30 seconds; the editor renews every 10), and when a session takes a new block, release the block it held before. Leave lock checks to `applyOperations`: pass every unexpired lock with its owner, and the acting owner as `session`.
+
+### Catching up
+
+Keep recent batches for `operationsAfter`. How many is up to you: when an editor asks for revisions you no longer have, answer `resync` and it reloads the template.
+
+### Presence
+
+Members are sessions, not users: the same user in two tabs is two members, and the editor groups them. Give each member a colour that stays the same for the same person everywhere, for example from a hash of the user id.
+
+## Without realtime
+
+A backend without a realtime channel can still collaborate in order: `join` answers with the revision and empty `locks` and `members` and never calls a handler, and the provider has no lock methods. Every edit still goes through `submit`, refusals still work, and other people's edits appear when the template is loaded again.
+
+## Events
+
+`init({ onRemoteChange })` is called with `{ actor, ops }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+
+## In the playground
+
+The **Collaboration** setup runs this contract between browser tabs, over a backend built on `applyOperations` in a shared worker. Open it in two tabs, and add `?user=Ada` to one to sign it in.
+
+[Open in playground](https://play.templatical.com/scenes/collaboration)
+
 ---
 
 # Comments
@@ -2236,6 +2594,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Saving & loading](/backend/templates) | inline name field, save button, save status, `Cmd`/`Ctrl`+`S`, autosave, unsaved-changes guard | `load` · `create` · `save` |
 | [Version history](/backend/version-history) | header control, version list, preview on the canvas with its own banner, restore with confirmation | `list` · `get` · `create` · `restore` |
 | [Comments](/backend/comments) | review panel, threads and replies, per-block count badges, resolve and reopen | `list` · `create` · `update` · `delete` · `setResolved` |
+| [Collaboration](/backend/collaboration) | others' edits live, a presence bar, block locks with outlines, undo that skips steps others overtook | `join` · `submit` · `operationsAfter` · and, together, `acquireLock` · `renewLock` · `releaseLock` |
 | [Saved blocks](/backend/saved-blocks) | pick session on the canvas, searchable browser with live preview, insert-at-position, rename, delete | `list` · `create` · `update` · `delete` |
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
@@ -2243,7 +2602,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
-On `templates`, `versionHistory`, `comments`, `savedBlocks` and `media` every mutation is `false | fn`. Passing `false` states that the action is unavailable: calling it rejects, and wherever the editor renders a control for it, that control is hidden rather than disabled. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) and [media](/backend/media#controlling-permissions) have the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`.
+On `templates`, `versionHistory`, `comments`, `savedBlocks` and `media` every mutation is `false | fn`. Passing `false` states that the action is unavailable: calling it rejects, and wherever the editor renders a control for it, that control is hidden rather than disabled. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) and [media](/backend/media#controlling-permissions) have the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`. `collaboration` is a session rather than storage: it needs `templates`, and its three lock methods are optional together.
 
 ::: warning Not a security boundary
 Providers run in the user's browser. These flags shape the UI; they do not protect your API. Who may open a template, who may delete a shared saved block, which address a test may reach — enforce all of it on your server as well.
@@ -8473,7 +8832,7 @@ export default translations;
 
 ### Cloud strings are optional
 
-Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — AI, collaboration, template scoring, the lint save gate, and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
+Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — AI, template scoring, the lint save gate, and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 
@@ -9396,6 +9755,7 @@ There is nothing to call and nothing to enable. It runs wherever content arrives
 | `editor.create({ content })` | before the content becomes editor state |
 | `editor.load(id)` | as the [`templates`](/backend/templates) provider's result returns |
 | [Version history](/backend/version-history) preview and restore | as each version reaches the canvas |
+| Batches from other sessions with [collaboration](/backend/collaboration), an AI agent's included | as each batch is applied |
 
 Matching follows your configured `syntax`, not the `tags` array, so an undeclared token still becomes a tag — labelled with its own raw value.
 
@@ -12734,7 +13094,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
 
-Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
+Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, media, and real-time collaboration are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 

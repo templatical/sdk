@@ -15,6 +15,21 @@ describe("SdkError", () => {
       expect(error.statusCode).toBeUndefined();
     });
 
+    it("sets code from the third argument", () => {
+      const error = new SdkError("Storage is full.", 403, "limit_reached");
+      expect(error.code).toBe("limit_reached");
+      expect(error.statusCode).toBe(403);
+    });
+
+    it("keeps a code the known list does not name", () => {
+      const error = new SdkError("Later.", 403, "user_required");
+      expect(error.code).toBe("user_required");
+    });
+
+    it("defaults code to undefined when not provided", () => {
+      expect(new SdkError("Invalid.", 422).code).toBeUndefined();
+    });
+
     it('sets name to "SdkError"', () => {
       const error = new SdkError("test");
       expect(error.name).toBe("SdkError");

@@ -5,9 +5,9 @@
 the one matching the key being configured
 
 Optional config keys, each a plain object of methods: `templates`,
-`versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`.
-Every key stands alone — a feature is absent until its key is passed, not
-merely disabled: no half-rendered panel, no dead button.
+`versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`,
+`collaboration`. Every key stands alone — a feature is absent until its key
+is passed, not merely disabled: no half-rendered panel, no dead button.
 
 **On the storage providers (`templates`, `versionHistory`, `comments`,
 `savedBlocks`, `media`) every mutation is `false | fn`, and it's required,
@@ -19,6 +19,16 @@ make the choice explicit. `list` / `load` have no `false` option — without
 them there is nothing to open. `render` and `testEmail` are shaped
 differently: every `render` method (`toMjml`, `toHtml`, `compileMjml`) is
 independently optional, and `testEmail` is a single `send`.
+
+`collaboration` is a session, not storage: `join`, `submit` and
+`operationsAfter`, plus `acquireLock` / `renewLock` / `releaseLock`, which are
+optional together (no lock methods, no locks). It needs `templates`, whose
+`load` must return the template's `revision`; with it every edit reaches the
+backend as an operation through `submit`, so `templates.save` receives only
+renames, and undo sends inverse operations the backend may refuse. The
+backend applies operations with `applyOperations` from `@templatical/types`
+and owns a lock by session id and user identity together. `onRemoteChange`
+reports another session's edits.
 
 The editor has no template browser of its own. After wiring `templates`, the
 host still calls `editor.load(id)` or `editor.create(...)` — a missing Save

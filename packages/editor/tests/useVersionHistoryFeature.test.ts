@@ -40,6 +40,8 @@ function setup(
     templateId?: string | null;
     /** `null` mirrors "no templates provider"; `false` mirrors `save: false`. */
     saveBeforeRestore?: null | false | { save?: () => Promise<unknown> };
+    /** A collaboration controller, as `Editor.vue` passes it. */
+    collaboration?: boolean;
   } = {},
 ) {
   const provider: VersionHistoryProvider = {
@@ -85,6 +87,15 @@ function setup(
   const saveBeforeRestore =
     supplied === null ? null : { canSave: () => supplied !== false, save };
 
+  const collaboration = opts.collaboration
+    ? {
+        suspend: vi.fn(),
+        resume: vi.fn(),
+        catchUp: vi.fn(async () => {}),
+        reportReplaceRefused: vi.fn(),
+      }
+    : undefined;
+
   const scope = effectScope();
   const feature = scope.run(() =>
     useVersionHistoryFeature({
@@ -95,6 +106,7 @@ function setup(
       autoSave: autoSave as never,
       saveBeforeRestore,
       onError,
+      ...(collaboration ? { collaboration } : {}),
     }),
   )!;
 
@@ -109,6 +121,7 @@ function setup(
     feature,
     scope,
     state,
+    collaboration,
   };
 }
 
@@ -558,6 +571,64 @@ describe("useVersionHistoryFeature", () => {
 
       expect(ctx.feature.isConfirmingRestore.value).toBe(false);
       expect(ctx.provider.restore).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("with collaboration", () => {
+    it("stops reading the canvas while a version is on it, and resumes on cancel", async () => {
+      const { feature, collaboration } = setup({}, { collaboration: true });
+
+      await feature.navigate(version("ver-1", { content: content("v1") }));
+      expect(collaboration!.suspend).toHaveBeenCalledOnce();
+      expect(collaboration!.resume).not.toHaveBeenCalled();
+
+      feature.cancelPreview();
+      expect(collaboration!.resume).toHaveBeenCalledOnce();
+    });
+
+    it("fetches the restored content like every other editor, instead of applying the response", async () => {
+      const { feature, provider, editor, history, conditionPreview, collaboration } =
+        setup({}, { collaboration: true });
+      await feature.navigate(version("ver-1", { content: content("v1") }));
+      editor.setContent.mockClear();
+
+      await feature.confirmRestore();
+
+      expect(provider.restore).toHaveBeenCalledWith("tpl-1", "ver-1");
+      expect(collaboration!.catchUp).toHaveBeenCalledOnce();
+      expect(editor.setContent).not.toHaveBeenCalled();
+      expect(history.clear).toHaveBeenCalledOnce();
+      expect(conditionPreview.reset).toHaveBeenCalledOnce();
+      expect(collaboration!.resume).toHaveBeenCalledOnce();
+      expect(
+        collaboration!.catchUp.mock.invocationCallOrder[0],
+      ).toBeLessThan(collaboration!.resume.mock.invocationCallOrder[0]);
+    });
+
+    it("names who holds locks when a restore is refused, and goes back to the user's work", async () => {
+      const holders = [
+        { sessionId: "s-2", type: "user", id: "u-2", name: "Grace", color: "#ef4444" },
+      ];
+      const { feature, editor, collaboration } = setup(
+        {
+          restore: vi.fn(async () => {
+            throw Object.assign(new Error("Other people are editing blocks."), {
+              code: "locked_by_others",
+              holders,
+            });
+          }),
+        },
+        { collaboration: true },
+      );
+      await feature.navigate(version("ver-1", { content: content("v1") }));
+
+      await expect(feature.confirmRestore()).rejects.toThrow(
+        "Other people are editing blocks.",
+      );
+
+      expect(collaboration!.reportReplaceRefused).toHaveBeenCalledWith(holders);
+      expect(editor.setContent).toHaveBeenLastCalledWith(content("current"), false);
+      expect(collaboration!.resume).toHaveBeenCalledOnce();
     });
   });
 

@@ -26,8 +26,6 @@ const translations: typeof en = {
     daysAgo: "{days}日前",
   },
   history: {
-    collabWarning:
-      "元に戻すと、共同編集者の最近の変更にも影響する場合があります",
     undo: "元に戻す",
     redo: "やり直す",
   },
@@ -621,6 +619,37 @@ const translations: typeof en = {
     missingBlock: "ブロックが見つかりません",
     saveTemplateFirst:
       "このブロックにコメントする前にテンプレートを保存してください。",
+  },
+  collaboration: {
+    people: "このテンプレートを編集中のユーザー",
+    guest: "ゲスト",
+    connected: "接続中",
+    reconnecting: "再接続しています…",
+    offline: "オフライン",
+    editing: "{name}さんが編集中",
+    selectionRefused: "{name}さんがこのブロックを編集中です。",
+    editRefused:
+      "変更は保存されませんでした。先に他のユーザーがこの部分を変更しています。",
+    editRefusedLocked:
+      "変更は保存されませんでした。{name}さんがそのブロックを編集中です。",
+    editTooLarge: "変更は保存されませんでした。サイズが大きすぎます。",
+    undoSkipped:
+      "その操作は元に戻せませんでした。その後、他のユーザーが変更しています。",
+    replaceRefused:
+      "他のユーザーが編集中のため、テンプレートを置き換えられません：{names}",
+    reconnectingNotice: "再接続しています… 編集はそのまま続けられます。",
+    dismiss: "閉じる",
+    anAgent: "エージェント",
+    agentChangedBlock: "{name}さんの{client}がブロックを変更しました。",
+    agentChangedBlocks:
+      "{name}さんの{client}が{count}個のブロックを変更しました。",
+    agentChangedSettings:
+      "{name}さんの{client}がテンプレートの設定を変更しました。",
+    agentChangedBlockAndSettings:
+      "{name}さんの{client}がブロックとテンプレートの設定を変更しました。",
+    agentChangedBlocksAndSettings:
+      "{name}さんの{client}が{count}個のブロックとテンプレートの設定を変更しました。",
+    agentUpdatedTemplate: "{name}さんの{client}がテンプレートを更新しました。",
   },
   versionHistory: {
     tooltip: "バージョン履歴",

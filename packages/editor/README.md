@@ -85,7 +85,7 @@ See the [Shadow DOM guide](https://docs.templatical.com/guide/shadow-dom) for tr
 
 ## Cloud features
 
-AI rewrite and real-time collaboration go through `initCloud()`. Comments, version history, saved blocks, test email and rendering are **not** Cloud-only — configure each against your own backend with `init()`. See [Connect your backend](https://docs.templatical.com/backend/).
+AI rewrite goes through `initCloud()`. Comments, version history, saved blocks, test email, rendering and real-time collaboration are **not** Cloud-only — configure each against your own backend with `init()`. See [Connect your backend](https://docs.templatical.com/backend/).
 
 ## Documentation
 

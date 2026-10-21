@@ -160,42 +160,6 @@ export interface ProxyAuthConfig {
 export type SdkAuthConfig = DirectAuthConfig | ProxyAuthConfig;
 
 // ---------------------------------------------------------------------------
-// Collaboration
-// ---------------------------------------------------------------------------
-
-export interface Collaborator {
-  id: string;
-  name: string;
-  color: string;
-  selectedBlockId: string | null;
-}
-
-// ---------------------------------------------------------------------------
-// Template operations
-// ---------------------------------------------------------------------------
-
-// The operation vocabulary shared by the CLI's `edit` command, Cloud's MCP
-// bridge and the collaboration broadcast. Named for what it operates on rather
-// than for any one transport — the same seven operations travel over stdio,
-// over Pusher and over a local file edit. The names are camelCase to match the
-// payload keys beside them (`blockId`, `targetSectionId`) and every other
-// identifier in this package.
-export type TemplateOperation =
-  | "addBlock"
-  | "updateBlock"
-  | "deleteBlock"
-  | "moveBlock"
-  | "updateSettings"
-  | "setContent"
-  | "updateBlockStyle";
-
-export interface TemplateOperationPayload {
-  operation: TemplateOperation;
-  data: Record<string, unknown>;
-  timestamp: number;
-}
-
-// ---------------------------------------------------------------------------
 // SDK Configuration
 // ---------------------------------------------------------------------------
 
@@ -204,25 +168,6 @@ export interface AiConfig {
   scoring?: boolean;
   designToTemplate?: boolean;
   rewrite?: boolean;
-}
-
-export interface McpConfig {
-  enabled: boolean;
-  onOperation?: (payload: TemplateOperationPayload) => void;
-}
-
-export interface CollaborationConfig {
-  enabled: boolean;
-  onCollaboratorJoined?: (collaborator: Collaborator) => void;
-  onCollaboratorLeft?: (collaborator: Collaborator) => void;
-  onBlockLocked?: (event: {
-    blockId: string;
-    collaborator: Collaborator;
-  }) => void;
-  onBlockUnlocked?: (event: {
-    blockId: string;
-    collaborator: Collaborator;
-  }) => void;
 }
 
 export interface WebSocketServerConfig {

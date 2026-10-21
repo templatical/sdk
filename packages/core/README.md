@@ -45,6 +45,8 @@ watch(editor.content, (next) => {
 
 - `useEditor` — reactive state (content, selection, viewport, darkMode, isDirty) + mutation methods (`addBlock`, `removeBlock`, `moveBlock`, `updateBlock`, `updateSettings`, `selectBlock`, …)
 - `useHistory` — undo/redo stack
+- `useCollaboration` — the real-time collaboration controller over a `CollaborationProvider`: ordered operation batches, block locks, presence, and undo/redo as inverse operations
+- `diffContent` / `invertOperations` — the operations between two contents, and the guarded operations that undo a batch
 - `useHistoryInterceptor` — wraps mutation methods so they push onto the history stack automatically
 - `useBlockActions` — higher-level helpers built on top of `useEditor` (`createAndAddBlock(type)`, `duplicateBlock`, `deleteBlock`, `updateBlockProperty`)
 - `useAutoSave` — debounced save with onSave callback
@@ -55,7 +57,7 @@ watch(editor.content, (next) => {
 
 ## Cloud subpath
 
-The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, AI chat/rewrite, collaboration, comments, scoring, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`.
+The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, AI chat/rewrite, comments, scoring, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`.
 
 ## Documentation
 

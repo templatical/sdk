@@ -1,0 +1,60 @@
+{
+  "name": "with no session, every lock belongs to someone else",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "locks": [
+    {
+      "blockId": "d1",
+      "sessionId": "anyone"
+    }
+  ],
+  "ops": [
+    {
+      "op": "deleteBlock",
+      "blockId": "d1"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "lock_held",
+      "opIndex": 0
+    }
+  }
+}

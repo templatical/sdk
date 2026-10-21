@@ -128,9 +128,8 @@ describe("withNormalizedContentWrites", () => {
     expect(firstParagraph(wrapped.content.value)).toBe("<p>later</p>");
   });
 
-  // Collaboration replaces the editor's mutators so they broadcast, and it runs
-  // before this feature is built. Resolving `setContent` per call rather than
-  // capturing it keeps a wrapped editor from pinning the pre-broadcast version.
+  // Resolving `setContent` per call rather than capturing it means a wrapper
+  // installed on the editor after this feature is built still sees every write.
   it("resolves setContent per call, not at construction", () => {
     const editor = baseEditor();
     const wrapped = withNormalizedContentWrites(editor, MERGE_TAGS);

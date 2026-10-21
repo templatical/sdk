@@ -1,0 +1,111 @@
+{
+  "name": "an anchor added earlier in the batch can be used",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "n1",
+        "type": "spacer"
+      },
+      "parent": null,
+      "after": null
+    },
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "n2",
+        "type": "spacer"
+      },
+      "parent": null,
+      "after": "n1"
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "n1",
+          "type": "spacer"
+        },
+        {
+          "id": "n2",
+          "type": "spacer"
+        },
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "2",
+          "children": [
+            [
+              {
+                "id": "p1",
+                "type": "paragraph",
+                "content": "Left"
+              }
+            ],
+            [
+              {
+                "id": "b1",
+                "type": "button",
+                "text": "Go",
+                "url": "https://example.com"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "d1",
+          "type": "divider"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

@@ -12,11 +12,13 @@ export {
   type QualityLintResult,
 } from "./validate";
 
+// The operation engine lives in @templatical/types, shared with the editor,
+// collaboration backends and Templatical Cloud; `edit` runs it.
 export {
-  applyOperation,
+  applyOperations,
   getColumnCount,
-  type OperationResult,
-} from "./operations";
+  OperationError,
+} from "@templatical/types";
 export {
   checkCustomBlock,
   validateCustomBlockDefinition,

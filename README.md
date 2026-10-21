@@ -37,7 +37,7 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, and media need no Cloud — you pass providers to `init()`. An optional Cloud tier adds AI rewrite, real-time collaboration, and hosted/managed storage.
+**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (which compiles to the table-based HTML email clients expect), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. Comments, saved blocks, version history, test email, media and real-time collaboration need no Cloud — you pass providers to `init()`. An optional Cloud tier adds AI rewrite and runs storage and collaboration for you.
 
 ## Design a complete email from a prompt
 

@@ -165,9 +165,49 @@ export type {
   CommentsProvider,
 } from "./comments";
 
-// Who is editing — a top-level config key, needed by comments today and by
-// collaboration presence next.
+// Who is editing — a top-level config key, read by comments and by
+// collaboration presence.
 export type { EditorUser } from "./user";
+
+// Operations (vocabulary v2) and the engine that applies them
+export type {
+  AddBlockOperation,
+  BlockParent,
+  DeleteBlockOperation,
+  MoveBlockOperation,
+  Operation,
+  OperationContext,
+  OperationErrorCode,
+  OperationLock,
+  SetContentOperation,
+  UpdateBlockOperation,
+  UpdateSettingsOperation,
+} from "./operations";
+export {
+  applyOperations,
+  applyOperationsInPlace,
+  getColumnCount,
+  OperationError,
+} from "./operations";
+export { deepEqual } from "./deep-equal";
+
+// Collaboration (the bring-your-own realtime contract)
+export type {
+  BlockLock,
+  BlockLockHolder,
+  CollaborationActor,
+  CollaborationConflictCode,
+  CollaborationConnectionState,
+  CollaborationHandlers,
+  CollaborationJoin,
+  CollaborationMember,
+  CollaborationProvider,
+  CollaborationRemoteChange,
+  OperationBatch,
+  OperationsAfterResult,
+  RevisionedBatch,
+} from "./collaboration";
+export { CollaborationConflict } from "./collaboration";
 
 // Type guards
 export {
@@ -339,6 +379,7 @@ export type {
   ViewportSize,
 } from "./config";
 export { SdkError } from "./config";
+export type { SdkErrorCode } from "./config";
 
 // Cloud types (zero runtime cost — all type-only except re-exported ViewportSize/SyntaxPreset)
 export type {
@@ -352,15 +393,12 @@ export type {
   AuthConfig,
   AuthRequestOptions,
   CategoryScore,
-  Collaborator,
-  CollaborationConfig,
   CommentResponse,
   CreateCommentData,
   DirectAuthConfig,
   FindingSeverity,
   SdkAuthConfig,
   HealthCheckResult,
-  McpConfig,
   MediaCategoryData,
   MediaConfig,
   PlanConfig,
@@ -372,8 +410,6 @@ export type {
   ScoringFinding,
   ScoringResult,
   StorageInfo,
-  TemplateOperation,
-  TemplateOperationPayload,
   TemplateVersionResponse,
   TestEmailConfig,
   TokenData,

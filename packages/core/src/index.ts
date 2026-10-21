@@ -27,6 +27,20 @@ export { useDataSourceFetch } from "./data-source-fetch";
 // History interceptor
 export { useHistoryInterceptor } from "./history-interceptor";
 
+// Collaboration: operations from content diffs, their inverses, and the
+// controller that runs a session over a CollaborationProvider.
+export { diffContent } from "./diff-content";
+export { invertOperations } from "./invert-operations";
+export { useCollaboration } from "./collaboration";
+export type {
+  CollaborationEditor,
+  CollaborationRemoteResync,
+  CollaborationTemplate,
+  CollaborationNotice,
+  UseCollaborationOptions,
+  UseCollaborationReturn,
+} from "./collaboration";
+
 // Saved blocks (reusable block groups over a consumer-supplied storage provider)
 export { useSavedBlocks } from "./saved-blocks";
 export type {

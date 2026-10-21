@@ -1,0 +1,62 @@
+{
+  "name": "order 6 before 7: a missing parent section wins over a missing anchor",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "addBlock",
+      "block": {
+        "id": "n1",
+        "type": "spacer"
+      },
+      "parent": {
+        "sectionId": "zz",
+        "column": 0
+      },
+      "after": "nope"
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "block_missing",
+      "opIndex": 0
+    }
+  }
+}

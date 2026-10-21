@@ -264,8 +264,12 @@ export interface UseEditorCoreOptions {
   translations: Translations;
   fontsManager: UseFontsReturn;
 
-  /** Extra options passed to useHistory (Cloud passes isRemoteOperation) */
-  historyOptions?: { isRemoteOperation?: () => boolean };
+  /**
+   * The undo/redo history to use instead of the snapshot one. A collaboration
+   * provider brings its own, which sends inverse batches; without one the
+   * editor keeps content snapshots.
+   */
+  history?: UseHistoryReturn;
 
   /** Auto-save configuration. Pass null to skip auto-save. */
   autoSaveOptions?: {
@@ -276,9 +280,6 @@ export interface UseEditorCoreOptions {
 
   /** Extra CSS custom properties merged into theme styles (Cloud uses for drop-zone text) */
   themeExtraStyles?: () => Record<string, string>;
-
-  /** Extra keyboard shortcut hooks (Cloud passes onBeforeUndo for collab warning) */
-  keyboardOptions?: { onBeforeUndo?: () => void };
 
   /** Cloud capabilities exposed to OSS components. Empty in OSS mode. */
   capabilities?: EditorCapabilities;
@@ -409,13 +410,16 @@ export function useEditorCore(
   });
 
   // --- History ---
-  const history = useHistory({
-    content: editor.content,
-    setContent: (content: TemplateContent, markDirty?: boolean) =>
-      editor.setContent(content, markDirty),
-    ...options.historyOptions,
-  });
-  useHistoryInterceptor(editor, history);
+  // Snapshots unless collaboration supplies its own. Its `record` does
+  // nothing, so the interceptor that calls it is left out with it.
+  const history =
+    options.history ??
+    useHistory({
+      content: editor.content,
+      setContent: (content: TemplateContent, markDirty?: boolean) =>
+        editor.setContent(content, markDirty),
+    });
+  if (!options.history) useHistoryInterceptor(editor, history);
 
   // --- Block actions ---
   const blockActions = useBlockActions({
@@ -600,7 +604,6 @@ export function useEditorCore(
       getSelectedBlockId: () => editor.state.selectedBlockId,
       removeBlock: (id) => editor.removeBlock(id),
       onSave: handleSaveShortcut,
-      onBeforeUndo: options.keyboardOptions?.onBeforeUndo,
       // Read off the capability rather than a new option, so neither editor has
       // to know about the pick session to get Escape/Enter working.
       isPicking: () =>

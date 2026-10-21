@@ -374,6 +374,7 @@ There is nothing to call and nothing to enable. It runs wherever content arrives
 | `editor.create({ content })` | before the content becomes editor state |
 | `editor.load(id)` | as the [`templates`](/backend/templates) provider's result returns |
 | [Version history](/backend/version-history) preview and restore | as each version reaches the canvas |
+| Batches from other sessions with [collaboration](/backend/collaboration), an AI agent's included | as each batch is applied |
 
 Matching follows your configured `syntax`, not the `tags` array, so an undeclared token still becomes a tag — labelled with its own raw value.
 

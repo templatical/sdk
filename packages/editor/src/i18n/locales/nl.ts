@@ -36,8 +36,6 @@ const nl: typeof en = {
   },
 
   history: {
-    collabWarning:
-      "Ongedaan maken kan recente wijzigingen van medewerkers beïnvloeden",
     undo: "Ongedaan maken",
     redo: "Opnieuw",
   },
@@ -637,6 +635,36 @@ const nl: typeof en = {
     missingBlock: "Blok ontbreekt",
     saveTemplateFirst:
       "Sla de template op voordat je een opmerking bij dit blok plaatst.",
+  },
+  collaboration: {
+    people: "Mensen die deze template bewerken",
+    guest: "Gast",
+    connected: "Live",
+    reconnecting: "Opnieuw verbinden…",
+    offline: "Offline",
+    editing: "{name} bewerkt",
+    selectionRefused: "{name} bewerkt dit blok.",
+    editRefused:
+      "Je wijziging is niet opgeslagen: iemand anders heeft dit deel eerder gewijzigd.",
+    editRefusedLocked:
+      "Je wijziging is niet opgeslagen: {name} bewerkt dat blok.",
+    editTooLarge: "Je wijziging is niet opgeslagen: deze is te groot.",
+    undoSkipped:
+      "Deze stap kan niet ongedaan worden gemaakt: iemand anders heeft deze inmiddels gewijzigd.",
+    replaceRefused:
+      "De template kan niet worden vervangen terwijl anderen deze bewerken: {names}.",
+    reconnectingNotice: "Opnieuw verbinden… Je kunt gewoon verder bewerken.",
+    dismiss: "Verbergen",
+    anAgent: "Een agent",
+    agentChangedBlock: "{client} voor {name} heeft een blok gewijzigd.",
+    agentChangedBlocks: "{client} voor {name} heeft {count} blokken gewijzigd.",
+    agentChangedSettings:
+      "{client} voor {name} heeft de template-instellingen gewijzigd.",
+    agentChangedBlockAndSettings:
+      "{client} voor {name} heeft een blok en de template-instellingen gewijzigd.",
+    agentChangedBlocksAndSettings:
+      "{client} voor {name} heeft {count} blokken en de template-instellingen gewijzigd.",
+    agentUpdatedTemplate: "{client} voor {name} heeft de template bijgewerkt.",
   },
   versionHistory: {
     tooltip: "Versiegeschiedenis",

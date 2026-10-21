@@ -1,6 +1,5 @@
 import type {
   Block,
-  ColumnLayout,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -15,15 +14,10 @@ import {
   assertNoSlotInContent,
   assertNoWrapperInContent,
   createDefaultTemplateContent,
+  getColumnCount,
   SdkError,
 } from "@templatical/types";
 import { notifyHandler } from "./error-reporting";
-
-function getColumnCount(layout: ColumnLayout): number {
-  if (layout === "1") return 1;
-  if (layout === "3") return 3;
-  return 2;
-}
 import {
   computed,
   reactive,
@@ -60,7 +54,11 @@ export interface UseEditorOptions {
   content: TemplateContent;
   defaultFontFamily?: string;
   templateDefaults?: TemplateDefaults;
-  lockedBlocks?: Ref<Map<string, unknown>>;
+  /**
+   * Blocks other collaborators hold. A locked block can't be selected, and the
+   * editor's own mutators leave it alone.
+   */
+  lockedBlocks?: Readonly<Ref<ReadonlyMap<string, unknown>>>;
   /**
    * Storage backend for the template's save/load lifecycle. Omit it and
    * `create()` / `load()` / `save()` reject — the editor keeps working as a

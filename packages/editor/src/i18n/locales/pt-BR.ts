@@ -35,7 +35,6 @@ const ptBR: typeof en = {
 
   // History (undo/redo)
   history: {
-    collabWarning: "Desfazer pode afetar alterações recentes de colaboradores",
     undo: "Desfazer",
     redo: "Refazer",
   },
@@ -699,6 +698,36 @@ const ptBR: typeof en = {
     replyMany: "{count} Respostas",
     missingBlock: "Bloco ausente",
     saveTemplateFirst: "Salve o template antes de comentar neste bloco.",
+  },
+  collaboration: {
+    people: "Pessoas editando este template",
+    guest: "Convidado",
+    connected: "Ao vivo",
+    reconnecting: "Reconectando…",
+    offline: "Offline",
+    editing: "{name} está editando",
+    selectionRefused: "{name} está editando este bloco.",
+    editRefused:
+      "Sua alteração não foi salva: outra pessoa alterou esta parte primeiro.",
+    editRefusedLocked:
+      "Sua alteração não foi salva: {name} está editando esse bloco.",
+    editTooLarge: "Sua alteração não foi salva: ela é grande demais.",
+    undoSkipped:
+      "Não foi possível desfazer essa etapa: outra pessoa a alterou desde então.",
+    replaceRefused:
+      "Não é possível substituir o template enquanto outras pessoas o editam: {names}.",
+    reconnectingNotice: "Reconectando… Você pode continuar editando.",
+    dismiss: "Dispensar",
+    anAgent: "Um agente",
+    agentChangedBlock: "{client} para {name} alterou um bloco.",
+    agentChangedBlocks: "{client} para {name} alterou {count} blocos.",
+    agentChangedSettings:
+      "{client} para {name} alterou as configurações do template.",
+    agentChangedBlockAndSettings:
+      "{client} para {name} alterou um bloco e as configurações do template.",
+    agentChangedBlocksAndSettings:
+      "{client} para {name} alterou {count} blocos e as configurações do template.",
+    agentUpdatedTemplate: "{client} para {name} atualizou o template.",
   },
   versionHistory: {
     tooltip: "Histórico de versões",

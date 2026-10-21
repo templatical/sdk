@@ -1,0 +1,92 @@
+{
+  "name": "set.columns to a layout with as many columns leaves children alone",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "2",
+        "children": [
+          [
+            {
+              "id": "p1",
+              "type": "paragraph",
+              "content": "Left"
+            }
+          ],
+          [
+            {
+              "id": "b1",
+              "type": "button",
+              "text": "Go",
+              "url": "https://example.com"
+            }
+          ]
+        ]
+      },
+      {
+        "id": "d1",
+        "type": "divider"
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff"
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlock",
+      "blockId": "s1",
+      "set": {
+        "columns": "2-1"
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "2-1",
+          "children": [
+            [
+              {
+                "id": "p1",
+                "type": "paragraph",
+                "content": "Left"
+              }
+            ],
+            [
+              {
+                "id": "b1",
+                "type": "button",
+                "text": "Go",
+                "url": "https://example.com"
+              }
+            ]
+          ]
+        },
+        {
+          "id": "d1",
+          "type": "divider"
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

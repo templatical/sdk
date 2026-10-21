@@ -6,7 +6,6 @@ export interface KeyboardShortcutHandlers {
   getSelectedBlockId: () => string | null;
   removeBlock: (blockId: string) => void;
   onSave?: () => void;
-  onBeforeUndo?: () => void;
   /** True while a saved-blocks pick session is running. */
   isPicking?: () => boolean;
   onConfirmPick?: () => void;
@@ -79,7 +78,6 @@ export function handleEditorKeydown(
     if (e.shiftKey) {
       handlers.history.redo();
     } else {
-      handlers.onBeforeUndo?.();
       handlers.history.undo();
     }
     return;

@@ -1,3 +1,4 @@
+import type { BlockLock } from "./collaboration";
 import type { TemplateContent } from "./template";
 
 /**
@@ -37,6 +38,13 @@ export interface Template {
    */
   updatedAt?: string;
   content: TemplateContent;
+  /**
+   * The collaboration revision `content` is at. Required from `load` when a
+   * collaboration provider is configured: the editor starts counting from it.
+   */
+  revision?: number;
+  /** Unexpired block locks, when the store has a collaboration backend. */
+  locks?: BlockLock[];
 }
 
 /**

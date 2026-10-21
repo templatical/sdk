@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   INIT_TIMEOUT_MS,
-  COLLAB_UNDO_WARNING_MS,
   MAX_UPLOAD_SIZE_BYTES,
 } from "../src/constants/timeouts";
 
 describe("timeout constants", () => {
   it("INIT_TIMEOUT_MS is 30 seconds", () => {
     expect(INIT_TIMEOUT_MS).toBe(30000);
-  });
-
-  it("COLLAB_UNDO_WARNING_MS is 4 seconds", () => {
-    expect(COLLAB_UNDO_WARNING_MS).toBe(4000);
   });
 
   it("MAX_UPLOAD_SIZE_BYTES is 10 MB", () => {

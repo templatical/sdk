@@ -54,7 +54,9 @@ unmount();
 | `render`             | `RenderProvider`                                                  | Nein     | Rendering-Backend für `toMjml()` / `toHtml()`. Jede Methode (`toMjml`, `toHtml`, `compileMjml`) ist unabhängig optional und wird separat aufgelöst. Weglassen: `toMjml()` rendert lokal, `toHtml()` lehnt ab — das SDK bündelt keinen MJML-Compiler. Siehe [Rendering & Export](/de/backend/render)                                                                                                                                                                                                                                                                                        |
 | `versionHistory`     | `VersionHistoryProvider`                                          | Nein     | Speicher-Backend für den Versionsverlauf der Vorlage — die früheren Stände, die Nutzende durchsehen, in der Vorschau ansehen und wiederherstellen können. Der Editor liefert das Header-Steuerelement, das Vorschaubanner und den Wiederherstellungsablauf; Sie liefern den Speicher. Dasselbe Objekt trägt auch die Events `onCreated` und `onRestored`. Er zeichnet nie selbst eine Version auf: Das entscheidet Ihr `templates.save`. Weglassen, um die Funktion vollständig zu deaktivieren. Siehe [Versionsverlauf](/de/backend/version-history)                                      |
 | `comments`           | `CommentsProvider`                                                | Nein     | Speicher-Backend für Review-Kommentare — Threads, die an einem Block oder der Vorlage hängen. Dasselbe Objekt trägt auch die Events `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved`. Der Editor liefert die Seitenleiste, den Editor, Auflösen/Antworten und die Block-Marker; Sie liefern die Persistenz. **Erfordert `user`**: ohne Identität meldet sich die Funktion als nicht verfügbar, statt anonyme Kommentare zu schreiben. Ein optionales `subscribe` schiebt entfernte Änderungen herein. Siehe [Kommentare](/de/backend/comments)                       |
-| `user`               | `EditorUser`                                                      | Nein     | Wer den Editor benutzt — `{ id, name }`. Wird von jeder Funktion benötigt, die Arbeit einer Person zuordnet; heute ist das `comments`. Keine Sicherheitsgrenze: Die Angabe identifiziert die Person gegenüber der Oberfläche, im Browser dieser Person. Ordnen Sie Schreibvorgänge serverseitig der Sitzung zu, der Ihr Backend ohnehin vertraut                                                                                                                                                                                                                                           |
+| `collaboration`      | `CollaborationProvider`                                           | Nein     | Echtzeit-Zusammenarbeit über Ihr Backend: Jede Änderung geht als Batch von [Operationen](/de/api/operations) über `submit` hinaus, Batches anderer Sitzungen werden in Revisionsreihenfolge angewendet, die Auswahl eines Blocks nimmt seine Sperre, die Kopfzeile zeigt, wer sonst da ist, und Rückgängig schickt umgekehrte Operationen, die Ihr Backend ablehnen kann. **Benötigt `templates`**, dessen `load` die `revision` des Templates liefert; `templates.save` erhält dann nur noch Umbenennungen. Die drei Sperr-Methoden sind nur gemeinsam optional. Siehe [Zusammenarbeit](/de/backend/collaboration) |
+| `onRemoteChange`     | `(change: CollaborationRemoteChange) => void`                     | Nein     | Wird mit `{ actor, ops }` aufgerufen, nachdem der Batch einer anderen Sitzung auf dem Canvas angewendet wurde. Nicht für die eigenen Änderungen dieses Editors und nicht für einen Resync, der das Template neu lädt |
+| `user`               | `EditorUser`                                                      | Nein     | Wer den Editor benutzt — `{ id, name }`. Wird von jeder Funktion benötigt, die Arbeit einer Person zuordnet: `comments` und `collaboration`, deren Leiste in der Kopfzeile die eigenen Sitzungen dieses Nutzers auslässt. Keine Sicherheitsgrenze: Die Angabe identifiziert die Person gegenüber der Oberfläche, im Browser dieser Person. Ordnen Sie Schreibvorgänge serverseitig der Sitzung zu, der Ihr Backend ohnehin vertraut                                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | Nein     | Wie lange der Editor nach der letzten Änderung wartet, bevor `onChange` auslöst und, sofern `templates.autoSave` aktiv ist, bevor gespeichert wird. Ein Timer treibt beides, sodass er `onChange` auch ohne konfigurierten `templates`-Provider taktet. Standardwert `2000`. Siehe [Speichern & Laden](/de/backend/templates#autosave)                                                                                                                                                                                                                                                     |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | Nein     | UI-Überschreibung für die Medienauswahl (Bynder, Cloudinary-Widget, ein Host-Modal). Hat Vorrang vor `media`, wenn beide gesetzt sind. Gibt `{ url, alt?, width?, height? }` oder `null` zurück. Siehe [Bilder](/de/guide/images) und [Medien](/de/backend/media)                                                                                                                                                                                                                                                                                                                                           |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | Nein     | Reiner Anzeige-Resolver für Bild-`src`-Werte sowie für die Hintergrundbild-URLs von Sektionen, Sektions-Wrappern und Layout-Wrapper-Bändern (nie für eine Merge-Tag-URL): bildet einen kanonischen src auf eine Vorschau-URL für die Leinwand ab. Inhalt und `toMjml()`-Ausgabe behalten den kanonischen Wert. `null` zurückgeben, um den src unverändert zu verwenden. Wird einmal pro bestätigtem src aufgerufen (entprellt), pro src zwischengespeichert. Siehe [Bilder](/de/guide/images#reine-anzeige-aufloesung-von-bild-urls)                                                                                                                          |
@@ -367,12 +369,35 @@ import { useHistory } from "@templatical/core";
 const history = useHistory({
   content: editor.content,
   setContent: editor.setContent,
-  isRemoteOperation: () => false, // Aufzeichnung bei Remote-/Kollaborations-Updates überspringen
   maxSize: 50,
 });
 
 history.undo();
 history.redo();
+```
+
+### `useCollaboration(options)`
+
+Führt eine Collaboration-Sitzung über einen [`CollaborationProvider`](/de/backend/collaboration): Sie schickt die Änderungen des Editors als Operations-Batches, wendet die Batches anderer Sitzungen in Revisionsreihenfolge an, nimmt die Sperre des ausgewählten Blocks, verfolgt, wer da ist, und führt Rückgängig und Wiederholen als umgekehrte Batches. `init({ collaboration })` erstellt sie für Sie; rufen Sie sie nur selbst auf, wenn Sie einen eigenen Editor auf `useEditor` bauen.
+
+```ts
+import { useCollaboration, useEditor } from "@templatical/core";
+
+const collaboration = useCollaboration({
+  provider: myCollaborationProvider,
+  loadTemplate: (id) => myTemplatesProvider.load(id),
+  onNotice: (notice) => showNotice(notice),
+});
+const editor = useEditor({
+  content,
+  templates: myTemplatesProvider,
+  lockedBlocks: collaboration.locks,
+});
+collaboration.attach(editor);
+await editor.load("tpl_123");
+
+collaboration.undo();
+await collaboration.settle(); // erfüllt sich, sobald jeder Batch bestätigt ist
 ```
 
 ### `useBlockActions(options)`

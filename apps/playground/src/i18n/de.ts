@@ -203,6 +203,11 @@ export default {
         "Öffnen Sie „Comments“, kommentieren Sie einen Block und antworten Sie darauf.",
       note: "Kommentare",
     },
+    collaboration: {
+      title: "Zusammenarbeit",
+      seeIt:
+        "Öffnen Sie diese Seite in einem zweiten Tab: Änderungen, Auswahl und Rückgängig wirken zwischen beiden.",
+    },
     "saved-blocks": {
       title: "Gespeicherte Blöcke",
       seeIt:

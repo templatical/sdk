@@ -35,8 +35,6 @@ const de: typeof en = {
 
   // History (undo/redo)
   history: {
-    collabWarning:
-      "Rückgängig machen kann die Änderungen anderer Mitarbeiter beeinflussen",
     undo: "Rückgängig",
     redo: "Wiederholen",
   },
@@ -707,6 +705,37 @@ const de: typeof en = {
     missingBlock: "Fehlender Block",
     saveTemplateFirst:
       "Speichern Sie die Vorlage, bevor Sie diesen Block kommentieren.",
+  },
+  collaboration: {
+    people: "Personen, die diese Vorlage bearbeiten",
+    guest: "Gast",
+    connected: "Live",
+    reconnecting: "Verbindung wird wiederhergestellt…",
+    offline: "Offline",
+    editing: "{name} bearbeitet",
+    selectionRefused: "{name} bearbeitet diesen Block.",
+    editRefused:
+      "Ihre Änderung wurde nicht gespeichert: Jemand anderes hat diesen Teil zuerst geändert.",
+    editRefusedLocked:
+      "Ihre Änderung wurde nicht gespeichert: {name} bearbeitet diesen Block.",
+    editTooLarge: "Ihre Änderung wurde nicht gespeichert: Sie ist zu groß.",
+    undoSkipped:
+      "Dieser Schritt lässt sich nicht rückgängig machen: Jemand anderes hat ihn inzwischen geändert.",
+    replaceRefused:
+      "Die Vorlage kann nicht ersetzt werden, während andere sie bearbeiten: {names}.",
+    reconnectingNotice:
+      "Verbindung wird wiederhergestellt… Sie können weiter bearbeiten.",
+    dismiss: "Ausblenden",
+    anAgent: "Ein Agent",
+    agentChangedBlock: "{client} für {name} hat einen Block geändert.",
+    agentChangedBlocks: "{client} für {name} hat {count} Blöcke geändert.",
+    agentChangedSettings:
+      "{client} für {name} hat die Vorlageneinstellungen geändert.",
+    agentChangedBlockAndSettings:
+      "{client} für {name} hat einen Block und die Vorlageneinstellungen geändert.",
+    agentChangedBlocksAndSettings:
+      "{client} für {name} hat {count} Blöcke und die Vorlageneinstellungen geändert.",
+    agentUpdatedTemplate: "{client} für {name} hat die Vorlage aktualisiert.",
   },
   versionHistory: {
     tooltip: "Versionsverlauf",

@@ -67,12 +67,12 @@ Defaults to `--format mjml`. `--format html` compiles that MJML further and need
 
 ```bash
 npx -y @templatical/template-tools edit emails/welcome.json \
-  --op '{"operation":"updateBlock","data":{"blockId":"button_1","updates":{"backgroundColor":"#1d4ed8"}}}'
+  --op '{"op":"updateBlock","blockId":"button_1","set":{"backgroundColor":"#1d4ed8"}}'
 ```
 
-One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. Each operation is `{ "operation": "<name>", "data": {...} }`, where `operation` is one of the seven the editor itself uses: `addBlock`, `updateBlock`, `deleteBlock`, `moveBlock`, `updateSettings`, `setContent`, `updateBlockStyle`.
+One operation via `--op '<json>'`, or a batch via `--ops <file>` pointing at a JSON array of the same shape — never both. The operations are the vocabulary the editor, collaboration backends and Templatical Cloud share — `addBlock`, `moveBlock`, `deleteBlock`, `updateBlock`, `updateSettings` and `setContent` — described in the [Operations reference](/api/operations). An operation in the old `{ "operation", "data" }` form is refused with a pointer to the new one.
 
-A batch is all-or-nothing: the first operation that would be rejected stops the whole batch, nothing is written, and the error names which operation (by index) and why. Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
+A batch is applied in order and all or nothing: the first operation that is refused stops the whole batch, nothing is written, and the error names the operation, its code and the reason (`Operation 2 (updateBlock) was refused: block_missing — …`). Even once every operation in a batch succeeds, the result is re-validated structurally before anything is written — a sequence that produces an invalid document is refused and the file is left untouched. On success, `edit` overwrites `<file>` in place; there's no `--out`.
 
 ### `import <file> [--format <fmt>] [--out <name>]` or `import --list-formats`
 
@@ -206,14 +206,14 @@ import {
   schema,
   validateTemplate,
   runQualityLint,
-  applyOperation,
+  applyOperations,
+  OperationError,
   getColumnCount,
   checkCustomBlock,
   validateCustomBlockDefinition,
   SPECIMEN_STATES,
   type ValidationResult,
   type QualityLintResult,
-  type OperationResult,
   type CustomBlockCheckResult,
   type CustomBlockWorkingFile,
 } from "@templatical/template-tools";
@@ -222,8 +222,7 @@ import {
 - **`schema`** — the generated JSON Schema for `TemplateContent`, as a plain object. Same content the `schema` command prints and the published `schema.json` file (below) contains.
 - **`validateTemplate(data: unknown): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step and no other workspace package.
 - **`runQualityLint(data: unknown): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw.
-- **`applyOperation(content: TemplateContent, payload: TemplateOperationPayload): OperationResult`** — the pure reducer behind `edit --op`. Never mutates `content`; returns `{ ok, content, error? }`, where `content` on a rejection is the same object passed in, provably untouched.
-- **`getColumnCount(layout: ColumnLayout): number`** — columns a section layout declares: `'1'` → `1`, `'3'` → `3`, everything else (`'2'`, `'2-1'`, `'1-2'`) → `2`. Mirrors the identical helper in `@templatical/core`'s own editor, reimplemented here because this package never imports core — see "How it relates to the other packages" below.
+- **`applyOperations(content, ops, context?)`**, **`OperationError`** and **`getColumnCount(layout)`** — the operation engine behind `edit`, re-exported from `@templatical/types`. `applyOperations` returns a new document and never changes `content`; a refused batch throws an `OperationError` carrying `code` and `opIndex`. See the [Operations reference](/api/operations).
 - **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — the checks `custom-block validate` runs, returning `{ valid, issues }`. It takes a JSON working file or the object a definition module exports, `dataSource` function included, so the same check can run in your own tests over the definitions you ship. Pass `compileMjml` in `options` to add the MJML compile check; without it that check is skipped.
 - **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — the structural check alone, synchronous. `checkCustomBlock` runs it first.
 - **`SPECIMEN_STATES`** — the specimen state names `custom-block render --state` accepts.
@@ -242,7 +241,7 @@ Node-only (`node:http`, `node:fs`) — a separate subpath so a bundler building 
 
 The raw generated JSON Schema as a `.json` file — importable anywhere your bundler or runtime can load JSON (`import schema from "@templatical/template-tools/schema.json"`, or read it with `fetch`/`fs.readFileSync` outside a bundler). Identical content to the `schema` export above and to what the `schema` command prints.
 
-**Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperation` and `./live` all assume you already have a structurally valid template to work with.
+**Building a "generate with AI" feature into your own product?** This is what you need. The bundled [Agent Skill](/guide/agent-skill) runs exactly this loop for a coding agent: read the block schema as grounding, generate a template, validate what comes back, and feed any errors to the model until it passes. `schema.json` and `validateTemplate` are the two pieces of that loop this package gives you directly — hand the schema to your model (a system prompt, a tool definition, structured-output mode, whatever your provider supports), then run its output through `validateTemplate` before you trust it. Nothing else in this package is relevant to that path: `runQualityLint`, `applyOperations` and `./live` all assume you already have a structurally valid template to work with.
 
 ### `@templatical/template-tools/custom-block-schema.json`
 
@@ -252,4 +251,4 @@ The JSON Schema for a custom block working file — a `CustomBlockDefinition` wi
 
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
-It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit`'s operation reducer (`applyOperation`) reimplements the same invariants core's own editor mutators enforce — most importantly, that a section can never land inside a column, because MJML forbids nesting `mj-section` inside `mj-column` — instead of importing them. That is a real maintenance cost: the two implementations can drift apart, which is exactly why this package's own test suite checks both descriptions of each invariant against one another. What it buys back is what keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
+It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit` runs the operation engine from `@templatical/types`, which is MIT: the same engine the editor's collaboration and Templatical Cloud apply, kept identical to Cloud's by shared fixtures. That keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.

@@ -70,10 +70,6 @@ const de: typeof en = {
     disclaimer:
       "KI kann Fehler machen. Bitte überprüfen Sie die Ergebnisse vor der Genehmigung.",
   },
-  collaboration: {
-    connected: "Zusammenarbeit aktiv",
-    disconnected: "Zusammenarbeit getrennt",
-  },
   designReference: {
     title: "Designvorlage",
     close: "Schließen",

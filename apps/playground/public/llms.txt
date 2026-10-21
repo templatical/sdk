@@ -34,6 +34,7 @@ Each scene is also raw markdown: /scenes/<id>.md
 - [Templates](https://play.templatical.com/scenes/templates): Load and save the template
 - [Version history](https://play.templatical.com/scenes/version-history): Restore an earlier snapshot
 - [Comments](https://play.templatical.com/scenes/comments): Thread a note on a block
+- [Collaboration](https://play.templatical.com/scenes/collaboration): Edit one template from two tabs
 - [Saved blocks](https://play.templatical.com/scenes/saved-blocks): Bookmark a reusable group
 - [Media](https://play.templatical.com/scenes/media): Upload and pick an image
 - [Test email](https://play.templatical.com/scenes/test-email): Send this to an inbox

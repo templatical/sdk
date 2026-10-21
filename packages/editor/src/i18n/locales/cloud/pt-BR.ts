@@ -67,10 +67,6 @@ const ptBR: typeof en = {
     templateScoreDesc: "Analise qualidade, risco de spam e acessibilidade",
     disclaimer: "A IA pode cometer erros. Verifique antes de aprovar.",
   },
-  collaboration: {
-    connected: "Modo de colaboração ativo",
-    disconnected: "Colaboração desconectada",
-  },
   designReference: {
     title: "Referência de Design",
     close: "Fechar",

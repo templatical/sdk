@@ -143,7 +143,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
 
-Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, and media are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
+Cloud is optional hosted infrastructure (AI rewrite, real-time collaboration, managed storage). Comments, saved blocks, version history, test email, media, and real-time collaboration are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 

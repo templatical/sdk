@@ -30,9 +30,6 @@ export type {
   WebSocketConfig,
 } from "./websocket-client";
 
-// MCP operation handler
-export { handleOperation } from "./mcp-operation-handler";
-
 // AI
 export { useAiChat } from "./ai-chat";
 export type { UseAiChatOptions, UseAiChatReturn } from "./ai-chat";
@@ -65,14 +62,6 @@ export type {
   CreateCloudCommentsProviderOptions,
   RealtimeChannel,
 } from "./comments-provider";
-
-// Collaboration
-export { useCollaboration } from "./collaboration";
-export { useCollaborationBroadcast } from "./collaboration-broadcast";
-export type {
-  UseCollaborationOptions,
-  UseCollaborationReturn,
-} from "./collaboration";
 
 // WebSocket module
 export { useWebSocket } from "./web-socket";
@@ -126,7 +115,3 @@ export type { UsePlanConfigOptions, UsePlanConfigReturn } from "./plan-config";
 
 // Health check
 export { performHealthCheck } from "./health-check";
-
-// MCP listener
-export { useMcpListener } from "./mcp-listener";
-export type { UseMcpListenerOptions } from "./mcp-listener";

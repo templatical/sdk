@@ -5,8 +5,9 @@ import * as entry from "../src/index";
 // publish every internal helper next to it.
 it("exports exactly the documented runtime API", () => {
   expect(Object.keys(entry).sort()).toEqual([
+    "OperationError",
     "SPECIMEN_STATES",
-    "applyOperation",
+    "applyOperations",
     "checkCustomBlock",
     "getColumnCount",
     "runQualityLint",

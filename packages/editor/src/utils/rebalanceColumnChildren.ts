@@ -1,10 +1,5 @@
 import type { Block, ColumnLayout } from "@templatical/types";
-
-function expectedColumnCount(layout: ColumnLayout): number {
-  if (layout === "1") return 1;
-  if (layout === "3") return 3;
-  return 2;
-}
+import { getColumnCount } from "@templatical/types";
 
 /**
  * Resize a section's `children` array to match a new column layout, without
@@ -16,7 +11,7 @@ export function rebalanceColumnChildren(
   current: Block[][],
   layout: ColumnLayout,
 ): Block[][] {
-  const target = expectedColumnCount(layout);
+  const target = getColumnCount(layout);
 
   if (current.length === target) {
     return current;

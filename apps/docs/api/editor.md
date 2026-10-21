@@ -54,7 +54,9 @@ unmount();
 | `render`             | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render)                                                                                                                                                                                                                                  |
 | `versionHistory`     | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. The same object also carries the `onCreated` and `onRestored` events. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history)                                                                              |
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
-| `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
+| `collaboration`      | `CollaborationProvider`                                           | No       | Real-time collaboration over your backend: every edit is sent as a batch of [operations](/api/operations) through `submit`, other sessions' batches are applied in revision order, selecting a block takes its lock, the header shows who else is here, and undo sends inverse operations your backend can refuse. **Requires `templates`**, whose `load` returns the template's `revision`; `templates.save` then receives only renames. The three lock methods are optional together. See [Collaboration](/backend/collaboration) |
+| `onRemoteChange`     | `(change: CollaborationRemoteChange) => void`                     | No       | Called with `{ actor, ops }` after another session's batch is applied on the canvas. Not called for this editor's own edits, nor for a re-sync that reloads the template |
+| `user`               | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person: `comments`, and `collaboration`, whose header bar leaves this user's own sessions out. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts                                                                                                                                                                                                                           |
 | `changeDebounce`     | `number`                                                          | No       | How long the editor waits after the last edit before `onChange` fires and, when `templates.autoSave` is on, before it saves. One timer drives both, so it paces `onChange` even with no `templates` provider configured. Defaults to `2000`. See [Saving & Loading](/backend/templates#autosave)                                                                                                                                                                                                                               |
 | `onRequestMedia`     | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | UI override for the media picker (Bynder, Cloudinary widget, a host modal). Wins over `media` when both are set. Return `{ url, alt?, width?, height? }` or `null`. See [Images](/guide/images) and [Media](/backend/media)                                                                                                                                                                                                                                                                                                                     |
 | `resolveImageUrl`    | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values, and for the background image URLs of sections, section wrappers and layout wrapper bands (never for a merge-tag URL): maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution)                                                                                                                                                  |
@@ -367,12 +369,35 @@ import { useHistory } from "@templatical/core";
 const history = useHistory({
   content: editor.content,
   setContent: editor.setContent,
-  isRemoteOperation: () => false, // skip recording during remote/collab updates
   maxSize: 50,
 });
 
 history.undo();
 history.redo();
+```
+
+### `useCollaboration(options)`
+
+Runs a collaboration session over a [`CollaborationProvider`](/backend/collaboration): it sends the editor's changes as operation batches, applies other sessions' batches in revision order, takes the selected block's lock, tracks who is here, and keeps undo and redo as inverse batches. `init({ collaboration })` builds it for you; call it yourself only for an editor of your own on `useEditor`.
+
+```ts
+import { useCollaboration, useEditor } from "@templatical/core";
+
+const collaboration = useCollaboration({
+  provider: myCollaborationProvider,
+  loadTemplate: (id) => myTemplatesProvider.load(id),
+  onNotice: (notice) => showNotice(notice),
+});
+const editor = useEditor({
+  content,
+  templates: myTemplatesProvider,
+  lockedBlocks: collaboration.locks,
+});
+collaboration.attach(editor);
+await editor.load("tpl_123");
+
+collaboration.undo();
+await collaboration.settle(); // resolves once every batch is confirmed
 ```
 
 ### `useBlockActions(options)`
