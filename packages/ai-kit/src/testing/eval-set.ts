@@ -182,9 +182,10 @@ export function checkEvalCase(
       case "maxText": {
         const raw =
           block && typeof block.content === "string" ? block.content : "";
+        // A length measure, not a sanitizer: the text between the tags.
+        const text = raw.split(/<[^>]*>/).join("");
         ok =
-          block !== undefined &&
-          Array.from(raw.replace(/<[^>]*>/g, "").trim()).length <= check.chars;
+          block !== undefined && Array.from(text.trim()).length <= check.chars;
         break;
       }
       case "countType":
