@@ -9,7 +9,6 @@ export function buildUrl(
 
 const BASE = "/api/v1/projects/{project}/tenants/{tenant}";
 const TEMPLATE = `${BASE}/templates/{template}`;
-const AI = `${TEMPLATE}/ai`;
 const MEDIA = `${BASE}/media`;
 const FOLDERS = `${MEDIA}/folders`;
 const MODULES = `${BASE}/saved-modules`;
@@ -34,13 +33,6 @@ export const API_ROUTES = {
   "comments.update": `${TEMPLATE}/comments/{comment}`,
   "comments.destroy": `${TEMPLATE}/comments/{comment}`,
   "comments.resolve": `${TEMPLATE}/comments/{comment}/resolve`,
-  "ai.generate": `${AI}/generate`,
-  "ai.conversationMessages": `${AI}/conversation-messages`,
-  "ai.suggestions": `${AI}/suggestions`,
-  "ai.rewriteText": `${AI}/rewrite-text`,
-  "ai.score": `${AI}/score`,
-  "ai.fixFinding": `${AI}/fix-finding`,
-  "ai.generateFromDesign": `${AI}/generate-from-design`,
   "media.upload": `${MEDIA}/upload`,
   "media.browse": `${MEDIA}/browse`,
   "media.delete": `${MEDIA}/delete`,

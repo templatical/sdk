@@ -271,10 +271,9 @@ export interface ThemeOverrides {
 }
 
 /**
- * The `code` Templatical Cloud sends in a failed response's
- * `{ message, code }` body. The named members are the codes Cloud sends
- * today; any other string passes through, so a code Cloud adds later reaches
- * `SdkError.code` without an SDK release.
+ * The `code` any provider sends in a refusal. Cloud and AI codes are named
+ * here; collaboration refusal codes flow through `CollaborationConflict`.
+ * Any other string reaches `SdkError.code` without an SDK release.
  */
 export type SdkErrorCode =
   | "invalid_credentials"
@@ -291,20 +290,38 @@ export type SdkErrorCode =
   | "content_too_large"
   | "recipient_not_allowed"
   | "send_failed"
+  | "rate_limited"
+  | "ai_turn_running"
+  | "ai_output_invalid"
+  | "ai_provider_error"
   | (string & {});
 
 export class SdkError extends Error {
   /**
+   * The refusal's other fields, when it has any: `{ limit, resetsAt }` on
+   * `limit_reached`. Absent otherwise, so `"details" in error` says whether
+   * there are some.
+   */
+  declare readonly details?: Readonly<Record<string, unknown>>;
+
+  /**
    * @param code The error body's `code`, as sent. Absent when the body has
    * none, which includes every `422` validation failure.
+   * @param details The error body's fields besides `message`, `errors` and
+   * `code`, or an AI stream's `error` event's besides `type`, `code` and
+   * `message`. Set only when there are some.
    */
   constructor(
     message: string,
     public readonly statusCode?: number,
     public readonly code?: SdkErrorCode,
+    details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "SdkError";
+    if (details !== undefined && Object.keys(details).length > 0) {
+      this.details = details;
+    }
   }
 
   get isNotFound(): boolean {
@@ -317,5 +334,23 @@ export class SdkError extends Error {
 
   get isServerError(): boolean {
     return this.statusCode !== undefined && this.statusCode >= 500;
+  }
+}
+
+/**
+ * A `429`: too many requests. `retryAfterMs` is how long to wait, from the
+ * response's `Retry-After` (seconds or an HTTP date), a second when it is
+ * missing. Every BYO provider may reject with one; the editor says to try
+ * again in a moment.
+ */
+export class ThrottledError extends SdkError {
+  constructor(
+    message: string,
+    readonly retryAfterMs: number,
+    code: SdkErrorCode = "rate_limited",
+    details?: Readonly<Record<string, unknown>>,
+  ) {
+    super(message, 429, code, details);
+    this.name = "ThrottledError";
   }
 }

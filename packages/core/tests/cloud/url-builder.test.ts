@@ -70,12 +70,6 @@ describe('API_ROUTES', () => {
     expect(API_ROUTES['comments.resolve']).toContain('{comment}/resolve');
   });
 
-  it('has AI routes nested under template', () => {
-    expect(API_ROUTES['ai.generate']).toContain('{template}/ai/generate');
-    expect(API_ROUTES['ai.rewriteText']).toContain('{template}/ai/rewrite-text');
-    expect(API_ROUTES['ai.score']).toContain('{template}/ai/score');
-  });
-
   it('has media routes', () => {
     expect(API_ROUTES['media.upload']).toContain('/media/upload');
     expect(API_ROUTES['media.browse']).toContain('/media/browse');

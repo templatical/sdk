@@ -1,14 +1,12 @@
-import type {
-  Block,
-  BlockParent,
-  Operation,
-  TemplateContent,
-} from "@templatical/types";
+import type { Block } from "./blocks";
+import { safeClone } from "./clone";
 import {
   applyOperationsInPlace,
   OperationError,
-  safeClone,
-} from "@templatical/types";
+  type BlockParent,
+  type Operation,
+} from "./operations";
+import type { TemplateContent } from "./template";
 
 type Json = Record<string, unknown>;
 

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Block, Operation, TemplateContent } from "@templatical/types";
-import { applyOperations, OperationError } from "@templatical/types";
+import {
+  applyOperations,
+  invertOperations,
+  OperationError,
+} from "@templatical/types";
 import { diffContent } from "../src/diff-content";
-import { invertOperations } from "../src/invert-operations";
 import {
   createGenerator,
   randomContent,
@@ -206,5 +209,10 @@ describe("invertOperations", () => {
         `seed ${seed}`,
       ).toEqual(JSON.parse(JSON.stringify(before)));
     }
+  });
+
+  it("is the same function core re-exports (guard: D1)", async () => {
+    const core = await import("../src/index");
+    expect(core.invertOperations).toBe(invertOperations);
   });
 });
