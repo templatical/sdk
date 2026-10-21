@@ -14,4 +14,3 @@ Real-time collaboration in the editor over your backend, and agents' edits named
 Breaking changes:
 
 - The `history.collabWarning` string is gone.
-- Cloud (experimental, outside semver until Cloud GA): `initCloud()` no longer takes `collaboration` or `mcp`, and its peer-to-peer collaboration, collaborator bar, collaborative undo warning and MCP listener are removed, with the cloud chunk's `collaboration` strings.

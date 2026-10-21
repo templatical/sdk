@@ -13,4 +13,3 @@ Real-time collaboration over a provider
 Breaking changes:
 
 - `useHistory` no longer takes `isRemoteOperation`.
-- Cloud (experimental, outside semver until Cloud GA): `@templatical/core/cloud`'s peer-to-peer collaboration and MCP listener are removed: `useCollaboration`, `useCollaborationBroadcast`, `UseCollaborationOptions`, `UseCollaborationReturn`, `useMcpListener`, `UseMcpListenerOptions` and `handleOperation`. `useCollaboration` now lives in `@templatical/core` and runs over a `CollaborationProvider`.

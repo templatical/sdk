@@ -14,4 +14,3 @@ Operations vocabulary v2, the engine that applies it, and the collaboration cont
 Breaking changes:
 
 - `TemplateOperation` and `TemplateOperationPayload` (the v1 vocabulary) are removed; use `Operation`.
-- `Collaborator`, `CollaborationConfig` and `McpConfig` are removed. Presence is `CollaborationMember`, a lock's owner `BlockLockHolder`.
