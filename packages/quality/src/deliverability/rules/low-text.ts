@@ -15,6 +15,8 @@ import { walkBlocks } from "../../walk";
 
 export const meta: RuleMeta = {
   id: "deliverability.low-text",
+  reference:
+    "https://svn.apache.org/repos/asf/spamassassin/branches/b2_6_0/rules/20_html_tests.cf",
   severity: "info",
 };
 

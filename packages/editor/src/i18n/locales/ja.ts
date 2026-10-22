@@ -729,6 +729,12 @@ const translations: typeof en = {
     emptyState: "問題は見つかりませんでした。",
     badgeError: "エラーあり",
     badgeWarning: "警告あり",
+    checkSize: "サイズを確認",
+    checkingSize: "サイズを確認中…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "内容が変更されました。サイズを再確認してください。",
+    sizeError: "サイズを確認できませんでした: {error}",
+    learnMore: "詳細を見る",
     issueCountTooltip: "{count} 件の問題",
   },
   smallScreen: {

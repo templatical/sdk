@@ -645,3 +645,5 @@ Das Setup **Custom blocks** registriert einen Blocktyp, der neben den integriert
 ## Mit dem Agent Skill
 
 Der [Agent Skill](/de/guide/agent-skill) definiert einen benutzerdefinierten Block aus einer Beschreibung, zeigt ihn live an und schreibt ihn in Ihre Codebasis.
+
+Templates und Stylesheets von Custom-Blöcken werden unverändert gerendert. Prüfen Sie HTML und CSS mit `custom-block validate` und dem [Kompatibilitätskatalog](/de/quality/compatibility/rule-catalog); die Client-Daten stammen von [caniemail](https://www.caniemail.com/).

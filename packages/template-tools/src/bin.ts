@@ -25,7 +25,7 @@ import { runList, runLive } from "./cli/commands/live";
 
 const USAGE = `templatical <command> [options]
 
-  validate <file>                       structural + quality lint
+  validate <file> [--html]              structural + quality lint; --html checks compiled size
   schema   [--out <file>]               print the block JSON Schema
   render   <file> [--format mjml|html] [-o <file>]  render to MJML or HTML
   edit     <file> --op '<json>' | --ops <file>  apply operations, write the result

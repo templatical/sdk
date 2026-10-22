@@ -12,6 +12,10 @@ export default defineConfig({
     },
     rolldownOptions: {
       external: ["@templatical/types", "htmlparser2"],
+      output: {
+        banner:
+          "/*! caniemail data © Rémi Parmentier, MIT — https://github.com/hteumeuleu/caniemail */",
+      },
     },
   },
 });

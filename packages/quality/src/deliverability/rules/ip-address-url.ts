@@ -4,6 +4,8 @@ import { normalizedHost, parseHttpUrl } from "../same-site";
 
 export const meta: RuleMeta = {
   id: "deliverability.ip-address-url",
+  reference:
+    "https://svn.apache.org/repos/asf/spamassassin/branches/b2_4_0/rules/20_uri_tests.cf",
   severity: "warning",
 };
 

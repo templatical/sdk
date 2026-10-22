@@ -4,6 +4,7 @@ import { getContrastRatio } from "../../contrast";
 
 export const meta: RuleMeta = {
   id: "a11y.button-low-contrast",
+  reference: "https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum",
   severity: "error",
 };
 

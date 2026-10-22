@@ -12,6 +12,7 @@ describe("runRules message variants", () => {
     meta: {
       id: "test.variant",
       severity: "warning",
+      reference: "https://docs.templatical.com/quality/structure/rule-catalog#tree-integrity",
       messageVariants: ["a", "b"],
     },
     block: (block) =>
@@ -28,13 +29,15 @@ describe("runRules message variants", () => {
       resolveStructureOptions("en", {}, [rule]),
       (_locale, messageId) => {
         seen.push(messageId);
-        return `message for ${messageId}`;
+        return { message: `message for ${messageId}`, suggestion: "Fix the variant." };
       },
     );
     expect(seen).toEqual(["test.variant.b"]);
     expect(issues[0]).toMatchObject({
       ruleId: "test.variant",
       message: "message for test.variant.b",
+      suggestion: "Fix the variant.",
+      reference: "https://docs.templatical.com/quality/structure/rule-catalog#tree-integrity",
     });
   });
 });

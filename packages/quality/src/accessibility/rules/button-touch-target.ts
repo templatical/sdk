@@ -3,6 +3,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.button-touch-target",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
   severity: "warning",
 };
 

@@ -20,7 +20,9 @@ describe(id, () => {
     const { content, block } = button("https://example.com/x", "https://other.com");
     expect(hits(content)).toEqual([{
       blockId: block.id, ruleId: id, severity: "warning",
-      message: "The link text shows example.com, but the link goes to other.com. Spam filters flag links like this as phishing. Make the text match the destination, or use words instead of an address.",
+      message: "The link text shows example.com, but the link goes to other.com. Spam filters flag links like this as phishing.",
+      suggestion: "Make the text match the destination, or use words instead of an address.",
+      reference: "https://docs.rspamd.com/modules/phishing/",
       fix: undefined,
     }]);
   });

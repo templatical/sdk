@@ -1,6 +1,6 @@
 # Schweregrade & Fixes
 
-Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` gemeinsam.
+Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility` gemeinsam.
 
 ## Schweregrad-Modell
 
@@ -13,13 +13,15 @@ Jede Regel emittiert ein `LintIssue` mit einem von vier Schweregraden:
 | `info` | Empfehlung; kein Defekt. | Kein Canvas-Badge, „Hinweise"-Gruppe. |
 | `off` | Override — deaktiviert die Regel komplett. | Nichts. |
 
-Schweregrade sind pro Regel über die `rules`-Map des jeweiligen Linters konfigurierbar — `accessibility.rules`, `structure.rules`, `links.rules`, `deliverability.rules`. Die dokumentierten Defaults sind nur die Basislinie.
+Schweregrade sind pro Regel über die `rules`-Map des jeweiligen Linters konfigurierbar — `accessibility.rules`, `structure.rules`, `links.rules`, `deliverability.rules`, `compatibility.rules`. Die dokumentierten Defaults sind nur die Basislinie.
 
 ```ts
 lintAccessibility(content, {
   accessibility: { rules: { "a11y.text-all-caps": "off" } },
 });
 ```
+
+Jedes Issue hat verpflichtend `message` (Problem), `suggestion` (Handlung) und eine absolute `reference`-URL. Kompatibilitätsmeldungen können zusätzlich `clients` und `excerpt` enthalten; `fix` bleibt optional.
 
 ## Auto-Fix
 
@@ -63,6 +65,7 @@ Siehe die **Auto-Fix**-Spalte in den jeweiligen Katalogen. Aktuell mit Auto-Fix:
 - Barrierefreiheit — `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`, `a11y.text-justified`.
 - Struktur — `structure.empty-section`.
 - Links — keine. Jede Link-Regel ist beim Auto-Fix destruktiv (Href entfernen, Protokoll ändern), und die richtige Antwort hängt vom Intent ab.
+- Kompatibilität — keine; die passende Lösung hängt vom Inhalt ab.
 - Zustellbarkeit — keine. Die richtige URL oder der richtige Text hängt von Nachricht und Absender ab.
 
 Auto-Fixes werden konservativ ergänzt — nur wenn die richtige Antwort eindeutig ist. `structure.empty-column` hat z. B. keinen Auto-Fix, weil das Entfernen einer leeren Spalte das `columns`-Layout der Sektion ändern muss und die richtige Antwort (in Nachbar-Spalte zusammenführen vs. Sektion entfernen vs. Layout-Key ändern) von der Intention abhängt.

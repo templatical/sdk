@@ -9,7 +9,7 @@ import { lintDeliverability } from "../../src";
 const id = "deliverability.low-text";
 const image = () => createImageBlock({ src: "https://example.com/image.png" });
 const message = (count: number, min = 200) =>
-  `This email has images but only ${count} characters of text (under ${min}). Some spam filters score image-heavy emails with little text, and readers who block images see almost nothing. Add text that carries the message.`;
+  `This email has images but only ${count} characters of text (under ${min}). Some spam filters score image-heavy emails with little text, and readers who block images see almost nothing.`;
 function check(blocks: ReturnType<typeof createDefaultTemplateContent>["blocks"], options = {}) {
   const content = createDefaultTemplateContent();
   content.blocks = blocks;
@@ -20,7 +20,9 @@ describe(id, () => {
   it("fires below 200 visible characters with the exact template-level issue", () => {
     expect(check([image(), createParagraphBlock({ content: `<p>${"x".repeat(199)}</p>` })])).toEqual([{
       blockId: null, ruleId: id, severity: "info",
-      message: "This email has images but only 199 characters of text (under 200). Some spam filters score image-heavy emails with little text, and readers who block images see almost nothing. Add text that carries the message.",
+      message: "This email has images but only 199 characters of text (under 200). Some spam filters score image-heavy emails with little text, and readers who block images see almost nothing.",
+      suggestion: "Add text that carries the message.",
+      reference: "https://svn.apache.org/repos/asf/spamassassin/branches/b2_6_0/rules/20_html_tests.cf",
       fix: undefined,
     }]);
   });

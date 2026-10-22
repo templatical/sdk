@@ -265,6 +265,7 @@ Renders as a thumbnail with a play button linking to the video.
 
 Raw-HTML escape hatch. Prefer native blocks — `html` content is not visually
 editable in the editor afterward, so use it only when no other block fits.
+Its markup passes through MJML unchanged. Follow the [pass-through rules](rules.md#pass-through-html-and-css) and check [caniemail](https://www.caniemail.com/) before relying on an HTML/CSS feature.
 
 <!-- BEGIN GENERATED FIELDS: html -->
 **Required** — `content` (string).

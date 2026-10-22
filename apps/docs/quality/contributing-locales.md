@@ -1,5 +1,5 @@
 ---
-description: Add a new locale's rule messages for accessibility, structure, links, and deliverability, plus the vague-text dictionaries the accessibility linter alone uses.
+description: Add a new locale's rule messages for accessibility, structure, links, deliverability, and compatibility, plus the vague-text dictionaries the accessibility linter alone uses.
 ---
 
 # Contributing locales
@@ -11,6 +11,8 @@ description: Add a new locale's rule messages for accessibility, structure, link
 3. **Structure rule messages** (`src/structure/messages/{locale}.ts`) — strings for each `structure.*` issue.
 4. **Link rule messages** (`src/links/messages/{locale}.ts`) — strings for each `link.*` issue.
 5. **Deliverability rule messages** (`src/deliverability/messages/{locale}.ts`) — strings for each `deliverability.*` issue.
+
+6. **Compatibility rule messages** (`src/compatibility/messages/{locale}.ts`) — `message` and `suggestion` for each `compat.*` rule, plus client grouping labels.
 
 Each set mirrors the editor's locale set. The structure, link, and deliverability linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
 
@@ -37,6 +39,11 @@ packages/quality/src/links/messages/
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatLinkMessage(), getLinkMessages()
 
+packages/quality/src/compatibility/messages/
+  en.ts
+  de.ts
+  index.ts
+
 packages/quality/src/deliverability/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
@@ -51,7 +58,7 @@ Follow the `typeof en` pattern for every file. The annotation is the contract: a
 
 ### 1. Accessibility rule messages
 
-Drop `accessibility/messages/<lang>.ts` and translate every value, preserving `{name}` placeholders exactly:
+Drop `accessibility/messages/<lang>.ts` and translate both `message` and `suggestion` for every value, preserving `{name}` placeholders exactly:
 
 ```ts
 // accessibility/messages/pt.ts
@@ -59,9 +66,9 @@ import type en from "./en";
 
 const pt: typeof en = {
   "a11y.img-missing-alt":
-    "Imagem sem texto alternativo. Adicione uma descrição curta ou marque a imagem como decorativa.",
+    { message: "Imagem sem texto alternativo.", suggestion: "Adicione uma descrição curta ou marque a imagem como decorativa." },
   "a11y.img-alt-too-long":
-    "Texto alternativo tem {length} caracteres; mantenha abaixo de {max}.",
+    { message: "Texto alternativo tem {length} caracteres.", suggestion: "Mantenha abaixo de {max}." },
   // …one key per accessibility rule
 };
 
@@ -95,9 +102,9 @@ import type en from "./en";
 
 const pt: typeof en = {
   "structure.duplicate-block-id":
-    "ID de bloco aparece {count} vezes na árvore. Cada bloco precisa ter um ID único.",
+    { message: "ID de bloco aparece {count} vezes na árvore.", suggestion: "Dê a cada bloco um ID único." },
   "structure.section-column-mismatch":
-    'Seção usa layout "{layout}" (espera {expected} colunas) mas tem {actual}. Estado corrompido.',
+    { message: "Seção usa layout {layout}: esperadas {expected} colunas, encontradas {actual}.", suggestion: "Corrija as colunas." },
   // …one key per structure rule
 };
 
@@ -114,9 +121,9 @@ import type en from "./en";
 
 const pt: typeof en = {
   "link.javascript-protocol":
-    'URL usa o protocolo "javascript:", que é removido na renderização por segurança. Substitua por um link real ou remova a URL.',
+    { message: "URL usa o protocolo javascript:.", suggestion: "Substitua por um link real ou remova a URL." },
   "link.unsupported-protocol":
-    'URL usa o protocolo "{protocol}", que a maioria dos clientes de e-mail não suporta. Use http, https, mailto, tel ou sms.',
+    { message: "URL usa o protocolo {protocol}, que muitos clientes não suportam.", suggestion: "Use http, https, mailto, tel ou sms." },
   // …one key per link rule
 };
 
@@ -133,7 +140,7 @@ import en from "./en";
 const pt: typeof en = {
   ...en,
   "deliverability.link-text-domain-mismatch":
-    "O texto mostra {textHost}, mas o link leva a {linkHost}.",
+    { message: "O texto mostra {textHost}, mas o link leva a {linkHost}.", suggestion: "Alinhe o texto com o destino." },
 };
 
 export default pt;
@@ -153,4 +160,8 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All four fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All five fall back to English when the locale isn't bundled.
+
+### 6. Compatibility rule messages
+
+Translate both fields of each `{ message, suggestion }` entry in `compatibility/messages/en.ts`. Preserve `{feature}`, `{unsupported}`, `{partial}`, `{size}`, `{max}`, and the feature placeholders. Keep family/platform labels and the `more` count localized. The formatter returns `{ message, suggestion }`; add the locale file to the existing glob layout.

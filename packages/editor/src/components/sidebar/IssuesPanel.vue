@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed, inject, onUnmounted, ref, watch } from "vue";
 import {
   ListChecks,
   AlertCircle,
@@ -10,22 +10,89 @@ import {
 } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
 import { useScrollToBlock } from "../../composables/useScrollToBlock";
-import { TEMPLATE_LINT_KEY, EDITOR_KEY } from "../../keys";
+import {
+  TEMPLATE_LINT_KEY,
+  EDITOR_KEY,
+  SIZE_CHECK_KEY,
+  UI_LOCALE_KEY,
+} from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
 const { t, format } = useI18n();
 const lint = inject(TEMPLATE_LINT_KEY, null);
 const editor = inject(EDITOR_KEY, null);
+const sizeCheck = inject(SIZE_CHECK_KEY, null);
+const locale = inject(UI_LOCALE_KEY, "en");
 const scrollToBlock = useScrollToBlock();
 
+const sizeAvailable = computed(
+  () =>
+    !!sizeCheck &&
+    !sizeCheck.cloud &&
+    sizeCheck.canRenderHtml() &&
+    sizeCheck.options.disabled !== true &&
+    sizeCheck.options.compatibility !== false &&
+    sizeCheck.options.compatibility?.rules?.["compat.gmail-clipping"] !== "off",
+);
+const checkingSize = ref(false);
+const sizeBytes = ref<number | null>(null);
+const sizeIssue = ref<LintIssue | null>(null);
+const sizeError = ref("");
+const sizeStale = ref(false);
+let contentRevision = 0;
+let destroyed = false;
+
+if (editor) {
+  watch(
+    editor.content,
+    () => {
+      contentRevision++;
+      if (sizeBytes.value !== null) sizeStale.value = true;
+    },
+    { deep: true },
+  );
+}
+onUnmounted(() => {
+  destroyed = true;
+});
+
+async function checkSize(): Promise<void> {
+  if (!sizeCheck || !sizeAvailable.value || checkingSize.value) return;
+  const revision = contentRevision;
+  checkingSize.value = true;
+  sizeError.value = "";
+  try {
+    const html = await sizeCheck.renderHtml();
+    const quality = await import("@templatical/quality");
+    if (destroyed) return;
+    sizeBytes.value = new TextEncoder().encode(html).byteLength;
+    sizeIssue.value =
+      quality.lintCompiledHtml(html, {
+        ...sizeCheck.options,
+        locale: sizeCheck.options.locale ?? locale,
+      })[0] ?? null;
+    sizeStale.value = revision !== contentRevision;
+  } catch (error) {
+    if (!destroyed)
+      sizeError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (!destroyed) checkingSize.value = false;
+  }
+}
+
+const visibleIssues = computed(() => [
+  ...(lint?.issues.value ?? []),
+  ...(sizeIssue.value && !sizeStale.value ? [sizeIssue.value] : []),
+]);
+
 const errors = computed(() =>
-  (lint?.issues.value ?? []).filter((i) => i.severity === "error"),
+  visibleIssues.value.filter((i) => i.severity === "error"),
 );
 const warnings = computed(() =>
-  (lint?.issues.value ?? []).filter((i) => i.severity === "warning"),
+  visibleIssues.value.filter((i) => i.severity === "warning"),
 );
 const infos = computed(() =>
-  (lint?.issues.value ?? []).filter((i) => i.severity === "info"),
+  visibleIssues.value.filter((i) => i.severity === "info"),
 );
 
 const totalCount = computed(
@@ -63,6 +130,48 @@ function applyFix(issue: LintIssue): void {
         {{ totalCount }}
       </span>
     </header>
+
+    <div
+      v-if="sizeAvailable"
+      class="tpl:flex tpl:flex-col tpl:gap-1.5 tpl:text-xs"
+    >
+      <button
+        type="button"
+        data-testid="issue-check-size"
+        :disabled="checkingSize"
+        class="tpl:self-start tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2.5 tpl:py-1.5 tpl:font-medium tpl:text-[var(--tpl-text)] tpl:hover:bg-[var(--tpl-bg-active)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
+        @click="checkSize"
+      >
+        {{ checkingSize ? t.issues.checkingSize : t.issues.checkSize }}
+      </button>
+      <p
+        v-if="sizeBytes !== null"
+        class="tpl:m-0 tpl:text-[var(--tpl-text-muted)]"
+      >
+        {{
+          format(t.issues.sizeResult, {
+            size: new Intl.NumberFormat(locale, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            }).format(sizeBytes / 1024),
+          })
+        }}
+      </p>
+      <p
+        v-if="sizeStale"
+        role="status"
+        class="tpl:m-0 tpl:text-[var(--tpl-text-muted)]"
+      >
+        {{ t.issues.sizeOutdated }}
+      </p>
+      <p
+        v-if="sizeError"
+        role="alert"
+        class="tpl:m-0 tpl:text-[var(--tpl-danger)]"
+      >
+        {{ format(t.issues.sizeError, { error: sizeError }) }}
+      </p>
+    </div>
 
     <div
       v-if="!lint || lint.unavailable.value"
@@ -129,10 +238,22 @@ function applyFix(issue: LintIssue): void {
               {{ issue.message }}
             </p>
             <p
+              class="tpl:m-0 tpl:mb-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{ issue.suggestion }}
+            </p>
+            <p
               class="tpl:m-0 tpl:mb-2 tpl:font-mono tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
             >
               {{ issue.ruleId }}
             </p>
+            <a
+              :href="issue.reference"
+              target="_blank"
+              rel="noopener"
+              class="tpl:mb-2 tpl:inline-block tpl:text-xs tpl:text-[var(--tpl-primary)] tpl:underline tpl:underline-offset-2 tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)]"
+              >{{ t.issues.learnMore }}</a
+            >
             <div class="tpl:flex tpl:gap-1.5">
               <button
                 v-if="issue.blockId"

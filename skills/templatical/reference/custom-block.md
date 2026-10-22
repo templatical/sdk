@@ -210,3 +210,5 @@ With the user's go-ahead, put it in their codebase following
   regress silently.
 
 If there's no repository, hand over the module and the `init()` snippet.
+
+Client support findings from `custom-block validate` use `compat.*` IDs, sourced from [caniemail](https://www.caniemail.com/). Its strict error set is `compat.css-display-flex`, `compat.css-display-grid`, `compat.css-position`, `compat.html-svg`, `compat.html-script`, `compat.css-at-import`, and `compat.html-link`. `compat.html-style` is off here because `safety.style-tag` already covers a template `<style>`; the authoring checks `safety.unscoped-class`, `safety.empty-img-src`, `safety.img-alt`, and `safety.img-width` remain. Other compatibility findings are warning or info. Each issue includes a fix suggestion and reference.

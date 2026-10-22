@@ -3,6 +3,8 @@ import { walkUrls } from "../../url-walker";
 
 export const meta: RuleMeta = {
   id: "link.malformed-tel",
+  reference:
+    "https://docs.templatical.com/quality/links/rule-catalog#malformed-uris",
   severity: "warning",
 };
 

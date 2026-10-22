@@ -91,7 +91,7 @@ Einige Hinweise:
 - **Eine Datei pro Drop.** `files` ist aus Gründen der Vorwärtskompatibilität ein Array, aber der Editor sendet derzeit eine einzelne Datei (`files[0]`).
 - **Nur Bilder.** Der Editor filtert abgelegte Dateien vor dem Aufruf auf Bild-MIME-Typen.
 - **Keine Auswahl, kein Drop.** Ohne `onRequestMedia` und ohne einen `media`-Provider, dessen `create` eine Funktion ist, erscheint kein Drop-Hinweis und Drops werden ignoriert.
-- **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL (oder eine `data:`-URL) zurück.
+- **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL zurück. [Base64-Bilder funktionieren in Gmail nicht](https://www.caniemail.com/features/image-base64/).
 
 Mit einem `media`-Provider, dessen `create` eine Funktion ist, werden abgelegte Dateien über diesen Provider hochgeladen — kein `onRequestMedia` nötig. Ein eigener Handler hat weiterhin Vorrang.
 
@@ -181,7 +181,7 @@ Wenn die Spalten einer Sektion auf dem Smartphone untereinander rutschen, ist je
 
 Für ein **kreisrundes** Avatar- oder Portraitbild braucht der Block ein quadratisches Quellbild und einen Radius von mindestens der Hälfte seiner gerenderten Größe: Ein 240px-Quadrat benötigt `120`, jeder größere Wert (`999` ist die übliche Kurzform) ergibt denselben Kreis. Ein nicht-quadratisches Bild wird zur Ellipse, da es keinen Beschnitt gibt -- siehe Höhe oben.
 
-Die Unterstützung ist gut, aber nicht vollständig: Apple Mail, iOS Mail, Gmail und Outlook.com setzen es um, Outlook unter Windows ignoriert es und zeigt eckige Ecken. Behandeln Sie es als Progressive Enhancement, nicht als Grundlage eines Layouts.
+Die Unterstützung ist gut, aber nicht vollständig: Apple Mail, iOS Mail, Gmail und Outlook.com setzen es um, Outlook unter Windows ignoriert es und zeigt eckige Ecken. Behandeln Sie es als Progressive Enhancement, nicht als Grundlage eines Layouts. Siehe [caniemail zu border-radius](https://www.caniemail.com/features/css-border-radius/).
 
 ### Placeholder-URL
 

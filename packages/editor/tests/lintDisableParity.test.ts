@@ -3,7 +3,7 @@ import type { LintOptions } from "@templatical/quality";
 import { isLintFullyDisabled as qualityIsLintFullyDisabled } from "@templatical/quality";
 import { isLintFullyDisabled as editorIsLintFullyDisabled } from "../src/composables/useTemplateLint";
 
-const keys = ["accessibility", "structure", "links", "deliverability"] as const;
+const keys = ["accessibility", "structure", "links", "deliverability", "compatibility"] as const;
 
 describe("editor lint disable parity", () => {
   it("matches quality for every absent/false key combination, with and without disabled", () => {

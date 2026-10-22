@@ -25,7 +25,7 @@ Add `--json` for machine-readable result output on stdout when a command produce
 
 | Command | Does |
 |---|---|
-| `validate <file>` | Structural check, then the quality lint |
+| `validate <file> [--html]` | Structural check, then the quality lint |
 | `schema [--out <file>]` | Print the block JSON Schema |
 | `render <file> [--format mjml\|html] [-o <file>]` | Render to MJML, or to sending-ready HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Apply one operation, or a batch, and write the result |
@@ -143,7 +143,7 @@ It means the CLI did its job and hit an optional piece it can't do without — t
 
 When a command produces a result, `--json` emits a parseable result document on stdout. Usage and tool errors (2, 3) go to stderr without a result document. Diagnostics and progress notes also go to stderr; check the exit code before consuming stdout.
 
-`validate --json` emits `{ valid, errors, issues }`. `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
+`validate --json` emits `{ valid, errors, issues }` (plus `htmlBytes` with `--html`). `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
 `valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info never change the exit code. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
 
@@ -252,3 +252,5 @@ The JSON Schema for a custom block working file — a `CustomBlockDefinition` wi
 Builds on three MIT packages, all real `dependencies` rather than peers, so none of them are optional: `@templatical/types` for the block model the schema is generated from, `@templatical/quality` for the lint `validate` layers on top, and `@templatical/renderer` for the MJML output `render` produces. It is not the editor — there's no visual surface in this package, and nothing in it mounts UI or touches a DOM.
 
 It never imports `@templatical/core`, which is under [FSL-1.1-MIT](/license-faq) rather than plain MIT, like the editor and the media library. `edit` runs the operation engine from `@templatical/types`, which is MIT: the same engine the editor's collaboration and Templatical Cloud apply, kept identical to Cloud's by shared fixtures. That keeps this package's own license plain MIT — safe to run via a bare, unauthenticated `npx`, with no license terms to reason about beyond MIT's.
+
+`validate <file> --html --json` renders and compiles the email, reports `htmlBytes`, and adds `compat.gmail-clipping` if the compiled HTML exceeds the configured size. It requires the optional `mjml` peer; when absent, exit code `3` and the install hint arrive before any JSON output. `compat.*` findings are warning or info in template validation and never cause exit `1`. `custom-block validate` uses `compat.*` IDs for client facts instead of the old `safety.*` IDs; flex/grid, positioning, SVG, script, `@import`, and external stylesheets remain errors there, while `compat.html-style` is disabled. Issues carry `suggestion` and `reference`, and may include `clients` and `excerpt`.

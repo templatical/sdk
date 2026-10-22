@@ -810,6 +810,12 @@ export default {
     emptyState: "No issues — looking good.",
     badgeError: "Has errors",
     badgeWarning: "Has warnings",
+    checkSize: "Check size",
+    checkingSize: "Checking size…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "Content changed. Check size again.",
+    sizeError: "Could not check size: {error}",
+    learnMore: "Learn more",
     issueCountTooltip: "{count} issue(s)",
   },
 

@@ -1,4 +1,5 @@
 import en from "./en";
+import { formatMessagePair } from "../../format-message";
 
 export type MessageMap = typeof en;
 export type RuleMessageId = keyof MessageMap;
@@ -40,12 +41,8 @@ export function formatMessage(
   locale: string,
   ruleId: RuleMessageId,
   params?: Record<string, string | number>,
-): string {
+): { message: string; suggestion: string } {
   const map = getMessages(locale);
   const template = map[ruleId] ?? en[ruleId];
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
-    const value = params[key];
-    return value === undefined ? `{${key}}` : String(value);
-  });
+  return formatMessagePair(template, params);
 }

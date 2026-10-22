@@ -4,6 +4,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.heading-multiple-h1",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#headings",
   severity: "warning",
 };
 

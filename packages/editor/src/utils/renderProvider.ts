@@ -104,6 +104,8 @@ export interface RenderMethodsSource {
 export interface RenderMethods {
   toMjml(): Promise<string>;
   toHtml(): Promise<string>;
+  /** Whether the provider can produce sending-ready HTML without guessing. */
+  canRenderHtml(): boolean;
   /**
    * Whether {@link toMjml} would reach the bundled `@templatical/renderer` —
    * false once the provider implements `toMjml` and owns the render itself.
@@ -179,5 +181,12 @@ export function createRenderMethods(
     return typeof source.provider?.toMjml !== "function";
   }
 
-  return { toMjml, toHtml, usesLocalRenderer };
+  function canRenderHtml(): boolean {
+    return (
+      typeof source.provider?.toHtml === "function" ||
+      typeof source.provider?.compileMjml === "function"
+    );
+  }
+
+  return { toMjml, toHtml, canRenderHtml, usesLocalRenderer };
 }

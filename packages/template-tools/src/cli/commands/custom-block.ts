@@ -31,7 +31,7 @@ function formatIssues(issues: CustomBlockIssue[]): string {
   return issues
     .map(
       (i) =>
-        `  - [${i.severity}] ${i.ruleId}${i.path ? ` ${i.path}` : ""}: ${i.message}`,
+        `  - [${i.severity}] ${i.ruleId}${i.path ? ` ${i.path}` : ""}: ${i.message}${i.suggestion ? `\n    → ${i.suggestion}` : ""}`,
     )
     .join("\n");
 }

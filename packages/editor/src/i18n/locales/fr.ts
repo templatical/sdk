@@ -744,6 +744,12 @@ const fr: typeof en = {
     emptyState: "Aucun problème — tout va bien.",
     badgeError: "Contient des erreurs",
     badgeWarning: "Contient des avertissements",
+    checkSize: "Vérifier la taille",
+    checkingSize: "Vérification de la taille…",
+    sizeResult: "HTML : {size} Ko",
+    sizeOutdated: "Le contenu a changé. Vérifiez à nouveau la taille.",
+    sizeError: "Impossible de vérifier la taille : {error}",
+    learnMore: "En savoir plus",
     issueCountTooltip: "{count} problème(s)",
   },
   smallScreen: {

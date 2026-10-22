@@ -4,6 +4,8 @@ import { getDictionary } from "../dictionaries";
 
 export const meta: RuleMeta = {
   id: "a11y.img-linked-no-context",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#images",
   severity: "warning",
 };
 

@@ -70,7 +70,7 @@ Templatical trennt die Template-Bearbeitung vom Template-Rendering. Der Editor e
 
 ## MJML
 
-[MJML](https://mjml.io) ist eine Open-Source-Markup-Sprache, die speziell für E-Mails entwickelt wurde. E-Mail-HTML ist bekanntermaßen schwierig. E-Mail-Clients rendern HTML unterschiedlich -- Outlook verwendet die Rendering-Engine von Microsoft Word, Gmail entfernt `<style>`-Tags, Apple Mail unterstützt modernes CSS, Yahoo dagegen nicht. HTML zu schreiben, das überall funktioniert, erfordert:
+[MJML](https://mjml.io) ist eine Open-Source-Markup-Sprache, die speziell für E-Mails entwickelt wurde. E-Mail-HTML ist bekanntermaßen schwierig. E-Mail-Clients rendern HTML unterschiedlich -- Outlook verwendet die Rendering-Engine von Microsoft Word, Gmail unterstützt `<style>` im Head, im Body nur teilweise ([caniemail](https://www.caniemail.com/features/html-style/)), Apple Mail unterstützt modernes CSS, Yahoo dagegen nicht. HTML zu schreiben, das überall funktioniert, erfordert:
 
 - Verschachtelte Tabellen für das Layout (Flexbox und Grid funktionieren nicht)
 - Inline-Styles auf jedem Element (externe/eingebettete Stylesheets werden entfernt)

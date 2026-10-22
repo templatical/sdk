@@ -19,7 +19,9 @@ describe(id, () => {
     const { block, issues } = check("https://bit.ly/x");
     expect(issues).toEqual([{
       blockId: block.id, ruleId: id, severity: "warning",
-      message: "This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead.",
+      message: "This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination.",
+      suggestion: "Link to the destination instead.",
+      reference: "https://docs.rspamd.com/modules/phishing/",
       fix: undefined,
     }]);
   });
@@ -46,7 +48,7 @@ describe(id, () => {
     expect(check(url).issues.map(({ ruleId, severity, message }) => ({ ruleId, severity, message }))).toEqual([{
       ruleId: id,
       severity: "warning",
-      message: `This link goes through the URL shortener ${host}. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead.`,
+      message: `This link goes through the URL shortener ${host}. Spam filters treat shortener links with suspicion because they hide the destination.`,
     }]);
   });
 

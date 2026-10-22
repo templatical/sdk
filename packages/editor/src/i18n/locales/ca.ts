@@ -816,6 +816,12 @@ const ca: typeof en = {
     emptyState: "Sense problemes, tot correcte.",
     badgeError: "Té errors",
     badgeWarning: "Té avisos",
+    checkSize: "Comprova la mida",
+    checkingSize: "Comprovant la mida…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "El contingut ha canviat. Torna a comprovar la mida.",
+    sizeError: "No s'ha pogut comprovar la mida: {error}",
+    learnMore: "Més informació",
     issueCountTooltip: "{count} problema/es",
   },
 

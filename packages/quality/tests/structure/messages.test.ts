@@ -36,8 +36,8 @@ describe("structure rule messages", () => {
   });
 
   it("placeholders match between locales for every key", () => {
-    const placeholders = (s: string) =>
-      Array.from(s.matchAll(/\{(\w+)\}/g))
+    const placeholders = (s: { message: string; suggestion: string }) =>
+      Array.from((s.message + " " + s.suggestion).matchAll(/\{(\w+)\}/g))
         .map((m) => m[1])
         .sort();
     for (const key of Object.keys(en) as Array<keyof typeof en>) {
@@ -57,14 +57,15 @@ describe("structure rule messages", () => {
     const out = formatStructureMessage("en", "structure.duplicate-block-id", {
       count: 3,
     });
-    expect(out).toBe(
-      "Block id appears 3 times in the tree. Each block must have a unique id.",
-    );
+    expect(out).toEqual({
+      message: "Block id appears 3 times in the tree.",
+      suggestion: "Give each block a unique id.",
+    });
   });
 
   it("uses the German template when locale=de", () => {
     const out = formatStructureMessage("de", "structure.empty-section");
-    expect(out).toContain("Sektion");
+    expect(out.message).toContain("Sektion");
   });
 
   it("exports the supported locale list", () => {

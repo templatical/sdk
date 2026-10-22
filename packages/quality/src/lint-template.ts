@@ -4,10 +4,12 @@ import { lintAccessibility } from "./accessibility";
 import { lintStructure } from "./structure";
 import { lintLinks } from "./links";
 import { lintDeliverability } from "./deliverability";
+import { lintCompatibility } from "./compatibility";
 import { isLintFullyDisabled } from "./util";
 
 /**
- * Run every linter in the package — accessibility, structure, links, and deliverability —
+ * Run every linter in the package — accessibility, structure, links,
+ * deliverability, and compatibility —
  * against `content` and return the merged issue list.
  *
  * This is the single entry point callers should prefer. CI guards, the
@@ -16,11 +18,12 @@ import { isLintFullyDisabled } from "./util";
  * one fan-out — no consumer has to learn about the new function.
  *
  * Per-category options (`options.accessibility`, `options.structure`,
- * `options.links`, `options.deliverability`) and the global `options.disabled` flag are forwarded
+ * `options.links`, `options.deliverability`, `options.compatibility`) and the
+ * global `options.disabled` flag are forwarded
  * unchanged; each sub-linter already short-circuits when its category is
  * `false`, so the per-tool calls below are cheap no-ops when disabled.
  *
- * Issue order is stable: accessibility, structure, links, then deliverability.
+ * Issue order is stable: accessibility, structure, links, deliverability, compatibility.
  */
 export function lintTemplate(
   content: TemplateContent,
@@ -32,5 +35,6 @@ export function lintTemplate(
     ...lintStructure(content, options),
     ...lintLinks(content, options),
     ...lintDeliverability(content, options),
+    ...lintCompatibility(content, options),
   ];
 }

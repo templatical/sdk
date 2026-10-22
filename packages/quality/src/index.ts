@@ -3,6 +3,13 @@ export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
 export { lintStructure, STRUCTURE_RULES } from "./structure";
 export { lintLinks, LINK_RULES } from "./links";
 export { lintDeliverability, DELIVERABILITY_RULES } from "./deliverability";
+export {
+  lintCompatibility,
+  lintHtmlFragment,
+  lintCompiledHtml,
+  COMPATIBILITY_RULES,
+} from "./compatibility";
+export { CANIEMAIL_DATA_DATE } from "./compatibility/data/caniemail.generated";
 export { DEFAULT_SHORTENER_HOSTS } from "./deliverability/shorteners";
 export {
   formatDeliverabilityMessage,
@@ -49,6 +56,9 @@ export type { LinkMessageMap, LinkRuleMessageId } from "./links/messages";
 export { isLintFullyDisabled } from "./util";
 export type {
   AccessibilityLintOptions,
+  ClientSupport,
+  CompatibilityLintOptions,
+  CompatibilityThresholds,
   DeliverabilityLintOptions,
   DeliverabilityThresholds,
   LinksLintOptions,
@@ -59,6 +69,7 @@ export type {
   LintThresholds,
   ResolvedLinksOptions,
   ResolvedDeliverabilityOptions,
+  ResolvedCompatibilityOptions,
   ResolvedOptions,
   Rule,
   RuleHit,
@@ -70,6 +81,7 @@ export type {
 } from "./types";
 export {
   DEFAULT_A11Y_THRESHOLDS,
+  DEFAULT_COMPATIBILITY_THRESHOLDS,
   DEFAULT_DELIVERABILITY_THRESHOLDS,
   DEFAULT_NON_PRODUCTION_HOSTS,
 } from "./types";

@@ -15,7 +15,9 @@ describe(id, () => {
     const { block, issues } = check("http://203.0.113.7/a");
     expect(issues).toEqual([{
       blockId: block.id, ruleId: id, severity: "warning",
-      message: "This link points to the IP address 203.0.113.7 instead of a domain. Spam filters score links like this as spam. Link to your domain.",
+      message: "This link points to the IP address 203.0.113.7 instead of a domain. Spam filters score links like this as spam.",
+      suggestion: "Link to your domain.",
+      reference: "https://svn.apache.org/repos/asf/spamassassin/branches/b2_4_0/rules/20_uri_tests.cf",
       fix: undefined,
     }]);
   });
@@ -28,7 +30,7 @@ describe(id, () => {
     expect(check(url).issues.map(({ ruleId, severity, message }) => ({ ruleId, severity, message }))).toEqual([{
       ruleId: id,
       severity: "warning",
-      message: `This link points to the IP address ${host} instead of a domain. Spam filters score links like this as spam. Link to your domain.`,
+      message: `This link points to the IP address ${host} instead of a domain. Spam filters score links like this as spam.`,
     }]);
   });
 

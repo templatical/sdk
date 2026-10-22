@@ -1,6 +1,6 @@
 # Optionen
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
 
 ```ts
 interface LintOptions {
@@ -10,6 +10,7 @@ interface LintOptions {
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
   deliverability?: false | DeliverabilityLintOptions;
+  compatibility?: false | CompatibilityLintOptions;
 }
 
 interface AccessibilityLintOptions {
@@ -24,6 +25,15 @@ interface StructureLintOptions {
 interface LinksLintOptions {
   rules?: Record<string, Severity>;
   nonProductionHosts?: string[];
+}
+
+interface CompatibilityThresholds {
+  maxHtmlBytes: number;
+}
+
+interface CompatibilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<CompatibilityThresholds>;
 }
 
 interface DeliverabilityThresholds {
@@ -58,7 +68,7 @@ Bei `true`:
 Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-Editor-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
 
 ::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
-Der Editor behandelt `{ accessibility: false, structure: false, links: false, deliverability: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
+Der Editor behandelt `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
 :::
 
 ## `locale`
@@ -75,6 +85,7 @@ lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
 lintDeliverability(content, { locale: "de" });
+lintCompatibility(content, { locale: "de" });
 
 // Editor — Linter folgt automatisch der Editor-Locale
 init({ locale: "de" });
@@ -223,7 +234,7 @@ lintLinks(content, { links: { nonProductionHosts: [] } });
 Konfiguration für `lintDeliverability`. Mit `deliverability: false` deaktivieren Sie diese Kategorie.
 
 ```ts
-lintDeliverability(content, { deliverability: false });
+lintDeliverability(content, { deliverability: false, compatibility: false });
 ```
 
 ### `deliverability.rules`
@@ -259,3 +270,7 @@ const issues = lintDeliverability(content, {
   deliverability: { shortenerHosts: [...DEFAULT_SHORTENER_HOSTS, "go.example.com"] },
 });
 ```
+
+## `compatibility`
+
+Standardmäßig aktiv. `compatibility: false` deaktiviert die Client-Kompatibilitätsprüfung. Vollständige `compat.*`-IDs in `compatibility.rules` erlauben Schweregrad-Overrides einschließlich `"off"`. `compatibility.thresholds.maxHtmlBytes` beträgt standardmäßig `92_160` Byte (90 KiB) für `lintCompiledHtml`. Siehe den [Kompatibilitätskatalog](./compatibility/rule-catalog).

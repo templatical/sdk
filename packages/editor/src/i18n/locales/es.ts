@@ -814,6 +814,12 @@ const es: typeof en = {
     emptyState: "Sin problemas, todo se ve bien.",
     badgeError: "Tiene errores",
     badgeWarning: "Tiene advertencias",
+    checkSize: "Comprobar tamaño",
+    checkingSize: "Comprobando tamaño…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "El contenido ha cambiado. Comprueba el tamaño de nuevo.",
+    sizeError: "No se pudo comprobar el tamaño: {error}",
+    learnMore: "Más información",
     issueCountTooltip: "{count} problema(s)",
   },
 

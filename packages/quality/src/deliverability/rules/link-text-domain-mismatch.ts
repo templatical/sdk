@@ -4,6 +4,7 @@ import { isSameSite, normalizedHost, parseHttpUrl } from "../same-site";
 
 export const meta: RuleMeta = {
   id: "deliverability.link-text-domain-mismatch",
+  reference: "https://docs.rspamd.com/modules/phishing/",
   severity: "warning",
 };
 

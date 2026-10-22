@@ -21,8 +21,8 @@ describe("rule messages", () => {
   });
 
   it("placeholders match between locales for every key", () => {
-    const placeholders = (s: string) =>
-      Array.from(s.matchAll(/\{(\w+)\}/g))
+    const placeholders = (s: { message: string; suggestion: string }) =>
+      Array.from((s.message + " " + s.suggestion).matchAll(/\{(\w+)\}/g))
         .map((m) => m[1])
         .sort();
     for (const key of Object.keys(en) as Array<keyof typeof en>) {
@@ -43,17 +43,17 @@ describe("rule messages", () => {
       length: 200,
       max: 125,
     });
-    expect(out).toBe("Alt text is 200 characters; aim for under 125.");
+    expect(out).toEqual({ message: "Alt text is 200 characters.", suggestion: "Keep alt text under 125 characters." });
   });
 
   it("uses the German template when locale=de", () => {
     const out = formatMessage("de", "a11y.img-missing-alt");
-    expect(out).toContain("Alt-Text");
+    expect(out.message).toContain("Alt-Text");
   });
 
   it("leaves unknown placeholders intact", () => {
     const out = formatMessage("en", "a11y.img-alt-too-long", { length: 200 });
-    expect(out).toContain("{max}");
+    expect(out.suggestion).toContain("{max}");
   });
 
   it("exports the supported locale list", () => {

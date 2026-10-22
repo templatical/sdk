@@ -59,3 +59,5 @@ That renders the *current* canvas rather than the stored copy, and produces the 
 ## Headless use
 
 Render outside the editor entirely with the [headless API](/cloud/headless-api#export).
+
+**Check size** is hidden in Cloud mode because the current HTML render path saves first. Use `validate --html` for an on-demand compiled size check without that UI action.

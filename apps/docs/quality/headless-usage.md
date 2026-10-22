@@ -6,7 +6,7 @@ description: Run the quality linters headless in Node.js — CI guards, save-tim
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
-`lintTemplate(content, options?)` runs every linter — accessibility, structure, links, and deliverability — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
+`lintTemplate(content, options?)` runs every linter — accessibility, structure, links, deliverability, and compatibility — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
 
 ```ts
 import { lintTemplate } from "@templatical/quality";
@@ -14,7 +14,7 @@ import { lintTemplate } from "@templatical/quality";
 const issues = lintTemplate(content); // a11y, then structure, then link, then deliverability issues
 ```
 
-The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false, deliverability: false })` runs accessibility only.
+The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)`, `lintCompatibility(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false, deliverability: false, compatibility: false })` runs accessibility only.
 
 ## Validate before storing
 
@@ -75,7 +75,7 @@ Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The T
 
 ## Filtering by category
 
-Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`), so grouping or filtering by linter is a `startsWith` check:
+Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`), so grouping or filtering by linter is a `startsWith` check:
 
 ```ts
 const issues = lintTemplate(content);
@@ -130,4 +130,4 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintTemplate` fans out to all four.
+If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`, `clients`, `excerpt`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility`, and `lintTemplate` fans out to all five.

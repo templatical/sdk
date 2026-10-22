@@ -4,6 +4,8 @@ import { getDictionary, normalizeForMatch } from "../dictionaries";
 
 export const meta: RuleMeta = {
   id: "a11y.button-vague-label",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
   severity: "warning",
 };
 

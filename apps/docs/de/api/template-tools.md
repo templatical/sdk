@@ -25,7 +25,7 @@ Mit `--json` erscheint ein maschinenlesbares Ergebnis auf stdout, wenn ein Befeh
 
 | Befehl | Funktion |
 |---|---|
-| `validate <file>` | Strukturprüfung, dann der Qualitäts-Lint |
+| `validate <file> [--html]` | Strukturprüfung, dann der Qualitäts-Lint |
 | `schema [--out <file>]` | Gibt das Block-JSON-Schema aus |
 | `render <file> [--format mjml\|html] [-o <file>]` | Rendert zu MJML oder zu versandfertigem HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Wendet eine Operation oder einen Batch an und schreibt das Ergebnis |
@@ -252,3 +252,5 @@ Das JSON-Schema für eine Custom-Block-Arbeitsdatei — eine `CustomBlockDefinit
 Baut auf drei MIT-Paketen auf, allesamt echte `dependencies` statt Peers, also keines davon optional: `@templatical/types` für das Blockmodell, aus dem das Schema generiert wird, `@templatical/quality` für den Lint, den `validate` darüberlegt, und `@templatical/renderer` für die MJML-Ausgabe, die `render` erzeugt. Es ist nicht der Editor — dieses Paket hat keine visuelle Oberfläche, und nichts darin mountet UI oder fasst ein DOM an.
 
 Es importiert nie `@templatical/core`, das wie Editor und Media-Library unter [FSL-1.1-MIT](/de/license-faq) statt reinem MIT steht. `edit` verwendet die Operations-Engine aus `@templatical/types`, die unter MIT steht: dieselbe Engine, die die Collaboration des Editors und Templatical Cloud anwenden, über gemeinsame Fixtures mit der von Cloud identisch gehalten. Das hält die Lizenz dieses Pakets rein MIT — sicher über ein bloßes, unauthentifiziertes `npx` auszuführen, ohne Lizenzbedingungen jenseits von MIT abwägen zu müssen.
+
+Mit `validate <file> --html --json` rendert und kompiliert die CLI zusätzlich die E-Mail und liefert `htmlBytes` sowie gegebenenfalls `compat.gmail-clipping`. Dafür wird das optionale `mjml` benötigt; fehlt es, endet der Befehl mit Exit-Code `3` und einem Installationshinweis, ohne JSON-Ausgabe. `compat.*` ist standardmäßig `warning` oder `info` und führt nicht zu Exit-Code `1`. `custom-block validate` verwendet `compat.*` statt der bisherigen Client-Fakten unter `safety.*`; Flex/Grid, Position, SVG, Script, `@import` und externe Stylesheets bleiben dort `error`, während `compat.html-style` deaktiviert ist. Issues enthalten `suggestion` und `reference`, gegebenenfalls auch `clients` und `excerpt`.

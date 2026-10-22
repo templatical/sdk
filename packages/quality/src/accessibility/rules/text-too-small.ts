@@ -4,6 +4,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.text-too-small",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#text",
   severity: "warning",
 };
 

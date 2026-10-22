@@ -29,7 +29,7 @@ from prose.
 
 ## Lint severity
 
-`issues[]` is the quality lint — accessibility, structure, links, deliverability — with severity
+`issues[]` is the quality lint — accessibility, structure, links, deliverability, compatibility — with severity
 `error`, `warning` or `info`. Structural failure or any error-severity lint issue
 returns exit 1. Warnings and info never change the exit code. A missing preheader
 (`info`) is worth one mention; a `warning` is worth fixing before the user sends.
@@ -37,3 +37,5 @@ returns exit 1. Warnings and info never change the exit code. A missing preheade
 while `valid` remains `true` and `errors[]` stays empty.
 `deliverability.*` issues are warning or info advice in this CLI and never
 cause exit 1.
+
+For compiled size, run `npx -y @templatical/template-tools@0.49.0 validate <file> --html --json`. Read `htmlBytes` and any `compat.gmail-clipping` warning. This flag needs the optional `mjml` peer; if it is missing, exit `3` with an install hint and no JSON. `compat.*` issues are warning/info for template validation and never cause exit `1` by themselves. Each lint issue supplies `suggestion` and `reference`; use them when repairing the template.

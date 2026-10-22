@@ -4,6 +4,7 @@ import {
   defineAsyncComponent,
   onMounted,
   onUnmounted,
+  provide,
   ref,
   toRaw,
   watch,
@@ -43,6 +44,7 @@ import {
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
+import { SIZE_CHECK_KEY } from "./keys";
 
 import { RotateCcw } from "@lucide/vue";
 import { warningBtnCompactClass } from "./constants/styleConstants";
@@ -91,9 +93,20 @@ const props = defineProps<{
    * Absent means no MJML: a directly-mounted editor has no entry point to ask.
    */
   renderMjml?: () => Promise<string>;
+  renderHtml?: () => Promise<string>;
+  canRenderHtml?: () => boolean;
   /** Whether {@link renderMjml} reaches the bundled `@templatical/renderer`. */
   usesLocalRenderer?: () => boolean;
 }>();
+
+provide(SIZE_CHECK_KEY, {
+  renderHtml: () =>
+    props.renderHtml?.() ??
+    Promise.reject(new Error("HTML rendering is unavailable")),
+  canRenderHtml: () => props.canRenderHtml?.() ?? false,
+  cloud: !!props.cloud,
+  options: props.config.lint ?? {},
+});
 
 // The fourth place consumer content enters (the other three are the entry
 // points in `index.ts`: the mount seed, `setContent` and `create`). A template

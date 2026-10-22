@@ -85,4 +85,4 @@ If you exclude the family that new templates start on — Arial by default, or w
 - **Always set a fallback** — Most email clients don't support custom fonts. The fallback stack ensures your email still looks good when the custom font doesn't load.
 - **Limit font weights** — Only include the weights you actually need (e.g., `wght@400;700`). Extra weights increase load time for recipients.
 - **Stick to 1-2 custom fonts** — Too many fonts slow down rendering and make the design inconsistent. One for headings and one for body text is a common pattern.
-- **Test across clients** — Gmail, Outlook, and Apple Mail all handle fonts differently. Gmail supports Google Fonts in most cases, but Outlook falls back to system fonts.
+- **Test across clients** — Gmail, Outlook, and Apple Mail all handle fonts differently. [caniemail reports no `@font-face` support in Gmail](https://www.caniemail.com/features/css-at-font-face/), and Outlook also falls back to system fonts.

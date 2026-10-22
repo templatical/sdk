@@ -45,13 +45,13 @@ describe("a11y.button-low-contrast", () => {
     // #888888 on white = ~3.5:1. Default fontSize 15 < 24 → strict 4.5:1.
     const issues = lint("#888888", "#ffffff");
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/4\.5:1/);
+    expect(issues[0].suggestion).toMatch(/4\.5:1/);
   });
 
   it("uses 4.5:1 threshold for small button (fontSize 16)", () => {
     const issues = lint("#888888", "#ffffff", 16);
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/4\.5:1/);
+    expect(issues[0].suggestion).toMatch(/4\.5:1/);
   });
 
   it("uses 3:1 threshold for large button (fontSize ≥ 24)", () => {
@@ -63,6 +63,6 @@ describe("a11y.button-low-contrast", () => {
     // #bbbbbb on white ≈ 1.95:1 — fails even relaxed 3:1.
     const issues = lint("#bbbbbb", "#ffffff", 28);
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/3:1/);
+    expect(issues[0].suggestion).toMatch(/3:1/);
   });
 });

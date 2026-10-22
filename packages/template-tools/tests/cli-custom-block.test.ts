@@ -133,7 +133,8 @@ describe("custom-block human output", () => {
     const warned = { ...good, template: `<div style="position:absolute">{{ text }}{{ on }}</div>` };
     const code = await run(["validate", file(warned)]);
     expect(code).toBe(1);
-    expect(text()).toContain("[error] safety.position");
+    expect(text()).toContain("[error] compat.css-position");
+    expect(text()).toContain("→ Remove the positioning");
   });
   it("render prints MJML to stdout without -o", async () => {
     expect(await run(["render", file(good)])).toBe(0);

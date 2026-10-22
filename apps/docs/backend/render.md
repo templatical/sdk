@@ -293,3 +293,5 @@ The **Render** setup runs `editor.toMjml()` in the browser and `toHtml()` throug
 - [`@templatical/renderer` API](/api/renderer-typescript)
 - [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
+
+The editor’s **Check size** action is available when the render provider implements `toHtml` or `compileMjml`; it renders only on demand and never calls a save endpoint.

@@ -48,7 +48,7 @@ const issues = lintLinks(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "link."
 ```
 
-Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all four linters independently or merge results.
+Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all five linters independently or merge results.
 
 In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs every linter on every (debounced) content change. Link issues appear in the **Issues** sidebar tab alongside accessibility and structure issues.
 

@@ -5,6 +5,7 @@ import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 
 export const meta: RuleMeta = {
   id: "a11y.text-low-contrast",
+  reference: "https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum",
   severity: "error",
 };
 

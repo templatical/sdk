@@ -31,7 +31,7 @@ const issues = lintStructure(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "structure."
 ```
 
-Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all four linters independently or merge results.
+Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all five linters independently or merge results.
 
 Structure-specific config lives under `LintOptions.structure`. Set `structure: false` to disable the linter entirely.
 
@@ -41,11 +41,11 @@ lintStructure(content, {
 });
 ```
 
-In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs all four linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
+In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs all five linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
 
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every structure rule with severity, rationale, and an auto-fix note.
-- [Options](../options) — shared across all four linters.
+- [Options](../options) — shared across all five linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.

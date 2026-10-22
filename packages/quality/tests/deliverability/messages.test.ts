@@ -6,7 +6,7 @@ import { DELIVERABILITY_RULES, formatDeliverabilityMessage, getDeliverabilityMes
 describe("deliverability messages", () => {
   it("has key and placeholder parity between English and German", () => {
     expect(Object.keys(de).sort()).toEqual(Object.keys(en).sort());
-    const placeholders = (value: string) => [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+    const placeholders = (value: { message: string; suggestion: string }) => [...(value.message + " " + value.suggestion).matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
     for (const key of Object.keys(en) as Array<keyof typeof en>) {
       expect(placeholders(de[key])).toEqual(placeholders(en[key]));
     }
@@ -27,8 +27,8 @@ describe("deliverability messages", () => {
 
   it("interpolates params and preserves missing tokens", () => {
     expect(formatDeliverabilityMessage("en", "deliverability.ip-address-url", { host: "203.0.113.7" }))
-      .toBe("This link points to the IP address 203.0.113.7 instead of a domain. Spam filters score links like this as spam. Link to your domain.");
-    expect(formatDeliverabilityMessage("de", "deliverability.link-text-domain-mismatch", { textHost: "example.com" }))
+      .toEqual({ message: "This link points to the IP address 203.0.113.7 instead of a domain. Spam filters score links like this as spam.", suggestion: "Link to your domain." });
+    expect(formatDeliverabilityMessage("de", "deliverability.link-text-domain-mismatch", { textHost: "example.com" }).message)
       .toContain("{linkHost}");
   });
 });

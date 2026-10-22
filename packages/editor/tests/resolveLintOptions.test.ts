@@ -46,6 +46,7 @@ describe("resolveLintOptions", () => {
         structure: false,
         links: false,
         deliverability: false,
+        compatibility: false,
       },
     });
     expect(out.accessibility).toBe(false);

@@ -4,6 +4,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "structure.empty-section",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#content-presence",
   severity: "warning",
 };
 

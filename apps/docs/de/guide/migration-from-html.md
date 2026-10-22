@@ -298,3 +298,5 @@ Ein Wrapper, den der Importer durchläuft, liefert keinen eigenen Eintrag: Es en
 ::: warning Anzahl der Einträge geändert
 Sections und verlorene Layouts werden jetzt gemeldet, wo das vorher nicht der Fall war. `report.summary.total` ist für dasselbe Dokument also höher, und `approximated` umfasst nun Fälle, die zuvor nur einen `warnings`-String erzeugten oder gar nicht gemeldet wurden. Code, der auf exakte Summen prüft, muss angepasst werden; Code, der nach `status` oder `templaticalBlockType` filtert, nicht.
 :::
+
+HTML-Fallback-Blöcke bleiben durchgereichter Inhalt. Prüfen Sie nach dem Import den Client-Support mit dem [Kompatibilitäts-Linter](/de/quality/compatibility/) und [caniemail](https://www.caniemail.com/).

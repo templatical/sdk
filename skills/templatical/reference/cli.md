@@ -29,7 +29,7 @@ the property to reassure a wary user about first.
 Two commands may each ask for **one** additional install, and the CLI prints
 the exact command when it does:
 
-- `render --format html` needs the `mjml` package.
+- `render --format html` and `validate --html` need the `mjml` package.
 - `import` needs the converter for the source format.
 
 **The exit code says which situation you're in — read it, don't guess from
@@ -40,9 +40,9 @@ the output:**
 | `0` | Succeeded. `validate` may still report lint warnings. |
 | `1` | The template itself is invalid — fix the JSON, not the tool. |
 | `2` | The command was misused, or the tool broke — bad flags, an unreadable file, an unexpected internal error. |
-| `3` | One of the two optional packages above is missing. Install it, then re-run — not a bug. |
+| `3` | An optional package above is missing. Install it, then re-run — not a bug. |
 
-`deliverability.*` issues are warning or info advice in the default CLI
+`deliverability.*` and `compat.*` issues are warning or info advice in the default CLI
 configuration. They never cause exit 1; structural errors and error-severity
 lint issues do.
 
@@ -51,3 +51,5 @@ mode that works — no Node, too old a version (`node -v`, then
 <https://nodejs.org>), or no network blocks everything; no background process
 or reachable port (a hosted, server-side sandbox) blocks only [live
 mode](live.md), and build mode is unaffected.
+
+`validate <file> --html --json` compiles the rendered email and adds exact UTF-8 `htmlBytes` plus a `compat.gmail-clipping` warning above 90 KiB. It requires `mjml`: missing peer means exit `3` and the existing install hint on stderr before any JSON output. Compatibility warning/info never changes a valid template to exit `1`.

@@ -62,3 +62,5 @@ The built CLI returns exit code `0`. Its JSON output includes this issue (produc
 ```json
 {"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead."}
 ```
+
+For pass-through HTML and CSS support, see the [compatibility linter](../compatibility/).

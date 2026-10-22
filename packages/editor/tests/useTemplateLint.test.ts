@@ -215,6 +215,7 @@ describe("useTemplateLint", () => {
         structure: false,
         links: false,
         deliverability: false,
+        compatibility: false,
       },
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
@@ -305,7 +306,7 @@ describe("isLintFullyDisabled", () => {
     expect(isLintFullyDisabled({ disabled: true })).toBe(true);
   });
 
-  it("returns true only when all four tool keys are false", async () => {
+  it("returns true only when all five tool keys are false", async () => {
     const { isLintFullyDisabled } = await import(
       "../src/composables/useTemplateLint"
     );
@@ -315,6 +316,7 @@ describe("isLintFullyDisabled", () => {
         structure: false,
         links: false,
         deliverability: false,
+        compatibility: false,
       }),
     ).toBe(true);
   });

@@ -17,7 +17,7 @@ export type { LintIssue, LintOptions } from "@templatical/quality";
 /**
  * Mirrors `isLintFullyDisabled` from `@templatical/quality`. Duplicated
  * here to avoid a static runtime import of the optional peer, which would
- * defeat the editor's lazy-load gate. All four category keys must be false;
+ * defeat the editor's lazy-load gate. All five category keys must be false;
  * keep this check in sync with the quality package.
  */
 export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
@@ -27,7 +27,8 @@ export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
     options.accessibility === false &&
     options.structure === false &&
     options.links === false &&
-    options.deliverability === false
+    options.deliverability === false &&
+    options.compatibility === false
   );
 }
 
@@ -57,13 +58,13 @@ interface Loaded {
 
 /**
  * Live template linting. Runs every linter in `@templatical/quality`
- * (accessibility + structure + links + deliverability) on every content change,
+ * (accessibility + structure + links + deliverability + compatibility) on every content change,
  * debounced 500ms. Lazy-imports the quality package on first call so the
  * OSS bundle pays nothing for the chunk until linting actually starts.
  *
  * When all linting is turned off — either `options.disabled === true` or
  * every per-tool key (`accessibility`, `structure`, `links`,
- * `deliverability`) is set to
+ * `deliverability`, `compatibility`) is set to
  * `false` — the dynamic import is skipped entirely and `issues` stays
  * empty. Saves the chunk download for consumers that turn the linter off.
  */

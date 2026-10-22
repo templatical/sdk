@@ -1,6 +1,6 @@
 # Qualität
 
-`@templatical/quality` ist das Dachpaket für die Template-Qualitäts-Werkzeuge von Templatical — deterministische, ausschließlich JSON-basierte Linter, die Autorenfehler im Editor und in Headless- / CI-Prüfungen erkennen. MIT-lizenziert, ESM, kein Vue, kein DOM.
+`@templatical/quality` ist das Dachpaket für die Template-Qualitäts-Werkzeuge von Templatical — deterministische Linter, die Autorenfehler im Editor und in Headless- / CI-Prüfungen erkennen. MIT-lizenziert, ESM, kein Vue, kein DOM.
 
 ## Linter
 
@@ -10,14 +10,15 @@
 | **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten, Heros, die als normale Sektion dargestellt werden, Hintergrundbilder, die Outlook unter Windows nicht übereinanderlegen kann | überwiegend error; einige warning |
 | **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, relative URLs, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 | **[Zustellbarkeit](./deliverability/)** | Abweichender URL-Linktext, URL-Kürzer, IP-Links und bildlastige E-Mails mit wenig Text | warning oder info |
+| **[Kompatibilität](./compatibility/)** | Nicht unterstütztes durchgereichtes HTML und CSS sowie kompilierte Gmail-Größe | warning oder info |
 
-Alle vier Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`, `deliverability`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
+Alle fünf Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
 
-**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle vier Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links, dann Zustellbarkeit). Greifen Sie standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Um eine Kategorie zu überspringen, setzen Sie ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
+**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle fünf Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links, dann Zustellbarkeit, dann Kompatibilität). Greifen Sie standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Um eine Kategorie zu überspringen, setzen Sie ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
 
 ## Architektur
 
-<svg viewBox="0 0 640 330" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
+<svg viewBox="0 0 640 370" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
   <defs>
     <marker id="ah-quality-de" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">
       <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
@@ -40,22 +41,25 @@ Alle vier Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe 
   <rect x="230" y="110" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="124" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintDeliverability()</text>
   <text x="320" y="136" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">deliverability.* Regeln</text>
+  <rect x="230" y="146" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="160" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintCompatibility()</text>
+  <text x="320" y="172" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">compat.* rules</text>
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality-de)"/>
   <rect x="450" y="10" width="180" height="80" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="10"/>
   <text x="540" y="36" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600" fill="#1e293b" text-anchor="middle">LintIssue[]</text>
-  <text x="540" y="58" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Schweregrad · Nachricht ·</text>
-  <text x="540" y="74" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">blockId · optionaler fix</text>
-  <line x1="30" y1="165" x2="610" y2="165" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 4"/>
-  <text x="320" y="190" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">Verwendet von</text>
-  <rect x="40" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="120" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Issues-Panel</text>
-  <text x="120" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Editor-Sidebar</text>
-  <rect x="240" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="320" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Canvas-Badges</text>
-  <text x="320" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Symbole pro Block</text>
-  <rect x="440" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="520" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Headless / CI</text>
-  <text x="520" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">gespeicherte Templates</text>
+  <text x="540" y="58" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Schweregrad · Nachricht · Vorschlag ·</text>
+  <text x="540" y="74" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">reference · blockId · optionaler fix</text>
+  <line x1="30" y1="205" x2="610" y2="205" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="320" y="230" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">Verwendet von</text>
+  <rect x="40" y="255" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="120" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Issues-Panel</text>
+  <text x="120" y="299" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Editor-Sidebar</text>
+  <rect x="240" y="255" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="320" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Canvas-Badges</text>
+  <text x="320" y="299" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Symbole pro Block</text>
+  <rect x="440" y="255" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="520" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Headless / CI</text>
+  <text x="520" y="299" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">gespeicherte Templates</text>
 </svg>
 
 Das Paket trifft keine UI-Annahmen. Das `useTemplateLint`-Composable des Editors lädt `@templatical/quality` per dynamischem Import nach, ruft alle Linter über den einzelnen `lintTemplate`-Aufruf bei (entprellten) Inhaltsänderungen auf und speist den zusammengeführten Issue-Strom in den **Issues**-Sidebar-Tab und die Per-Block-Canvas-Badges. `applyFix(issue)` führt jeden Patch über den bestehenden Block-Update-Pfad des Editors aus — Fixes landen so als ordentliche Undo-Einträge.
@@ -109,13 +113,14 @@ const editor = init({
       nonProductionHosts: ["*.staging.*", "*.preview.*"],
     },
     deliverability: { thresholds: { minTextLength: 250 } },
+    compatibility: { thresholds: { maxHtmlBytes: 92_160 } },
   },
 });
 ```
 
 [Im Playground öffnen](https://play.templatical.com/scenes/issues)
 
-Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`, `deliverability`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
+Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
 
 Setzen Sie einen einzelnen Linter auf `false`, um nur dessen Regeln auszuschalten:
 
@@ -125,7 +130,7 @@ init({ container: "#editor", lint: { links: false } });
 
 ## Schnellzugriff
 
-- [Optionen](./options) — `disabled`, `locale`, pro-Tool-Namensräume `accessibility` / `structure` / `links` / `deliverability`.
+- [Optionen](./options) — `disabled`, `locale`, pro-Tool-Namensräume `accessibility` / `structure` / `links` / `deliverability` / `compatibility`.
 - [Schweregrade & Fixes](./severity-and-fixes) — Schweregrad-Modell + wie Auto-Fix-Patches im Editor landen.
 - [Headless-Nutzung](./headless-usage) — `lintTemplate` + Validierung gespeicherter Templates in CI / Server-Save-Handlern.
 - [Lokalen beitragen](./contributing-locales) — Regel-Nachrichten + Vague-Text-Dictionaries hinzufügen.
@@ -133,3 +138,4 @@ init({ container: "#editor", lint: { links: false } });
 - [Struktur-Linter](./structure/) — was er erkennt, Regelkatalog.
 - [Links-Linter](./links/) — was er erkennt, Regelkatalog.
 - [Zustellbarkeits-Linter](./deliverability/) — Inhaltsmuster und Regelkatalog.
+- [Kompatibilitäts-Linter](./compatibility/) — Client-Support für durchgereichte Inhalte und kompilierte Größe.

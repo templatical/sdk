@@ -1,4 +1,5 @@
 import en from "./en";
+import { formatMessagePair } from "../../format-message";
 
 export type DeliverabilityMessageMap = typeof en;
 export type DeliverabilityRuleMessageId = keyof DeliverabilityMessageMap;
@@ -29,12 +30,8 @@ export function formatDeliverabilityMessage(
   locale: string,
   ruleId: DeliverabilityRuleMessageId,
   params?: Record<string, string | number>,
-): string {
+): { message: string; suggestion: string } {
   const map = getDeliverabilityMessages(locale);
   const template = map[ruleId] ?? en[ruleId];
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
-    const value = params[key];
-    return value === undefined ? `{${key}}` : String(value);
-  });
+  return formatMessagePair(template, params);
 }

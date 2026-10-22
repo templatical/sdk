@@ -813,6 +813,12 @@ const ptBR: typeof en = {
     emptyState: "Nenhum problema — tudo certo.",
     badgeError: "Possui erros",
     badgeWarning: "Possui avisos",
+    checkSize: "Verificar tamanho",
+    checkingSize: "Verificando tamanho…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "O conteúdo mudou. Verifique o tamanho novamente.",
+    sizeError: "Não foi possível verificar o tamanho: {error}",
+    learnMore: "Saiba mais",
     issueCountTooltip: "{count} problema(s)",
   },
 

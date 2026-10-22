@@ -2,6 +2,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.missing-preheader",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#template-level",
   severity: "info",
 };
 

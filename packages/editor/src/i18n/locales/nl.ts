@@ -745,6 +745,12 @@ const nl: typeof en = {
     emptyState: "Geen problemen — ziet er goed uit.",
     badgeError: "Bevat fouten",
     badgeWarning: "Bevat waarschuwingen",
+    checkSize: "Grootte controleren",
+    checkingSize: "Grootte wordt gecontroleerd…",
+    sizeResult: "HTML: {size} KB",
+    sizeOutdated: "Inhoud gewijzigd. Controleer de grootte opnieuw.",
+    sizeError: "Grootte kon niet worden gecontroleerd: {error}",
+    learnMore: "Meer informatie",
     issueCountTooltip: "{count} probleem(en)",
   },
   smallScreen: {

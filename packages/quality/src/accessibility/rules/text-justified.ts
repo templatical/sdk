@@ -4,6 +4,7 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.text-justified",
+  reference: "https://www.w3.org/WAI/WCAG21/Understanding/visual-presentation",
   severity: "warning",
 };
 

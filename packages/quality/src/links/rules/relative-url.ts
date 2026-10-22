@@ -3,6 +3,8 @@ import { walkUrls } from "../../url-walker";
 
 export const meta: RuleMeta = {
   id: "link.relative-url",
+  reference:
+    "https://docs.templatical.com/quality/links/rule-catalog#unsupported-protocols",
   severity: "warning",
 };
 
