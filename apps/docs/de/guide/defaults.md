@@ -185,22 +185,24 @@ import {
   BUTTON_BLOCK_DEFAULTS,
 } from '@templatical/types';
 
-// Die Standardwerte für einen einzelnen Blocktyp inspizieren
+// Inspect the defaults for a single block type
 console.log(TITLE_BLOCK_DEFAULTS);
-// { content: '<p>Enter your title</p>', level: 2, color: '#1a1a1a', ... }
+// { content: '<p>Enter your title</p>', level: 2, textAlign: 'left' }
 
-// Template-Standardwerte inspizieren
+// Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
 // { width: 600, backgroundColor: '#ffffff', textColor: '#1a1a1a',
 //   linkUnderline: true, fontFamily: 'Arial', locale: 'en' }
 
-// Ein benutzerdefiniertes Preset erstellen, indem die Standardwerte eines einzelnen Blocks erweitert werden
+// Build a custom preset by extending a single block's defaults
 const myButtonDefaults = {
   ...BUTTON_BLOCK_DEFAULTS,
   backgroundColor: '#ff6600',
   borderRadius: 8,
 };
 ```
+
+Ein neuer Titel erbt `textColor` des Dokuments; `TITLE_BLOCK_DEFAULTS` setzt keinen `color`-Wert.
 
 ### Verfügbare Konstanten
 
@@ -226,7 +228,7 @@ const myButtonDefaults = {
 | Konstante | Beschreibung |
 |----------|-------------|
 | `DEFAULT_BLOCK_DEFAULTS` | Alle Blocktyp-Standardwerte in einem einzigen Objekt (Schlüssel entsprechen der `BlockDefaults`-Schnittstelle) |
-| `DEFAULT_TEMPLATE_DEFAULTS` | Standardwerte der Template-Einstellungen (`width`, `backgroundColor`, `fontFamily`) |
+| `DEFAULT_TEMPLATE_DEFAULTS` | Standardwerte der Template-Einstellungen (`width`, `backgroundColor`, `textColor`, `linkUnderline`, `fontFamily`, `locale`) |
 
 Diese Konstanten sind die einzige Quelle der Wahrheit, die intern von den Factory-Funktionen verwendet wird. Wenn Sie nur einige Eigenschaften überschreiben müssen, brauchen Sie sie nicht zu referenzieren — übergeben Sie einfach Ihre Überschreibungen an `blockDefaults` und sie werden mit diesen Werten deep-merged.
 

@@ -18,7 +18,7 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Überschriften, Titel | [Title](#title) | Überschriften mit fester Größe (H1-H4) mit Formatierung auf Blockebene |
 | Fließtext, Absätze | [Paragraph](#paragraph) | Rich Text mit Inline-Formatierung über TipTap |
 | Fotos, Banner, Logos | [Image](#image) | Optionales Link-Wrapping, responsive Breite |
-| Call-to-Action | [Button](#button) | Bulletproof-Schaltflächen, die in allen E-Mail-Clients funktionieren |
+| Call-to-Action | [Button](#button) | Bulletproof-Schaltflächen, über `mj-button` als HTML-Tabellen gerendert |
 | Mehrspaltiges Layout | [Section](#section) | Der einzige Block, der andere Blöcke enthält |
 | Visuelle Trennung | [Divider](#divider) | Horizontale Linie mit Stiloptionen |
 | Vertikaler Abstand | [Spacer](#spacer) | Leerraum zwischen Blöcken |

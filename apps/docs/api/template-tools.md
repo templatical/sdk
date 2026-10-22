@@ -17,7 +17,7 @@ Every command follows the same shape:
 npx -y @templatical/template-tools <command> [options]
 ```
 
-Add `--json` to any command for a single parseable JSON document on stdout. Installed as a project dependency instead, the binary is named `templatical`.
+Add `--json` for machine-readable result output on stdout when a command produces a result; usage and tool errors (2, 3) go to stderr without a result document. Installed as a project dependency instead, the binary is named `templatical`.
 
 **Pin an exact version in CI.** The CLI and the block model it validates against (`@templatical/types`) are released together, so an unpinned call always matches itself — but it can grow stricter between two runs with no change of yours to explain it. Pinning makes a version bump a reviewable diff instead.
 
@@ -130,10 +130,10 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 
 | Code | Meaning |
 |---|---|
-| `0` | Success. `validate` may still report `warning`/`info` lint findings — see below. |
-| `1` | The template is invalid: a structural error, or a quality-lint finding of severity `error`. For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
-| `2` | Usage error — bad flags, a missing argument, an unreadable or unparseable input file. |
-| `3` | An optional dependency isn't installed. The error message names the exact install command. |
+| `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
+| `1` | Invalid structure or any `severity: "error"` lint issue (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, or an unexpected internal error. |
+| `3` | A missing optional dependency. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure
 It means the CLI did its job and hit an optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
@@ -141,11 +141,11 @@ It means the CLI did its job and hit an optional piece it can't do without — t
 
 ## Reading `--json`
 
-Every command's `--json` output is exactly one parseable document on stdout — nothing else is ever written there in that mode. Diagnostics, progress notes and human-readable errors all go to stderr instead, in both modes, so `<command> --json | jq .` is always safe to pipe.
+When a command produces a result, `--json` emits a parseable result document on stdout. Usage and tool errors (2, 3) go to stderr without a result document. Diagnostics and progress notes also go to stderr; check the exit code before consuming stdout.
 
 `validate --json` emits `{ valid, errors, issues }`. `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
+`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info never change the exit code. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
 
 ## Using it in CI
 

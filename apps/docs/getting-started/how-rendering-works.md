@@ -70,7 +70,7 @@ Templatical separates template editing from template rendering. The editor produ
 
 ## MJML
 
-[MJML](https://mjml.io) is an open-source markup language designed specifically for email. Email HTML is notoriously difficult. Every email client renders HTML differently -- Outlook uses Microsoft Word's rendering engine, Gmail strips `<style>` tags, Apple Mail supports modern CSS but Yahoo doesn't. Writing HTML that works everywhere requires:
+[MJML](https://mjml.io) is an open-source markup language designed specifically for email. Email HTML is notoriously difficult. Email clients render HTML differently -- Outlook uses Microsoft Word's rendering engine, Gmail strips `<style>` tags, Apple Mail supports modern CSS but Yahoo doesn't. Writing HTML that works everywhere requires:
 
 - Nested tables for layout (flexbox and grid don't work)
 - Inline styles on every element (external/embedded stylesheets are stripped)

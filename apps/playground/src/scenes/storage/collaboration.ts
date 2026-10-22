@@ -33,16 +33,18 @@ export const collaboration: Scene = {
   snippet: `import { init } from "@templatical/editor";
 import "@templatical/editor/style.css";
 
-// replace with your API: refusals keep the body's code, holder and holders
+// replace with your API: refusals keep statusCode, code, holder and holders
 async function api(path, init = {}) {
   const res = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...init.headers },
   });
   const body = await res.json();
-  if (!res.ok) throw Object.assign(new Error(body.message), body);
+  if (!res.ok) throw Object.assign(new Error(body.message), body, { statusCode: res.status });
   return body;
 }
+
+let sessionId = "";
 
 const editor = await init({
   container: document.getElementById("editor"),
@@ -60,25 +62,35 @@ const editor = await init({
   },
   collaboration: {
     // your realtime client: call handlers.onBatch, onLock, onMembers, …
-    join: (templateId, session, handlers) =>
-      realtime.join(templateId, session, handlers),
+    join: (templateId, session, handlers) => {
+      sessionId = session.sessionId;
+      return realtime.join(templateId, session, handlers);
+    },
     submit: (templateId, batch) =>
       api(\`/api/templates/\${templateId}/operations\`, {
         method: "POST",
+        headers: { "X-Session-Id": sessionId },
         body: JSON.stringify(batch),
       }),
     operationsAfter: (templateId, revision) =>
-      api(\`/api/templates/\${templateId}/operations?after=\${revision}\`),
+      api(\`/api/templates/\${templateId}/operations?after=\${revision}\`, {
+        headers: { "X-Session-Id": sessionId },
+      }),
     acquireLock: (templateId, blockId) =>
       api(\`/api/templates/\${templateId}/locks\`, {
         method: "POST",
+        headers: { "X-Session-Id": sessionId },
         body: JSON.stringify({ blockId }),
       }),
     renewLock: (templateId, blockId) =>
-      api(\`/api/templates/\${templateId}/locks/\${blockId}\`, { method: "PUT" }),
+      api(\`/api/templates/\${templateId}/locks/\${blockId}\`, {
+        method: "PUT",
+        headers: { "X-Session-Id": sessionId },
+      }),
     releaseLock: async (templateId, blockId) => {
       await fetch(\`/api/templates/\${templateId}/locks/\${blockId}\`, {
         method: "DELETE",
+        headers: { "X-Session-Id": sessionId },
         keepalive: true,
       });
     },

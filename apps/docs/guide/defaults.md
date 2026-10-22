@@ -186,7 +186,7 @@ import {
 
 // Inspect the defaults for a single block type
 console.log(TITLE_BLOCK_DEFAULTS);
-// { content: '<p>Enter your title</p>', level: 2, color: '#1a1a1a', ... }
+// { content: '<p>Enter your title</p>', level: 2, textAlign: 'left' }
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
@@ -200,6 +200,8 @@ const myButtonDefaults = {
   borderRadius: 8,
 };
 ```
+
+A new title inherits the document's `textColor`; `TITLE_BLOCK_DEFAULTS` does not set `color`.
 
 ### Available Constants
 
@@ -225,7 +227,7 @@ const myButtonDefaults = {
 | Constant | Description |
 |----------|-------------|
 | `DEFAULT_BLOCK_DEFAULTS` | All block type defaults in a single object (keys match `BlockDefaults` interface) |
-| `DEFAULT_TEMPLATE_DEFAULTS` | Template settings defaults (`width`, `backgroundColor`, `fontFamily`) |
+| `DEFAULT_TEMPLATE_DEFAULTS` | Template settings defaults (`width`, `backgroundColor`, `textColor`, `linkUnderline`, `fontFamily`, `locale`) |
 
 These constants are the single source of truth used internally by the factory functions. If you only need to override a few properties, you don't need to reference them — just pass your overrides to `blockDefaults` and they'll be deep-merged with these values.
 

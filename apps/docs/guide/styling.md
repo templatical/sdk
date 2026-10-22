@@ -117,6 +117,9 @@ const editor = await init({
     settings: {
       width: 640,
       backgroundColor: '#f8fafc',
+      textColor: '#1a1a1a',
+      linkUnderline: true,
+      locale: 'en',
       fontFamily: 'Inter, system-ui, sans-serif',
     },
     blocks: [],

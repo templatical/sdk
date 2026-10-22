@@ -104,3 +104,28 @@ describe("api/types.md stays aligned with @templatical/types", () => {
     expect(stringUnionMembers(de, "BlockType").sort()).toEqual(expected);
   });
 });
+
+describe("block interface fields, optionality and types", () => {
+  function fields(src: string, name: string): string[] {
+    const body = braceBody(
+      stripComments(src),
+      new RegExp(`interface ${name} extends BaseBlock\\s*\\{`),
+    );
+    return body
+      .split(";")
+      .map((field) => field.replaceAll("'", '\"').replace(/\s+/g, ""))
+      .filter(Boolean)
+      .sort();
+  }
+
+  it.each(["TitleBlock", "ParagraphBlock", "SectionBlock"])(
+    "%s matches source in EN and DE",
+    (name) => {
+      const expected = fields(readTypes("blocks.ts"), name);
+      expect(expected.length).toBeGreaterThan(2);
+      for (const rel of ["api/types.md", "de/api/types.md"]) {
+        expect.soft(fields(readDocs(rel), name), rel).toEqual(expected);
+      }
+    },
+  );
+});

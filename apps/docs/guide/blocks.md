@@ -18,7 +18,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Headings, titles | [Title](#title) | Fixed-size headings (H1-H4) with block-level formatting |
 | Body text, paragraphs | [Paragraph](#paragraph) | Rich text with inline formatting via TipTap |
 | Photos, banners, logos | [Image](#image) | Optional link wrapping, responsive width |
-| Call-to-action | [Button](#button) | Bulletproof buttons that work in all email clients |
+| Call-to-action | [Button](#button) | Bulletproof buttons rendered through `mj-button` as HTML tables |
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |

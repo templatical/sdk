@@ -744,13 +744,15 @@ An operation is one change to a template: add, move, delete or update a block, u
 ## The six operations
 
 ```json
-{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>"}, "parent": null, "after": "b1"}
+{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>", "styles": {"padding": {"top": 0, "right": 0, "bottom": 0, "left": 0}}}, "parent": null, "after": "b1"}
 {"op": "moveBlock",      "blockId": "b2", "parent": {"sectionId": "s1", "column": 0}, "after": null}
 {"op": "deleteBlock",    "blockId": "b2"}
 {"op": "updateBlock",    "blockId": "b1", "set": {"content": "<p>Hello</p>"}, "unset": ["visibility"]}
-{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheader"]}
-{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600}}}
+{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheaderText"]}
+{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600, "backgroundColor": "#ffffff", "textColor": "#1a1a1a", "linkUnderline": true, "fontFamily": "Arial", "locale": "en"}}}
 ```
+
+Engine acceptance of an operation does not replace schema validation: run `template-tools validate` on the resulting template.
 
 A batch is a list of operations. It applies in order, each operation seeing the ones before it, and all or nothing: when one is refused, none of the batch applies.
 
@@ -1136,7 +1138,7 @@ Every command follows the same shape:
 npx -y @templatical/template-tools <command> [options]
 ```
 
-Add `--json` to any command for a single parseable JSON document on stdout. Installed as a project dependency instead, the binary is named `templatical`.
+Add `--json` for machine-readable result output on stdout when a command produces a result; usage and tool errors (2, 3) go to stderr without a result document. Installed as a project dependency instead, the binary is named `templatical`.
 
 **Pin an exact version in CI.** The CLI and the block model it validates against (`@templatical/types`) are released together, so an unpinned call always matches itself — but it can grow stricter between two runs with no change of yours to explain it. Pinning makes a version bump a reviewable diff instead.
 
@@ -1249,10 +1251,10 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 
 | Code | Meaning |
 |---|---|
-| `0` | Success. `validate` may still report `warning`/`info` lint findings — see below. |
-| `1` | The template is invalid: a structural error, or a quality-lint finding of severity `error`. For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
-| `2` | Usage error — bad flags, a missing argument, an unreadable or unparseable input file. |
-| `3` | An optional dependency isn't installed. The error message names the exact install command. |
+| `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
+| `1` | Invalid structure or any `severity: "error"` lint issue (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, or an unexpected internal error. |
+| `3` | A missing optional dependency. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure
 It means the CLI did its job and hit an optional piece it can't do without — the `mjml` package for `render --format html`, or a converter package for `import`. Handle it differently from `1`/`2` in any script or CI step you write: `3` means "install one thing and re-run," not "something is wrong with this template."
@@ -1260,11 +1262,11 @@ It means the CLI did its job and hit an optional piece it can't do without — t
 
 ## Reading `--json`
 
-Every command's `--json` output is exactly one parseable document on stdout — nothing else is ever written there in that mode. Diagnostics, progress notes and human-readable errors all go to stderr instead, in both modes, so `<command> --json | jq .` is always safe to pipe.
+When a command produces a result, `--json` emits a parseable result document on stdout. Usage and tool errors (2, 3) go to stderr without a result document. Diagnostics and progress notes also go to stderr; check the exit code before consuming stdout.
 
 `validate --json` emits `{ valid, errors, issues }`. `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-**The thing this gets people:** `issues.length > 0` is not "the template failed." Most rules default to `warning` or `info` and are advisory only. A handful — missing image `alt` text, a `javascript:` URL, a duplicate block ID, low-contrast text, and a few more — default to `error`, and those *do* fail the command: `validate` already computed this for you, which is exactly what the exit code is for (`1` for a structural failure or any `severity: "error"` issue, `0` otherwise). A CI script that fails the build because the `issues` array is non-empty will reject templates the command itself considers passing. Trust the exit code — or the top-level `valid` field, if you want it in-process — over hand-rolling an "any issue fails" check against `issues`.
+`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info never change the exit code. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
 
 ## Using it in CI
 
@@ -1550,12 +1552,14 @@ See [Blocks Guide](/guide/blocks) for detailed descriptions of each block type.
 ```ts
 interface TitleBlock extends BaseBlock {
   type: 'title';
-  content: string;          // HTML content
-  level: 1 | 2 | 3 | 4;   // H1=36px, H2=28px, H3=22px, H4=18px
-  color: string;
+  content: string;
+  level: HeadingLevel;
+  color?: string;
   textAlign: 'left' | 'center' | 'right';
   fontFamily?: string;
 }
+
+type HeadingLevel = 1 | 2 | 3 | 4;
 ```
 
 ### ParagraphBlock
@@ -1563,7 +1567,8 @@ interface TitleBlock extends BaseBlock {
 ```ts
 interface ParagraphBlock extends BaseBlock {
   type: 'paragraph';
-  content: string;          // HTML content (all formatting is inline via TipTap)
+  content: string;
+  paragraphSpacing?: number;
 }
 ```
 
@@ -1621,12 +1626,20 @@ Container for multi-column layouts.
 interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
-  border?: BorderValue;     // absent: no border
-  backgroundImage?: BackgroundImage; // absent: no image; styles.backgroundColor is its fallback
-  hero?: SectionHero;       // absent: a regular section; applies with one column and an image
-  children: Block[][];      // Array of columns, each containing blocks
-  stackOnMobile?: boolean;  // absent/true: columns stack on mobile (MJML default).
-                            // false: rendered as <mj-group> so they stay side-by-side.
+  children: Block[][];
+  stackOnMobile?: boolean;
+  borderRadius?: BorderRadiusValue;
+  border?: BorderValue;
+  backgroundImage?: BackgroundImage;
+  hero?: SectionHero;
+  wrapper?: SectionWrapper;
+}
+
+interface SectionWrapper {
+  backgroundColor?: string;
+  padding?: SpacingValue;
+  borderRadius?: BorderRadiusValue;
+  backgroundImage?: BackgroundImage;
 }
 
 type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
@@ -2091,30 +2104,42 @@ Give the editor a collaboration provider and several people can edit one templat
 ```ts
 import { init } from '@templatical/editor';
 
+let sessionId = '';
+
 const editor = await init({
   container: '#editor',
   user: { id: 'u_7', name: 'Ada Lovelace' },
   templates: myTemplatesProvider, // `load` returns the template's `revision`
   collaboration: {
-    join: (templateId, session, handlers) =>
-      myRealtime.join(templateId, session, handlers),
+    join: (templateId, session, handlers) => {
+      sessionId = session.sessionId;
+      return myRealtime.join(templateId, session, handlers);
+    },
     submit: (templateId, batch) =>
       api(`/api/templates/${templateId}/operations`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify(batch),
       }),
     operationsAfter: (templateId, revision) =>
-      api(`/api/templates/${templateId}/operations?after=${revision}`),
+      api(`/api/templates/${templateId}/operations?after=${revision}`, {
+        headers: { 'X-Session-Id': sessionId },
+      }),
     acquireLock: (templateId, blockId) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify({ blockId }),
       }),
     renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, { method: 'PUT' }),
+      api(`/api/templates/${templateId}/locks/${blockId}`, {
+        method: 'PUT',
+        headers: { 'X-Session-Id': sessionId },
+      }),
     releaseLock: async (templateId, blockId) => {
       await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
         method: 'DELETE',
+        headers: { 'X-Session-Id': sessionId },
         keepalive: true,
       });
     },
@@ -2124,7 +2149,9 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`api` is your own fetch helper. When a request is refused, it must reject with an error that keeps the response's `code`, `holder` and `holders` (see [Refusals](#refusals)).
+`api` is your own fetch helper; a refused request must reject with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
+
+The backend combines `X-Session-Id` with the authenticated user to identify the lock owner.
 
 ## What the editor does
 
@@ -2202,7 +2229,7 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 ### Refusals
 
-The editor reads three fields off a rejected promise: `code`, and `holder` or `holders`. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
+The editor reads `statusCode` for retry classification, plus `code` and `holder` or `holders` for refusals. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
 
 | `code` | From | The editor |
 |---|---|---|
@@ -6194,7 +6221,7 @@ Templatical separates template editing from template rendering. The editor produ
 
 ## MJML
 
-[MJML](https://mjml.io) is an open-source markup language designed specifically for email. Email HTML is notoriously difficult. Every email client renders HTML differently -- Outlook uses Microsoft Word's rendering engine, Gmail strips `<style>` tags, Apple Mail supports modern CSS but Yahoo doesn't. Writing HTML that works everywhere requires:
+[MJML](https://mjml.io) is an open-source markup language designed specifically for email. Email HTML is notoriously difficult. Email clients render HTML differently -- Outlook uses Microsoft Word's rendering engine, Gmail strips `<style>` tags, Apple Mail supports modern CSS but Yahoo doesn't. Writing HTML that works everywhere requires:
 
 - Nested tables for layout (flexbox and grid don't work)
 - Inline styles on every element (external/embedded stylesheets are stripped)
@@ -7159,7 +7186,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Headings, titles | [Title](#title) | Fixed-size headings (H1-H4) with block-level formatting |
 | Body text, paragraphs | [Paragraph](#paragraph) | Rich text with inline formatting via TipTap |
 | Photos, banners, logos | [Image](#image) | Optional link wrapping, responsive width |
-| Call-to-action | [Button](#button) | Bulletproof buttons that work in all email clients |
+| Call-to-action | [Button](#button) | Bulletproof buttons rendered through `mj-button` as HTML tables |
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
@@ -8258,7 +8285,7 @@ import {
 
 // Inspect the defaults for a single block type
 console.log(TITLE_BLOCK_DEFAULTS);
-// { content: '<p>Enter your title</p>', level: 2, color: '#1a1a1a', ... }
+// { content: '<p>Enter your title</p>', level: 2, textAlign: 'left' }
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
@@ -8272,6 +8299,8 @@ const myButtonDefaults = {
   borderRadius: 8,
 };
 ```
+
+A new title inherits the document's `textColor`; `TITLE_BLOCK_DEFAULTS` does not set `color`.
 
 ### Available Constants
 
@@ -8297,7 +8326,7 @@ const myButtonDefaults = {
 | Constant | Description |
 |----------|-------------|
 | `DEFAULT_BLOCK_DEFAULTS` | All block type defaults in a single object (keys match `BlockDefaults` interface) |
-| `DEFAULT_TEMPLATE_DEFAULTS` | Template settings defaults (`width`, `backgroundColor`, `fontFamily`) |
+| `DEFAULT_TEMPLATE_DEFAULTS` | Template settings defaults (`width`, `backgroundColor`, `textColor`, `linkUnderline`, `fontFamily`, `locale`) |
 
 These constants are the single source of truth used internally by the factory functions. If you only need to override a few properties, you don't need to reference them — just pass your overrides to `blockDefaults` and they'll be deep-merged with these values.
 
@@ -12627,6 +12656,9 @@ const editor = await init({
     settings: {
       width: 640,
       backgroundColor: '#f8fafc',
+      textColor: '#1a1a1a',
+      linkUnderline: true,
+      locale: 'en',
       fontFamily: 'Inter, system-ui, sans-serif',
     },
     blocks: [],
