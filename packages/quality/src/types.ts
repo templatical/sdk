@@ -36,7 +36,7 @@ export interface LintThresholds {
 
 /**
  * Per-rule severity override. Set a rule to `'off'` to disable it.
- * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`)
+ * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`)
  * so a value copied from `LintIssue.ruleId` pastes straight in.
  */
 export type RuleOverrides = Record<string, Severity>;
@@ -67,6 +67,22 @@ export interface LinksLintOptions {
   nonProductionHosts?: string[];
 }
 
+export interface DeliverabilityThresholds {
+  /** Visible characters below which `deliverability.low-text` fires. */
+  minTextLength: number;
+}
+
+export const DEFAULT_DELIVERABILITY_THRESHOLDS: DeliverabilityThresholds = {
+  minTextLength: 200,
+};
+
+export interface DeliverabilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<DeliverabilityThresholds>;
+  /** Hosts treated as URL shorteners. Replaces DEFAULT_SHORTENER_HOSTS; spread the default to extend it. */
+  shortenerHosts?: string[];
+}
+
 export interface LintOptions {
   /**
    * Fully disable linting. When true, the editor skips lazy-loading the
@@ -90,10 +106,20 @@ export interface LintOptions {
    * linter without enumerating its rules.
    */
   links?: false | LinksLintOptions;
+  /**
+   * Deliverability linter config. Set to `false` to disable the whole
+   * `lintDeliverability` linter without enumerating its rules.
+   */
+  deliverability?: false | DeliverabilityLintOptions;
 }
 
 export interface ResolvedLinksOptions {
   nonProductionHosts: string[];
+}
+
+export interface ResolvedDeliverabilityOptions {
+  minTextLength: number;
+  shortenerHosts: string[];
 }
 
 export interface ResolvedOptions {
@@ -101,6 +127,7 @@ export interface ResolvedOptions {
   rules: RuleOverrides;
   thresholds: LintThresholds;
   links: ResolvedLinksOptions;
+  deliverability: ResolvedDeliverabilityOptions;
   /** Returns the effective severity for a rule (override or default). */
   severity: (ruleId: string) => Severity;
 }

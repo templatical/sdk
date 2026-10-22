@@ -49,6 +49,13 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Rule catalog", link: "/quality/links/rule-catalog" },
       ],
     },
+    {
+      text: "Deliverability",
+      items: [
+        { text: "Overview", link: "/quality/deliverability/" },
+        { text: "Rule catalog", link: "/quality/deliverability/rule-catalog" },
+      ],
+    },
   ],
   "/": [
     {
@@ -231,6 +238,13 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Überblick", link: "/de/quality/links/" },
         { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
+      ],
+    },
+    {
+      text: "Zustellbarkeit",
+      items: [
+        { text: "Überblick", link: "/de/quality/deliverability/" },
+        { text: "Regelkatalog", link: "/de/quality/deliverability/rule-catalog" },
       ],
     },
   ],

@@ -4,7 +4,7 @@ description: The four-level severity model (error, warning, info, off) shared by
 
 # Severity & fixes
 
-Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability` together.
 
 ## Severity model
 
@@ -17,7 +17,7 @@ Every rule emits a `LintIssue` with one of four severities:
 | `info` | Recommendation; not a defect. | No canvas badge, "Info" group. |
 | `off` | Override — disables the rule entirely. | Nothing. |
 
-Severity is configurable per rule via the linter's own `rules` map — `accessibility.rules`, `structure.rules`, `links.rules`. Each rule's documented default is just the baseline.
+Severity is configurable per rule via the linter's own `rules` map — `accessibility.rules`, `structure.rules`, `links.rules`, `deliverability.rules`. Each rule's documented default is just the baseline.
 
 ```ts
 lintAccessibility(content, {
@@ -67,5 +67,6 @@ See the **Auto-fix** column in each catalog. Today's auto-fixable rules:
 - Accessibility — `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`, `a11y.text-justified`.
 - Structure — `structure.empty-section`.
 - Links — none. Every link rule is destructive to auto-fix (strip the href, change the protocol) and the right answer depends on intent.
+- Deliverability — none. The right URL or text depends on the message and sender.
 
 Auto-fixes are added conservatively — only when the right answer is unambiguous. `structure.empty-column`, for example, has no auto-fix because removing an empty column requires changing the section's `columns` layout, and the right answer (merge into a sibling vs. drop the section vs. change the layout key) depends on intent.

@@ -1,6 +1,7 @@
 import type { TemplateContent } from "@templatical/types";
 import type {
   AccessibilityLintOptions,
+  DeliverabilityLintOptions,
   LinksLintOptions,
   LintIssue,
   ResolvedOptions,
@@ -10,7 +11,12 @@ import type {
   Severity,
   StructureLintOptions,
 } from "./types";
-import { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";
+import {
+  DEFAULT_A11Y_THRESHOLDS,
+  DEFAULT_DELIVERABILITY_THRESHOLDS,
+  DEFAULT_NON_PRODUCTION_HOSTS,
+} from "./types";
+import { DEFAULT_SHORTENER_HOSTS } from "./deliverability/shorteners";
 import { walkBlocks } from "./walk";
 
 export type MessageFormatter = (
@@ -86,6 +92,10 @@ export function resolveOptions(args: {
   overrides: RuleOverrides | undefined;
   thresholds: Partial<import("./types").LintThresholds> | undefined;
   nonProductionHosts: string[] | undefined;
+  deliverabilityThresholds?: Partial<
+    import("./types").DeliverabilityThresholds
+  >;
+  shortenerHosts?: string[];
 }): ResolvedOptions {
   const overrides = args.overrides ?? {};
   const thresholds = {
@@ -95,6 +105,12 @@ export function resolveOptions(args: {
   const links = {
     nonProductionHosts: args.nonProductionHosts ?? DEFAULT_NON_PRODUCTION_HOSTS,
   };
+  const deliverability = {
+    minTextLength:
+      args.deliverabilityThresholds?.minTextLength ??
+      DEFAULT_DELIVERABILITY_THRESHOLDS.minTextLength,
+    shortenerHosts: args.shortenerHosts ?? DEFAULT_SHORTENER_HOSTS,
+  };
   const locale = args.locale ?? "en";
   const rules = args.rules;
 
@@ -103,6 +119,7 @@ export function resolveOptions(args: {
     rules: overrides,
     thresholds,
     links,
+    deliverability,
     severity: (ruleId: string): Severity => {
       const override = overrides[ruleId];
       if (override !== undefined) {
@@ -112,6 +129,23 @@ export function resolveOptions(args: {
       return rule?.meta.severity ?? "warning";
     },
   };
+}
+
+/** Resolver for the deliverability linter — reads `options.deliverability`. */
+export function resolveDeliverabilityOptions(
+  locale: string | undefined,
+  tool: DeliverabilityLintOptions,
+  rules: Rule[],
+): ResolvedOptions {
+  return resolveOptions({
+    locale,
+    rules,
+    overrides: tool.rules,
+    thresholds: undefined,
+    nonProductionHosts: undefined,
+    deliverabilityThresholds: tool.thresholds,
+    shortenerHosts: tool.shortenerHosts,
+  });
 }
 
 /**

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runValidate } from "../src/cli/commands/validate";
@@ -126,5 +128,25 @@ describe("validate command", () => {
         severity: "warning",
       }),
     );
+  });
+
+  it("keeps the built CLI at exit 0 for a deliverability warning", () => {
+    const f = fixture("shortener.json", {
+      ...VALID,
+      blocks: [{
+        id: "button_1", type: "button", text: "Open the report",
+        url: "https://bit.ly/x", backgroundColor: "#1d4ed8",
+        textColor: "#ffffff", borderRadius: 6, fontSize: 16,
+        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
+        align: "center", styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+      }],
+    });
+    const result = spawnSync(process.execPath, [resolve(import.meta.dirname, "../dist/bin.js"), "validate", f, "--json"], { encoding: "utf8" });
+    expect(result.status).toBe(0);
+    const out = JSON.parse(result.stdout);
+    expect(out.valid).toBe(true);
+    expect(out.issues).toContainEqual(expect.objectContaining({
+      ruleId: "deliverability.url-shortener", severity: "warning",
+    }));
   });
 });

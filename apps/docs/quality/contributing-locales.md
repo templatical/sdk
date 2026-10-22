@@ -1,5 +1,5 @@
 ---
-description: Add a new locale's rule messages for accessibility, structure, and link rules, plus the vague-text dictionaries the accessibility linter alone uses.
+description: Add a new locale's rule messages for accessibility, structure, links, and deliverability, plus the vague-text dictionaries the accessibility linter alone uses.
 ---
 
 # Contributing locales
@@ -10,8 +10,9 @@ description: Add a new locale's rule messages for accessibility, structure, and 
 2. **Vague-text dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — phrase lists used by `a11y.link-vague-text`, `a11y.button-vague-label`, and `a11y.img-linked-no-context`.
 3. **Structure rule messages** (`src/structure/messages/{locale}.ts`) — strings for each `structure.*` issue.
 4. **Link rule messages** (`src/links/messages/{locale}.ts`) — strings for each `link.*` issue.
+5. **Deliverability rule messages** (`src/deliverability/messages/{locale}.ts`) — strings for each `deliverability.*` issue.
 
-Each set mirrors the editor's locale set. The structure and link linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
+Each set mirrors the editor's locale set. The structure, link, and deliverability linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
 
 ## File layout
 
@@ -35,11 +36,16 @@ packages/quality/src/links/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatLinkMessage(), getLinkMessages()
+
+packages/quality/src/deliverability/messages/
+  en.ts       ← source of truth
+  de.ts       ← annotated `typeof en`
+  index.ts    ← exports formatDeliverabilityMessage(), getDeliverabilityMessages()
 ```
 
 ## Adding a locale
 
-You need **three** files (or two if you're skipping the vague-text dictionary): a message map per linter and a dictionary. Drop the files and they're picked up automatically — every locale registry is built at compile time via `import.meta.glob`, so there's no map to update.
+You need one message file per linter and optionally a vague-text dictionary. Drop the files and they're picked up automatically — every locale registry is built at compile time via `import.meta.glob`, so there's no map to update.
 
 Follow the `typeof en` pattern for every file. The annotation is the contract: any missing key, extra key, or wrong type fails `pnpm run typecheck`. Runtime parity tests verify `{name}` placeholder positions match across locales.
 
@@ -117,7 +123,23 @@ const pt: typeof en = {
 export default pt;
 ```
 
-That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, and `SUPPORTED_LINK_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
+### 5. Deliverability rule messages
+
+Add `deliverability/messages/<lang>.ts` and translate every key in `en.ts`. Preserve the `{textHost}`, `{linkHost}`, `{host}`, `{count}`, and `{min}` placeholders.
+
+```ts
+import en from "./en";
+
+const pt: typeof en = {
+  ...en,
+  "deliverability.link-text-domain-mismatch":
+    "O texto mostra {textHost}, mas o link leva a {linkHost}.",
+};
+
+export default pt;
+```
+
+That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, and `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
 
 ## Phrase guidelines (vague-text dictionary)
 
@@ -131,4 +153,4 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), and `formatLinkMessage(locale, ruleId, params?)` (links) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All three fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All four fall back to English when the locale isn't bundled.

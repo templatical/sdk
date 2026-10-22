@@ -29,9 +29,11 @@ from prose.
 
 ## Lint severity
 
-`issues[]` is the quality lint — accessibility, structure, links — with severity
+`issues[]` is the quality lint — accessibility, structure, links, deliverability — with severity
 `error`, `warning` or `info`. Structural failure or any error-severity lint issue
 returns exit 1. Warnings and info never change the exit code. A missing preheader
 (`info`) is worth one mention; a `warning` is worth fixing before the user sends.
 `valid` reports structural validity only; error-severity lint can fail the command
 while `valid` remains `true` and `errors[]` stays empty.
+`deliverability.*` issues are warning or info advice in this CLI and never
+cause exit 1.

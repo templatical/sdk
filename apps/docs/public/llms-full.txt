@@ -6384,7 +6384,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
-| `@templatical/quality`         | Template linters (accessibility, structure, links) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
+| `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
 | `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
@@ -6407,7 +6407,7 @@ The editor lazy-loads three optional peers via dynamic `import()` at runtime, ga
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
-| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, and link lint in the Issues sidebar |
+| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, link, and deliverability lint in the Issues sidebar |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
 If you don't install them, the editor still mounts. Quality's Issues tab and Pusher stay off. `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
@@ -13183,7 +13183,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every accessibility rule with severity, rationale, and examples.
-- [Options](../options) — shared across both linters.
+- [Options](../options) — shared across all four linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 - [Contributing locales](../contributing-locales) — adding rule messages + vague-text dictionaries.
@@ -13259,8 +13259,9 @@ Source: https://docs.templatical.com/quality/contributing-locales
 2. **Vague-text dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — phrase lists used by `a11y.link-vague-text`, `a11y.button-vague-label`, and `a11y.img-linked-no-context`.
 3. **Structure rule messages** (`src/structure/messages/{locale}.ts`) — strings for each `structure.*` issue.
 4. **Link rule messages** (`src/links/messages/{locale}.ts`) — strings for each `link.*` issue.
+5. **Deliverability rule messages** (`src/deliverability/messages/{locale}.ts`) — strings for each `deliverability.*` issue.
 
-Each set mirrors the editor's locale set. The structure and link linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
+Each set mirrors the editor's locale set. The structure, link, and deliverability linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
 
 ## File layout
 
@@ -13284,11 +13285,16 @@ packages/quality/src/links/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatLinkMessage(), getLinkMessages()
+
+packages/quality/src/deliverability/messages/
+  en.ts       ← source of truth
+  de.ts       ← annotated `typeof en`
+  index.ts    ← exports formatDeliverabilityMessage(), getDeliverabilityMessages()
 ```
 
 ## Adding a locale
 
-You need **three** files (or two if you're skipping the vague-text dictionary): a message map per linter and a dictionary. Drop the files and they're picked up automatically — every locale registry is built at compile time via `import.meta.glob`, so there's no map to update.
+You need one message file per linter and optionally a vague-text dictionary. Drop the files and they're picked up automatically — every locale registry is built at compile time via `import.meta.glob`, so there's no map to update.
 
 Follow the `typeof en` pattern for every file. The annotation is the contract: any missing key, extra key, or wrong type fails `pnpm run typecheck`. Runtime parity tests verify `{name}` placeholder positions match across locales.
 
@@ -13366,7 +13372,23 @@ const pt: typeof en = {
 export default pt;
 ```
 
-That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, and `SUPPORTED_LINK_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
+### 5. Deliverability rule messages
+
+Add `deliverability/messages/<lang>.ts` and translate every key in `en.ts`. Preserve the `{textHost}`, `{linkHost}`, `{host}`, `{count}`, and `{min}` placeholders.
+
+```ts
+import en from "./en";
+
+const pt: typeof en = {
+  ...en,
+  "deliverability.link-text-domain-mismatch":
+    "O texto mostra {textHost}, mas o link leva a {linkHost}.",
+};
+
+export default pt;
+```
+
+That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, and `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
 
 ## Phrase guidelines (vague-text dictionary)
 
@@ -13380,7 +13402,120 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), and `formatLinkMessage(locale, ruleId, params?)` (links) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All three fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All four fall back to English when the locale isn't bundled.
+
+---
+
+# Deliverability linter
+
+Source: https://docs.templatical.com/quality/deliverability/
+
+`lintDeliverability(content, options?)` checks template JSON for mismatched link text, URL shorteners, raw IP links, and image-led emails with little visible text.
+
+These rules flag content patterns that spam filters and mailbox-provider guidelines name. They don't predict inbox placement: sender reputation, authentication and recipient engagement decide that.
+
+## API
+
+```ts
+import { lintDeliverability } from "@templatical/quality";
+
+const issues = lintDeliverability(content);
+// LintIssue[] with deliverability.* rule IDs
+```
+
+`lintTemplate(content, options?)` also runs these rules by default, after accessibility, structure and links. `link-text-domain-mismatch`, `url-shortener`, and `ip-address-url` default to `warning`; `low-text` defaults to `info`. None has an auto-fix. The [rule catalog](./rule-catalog) gives each trigger and source.
+
+## Options
+
+Set `deliverability: false` to disable the category. `DeliverabilityLintOptions` accepts `rules?: RuleOverrides`, `thresholds?: Partial<DeliverabilityThresholds>`, and `shortenerHosts?: string[]`.
+
+| Option | Default | Effect |
+|---|---|---|
+| `thresholds.minTextLength` | `200` | `deliverability.low-text` fires below this visible-character count when an image-producing block is present. |
+| `shortenerHosts` | `DEFAULT_SHORTENER_HOSTS` | Replaces the host list used by `deliverability.url-shortener`. |
+
+```ts
+import { DEFAULT_SHORTENER_HOSTS, lintDeliverability } from "@templatical/quality";
+
+const issues = lintDeliverability(content, {
+  deliverability: {
+    thresholds: { minTextLength: 250 },
+    shortenerHosts: [...DEFAULT_SHORTENER_HOSTS, "go.example.com"],
+  },
+});
+```
+
+A rule override such as `{ rules: { "deliverability.low-text": "off" } }` changes one rule without disabling the category. See [Options](../options) for the full `LintOptions` contract.
+
+## Limits
+
+The linter reads template JSON, not the sent message. It cannot predict inbox placement or inspect sender reputation, authentication, recipient engagement, unsubscribe headers or an ESP footer. It cannot inspect client compatibility, Gmail clipping, or rendered HTML size. A sending service can rewrite an href for click tracking after this check. A `custom` block suppresses `low-text` because its rendered HTML is absent from the JSON.
+
+## Check it
+
+Save this valid template as `template.json`:
+
+```json
+{"blocks":[{"id":"button_1","type":"button","text":"Open the report","url":"https://bit.ly/x","backgroundColor":"#1d4ed8","textColor":"#ffffff","borderRadius":6,"fontSize":16,"buttonPadding":{"top":14,"right":28,"bottom":14,"left":28},"align":"center","styles":{"padding":{"top":0,"right":0,"bottom":0,"left":0}}}],"settings":{"width":600,"backgroundColor":"#ffffff","textColor":"#111111","fontFamily":"Arial, sans-serif","linkUnderline":true,"locale":"en"}}
+```
+
+```bash
+npx @templatical/template-tools validate template.json --json
+```
+
+The built CLI returns exit code `0`. Its JSON output includes this issue (produced from the template above):
+
+```json
+{"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead."}
+```
+
+---
+
+# Deliverability rule catalog
+
+Source: https://docs.templatical.com/quality/deliverability/rule-catalog
+
+This catalog lists when `deliverability.link-text-domain-mismatch`, `deliverability.url-shortener`, `deliverability.ip-address-url`, and `deliverability.low-text` fire, what they skip, and why. They are advisory and have no auto-fixes. [Options](../options) can change a rule's severity or disable the category.
+
+## `deliverability.link-text-domain-mismatch`
+
+**Default severity:** `warning`.
+
+**What fires:** An anchor, button or menu-item has a whole-label URL or hostname whose site differs from its HTTP(S) destination. `example.co.uk` linked to `evil.co.uk` fires. Subdomains of one registrable domain pass; an explicit multi-part suffix list avoids treating `co.uk` as a site.
+
+**What doesn't:** A matching address label, a sentence containing a domain, image-link alt text, non-HTTP(S) hrefs, and a host with merge tags. A copy-link fallback with text equal to its href passes. ESP click tracking may rewrite the href after send and create a mismatch this JSON check cannot see.
+
+**Why it's flagged:** Rspamd's phishing module compares visible URL text with the destination and emits `PHISHED_URL` for a mismatch. [Google's sender guidelines](https://support.google.com/a/answer/81126) say body links should be visible and easy to understand. [Rspamd phishing module](https://docs.rspamd.com/modules/phishing/).
+
+## `deliverability.url-shortener`
+
+**Default severity:** `warning`.
+
+**What fires:** Any URL occurrence with a configured shortener host or its subdomain, including `bit.ly`, `www.bit.ly` and `sub.bit.ly`. `shortenerHosts` replaces the default list; spread `DEFAULT_SHORTENER_HOSTS` to extend it.
+
+**What doesn't:** Other hosts such as `notbit.ly`, non-HTTP(S) URLs, and a default host removed by a replacement list. The rule does not follow redirects or decide whether the destination is safe.
+
+**Why it's flagged:** Shortened destinations conceal where a click goes and shortener domains can appear on URL blocklists. [Rspamd's phishing examples](https://docs.rspamd.com/modules/phishing/) include a `t.co` redirect when visible text shows another site. Google's sender guidelines do not specifically ban URL shorteners.
+
+## `deliverability.ip-address-url`
+
+**Default severity:** `warning`.
+
+**What fires:** An HTTP(S) URL whose host is IPv4 or IPv6, including private IPs and all-digit IPv4 forms normalized by `URL`.
+
+**What doesn't:** `127.0.0.0/8`, `0.0.0.0` and `[::1]` (covered by `link.localhost-or-staging`), domain names, non-HTTP(S) URLs, and unparseable URLs.
+
+**Why it's flagged:** SpamAssassin names `NORMAL_HTTP_TO_IP` and `NUMERIC_HTTP_ADDR` URI tests for IP-address links. [SpamAssassin URI rules](https://svn.apache.org/repos/asf/spamassassin/branches/b2_4_0/rules/20_uri_tests.cf).
+
+## `deliverability.low-text`
+
+**Default severity:** `info`.
+
+**What fires:** A template has an image with nonempty `src`, a video, or a countdown, and fewer than `thresholds.minTextLength` visible text characters (`200` by default). Text comes from title, paragraph, HTML and table-cell content, button text, and menu-item text, including nested sections. Merge tags count as written.
+
+**What doesn't:** Templates without image-producing blocks, templates meeting the threshold, or templates with any `custom` block: its HTML is unavailable in the JSON. The rule does not evaluate display conditions or per-viewport visibility.
+
+**Why it's flagged:** SpamAssassin has `HTML_IMAGE_ONLY_*` text-byte bands and `HTML_IMAGE_RATIO_*` rules. The 200-character setting is a conservative content cue, not a conversion of those byte thresholds. Readers who block images otherwise see little content. Microsoft 365 does not use SpamAssassin; this evidence is most relevant to rule-based filters such as corporate gateways and smaller ISPs. [SpamAssassin HTML rules](https://svn.apache.org/repos/asf/spamassassin/branches/b2_6_0/rules/20_html_tests.cf).
 
 ---
 
@@ -13390,15 +13525,15 @@ Source: https://docs.templatical.com/quality/headless-usage
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
-`lintTemplate(content, options?)` runs every linter — accessibility, structure, and links — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
+`lintTemplate(content, options?)` runs every linter — accessibility, structure, links, and deliverability — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
 
 ```ts
 import { lintTemplate } from "@templatical/quality";
 
-const issues = lintTemplate(content); // a11y, then structure, then link issues
+const issues = lintTemplate(content); // a11y, then structure, then link, then deliverability issues
 ```
 
-The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false })` runs accessibility only.
+The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false, deliverability: false })` runs accessibility only.
 
 ## Validate before storing
 
@@ -13459,13 +13594,14 @@ Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The T
 
 ## Filtering by category
 
-Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`), so grouping or filtering by linter is a `startsWith` check:
+Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`), so grouping or filtering by linter is a `startsWith` check:
 
 ```ts
 const issues = lintTemplate(content);
 const a11y = issues.filter((i) => i.ruleId.startsWith("a11y."));
 const structural = issues.filter((i) => i.ruleId.startsWith("structure."));
 const links = issues.filter((i) => i.ruleId.startsWith("link."));
+const deliverability = issues.filter((i) => i.ruleId.startsWith("deliverability."));
 ```
 
 ## Custom severity policy
@@ -13513,7 +13649,7 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, and `lintLinks`, and `lintTemplate` simply fans out to all three.
+If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintTemplate` fans out to all four.
 
 ---
 
@@ -13530,14 +13666,15 @@ Source: https://docs.templatical.com/quality/
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
 | **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns, heroes that render as regular sections, background images Outlook on Windows can't layer | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
+| **[Deliverability](./deliverability/)** | Mismatched URL-shaped link text, shortener links, IP-address links, and image-led emails with little text | warning or info |
 
-All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
+All four linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`, `deliverability`); set any of them to `false` to disable that linter entirely.
 
-**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all three linters and returns the merged `LintIssue[]` (accessibility, then structure, then links). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all four linters and returns the merged `LintIssue[]` (accessibility, then structure, then links, then deliverability). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
 
 ## Architecture
 
-<svg viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
+<svg viewBox="0 0 640 330" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
   <defs>
     <marker id="ah-quality" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">
       <path d="M0,0 L8,3 L0,6" fill="#94a3b8"/>
@@ -13550,7 +13687,7 @@ All three linters return the same `LintIssue` shape and share the same options s
   <text x="100" y="76" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">from the editor or DB</text>
   <!-- Arrow -->
   <line x1="190" y1="50" x2="225" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
-  <!-- Step 2: Engines (three boxes stacked) -->
+  <!-- Step 2: Engines (four boxes stacked) -->
   <rect x="230" y="2" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="16" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
   <text x="320" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* rules</text>
@@ -13560,6 +13697,9 @@ All three linters return the same `LintIssue` shape and share the same options s
   <rect x="230" y="74" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="88" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLinks()</text>
   <text x="320" y="100" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">link.* rules</text>
+  <rect x="230" y="110" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="124" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintDeliverability()</text>
+  <text x="320" y="136" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">deliverability.* rules</text>
   <!-- Arrow -->
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
   <!-- Step 3: Output -->
@@ -13568,18 +13708,18 @@ All three linters return the same `LintIssue` shape and share the same options s
   <text x="540" y="58" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">severity · message ·</text>
   <text x="540" y="74" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">blockId · optional fix</text>
   <!-- Divider -->
-  <line x1="30" y1="130" x2="610" y2="130" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 4"/>
-  <text x="320" y="155" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">Consumed by</text>
+  <line x1="30" y1="165" x2="610" y2="165" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="320" y="190" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">Consumed by</text>
   <!-- Consumer chips -->
-  <rect x="40" y="180" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="120" y="206" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Issues panel</text>
-  <text x="120" y="224" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">editor sidebar</text>
-  <rect x="240" y="180" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="320" y="206" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Canvas badges</text>
-  <text x="320" y="224" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">per-block icons</text>
-  <rect x="440" y="180" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="520" y="206" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Headless / CI</text>
-  <text x="520" y="224" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">stored templates</text>
+  <rect x="40" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="120" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Issues panel</text>
+  <text x="120" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">editor sidebar</text>
+  <rect x="240" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="320" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Canvas badges</text>
+  <text x="320" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">per-block icons</text>
+  <rect x="440" y="215" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
+  <text x="520" y="241" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Headless / CI</text>
+  <text x="520" y="259" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">stored templates</text>
 </svg>
 
 The package has no opinion on UI. The editor's `useTemplateLint` composable lazy-imports `@templatical/quality`, runs all linters via the single `lintTemplate` call on debounced content changes, and feeds the merged issues stream into the **Issues** sidebar tab and the per-block canvas badges. `applyFix(issue)` runs each patch through the editor's existing block-update path so fixes land as proper undo entries.
@@ -13632,13 +13772,14 @@ const editor = init({
       rules: { "link.localhost-or-staging": "error" }, // promote before send
       nonProductionHosts: ["*.staging.*", "*.preview.*"],
     },
+    deliverability: { thresholds: { minTextLength: 250 } },
   },
 });
 ```
 
 [Open in playground](https://play.templatical.com/scenes/issues)
 
-The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
+The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`, `deliverability`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
 
 Set any single linter to `false` to drop just that tool's rules:
 
@@ -13648,13 +13789,14 @@ init({ container: "#editor", lint: { links: false } });
 
 ## Quick links
 
-- [Options](./options) — `disabled`, `locale`, per-tool `accessibility` / `structure` / `links` namespaces.
+- [Options](./options) — `disabled`, `locale`, per-tool `accessibility` / `structure` / `links` / `deliverability` namespaces.
 - [Severity & fixes](./severity-and-fixes) — severity model + how auto-fix patches land in the editor.
 - [Headless usage](./headless-usage) — `lintTemplate` + validating stored templates in CI / server save handlers.
 - [Contributing locales](./contributing-locales) — adding rule messages + vague-text dictionaries.
 - [Accessibility linter](./accessibility/) — what it catches, rule catalog.
 - [Structure linter](./structure/) — what it catches, rule catalog.
 - [Links linter](./links/) — what it catches, rule catalog.
+- [Deliverability linter](./deliverability/) — content cues, rule catalog.
 
 ---
 
@@ -13706,7 +13848,7 @@ const issues = lintLinks(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "link."
 ```
 
-Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all three linters independently or merge results.
+Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all four linters independently or merge results.
 
 In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs every linter on every (debounced) content change. Link issues appear in the **Issues** sidebar tab alongside accessibility and structure issues.
 
@@ -13818,7 +13960,7 @@ Each link rule is destructive (strip href / change protocol) and the right answe
 
 Source: https://docs.templatical.com/quality/options
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` all accept the same `LintOptions` shape. Every field is optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability` all accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
@@ -13827,6 +13969,7 @@ interface LintOptions {
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
+  deliverability?: false | DeliverabilityLintOptions;
 }
 
 interface AccessibilityLintOptions {
@@ -13843,12 +13986,23 @@ interface LinksLintOptions {
   nonProductionHosts?: string[];
 }
 
+interface DeliverabilityThresholds {
+  minTextLength: number;
+}
+
+interface DeliverabilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<DeliverabilityThresholds>;
+  shortenerHosts?: string[];
+}
+
 type Severity = "error" | "warning" | "info" | "off";
+type RuleOverrides = Record<string, Severity>;
 ```
 
 The same object also gates the editor's `init({ lint })` config — every option here applies to every linter via the shared `useTemplateLint` composable.
 
-Severity overrides and tool-specific knobs (`thresholds`, `nonProductionHosts`) are namespaced under their owning linter, so each linter only sees the config that's relevant to it.
+Severity overrides and tool-specific knobs (`thresholds`, `nonProductionHosts`, `shortenerHosts`) are namespaced under their owning linter, so each linter only sees the config that's relevant to it.
 
 ## `disabled`
 
@@ -13864,7 +14018,7 @@ When `true`:
 Use this when a tenant has explicitly opted out, or to keep the default editor bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
 
 ::: tip Disabling every linter individually has the same effect
-The editor treats `{ accessibility: false, structure: false, links: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
+The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
 :::
 
 ## `locale`
@@ -13880,6 +14034,7 @@ Drives the message templates the linter returns (one file per locale per linter)
 lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
+lintDeliverability(content, { locale: "de" });
 
 // Editor — linter automatically follows the editor locale
 init({ locale: "de" });
@@ -13888,7 +14043,7 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` directly) keep full control.
+Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
@@ -14024,13 +14179,58 @@ lintLinks(content, { links: { nonProductionHosts: [] } });
 
 `DEFAULT_NON_PRODUCTION_HOSTS` is exported as the baseline. See the [links overview](./links/) for more.
 
+## `deliverability`
+
+| Default | `{}` |
+|---|---|
+
+Configuration for `lintDeliverability`. Set `deliverability: false` to disable this category.
+
+```ts
+lintDeliverability(content, { deliverability: false });
+```
+
+### `deliverability.rules`
+
+Keys are full `deliverability.*` rule IDs. `"off"` disables one rule; other severities override its default. See the [deliverability rule catalog](./deliverability/rule-catalog).
+
+```ts
+lintDeliverability(content, {
+  deliverability: { rules: { "deliverability.low-text": "off" } },
+});
+```
+
+### `deliverability.thresholds.minTextLength`
+
+Default `200` visible characters. `deliverability.low-text` fires below this threshold when an image-producing block exists. A partial override preserves other defaults:
+
+```ts
+lintDeliverability(content, {
+  deliverability: { thresholds: { minTextLength: 250 } },
+});
+```
+
+`DEFAULT_DELIVERABILITY_THRESHOLDS` exports the baseline.
+
+### `deliverability.shortenerHosts`
+
+Replaces `DEFAULT_SHORTENER_HOSTS`. Spread the default to extend it:
+
+```ts
+import { DEFAULT_SHORTENER_HOSTS, lintDeliverability } from "@templatical/quality";
+
+const issues = lintDeliverability(content, {
+  deliverability: { shortenerHosts: [...DEFAULT_SHORTENER_HOSTS, "go.example.com"] },
+});
+```
+
 ---
 
 # Severity & fixes
 
 Source: https://docs.templatical.com/quality/severity-and-fixes
 
-Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability` together.
 
 ## Severity model
 
@@ -14043,7 +14243,7 @@ Every rule emits a `LintIssue` with one of four severities:
 | `info` | Recommendation; not a defect. | No canvas badge, "Info" group. |
 | `off` | Override — disables the rule entirely. | Nothing. |
 
-Severity is configurable per rule via the linter's own `rules` map — `accessibility.rules`, `structure.rules`, `links.rules`. Each rule's documented default is just the baseline.
+Severity is configurable per rule via the linter's own `rules` map — `accessibility.rules`, `structure.rules`, `links.rules`, `deliverability.rules`. Each rule's documented default is just the baseline.
 
 ```ts
 lintAccessibility(content, {
@@ -14093,6 +14293,7 @@ See the **Auto-fix** column in each catalog. Today's auto-fixable rules:
 - Accessibility — `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`, `a11y.text-justified`.
 - Structure — `structure.empty-section`.
 - Links — none. Every link rule is destructive to auto-fix (strip the href, change the protocol) and the right answer depends on intent.
+- Deliverability — none. The right URL or text depends on the message and sender.
 
 Auto-fixes are added conservatively — only when the right answer is unambiguous. `structure.empty-column`, for example, has no auto-fix because removing an empty column requires changing the section's `columns` layout, and the right answer (merge into a sibling vs. drop the section vs. change the layout key) depends on intent.
 
@@ -14129,7 +14330,7 @@ const issues = lintStructure(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "structure."
 ```
 
-Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run both linters independently or merge results.
+Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all four linters independently or merge results.
 
 Structure-specific config lives under `LintOptions.structure`. Set `structure: false` to disable the linter entirely.
 
@@ -14139,12 +14340,12 @@ lintStructure(content, {
 });
 ```
 
-In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs both linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
+In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs all four linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
 
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every structure rule with severity, rationale, and an auto-fix note.
-- [Options](../options) — shared across both linters.
+- [Options](../options) — shared across all four linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 

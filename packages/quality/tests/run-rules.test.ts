@@ -3,7 +3,8 @@ import {
   createDefaultTemplateContent,
   createSectionBlock,
 } from "@templatical/types";
-import { resolveStructureOptions, runRules } from "../src/run-rules";
+import { resolveDeliverabilityOptions, resolveStructureOptions, runRules } from "../src/run-rules";
+import { DEFAULT_SHORTENER_HOSTS } from "../src";
 import type { Rule } from "../src/types";
 
 describe("runRules message variants", () => {
@@ -35,5 +36,27 @@ describe("runRules message variants", () => {
       ruleId: "test.variant",
       message: "message for test.variant.b",
     });
+  });
+});
+
+describe("resolveDeliverabilityOptions", () => {
+  it("uses the default threshold and shortener hosts", () => {
+    const resolved = resolveDeliverabilityOptions("en", {}, []);
+    expect(resolved.deliverability).toEqual({
+      minTextLength: 200,
+      shortenerHosts: DEFAULT_SHORTENER_HOSTS,
+    });
+  });
+
+  it("applies threshold and host overrides", () => {
+    const resolved = resolveDeliverabilityOptions("de", {
+      thresholds: { minTextLength: 50 },
+      shortenerHosts: ["go.example.com"],
+    }, []);
+    expect(resolved.deliverability).toEqual({
+      minTextLength: 50,
+      shortenerHosts: ["go.example.com"],
+    });
+    expect(resolved.locale).toBe("de");
   });
 });

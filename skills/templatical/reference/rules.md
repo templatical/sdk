@@ -48,6 +48,18 @@
 - **Colors** are hex strings (`"#4CBB17"`). **Images**: use a real URL when
   given, else a placeholder like `https://placehold.co/600x300`, and always write
   meaningful `alt` text.
+- **Use destination URLs, not shortened links.** `deliverability.url-shortener`
+  warns on hosts such as `bit.ly`; link directly to the destination.
+- **Keep address-shaped link text aligned with its destination.**
+  `deliverability.link-text-domain-mismatch` warns when a link label shows a
+  different site. Prefer descriptive words. An address as the whole label is
+  acceptable when it is the link's own URL, such as a copy-link fallback.
+- **Use domain names in links, not raw IP addresses.**
+  `deliverability.ip-address-url` warns on public and private IP links.
+- **Carry the message in text when images lead the email.**
+  `deliverability.low-text` checks for at least 200 visible characters when
+  an image, video, or countdown is present. Add real text readers can use when
+  images are blocked.
 - **Settings** must include `width` (usually `600`), `backgroundColor`,
   `textColor`, `fontFamily`, `linkUnderline`, and `locale` (BCP-47, e.g. `"en"`).
   Set `locale` to **the language of the copy you are writing**, not to `"en"`

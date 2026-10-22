@@ -42,6 +42,10 @@ the output:**
 | `2` | The command was misused, or the tool broke — bad flags, an unreadable file, an unexpected internal error. |
 | `3` | One of the two optional packages above is missing. Install it, then re-run — not a bug. |
 
+`deliverability.*` issues are warning or info advice in the default CLI
+configuration. They never cause exit 1; structural errors and error-severity
+lint issues do.
+
 When a prerequisite is absent, say so plainly with the fix and fall back to a
 mode that works — no Node, too old a version (`node -v`, then
 <https://nodejs.org>), or no network blocks everything; no background process

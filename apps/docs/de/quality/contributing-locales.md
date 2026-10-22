@@ -6,8 +6,9 @@
 2. **Vague-Text-Dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — Phrasenlisten, die von `a11y.link-vague-text`, `a11y.button-vague-label` und `a11y.img-linked-no-context` genutzt werden.
 3. **Struktur-Regelnachrichten** (`src/structure/messages/{locale}.ts`) — Texte für jedes `structure.*`-Issue.
 4. **Link-Regelnachrichten** (`src/links/messages/{locale}.ts`) — Texte für jedes `link.*`-Issue.
+5. **Zustellbarkeits-Regelnachrichten** (`src/deliverability/messages/{locale}.ts`) — Texte für jedes `deliverability.*`-Issue.
 
-Jede Datenmenge spiegelt die Locale-Auswahl des Editors. Der Struktur- und der Link-Linter haben kein Vague-Text-Dictionary-Pendant — ihre Regeln sind deterministisch und sprachunabhängig, nur der Nachrichtentext muss übersetzt werden.
+Jede Datenmenge spiegelt die Locale-Auswahl des Editors. Der Struktur-, Link- und Zustellbarkeits-Linter haben kein Vague-Text-Dictionary-Pendant — ihre Regeln sind deterministisch und sprachunabhängig, nur der Nachrichtentext muss übersetzt werden.
 
 ## Verzeichnisstruktur
 
@@ -31,11 +32,16 @@ packages/quality/src/links/messages/
   en.ts       ← Source of Truth
   de.ts       ← annotiert mit `typeof en`
   index.ts    ← exportiert formatLinkMessage(), getLinkMessages()
+
+packages/quality/src/deliverability/messages/
+  en.ts       ← Source of Truth
+  de.ts       ← annotiert mit `typeof en`
+  index.ts    ← exportiert formatDeliverabilityMessage(), getDeliverabilityMessages()
 ```
 
 ## Eine Locale hinzufügen
 
-Sie brauchen **drei** Dateien (oder zwei, falls Sie das Vague-Text-Dictionary auslassen): eine Message-Map pro Linter und ein Dictionary. Dateien ablegen — sie werden automatisch erkannt. Jede Locale-Registry wird zur Compile-Zeit per `import.meta.glob` gebaut, es gibt keine Map zu pflegen.
+Sie brauchen eine Nachrichtendatei pro Linter und optional ein Vague-Text-Dictionary. Dateien ablegen — sie werden automatisch erkannt. Jede Locale-Registry wird zur Compile-Zeit per `import.meta.glob` gebaut, es gibt keine Map zu pflegen.
 
 Folgen Sie dem `typeof en`-Muster in jeder Datei. Die Annotation ist der Vertrag: jeder fehlende Key, jeder zusätzliche Key oder jeder falsche Typ lässt `pnpm run typecheck` scheitern. Laufzeit-Paritätstests prüfen zusätzlich, dass `{name}`-Platzhalter über Locales hinweg übereinstimmen.
 
@@ -113,7 +119,23 @@ const pt: typeof en = {
 export default pt;
 ```
 
-Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES` und `SUPPORTED_LINK_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Keine Registry zu editieren, kein Test zu aktualisieren.
+### 5. Zustellbarkeits-Regelnachrichten
+
+Legen Sie `deliverability/messages/<lang>.ts` an und übersetzen Sie alle Schlüssel aus `en.ts`. Erhalten Sie die Platzhalter `{textHost}`, `{linkHost}`, `{host}`, `{count}` und `{min}`.
+
+```ts
+import en from "./en";
+
+const pt: typeof en = {
+  ...en,
+  "deliverability.link-text-domain-mismatch":
+    "O texto mostra {textHost}, mas o link leva a {linkHost}.",
+};
+
+export default pt;
+```
+
+Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES` und `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Keine Registry zu editieren, kein Test zu aktualisieren.
 
 ## Phrasen-Richtlinien (Vague-Text-Dictionary)
 
@@ -127,4 +149,4 @@ Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match-Reihenfolge
 
 - **Vague-Text-Dictionary** — `getDictionary(locale)` liefert eine Vereinigung der Phrasen (und Action-Hints) aller registrierten Locales. Das `locale`-Argument wird der API-Symmetrie wegen akzeptiert, ändert aber aktuell nichts an der zurückgegebenen Menge — eine vage Phrase ist universell vage, und ein Action-Verb in einer beliebigen registrierten Sprache zählt als Link-Ziel-Kontext. Die Erkennung ist by design sprachübergreifend.
-- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur) und `formatLinkMessage(locale, ruleId, params?)` (Links) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle drei fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.
+- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur), `formatLinkMessage(locale, ruleId, params?)` (Links) und `formatDeliverabilityMessage(locale, ruleId, params?)` (Zustellbarkeit) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle vier fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.

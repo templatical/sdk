@@ -2,6 +2,17 @@ export { lintTemplate } from "./lint-template";
 export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
 export { lintStructure, STRUCTURE_RULES } from "./structure";
 export { lintLinks, LINK_RULES } from "./links";
+export { lintDeliverability, DELIVERABILITY_RULES } from "./deliverability";
+export { DEFAULT_SHORTENER_HOSTS } from "./deliverability/shorteners";
+export {
+  formatDeliverabilityMessage,
+  getDeliverabilityMessages,
+  SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES,
+} from "./deliverability/messages";
+export type {
+  DeliverabilityMessageMap,
+  DeliverabilityRuleMessageId,
+} from "./deliverability/messages";
 export { walkBlocks } from "./walk";
 export type { Visitor } from "./walk";
 export { walkUrls } from "./url-walker";
@@ -38,6 +49,8 @@ export type { LinkMessageMap, LinkRuleMessageId } from "./links/messages";
 export { isLintFullyDisabled } from "./util";
 export type {
   AccessibilityLintOptions,
+  DeliverabilityLintOptions,
+  DeliverabilityThresholds,
   LinksLintOptions,
   LintIssue,
   LintOptions,
@@ -45,6 +58,7 @@ export type {
   LintPatchContext,
   LintThresholds,
   ResolvedLinksOptions,
+  ResolvedDeliverabilityOptions,
   ResolvedOptions,
   Rule,
   RuleHit,
@@ -54,4 +68,8 @@ export type {
   StructureLintOptions,
   WalkContext,
 } from "./types";
-export { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";
+export {
+  DEFAULT_A11Y_THRESHOLDS,
+  DEFAULT_DELIVERABILITY_THRESHOLDS,
+  DEFAULT_NON_PRODUCTION_HOSTS,
+} from "./types";

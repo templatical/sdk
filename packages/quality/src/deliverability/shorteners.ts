@@ -1,0 +1,20 @@
+/** Hosts commonly used to shorten URLs. */
+export const DEFAULT_SHORTENER_HOSTS: string[] = [
+  "bit.ly",
+  "buff.ly",
+  "cutt.ly",
+  "dub.sh",
+  "goo.gl",
+  "is.gd",
+  "lnkd.in",
+  "ow.ly",
+  "rb.gy",
+  "rebrand.ly",
+  "s.id",
+  "shorturl.at",
+  "t.co",
+  "t.ly",
+  "tiny.cc",
+  "tinyurl.com",
+  "v.gd",
+];

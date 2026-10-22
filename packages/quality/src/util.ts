@@ -14,6 +14,7 @@ export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
   return (
     options.accessibility === false &&
     options.structure === false &&
-    options.links === false
+    options.links === false &&
+    options.deliverability === false
   );
 }

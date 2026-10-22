@@ -43,7 +43,7 @@ Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dyna
 ## Schnellzugriff
 
 - [Regelkatalog](./rule-catalog) — jede Barrierefreiheits-Regel mit Schweregrad, Begründung und Beispiel.
-- [Optionen](../options) — geteilt über beide Linter.
+- [Optionen](../options) — geteilt über alle vier Linter.
 - [Schweregrade & Fixes](../severity-and-fixes) — wie das Schweregrad-Modell funktioniert und wie Auto-Fix-Patches angewendet werden.
 - [Headless-Nutzung](../headless-usage) — Validierung gespeicherter Templates in CI.
 - [Lokalen beitragen](../contributing-locales) — Regelnachrichten + Vague-Text-Dictionaries hinzufügen.
