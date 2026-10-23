@@ -9,11 +9,14 @@
 const TAG = "[Templatical]";
 
 function isProduction(): boolean {
-  // `process.env.NODE_ENV` is replaced statically by Vite/tsup in consumer builds.
-  // Guard access so pure browser environments (no process) don't throw.
-  return (
-    typeof process !== "undefined" && process.env?.NODE_ENV === "production"
-  );
+  // Consumer bundlers replace this expression statically. A typeof-process
+  // guard would override that value in browsers, which do not have process.
+  try {
+    return process.env.NODE_ENV === "production";
+  } catch {
+    // Unbundled browser use has no environment value; keep info/debug quiet.
+    return true;
+  }
 }
 
 export const logger = {

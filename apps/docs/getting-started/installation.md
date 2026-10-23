@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install the Templatical email editor with a package manager or from a CDN.
+description: Install the Templatical email editor with quality checks enabled by default, or load it from a CDN.
 ---
 
 # Installation
@@ -18,7 +18,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
 - **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [Embedding the editor](./embedding) for what each one breaks and how to work around it.
-- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` and `pusher-js` remain optional peers. See [Optional peers](#optional-peers).
 
 ## Network requests
 
@@ -109,7 +109,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
-| `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
+| `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional dependency of the editor, installed by default                        |
 | `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
@@ -123,19 +123,21 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-chamaileon` | Converts Chamaileon `getDocument()` JSON to Templatical format.                                                                        | Optional                                                                                            |
 | `@templatical/import-easy-email-pro` | Converts Easy Email Pro persist JSON to Templatical format.                                                                        | Optional                                                                                            |
 
-`@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
+`@templatical/editor` ships as a single self-contained ESM bundle: its required editor runtime (Vue, TipTap, vue-draggable-plus, `@templatical/core` and `@templatical/types`) is inlined. You do not install the bundled runtime separately. Quality installs its own `@templatical/types` dependency.
 
 ## Optional peers
 
-The editor lazy-loads three optional peers via dynamic `import()` at runtime, gated by feature use:
+The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; renderer and pusher-js remain optional peers:
 
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
-| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, link, deliverability, and compatibility lint in the Issues sidebar |
+| `@templatical/quality`       | Editor mount (Issues panel)     | Optional dependency of the editor, installed by default |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
-If you don't install them, the editor still mounts. Quality's Issues tab and Pusher stay off. `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
+
+Without pusher-js, Cloud realtime stays off. Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
 
 ### A note on bundler output
 
@@ -360,15 +362,16 @@ Every GitHub release carries the same tarballs that go to npm, one per package. 
 
 Three things to know:
 
-**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the importers all depend on `@templatical/types`. Point each one you pull in at a tarball:
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. A default install of `@templatical/editor` pulls in `@templatical/quality`, which depends on `@templatical/types`. `@templatical/core`, `@templatical/renderer`, `@templatical/media-library` and the importers also depend on `@templatical/types`. Point each package you pull in at its versioned release tarball; for the editor's default install, pin both quality and types:
 
 ```yaml
 # pnpm-workspace.yaml
 overrides:
+  '@templatical/quality': https://github.com/templatical/sdk/releases/download/v<version>/templatical-quality-<version>.tgz
   '@templatical/types': https://github.com/templatical/sdk/releases/download/v<version>/templatical-types-<version>.tgz
 ```
 
-npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`. `@templatical/editor` needs none of this — it bundles everything it uses.
+npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`.
 
 **Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-topol`, `@templatical/import-chamaileon` and `@templatical/import-easy-email-pro` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html`, `@templatical/import-mjml` and `@templatical/import-stripo` need `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
 

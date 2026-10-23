@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Installieren Sie den Templatical-E-Mail-Editor mit einem Paketmanager oder von einem CDN.
+description: Installieren Sie den Templatical-E-Mail-Editor mit standardmäßig aktivierten Qualitätsprüfungen oder laden Sie ihn per CDN.
 ---
 
 # Installation
@@ -18,7 +18,7 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
   - **Opt-out-Modus** (`shadowDom: false`, Light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Verwenden Sie diesen Modus, wenn Sie ältere Firefox- oder Safari-Versionen unterstützen müssen oder Ihre Integration Light-DOM-Zugriff auf Editor-Interna benötigt. Siehe den [Shadow-DOM-Leitfaden](../guide/shadow-dom) für die Kompromisse.
 - **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus). Im Standardmodus muss es ein Elementtyp sein, der einen Shadow Root hosten kann (z. B. `<div>`, `<section>`, `<article>`). Siehe [Container-Element-Anforderungen](../api/editor#container-element-requirements).
 - **Kein `transform` und kein Stacking-Kontext auf einem Vorfahren des Containers** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` unter `1`, `isolation`, `contain` und positionierte Elemente mit `z-index` verändern jeweils, wo die Overlays des Editors gezeichnet oder positioniert werden. Das sind reine CSS-Regeln, keine Templatical-spezifischen Einschränkungen; sie betreffen jede Bibliothek, die Overlays mit `position: fixed` positioniert. Was jede Eigenschaft konkret bricht und wie Sie es umgehen, steht unter [Den Editor einbetten](./embedding).
-- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality` und `pusher-js` sind _optionale_ Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
+- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Es aktiviert das Panel „Probleme“ und die Lint-Badges; `@templatical/renderer` und `pusher-js` bleiben optionale Peers. Siehe [Optionale Peers](#optionale-peers).
 
 ## Netzwerk-Anfragen
 
@@ -108,10 +108,10 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | Paket                          | Beschreibung                                                                                                            | Erforderlich                                                                                                 |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `@templatical/editor`          | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt                                                              | Ja                                                                                                           |
-| `@templatical/types`           | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards                                                      | Automatisch installiert                                                                                      |
-| `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Automatisch installiert                                                                                      |
+| `@templatical/types`           | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards                                                      | Nur für Headless-Nutzung außerhalb des Editors; Quality installiert seine eigene Types-Abhängigkeit |
+| `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Nur für Headless-Nutzung außerhalb des Editors |
 | `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
-| `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
+| `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität) für das Panel „Probleme“ des Editors und Headless- / CI-Checks                | Optionale Abhängigkeit des Editors, standardmäßig mitinstalliert                 |
 | `@templatical/media-library`   | Eigenständiges Medien-SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in einer Vue-App). Die Durchsuchen-Oberfläche des Editors ist in `@templatical/editor` gebündelt. | Optional – nur für eigenständige Nutzung, nicht für `init({ media })` oder Clouds Speicher |
 | `@templatical/template-tools`  | CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templates außerhalb des Editors | Optional – per `npx` ausführen, nichts zu installieren; für CI-Checks, Skripte oder das Erzeugen von Templates ohne gemounteten Editor |
 | `@templatical/import-beefree`  | Konvertiert BeeFree-JSON-Templates in das Templatical-Format                                                            | Optional                                                                                                     |
@@ -123,19 +123,21 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/import-chamaileon` | Konvertiert Chamaileon-`getDocument()`-JSON in das Templatical-Format                                                    | Optional                                                                                                     |
 | `@templatical/import-easy-email-pro` | Konvertiert Easy-Email-Pro-Persist-JSON in das Templatical-Format                                                    | Optional                                                                                                     |
 
-`@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
+Der Editor bündelt Vue, TipTap, `@templatical/core` und `@templatical/types` in seinem JavaScript. Quality benötigt zusätzlich `@templatical/types` als eigene Laufzeitabhängigkeit.
 
 ## Optionale Peers
 
-Der Editor lädt drei optionale Peers zur Laufzeit per dynamischem `import()`, abhängig davon, welche Features Sie nutzen:
+Der Editor lädt optionale Pakete per dynamischem `import()`, abhängig vom genutzten Feature. Quality wird standardmäßig installiert; Renderer und pusher-js bleiben optionale Peers:
 
 | Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
 | `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
-| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit, Struktur, Link-, Zustellbarkeits- und Kompatibilitäts-Lint in der Issues-Sidebar nutzen möchten |
+| `@templatical/quality`       | Beim Mounten des Editors (Panel „Probleme“)        | Optionale Abhängigkeit des Editors, standardmäßig mitinstalliert |
 | `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 
-Wenn Sie sie nicht installieren, mountet der Editor trotzdem. Der Issues-Tab von Quality und Pusher bleiben aus. `editor.toMjml()` wirft einen klaren Fehler, der das fehlende Paket nennt. Durchsuchen braucht kein Extra-Paket — das Modal ist ein Lazy-Chunk des Editors.
+`@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus.
+
+Ohne pusher-js bleibt Cloud-Realtime aus. Ohne Renderer oder Rendering-Provider wirft `editor.toMjml()` einen klaren Fehler, der das fehlende Paket nennt. Durchsuchen braucht kein Extra-Paket — das Modal ist ein Lazy-Chunk des Editors.
 
 ### Hinweis zur Bundler-Ausgabe
 
@@ -360,15 +362,16 @@ Jedes GitHub-Release enthält dieselben Tarballs, die auch an npm gehen — eine
 
 Drei Dinge sollten Sie wissen:
 
-**Pinnen Sie auch die Templatical-Pakete, die Sie indirekt nutzen.** Ein Tarball verweist auf seine Geschwisterpakete nur über eine Versionsnummer, Ihr Paketmanager sucht diese Version also weiterhin in der Registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` und die Importer hängen alle von `@templatical/types` ab. Verweisen Sie jedes davon, das Sie einbinden, ebenfalls auf einen Tarball:
+**Pinnen Sie auch die Templatical-Pakete, die Sie indirekt nutzen.** Ein Tarball verweist auf seine Geschwisterpakete nur über eine Versionsnummer, Ihr Paketmanager sucht diese Version also weiterhin in der Registry. Eine Standardinstallation von `@templatical/editor` installiert `@templatical/quality`, das von `@templatical/types` abhängt. `@templatical/core`, `@templatical/renderer`, `@templatical/media-library` und die Importer hängen ebenfalls von `@templatical/types` ab. Verweisen Sie jedes eingebundene Paket auf seinen versionierten Release-Tarball; pinnen Sie für die Standardinstallation des Editors sowohl Quality als auch Types:
 
 ```yaml
 # pnpm-workspace.yaml
 overrides:
+  '@templatical/quality': https://github.com/templatical/sdk/releases/download/v<version>/templatical-quality-<version>.tgz
   '@templatical/types': https://github.com/templatical/sdk/releases/download/v<version>/templatical-types-<version>.tgz
 ```
 
-npm und Yarn erledigen dasselbe über `overrides` bzw. `resolutions` in der `package.json`. `@templatical/editor` benötigt nichts davon — es bündelt alles, was es verwendet.
+npm und Yarn erledigen dasselbe über `overrides` bzw. `resolutions` in der `package.json`.
 
 **Fremdabhängigkeiten stammen weiterhin aus einer Registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-topol`, `@templatical/import-chamaileon` und `@templatical/import-easy-email-pro` kommen zur Laufzeit ohne weitere Pakete aus. Die übrigen ziehen Pakete nach, die nicht von uns stammen: `@templatical/core` benötigt `@vue/reactivity`, `@templatical/quality` benötigt `htmlparser2`, `@templatical/import-html`, `@templatical/import-mjml` und `@templatical/import-stripo` benötigen `cheerio` und `domhandler`, und `@templatical/media-library` benötigt `@lucide/vue`, `@vueuse/core` und `vue-advanced-cropper`. Um diese ohne Registry zu installieren, brauchen Sie auch dafür einen Mirror.
 

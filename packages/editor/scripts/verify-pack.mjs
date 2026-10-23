@@ -9,10 +9,10 @@
  * of bundled libraries (Vue, Tiptap, etc.). This script catches that.
  *
  * Procedure:
- *   1. `pnpm pack` the editor package into a temp directory.
- *   2. `npm init -y` a fresh consumer project in another temp dir.
- *   3. `npm install <tarball>` and read the resulting node_modules.
- *   4. Assert: total package count is reasonable; forbidden packages absent.
+ *   1. Pack the editor and its default-install workspace dependency closure.
+ *   2. Create a fresh consumer manifest with local tarball overrides.
+ *   3. Install normally and verify quality's lintTemplate API is available.
+ *   4. Assert: total package count is reasonable; bundled runtime copies absent.
  *
  * Run:
  *   node packages/editor/scripts/verify-pack.mjs
@@ -21,7 +21,7 @@
  *   pnpm --filter @templatical/editor run verify:pack
  */
 
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 import {
   mkdtempSync,
   rmSync,
@@ -32,6 +32,12 @@ import {
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  packClosure,
+  readWorkspacePackages,
+  resolveWorkspaceClosure,
+  withTarballs,
+} from "./consumer-fixture.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EDITOR_DIR = resolve(__dirname, "..");
@@ -50,7 +56,6 @@ const FORBIDDEN_PACKAGES = [
   "@vue/runtime-core",
   "@vue/runtime-dom",
   "@templatical/core",
-  "@templatical/types",
   "@vueuse/core",
   "vue-draggable-plus",
   "@tiptap/core",
@@ -59,6 +64,7 @@ const FORBIDDEN_PACKAGES = [
   "@lucide/vue",
   "vue-advanced-cropper",
 ];
+// Types is allowed: quality leaves @templatical/types external at runtime.
 
 function logStep(msg) {
   process.stdout.write(`[verify-pack] ${msg}\n`);
@@ -92,30 +98,44 @@ const tarballDir = mkdtempSync(join(tmpdir(), "tpl-pack-"));
 const consumerDir = mkdtempSync(join(tmpdir(), "tpl-consumer-"));
 
 try {
-  logStep(`packing @templatical/editor → ${tarballDir}`);
-  execSync(`pnpm pack --pack-destination "${tarballDir}"`, {
-    cwd: EDITOR_DIR,
-    stdio: "inherit",
+  const repoRoot = resolve(EDITOR_DIR, "../..");
+  const manifests = readWorkspacePackages(repoRoot);
+  const { closure, transitive } = resolveWorkspaceClosure(
+    ["@templatical/editor"],
+    manifests,
+  );
+  logStep(`packing default-install closure: ${closure.join(", ")}`);
+  const tarballs = packClosure({
+    repoRoot,
+    closure,
+    manifests,
+    packDir: tarballDir,
+    log: logStep,
   });
-
-  const tarball = readdirSync(tarballDir).find((f) => f.endsWith(".tgz"));
-  if (!tarball) fail("no .tgz produced by pnpm pack");
-
-  const tarballPath = join(tarballDir, tarball);
-  logStep(`tarball: ${tarballPath}`);
 
   logStep(`creating clean consumer project in ${consumerDir}`);
   writeFileSync(
     join(consumerDir, "package.json"),
     JSON.stringify(
-      { name: "verify-pack-consumer", version: "0.0.0", private: true },
+      withTarballs(
+        {
+          name: "verify-pack-consumer",
+          version: "0.0.0",
+          private: true,
+          dependencies: {
+            "@templatical/editor": tarballs.get("@templatical/editor"),
+          },
+        },
+        tarballs,
+        transitive,
+      ),
       null,
       2,
     ),
   );
 
-  logStep("npm install <tarball>");
-  execSync(`npm install "${tarballPath}" --no-fund --no-audit`, {
+  logStep("npm install (default optional dependencies included)");
+  execSync("npm install --no-fund --no-audit", {
     cwd: consumerDir,
     stdio: "inherit",
   });
@@ -123,6 +143,20 @@ try {
   const nodeModules = join(consumerDir, "node_modules");
   const installed = listTopLevelPackages(nodeModules);
   logStep(`installed top-level packages: ${installed.length}`);
+
+  if (!installed.includes("@templatical/quality")) {
+    fail("default install did not include @templatical/quality");
+  }
+  execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      'import { lintTemplate } from "@templatical/quality"; if (typeof lintTemplate !== "function") throw new Error("quality API missing");',
+    ],
+    { cwd: consumerDir, stdio: "inherit" },
+  );
+  logStep("default install includes quality and its lintTemplate API");
 
   const violations = installed.filter((p) => FORBIDDEN_PACKAGES.includes(p));
   if (violations.length > 0) {
@@ -134,7 +168,7 @@ try {
   if (installed.length > MAX_PACKAGES) {
     fail(
       `consumer install footprint too large: ${installed.length} packages (max ${MAX_PACKAGES}).\n` +
-        `Inspect editor's package.json — anything in 'dependencies' is a candidate to move to 'devDependencies' (then bundle inline). The editor is designed to declare no runtime dependencies at all; see CONTRIBUTING.md "Architecture overview".`,
+        `Inspect editor's package.json — required editor runtime libraries belong in the bundle, while quality is intentionally an optional dependency; see CONTRIBUTING.md "Architecture overview".`,
     );
   }
 

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@templatical/editor": "^0.49.0",
+    "@templatical/quality": "^0.49.0",
     "@templatical/renderer": "^0.49.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

@@ -52,7 +52,7 @@ Alle fünf Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe
   <line x1="30" y1="205" x2="610" y2="205" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 4"/>
   <text x="320" y="230" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">Verwendet von</text>
   <rect x="40" y="255" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
-  <text x="120" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Issues-Panel</text>
+  <text x="120" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Panel „Probleme“</text>
   <text x="120" y="299" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Editor-Sidebar</text>
   <rect x="240" y="255" width="160" height="60" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="8"/>
   <text x="320" y="281" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">Canvas-Badges</text>
@@ -62,9 +62,11 @@ Alle fünf Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe
   <text x="520" y="299" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">gespeicherte Templates</text>
 </svg>
 
-Das Paket trifft keine UI-Annahmen. Das `useTemplateLint`-Composable des Editors lädt `@templatical/quality` per dynamischem Import nach, ruft alle Linter über den einzelnen `lintTemplate`-Aufruf bei (entprellten) Inhaltsänderungen auf und speist den zusammengeführten Issue-Strom in den **Issues**-Sidebar-Tab und die Per-Block-Canvas-Badges. `applyFix(issue)` führt jeden Patch über den bestehenden Block-Update-Pfad des Editors aus — Fixes landen so als ordentliche Undo-Einträge.
+Das Paket trifft keine UI-Annahmen. Das `useTemplateLint`-Composable des Editors lädt `@templatical/quality` per dynamischem Import nach, ruft alle Linter über den einzelnen `lintTemplate`-Aufruf bei (entprellten) Inhaltsänderungen auf und speist den zusammengeführten Issue-Strom in den **Probleme**-Sidebar-Tab und die Per-Block-Canvas-Badges. `applyFix(issue)` führt jeden Patch über den bestehenden Block-Update-Pfad des Editors aus — Fixes landen so als ordentliche Undo-Einträge.
 
 ## Installation
+
+`@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Für die Headless-Nutzung oder um es wieder hinzuzufügen, installieren Sie es ausdrücklich:
 
 ::: code-group
 ```bash [npm]
@@ -81,7 +83,7 @@ bun add @templatical/quality
 ```
 :::
 
-Das Paket ist ein **optionaler Peer** von `@templatical/editor`. Installieren Sie es, um den Issues-Tab und die Canvas-Badges zu aktivieren. Lassen Sie es weg und der Editor bleibt schlank — der dynamische Import ist gegated und tree-shakeable, der Linter-Chunk wird nie geladen.
+
 
 ::: tip CDN-Nutzer
 Wenn Sie Templatical per CDN laden, gibt es nichts zu installieren. Das Editor-CDN-Bundle liefert `@templatical/quality` als separat ausgelagerten Code-Split-Chunk aus, der automatisch nachgeladen wird, sobald Linting aktiv ist.
@@ -120,7 +122,7 @@ const editor = init({
 
 [Im Playground öffnen](https://play.templatical.com/scenes/issues)
 
-Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
+Der Tab „Probleme“ und die Canvas-Badges erscheinen automatisch, sobald das Quality-Paket verfügbar ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
 
 Setzen Sie einen einzelnen Linter auf `false`, um nur dessen Regeln auszuschalten:
 

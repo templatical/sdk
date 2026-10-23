@@ -14,7 +14,7 @@ Not sure what to pick up?
 
 ## Architecture overview
 
-A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and declares **no runtime dependencies at all** — it bundles Vue, `core`, `types` and every transitive Vue library inline, so consumers get a single drop-in ESM file. A few things that surprise people:
+A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and bundles its **required runtime** — Vue, `core`, `types` and every transitive Vue library — inline. `@templatical/quality` is an optional dependency installed separately by default. A few things that surprise people:
 
 - **`types` builds first, and nothing needs building before it** — the media types it references resolve through its tsconfig `paths` to media-library's *source*, so no `dist/` need exist. A workspace dependency there is forbidden: it would close `types → media-library → core → types`, which pnpm rejects with `ERR_PNPM_TASK_CYCLE` before running anything, and the cycle guard in `packages/editor/tests/consumer-fixture.test.ts` keeps it out.
 - **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the `init()` entry.

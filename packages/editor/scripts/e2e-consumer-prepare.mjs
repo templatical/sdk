@@ -46,6 +46,7 @@ try {
     fixtureDir: FIXTURE_DIR,
     consumerDir: CONSUMER_DIR,
     packDir,
+    omitOptional: true,
     log,
   });
 
@@ -71,13 +72,15 @@ try {
   // folders the way a bundler does, not with Node's resolver: it also reads
   // NODE_PATH, which pnpm's `.bin` shims point at its hoist folder, and Vite
   // never consults it.
-  const leakedPusher = ancestorNodeModules(CONSUMER_DIR).find((dir) =>
-    existsSync(join(dir, "pusher-js", "package.json")),
-  );
-  if (leakedPusher) {
-    throw new Error(
-      `pusher-js is installed in ${leakedPusher}, where the consumer resolves bare imports, so its production build can no longer catch an undeclared optional import`,
+  for (const name of ["pusher-js", "@templatical/quality"]) {
+    const leaked = ancestorNodeModules(CONSUMER_DIR).find((dir) =>
+      existsSync(join(dir, name, "package.json")),
     );
+    if (leaked) {
+      throw new Error(
+        `${name} is installed in ${leaked}, where the consumer resolves bare imports, so its production build can no longer catch an undeclared optional import`,
+      );
+    }
   }
   log("running the consumer's production build (vite build)");
   execSync("node node_modules/vite/bin/vite.js build --logLevel warn", {

@@ -449,9 +449,6 @@ importers:
       '@templatical/media-library':
         specifier: workspace:*
         version: link:../media-library
-      '@templatical/quality':
-        specifier: workspace:*
-        version: link:../quality
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
@@ -539,6 +536,10 @@ importers:
       vue-tsc:
         specifier: ^3.3.13
         version: 3.3.13(typescript@6.0.3)
+    optionalDependencies:
+      '@templatical/quality':
+        specifier: workspace:*
+        version: link:../quality
 
   packages/import-beefree:
     dependencies:

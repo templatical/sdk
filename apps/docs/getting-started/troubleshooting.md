@@ -9,6 +9,7 @@ Match the symptom to the row before changing anything. Several of these look lik
 
 | Symptom | Cause | What to do |
 |---|---|---|
+| No Issues tab or lint badges | `@templatical/quality` is missing or was left out. | Add `@templatical/quality` to your dependencies. If it is present, check `lint.disabled` and per-tool settings. |
 | Editor renders in a fallback font, or has no layout with `shadowDom: false` | `@templatical/editor/style.css` was not imported. It loads the editor's Geist font, and with `shadowDom: false` it is the editor's only stylesheet. The default shadow mount carries its own copy of the editor's CSS. The `exports` map resolves that subpath to `dist/style.css`. | Import the stylesheet next to `init()`. Do not install `tailwindcss` as a peer — it is compiled into that file. |
 | Dialogs clipped, painted under host chrome, or a drag ghost that drifts | An ancestor of the container is a containing block for `position: fixed`: `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`, `isolation`, `opacity` below `1`, or a positioned element with `z-index`. | Remove that property from ancestors, or mount outside that stacking context. |
 | Sidebar last items / footer clip, no scroll | The container has no definite height. The editor fills its parent; without one it uses a small anti-collapse floor and chrome still assumes real height. | Give the container a real height (`100%` of a sized parent, or a `px`/`vh` value). |

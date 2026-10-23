@@ -32,10 +32,11 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 const SCOPE = "@templatical/";
 
@@ -96,10 +97,11 @@ export function readFixtureRoots(fixtureManifest) {
 }
 
 /**
- * Walk `dependencies` from the fixture's direct packages to everything npm
- * would resolve transitively. `peerDependencies` are deliberately not followed:
- * the editor's three are optional, so npm never installs them, and a fixture
- * that wants one declares it directly.
+ * Walk dependencies and optionalDependencies from the direct packages to
+ * everything npm would resolve transitively. Peers are not followed:
+ * renderer and pusher-js are optional peers only, so a fixture that wants one
+ * declares it directly. Quality also has an optional dependency declaration,
+ * so it and its dependencies must be packed even for omitted installs.
  */
 export function resolveWorkspaceClosure(roots, manifests) {
   const closure = new Set();
@@ -112,7 +114,11 @@ export function resolveWorkspaceClosure(roots, manifests) {
       throw new Error(`${name} is not a workspace package under packages/`);
     }
     closure.add(name);
-    queue.push(...scopedKeys(manifest, "dependencies"));
+    queue.push(
+      ...["dependencies", "optionalDependencies"].flatMap((field) =>
+        scopedKeys(manifest, field),
+      ),
+    );
   }
   const rootSet = new Set(roots);
   return {
@@ -126,17 +132,17 @@ export function resolveWorkspaceClosure(roots, manifests) {
  * package their builds read from a sibling's `dist/`, each after the packages
  * it reads.
  *
- * `dependencies` and `devDependencies` both extend the set, because a build
- * reads both through the workspace symlinks: the editor's `vite build` bundles
+ * Dependencies, optionalDependencies and devDependencies extend the set. A build
+ * reads them through the workspace symlinks: the editor's `vite build` bundles
  * core and types from their `dist/` (only media-library is aliased to `src/`),
- * and its `vue-tsc` step type-resolves all four of its devDependencies from
+ * and its `vue-tsc` step type-resolves its workspace dependencies from
  * theirs. The manifest cannot tell those from a devDependency only tests use
  * (import-html's renderer), so that one is built too.
  *
  * `peerDependencies` only order: a peer already in the set goes first, but
  * none is added, because no build reads a peer's `dist/` — the editor declares
- * the renderer in `src/renderer.d.ts`, and quality is also one of its
- * devDependencies. That edge set is acyclic across the whole workspace.
+ * the renderer in `src/renderer.d.ts`, and quality is also an optional
+ * dependency. That edge set is acyclic across the whole workspace.
  */
 export function buildOrder(closure, manifests) {
   const toBuild = new Set();
@@ -146,8 +152,8 @@ export function buildOrder(closure, manifests) {
     if (toBuild.has(name)) continue;
     toBuild.add(name);
     queue.push(
-      ...["dependencies", "devDependencies"].flatMap((field) =>
-        scopedKeys(manifests.get(name), field),
+      ...["dependencies", "optionalDependencies", "devDependencies"].flatMap(
+        (field) => scopedKeys(manifests.get(name), field),
       ),
     );
   }
@@ -155,7 +161,12 @@ export function buildOrder(closure, manifests) {
     [...toBuild].map((name) => [
       name,
       new Set(
-        ["dependencies", "devDependencies", "peerDependencies"]
+        [
+          "dependencies",
+          "optionalDependencies",
+          "devDependencies",
+          "peerDependencies",
+        ]
           .flatMap((field) => scopedKeys(manifests.get(name), field))
           .filter((dep) => toBuild.has(dep)),
       ),
@@ -347,6 +358,7 @@ export function materializeConsumer({
   fixtureDir,
   consumerDir,
   packDir,
+  omitOptional = false,
   log = () => {},
 }) {
   if (!existsSync(fixtureDir)) {
@@ -389,9 +401,49 @@ export function materializeConsumer({
   const consumerPkgPath = join(consumerDir, "package.json");
   writeFileSync(consumerPkgPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-  run(`npm install --no-fund --no-audit`, { cwd: consumerDir }, log);
+  installConsumer({ consumerDir, manifest, omitOptional, log });
 
   return { closure, transitive, consumerPkgPath };
+}
+
+/** Keep omitted SDK dependencies separate from build tools' native optionals. */
+export function installConsumer({
+  consumerDir,
+  manifest,
+  omitOptional = false,
+  log = () => {},
+}) {
+  if (!omitOptional) {
+    run("npm install --no-fund --no-audit", { cwd: consumerDir }, log);
+    return;
+  }
+  run(
+    "npm install --omit=optional --omit=dev --no-fund --no-audit",
+    { cwd: consumerDir },
+    log,
+  );
+  const toolsDir = join(consumerDir, ".consumer-tools");
+  mkdirSync(toolsDir, { recursive: true });
+  writeFileSync(
+    join(toolsDir, "package.json"),
+    JSON.stringify(
+      {
+        name: "consumer-build-tools",
+        private: true,
+        dependencies: manifest.devDependencies ?? {},
+      },
+      null,
+      2,
+    ),
+  );
+  // Vite needs Rollup's native optional package even while the SDK's optional
+  // quality dependency is absent. This install contains build tools only.
+  run("npm install --no-fund --no-audit", { cwd: toolsDir }, log);
+  for (const name of Object.keys(manifest.devDependencies ?? {})) {
+    const target = join(consumerDir, "node_modules", name);
+    mkdirSync(dirname(target), { recursive: true });
+    symlinkSync(join(toolsDir, "node_modules", name), target, "junction");
+  }
 }
 
 function run(cmd, opts, log) {

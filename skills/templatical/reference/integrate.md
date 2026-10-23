@@ -9,8 +9,9 @@ into their repository
 **Related:** [diagnose.md](diagnose.md) when a mount already exists and
 misbehaves · [docs.md](docs.md) for anything not covered here
 
-`@templatical/editor` is self-contained: Vue, TipTap and its other runtime
-dependencies are all bundled inside it. There is **no** framework component —
+`@templatical/editor` bundles its **required runtime**: Vue, TipTap and its
+other required runtime dependencies. `@templatical/quality` is an optional
+dependency installed separately by default. There is **no** framework component —
 no `<TemplaticalEditor />`, no Vue SFC export, no `@templatical/react`. The
 public API is `init()` / `initCloud()` / `unmount()` in every stack, including
 React. The `useRef` + `useEffect` wrapper below is that API used
@@ -20,9 +21,7 @@ idiomatically, not a missing-component workaround.
 npm install @templatical/editor
 ```
 
-`@templatical/renderer`, `@templatical/quality` and `pusher-js` are optional
-peers, each gated by a specific feature — install only the ones actually used
-(see [failure-modes.md](failure-modes.md)).
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The default install is recommended for the Issues panel and lint badges. `@templatical/renderer` and `pusher-js` stay optional peers; install them only for the features used (see [failure-modes.md](failure-modes.md)).
 
 ## Vanilla
 

@@ -1,13 +1,23 @@
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // @ts-expect-error — plain .mjs build script, no declarations
 import {
   buildOrder,
+  installConsumer,
   readExampleRoots,
   readFixtureRoots,
   readWorkspacePackages,
@@ -25,6 +35,7 @@ const FIXTURES_DIR = join(__dirname, "e2e-fixtures");
 type Manifest = {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
 };
 
@@ -50,6 +61,74 @@ const exampleNames = () =>
   readdirSync(EXAMPLES_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
+
+describe("omitted consumer installation", () => {
+  it("omits quality while retaining the build tool's native optional dependencies", () => {
+    const cache = join(REPO_ROOT, "node_modules/.cache");
+    mkdirSync(cache, { recursive: true });
+    const work = mkdtempSync(join(cache, "oi224-install-"));
+    vi.stubEnv("npm_config_cache", join(work, "cache"));
+    const pack = (name: string, extra: object = {}) => {
+      const dir = join(work, name);
+      mkdirSync(dir);
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({
+          name: `@oi224/${name}`,
+          version: "1.0.0",
+          main: "index.js",
+          ...extra,
+        }),
+      );
+      writeFileSync(join(dir, "index.js"), "module.exports = true;");
+      const packed = JSON.parse(
+        execFileSync("npm", ["pack", "--json", "--pack-destination", work], {
+          cwd: dir,
+          encoding: "utf8",
+        }),
+      );
+      return `file:${join(work, packed[0].filename)}`;
+    };
+    try {
+      const quality = pack("quality");
+      const editor = pack("editor", {
+        optionalDependencies: { "@oi224/quality": quality },
+        peerDependencies: { "@oi224/quality": "*" },
+        peerDependenciesMeta: { "@oi224/quality": { optional: true } },
+      });
+      const native = pack("native");
+      const tool = pack("tool", {
+        optionalDependencies: { "@oi224/native": native },
+      });
+      const app = join(work, "app");
+      mkdirSync(app);
+      const manifest = {
+        name: "consumer",
+        version: "1.0.0",
+        private: true,
+        dependencies: { "@oi224/editor": editor },
+        devDependencies: { "@oi224/tool": tool },
+      };
+      writeFileSync(join(app, "package.json"), JSON.stringify(manifest));
+      installConsumer({ consumerDir: app, manifest, omitOptional: true });
+      expect(existsSync(join(app, "node_modules/@oi224/quality"))).toBe(false);
+      expect(existsSync(join(app, "node_modules/@oi224/editor/index.js"))).toBe(
+        true,
+      );
+      expect(existsSync(join(app, "node_modules/@oi224/tool/index.js"))).toBe(
+        true,
+      );
+      expect(
+        existsSync(
+          join(app, ".consumer-tools/node_modules/@oi224/native/index.js"),
+        ),
+      ).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("vanillaConsumerDir", () => {
   // A consumer inside the repo also resolves bare imports from the repo-root
@@ -117,6 +196,46 @@ describe("readFixtureRoots", () => {
 });
 
 describe("resolveWorkspaceClosure", () => {
+  it("pins optional dependencies and their transitive types to local tarballs", () => {
+    const manifests = fake({
+      "@templatical/editor": {
+        optionalDependencies: { "@templatical/quality": "workspace:*" },
+      },
+      "@templatical/quality": {
+        dependencies: { "@templatical/types": "workspace:*" },
+      },
+      "@templatical/types": {},
+    });
+    const { closure, transitive } = resolveWorkspaceClosure(
+      ["@templatical/editor"],
+      manifests,
+    );
+    expect(closure).toEqual([
+      "@templatical/editor",
+      "@templatical/quality",
+      "@templatical/types",
+    ]);
+    expect(
+      withTarballs(
+        { dependencies: { "@templatical/editor": "^0.49.0" } },
+        new Map(
+          closure.map((name: string) => [
+            name,
+            `file:/packed/${name.slice(13)}.tgz`,
+          ]),
+        ),
+        transitive,
+      ).overrides,
+    ).toEqual({
+      "@templatical/quality": "file:/packed/quality.tgz",
+      "@templatical/types": "file:/packed/types.tgz",
+    });
+    expect(buildOrder(["@templatical/editor"], manifests)).toEqual([
+      "@templatical/types",
+      "@templatical/quality",
+      "@templatical/editor",
+    ]);
+  });
   const manifests = fake({
     "@templatical/editor": {
       peerDependencies: {
@@ -286,7 +405,12 @@ const findWorkspaceCycle = (
     state.set(name, VISITING);
     path.push(name);
     const edges = (
-      ["dependencies", "devDependencies", "peerDependencies"] as const
+      [
+        "dependencies",
+        "optionalDependencies",
+        "devDependencies",
+        "peerDependencies",
+      ] as const
     )
       .flatMap((field) => Object.keys(manifests.get(name)?.[field] ?? {}))
       .filter((dep) => manifests.has(dep));
@@ -402,12 +526,12 @@ describe("the real workspace, fixtures and examples", () => {
     },
   );
 
-  it("pins types for the fixtures that install the renderer", () => {
+  it("pins quality and types for the fixtures that install the editor and renderer", () => {
     for (const name of ["vanilla-consumer", "webpack-consumer"]) {
       expect(
         resolveWorkspaceClosure(readFixtureRoots(readFixture(name)), manifests)
           .transitive,
-      ).toEqual(["@templatical/types"]);
+      ).toEqual(["@templatical/quality", "@templatical/types"]);
     }
   });
 

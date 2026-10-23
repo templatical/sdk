@@ -84,7 +84,7 @@ unmount();
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `smallScreenNotice`  | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself                                                                                                                                                                                                                                   |
-| `lint`               | `LintOptions`                                                     | No       | Template linter configuration, from `@templatical/quality` (an optional peer). Unset, the linter loads on demand when the panel is opened. `disabled: true` skips the import entirely and hides the sidebar tab and inline badges. See [Quality options](/quality/options)                                                                                                                                                                                                                                                     |
+| `lint`               | `LintOptions`                                                     | No       | Template linter configuration. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. Unset, linting starts at editor mount. `disabled: true` skips the import entirely and hides the sidebar tab and inline badges. See [Quality options](/quality/options)                                                                                                                                                                                                                                                     |
 
 ### Container element requirements
 
@@ -5988,7 +5988,7 @@ export async function renderTemplate(content: TemplateContent): Promise<{ mjml: 
 
 Source: https://docs.templatical.com/getting-started/author-features
 
-What authors see. Each row is off until you pass its key (or, for Issues, install the optional quality package). The editor with only `container` still edits; it does not persist, comment, or send.
+What authors see. Provider features are off until you pass their key. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The editor with only `container` still edits; it does not persist, comment, or send.
 
 Provider methods run in the browser. Hide a control with `false`; enforce the same rule on your server. See [Connect your backend](/backend/).
 
@@ -6014,10 +6014,10 @@ No provider. Configure on `init()` or in template settings.
 |---|---|---|---|
 | Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) | [merge-tags](https://play.templatical.com/scenes/merge-tags) |
 | Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) | [display-conditions](https://play.templatical.com/scenes/display-conditions) |
-| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` | [issues](https://play.templatical.com/scenes/issues) |
+| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — `@templatical/quality`, optional dependency installed by default | [issues](https://play.templatical.com/scenes/issues) |
 | Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) | [custom-blocks](https://play.templatical.com/scenes/custom-blocks) |
 
-Issues is an optional peer: skip the package and the tab never downloads.
+See [Installation](/getting-started/installation#optional-peers) for package details.
 
 ---
 
@@ -6297,7 +6297,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
 - **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [Embedding the editor](./embedding) for what each one breaks and how to work around it.
-- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. It enables the Issues panel and lint badges; `@templatical/renderer` and `pusher-js` remain optional peers. See [Optional peers](#optional-peers).
 
 ## Network requests
 
@@ -6388,7 +6388,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
-| `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
+| `@templatical/quality`         | Template linters (accessibility, structure, links, deliverability, compatibility) that drive the editor's Issues panel and a headless / CI check.                             | Optional dependency of the editor, installed by default                        |
 | `@templatical/media-library`   | Standalone media SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in a Vue app). The editor's Browse UI is bundled into `@templatical/editor`. | Optional — only for standalone use, not for `init({ media })` or Cloud's store |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
@@ -6402,19 +6402,21 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-chamaileon` | Converts Chamaileon `getDocument()` JSON to Templatical format.                                                                        | Optional                                                                                            |
 | `@templatical/import-easy-email-pro` | Converts Easy Email Pro persist JSON to Templatical format.                                                                        | Optional                                                                                            |
 
-`@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
+`@templatical/editor` ships as a single self-contained ESM bundle: its required editor runtime (Vue, TipTap, vue-draggable-plus, `@templatical/core` and `@templatical/types`) is inlined. You do not install the bundled runtime separately. Quality installs its own `@templatical/types` dependency.
 
 ## Optional peers
 
-The editor lazy-loads three optional peers via dynamic `import()` at runtime, gated by feature use:
+The editor lazy-loads optional packages via dynamic `import()`, gated by feature use. Quality installs by default; renderer and pusher-js remain optional peers:
 
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
-| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, link, deliverability, and compatibility lint in the Issues sidebar |
+| `@templatical/quality`       | Editor mount (Issues panel)     | Optional dependency of the editor, installed by default |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
-If you don't install them, the editor still mounts. Quality's Issues tab and Pusher stay off. `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
+
+Without pusher-js, Cloud realtime stays off. Without the renderer or a rendering provider, `editor.toMjml()` throws a clear error naming the missing package. Browse needs no extra package — the modal is a lazy chunk of the editor.
 
 ### A note on bundler output
 
@@ -6639,15 +6641,16 @@ Every GitHub release carries the same tarballs that go to npm, one per package. 
 
 Three things to know:
 
-**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the importers all depend on `@templatical/types`. Point each one you pull in at a tarball:
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. A default install of `@templatical/editor` pulls in `@templatical/quality`, which depends on `@templatical/types`. `@templatical/core`, `@templatical/renderer`, `@templatical/media-library` and the importers also depend on `@templatical/types`. Point each package you pull in at its versioned release tarball; for the editor's default install, pin both quality and types:
 
 ```yaml
 # pnpm-workspace.yaml
 overrides:
+  '@templatical/quality': https://github.com/templatical/sdk/releases/download/v<version>/templatical-quality-<version>.tgz
   '@templatical/types': https://github.com/templatical/sdk/releases/download/v<version>/templatical-types-<version>.tgz
 ```
 
-npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`. `@templatical/editor` needs none of this — it bundles everything it uses.
+npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`.
 
 **Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-topol`, `@templatical/import-chamaileon` and `@templatical/import-easy-email-pro` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html`, `@templatical/import-mjml` and `@templatical/import-stripo` need `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
 
@@ -6766,6 +6769,8 @@ bun add @templatical/editor @templatical/renderer
 ```
 
 :::
+
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
 
 ## 2. Mount the editor {#mount-the-editor}
 
@@ -6886,6 +6891,7 @@ Match the symptom to the row before changing anything. Several of these look lik
 
 | Symptom | Cause | What to do |
 |---|---|---|
+| No Issues tab or lint badges | `@templatical/quality` is missing or was left out. | Add `@templatical/quality` to your dependencies. If it is present, check `lint.disabled` and per-tool settings. |
 | Editor renders in a fallback font, or has no layout with `shadowDom: false` | `@templatical/editor/style.css` was not imported. It loads the editor's Geist font, and with `shadowDom: false` it is the editor's only stylesheet. The default shadow mount carries its own copy of the editor's CSS. The `exports` map resolves that subpath to `dist/style.css`. | Import the stylesheet next to `init()`. Do not install `tailwindcss` as a peer — it is compiled into that file. |
 | Dialogs clipped, painted under host chrome, or a drag ghost that drifts | An ancestor of the container is a containing block for `position: fixed`: `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`, `isolation`, `opacity` below `1`, or a positioned element with `z-index`. | Remove that property from ancestors, or mount outside that stacking context. |
 | Sidebar last items / footer clip, no scroll | The container has no definite height. The editor fills its parent; without one it uses a small anti-collapse floor and chrome still assumes real height. | Give the container a real height (`100%` of a sized parent, or a `px`/`vh` value). |
@@ -14064,6 +14070,8 @@ The package has no opinion on UI. The editor's `useTemplateLint` composable lazy
 
 ## Install
 
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. For headless use or to add it back, install it explicitly:
+
 ::: code-group
 ```bash [npm]
 npm install @templatical/quality
@@ -14079,7 +14087,7 @@ bun add @templatical/quality
 ```
 :::
 
-The package is an **optional peer** of `@templatical/editor`. Install it to turn on the Issues sidebar tab and canvas badges. Skip it and the editor stays lean — the dynamic import is gated and tree-shakeable, so the linter chunk never downloads.
+
 
 ::: tip CDN users
 If you load Templatical via CDN, there's nothing to install. The editor's CDN bundle ships `@templatical/quality` as a separate code-split chunk that lazy-loads automatically when linting is enabled.
@@ -14118,7 +14126,7 @@ const editor = init({
 
 [Open in playground](https://play.templatical.com/scenes/issues)
 
-The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
+The Issues tab and inline canvas badges appear automatically once the quality package is available. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
 
 Set any single linter to `false` to drop just that tool's rules:
 

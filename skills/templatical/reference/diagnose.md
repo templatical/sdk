@@ -12,3 +12,7 @@ symptoms are indistinguishable from a broken build until you know the
 signature — a sidebar whose last items and footer are cut off with no scroll
 is the height-chain row in [failure-modes.md](failure-modes.md), and nothing
 throws or logs to make it obvious.
+
+No Issues tab means `@templatical/quality` is missing or was left out. Add it
+to the app's dependencies to restore the Issues panel and lint badges. If it
+is present, check `lint.disabled` and per-tool settings.

@@ -1,11 +1,11 @@
 ---
 title: Funktionen für Autoren
-description: Was man im Editor sieht — gespeicherte Blöcke, Kommentare, Versionsverlauf, Test-E-Mail, Issues, Medien — und welcher init()-Schlüssel oder welches Paket das jeweils einschaltet.
+description: Was man im Editor sieht — gespeicherte Blöcke, Kommentare, Versionsverlauf, Test-E-Mail, Probleme, Medien — und welcher init()-Schlüssel oder welches Paket das jeweils einschaltet.
 ---
 
 # Funktionen für Autoren
 
-Was Autoren sehen. Jede Zeile ist aus, bis Sie den Schlüssel übergeben (bei Issues: das optionale Quality-Paket installieren). Der Editor mit nur `container` editiert; er speichert, kommentiert und sendet nicht.
+Was Autoren sehen. Provider-Funktionen sind aus, bis Sie ihren Schlüssel übergeben. `@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus. Der Editor mit nur `container` editiert; er speichert, kommentiert und sendet nicht.
 
 Provider-Methoden laufen im Browser. Ein Steuerelement mit `false` ausblenden; dieselbe Regel auf dem Server durchsetzen. Siehe [Backend anbinden](/de/backend/).
 
@@ -31,7 +31,7 @@ Kein Provider. Konfiguration über `init()` oder Template-Einstellungen.
 |---|---|---|---|
 | Merge-Tags | CRM-Felder mit lesbarem Label einfügen | [Merge-Tags](/de/guide/merge-tags) | [merge-tags](https://play.templatical.com/scenes/merge-tags) |
 | Anzeigebedingungen | Block je Empfänger ein- oder ausblenden | [Anzeigebedingungen](/de/guide/display-conditions) | [display-conditions](https://play.templatical.com/scenes/display-conditions) |
-| Issues | Zu einem Lint-Treffer springen, Fix anwenden | [Qualität](/de/quality/) — `@templatical/quality` installieren | [issues](https://play.templatical.com/scenes/issues) |
+| Probleme | Zu einem Lint-Treffer springen, Fix anwenden | [Qualität](/de/quality/) — `@templatical/quality`, optionale Abhängigkeit und standardmäßig mitinstalliert | [issues](https://play.templatical.com/scenes/issues) |
 | Eigene Blöcke | Einen von Ihnen registrierten Typ ablegen | [Eigene Blöcke](/de/guide/custom-blocks) | [custom-blocks](https://play.templatical.com/scenes/custom-blocks) |
 
-Issues ist ein optionales Peer: ohne das Paket wird der Tab nicht geladen.
+Paketdetails finden Sie unter [Installation](/de/getting-started/installation#optionale-peers).

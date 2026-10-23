@@ -2,7 +2,8 @@
 /**
  * Verify one `examples/<name>` against this checkout's packages. It
  * materializes the example in a temp directory with every @templatical
- * dependency pointed at a packed tarball, runs its production build and its
+ * dependency (including the editor's optional quality dependency) pointed at
+ * a packed tarball, runs its production build and its
  * typecheck, serves it, and runs the Playwright smoke spec against it.
  *
  * Usage: node packages/editor/scripts/examples-verify.mjs <name> [--build] [--keep]
