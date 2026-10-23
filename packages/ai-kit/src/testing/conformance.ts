@@ -1,4 +1,5 @@
 import type {
+  AiAltTextRequest,
   AiFeatureName,
   AiMergeTags,
   AiProvider,
@@ -26,6 +27,8 @@ export interface AiConformanceOptions {
   /** The template the suite edits; the test set's welcome email by default. */
   content?: TemplateContent;
   templateId?: string;
+  /** Public image URL fetched by the model provider for the alt-text probe. */
+  altTextImageUrl?: string;
   mergeTags?: AiMergeTags | null;
   /** How long a stopped call may take to reject (D35). */
   timeoutMs?: number;
@@ -35,7 +38,13 @@ export interface AiConformanceOptions {
   design?: { file: Blob; fileKind: "image" | "pdf" };
 }
 
-const FEATURES: AiFeatureName[] = ["chat", "fixFinding", "design", "rewrite"];
+const FEATURES: AiFeatureName[] = [
+  "chat",
+  "fixFinding",
+  "design",
+  "rewrite",
+  "altText",
+];
 
 /** A 1×1 transparent PNG. */
 function tinyPng(): Blob {
@@ -524,6 +533,37 @@ export async function runAiProviderConformance(
             typeof html === "string"
               ? JSON.stringify(html).slice(0, 120)
               : preview(html),
+        };
+      });
+  }
+  if (typeof provider.altText === "function") {
+    const altText = provider.altText;
+    const request: AiAltTextRequest = {
+      templateId,
+      sessionId: editor.sessionId,
+      blockId: "conformance-image",
+      image: {
+        url:
+          options.altTextImageUrl ??
+          "https://docs.templatical.com/og-image.png",
+      },
+      currentAlt: null,
+      linkHref: null,
+      nearbyText: "Explore our email editor.",
+      locale: editor.content.settings.locale ?? "en",
+      maxLength: 125,
+    };
+    probes.altText = (signal) => altText(request, signal);
+    const result = await call("altText", probes.altText);
+    if (result !== NO_RESULT)
+      await add("altText: answers within maxLength", () => {
+        const alt = (result as { alt?: unknown } | null)?.alt;
+        return {
+          ok:
+            typeof alt === "string" &&
+            alt.trim() !== "" &&
+            alt.length <= request.maxLength,
+          detail: preview(alt),
         };
       });
   }

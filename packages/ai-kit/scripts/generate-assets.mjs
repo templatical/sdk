@@ -40,6 +40,7 @@ function constants() {
     ["CHAT_REQUEST", prompt("prompts/chat.md")],
     ["FIX_REQUEST", prompt("prompts/fix.md")],
     ["DESIGN_REQUEST", prompt("prompts/design.md")],
+    ["ALT_TEXT_INSTRUCTIONS", prompt("prompts/alt-text.md")],
     ["REWRITE_INSTRUCTIONS", prompt("prompts/rewrite.md")],
   ];
 }

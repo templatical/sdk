@@ -726,6 +726,17 @@ const ptBR: typeof en = {
     agentUpdatedTemplate: "{who} atualizou o template.",
   },
   ai: {
+    altText: {
+      button: "Escrever texto alternativo",
+      drafting: "Escrevendo texto alternativo…",
+      title: "Texto alternativo",
+      accept: "Aceitar",
+      decorative: "Marcar como decorativa",
+      cancel: "Cancelar",
+      note: "Escrito por IA. Verifique se o texto descreve a finalidade da imagem.",
+      failed:
+        "Não foi possível escrever o texto alternativo desta imagem. Escreva-o manualmente.",
+    },
     fix: {
       button: "Corrigir com IA",
       fixing: "Corrigindo…",

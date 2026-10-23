@@ -647,6 +647,17 @@ const translations: typeof en = {
     agentUpdatedTemplate: "{who}がテンプレートを更新しました。",
   },
   ai: {
+    altText: {
+      button: "代替テキストを作成",
+      drafting: "代替テキストを作成中…",
+      title: "代替テキスト",
+      accept: "採用",
+      decorative: "装飾画像にする",
+      cancel: "キャンセル",
+      note: "AIが作成しました。画像の目的が伝わるか確認してください。",
+      failed:
+        "この画像の代替テキストを作成できませんでした。手動で入力してください。",
+    },
     fix: {
       button: "AIで修正",
       fixing: "修正中…",

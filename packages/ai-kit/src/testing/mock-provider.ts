@@ -1,4 +1,5 @@
 import type {
+  AiAltTextRequest,
   AiMessageBatch,
   AiReplayContext,
   AiReplayOutcome,
@@ -42,6 +43,7 @@ export interface AiMockScript {
   fixFinding?: false | AiRecording<AiFixRequest>;
   design?: false | AiRecording<AiDesignRequest>;
   rewrite?: false | AiRecording<AiRewriteRequest>;
+  altText?: false | AiRecording<AiAltTextRequest>;
   /** Keep a conversation in memory per template, with Undo and Redo. */
   conversation?: boolean;
   /** A pause before every event, in ms (0 by default). */
@@ -274,6 +276,18 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
           );
           if (typeof done.html !== "string") throw failure();
           return { html: done.html };
+        }
+      : false,
+    altText: script.altText
+      ? async (request, signal) => {
+          const done = await play(
+            script.altText as AiRecording<AiAltTextRequest>,
+            request,
+            signal,
+            () => {},
+          );
+          if (typeof done.alt !== "string") throw failure();
+          return { alt: done.alt };
         }
       : false,
     ...(script.conversation

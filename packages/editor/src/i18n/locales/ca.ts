@@ -728,6 +728,17 @@ const ca: typeof en = {
     agentUpdatedTemplate: "{who} ha actualitzat la plantilla.",
   },
   ai: {
+    altText: {
+      button: "Escriu el text alternatiu",
+      drafting: "S'està escrivint el text alternatiu…",
+      title: "Text alternatiu",
+      accept: "Accepta",
+      decorative: "Marca com a decorativa",
+      cancel: "Cancel·la",
+      note: "Redactat amb IA. Comproveu que descrigui la finalitat de la imatge.",
+      failed:
+        "No s'ha pogut escriure el text alternatiu d'aquesta imatge. Escriviu-lo manualment.",
+    },
     fix: {
       button: "Corregeix amb IA",
       fixing: "S’està corregint…",

@@ -72,7 +72,7 @@ import {
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
 | `rewriteInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Per-request prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
@@ -101,6 +101,24 @@ There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview 
 
 Check your fix endpoint with `runAiWireConformance({ baseUrl })` in the example below; `runAiProviderConformance(provider)` also sends a lint-shaped finding to `fixFinding`.
 
+### Alt text
+
+`buildAltTextRequest(request: AiAltTextRequest)` returns `{ system: string; messages: AiModelMessage[] }` with the image as an `image-url` attachment on the user message. `prompts/alt-text.md` requests the image's purpose in this email, destination or action for linked images, visible image text, the template's locale, plain text and the request's `maxLength`. Nearby text and current alt are data, never instructions.
+
+`checkAltText(answer, { maxLength })` returns the normalized string: trim, strip one surrounding single or double quote pair, remove one leading “Image of” or “Picture of” case-insensitively, then trim. It rejects empty text, HTML (`<` followed by a letter), or a string longer than `maxLength` UTF-16 units with `SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 502, "ai_output_invalid")`.
+
+`readAiRequest` validates the `altText` route without truncation: `blockId` is non-empty, at most 200 characters; `image.url` is an `http:` or `https:` URL parsed by `new URL()`, at most 2,048 characters; `currentAlt` and `linkHref` are strings of at most 2,048 characters or `null`; `nearbyText` is at most 2,000 code points; `locale` is at most 35 characters and matches `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/`; `maxLength` is an integer from 1 to 1,000. Invalid fields throw `SdkError(message, 422)` with no code. Character limits other than `nearbyText` count UTF-16 units.
+
+The editor supplies its effective lint `altMaxLength`, default 125. Always check the answer with the request's value. The model provider fetches `image.url`; your backend authorizes the template and block and resolves private or signed media. [Alt text in the editor](/backend/ai#alt-text) documents review and the `decorative` flag.
+
+The model attachment union is:
+
+```ts
+export type AiModelAttachment =
+  | { kind: "image" | "pdf"; mediaType: string; data: Blob }
+  | { kind: "image-url"; url: string };
+```
+
 ### Model adapters
 
 `runEditingTurn` calls your model through one method:
@@ -120,7 +138,7 @@ interface AiModelAdapter {
 }
 ```
 
-[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. The Vercel AI SDK and OpenAI examples are text-only; their client configuration turns off design and stored conversation history. The Anthropic example also maps image and PDF attachments.
+[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All accept image URLs; only the Anthropic example accepts image and PDF Blobs. The OpenAI and Vercel client configurations turn off design and stored conversation history.
 
 ## Testing
 
@@ -136,9 +154,11 @@ const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' 
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
 ```
 
-- `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features })` does the same over the wire, plus the wire's own rules, for a backend in any language.
+- `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features, altTextImageUrl })` does the same over the wire, plus the wire's own rules, for a backend in any language.
 - `createMockAiProvider(script)` plays recorded streams, for your UI tests; `AI_RECORDINGS` is the playground's.
 - `runAiEvalSet({ runTurn, model })` runs the 32-case test set and reports a pass rate; `evalTurnWith(adapter)` builds `runTurn` from the kit's own loop.
+
+The conformance suites check a non-empty alt string within the request's `maxLength`, abort handling, and `altText: false`. The wire probe uses `altTextImageUrl`, default `https://docs.templatical.com/og-image.png`; set it to a public image your model provider can fetch.
 
 ## Files
 
@@ -146,7 +166,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## The wire
 
-Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo and replay settlement carry `X-Templatical-Session`. A cross-origin backend allows `Templatical-AI-Wire`, `X-Templatical-Session` and its auth header in `Access-Control-Allow-Headers` for preflight, and exposes `Templatical-AI-Wire` in `Access-Control-Expose-Headers`. Routes are relative to your base URL; `{t}` is the template id.
+Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Undo, Redo and replay settlement carry `X-Templatical-Session`. A cross-origin backend allows `Templatical-AI-Wire`, `X-Templatical-Session` and its auth header in `Access-Control-Allow-Headers` for preflight, and exposes `Templatical-AI-Wire` in `Access-Control-Expose-Headers`. Routes are relative to your base URL; `{t}` is the template id.
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -154,12 +174,13 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite); `error { code, message }`. `done` or `error` is the last event.
+**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite), `done { alt }` (alt text); `error { code, message }`. `done` or `error` is the last event.
 
 **Errors before the stream** are JSON `{ message, code, …details }` with the status of the code: `feature_unavailable` and `limit_reached` 403, `rate_limited` 429 with `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, an operation's code 409 (`invalid_operation` 422). A validation failure is a 422 `{ message }`.
 
@@ -2278,7 +2299,7 @@ unsubscribe(); // Remove listener
 
 Source: https://docs.templatical.com/backend/ai
 
-Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, reviewed alt-text drafts in Issues, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
 The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
@@ -2314,6 +2335,7 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
+  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -2332,7 +2354,7 @@ interface AiReplayOutcome {
 }
 ```
 
-Every request carries `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix, design and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
 
 ### Turns: chat, fix and design
 
@@ -2357,9 +2379,35 @@ The Issues panel offers **Fix with AI** for these rule ids when the finding has 
 - `deliverability.link-text-domain-mismatch`
 - `deliverability.low-text`
 
-The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. All buttons are disabled during AI work; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
+The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. Fix buttons are disabled during AI editing work; independent alt-text drafts do not block fixes; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
 
 For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
+
+### Alt text
+
+`altText(request, signal)` returns `{ alt: string }` for one image, with no content change or chat history. The request is `AiAltTextRequest` from `@templatical/types`:
+
+```ts
+export interface AiAltTextRequest {
+  templateId: string;
+  sessionId: string;
+  blockId: string;
+  image: { url: string };
+  currentAlt: string | null;
+  linkHref: string | null;
+  nearbyText: string;
+  locale: string;
+  maxLength: number;
+}
+```
+
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale.
+
+`maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend.
+
+The Issues panel offers **Write alt text** once per image for `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` and `a11y.img-linked-no-context`. The inline review has an editable draft. **Accept** writes `{ alt, decorative: false }`; **Mark decorative** writes `{ alt: "", decorative: true }`; **Cancel** and Escape write nothing. An empty `alt` alone still triggers `img-missing-alt`. The renderer forces `alt=""` and `role="presentation"` for decorative images.
+
+Drafts run independently, can be stopped, and abort on template switches or editor destruction. Applying uses one AI batch and one undo step, split at 100 operations when needed; collaboration uses the user's batch with `origin: 'ai'`. Neither action adds chat history. `altText: false` hides the action; the HTTP equivalent is `features: { altText: false }`.
 
 ### Rewrite
 
@@ -2394,7 +2442,7 @@ Reject with an `SdkError` whose `code` the editor knows, and whose message the u
 | `rate_limited` | Too many requests; a `ThrottledError` with `retryAfterMs` |
 | `ai_turn_running` | A turn is already running on this template |
 | `content_too_large` | The template is too large for the model |
-| `ai_output_invalid` | The model's rewrite broke the rules after a repair |
+| `ai_output_invalid` | The model's rewrite or alt-text output broke the rules |
 | `ai_provider_error` | The model provider failed |
 
 Undo and Redo may reject with an operation's code (`precondition_failed`, …) as a `CollaborationConflict`. An `AbortError` means the user stopped the call and is never shown. The editor says each failure in words and passes it to `init({ onError })` too.
@@ -2432,6 +2480,8 @@ The **AI** setup plays recorded turns through `createMockAiProvider`: no model a
 Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
 
 Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
+
+For alt text, open an image finding and choose **Write alt text**. Edit the draft, accept it, and Undo: both `alt` and `decorative` return to their previous values. **Mark decorative** clears `img-missing-alt` after re-lint. Cancel leaves the image unchanged.
 
 ---
 
@@ -7820,6 +7870,8 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
+  buildAltTextRequest,
+  checkAltText,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
@@ -7886,6 +7938,19 @@ export async function handle(request: Request): Promise<Response> {
         stream.send({ type: 'done', messageId: null });
       });
     }
+    case 'altText': {
+      const body = read.body;
+      // Authorize the template and block as on every route. The model provider
+      // fetches the image URL; resolve private or signed media in your backend.
+      const built = buildAltTextRequest({ ...body, templateId: read.template, sessionId: read.sessionId ?? '' });
+      return aiEventStream(async (stream) => {
+        let answer = '';
+        for await (const part of model.stream({ ...built, tools: [], signal: stream.signal })) {
+          if (part.type === 'text') answer += part.text;
+        }
+        stream.send({ type: 'done', alt: checkAltText(answer, { maxLength: body.maxLength }) });
+      });
+    }
     case 'rewriteText': {
       const body = read.body;
       const prompt = buildRewritePrompt(body);
@@ -7913,7 +7978,13 @@ Set your framework's whole-body request limit to about 6 MB with design uploads,
 
 Each adapter maps the kit's neutral messages and tools to one SDK and back. Install only the one you use.
 
-The Vercel AI SDK and OpenAI adapters below are text-only: they do not forward image or PDF uploads to the model. Use this client configuration with either adapter to turn off design-to-template and stored conversation history:
+OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All three adapters accept `image-url` attachments. Blob attachments for design stay Anthropic-only. Use this client configuration with OpenAI or Vercel to turn off design-to-template and stored conversation history:
+
+| Adapter | Features | Attachments |
+| --- | --- | --- |
+| OpenAI | Chat, fix, rewrite, alt text | Image URL |
+| Vercel AI SDK | Chat, fix, rewrite, alt text | Image URL |
+| Anthropic | Chat, fix, rewrite, alt text, design | Image URL, image Blob, PDF Blob |
 
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
@@ -7945,7 +8016,10 @@ export const model: AiModelAdapter = {
           ? { role: 'tool', content: [{ type: 'tool-result', toolCallId: m.toolCallId, toolName: m.name, output: { type: 'text', value: m.content } }] }
           : m.role === 'assistant'
             ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
-            : { role: 'user', content: m.content },
+            : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
+                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                return { type: 'image' as const, image: new URL(a.url) };
+              })] },
       ),
     });
     for await (const part of result.fullStream) {
@@ -7981,7 +8055,10 @@ export const model: AiModelAdapter = {
               ? { role: 'tool' as const, tool_call_id: m.toolCallId, content: m.content }
               : m.role === 'assistant'
                 ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
-                : { role: 'user' as const, content: m.content },
+                : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
+                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                    return { type: 'image_url' as const, image_url: { url: a.url } };
+                  })] },
           ),
         ],
       },
@@ -8031,6 +8108,7 @@ async function toAnthropic(messages: AiModelMessage[]): Promise<Anthropic.Messag
     } else {
       const files = await Promise.all(
         (m.attachments ?? []).map(async (a) => {
+          if (a.kind === 'image-url') return { type: 'image', source: { type: 'url', url: a.url } } as const;
           const data = Buffer.from(await a.data.arrayBuffer()).toString('base64');
           return a.kind === 'pdf'
             ? ({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } } as const)
@@ -8078,7 +8156,7 @@ import { model } from './model';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, design: false }, // text-only adapters
+  features: { conversation: false, design: false }, // adapters without design
 });
 const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
 console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);

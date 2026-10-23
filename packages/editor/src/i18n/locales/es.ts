@@ -727,6 +727,17 @@ const es: typeof en = {
     agentUpdatedTemplate: "{who} actualizó la plantilla.",
   },
   ai: {
+    altText: {
+      button: "Escribir texto alternativo",
+      drafting: "Escribiendo texto alternativo…",
+      title: "Texto alternativo",
+      accept: "Aceptar",
+      decorative: "Marcar como decorativa",
+      cancel: "Cancelar",
+      note: "Redactado por IA. Compruebe que describe la finalidad de la imagen.",
+      failed:
+        "No se pudo escribir el texto alternativo de esta imagen. Escríbalo manualmente.",
+    },
     fix: {
       button: "Corregir con IA",
       fixing: "Corrigiendo…",

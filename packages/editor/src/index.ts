@@ -1646,6 +1646,7 @@ export type {
   AiAppliedBatch,
   AiChatMessage,
   AiChatRequest,
+  AiAltTextRequest,
   AiConversationProvider,
   AiDesignRequest,
   AiFeatureName,

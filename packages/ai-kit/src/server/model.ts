@@ -1,12 +1,9 @@
 import type { AiToolDefinition } from "./tool";
 
-/** A file a design turn attaches to the user message. */
-export interface AiModelAttachment {
-  kind: "image" | "pdf";
-  /** `image/png`, `image/jpeg`, `image/webp`, `image/gif` or `application/pdf`. */
-  mediaType: string;
-  data: Blob;
-}
+/** A design file or an image URL attached to a user message. */
+export type AiModelAttachment =
+  | { kind: "image" | "pdf"; mediaType: string; data: Blob }
+  | { kind: "image-url"; url: string };
 
 export interface AiModelToolCall {
   id: string;

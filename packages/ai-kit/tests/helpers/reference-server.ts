@@ -5,6 +5,8 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
+  buildAltTextRequest,
+  checkAltText,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
@@ -40,6 +42,10 @@ export function referenceModel(): AiModelAdapter {
           },
         };
         yield { type: "usage", inputTokens: 10, outputTokens: 5 };
+        return;
+      }
+      if (messages.some(message => message.role === "user" && message.attachments?.some(attachment => attachment.kind === "image-url"))) {
+        yield { type: "text", text: "Explore the email editor" };
         return;
       }
       if (system === rewriteInstructions) {
@@ -186,6 +192,19 @@ export function createReferenceHandler(
             after: result.content,
           });
           stream.send({ type: "done", messageId: assistant.id });
+        });
+      }
+      case "altText": {
+        const body = read.body;
+        const built = buildAltTextRequest({ ...body, templateId: read.template, sessionId: read.sessionId ?? "" });
+        // Authorize this template and block as on every route. The model provider
+        // fetches the URL; the integrator's backend resolves private/signed media.
+        return aiEventStream(async stream => {
+          let answer = "";
+          for await (const part of model.stream({ ...built, tools: [], signal: stream.signal })) {
+            if (part.type === "text") answer += part.text;
+          }
+          stream.send({ type: "done", alt: checkAltText(answer, { maxLength: body.maxLength }) });
         });
       }
       case "rewriteText": {

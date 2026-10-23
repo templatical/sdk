@@ -31,6 +31,7 @@ describe("the wire", () => {
       fixFinding: "POST /templates/{template}/ai/fix-finding",
       generateFromDesign: "POST /templates/{template}/ai/generate-from-design",
       rewriteText: "POST /templates/{template}/ai/rewrite-text",
+      altText: "POST /templates/{template}/ai/alt-text",
       conversationMessages:
         "GET /templates/{template}/ai/conversation-messages",
       undoMessage: "POST /templates/{template}/ai/messages/{message}/undo",

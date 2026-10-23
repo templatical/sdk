@@ -102,6 +102,21 @@ export interface AiRewriteRequest extends AiRequestBase {
   instruction: string | null;
 }
 
+/** One image and its email context. Image URLs must be http(s), at most 2,048 characters. */
+export interface AiAltTextRequest {
+  templateId: string;
+  sessionId: string;
+  blockId: string;
+  image: { url: string };
+  currentAlt: string | null;
+  linkHref: string | null;
+  /** Plain text, at most 2,000 code points. */
+  nearbyText: string;
+  locale: string;
+  /** Effective lint altMaxLength: integer 1–1,000, counted as string.length. */
+  maxLength: number;
+}
+
 // ---------------------------------------------------------------------------
 // Turns
 // ---------------------------------------------------------------------------
@@ -308,6 +323,12 @@ export interface AiProvider {
         on: AiRewriteHandlers,
         signal: AbortSignal,
       ) => Promise<{ html: string }>);
+  altText:
+    | false
+    | ((
+        request: AiAltTextRequest,
+        signal: AbortSignal,
+      ) => Promise<{ alt: string }>);
   conversation?: AiConversationProvider;
 }
 

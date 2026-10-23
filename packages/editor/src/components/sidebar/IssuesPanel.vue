@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, inject, onUnmounted, ref, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  nextTick,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import {
   ListChecks,
   AlertCircle,
@@ -22,8 +30,67 @@ import {
 } from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
-import { AI_FIXABLE_RULES, toAiFixFinding } from "../../utils/aiFixableRules";
+import {
+  AI_ALT_TEXT_RULES,
+  AI_FIXABLE_RULES,
+  toAiFixFinding,
+} from "../../utils/aiFixableRules";
 
+const AiAltTextPopover = defineAsyncComponent(
+  () => import("../ai/AiAltTextPopover.vue"),
+);
+interface AltReviewRow {
+  blockId: string;
+  ruleId: string;
+  severity: LintIssue["severity"];
+}
+const altReview = ref<AltReviewRow | null>(null);
+const altBlockId = computed(() => altReview.value?.blockId ?? null);
+const altController = ref<AbortController | null>(null);
+const panelHeading = ref<HTMLHeadingElement | null>(null);
+let altButton: HTMLButtonElement | null = null;
+function ownsAltReview(issue: LintIssue): boolean {
+  const row = altReview.value;
+  return (
+    row !== null &&
+    row.blockId === issue.blockId &&
+    row.ruleId === issue.ruleId &&
+    row.severity === issue.severity
+  );
+}
+function openAltText(issue: LintIssue, event: MouseEvent): void {
+  if (!issue.blockId || ownsAltReview(issue)) return;
+  altController.value?.abort();
+  altController.value = null;
+  altButton = event.currentTarget as HTMLButtonElement;
+  altReview.value = {
+    blockId: issue.blockId,
+    ruleId: issue.ruleId,
+    severity: issue.severity,
+  };
+}
+async function closeAltText(
+  focus: "button" | "panel" = "button",
+): Promise<void> {
+  if (altReview.value === null) return;
+  altReview.value = null;
+  altController.value?.abort();
+  altController.value = null;
+  const button = altButton;
+  altButton = null;
+  await nextTick();
+  if (destroyed || altReview.value !== null) return;
+  (focus === "button" && button?.isConnected
+    ? button
+    : panelHeading.value
+  )?.focus();
+}
+function setAltDrafting(
+  issue: LintIssue,
+  controller: AbortController | null,
+): void {
+  if (ownsAltReview(issue)) altController.value = controller;
+}
 const { t, format } = useI18n();
 const ai = inject(AI_FEATURE_KEY, null);
 const lint = inject(TEMPLATE_LINT_KEY, null);
@@ -137,6 +204,7 @@ if (ai) {
     () => {
       pendingVerify.clear();
       stillFlagged.value.clear();
+      void closeAltText();
     },
     { flush: "sync" },
   );
@@ -155,6 +223,41 @@ const firstRows = computed(() => {
     }),
   );
 });
+const firstAltRows = computed(() => {
+  const seen = new Set<string>();
+  return new Set(
+    [...errors.value, ...warnings.value, ...infos.value].filter((issue) => {
+      if (
+        !issue.blockId ||
+        !(AI_ALT_TEXT_RULES as readonly string[]).includes(issue.ruleId) ||
+        seen.has(issue.blockId)
+      )
+        return false;
+      seen.add(issue.blockId);
+      return true;
+    }),
+  );
+});
+// A lint refresh can remove or regroup the owning row before the whole image's
+// findings disappear. Clear the review now so a later row cannot restart it.
+watch(
+  () =>
+    altReview.value === null ||
+    (visibleIssues.value.some(ownsAltReview) &&
+      (!editor || editor.findBlockLocation(altReview.value.blockId) !== null)),
+  (visible) => {
+    if (!visible) void closeAltText("panel");
+  },
+  { flush: "sync" },
+);
+function canWriteAltText(issue: LintIssue): boolean {
+  return (
+    !!ai &&
+    ai.isAvailable.value &&
+    ai.has("altText") &&
+    firstAltRows.value.has(issue)
+  );
+}
 function canFixWithAi(issue: LintIssue): boolean {
   return (
     !!ai &&
@@ -205,6 +308,8 @@ function applyFix(issue: LintIssue): void {
     <header class="tpl:flex tpl:items-center tpl:gap-2">
       <ListChecks :size="16" :stroke-width="1.5" />
       <h3
+        ref="panelHeading"
+        tabindex="-1"
         class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
         {{ t.issues.panelTitle }}
@@ -283,17 +388,17 @@ function applyFix(issue: LintIssue): void {
     </section>
 
     <div
-      v-if="runningPair !== null"
+      v-if="runningPair !== null || altController !== null"
       role="status"
       data-testid="issue-ai-status"
       class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
     >
-      <span>{{ t.ai.fix.fixing }}</span>
+      <span>{{ altController ? t.ai.altText.drafting : t.ai.fix.fixing }}</span>
       <button
         type="button"
         data-testid="issue-ai-stop"
         class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)]"
-        @click="ai?.stop()"
+        @click="altController ? altController.abort() : ai?.stop()"
       >
         <Square :size="10" :stroke-width="2" />
         {{ t.ai.chat.stop }}
@@ -403,6 +508,17 @@ function applyFix(issue: LintIssue): void {
                 {{ t.issues.fix }}
               </button>
               <button
+                v-if="canWriteAltText(issue)"
+                type="button"
+                data-testid="issue-ai-alt-text"
+                :disabled="ai!.busy.value"
+                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
+                @click="openAltText(issue, $event)"
+              >
+                <Sparkles :size="10" :stroke-width="2" />
+                {{ t.ai.altText.button }}
+              </button>
+              <button
                 v-if="canFixWithAi(issue)"
                 type="button"
                 data-testid="issue-ai-fix"
@@ -414,6 +530,13 @@ function applyFix(issue: LintIssue): void {
                 {{ t.ai.fix.button }}
               </button>
             </div>
+            <AiAltTextPopover
+              v-if="ownsAltReview(issue) && firstRows.has(issue)"
+              :key="JSON.stringify(altReview)"
+              :block-id="altBlockId!"
+              @close="closeAltText"
+              @drafting="setAltDrafting(issue, $event)"
+            />
             <p
               v-if="stillFlagged.has(pairOf(issue)) && firstRows.has(issue)"
               role="status"

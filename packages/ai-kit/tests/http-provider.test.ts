@@ -476,6 +476,7 @@ describe("createHttpAiProvider: transport edge cases", () => {
   it("disables every requested feature", () => {
     expect(
       provider({
+        altText: false,
         chat: false,
         fixFinding: false,
         design: false,
@@ -484,7 +485,8 @@ describe("createHttpAiProvider: transport edge cases", () => {
         conversation: false,
       }),
     ).toEqual({
-      chat: false,
+      altText: false,
+        chat: false,
       fixFinding: false,
       design: false,
       rewrite: false,
@@ -530,4 +532,25 @@ it("opens chat without requesting model starters", async () => {
   const ai = provider();
   expect("suggestions" in ai).toBe(false);
   expect(seen).toEqual([]);
+});
+
+
+describe("createHttpAiProvider altText", () => {
+  const request = { templateId: "t-1", sessionId: "s-1", blockId: "i", image: { url: "https://example.com/image.png" }, currentAlt: null, linkHref: null, nearbyText: "Shop", locale: "en", maxLength: 60 };
+  it("posts only the alt-text body and session header and reads done.alt", async () => {
+    const seen = fakeFetch(() => streamResponse(sse({ type: "done", alt: "Shop autumn arrivals" })));
+    const ai = provider();
+    expect(typeof ai.altText).toBe("function");
+    const result = await (ai.altText as Function)(request, new AbortController().signal);
+    expect(result).toEqual({ alt: "Shop autumn arrivals" });
+    expect(seen[0].url).toBe("https://api.example.com/ai/templates/t-1/ai/alt-text");
+    expect(seen[0].headers.get("X-Templatical-Session")).toBe("s-1");
+    const { templateId: _t, sessionId: _s, ...body } = request;
+    expect(seen[0].body).toEqual(body);
+  });
+  it("disables alt text explicitly", () => expect(provider({ altText: false }).altText).toBe(false));
+  it.each([{}, { html: "no" }, { alt: 42 }])("refuses a missing or malformed alt result %j", async fields => {
+    fakeFetch(() => streamResponse(sse(`data: ${JSON.stringify({ type: "done", ...fields })}\n\n`)));
+    await expect((provider().altText as Function)(request, new AbortController().signal)).rejects.toMatchObject({ code: "ai_provider_error" });
+  });
 });

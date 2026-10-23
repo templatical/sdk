@@ -25,6 +25,8 @@ export interface AiWireConformanceOptions {
     | Record<string, string>
     | (() => Record<string, string> | Promise<Record<string, string>>);
   templateId?: string;
+  /** Defaults to https://docs.templatical.com/og-image.png. */
+  altTextImageUrl?: string;
   timeoutMs?: number;
   callTimeoutMs?: number;
 }
@@ -92,6 +94,7 @@ export async function runAiWireConformance(
             "fixFinding",
             "generateFromDesign",
             "rewriteText",
+            "altText",
           ].includes(route),
       });
       if (!response.body) {
@@ -232,6 +235,7 @@ export async function runAiWireConformance(
     ),
     {
       templateId,
+      altTextImageUrl: options.altTextImageUrl,
       ...(options.timeoutMs !== undefined
         ? { timeoutMs: options.timeoutMs }
         : {}),

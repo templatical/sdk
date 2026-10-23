@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ACCESSIBILITY_RULES,
+  DEFAULT_A11Y_THRESHOLDS,
   DELIVERABILITY_RULES,
   type LintIssue,
 } from "@templatical/quality";
 import {
   AI_ALT_TEXT_RULES,
+  DEFAULT_ALT_MAX_LENGTH,
+  effectiveAltMaxLength,
   AI_FIXABLE_RULES,
   toAiFixFinding,
 } from "../src/utils/aiFixableRules";
@@ -46,5 +49,18 @@ describe("AI lint rule projection", () => {
     expect(issue.fix).toBeDefined();
     const { excerpt: _excerpt, ...withoutExcerpt } = issue;
     expect(toAiFixFinding(withoutExcerpt)).not.toHaveProperty("excerpt");
+  });
+});
+
+describe("effectiveAltMaxLength", () => {
+  it("matches quality's default without a runtime dependency", () => {
+    expect(DEFAULT_ALT_MAX_LENGTH).toBe(DEFAULT_A11Y_THRESHOLDS.altMaxLength);
+    expect(DEFAULT_ALT_MAX_LENGTH).toBe(125);
+  });
+  it.each([1, 60, 1000])("takes the configured integer %s", value => {
+    expect(effectiveAltMaxLength({ accessibility: { thresholds: { altMaxLength: value } } })).toBe(value);
+  });
+  it.each([undefined, {}, { accessibility: null }, { disabled: true, accessibility: { thresholds: { altMaxLength: 60 } } }, { accessibility: false }, { accessibility: true }, { accessibility: {} }, ...[0, 1001, 2.5, NaN, Infinity, "60"].map(altMaxLength => ({ accessibility: { thresholds: { altMaxLength } } }))])("falls back for %j", lint => {
+    expect(effectiveAltMaxLength(lint as never)).toBe(125);
   });
 });

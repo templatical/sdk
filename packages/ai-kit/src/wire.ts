@@ -1,5 +1,6 @@
 import type {
   AiAppliedBatch,
+  AiAltTextRequest,
   AiChatMessage,
   AiErrorCode,
   AiFixFinding,
@@ -20,6 +21,7 @@ export type AiRouteName =
   | "fixFinding"
   | "generateFromDesign"
   | "rewriteText"
+  | "altText"
   | "conversationMessages"
   | "undoMessage"
   | "redoMessage"
@@ -44,6 +46,7 @@ export const AI_ROUTES: Readonly<Record<AiRouteName, AiRoute>> = {
     method: "POST",
     path: "/templates/{template}/ai/rewrite-text",
   },
+  altText: { method: "POST", path: "/templates/{template}/ai/alt-text" },
   conversationMessages: {
     method: "GET",
     path: "/templates/{template}/ai/conversation-messages",
@@ -152,8 +155,9 @@ export interface AiAppliedEvent extends AiAppliedBatch {
  * without history; rewrite requires `html`.
  */
 export type AiDoneEvent = { type: "done" } & (
-  | { messageId: string | null; html?: never }
-  | { html: string; messageId?: never }
+  | { messageId: string | null; html?: never; alt?: never }
+  | { html: string; messageId?: never; alt?: never }
+  | { alt: string; messageId?: never; html?: never }
 );
 
 /** The last event of a failed stream; other fields are the error's details. */
@@ -170,6 +174,8 @@ export type AiWireEvent =
 // ---------------------------------------------------------------------------
 // Request bodies
 // ---------------------------------------------------------------------------
+
+export type AiAltTextBody = Omit<AiAltTextRequest, "templateId" | "sessionId">;
 
 export interface AiGenerateBody {
   message: string;

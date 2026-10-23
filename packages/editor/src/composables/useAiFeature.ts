@@ -36,6 +36,8 @@ import {
   AI_MISSING_PROVIDER_MESSAGE,
   type AiErrorContext,
 } from "../utils/aiErrors";
+import { aiImageContext } from "../utils/aiImageContext";
+import { DEFAULT_ALT_MAX_LENGTH } from "../utils/aiFixableRules";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 import {
   AGENT_HIGHLIGHT_MS,
@@ -120,6 +122,7 @@ export interface UseAiFeatureOptions {
   ) => Operation[];
   /** The comments panel's state: AI panels and comments are exclusive (D18). */
   commentsOpen: Ref<boolean> | null;
+  altMaxLength?: () => number;
   onError?: (error: Error) => void;
 }
 
@@ -208,6 +211,10 @@ export interface UseAiFeatureReturn {
     onText: (text: string) => void,
     signal: AbortSignal,
   ) => Promise<{ html: string }>;
+  draftAltText: (blockId: string, signal?: AbortSignal) => Promise<string>;
+  applyAltTexts: (
+    entries: Array<{ blockId: string; alt: string; decorative: boolean }>,
+  ) => Promise<void>;
   destroy: () => void;
 }
 
@@ -1268,6 +1275,100 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     ),
   );
 
+  async function draftAltText(
+    blockId: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    const scope = scopeOf();
+    const altText = provider.altText;
+    const controller = new AbortController();
+    const abort = () => controller.abort(signal?.reason);
+    const abandonDraft = () => controller.abort();
+    try {
+      signal?.throwIfAborted();
+      if (!scope || typeof altText !== "function")
+        throw new SdkError(
+          "This AI feature isn't available.",
+          403,
+          "feature_unavailable",
+        );
+      const context = aiImageContext(editor.content.value, blockId);
+      if (!context)
+        throw new SdkError(
+          "The image is no longer available.",
+          409,
+          "block_missing",
+        );
+      signal?.addEventListener("abort", abort, { once: true });
+      scope.lifetime.signal.addEventListener("abort", abandonDraft, {
+        once: true,
+      });
+      const { url, ...rest } = context;
+      const answer = await abortable(
+        altText(
+          {
+            templateId: scope.id,
+            sessionId: collaboration
+              ? collaboration.core.sessionId
+              : localSessionId,
+            blockId,
+            image: { url },
+            ...rest,
+            locale: editor.content.value.settings.locale,
+            maxLength: options.altMaxLength?.() ?? DEFAULT_ALT_MAX_LENGTH,
+          },
+          controller.signal,
+        ),
+        controller.signal,
+      );
+      controller.signal.throwIfAborted();
+      if (!isCurrent(scope))
+        throw new DOMException("The template changed.", "AbortError");
+      return answer.alt;
+    } catch (error) {
+      report(error);
+      throw error;
+    } finally {
+      signal?.removeEventListener("abort", abort);
+      scope?.lifetime.signal.removeEventListener("abort", abandonDraft);
+    }
+  }
+
+  function applyAltTexts(
+    entries: Array<{ blockId: string; alt: string; decorative: boolean }>,
+  ): Promise<void> {
+    const scope = scopeOf();
+    if (!scope || entries.length === 0) return Promise.resolve();
+    const ops: Operation[] = entries.map(({ blockId, alt, decorative }) => ({
+      op: "updateBlock",
+      blockId,
+      set: { alt, decorative },
+    }));
+    return enqueue(
+      "replay",
+      scope,
+      async (job) => {
+        try {
+          check(job);
+          const turn = crypto.randomUUID();
+          for (let start = 0; start < ops.length; start += 100) {
+            check(job);
+            const result = applyOps(ops.slice(start, start + 100), turn, scope);
+            if (!result.applied)
+              throw new CollaborationConflict(result.message, {
+                code: result.code,
+                opIndex: result.opIndex,
+              });
+          }
+        } catch (error) {
+          report(error);
+          throw error;
+        }
+      },
+      () => {},
+    );
+  }
+
   // --- The features ------------------------------------------------------------------
 
   return {
@@ -1379,6 +1480,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
         },
       );
     },
+    draftAltText,
+    applyAltTexts,
     destroy: () => {
       if (destroyed) return;
       destroyed = true;

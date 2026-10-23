@@ -10,6 +10,7 @@ const failed = (report: {
 }) => report.checks.filter((check) => !check.ok);
 
 const disabled: AiProvider = {
+  altText: false,
   chat: false,
   fixFinding: false,
   design: false,
@@ -118,6 +119,7 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
       ["fixFinding: stops on abort with an AbortError", true],
       ["design: stops on abort with an AbortError", true],
       ["rewrite: stops on abort with an AbortError", true],
+      ["altText: stops on abort with an AbortError", true],
     ]);
   });
 
@@ -249,6 +251,7 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
 
   it("fails a provider that rejects with a plain Error", async () => {
     const provider: AiProvider = {
+      altText: false,
       chat: false,
       fixFinding: false,
       design: false,
@@ -264,6 +267,7 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
 
   it("fails a provider that ignores an abort", async () => {
     const provider: AiProvider = {
+      altText: false,
       chat: false,
       fixFinding: false,
       design: false,
@@ -569,5 +573,20 @@ describe("runAiProviderConformance: precise diagnostics", () => {
       ok: true,
       detail: '"<p>Rewritten.</p>"',
     });
+  });
+});
+
+
+describe("altText conformance", () => {
+  it.each(["", " ", "x".repeat(126), 42])("rejects an invalid alt result %j", async alt => {
+    const report = await runAiProviderConformance({ ...disabled, altText: async (_r, signal) => { signal.throwIfAborted(); return { alt } as never; } });
+    expect(report.checks.find(c => c.name === "altText: answers within maxLength")).toMatchObject({ ok: false });
+  });
+  it("passes a valid recorded alt draft and records disabled members as off", async () => {
+    const report = await runAiProviderConformance(createMockAiProvider({ altText: [{ type: "done", alt: "Shop arrivals" }] }));
+    expect(report.ok).toBe(true);
+    expect(report.checks.find(c => c.name === "altText: answers within maxLength")).toMatchObject({ ok: true });
+    const off = await runAiProviderConformance(createMockAiProvider({ rewrite: [{ type: "done", html: "<p>Hi</p>" }], altText: false }));
+    expect(off.checks.find(c => c.name === "altText: off")).toMatchObject({ ok: true });
   });
 });

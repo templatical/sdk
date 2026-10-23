@@ -1,11 +1,11 @@
 ---
 title: AI
-description: Chat that edits the template, rewrite and design to template over your own AI backend.
+description: Chat, lint fixes, alt-text drafts, rewrite and design to template over your own AI backend.
 ---
 
 # AI
 
-Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, reviewed alt-text drafts in Issues, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
 The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
@@ -41,6 +41,7 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
+  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -59,7 +60,7 @@ interface AiReplayOutcome {
 }
 ```
 
-Every request carries `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix, design and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
 
 ### Turns: chat, fix and design
 
@@ -84,9 +85,35 @@ The Issues panel offers **Fix with AI** for these rule ids when the finding has 
 - `deliverability.link-text-domain-mismatch`
 - `deliverability.low-text`
 
-The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. All buttons are disabled during AI work; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
+The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. Fix buttons are disabled during AI editing work; independent alt-text drafts do not block fixes; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
 
 For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
+
+### Alt text
+
+`altText(request, signal)` returns `{ alt: string }` for one image, with no content change or chat history. The request is `AiAltTextRequest` from `@templatical/types`:
+
+```ts
+export interface AiAltTextRequest {
+  templateId: string;
+  sessionId: string;
+  blockId: string;
+  image: { url: string };
+  currentAlt: string | null;
+  linkHref: string | null;
+  nearbyText: string;
+  locale: string;
+  maxLength: number;
+}
+```
+
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale.
+
+`maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend.
+
+The Issues panel offers **Write alt text** once per image for `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` and `a11y.img-linked-no-context`. The inline review has an editable draft. **Accept** writes `{ alt, decorative: false }`; **Mark decorative** writes `{ alt: "", decorative: true }`; **Cancel** and Escape write nothing. An empty `alt` alone still triggers `img-missing-alt`. The renderer forces `alt=""` and `role="presentation"` for decorative images.
+
+Drafts run independently, can be stopped, and abort on template switches or editor destruction. Applying uses one AI batch and one undo step, split at 100 operations when needed; collaboration uses the user's batch with `origin: 'ai'`. Neither action adds chat history. `altText: false` hides the action; the HTTP equivalent is `features: { altText: false }`.
 
 ### Rewrite
 
@@ -121,7 +148,7 @@ Reject with an `SdkError` whose `code` the editor knows, and whose message the u
 | `rate_limited` | Too many requests; a `ThrottledError` with `retryAfterMs` |
 | `ai_turn_running` | A turn is already running on this template |
 | `content_too_large` | The template is too large for the model |
-| `ai_output_invalid` | The model's rewrite broke the rules after a repair |
+| `ai_output_invalid` | The model's rewrite or alt-text output broke the rules |
 | `ai_provider_error` | The model provider failed |
 
 Undo and Redo may reject with an operation's code (`precondition_failed`, …) as a `CollaborationConflict`. An `AbortError` means the user stopped the call and is never shown. The editor says each failure in words and passes it to `init({ onError })` too.
@@ -159,3 +186,5 @@ The **AI** setup plays recorded turns through `createMockAiProvider`: no model a
 Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
 
 Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
+
+For alt text, open an image finding and choose **Write alt text**. Edit the draft, accept it, and Undo: both `alt` and `decorative` return to their previous values. **Mark decorative** clears `img-missing-alt` after re-lint. Cancel leaves the image unchanged.

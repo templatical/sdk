@@ -345,6 +345,20 @@ export function createHttpAiProviderWithFetch(
               typeof done.html === "string" ? { html: done.html } : undefined,
           )
       : false,
+    altText: on("altText")
+      ? (req, signal) => {
+          const { templateId, sessionId, ...body } = req;
+          return streamed(
+            "altText",
+            templateId,
+            { json: body, session: sessionId },
+            signal,
+            () => {},
+            (done) =>
+              typeof done.alt === "string" ? { alt: done.alt } : undefined,
+          );
+        }
+      : false,
     ...(on("conversation")
       ? {
           conversation: {

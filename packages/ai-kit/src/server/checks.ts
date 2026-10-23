@@ -1,3 +1,5 @@
+import { SdkError } from "@templatical/types";
+import { AI_ERROR_MESSAGES } from "../wire";
 import type { AiMergeTags } from "@templatical/types";
 import {
   flattenMergeTags,
@@ -47,4 +49,25 @@ export function buildRewriteRepairPrompt(
   reason: string,
 ): string {
   return `${prompt}\n\n${reason} Rewrite it again, using only the merge tags in the text.`;
+}
+
+/** Normalize a draft and enforce the request's UTF-16 alt-text limit. */
+export function checkAltText(
+  answer: string,
+  { maxLength }: { maxLength: number },
+): string {
+  let alt = answer.trim();
+  if (
+    (alt.startsWith('"') && alt.endsWith('"')) ||
+    (alt.startsWith("'") && alt.endsWith("'"))
+  )
+    alt = alt.slice(1, -1).trim();
+  alt = alt.replace(/^(?:image of|picture of)(?:\s+|$)/i, "").trim();
+  if (alt === "" || /<[a-z]/i.test(alt) || alt.length > maxLength)
+    throw new SdkError(
+      AI_ERROR_MESSAGES.ai_output_invalid,
+      502,
+      "ai_output_invalid",
+    );
+  return alt;
 }

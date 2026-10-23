@@ -15,6 +15,8 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
+  buildAltTextRequest,
+  checkAltText,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
@@ -81,6 +83,19 @@ export async function handle(request: Request): Promise<Response> {
         stream.send({ type: 'done', messageId: null });
       });
     }
+    case 'altText': {
+      const body = read.body;
+      // Authorize the template and block as on every route. The model provider
+      // fetches the image URL; resolve private or signed media in your backend.
+      const built = buildAltTextRequest({ ...body, templateId: read.template, sessionId: read.sessionId ?? '' });
+      return aiEventStream(async (stream) => {
+        let answer = '';
+        for await (const part of model.stream({ ...built, tools: [], signal: stream.signal })) {
+          if (part.type === 'text') answer += part.text;
+        }
+        stream.send({ type: 'done', alt: checkAltText(answer, { maxLength: body.maxLength }) });
+      });
+    }
     case 'rewriteText': {
       const body = read.body;
       const prompt = buildRewritePrompt(body);
@@ -108,7 +123,13 @@ Set your framework's whole-body request limit to about 6 MB with design uploads,
 
 Each adapter maps the kit's neutral messages and tools to one SDK and back. Install only the one you use.
 
-The Vercel AI SDK and OpenAI adapters below are text-only: they do not forward image or PDF uploads to the model. Use this client configuration with either adapter to turn off design-to-template and stored conversation history:
+OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All three adapters accept `image-url` attachments. Blob attachments for design stay Anthropic-only. Use this client configuration with OpenAI or Vercel to turn off design-to-template and stored conversation history:
+
+| Adapter | Features | Attachments |
+| --- | --- | --- |
+| OpenAI | Chat, fix, rewrite, alt text | Image URL |
+| Vercel AI SDK | Chat, fix, rewrite, alt text | Image URL |
+| Anthropic | Chat, fix, rewrite, alt text, design | Image URL, image Blob, PDF Blob |
 
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
@@ -140,7 +161,10 @@ export const model: AiModelAdapter = {
           ? { role: 'tool', content: [{ type: 'tool-result', toolCallId: m.toolCallId, toolName: m.name, output: { type: 'text', value: m.content } }] }
           : m.role === 'assistant'
             ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
-            : { role: 'user', content: m.content },
+            : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
+                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                return { type: 'image' as const, image: new URL(a.url) };
+              })] },
       ),
     });
     for await (const part of result.fullStream) {
@@ -176,7 +200,10 @@ export const model: AiModelAdapter = {
               ? { role: 'tool' as const, tool_call_id: m.toolCallId, content: m.content }
               : m.role === 'assistant'
                 ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
-                : { role: 'user' as const, content: m.content },
+                : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
+                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                    return { type: 'image_url' as const, image_url: { url: a.url } };
+                  })] },
           ),
         ],
       },
@@ -226,6 +253,7 @@ async function toAnthropic(messages: AiModelMessage[]): Promise<Anthropic.Messag
     } else {
       const files = await Promise.all(
         (m.attachments ?? []).map(async (a) => {
+          if (a.kind === 'image-url') return { type: 'image', source: { type: 'url', url: a.url } } as const;
           const data = Buffer.from(await a.data.arrayBuffer()).toString('base64');
           return a.kind === 'pdf'
             ? ({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } } as const)
@@ -273,7 +301,7 @@ import { model } from './model';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, design: false }, // text-only adapters
+  features: { conversation: false, design: false }, // adapters without design
 });
 const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
 console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);

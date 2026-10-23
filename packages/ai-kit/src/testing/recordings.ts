@@ -169,6 +169,9 @@ export const AI_RECORDINGS: AiMockScript = {
     text(" Done: a title, a paragraph and a button."),
     done,
   ],
+  altText: (request) => [
+    { type: "done", alt: "Shop new arrivals".slice(0, request.maxLength) },
+  ],
   rewrite: (request) => {
     const html = request.html.replace(/^(<p[^>]*>)/, "$1✨ ");
     return [text("✨ "), text("Rewritten"), { type: "done", html }];

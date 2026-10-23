@@ -726,6 +726,16 @@ export default {
     agentUpdatedTemplate: "{who} updated the template.",
   },
   ai: {
+    altText: {
+      button: "Write alt text",
+      drafting: "Writing alt text…",
+      title: "Alt text",
+      accept: "Accept",
+      decorative: "Mark decorative",
+      cancel: "Cancel",
+      note: "Drafted by AI. Check that it says what the image is for.",
+      failed: "Couldn't write alt text for this image. Write it yourself.",
+    },
     fix: {
       button: "Fix with AI",
       fixing: "Fixing…",

@@ -215,6 +215,7 @@ it("reports an unreadable response body without leaking the transport TypeError"
       fixFinding: false,
       design: false,
       rewrite: true,
+      altText: false,
       conversation: false,
     },
   });
@@ -235,4 +236,22 @@ it("reports an unreadable response body without leaking the transport TypeError"
     ok: true,
     detail: "1 response(s)",
   });
+});
+
+
+it("sends the configured alt image URL and skips altText when false", async () => {
+  const bodies: unknown[] = [];
+  const reference = createReferenceHandler();
+  server = await serve(async request => {
+    if (new URL(request.url).pathname.endsWith("/alt-text")) bodies.push(await request.clone().json());
+    return reference(request);
+  });
+  const report = await runAiWireConformance({ baseUrl: server.baseUrl, altTextImageUrl: "https://example.com/public.png" });
+  expect(report.ok).toBe(true);
+  expect(bodies).toContainEqual(expect.objectContaining({ image: { url: "https://example.com/public.png" }, maxLength: 125 }));
+  bodies.length = 0;
+  const off = await runAiWireConformance({ baseUrl: server.baseUrl, features: { altText: false } });
+  expect(off.ok).toBe(true);
+  expect(off.checks.find(c => c.name === "altText: off")).toMatchObject({ ok: true });
+  expect(bodies).toEqual([]);
 });

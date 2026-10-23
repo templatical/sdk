@@ -1,11 +1,11 @@
 ---
 title: KI
-description: Chat mit Template-Bearbeitung, Umformulieren und Design zu Template über Ihr eigenes KI-Backend.
+description: Chat, Lint-Korrekturen, Alt-Text-Entwürfe, Umformulieren und Design zu Template über Ihr eigenes KI-Backend.
 ---
 
 # KI
 
-Geben Sie dem Editor einen KI-Provider, und Ihre Nutzenden erhalten einen Assistenten, der das geöffnete Template bearbeitet: einen Chat mit Rückgängig, „Rewrite with AI“ in der Absatz-Werkzeugleiste, statische, lokalisierte Einstiegsanfragen und ein Template aus einem Screenshot oder einer PDF. Ihr Backend spricht mit dem Modell — mit Ihren Schlüsseln, Ihren Vereinbarungen zur Datenverarbeitung und Ihren Regeln.
+Geben Sie dem Editor einen KI-Provider, und Ihre Nutzenden erhalten einen Assistenten, der das geöffnete Template bearbeitet: einen Chat mit Rückgängig, „Rewrite with AI“ in der Absatz-Werkzeugleiste, prüfbare Alt-Text-Entwürfe im Issues-Panel, statische, lokalisierte Einstiegsanfragen und ein Template aus einem Screenshot oder einer PDF. Ihr Backend spricht mit dem Modell — mit Ihren Schlüsseln, Ihren Vereinbarungen zur Datenverarbeitung und Ihren Regeln.
 
 Der Editor übernimmt die Oberflächen, das Streaming, das Anwenden der KI-Änderungen mit Rückgängig und die Kennzeichnung der Inhalte als KI-generiert. Sie übernehmen den Modellaufruf: eine Funktion pro Feature oder einige HTTP-Endpunkte, deren Großteil `@templatical/ai-kit` bereitstellt.
 
@@ -41,6 +41,7 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
+  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -59,7 +60,7 @@ interface AiReplayOutcome {
 }
 ```
 
-Jede Anfrage enthält `templateId`, `content` (das Template im Editor, nachdem ausstehende Änderungen gesendet wurden), `revision` (die Zusammenarbeitsrevision oder `null`), `sessionId` und `mergeTags` (`{ syntax, tags }` oder `null`, wenn keine deklariert sind). Jeder Aufruf erhält ein `AbortSignal`: „Stop“ bricht ihn ab.
+Anfragen für Chat, Fix, Design und Umformulieren enthalten `templateId`, `content` (das Template im Editor, nachdem ausstehende Änderungen gesendet wurden), `revision` (die Zusammenarbeitsrevision oder `null`), `sessionId` und `mergeTags` (`{ syntax, tags }` oder `null`, wenn keine deklariert sind). Jeder Aufruf erhält ein `AbortSignal`: „Stop“ bricht ihn ab.
 
 ### Durchläufe: Chat, Beheben und Design
 
@@ -84,9 +85,35 @@ Das Issues-Panel bietet **Mit KI beheben** für diese Regel-IDs an, wenn der Bef
 - `deliverability.link-text-domain-mismatch`
 - `deliverability.low-text`
 
-Der Editor zeigt eine Schaltfläche pro `ruleId`/`blockId`-Paar, unabhängig vom Schweregrad. Während KI-Arbeit sind alle Schaltflächen deaktiviert; der laufende Fix zeigt **Wird behoben…** und **Stoppen**. Der Durchlauf bleibt ein Undo-Schritt mit Verlaufstyp `fix`. Erst die nächste, um 500 ms verzögerte Lint-Aktualisierung entscheidet über die Behebung: Bleibt ein Treffer für das Paar, erscheint **Nach der Korrektur weiterhin markiert**. Das ist keine Aussage über einzelne Vorkommen innerhalb eines Blocks.
+Der Editor zeigt eine Schaltfläche pro `ruleId`/`blockId`-Paar, unabhängig vom Schweregrad. Die Fix-Schaltflächen sind während KI-Bearbeitungen deaktiviert; während unabhängiger Alt-Text-Entwürfe können Sie weiterhin Fixes starten; der laufende Fix zeigt **Wird behoben…** und **Stoppen**. Der Durchlauf bleibt ein Undo-Schritt mit Verlaufstyp `fix`. Erst die nächste, um 500 ms verzögerte Lint-Aktualisierung entscheidet über die Behebung: Bleibt ein Treffer für das Paar, erscheint **Nach der Korrektur weiterhin markiert**. Das ist keine Aussage über einzelne Vorkommen innerhalb eines Blocks.
 
 Bei Domain-Abweichungen wird nur der sichtbare Linktext in beschreibende Wörter umgeschrieben, nie das `href`. Bei zu wenig Text (`blockId: null`) wird Text im E-Mail-Inhalt aus vorhandenen Fakten ergänzt, nicht im Alt-Text oder Preheader. `a11y.missing-preheader` setzt über `updateSettings` einen `preheaderText` mit höchstens 100 Zeichen aus dem einleitenden Inhalt.
+
+### Alt-Text
+
+`altText(request, signal)` liefert `{ alt: string }` für ein Bild, ohne den Inhalt zu ändern oder einen Chat-Verlauf anzulegen. Die Anfrage ist `AiAltTextRequest` aus `@templatical/types`:
+
+```ts
+export interface AiAltTextRequest {
+  templateId: string;
+  sessionId: string;
+  blockId: string;
+  image: { url: string };
+  currentAlt: string | null;
+  linkHref: string | null;
+  nearbyText: string;
+  locale: string;
+  maxLength: number;
+}
+```
+
+Das Bild erreicht das Modell per URL. Der Modellanbieter ruft sie ab; Ihr Backend muss daher Template und Block autorisieren und private oder signierte Medien auflösen. `currentAlt` ist bei leerem Alt-Text oder dekorativen Bildern `null`; `linkHref` stammt aus `linkUrl`. `nearbyText` enthält den nächsten Klartext vor und nach dem Bild in seiner Spalte, ersatzweise in seinem Abschnitt, begrenzt auf 2.000 Codepoints. `locale` ist die Sprache des Templates.
+
+`maxLength` ist der wirksame Accessibility-Lint-Schwellwert `altMaxLength`: eine Ganzzahl von 1 bis 1.000, Standard 125 bei fehlendem oder ungültigem Wert oder deaktiviertem Lint. Gezählt werden UTF-16-Einheiten (`string.length`). Verwenden Sie den Anfragewert mit `checkAltText` in Ihrem Backend.
+
+Das Issues-Panel bietet **Alt-Text schreiben** einmal je Bild für `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` und `a11y.img-linked-no-context` an. Die Inline-Prüfung enthält einen bearbeitbaren Entwurf. **Übernehmen** schreibt `{ alt, decorative: false }`; **Als dekorativ markieren** schreibt `{ alt: "", decorative: true }`; **Abbrechen** und Escape schreiben nichts. Ein leerer `alt` allein löst weiterhin `img-missing-alt` aus. Der Renderer erzwingt bei dekorativen Bildern `alt=""` und `role="presentation"`.
+
+Entwürfe laufen unabhängig, lassen sich stoppen und werden beim Template-Wechsel oder beim Zerstören des Editors abgebrochen. Das Anwenden nutzt einen KI-Batch und einen Rückgängig-Schritt, bei Bedarf in Teile mit 100 Operationen aufgeteilt; mit Zusammenarbeit ist es der Batch der Person mit `origin: 'ai'`. Beides legt keinen Chat-Verlauf an. `altText: false` blendet die Aktion aus; über HTTP gilt `features: { altText: false }`.
 
 ### Umformulieren
 
@@ -121,7 +148,7 @@ Lehnen Sie mit einem `SdkError` ab, dessen `code` der Editor kennt und dessen Na
 | `rate_limited` | Zu viele Anfragen; ein `ThrottledError` mit `retryAfterMs` |
 | `ai_turn_running` | Auf diesem Template läuft bereits ein Durchlauf |
 | `content_too_large` | Das Template ist für das Modell zu groß |
-| `ai_output_invalid` | Die Umformulierung des Modells verletzt auch nach einer Reparatur die Regeln |
+| `ai_output_invalid` | Die Umformulierung oder Alt-Text-Ausgabe des Modells verletzt die Regeln |
 | `ai_provider_error` | Der Modell-Provider ist fehlgeschlagen |
 
 Rückgängig und Wiederholen dürfen mit einem Operationscode (`precondition_failed`, …) als `CollaborationConflict` ablehnen. Ein `AbortError` bedeutet, dass die Person den Aufruf gestoppt hat; er wird nie angezeigt. Der Editor beschreibt jeden Fehler in Worten und reicht ihn auch an `init({ onError })` weiter.
@@ -159,3 +186,5 @@ Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` 
 Öffnen Sie den Assistenten für eine geladene Vorlage ohne Blöcke: Er zeigt drei Einstiegsanfragen. Fügen Sie einen Block hinzu: Er zeigt vier. Ein Klick sendet den angezeigten Text. Prüfen Sie den Provider mit [der Konformitätssuite](/de/api/ai-kit#testen).
 
 Öffnen Sie das Issues-Panel mit einem Befund aus der obigen Liste ohne deterministischen Fix. **Mit KI beheben** sendet die Lint-Projektion; nach der erneuten Prüfung verschwindet der Befund oder zeigt **Nach der Korrektur weiterhin markiert**. Ein Undo nimmt den gesamten Fix zurück.
+
+Öffnen Sie einen Bildbefund und wählen Sie **Alt-Text schreiben**. Bearbeiten und übernehmen Sie den Entwurf, dann wählen Sie Rückgängig: `alt` und `decorative` erhalten ihre vorherigen Werte. **Als dekorativ markieren** entfernt `img-missing-alt` nach der erneuten Lint-Prüfung. Abbrechen lässt das Bild unverändert.

@@ -34,6 +34,7 @@ import { useVersionHistoryFeature } from "./composables/useVersionHistoryFeature
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { useScrollToBlock } from "./composables/useScrollToBlock";
 import { resolveAutoSave } from "./types/auto-save";
+import { effectiveAltMaxLength } from "./utils/aiFixableRules";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import { insertBlockAtSelection } from "./utils/insertBlockAtSelection";
@@ -327,6 +328,8 @@ const ai = props.config.ai
       reload: templates
         ? (id, shouldApply) => templates.load(id, shouldApply)
         : null,
+      altMaxLength: () =>
+        effectiveAltMaxLength(resolveLintOptions(props.config)),
       mergeTags: () => toAiMergeTags(core.mergeTags.value, core.mergeTagSyntax),
       normalize: (ops, content) =>
         normalizeRemoteOperations(ops, content, props.config.mergeTags),

@@ -656,3 +656,31 @@ describe("readAiRequest validation messages", () => {
     expect(await result.body.file.text()).toBe("PDF content");
   });
 });
+
+
+describe("readAiRequest alt text", () => {
+  const body = { blockId: "image", image: { url: "https://example.com/image.png" }, currentAlt: null, linkHref: null, nearbyText: "Buy now", locale: "en-US", maxLength: 125 };
+  const read = (patch = {}) => readAiRequest(post("/templates/t-1/ai/alt-text", { ...body, ...patch }));
+  it("reads the exact body and session", async () => {
+    expect(await read()).toEqual({ route: "altText", template: "t-1", sessionId: "s-1", body });
+  });
+  it("accepts every inclusive boundary and counts nearby text in code points", async () => {
+    const boundary = { blockId: "b".repeat(200), image: { url: "https://x.test/" + "a".repeat(2033) }, currentAlt: "a".repeat(2048), linkHref: "h".repeat(2048), nearbyText: "😀".repeat(2000), locale: "en-12345678-12345678-12345678-12345", maxLength: 1000 };
+    expect(boundary.image.url).toHaveLength(2048);
+    expect(boundary.locale).toHaveLength(35);
+    expect(await read(boundary)).toMatchObject({ body: boundary });
+    expect(await read({ maxLength: 1, image: { url: "http://x.test" }, currentAlt: "", linkHref: "" })).toMatchObject({ body: { maxLength: 1, currentAlt: "", linkHref: "" } });
+  });
+  it.each([
+    [{ blockId: "" }, "blockId must be 1 to 200 characters."],
+    [{ blockId: "x".repeat(201) }, "blockId must be 1 to 200 characters."],
+    [{ blockId: null }, "blockId must be 1 to 200 characters."],
+    ...[null, {}, { url: "ftp://x.test/a" }, { url: "//x.test" }, { url: "nonsense" }, { url: "https://x.test/" + "a".repeat(2034) }].map(image => [{ image }, "image.url must be an http: or https: URL of at most 2,048 characters."]),
+    ...["currentAlt", "linkHref"].flatMap(key => [42, undefined, "x".repeat(2049)].map(value => [{ [key]: value }, `${key} must be a string of at most 2,048 characters or null.`])),
+    ...[42, undefined, "😀".repeat(2001)].map(nearbyText => [{ nearbyText }, "nearbyText must be at most 2,000 code points."]),
+    ...["", "x", "en_XX", "en-123456789", "en-12345678-12345678-12345678-123456", 42].map(locale => [{ locale }, "locale must be a BCP 47 tag of at most 35 characters."]),
+    ...[0, 1001, 1.5, "60", null].map(maxLength => [{ maxLength }, "maxLength must be an integer from 1 to 1,000."]),
+  ])("rejects invalid alt-text input %#", async (patch, message) => {
+    await expect(read(patch as object)).rejects.toMatchObject({ name: "SdkError", statusCode: 422, message });
+  });
+});

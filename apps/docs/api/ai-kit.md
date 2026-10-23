@@ -69,7 +69,7 @@ import {
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
 | `rewriteInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Per-request prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
@@ -98,6 +98,24 @@ There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview 
 
 Check your fix endpoint with `runAiWireConformance({ baseUrl })` in the example below; `runAiProviderConformance(provider)` also sends a lint-shaped finding to `fixFinding`.
 
+### Alt text
+
+`buildAltTextRequest(request: AiAltTextRequest)` returns `{ system: string; messages: AiModelMessage[] }` with the image as an `image-url` attachment on the user message. `prompts/alt-text.md` requests the image's purpose in this email, destination or action for linked images, visible image text, the template's locale, plain text and the request's `maxLength`. Nearby text and current alt are data, never instructions.
+
+`checkAltText(answer, { maxLength })` returns the normalized string: trim, strip one surrounding single or double quote pair, remove one leading “Image of” or “Picture of” case-insensitively, then trim. It rejects empty text, HTML (`<` followed by a letter), or a string longer than `maxLength` UTF-16 units with `SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 502, "ai_output_invalid")`.
+
+`readAiRequest` validates the `altText` route without truncation: `blockId` is non-empty, at most 200 characters; `image.url` is an `http:` or `https:` URL parsed by `new URL()`, at most 2,048 characters; `currentAlt` and `linkHref` are strings of at most 2,048 characters or `null`; `nearbyText` is at most 2,000 code points; `locale` is at most 35 characters and matches `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/`; `maxLength` is an integer from 1 to 1,000. Invalid fields throw `SdkError(message, 422)` with no code. Character limits other than `nearbyText` count UTF-16 units.
+
+The editor supplies its effective lint `altMaxLength`, default 125. Always check the answer with the request's value. The model provider fetches `image.url`; your backend authorizes the template and block and resolves private or signed media. [Alt text in the editor](/backend/ai#alt-text) documents review and the `decorative` flag.
+
+The model attachment union is:
+
+```ts
+export type AiModelAttachment =
+  | { kind: "image" | "pdf"; mediaType: string; data: Blob }
+  | { kind: "image-url"; url: string };
+```
+
 ### Model adapters
 
 `runEditingTurn` calls your model through one method:
@@ -117,7 +135,7 @@ interface AiModelAdapter {
 }
 ```
 
-[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. The Vercel AI SDK and OpenAI examples are text-only; their client configuration turns off design and stored conversation history. The Anthropic example also maps image and PDF attachments.
+[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All accept image URLs; only the Anthropic example accepts image and PDF Blobs. The OpenAI and Vercel client configurations turn off design and stored conversation history.
 
 ## Testing
 
@@ -133,9 +151,11 @@ const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' 
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
 ```
 
-- `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features })` does the same over the wire, plus the wire's own rules, for a backend in any language.
+- `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features, altTextImageUrl })` does the same over the wire, plus the wire's own rules, for a backend in any language.
 - `createMockAiProvider(script)` plays recorded streams, for your UI tests; `AI_RECORDINGS` is the playground's.
 - `runAiEvalSet({ runTurn, model })` runs the 32-case test set and reports a pass rate; `evalTurnWith(adapter)` builds `runTurn` from the kit's own loop.
+
+The conformance suites check a non-empty alt string within the request's `maxLength`, abort handling, and `altText: false`. The wire probe uses `altTextImageUrl`, default `https://docs.templatical.com/og-image.png`; set it to a public image your model provider can fetch.
 
 ## Files
 
@@ -143,7 +163,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## The wire
 
-Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo and replay settlement carry `X-Templatical-Session`. A cross-origin backend allows `Templatical-AI-Wire`, `X-Templatical-Session` and its auth header in `Access-Control-Allow-Headers` for preflight, and exposes `Templatical-AI-Wire` in `Access-Control-Expose-Headers`. Routes are relative to your base URL; `{t}` is the template id.
+Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Undo, Redo and replay settlement carry `X-Templatical-Session`. A cross-origin backend allows `Templatical-AI-Wire`, `X-Templatical-Session` and its auth header in `Access-Control-Allow-Headers` for preflight, and exposes `Templatical-AI-Wire` in `Access-Control-Expose-Headers`. Routes are relative to your base URL; `{t}` is the template id.
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -151,12 +171,13 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite); `error { code, message }`. `done` or `error` is the last event.
+**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite), `done { alt }` (alt text); `error { code, message }`. `done` or `error` is the last event.
 
 **Errors before the stream** are JSON `{ message, code, …details }` with the status of the code: `feature_unavailable` and `limit_reached` 403, `rate_limited` 429 with `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, an operation's code 409 (`invalid_operation` 422). A validation failure is a 422 `{ message }`.
 

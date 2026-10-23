@@ -19,6 +19,8 @@ import {
   type UseAiFeatureOptions,
 } from "../src/composables/useAiFeature";
 import { useCollaborationFeature } from "../src/composables/useCollaborationFeature";
+import { effectiveAltMaxLength } from "../src/utils/aiFixableRules";
+import { resolveLintOptions } from "../src/utils/resolveLintOptions";
 import { normalizeRemoteOperations } from "../src/utils/normalizeMergeTagMarkup";
 
 import { createHttpAiProvider } from "../../ai-kit/src/client";
@@ -588,6 +590,21 @@ describe("useAiFeature with collaboration", () => {
     collaboration.history.undo();
     await settle();
     expect(editor.content.value).toEqual(CONTENT);
+  });
+
+  it("applies alt text as the user's AI batch with one collaboration undo and no chat", async () => {
+    const { ai, editor, collaboration, submitted } = await openCollaborative({});
+    editor.addBlock({ id: "i", type: "image", src: "https://example.com/i.png", alt: "Old", decorative: true } as never);
+    await settle();
+    const before = safeClone(editor.content.value);
+    submitted.length = 0;
+    await ai.applyAltTexts([{ blockId: "i", alt: "Shop", decorative: false }]);
+    await settle();
+    expect(submitted).toEqual([expect.objectContaining({ origin: "ai", ops: [{ op: "updateBlock", blockId: "i", set: { alt: "Shop", decorative: false } }] })]);
+    expect(ai.messages.value).toEqual([]);
+    collaboration.history.undo();
+    await settle();
+    expect(editor.content.value).toEqual(before);
   });
 
   it("sends the revision and the controller's session, and no block the backend lacks (D12)", async () => {
@@ -2428,4 +2445,72 @@ it("reloads again when another applied fact arrives during stopped-turn cleanup"
   expect(editor.content.value).toEqual(latestContent);
   expect(loads).toBe(3);
   expect(ai.busy.value).toBe(false);
+});
+
+
+describe("useAiFeature alt text", () => {
+  const image = { id: "i", type: "image", src: "https://example.com/i.png", alt: "Old", decorative: true } as const;
+  it("sends the effective limit, image context and template locale without becoming busy", async () => {
+    const requests: unknown[] = [];
+    const { ai, editor } = await openLocal({ altText: async (request, signal) => { signal.throwIfAborted(); requests.push(request); return { alt: "Shop arrivals" }; } }, { altMaxLength: () => effectiveAltMaxLength(resolveLintOptions({ lint: { accessibility: { thresholds: { altMaxLength: 60 } } } })) });
+    editor.setContent({ ...CONTENT, blocks: [safeClone(image)], settings: { ...CONTENT.settings, locale: "de-DE" } } as TemplateContent);
+    const draft = ai.draftAltText("i");
+    expect(ai.busy.value).toBe(false);
+    expect(await draft).toBe("Shop arrivals");
+    expect(requests).toEqual([{ templateId: "tpl-1", sessionId: expect.any(String), blockId: "i", image: { url: image.src }, currentAlt: null, linkHref: null, nearbyText: "", locale: "de-DE", maxLength: 60 }]);
+    expect(ai.messages.value).toEqual([]);
+    expect(editor.content.value.blocks[0]).toEqual(image);
+  });
+  it("applies all image fields in one undo step and leaves no chat history", async () => {
+    const { ai, editor, history } = await openLocal({});
+    editor.setContent({ ...CONTENT, blocks: [safeClone(image), { ...image, id: "i2", decorative: false }] } as TemplateContent);
+    const before = safeClone(editor.content.value);
+    const record = vi.spyOn(history, "record");
+    await ai.applyAltTexts([{ blockId: "i", alt: "Arrivals", decorative: false }, { blockId: "i2", alt: "", decorative: true }]);
+    expect(editor.content.value.blocks).toMatchObject([{ alt: "Arrivals", decorative: false }, { alt: "", decorative: true }]);
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(ai.messages.value).toEqual([]);
+    history.undo();
+    expect(editor.content.value).toEqual(before);
+  });
+  it.each(["switch", "destroy", "stop"] as const)("aborts every pending independent draft on %s", async action => {
+    const signals: AbortSignal[] = [];
+    const { ai, editor } = await openLocal({ altText: async (_r, signal) => { signals.push(signal); return new Promise(() => {}); } });
+    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
+    const controller = new AbortController();
+    const first = ai.draftAltText("i", controller.signal);
+    const second = ai.draftAltText("i", controller.signal);
+    const outcomes = Promise.allSettled([first, second]);
+    expect(signals).toHaveLength(2);
+    expect(signals[0]).not.toBe(signals[1]);
+    expect(ai.busy.value).toBe(false);
+    if (action === "switch") await editor.load("tpl-2");
+    else if (action === "destroy") ai.destroy();
+    else controller.abort();
+    expect(signals.every(s => s.aborted)).toBe(true);
+    expect((await outcomes).map(r => r.status)).toEqual(["rejected", "rejected"]);
+  });
+  it("reports draft failures through onError", async () => {
+    const error = new SdkError("Unavailable", 502, "ai_provider_error");
+    const { ai, editor, onError } = await openLocal({ altText: async () => { throw error; } });
+    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
+    await expect(ai.draftAltText("i")).rejects.toBe(error);
+    expect(onError).toHaveBeenCalledWith(error);
+  });
+  it("drafting does not occupy the fix lane, but apply waits behind a turn", async () => {
+    let finish!: () => void;
+    const { ai, editor } = await openLocal({ altText: async () => new Promise(() => {}), chat: chatting(() => new Promise<void>(resolve => { finish = resolve; })) });
+    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
+    const draft = ai.draftAltText("i").catch(() => {});
+    const turn = ai.send("Wait");
+    await settle();
+    const apply = ai.applyAltTexts([{ blockId: "i", alt: "New", decorative: false }]);
+    expect(editor.content.value.blocks[0]).toMatchObject({ alt: "Old" });
+    finish();
+    await turn;
+    await apply;
+    expect(editor.content.value.blocks[0]).toMatchObject({ alt: "New", decorative: false });
+    ai.destroy();
+    await draft;
+  });
 });

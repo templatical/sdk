@@ -1,5 +1,5 @@
 import type { AiFixFinding } from "@templatical/types";
-import type { LintIssue } from "@templatical/quality";
+import type { LintOptions, LintIssue } from "@templatical/quality";
 
 /** Lint rules whose findings get "Fix with AI" (A1 amendment R3). */
 export const AI_FIXABLE_RULES = [
@@ -30,4 +30,22 @@ export function toAiFixFinding(issue: LintIssue): AiFixFinding {
     blockId: issue.blockId,
     ...(issue.excerpt !== undefined ? { excerpt: issue.excerpt } : {}),
   };
+}
+
+/** Quality's default, pinned by aiFixableRules.test.ts without an eager runtime import. */
+export const DEFAULT_ALT_MAX_LENGTH = 125;
+
+export function effectiveAltMaxLength(lint: LintOptions | undefined): number {
+  const accessibility = lint?.accessibility;
+  const value =
+    accessibility !== null && typeof accessibility === "object"
+      ? accessibility.thresholds?.altMaxLength
+      : undefined;
+  return lint?.disabled !== true &&
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 1000
+    ? value
+    : DEFAULT_ALT_MAX_LENGTH;
 }

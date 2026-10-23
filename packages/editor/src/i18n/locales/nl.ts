@@ -662,6 +662,17 @@ const nl: typeof en = {
     agentUpdatedTemplate: "{who} heeft de template bijgewerkt.",
   },
   ai: {
+    altText: {
+      button: "Alt-tekst schrijven",
+      drafting: "Alt-tekst wordt geschreven…",
+      title: "Alt-tekst",
+      accept: "Accepteren",
+      decorative: "Als decoratief markeren",
+      cancel: "Annuleren",
+      note: "Opgesteld door AI. Controleer of de tekst het doel van de afbeelding beschrijft.",
+      failed:
+        "De alt-tekst voor deze afbeelding kon niet worden geschreven. Schrijf de tekst zelf.",
+    },
     fix: {
       button: "Oplossen met AI",
       fixing: "Bezig met oplossen…",

@@ -661,6 +661,17 @@ const fr: typeof en = {
     agentUpdatedTemplate: "{who} a mis à jour le modèle.",
   },
   ai: {
+    altText: {
+      button: "Rédiger le texte alternatif",
+      drafting: "Rédaction du texte alternatif…",
+      title: "Texte alternatif",
+      accept: "Accepter",
+      decorative: "Marquer comme décorative",
+      cancel: "Annuler",
+      note: "Rédigé par l’IA. Vérifiez qu’il décrit le rôle de l’image.",
+      failed:
+        "Impossible de rédiger le texte alternatif de cette image. Rédigez-le vous-même.",
+    },
     fix: {
       button: "Corriger avec l’IA",
       fixing: "Correction en cours…",

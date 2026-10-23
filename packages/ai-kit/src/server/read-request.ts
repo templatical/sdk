@@ -12,6 +12,7 @@ import {
   AI_SESSION_HEADER,
   matchAiRoute,
   type AiFixFindingBody,
+  type AiAltTextBody,
   type AiGenerateBody,
   type AiRewriteBody,
 } from "../wire";
@@ -37,6 +38,7 @@ export type AiWireRequest = Base &
     | { route: "fixFinding"; body: AiFixFindingBody }
     | { route: "generateFromDesign"; body: AiDesignBody }
     | { route: "rewriteText"; body: AiRewriteBody }
+    | { route: "altText"; body: AiAltTextBody }
     | { route: "conversationMessages" | "clearConversation" }
     | { route: "undoMessage" | "redoMessage"; message: string }
     | {
@@ -262,6 +264,67 @@ export async function readAiRequest(
   if (!isRecord(body)) invalid("Send a JSON object.");
 
   switch (match.route) {
+    case "altText": {
+      if (
+        typeof body.blockId !== "string" ||
+        body.blockId.length === 0 ||
+        body.blockId.length > 200
+      )
+        invalid("blockId must be 1 to 200 characters.");
+      let url: URL | null = null;
+      if (
+        isRecord(body.image) &&
+        typeof body.image.url === "string" &&
+        body.image.url.length <= 2048
+      ) {
+        try {
+          url = new URL(body.image.url);
+        } catch {
+          /* Invalid URL. */
+        }
+      }
+      if (!url || (url.protocol !== "http:" && url.protocol !== "https:"))
+        invalid(
+          "image.url must be an http: or https: URL of at most 2,048 characters.",
+        );
+      for (const key of ["currentAlt", "linkHref"] as const) {
+        if (
+          body[key] !== null &&
+          (typeof body[key] !== "string" || body[key].length > 2048)
+        )
+          invalid(
+            `${key} must be a string of at most 2,048 characters or null.`,
+          );
+      }
+      if (!isBoundedText(body.nearbyText, 2000))
+        invalid("nearbyText must be at most 2,000 code points.");
+      if (
+        typeof body.locale !== "string" ||
+        body.locale.length > 35 ||
+        !/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/.test(body.locale)
+      )
+        invalid("locale must be a BCP 47 tag of at most 35 characters.");
+      if (
+        typeof body.maxLength !== "number" ||
+        !Number.isInteger(body.maxLength) ||
+        body.maxLength < 1 ||
+        body.maxLength > 1000
+      )
+        invalid("maxLength must be an integer from 1 to 1,000.");
+      return {
+        ...base,
+        route: "altText",
+        body: {
+          blockId: body.blockId,
+          image: { url: (body.image as { url: string }).url },
+          currentAlt: body.currentAlt as string | null,
+          linkHref: body.linkHref as string | null,
+          nearbyText: body.nearbyText,
+          locale: body.locale,
+          maxLength: body.maxLength,
+        },
+      };
+    }
     case "settleReplay": {
       if (
         (body.direction !== "undo" && body.direction !== "redo") ||

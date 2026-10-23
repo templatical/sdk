@@ -69,7 +69,7 @@ import {
 | --- | --- |
 | `editingInstructions` | Der System-Prompt zum Bearbeiten: die Regeln, die [Operationen](/de/api/operations) und das Template-Schema |
 | `rewriteInstructions`, `designInstructions` | Die anderen Prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Prompts pro Anfrage |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Prompts pro Anfrage |
 | `applyOperationsTool` | Das einzige Tool: `apply_operations`, dessen `ops` ein JSON-String ist |
 | `createEditingSession` | Die Arbeitskopie eines Durchlaufs: prüft jeden Aufruf (Form, die Grenze von 100 Operationen, keine neuen Custom-, Slot- oder Wrapper-Blöcke, deklarierte Merge-Tags, die Engine, eine Größenbegrenzung) und antwortet mit einem Satz, auf den das Modell reagieren kann |
 | `runEditingTurn` | Die Referenzschleife über einen `AiModelAdapter`, höchstens drei Modellaufrufe |
@@ -98,6 +98,24 @@ Das Kit enthält keine HTML-Bereinigung. Der Editor bereinigt die Vorschau einer
 
 Prüfen Sie Ihren Fix-Endpunkt mit `runAiWireConformance({ baseUrl })` aus dem folgenden Beispiel; auch `runAiProviderConformance(provider)` sendet einen Lint-Befund an `fixFinding`.
 
+### Alt-Text
+
+`buildAltTextRequest(request: AiAltTextRequest)` liefert `{ system: string; messages: AiModelMessage[] }` mit dem Bild als `image-url`-Anhang der Nutzernachricht. `prompts/alt-text.md` verlangt den Zweck des Bildes in dieser E-Mail, Ziel oder Aktion verlinkter Bilder, sichtbaren Bildtext, die Sprache des Templates, Klartext und das `maxLength` der Anfrage. Umgebender Text und vorhandener Alt-Text sind Daten, keine Anweisungen.
+
+`checkAltText(answer, { maxLength })` liefert die normalisierte Zeichenkette: äußere Leerzeichen entfernen, ein umschließendes Paar einfacher oder doppelter Anführungszeichen entfernen, ein führendes „Image of“ oder „Picture of“ unabhängig von Groß-/Kleinschreibung entfernen, dann erneut äußere Leerzeichen entfernen. Leerer Text, HTML (`<` gefolgt von einem Buchstaben) oder mehr als `maxLength` UTF-16-Einheiten werden mit `SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 502, "ai_output_invalid")` abgelehnt.
+
+`readAiRequest` validiert die Route `altText` ohne Kürzung: `blockId` ist nicht leer und höchstens 200 Zeichen lang; `image.url` ist eine mit `new URL()` geparste `http:`- oder `https:`-URL mit höchstens 2.048 Zeichen; `currentAlt` und `linkHref` sind Zeichenketten mit höchstens 2.048 Zeichen oder `null`; `nearbyText` hat höchstens 2.000 Codepoints; `locale` hat höchstens 35 Zeichen und entspricht `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/`; `maxLength` ist eine Ganzzahl von 1 bis 1.000. Ungültige Felder lösen `SdkError(message, 422)` ohne Code aus. Alle Zeichenlimits außer `nearbyText` zählen UTF-16-Einheiten.
+
+Der Editor liefert seinen wirksamen Lint-Wert `altMaxLength`, Standard 125. Prüfen Sie die Antwort immer mit dem Anfragewert. Der Modellanbieter ruft `image.url` ab; Ihr Backend autorisiert Template und Block und löst private oder signierte Medien auf. [Alt-Text im Editor](/de/backend/ai#alt-text) beschreibt die Prüfung und das Flag `decorative`.
+
+Die Union der Modellanhänge lautet:
+
+```ts
+export type AiModelAttachment =
+  | { kind: "image" | "pdf"; mediaType: string; data: Blob }
+  | { kind: "image-url"; url: string };
+```
+
 ### Modell-Adapter
 
 `runEditingTurn` ruft Ihr Modell über eine Methode auf:
@@ -117,7 +135,7 @@ interface AiModelAdapter {
 }
 ```
 
-[Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. Die Beispiele für Vercel AI SDK und OpenAI verarbeiten nur Text; ihre Client-Konfiguration schaltet Design und den gespeicherten Gesprächsverlauf aus. Das Anthropic-Beispiel verarbeitet auch Bild- und PDF-Anhänge.
+[Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. OpenAI und Vercel unterstützen Chat, Fix, Umformulieren und Alt-Text; Anthropic ergänzt Design. Alle unterstützen Bild-URLs; nur das Anthropic-Beispiel akzeptiert Bild- und PDF-Blobs. Die Client-Konfigurationen für OpenAI und Vercel schalten Design und den gespeicherten Gesprächsverlauf aus.
 
 ## Testen
 
@@ -133,9 +151,11 @@ const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' 
 for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
 ```
 
-- `runAiProviderConformance(provider)` steuert einen Provider wie der Editor und prüft den Vertrag; `runAiWireConformance({ baseUrl, headers, features })` macht dasselbe über das Protokoll und prüft zusätzlich dessen Regeln — auch für Backends in anderen Sprachen.
+- `runAiProviderConformance(provider)` steuert einen Provider wie der Editor und prüft den Vertrag; `runAiWireConformance({ baseUrl, headers, features, altTextImageUrl })` macht dasselbe über das Protokoll und prüft zusätzlich dessen Regeln — auch für Backends in anderen Sprachen.
 - `createMockAiProvider(script)` spielt aufgezeichnete Streams für Ihre Oberflächentests ab; `AI_RECORDINGS` enthält die des Playgrounds.
 - `runAiEvalSet({ runTurn, model })` führt den Testsatz mit 32 Fällen aus und meldet die Erfolgsquote; `evalTurnWith(adapter)` erstellt `runTurn` aus der eigenen Schleife des Kits.
+
+Die Konformitätsprüfungen prüfen nicht leeren Alt-Text innerhalb des `maxLength` der Anfrage, Abbruchverhalten und `altText: false`. Die Protokollprüfung nutzt `altTextImageUrl`, Standard `https://docs.templatical.com/og-image.png`; setzen Sie eine öffentliche Bild-URL, die Ihr Modellanbieter abrufen kann.
 
 ## Dateien
 
@@ -143,7 +163,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Das Protokoll
 
-Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Rückgängig, Wiederholen und deren Bestätigung enthalten `X-Templatical-Session`. Ein Cross-Origin-Backend erlaubt beim Preflight `Templatical-AI-Wire`, `X-Templatical-Session` und den Authentifizierungs-Header in `Access-Control-Allow-Headers` und gibt `Templatical-AI-Wire` über `Access-Control-Expose-Headers` frei. Die Routen sind relativ zu Ihrer Basis-URL; `{t}` ist die Template-ID.
+Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Alt-Text, Rückgängig, Wiederholen und deren Bestätigung enthalten `X-Templatical-Session`. Ein Cross-Origin-Backend erlaubt beim Preflight `Templatical-AI-Wire`, `X-Templatical-Session` und den Authentifizierungs-Header in `Access-Control-Allow-Headers` und gibt `Templatical-AI-Wire` über `Access-Control-Expose-Headers` frei. Die Routen sind relativ zu Ihrer Basis-URL; `{t}` ist die Template-ID.
 
 | Route | Request | Response |
 | --- | --- | --- |
@@ -151,12 +171,13 @@ Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Rückg�
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** sind `data: {json}`-Zeilen mit jeweils einem `type`; `: ping`-Kommentare halten die Verbindung offen. `text { text }`; `operations { ops }` (der Editor wendet sie an); `applied { batchId, revision, operationCount }`; `done { messageId }` (Durchläufe: String oder `null` ohne Verlauf), `done { html }` (Umformulieren); `error { code, message }`. `done` oder `error` ist das letzte Event.
+**Events** sind `data: {json}`-Zeilen mit jeweils einem `type`; `: ping`-Kommentare halten die Verbindung offen. `text { text }`; `operations { ops }` (der Editor wendet sie an); `applied { batchId, revision, operationCount }`; `done { messageId }` (Durchläufe: String oder `null` ohne Verlauf), `done { html }` (Umformulieren), `done { alt }` (Alt-Text); `error { code, message }`. `done` oder `error` ist das letzte Event.
 
 **Fehler vor dem Stream** sind JSON `{ message, code, …details }` mit dem Status des Codes: `feature_unavailable` und `limit_reached` 403, `rate_limited` 429 mit `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, ein Operationscode 409 (`invalid_operation` 422). Ein Validierungsfehler ist ein 422 `{ message }`.
 

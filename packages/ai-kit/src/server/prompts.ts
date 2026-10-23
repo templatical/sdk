@@ -1,10 +1,12 @@
 import type {
   AiFixFinding,
+  AiAltTextRequest,
   AiMergeTags,
   AiRewritePreset,
   TemplateContent,
 } from "@templatical/types";
 import {
+  ALT_TEXT_INSTRUCTIONS,
   CHAT_REQUEST,
   DESIGN_REQUEST,
   EDITING_RULES,
@@ -15,6 +17,7 @@ import {
   REWRITE_PRESETS,
   TEMPLATE_CONTENT_SCHEMA,
 } from "../generated/assets";
+import type { AiModelMessage } from "./model";
 import { fill } from "./fill";
 import { flattenMergeTags } from "./merge-tags";
 
@@ -139,4 +142,28 @@ export function buildRewritePrompt(input: RewritePromptInput): string {
     parts.push(input.preset === null ? instruction : `Also: ${instruction}`);
   }
   return `Instruction: ${parts.join(" ")}\n\nText:\n${flattenMergeTags(input.html)}`;
+}
+
+/** Build a plain-text request with the image attached by URL. */
+export function buildAltTextRequest(request: AiAltTextRequest): {
+  system: string;
+  messages: AiModelMessage[];
+} {
+  return {
+    system: fill(ALT_TEXT_INSTRUCTIONS, {
+      maxLength: String(request.maxLength),
+    }),
+    messages: [
+      {
+        role: "user",
+        content: JSON.stringify({
+          currentAlt: request.currentAlt,
+          linkHref: request.linkHref,
+          nearbyText: request.nearbyText,
+          locale: request.locale,
+        }),
+        attachments: [{ kind: "image-url", url: request.image.url }],
+      },
+    ],
+  };
 }

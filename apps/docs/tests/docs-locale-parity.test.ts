@@ -210,3 +210,22 @@ describe("AI lint-fix links in the German mirror", () => {
       expect(links).toContain("/de/backend/ai#mit-ki-beheben");
   });
 });
+
+
+describe("AI alt-text factual corrections in the German mirror", () => {
+  const en = readFileSync(join(DOCS, "backend/ai.md"), "utf8");
+  const de = readFileSync(join(DOCS, "de/backend/ai.md"), "utf8");
+
+  it("distinguishes serialized AI editing from independent alt-text drafts in both languages", () => {
+    expect(en).toContain("Fix buttons are disabled during AI editing work");
+    expect(en).toContain("independent alt-text drafts do not block fixes");
+    expect(de).toContain("Fix-Schaltflächen sind während KI-Bearbeitungen deaktiviert");
+    expect(de).toContain("während unabhängiger Alt-Text-Entwürfe können Sie weiterhin Fixes starten");
+  });
+
+  it("includes invalid alt-text output in ai_output_invalid in both languages", () => {
+    const row = (source: string) => source.split("\n").find(line => line.startsWith("| `ai_output_invalid` |"));
+    expect(row(en)).toContain("rewrite or alt-text output");
+    expect(row(de)).toContain("Umformulierung oder Alt-Text-Ausgabe");
+  });
+});

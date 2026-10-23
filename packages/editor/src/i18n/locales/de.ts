@@ -734,6 +734,17 @@ const de: typeof en = {
     agentUpdatedTemplate: "{who} hat die Vorlage aktualisiert.",
   },
   ai: {
+    altText: {
+      button: "Alt-Text schreiben",
+      drafting: "Alt-Text wird geschrieben…",
+      title: "Alt-Text",
+      accept: "Übernehmen",
+      decorative: "Als dekorativ markieren",
+      cancel: "Abbrechen",
+      note: "Von KI entworfen. Prüfen Sie, ob er den Zweck des Bildes beschreibt.",
+      failed:
+        "Für dieses Bild konnte kein Alt-Text geschrieben werden. Bitte schreiben Sie ihn selbst.",
+    },
     fix: {
       button: "Mit KI beheben",
       fixing: "Wird behoben…",
