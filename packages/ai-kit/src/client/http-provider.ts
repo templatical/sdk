@@ -1,5 +1,4 @@
 import type {
-  AiDesignRequest,
   AiFeatureName,
   AiProvider,
   AiReplay,
@@ -10,7 +9,7 @@ import type {
 } from "@templatical/types";
 import { CollaborationConflict, SdkError } from "@templatical/types";
 import {
-  AI_DESIGN_FIELDS,
+  AI_GENERATE_FIELDS,
   AI_ROUTES,
   AI_SESSION_HEADER,
   AI_WIRE_HEADER,
@@ -185,7 +184,7 @@ export function createHttpAiProviderWithFetch(
   }
 
   function turn(
-    route: "generate" | "fixFinding" | "generateFromDesign",
+    route: "generate" | "fixFinding",
     req: AiRequestBase,
     init: { json?: unknown; form?: FormData },
     handlers: AiTurnHandlers,
@@ -268,23 +267,34 @@ export function createHttpAiProviderWithFetch(
   }
 
   return {
+    chatAttachments: on("chat") && on("chatAttachments"),
     chat: on("chat")
-      ? (req, handlers, signal) =>
-          turn(
-            "generate",
-            req,
-            {
-              json: {
-                message: req.message,
-                selectedBlockId: req.selectedBlockId,
-                mergeTags: req.mergeTags,
-                content: req.content,
-                revision: req.revision,
-              },
-            },
-            handlers,
-            signal,
-          )
+      ? (req, handlers, signal) => {
+          const body = {
+            message: req.message,
+            selectedBlockId: req.selectedBlockId,
+            mergeTags: req.mergeTags,
+            content: req.content,
+            revision: req.revision,
+          };
+          if (req.attachments.length === 0)
+            return turn("generate", req, { json: body }, handlers, signal);
+          const form = new FormData();
+          form.set(AI_GENERATE_FIELDS.message, req.message);
+          if (req.selectedBlockId !== null)
+            form.set(AI_GENERATE_FIELDS.selectedBlockId, req.selectedBlockId);
+          form.set(AI_GENERATE_FIELDS.mergeTags, JSON.stringify(req.mergeTags));
+          form.set(AI_GENERATE_FIELDS.content, JSON.stringify(req.content));
+          if (req.revision !== null)
+            form.set(AI_GENERATE_FIELDS.revision, String(req.revision));
+          for (const attachment of req.attachments)
+            form.append(
+              AI_GENERATE_FIELDS.attachment,
+              attachment.file,
+              attachment.name,
+            );
+          return turn("generate", req, { form }, handlers, signal);
+        }
       : false,
     fixFinding: on("fixFinding")
       ? (req, handlers, signal) =>
@@ -302,26 +312,6 @@ export function createHttpAiProviderWithFetch(
             handlers,
             signal,
           )
-      : false,
-    design: on("design")
-      ? (req: AiDesignRequest, handlers, signal) => {
-          const form = new FormData();
-          if (req.prompt !== null && req.prompt !== "") {
-            form.set(AI_DESIGN_FIELDS.prompt, req.prompt);
-          }
-          form.set(
-            req.fileKind === "pdf"
-              ? AI_DESIGN_FIELDS.pdf
-              : AI_DESIGN_FIELDS.image,
-            req.file,
-          );
-          form.set(AI_DESIGN_FIELDS.mergeTags, JSON.stringify(req.mergeTags));
-          form.set(AI_DESIGN_FIELDS.content, JSON.stringify(req.content));
-          if (req.revision !== null) {
-            form.set(AI_DESIGN_FIELDS.revision, String(req.revision));
-          }
-          return turn("generateFromDesign", req, { form }, handlers, signal);
-        }
       : false,
     rewrite: on("rewrite")
       ? (req, handlers, signal) =>

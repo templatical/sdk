@@ -57,9 +57,26 @@ describe("testing contract checks", () => {
         batches: [{ batchId: "b-2", revision: 1, operationCount: 0 }],
       }),
     ).toBe(null);
-    expect(messageProblem({ ...message, kind: "design" })).toBe(null);
+    expect(
+      messageProblem({
+        ...message,
+        role: "user",
+        attachments: [
+          { name: "shot.png", kind: "image" },
+          { name: "ref.pdf", kind: "pdf" },
+        ],
+      }),
+    ).toBe(null);
     for (const change of [
       { id: 1 },
+      { kind: "design" },
+      ...[
+        null,
+        {},
+        [null],
+        [{ name: 1, kind: "image" }],
+        [{ name: "x", kind: "video" }],
+      ].map((attachments) => ({ attachments })),
       { role: "system" },
       { kind: "rewrite" },
       { text: 1 },

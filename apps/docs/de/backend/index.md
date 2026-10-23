@@ -25,7 +25,7 @@ await init({
   media: myGallery, // Bilder, Ordner, Upload
   testEmail: mySender, // diese Vorlage an eine Person mailen
   render: myRenderer, // MJML- und HTML-Ausgabe
-  ai: myAiBackend, // Chat, Umformulieren, Design
+  ai: myAiBackend, // chat attachments, rewrite, screenshot/PDF import
 });
 ```
 
@@ -46,7 +46,7 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 | [Medien](/de/backend/media) | Durchsuchen an Bildfeldern, Drop-Upload, Zuschnitt, Ordner, Suche | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test-E-Mails](/de/backend/test-email) | Auslöser im Header, Empfängersteuerung, Formatprüfung, exakte Vorschau, Versand- und Fehlerzustände | `send` |
 | [Rendering & Export](/de/backend/render) | `toMjml()` und `toHtml()`, vorab aufgelöste Custom Blocks, aufgelöste Schriften | eines von `toMjml` · `toHtml` · `compileMjml` |
-| [KI](/de/backend/ai) | ein Chat, der die Vorlage mit Rückgängig bearbeitet, Umformulieren in der Absatz-Werkzeugleiste, Design zu Vorlage, statische, lokalisierte Einstiegsanfragen, KI-Kennzeichnung | eines von `chat` · `fixFinding` · `design` · `rewrite`, optional `conversation` |
+| [KI](/de/backend/ai) | ein Chat, der die Vorlage mit Rückgängig und Anhängen bearbeitet, die Verknüpfung **Aus Screenshot oder PDF importieren**, Umformulieren in der Absatz-Werkzeugleiste, statische, lokalisierte Einstiegsanfragen, KI-Kennzeichnung | aufrufbare Mitglieder: `chat` · `fixFinding` · `rewrite` · `altText` (jeweils `false \| fn`); boolesches Flag `chatAttachments`, nur wirksam, wenn `chat` eine Funktion ist; optional `conversation` |
 
 Der Editor behält, was kleinteilig und für alle gleich ist: Änderungsverfolgung, ein verzögertes Autosave, das während Undo pausiert, eine Vorschau, die Anzeigebedingungen respektiert, die Rückfrage, bevor ein Wiederherstellen ungespeicherte Arbeit verwirft. Ihnen bleibt, wohin die Daten gehen, wer sie lesen darf und wie Ihre API aussieht.
 

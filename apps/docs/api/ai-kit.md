@@ -34,9 +34,8 @@ import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   credentials: 'include',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
@@ -68,8 +67,8 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
-| `rewriteInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
+| `rewriteInstructions` | The other prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
@@ -135,7 +134,28 @@ interface AiModelAdapter {
 }
 ```
 
-[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All accept image URLs; only the Anthropic example accepts image and PDF Blobs. The OpenAI and Vercel client configurations turn off design and stored conversation history.
+[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. All examples take chat, fix, rewrite and alt text and accept image URLs for alt text. Only the Anthropic example accepts image and PDF Blobs in chat. The OpenAI and Vercel client configurations set `chatAttachments: false` and turn off stored conversation history.
+
+### Chat attachments
+
+`AiChatRequest.attachments` is always present: `[]` without files, otherwise `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` is a flag: `true` means the `chat` function accepts attachments; it has no effect when `chat` is `false`. The HTTP provider enables it by default when chat is on; `features: { chatAttachments: false }` disables it.
+
+Without attachments the HTTP client keeps the JSON body unchanged. With attachments, `AI_GENERATE_FIELDS` names `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`.
+
+`readAiRequest` accepts MIME types `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`. It refuses, never truncates, with status 422 and no code, in this order:
+
+| Condition | Message |
+| --- | --- |
+| Form cannot be parsed | Send the message as multipart form data. |
+| More than 4 files | Attach at most 4 files. |
+| Non-file part or unsupported MIME type | Attach PNG, JPEG, WebP or GIF images, or PDFs. |
+| Any file over `5 * 1024 * 1024` bytes | Each attachment must be 5 MB or smaller. |
+| Total over `10 * 1024 * 1024` bytes | Attachments must be 10 MB or smaller together. |
+| File name over 255 UTF-16 units | An attachment's file name must be at most 255 characters. |
+
+`buildChatRequest(message: string, options?: { hasAttachments?: boolean })` returns the text-only request unchanged by default; with `hasAttachments: true` it appends a blank line and `prompts/chat-attachments.md`. Map the parsed files to model attachments with `{ kind, mediaType: file.type, data: file }`, as the guide does. The prompt uses references for the requested change and replaces the whole template only when empty or explicitly requested; pictures become placeholders.
+
+The conformance suites send one 1×1 PNG when chat attachments are on; wire conformance also requires a 422 for five attachments. History stores only `{ name, kind }` in optional user-message `attachments`; retaining the files is the backend's choice.
 
 ## Testing
 
@@ -167,9 +187,8 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Un
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
-| `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
 | `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |

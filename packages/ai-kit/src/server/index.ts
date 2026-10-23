@@ -5,11 +5,9 @@
 export {
   buildChatRequest,
   buildAltTextRequest,
-  buildDesignRequest,
   buildEditingPrompt,
   buildFixRequest,
   buildRewritePrompt,
-  designInstructions,
   editingInstructions,
   REWRITE_PRESET_INSTRUCTIONS,
   FIX_RULE_GUIDANCE,
@@ -60,5 +58,5 @@ export type {
 } from "./event-stream";
 export { aiErrorEvent, aiErrorResponse, aiJsonResponse } from "./errors";
 export { readAiRequest } from "./read-request";
-export type { AiDesignBody, AiWireRequest } from "./read-request";
+export type { AiWireRequest } from "./read-request";
 export { buildRewriteRepairPrompt, checkRewrite, checkAltText } from "./checks";

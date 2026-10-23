@@ -1,12 +1,13 @@
 import type {
   AiFixFinding,
+  AiChatAttachment,
   AiMergeTags,
   AiRewritePreset,
   TemplateContent,
 } from "@templatical/types";
 import { SdkError } from "@templatical/types";
 import {
-  AI_DESIGN_FIELDS,
+  AI_GENERATE_FIELDS,
   AI_ERROR_MESSAGES,
   AI_LIMITS,
   AI_SESSION_HEADER,
@@ -16,15 +17,6 @@ import {
   type AiGenerateBody,
   type AiRewriteBody,
 } from "../wire";
-
-export interface AiDesignBody {
-  prompt: string | null;
-  file: Blob;
-  fileKind: "image" | "pdf";
-  mergeTags: AiMergeTags | null;
-  content: TemplateContent;
-  revision: number | null;
-}
 
 interface Base {
   template: string;
@@ -36,7 +28,6 @@ export type AiWireRequest = Base &
   (
     | { route: "generate"; body: AiGenerateBody }
     | { route: "fixFinding"; body: AiFixFindingBody }
-    | { route: "generateFromDesign"; body: AiDesignBody }
     | { route: "rewriteText"; body: AiRewriteBody }
     | { route: "altText"; body: AiAltTextBody }
     | { route: "conversationMessages" | "clearConversation" }
@@ -210,57 +201,64 @@ export async function readAiRequest(
     case "undoMessage":
     case "redoMessage":
       return { ...base, route: match.route, message: match.message ?? "" };
-    case "generateFromDesign": {
-      const form = await request
-        .formData()
-        .catch(() => invalid("Send the design as multipart form data."));
-      const image = form.get(AI_DESIGN_FIELDS.image);
-      const pdf = form.get(AI_DESIGN_FIELDS.pdf);
-      const file = image ?? pdf;
-      if (!(file instanceof Blob) || (image !== null && pdf !== null)) {
-        invalid("Upload one image or one PDF.");
-      }
-      const fileKind = image !== null ? "image" : "pdf";
-      if (
-        fileKind === "image"
-          ? !IMAGE_TYPES.includes(file.type)
-          : file.type !== "application/pdf"
-      ) {
-        invalid("Upload a PNG, JPEG, WebP or GIF image, or a PDF.");
-      }
-      if (file.size > AI_LIMITS.designMaxBytes)
-        invalid("The file must be 5 MB or smaller.");
-      const json = (field: string): unknown => {
-        const raw = form.get(field);
-        if (raw === null) return null;
-        try {
-          return JSON.parse(String(raw));
-        } catch {
-          return invalid(`${field} must be JSON.`);
-        }
-      };
-      return {
-        ...base,
-        route: "generateFromDesign",
-        body: {
-          prompt: optionalText(
-            form.get(AI_DESIGN_FIELDS.prompt),
-            AI_LIMITS.designPromptMaxChars,
-            "The prompt must be at most 2,000 characters.",
-          ),
-          file,
-          fileKind,
-          mergeTags: mergeTags(json(AI_DESIGN_FIELDS.mergeTags)),
-          content: content(json(AI_DESIGN_FIELDS.content)),
-          revision: revision(form.get(AI_DESIGN_FIELDS.revision)),
-        },
-      };
-    }
     default:
       break;
   }
 
-  const body = await request.json().catch(() => invalid("Send a JSON body."));
+  let attachments: AiChatAttachment[] = [];
+  let body: unknown;
+  if (
+    match.route === "generate" &&
+    request.headers.get("Content-Type")?.startsWith("multipart/form-data")
+  ) {
+    const form = await request
+      .formData()
+      .catch(() => invalid("Send the message as multipart form data."));
+    const files = form.getAll(AI_GENERATE_FIELDS.attachment);
+    if (files.length > AI_LIMITS.attachmentsMax)
+      invalid("Attach at most 4 files.");
+    if (
+      files.some(
+        (file) =>
+          !(file instanceof Blob) ||
+          (!IMAGE_TYPES.includes(file.type) && file.type !== "application/pdf"),
+      )
+    )
+      invalid("Attach PNG, JPEG, WebP or GIF images, or PDFs.");
+    const blobs = files as File[];
+    if (blobs.some((file) => file.size > AI_LIMITS.attachmentMaxBytes))
+      invalid("Each attachment must be 5 MB or smaller.");
+    if (
+      blobs.reduce((total, file) => total + file.size, 0) >
+      AI_LIMITS.attachmentsTotalMaxBytes
+    )
+      invalid("Attachments must be 10 MB or smaller together.");
+    if (blobs.some((file) => file.name.length > 255))
+      invalid("An attachment's file name must be at most 255 characters.");
+    attachments = blobs.map((file) => ({
+      file,
+      kind: file.type === "application/pdf" ? "pdf" : "image",
+      name: file.name,
+    }));
+    const json = (field: string): unknown => {
+      const raw = form.get(field);
+      if (raw === null) return null;
+      try {
+        return JSON.parse(String(raw));
+      } catch {
+        return invalid(`${field} must be JSON.`);
+      }
+    };
+    body = {
+      message: form.get(AI_GENERATE_FIELDS.message),
+      selectedBlockId: form.get(AI_GENERATE_FIELDS.selectedBlockId),
+      revision: form.get(AI_GENERATE_FIELDS.revision),
+      mergeTags: json(AI_GENERATE_FIELDS.mergeTags),
+      content: json(AI_GENERATE_FIELDS.content),
+    };
+  } else {
+    body = await request.json().catch(() => invalid("Send a JSON body."));
+  }
   if (!isRecord(body)) invalid("Send a JSON object.");
 
   switch (match.route) {
@@ -360,6 +358,7 @@ export async function readAiRequest(
         route: "generate",
         body: {
           message,
+          attachments,
           selectedBlockId:
             typeof body.selectedBlockId === "string"
               ? body.selectedBlockId

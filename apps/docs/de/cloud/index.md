@@ -28,7 +28,7 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 
 | Funktion | Beschreibung |
 |---------|-------------|
-| [KI-Assistent](/de/cloud/ai) | E-Mail-Inhalte aus Prompts erzeugen, Texte umschreiben, Umwandlung von Design zu Template |
+| [KI-Assistent](/de/cloud/ai) | E-Mail-Inhalte aus Prompts erzeugen, Texte umschreiben, Chat-Anhänge |
 | [Zusammenarbeit](/de/cloud/collaboration) | Echtzeit-Co-Editing mit Live-Cursorn und Block-Sperren |
 | [Kommentare](/de/cloud/comments) | Inline-Review-Threads an einzelnen Blöcken |
 | [Medienbibliothek](/de/cloud/media-library) | Bilder hochladen, organisieren und verwalten – mit Ordnern und Suche |

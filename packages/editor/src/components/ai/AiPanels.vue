@@ -3,14 +3,11 @@ import { computed, defineAsyncComponent } from "vue";
 import type { UseAiFeatureReturn } from "../../composables/useAiFeature";
 
 const AiChatPanel = defineAsyncComponent(() => import("./AiChatPanel.vue"));
-const AiDesignPanel = defineAsyncComponent(() => import("./AiDesignPanel.vue"));
 
 const props = defineProps<{ feature: UseAiFeatureReturn }>();
 
 const PANELS = {
   chat: AiChatPanel,
-  translate: null,
-  design: AiDesignPanel,
 } as const;
 
 const current = computed(() => {
@@ -31,7 +28,7 @@ const current = computed(() => {
     leave-to-class="tpl:translate-x-full"
     mode="out-in"
   >
-    <!-- Keep chat and design state when the panel closes. -->
+    <!-- Keep chat state when the panel closes. -->
     <KeepAlive>
       <component
         :is="current"

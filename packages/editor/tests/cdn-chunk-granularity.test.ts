@@ -200,7 +200,6 @@ describe("CDN chunk granularity", () => {
     // size so it stays meaningful as the components grow.
     const panels = [
       "AiChatPanel",
-      "AiDesignPanel",
       "AiRewriteMenu",
       "AiAltTextReview",
       "CommentsSidebar",

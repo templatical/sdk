@@ -6,15 +6,39 @@ const content = {
   blocks: [{ id: "t1", type: "title", content: "<p>Hi</p>" }],
   settings: { width: 600 },
 } as never;
-const base = { templateId: "t-1", content, revision: null, sessionId: "s", mergeTags: null };
-const rename = [{ op: "updateBlock" as const, blockId: "t1", set: { content: "<p>Hello</p>" } }];
+const base = {
+  templateId: "t-1",
+  content,
+  revision: null,
+  sessionId: "s",
+  mergeTags: null,
+};
+const rename = [
+  {
+    op: "updateBlock" as const,
+    blockId: "t1",
+    set: { content: "<p>Hello</p>" },
+  },
+];
 
 describe("createMockAiProvider (D35)", () => {
   it("plays the first recording whose match fits the message", async () => {
     const ai = createMockAiProvider({
       chat: [
-        { match: /title/i, events: [{ type: "operations", ops: rename }, { type: "text", text: "Renamed." }, { type: "done", messageId: null }] },
-        { events: [{ type: "text", text: "Fallback." }, { type: "done", messageId: null }] },
+        {
+          match: /title/i,
+          events: [
+            { type: "operations", ops: rename },
+            { type: "text", text: "Renamed." },
+            { type: "done", messageId: null },
+          ],
+        },
+        {
+          events: [
+            { type: "text", text: "Fallback." },
+            { type: "done", messageId: null },
+          ],
+        },
       ],
     });
     const editor = createStandInEditor(content);
@@ -26,17 +50,33 @@ describe("createMockAiProvider (D35)", () => {
     );
 
     expect(result).toEqual({ messageId: null, text: "Renamed." });
-    expect((editor.content.blocks[0] as { content: string }).content).toBe("<p>Hello</p>");
+    expect((editor.content.blocks[0] as { content: string }).content).toBe(
+      "<p>Hello</p>",
+    );
     expect(ai.rewrite).toBe(false);
     expect(ai.conversation).toBe(undefined);
   });
 
   it("fails a turn whose operations the editor refuses", async () => {
     const ai = createMockAiProvider({
-      chat: [{ events: [{ type: "operations", ops: [{ op: "deleteBlock", blockId: "nope" }] }, { type: "done", messageId: null }] }],
+      chat: [
+        {
+          events: [
+            {
+              type: "operations",
+              ops: [{ op: "deleteBlock", blockId: "nope" }],
+            },
+            { type: "done", messageId: null },
+          ],
+        },
+      ],
     });
     await expect(
-      (ai.chat as Function)({ ...base, message: "x", selectedBlockId: null }, createStandInEditor(content).handlers(), new AbortController().signal),
+      (ai.chat as Function)(
+        { ...base, message: "x", selectedBlockId: null },
+        createStandInEditor(content).handlers(),
+        new AbortController().signal,
+      ),
     ).rejects.toBeInstanceOf(CollaborationConflict);
   });
 
@@ -44,10 +84,22 @@ describe("createMockAiProvider (D35)", () => {
     vi.useFakeTimers();
     const ai = createMockAiProvider({
       delayMs: 100,
-      chat: [{ events: [{ type: "text", text: "a" }, { type: "text", text: "b" }, { type: "done", messageId: null }] }],
+      chat: [
+        {
+          events: [
+            { type: "text", text: "a" },
+            { type: "text", text: "b" },
+            { type: "done", messageId: null },
+          ],
+        },
+      ],
     });
     const stop = new AbortController();
-    const turn = (ai.chat as Function)({ ...base, message: "x", selectedBlockId: null }, createStandInEditor(content).handlers(), stop.signal);
+    const turn = (ai.chat as Function)(
+      { ...base, message: "x", selectedBlockId: null },
+      createStandInEditor(content).handlers(),
+      stop.signal,
+    );
     const caught = turn.catch((error: Error) => error);
     await vi.advanceTimersByTimeAsync(150);
     stop.abort();
@@ -59,37 +111,101 @@ describe("createMockAiProvider (D35)", () => {
   it("keeps history when asked: list, undo, redo, clear", async () => {
     const ai = createMockAiProvider({
       conversation: true,
-      chat: [{ events: [{ type: "operations", ops: rename }, { type: "text", text: "Renamed." }, { type: "done", messageId: null }] }],
+      chat: [
+        {
+          events: [
+            { type: "operations", ops: rename },
+            { type: "text", text: "Renamed." },
+            { type: "done", messageId: null },
+          ],
+        },
+      ],
     });
     const editor = createStandInEditor(content);
-    const result = await (ai.chat as Function)({ ...base, message: "Rename", selectedBlockId: null }, editor.handlers(), new AbortController().signal);
+    const result = await (ai.chat as Function)(
+      { ...base, message: "Rename", selectedBlockId: null },
+      editor.handlers(),
+      new AbortController().signal,
+    );
 
     const messages = await ai.conversation!.list("t-1");
-    expect(messages.map((m) => [m.role, m.kind, m.text, m.batches.length])).toEqual([
+    expect(
+      messages.map((m) => [m.role, m.kind, m.text, m.batches.length]),
+    ).toEqual([
       ["user", "chat", "Rename", 0],
       ["assistant", "chat", "Renamed.", 1],
     ]);
     expect(result.messageId).toBe(messages[1].id);
 
-    const undo = await (ai.conversation!.undo as Function)("t-1", messages[1].id, { sessionId: "s" });
+    const undo = await (ai.conversation!.undo as Function)(
+      "t-1",
+      messages[1].id,
+      { sessionId: "s" },
+    );
     expect(undo).toEqual({
       replayId: expect.any(String),
-      operations: [{ op: "updateBlock", blockId: "t1", set: { content: "<p>Hi</p>" }, expect: { content: "<p>Hello</p>" } }],
+      operations: [
+        {
+          op: "updateBlock",
+          blockId: "t1",
+          set: { content: "<p>Hi</p>" },
+          expect: { content: "<p>Hello</p>" },
+        },
+      ],
     });
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(false);
-    const outcome = { replayId: undo.replayId, direction: "undo" as const, applied: false, sessionId: "s" };
+    const outcome = {
+      replayId: undo.replayId,
+      direction: "undo" as const,
+      applied: false,
+      sessionId: "s",
+    };
     await ai.conversation!.settleReplay("t-1", messages[1].id, outcome);
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(false);
-    await ai.conversation!.settleReplay("t-1", messages[1].id, { ...outcome, applied: true });
+    await ai.conversation!.settleReplay("t-1", messages[1].id, {
+      ...outcome,
+      applied: true,
+    });
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(false);
-    const accepted = await (ai.conversation!.undo as Function)("t-1", messages[1].id, { sessionId: "s" });
-    await ai.conversation!.settleReplay("t-1", messages[1].id, { ...outcome, replayId: accepted.replayId, applied: true });
+    const accepted = await (ai.conversation!.undo as Function)(
+      "t-1",
+      messages[1].id,
+      { sessionId: "s" },
+    );
+    await ai.conversation!.settleReplay("t-1", messages[1].id, {
+      ...outcome,
+      replayId: accepted.replayId,
+      applied: true,
+    });
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(true);
-    const redo = await (ai.conversation!.redo as Function)("t-1", messages[1].id, { sessionId: "s" });
-    expect(redo).toEqual({ replayId: expect.any(String), operations: [{ op: "updateBlock", blockId: "t1", set: { content: "<p>Hello</p>" }, expect: { content: "<p>Hi</p>" } }] });
+    const redo = await (ai.conversation!.redo as Function)(
+      "t-1",
+      messages[1].id,
+      { sessionId: "s" },
+    );
+    expect(redo).toEqual({
+      replayId: expect.any(String),
+      operations: [
+        {
+          op: "updateBlock",
+          blockId: "t1",
+          set: { content: "<p>Hello</p>" },
+          expect: { content: "<p>Hi</p>" },
+        },
+      ],
+    });
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(true);
-    await ai.conversation!.settleReplay("t-1", messages[1].id, { replayId: redo.replayId, direction: "redo", applied: true, sessionId: "s" });
-    await ai.conversation!.settleReplay("t-1", messages[1].id, { ...outcome, replayId: accepted.replayId, applied: true });
+    await ai.conversation!.settleReplay("t-1", messages[1].id, {
+      replayId: redo.replayId,
+      direction: "redo",
+      applied: true,
+      sessionId: "s",
+    });
+    await ai.conversation!.settleReplay("t-1", messages[1].id, {
+      ...outcome,
+      replayId: accepted.replayId,
+      applied: true,
+    });
     expect((await ai.conversation!.list("t-1"))[1].undone).toBe(false);
     await (ai.conversation!.clear as Function)("t-1");
     expect(await ai.conversation!.list("t-1")).toEqual([]);
@@ -106,7 +222,13 @@ describe("createMockAiProvider (D35)", () => {
     const onText = vi.fn();
     expect(
       await (ai.rewrite as Function)(
-        { ...base, html: "<p>a</p>", preset: "shorten", language: null, instruction: null },
+        {
+          ...base,
+          html: "<p>a</p>",
+          preset: "shorten",
+          language: null,
+          instruction: null,
+        },
         { onText },
         signal,
       ),
@@ -115,11 +237,23 @@ describe("createMockAiProvider (D35)", () => {
   });
 
   it("normalizes a non-Error abort reason and preserves a supplied AbortError", async () => {
-    const ai = createMockAiProvider({ rewrite: [{ type: "done", html: "<p>One</p>" }] });
+    const ai = createMockAiProvider({
+      rewrite: [{ type: "done", html: "<p>One</p>" }],
+    });
     const stopped = new AbortController();
     stopped.abort("Stop now");
     await expect(
-      (ai.rewrite as Function)({ ...base, html: "<p>One</p>", preset: "shorten", language: null, instruction: null }, { onText: () => {} }, stopped.signal),
+      (ai.rewrite as Function)(
+        {
+          ...base,
+          html: "<p>One</p>",
+          preset: "shorten",
+          language: null,
+          instruction: null,
+        },
+        { onText: () => {} },
+        stopped.signal,
+      ),
     ).rejects.toMatchObject({
       name: "AbortError",
       message: "The AI request was stopped.",
@@ -128,7 +262,17 @@ describe("createMockAiProvider (D35)", () => {
     const preserve = new AbortController();
     preserve.abort(supplied);
     await expect(
-      (ai.rewrite as Function)({ ...base, html: "<p>One</p>", preset: "shorten", language: null, instruction: null }, { onText: () => {} }, preserve.signal),
+      (ai.rewrite as Function)(
+        {
+          ...base,
+          html: "<p>One</p>",
+          preset: "shorten",
+          language: null,
+          instruction: null,
+        },
+        { onText: () => {} },
+        preserve.signal,
+      ),
     ).rejects.toBe(supplied);
   });
 
@@ -246,44 +390,59 @@ describe("createMockAiProvider (D35)", () => {
     expect(await ai.conversation!.list("t-1")).toEqual([]);
   });
 
-  it.each([null, "Use a bright header."])(
-    "records the design instruction in conversation history: %s",
-    async (prompt) => {
-      const ai = createMockAiProvider({
-        conversation: true,
-        design: [
-          { type: "text", text: "Built." },
-          { type: "done", messageId: null },
+  it("records chat attachments as metadata only on the user message", async () => {
+    const ai = createMockAiProvider({
+      conversation: true,
+      chatAttachments: true,
+      chat: [
+        {
+          events: [
+            { type: "text", text: "Built." },
+            { type: "done", messageId: null },
+          ],
+        },
+      ],
+    });
+    const result = await (ai.chat as Function)(
+      {
+        ...base,
+        message: "Use this reference",
+        selectedBlockId: null,
+        attachments: [
+          {
+            file: new Blob(["image"], { type: "image/png" }),
+            kind: "image",
+            name: "shot.png",
+          },
         ],
-      });
-      const result = await (ai.design as Function)(
-        {
-          ...base,
-          prompt,
-          file: new Blob(["image"], { type: "image/png" }),
-          fileKind: "image",
-        },
-        createStandInEditor(content).handlers(),
-        new AbortController().signal,
-      );
-      const messages = await ai.conversation!.list("t-1");
-      expect(
-        messages.map((message) => ({
-          role: message.role,
-          kind: message.kind,
-          text: message.text,
-        })),
-      ).toEqual([
-        {
-          role: "user",
-          kind: "design",
-          text: prompt ? `Built from design\n${prompt}` : "Built from design",
-        },
-        { role: "assistant", kind: "design", text: "Built." },
-      ]);
-      expect(result).toEqual({ messageId: messages[1].id, text: "Built." });
-    },
-  );
+      },
+      createStandInEditor(content).handlers(),
+      new AbortController().signal,
+    );
+    const messages = await ai.conversation!.list("t-1");
+    expect(
+      messages.map(({ role, kind, text, attachments }) => ({
+        role,
+        kind,
+        text,
+        attachments,
+      })),
+    ).toEqual([
+      {
+        role: "user",
+        kind: "chat",
+        text: "Use this reference",
+        attachments: [{ name: "shot.png", kind: "image" }],
+      },
+      {
+        role: "assistant",
+        kind: "chat",
+        text: "Built.",
+        attachments: undefined,
+      },
+    ]);
+    expect(result).toEqual({ messageId: messages[1].id, text: "Built." });
+  });
 
   it("plays explicit pauses before continuing the recorded text", async () => {
     const ai = createMockAiProvider({

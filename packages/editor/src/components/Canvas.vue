@@ -119,7 +119,20 @@ provide(
 );
 
 const canChat = computed(() => caps.ai?.isFeatureEnabled("chat") ?? false);
-const canDesign = computed(() => caps.ai?.isFeatureEnabled("design") ?? false);
+const canImport = computed(
+  () =>
+    canChat.value && (caps.ai?.isFeatureEnabled("chatAttachments") ?? false),
+);
+const importInput = ref<HTMLInputElement | null>(null);
+function pickImport(): void {
+  importInput.value?.click();
+}
+function importPicked(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
+  if (files.length) caps.ai?.startImport(files);
+}
 
 /**
  * Whether the hand-toggled display-condition filter applies here. Owned by
@@ -439,20 +452,27 @@ function handleFetchData(
               {{ t.ai.canvas.chatHintSuffix }}
             </p>
             <p
-              v-if="canDesign"
+              v-if="canImport"
               class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
-              {{ t.ai.canvas.designHint }}
+              {{ t.ai.canvas.importHint }}
               <button
                 type="button"
-                data-testid="canvas-ai-design"
+                data-testid="canvas-ai-import"
                 class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-                @click="caps.ai?.open('design')"
+                @click="pickImport"
               >
                 <ImageUp :size="14" :stroke-width="2" aria-hidden="true" />
-                {{ t.ai.menu.design }}
+                {{ t.ai.import.menu }}
               </button>
-              {{ t.ai.canvas.designHintSuffix }}
+              <input
+                ref="importInput"
+                type="file"
+                multiple
+                accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+                hidden
+                @change="importPicked"
+              />
             </p>
           </div>
           <div

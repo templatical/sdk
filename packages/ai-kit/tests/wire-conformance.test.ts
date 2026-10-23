@@ -9,9 +9,12 @@ let server: Awaited<ReturnType<typeof serve>> | null = null;
 async function within<T>(pending: Promise<T>, ms = 1000): Promise<T | null> {
   let timer: ReturnType<typeof setTimeout>;
   try {
-    return await Promise.race([pending, new Promise<null>((resolve) => {
-      timer = setTimeout(() => resolve(null), ms);
-    })]);
+    return await Promise.race([
+      pending,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
   } finally {
     clearTimeout(timer!);
   }
@@ -48,24 +51,35 @@ describe("runAiWireConformance", () => {
     const reference = createReferenceHandler();
     server = await serve(async (request) => {
       const response = await reference(request);
-      if (!new URL(request.url).pathname.endsWith("/rewrite-text")) return response;
+      if (!new URL(request.url).pathname.endsWith("/rewrite-text"))
+        return response;
       const headers = new Headers(response.headers);
       headers.set("Content-Type", "application/json");
       return new Response(response.body, { status: response.status, headers });
     });
     const report = await runAiWireConformance({ baseUrl: server.baseUrl });
     expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "streams answer as text/event-stream")).toMatchObject({ ok: false, detail: expect.stringMatching(/rewrite/) });
+    expect(
+      report.checks.find(
+        (check) => check.name === "streams answer as text/event-stream",
+      ),
+    ).toMatchObject({ ok: false, detail: expect.stringMatching(/rewrite/) });
   });
 
   it("bounds a headers callback that never settles", async () => {
     server = await serve(createReferenceHandler());
-    const report = await within(runAiWireConformance({
-      baseUrl: server.baseUrl, timeoutMs: 20, callTimeoutMs: 20,
-      headers: () => new Promise(() => {}),
-    }));
+    const report = await within(
+      runAiWireConformance({
+        baseUrl: server.baseUrl,
+        timeoutMs: 20,
+        callTimeoutMs: 20,
+        headers: () => new Promise(() => {}),
+      }),
+    );
     expect(report).not.toBeNull();
-    expect(report?.checks.find((check) => check.name === "request headers")).toMatchObject({ ok: false, detail: expect.stringMatching(/20 ms/) });
+    expect(
+      report?.checks.find((check) => check.name === "request headers"),
+    ).toMatchObject({ ok: false, detail: expect.stringMatching(/20 ms/) });
   });
 
   it("bounds a probe fetch that never receives response headers", async () => {
@@ -75,36 +89,81 @@ describe("runAiWireConformance", () => {
         ? new Promise(() => {})
         : reference(request),
     );
-    const report = await within(runAiWireConformance({ baseUrl: server.baseUrl, timeoutMs: 20, callTimeoutMs: 20 }));
+    const report = await within(
+      runAiWireConformance({
+        baseUrl: server.baseUrl,
+        timeoutMs: 20,
+        callTimeoutMs: 20,
+      }),
+    );
     expect(report).not.toBeNull();
-    expect(report?.checks.some((check) => !check.ok && /generate.*20 ms/.test(check.detail))).toBe(true);
+    expect(
+      report?.checks.some(
+        (check) => !check.ok && /generate.*20 ms/.test(check.detail),
+      ),
+    ).toBe(true);
   });
 
   it("bounds a JSON body read that never completes", async () => {
     const reference = createReferenceHandler();
     server = await serve(async (request) => {
-      if (new URL(request.url).pathname.endsWith("/generate") && (await request.clone().json()).message === "") {
-        return new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('{"message":')); } }), {
-          status: 422, headers: { "Content-Type": "application/json", "Templatical-AI-Wire": "1" },
-        });
+      if (
+        new URL(request.url).pathname.endsWith("/generate") &&
+        request.headers.get("Content-Type")?.startsWith("application/json") &&
+        (await request.clone().json()).message === ""
+      ) {
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('{"message":'));
+            },
+          }),
+          {
+            status: 422,
+            headers: {
+              "Content-Type": "application/json",
+              "Templatical-AI-Wire": "1",
+            },
+          },
+        );
       }
       return reference(request);
     });
-    const report = await within(runAiWireConformance({ baseUrl: server.baseUrl, timeoutMs: 20, callTimeoutMs: 20 }));
+    const report = await within(
+      runAiWireConformance({
+        baseUrl: server.baseUrl,
+        timeoutMs: 20,
+        callTimeoutMs: 20,
+      }),
+    );
     expect(report).not.toBeNull();
-    expect(report?.checks.some((check) => !check.ok && /generate.*20 ms/.test(check.detail))).toBe(true);
+    expect(
+      report?.checks.some(
+        (check) => !check.ok && /generate.*20 ms/.test(check.detail),
+      ),
+    ).toBe(true);
   });
 
   it("reports a rejected headers callback and continues the wire checks", async () => {
     server = await serve(createReferenceHandler());
     const report = await runAiWireConformance({
       baseUrl: server.baseUrl,
-      headers: async () => { throw new Error("headers unavailable"); },
+      headers: async () => {
+        throw new Error("headers unavailable");
+      },
     });
     expect(report.ok).toBe(false);
-    expect(report.checks).toContainEqual({ name: "request headers", ok: false, detail: "headers unavailable" });
-    expect(report.checks.map((check) => check.name)).toContain("refuses an invalid turn before the stream with a JSON error");
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
+    expect(report.checks).toContainEqual({
+      name: "request headers",
+      ok: false,
+      detail: "headers unavailable",
+    });
+    expect(report.checks.map((check) => check.name)).toContain(
+      "refuses an invalid turn before the stream with a JSON error",
+    );
+    expect(report.checks.at(-1)?.name).toBe(
+      "errors are SdkErrors with known codes",
+    );
   });
 
   it("passes the reference server", async () => {
@@ -128,7 +187,10 @@ describe("runAiWireConformance", () => {
     });
     const report = await runAiWireConformance({ baseUrl: server.baseUrl });
     expect(report.ok).toBe(false);
-    expect(report.checks[0]).toMatchObject({ name: "responses carry Templatical-AI-Wire: 1", ok: false });
+    expect(report.checks[0]).toMatchObject({
+      name: "responses carry Templatical-AI-Wire: 1",
+      ok: false,
+    });
   });
 });
 
@@ -137,39 +199,100 @@ it("settles reference-server replay only once, after editor acceptance", async (
   const ai = createHttpAiProvider({ baseUrl: server.baseUrl });
   const content = { blocks: [], settings: { width: 600 } } as never;
   const editor = createStandInEditor(content);
-  const turn = await (ai.chat as Function)({ templateId: "settlement", content, revision: null, sessionId: "s", mergeTags: null, message: "Change background", selectedBlockId: null }, editor.handlers(), new AbortController().signal);
+  const turn = await (ai.chat as Function)(
+    {
+      templateId: "settlement",
+      content,
+      revision: null,
+      sessionId: "s",
+      mergeTags: null,
+      message: "Change background",
+      selectedBlockId: null,
+      attachments: [],
+    },
+    editor.handlers(),
+    new AbortController().signal,
+  );
   const conversation = ai.conversation!;
-  const undo = await (conversation.undo as Function)("settlement", turn.messageId, { sessionId: "s" });
+  const undo = await (conversation.undo as Function)(
+    "settlement",
+    turn.messageId,
+    { sessionId: "s" },
+  );
   expect(undo.replayId).toEqual(expect.any(String));
   expect((await conversation.list("settlement"))[1].undone).toBe(false);
-  await conversation.settleReplay("settlement", turn.messageId, { replayId: undo.replayId, direction: "undo", applied: false, sessionId: "s" });
-  await conversation.settleReplay("settlement", turn.messageId, { replayId: undo.replayId, direction: "undo", applied: true, sessionId: "s" });
+  await conversation.settleReplay("settlement", turn.messageId, {
+    replayId: undo.replayId,
+    direction: "undo",
+    applied: false,
+    sessionId: "s",
+  });
+  await conversation.settleReplay("settlement", turn.messageId, {
+    replayId: undo.replayId,
+    direction: "undo",
+    applied: true,
+    sessionId: "s",
+  });
   expect((await conversation.list("settlement"))[1].undone).toBe(false);
-  const accepted = await (conversation.undo as Function)("settlement", turn.messageId, { sessionId: "s" });
+  const accepted = await (conversation.undo as Function)(
+    "settlement",
+    turn.messageId,
+    { sessionId: "s" },
+  );
   expect(editor.apply(accepted.operations).applied).toBe(true);
-  await conversation.settleReplay("settlement", turn.messageId, { replayId: accepted.replayId, direction: "undo", applied: true, sessionId: "s" });
+  await conversation.settleReplay("settlement", turn.messageId, {
+    replayId: accepted.replayId,
+    direction: "undo",
+    applied: true,
+    sessionId: "s",
+  });
   expect((await conversation.list("settlement"))[1].undone).toBe(true);
-  const redo = await (conversation.redo as Function)("settlement", turn.messageId, { sessionId: "s" });
+  const redo = await (conversation.redo as Function)(
+    "settlement",
+    turn.messageId,
+    { sessionId: "s" },
+  );
   expect(editor.apply(redo.operations).applied).toBe(true);
-  await conversation.settleReplay("settlement", turn.messageId, { replayId: redo.replayId, direction: "redo", applied: true, sessionId: "s" });
-  await conversation.settleReplay("settlement", turn.messageId, { replayId: accepted.replayId, direction: "undo", applied: true, sessionId: "s" });
+  await conversation.settleReplay("settlement", turn.messageId, {
+    replayId: redo.replayId,
+    direction: "redo",
+    applied: true,
+    sessionId: "s",
+  });
+  await conversation.settleReplay("settlement", turn.messageId, {
+    replayId: accepted.replayId,
+    direction: "undo",
+    applied: true,
+    sessionId: "s",
+  });
   expect((await conversation.list("settlement"))[1].undone).toBe(false);
 });
 
-it("passes a backend without history or design and reports disabled checks as skipped", async () => {
+it("passes a backend without history or attachments and reports disabled checks as skipped", async () => {
   const reference = createReferenceHandler();
   const requests: string[] = [];
   server = await serve((request) => {
     requests.push(new URL(request.url).pathname);
-    if (/conversation|messages|generate-from-design/.test(new URL(request.url).pathname)) return new Response(null, { status: 404 });
+    if (/conversation|messages/.test(new URL(request.url).pathname))
+      return new Response(null, { status: 404 });
     return reference(request);
   });
-  const report = await runAiWireConformance({ baseUrl: server.baseUrl, features: { conversation: false, design: false } });
+  const report = await runAiWireConformance({
+    baseUrl: server.baseUrl,
+    features: { conversation: false, chatAttachments: false },
+  });
   expect(report.checks.filter((check) => !check.ok)).toEqual([]);
   expect(report.ok).toBe(true);
-  expect(report.checks.find((check) => check.name === "conversation: off")?.detail).toMatch(/skipped/);
-  expect(report.checks.find((check) => check.name === "design: off")?.detail).toMatch(/skipped/);
-  expect(requests.some((path) => /conversation|messages|generate-from-design/.test(path))).toBe(false);
+  expect(
+    report.checks.find((check) => check.name === "conversation: off")?.detail,
+  ).toMatch(/skipped/);
+  expect(
+    report.checks.find((check) => check.name === "chatAttachments: off")
+      ?.detail,
+  ).toMatch(/skipped/);
+  expect(requests.some((path) => /conversation|messages/.test(path))).toBe(
+    false,
+  );
 });
 
 it("skips the invalid-generate probe when chat is disabled", async () => {
@@ -213,7 +336,7 @@ it("reports an unreadable response body without leaking the transport TypeError"
     features: {
       chat: false,
       fixFinding: false,
-      design: false,
+      chatAttachments: false,
       rewrite: true,
       altText: false,
       conversation: false,
@@ -238,20 +361,78 @@ it("reports an unreadable response body without leaking the transport TypeError"
   });
 });
 
-
 it("sends the configured alt image URL and skips altText when false", async () => {
   const bodies: unknown[] = [];
   const reference = createReferenceHandler();
-  server = await serve(async request => {
-    if (new URL(request.url).pathname.endsWith("/alt-text")) bodies.push(await request.clone().json());
+  server = await serve(async (request) => {
+    if (new URL(request.url).pathname.endsWith("/alt-text"))
+      bodies.push(await request.clone().json());
     return reference(request);
   });
-  const report = await runAiWireConformance({ baseUrl: server.baseUrl, altTextImageUrl: "https://example.com/public.png" });
+  const report = await runAiWireConformance({
+    baseUrl: server.baseUrl,
+    altTextImageUrl: "https://example.com/public.png",
+  });
   expect(report.ok).toBe(true);
-  expect(bodies).toContainEqual(expect.objectContaining({ image: { url: "https://example.com/public.png" }, maxLength: 125 }));
+  expect(bodies).toContainEqual(
+    expect.objectContaining({
+      image: { url: "https://example.com/public.png" },
+      maxLength: 125,
+    }),
+  );
   bodies.length = 0;
-  const off = await runAiWireConformance({ baseUrl: server.baseUrl, features: { altText: false } });
+  const off = await runAiWireConformance({
+    baseUrl: server.baseUrl,
+    features: { altText: false },
+  });
   expect(off.ok).toBe(true);
-  expect(off.checks.find(c => c.name === "altText: off")).toMatchObject({ ok: true });
+  expect(off.checks.find((c) => c.name === "altText: off")).toMatchObject({
+    ok: true,
+  });
   expect(bodies).toEqual([]);
+});
+
+it("checks chat attachments and refuses five files before streaming", async () => {
+  const reference = createReferenceHandler();
+  const counts: number[] = [];
+  server = await serve(async (request) => {
+    if (request.headers.get("Content-Type")?.startsWith("multipart/form-data"))
+      counts.push(
+        (await request.clone().formData()).getAll("attachment").length,
+      );
+    return reference(request);
+  });
+  const report = await runAiWireConformance({ baseUrl: server.baseUrl });
+  expect(report.ok).toBe(true);
+  expect(counts).toContain(1);
+  expect(counts).toContain(5);
+  expect(
+    report.checks.find(
+      (c) => c.name === "refuses more than 4 attachments with 422",
+    ),
+  ).toMatchObject({ ok: true });
+});
+
+it("maps chat files into model attachments and keeps metadata only in user history", async () => {
+  const { referenceModel } = await import("./helpers/reference-server");
+  const { editingInstructions } = await import("../src/server");
+  const model = referenceModel();
+  const inputs: Parameters<typeof model.stream>[0][] = [];
+  const handle = createReferenceHandler({ async *stream(input) { inputs.push(input); yield* model.stream(input); } });
+  const form = new FormData();
+  form.set("message", "Change only the heading using this reference");
+  form.set("content", JSON.stringify({ blocks: [], settings: { width: 600 } }));
+  form.append("attachment", new Blob(["png"], { type: "image/png" }), "shot.png");
+  form.append("attachment", new Blob(["pdf"], { type: "application/pdf" }), "plan.pdf");
+  const response = await handle(new Request("https://x.test/templates/metadata/ai/generate", { method: "POST", body: form }));
+  expect(await response.text()).toContain('"type":"done"');
+  expect(inputs[0].system).toBe(editingInstructions);
+  const user = inputs[0].messages[0];
+  if (user.role !== "user") throw new Error("Expected a user message");
+  expect(user.content).toContain("Attachments are designs or references from the author.");
+  expect(user.attachments).toEqual([{ kind: "image", mediaType: "image/png", data: expect.any(Blob) }, { kind: "pdf", mediaType: "application/pdf", data: expect.any(Blob) }]);
+  expect(await Promise.all((user.attachments ?? []).map(a => a.kind === "image-url" ? a.url : a.data.text()))).toEqual(["png", "pdf"]);
+  const history = await (await handle(new Request("https://x.test/templates/metadata/ai/conversation-messages"))).json();
+  expect(history.data[0]).toMatchObject({ role: "user", kind: "chat", text: "Change only the heading using this reference", attachments: [{ name: "shot.png", kind: "image" }, { name: "plan.pdf", kind: "pdf" }] });
+  expect(history.data[1]).not.toHaveProperty("attachments");
 });

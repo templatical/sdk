@@ -1,4 +1,9 @@
-import type { AiChatMessage, AiMessageKind, Operation, TemplateContent } from "../../src";
+import type {
+  AiChatMessage,
+  AiMessageKind,
+  Operation,
+  TemplateContent,
+} from "../../src";
 import { AI_ERROR_MESSAGES, CollaborationConflict, SdkError } from "../../src";
 import { invertOperations } from "@templatical/types";
 import {
@@ -8,7 +13,6 @@ import {
   buildAltTextRequest,
   checkAltText,
   buildChatRequest,
-  buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
@@ -44,7 +48,15 @@ export function referenceModel(): AiModelAdapter {
         yield { type: "usage", inputTokens: 10, outputTokens: 5 };
         return;
       }
-      if (messages.some(message => message.role === "user" && message.attachments?.some(attachment => attachment.kind === "image-url"))) {
+      if (
+        messages.some(
+          (message) =>
+            message.role === "user" &&
+            message.attachments?.some(
+              (attachment) => attachment.kind === "image-url",
+            ),
+        )
+      ) {
         yield { type: "text", text: "Explore the email editor" };
         return;
       }
@@ -111,49 +123,44 @@ export function createReferenceHandler(
     } catch (error) {
       return aiErrorResponse(error);
     }
-    if (!read) return aiJsonResponse({ message: "Not found.", code: "not_found" }, 404);
+    if (!read)
+      return aiJsonResponse({ message: "Not found.", code: "not_found" }, 404);
     const history = conversations.get(read.template) ?? [];
     conversations.set(read.template, history);
 
     switch (read.route) {
       case "generate":
-      case "fixFinding":
-      case "generateFromDesign": {
+      case "fixFinding": {
         const turn = read;
-        const kind: AiMessageKind =
-          turn.route === "generate" ? "chat" : turn.route === "fixFinding" ? "fix" : "design";
+        const kind: AiMessageKind = turn.route === "generate" ? "chat" : "fix";
         const requestText =
           turn.route === "generate"
-            ? buildChatRequest(turn.body.message)
-            : turn.route === "fixFinding"
-              ? buildFixRequest(turn.body.finding)
-              : buildDesignRequest(turn.body.prompt);
+            ? buildChatRequest(turn.body.message, {
+                hasAttachments: turn.body.attachments.length > 0,
+              })
+            : buildFixRequest(turn.body.finding);
         const userText =
           turn.route === "generate"
             ? turn.body.message
-            : turn.route === "fixFinding"
-              ? `Fix: ${turn.body.finding.message}`
-              : `Built from design${turn.body.prompt ? `\n${turn.body.prompt}` : ""}`;
+            : `Fix: ${turn.body.finding.message}`;
         return aiEventStream(async (stream) => {
           const result = await runEditingTurn({
             request: {
               content: turn.body.content,
               revision: turn.body.revision,
               mergeTags: turn.body.mergeTags,
-              selectedBlockId: turn.route === "generate" ? turn.body.selectedBlockId : null,
+              selectedBlockId:
+                turn.route === "generate" ? turn.body.selectedBlockId : null,
               request: requestText,
               sessionId: turn.sessionId,
-              ...(turn.route === "generateFromDesign"
-                ? {
-                    attachments: [
-                      {
-                        kind: turn.body.fileKind,
-                        mediaType: turn.body.file.type,
-                        data: turn.body.file,
-                      },
-                    ],
-                  }
-                : {}),
+              attachments:
+                turn.route === "generate"
+                  ? turn.body.attachments.map(({ kind, file }) => ({
+                      kind,
+                      mediaType: file.type,
+                      data: file,
+                    }))
+                  : [],
             },
             model,
             write: stream.send,
@@ -165,6 +172,13 @@ export function createReferenceHandler(
               role: "user",
               kind,
               text: userText,
+              ...(turn.route === "generate" && turn.body.attachments.length
+                ? {
+                    attachments: turn.body.attachments.map(
+                      ({ name, kind }) => ({ name, kind }),
+                    ),
+                  }
+                : {}),
               batches: [],
               undone: false,
               createdAt: now(),
@@ -188,7 +202,9 @@ export function createReferenceHandler(
           };
           history.push({
             message: assistant,
-            inverse: [...result.batches].reverse().flatMap((batch) => batch.inverse),
+            inverse: [...result.batches]
+              .reverse()
+              .flatMap((batch) => batch.inverse),
             after: result.content,
           });
           stream.send({ type: "done", messageId: assistant.id });
@@ -196,15 +212,26 @@ export function createReferenceHandler(
       }
       case "altText": {
         const body = read.body;
-        const built = buildAltTextRequest({ ...body, templateId: read.template, sessionId: read.sessionId ?? "" });
+        const built = buildAltTextRequest({
+          ...body,
+          templateId: read.template,
+          sessionId: read.sessionId ?? "",
+        });
         // Authorize this template and block as on every route. The model provider
         // fetches the URL; the integrator's backend resolves private/signed media.
-        return aiEventStream(async stream => {
+        return aiEventStream(async (stream) => {
           let answer = "";
-          for await (const part of model.stream({ ...built, tools: [], signal: stream.signal })) {
+          for await (const part of model.stream({
+            ...built,
+            tools: [],
+            signal: stream.signal,
+          })) {
             if (part.type === "text") answer += part.text;
           }
-          stream.send({ type: "done", alt: checkAltText(answer, { maxLength: body.maxLength }) });
+          stream.send({
+            type: "done",
+            alt: checkAltText(answer, { maxLength: body.maxLength }),
+          });
         });
       }
       case "rewriteText": {
@@ -212,8 +239,12 @@ export function createReferenceHandler(
         const prompt = buildRewritePrompt(body);
         return aiEventStream(async (stream) => {
           let check = checkRewrite(
-            await textOf(model, rewriteInstructions, prompt, stream.signal, (text) =>
-              stream.send({ type: "text", text }),
+            await textOf(
+              model,
+              rewriteInstructions,
+              prompt,
+              stream.signal,
+              (text) => stream.send({ type: "text", text }),
             ),
             body.html,
             body.mergeTags,
@@ -231,7 +262,11 @@ export function createReferenceHandler(
             );
           }
           if (!check.ok) {
-            throw new SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 422, "ai_output_invalid");
+            throw new SdkError(
+              AI_ERROR_MESSAGES.ai_output_invalid,
+              422,
+              "ai_output_invalid",
+            );
           }
           stream.send({ type: "done", html: check.html });
         });
@@ -240,13 +275,21 @@ export function createReferenceHandler(
         return aiJsonResponse({ data: history.map((entry) => entry.message) });
       case "clearConversation":
         conversations.delete(read.template);
-        for (const [id, replay] of pending) if (replay.template === read.template) pending.delete(id);
+        for (const [id, replay] of pending)
+          if (replay.template === read.template) pending.delete(id);
         return aiJsonResponse(null, 204);
       case "settleReplay": {
         const replay = pending.get(read.replayId);
-        if (replay && replay.template === read.template && replay.message === read.message && replay.direction === read.body.direction && replay.sessionId === read.sessionId) {
+        if (
+          replay &&
+          replay.template === read.template &&
+          replay.message === read.message &&
+          replay.direction === read.body.direction &&
+          replay.sessionId === read.sessionId
+        ) {
           pending.delete(read.replayId);
-          if (read.body.applied) replay.entry.message.undone = read.body.direction === "undo";
+          if (read.body.applied)
+            replay.entry.message.undone = read.body.direction === "undo";
         }
         return aiJsonResponse(null, 204);
       }
@@ -254,25 +297,45 @@ export function createReferenceHandler(
       case "redoMessage": {
         const undo = read.route === "undoMessage";
         const entry = history.find(
-          (stored) => stored.message.id === read.message && stored.message.role === "assistant",
+          (stored) =>
+            stored.message.id === read.message &&
+            stored.message.role === "assistant",
         );
         if (!entry) {
           return aiErrorResponse(
-            new SdkError("That message isn't in this conversation.", 404, "not_found"),
+            new SdkError(
+              "That message isn't in this conversation.",
+              404,
+              "not_found",
+            ),
           );
         }
-        if (entry.inverse.length === 0 || entry.after === null || entry.message.undone === undo) {
+        if (
+          entry.inverse.length === 0 ||
+          entry.after === null ||
+          entry.message.undone === undo
+        ) {
           return aiErrorResponse(
             new CollaborationConflict(
-              undo ? "This change is already undone." : "This change isn't undone.",
+              undo
+                ? "This change is already undone."
+                : "This change isn't undone.",
               { code: "precondition_failed" },
             ),
           );
         }
         const replayId = crypto.randomUUID();
-        pending.set(replayId, { template: read.template, message: read.message, entry, direction: undo ? "undo" : "redo", sessionId: read.sessionId });
+        pending.set(replayId, {
+          template: read.template,
+          message: read.message,
+          entry,
+          direction: undo ? "undo" : "redo",
+          sessionId: read.sessionId,
+        });
         // Redo is the inverse of the Undo batch, so it is guarded too (D13).
-        const operations = undo ? entry.inverse : invertOperations(entry.after, entry.inverse);
+        const operations = undo
+          ? entry.inverse
+          : invertOperations(entry.after, entry.inverse);
         return aiJsonResponse({ data: { operations, replayId } });
       }
     }

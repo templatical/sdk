@@ -1,6 +1,6 @@
 ---
 title: AI
-description: Chat, lint fixes, alt-text drafts, rewrite and design to template over your own AI backend.
+description: Chat, lint fixes, alt-text drafts, rewrite and chat attachments over your own AI backend.
 ---
 
 # AI
@@ -13,14 +13,23 @@ The editor owns every surface, the streaming, applying the AI's edits with Undo,
 
 ```ts
 import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
+import type { Template } from '@templatical/types';
 
 const editor = await init({
   container: '#editor',
-  templates: myTemplateStore,
+  templates: {
+    load: async (id): Promise<Template> => {
+      const response = await fetch(`/api/templates/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error('Template load failed.');
+      return response.json();
+    },
+    create: false,
+    save: false,
+  },
   ai: createHttpAiProvider({
     baseUrl: '/api/ai',
-    headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   }),
 });
 
@@ -34,42 +43,62 @@ await editor.load('tpl_123');
 ## The contract
 
 ```ts
-import type { AiProvider } from '@templatical/types';
+import type { AiChatRequest, AiFixRequest, AiRewriteRequest, AiAltTextRequest, AiTurnHandlers, AiTurnResult, AiRewriteHandlers, AiConversationProvider } from '@templatical/types';
 
-interface AiProvider {
-  chat: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
-  conversation?: {
-    settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
-    list(templateId: string): Promise<AiChatMessage[]>;
-    clear: false | ((templateId: string) => Promise<void>);
-    undo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-    redo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-  };
-}
-
-type AiReplay = { operations: Operation[]; replayId: string } | { applied: { batchId: string; revision: number } };
-interface AiReplayOutcome {
-  replayId: string;
-  direction: 'undo' | 'redo';
-  applied: boolean;
-  sessionId: string;
+export interface AiProvider {
+  chat:
+    | false
+    | ((
+        request: AiChatRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  fixFinding:
+    | false
+    | ((
+        request: AiFixRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  /** True means chat accepts attachments; has no effect while chat is false. */
+  chatAttachments: false | true;
+  rewrite:
+    | false
+    | ((
+        request: AiRewriteRequest,
+        on: AiRewriteHandlers,
+        signal: AbortSignal,
+      ) => Promise<{ html: string }>);
+  altText:
+    | false
+    | ((
+        request: AiAltTextRequest,
+        signal: AbortSignal,
+      ) => Promise<{ alt: string }>);
+  conversation?: AiConversationProvider;
 }
 ```
 
-Chat, fix, design and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
 
-### Turns: chat, fix and design
+### Turns: chat and fix
 
 A turn streams its reply through `on.onText` and hands its edits over in one of two ways:
 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` the lint projection described below, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message`, `selectedBlockId` (only a block your backend has) and `attachments`, always an array. `fixFinding` sends the lint projection described below.
+
+### Chat attachments
+
+`AiChatAttachment` is `{ file: Blob; kind: "image" | "pdf"; name: string }`. `AiChatRequest.attachments` is always present: `[]` without files. `chatAttachments: true` means your `chat` function accepts attachments; the flag has no effect when `chat: false`. The controls need both features and a loaded template. The HTTP provider defaults the flag to true when chat is on; set `features: { chatAttachments: false }` for a text-only backend.
+
+Authors can attach PNG, JPEG, WebP, GIF or PDF files with **Attach files** or drag files onto chat. The limits are at most 4 files per message, each at most 5 MB (`5 * 1024 * 1024` bytes), at most 10 MB (`10 * 1024 * 1024` bytes) together. Invalid files show validation messages. File-name chips have remove buttons; controls are disabled during a turn. Sending clears attachments; a failed turn restores the text and files.
+
+**Import from screenshot or PDF** is a chat-attachments shortcut in the AI menu and on the empty canvas. It opens a file picker first; after a pick it opens chat, attaches the files and fills an empty composer with “Build this email from the attached design.” Existing composer text is preserved. The author sends the message; nothing sends automatically. Pictures come in as placeholders; replace them after import. The prompt replaces the whole template only when empty or when the message asks for it; otherwise attachments guide the requested edit. A replacement is one undo step.
+
+History has kind `chat` and stores only optional user-message `attachments: { name: string; kind: "image" | "pdf" }[]`. The backend decides whether to retain files. The [multipart generate wire](/api/ai-kit#chat-attachments) and [backend guide](/guide/bring-your-own-ai) show parsing and model mapping.
 
 ### Fix with AI
 
@@ -137,7 +166,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `chatAttachments: false` the attachment controls and import shortcuts. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -157,11 +186,11 @@ Undo and Redo may reject with an operation's code (`precondition_failed`, …) a
 
 ## In the editor
 
-- **Header:** an **AI** menu with the assistant and design to template.
+- **Header:** an **AI** menu with the assistant and **Import from screenshot or PDF**.
 - **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
 - **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
-- **Design to template:** PNG, JPEG, WebP, GIF or PDF up to 5 MB; the build is one undoable turn.
-- **The empty canvas:** shortcuts to the assistant and to design to template.
+- **Chat attachments:** add files with the attach button or drag them into the panel, review name chips and remove files before sending.
+- **The empty canvas:** shortcuts to the assistant and to **Import from screenshot or PDF**.
 
 AI content is always marked as AI, as the EU AI Act's Article 50 asks of systems that interact with people.
 
@@ -190,3 +219,5 @@ Open the assistant for a loaded template without blocks: it shows three starters
 Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
 
 For alt text, open an image finding and choose **Write alt text**. Edit the draft, accept it, and Undo: both `alt` and `decorative` return to their previous values. **Mark decorative** clears `img-missing-alt` after re-lint. Cancel leaves the image unchanged.
+
+For attachments, choose **Import from screenshot or PDF**, pick a file and check that chat opens without sending. Send the prefilled message and Undo its changes. Run the wire conformance suite with attachments enabled to check the upload limits.

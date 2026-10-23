@@ -31,27 +31,15 @@ describe("readAiRequest", () => {
       route: "generate",
       template: "t-1",
       sessionId: "s-1",
-      body: { message: "Hi", selectedBlockId: null, mergeTags: null, content, revision: null },
+      body: {
+        message: "Hi",
+        selectedBlockId: null,
+        mergeTags: null,
+        content,
+        revision: null,
+        attachments: [],
+      },
     });
-  });
-
-  it("reads a design upload", async () => {
-    const form = new FormData();
-    form.set("image_upload", new Blob(["png"], { type: "image/png" }), "shot.png");
-    form.set("content", JSON.stringify(content));
-    form.set("mergeTags", "null");
-    form.set("revision", "4");
-    const read = await readAiRequest(
-      new Request("https://x.test/templates/t-1/ai/generate-from-design", {
-        method: "POST",
-        body: form,
-      }),
-    );
-    expect(read).toMatchObject({
-      route: "generateFromDesign",
-      body: { prompt: null, fileKind: "image", content, mergeTags: null, revision: 4 },
-    });
-    expect(read?.route === "generateFromDesign" && read.body.file.type).toBe("image/png");
   });
 
   it.each([
@@ -97,7 +85,9 @@ describe("readAiRequest", () => {
   });
 
   it("answers null for a request that isn't the wire's", async () => {
-    expect(await readAiRequest(new Request("https://x.test/health"))).toBe(null);
+    expect(await readAiRequest(new Request("https://x.test/health"))).toBe(
+      null,
+    );
   });
 });
 
@@ -147,12 +137,14 @@ describe("readAiRequest merge-tag field validation", () => {
     async (syntax) => {
       const mergeTags = {
         syntax,
-        tags: [{
-          value: "v".repeat(200),
-          label: "l".repeat(100),
-          group: "g".repeat(100),
-          description: "d".repeat(200),
-        }],
+        tags: [
+          {
+            value: "v".repeat(200),
+            label: "l".repeat(100),
+            group: "g".repeat(100),
+            description: "d".repeat(200),
+          },
+        ],
       };
       expect(
         await readAiRequest(
@@ -353,13 +345,17 @@ describe("readAiRequest language field validation", () => {
   it.each(["!!!", " ", "p", "pt_BR", "pt-", "eng-123456789"])(
     "rejects malformed language %j with 422",
     async (language) => {
-      await expect(readAiRequest(post("/templates/t-1/ai/rewrite-text", {
-        html: "<p>Hi</p>",
-        preset: "translate",
-        language,
-        instruction: null,
-        mergeTags: null,
-      }))).rejects.toMatchObject({
+      await expect(
+        readAiRequest(
+          post("/templates/t-1/ai/rewrite-text", {
+            html: "<p>Hi</p>",
+            preset: "translate",
+            language,
+            instruction: null,
+            mergeTags: null,
+          }),
+        ),
+      ).rejects.toMatchObject({
         name: "SdkError",
         statusCode: 422,
         message: "language must be a BCP 47 tag.",
@@ -368,23 +364,31 @@ describe("readAiRequest language field validation", () => {
   );
 
   it("accepts pt-BR (guard)", async () => {
-    expect(await readAiRequest(post("/templates/t-1/ai/rewrite-text", {
-      html: "<p>Hi</p>",
-      preset: "translate",
-      language: "pt-BR",
-      instruction: null,
-      mergeTags: null,
-    }))).toMatchObject({ route: "rewriteText", body: { language: "pt-BR" } });
+    expect(
+      await readAiRequest(
+        post("/templates/t-1/ai/rewrite-text", {
+          html: "<p>Hi</p>",
+          preset: "translate",
+          language: "pt-BR",
+          instruction: null,
+          mergeTags: null,
+        }),
+      ),
+    ).toMatchObject({ route: "rewriteText", body: { language: "pt-BR" } });
   });
 
   it("accepts a language matching the required shape beyond the old length cap", async () => {
-    expect(await readAiRequest(post("/templates/t-1/ai/rewrite-text", {
-      html: "<p>Hi</p>",
-      preset: "translate",
-      language: "en-Latn-US-variant1-variant2-variant3",
-      instruction: null,
-      mergeTags: null,
-    }))).toMatchObject({
+    expect(
+      await readAiRequest(
+        post("/templates/t-1/ai/rewrite-text", {
+          html: "<p>Hi</p>",
+          preset: "translate",
+          language: "en-Latn-US-variant1-variant2-variant3",
+          instruction: null,
+          mergeTags: null,
+        }),
+      ),
+    ).toMatchObject({
       route: "rewriteText",
       body: { language: "en-Latn-US-variant1-variant2-variant3" },
     });
@@ -392,16 +396,47 @@ describe("readAiRequest language field validation", () => {
 });
 
 it("reads replay settlement and refuses malformed outcomes", async () => {
-  expect(await readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "undo", applied: false }))).toEqual({ route: "settleReplay", template: "t", message: "m", replayId: "r", sessionId: "s-1", body: { direction: "undo", applied: false } });
-  await expect(readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "other", applied: true }))).rejects.toMatchObject({ statusCode: 422 });
-  await expect(readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "undo", applied: "true" }))).rejects.toMatchObject({ statusCode: 422 });
+  expect(
+    await readAiRequest(
+      post("/templates/t/ai/messages/m/replays/r", {
+        direction: "undo",
+        applied: false,
+      }),
+    ),
+  ).toEqual({
+    route: "settleReplay",
+    template: "t",
+    message: "m",
+    replayId: "r",
+    sessionId: "s-1",
+    body: { direction: "undo", applied: false },
+  });
+  await expect(
+    readAiRequest(
+      post("/templates/t/ai/messages/m/replays/r", {
+        direction: "other",
+        applied: true,
+      }),
+    ),
+  ).rejects.toMatchObject({ statusCode: 422 });
+  await expect(
+    readAiRequest(
+      post("/templates/t/ai/messages/m/replays/r", {
+        direction: "undo",
+        applied: "true",
+      }),
+    ),
+  ).rejects.toMatchObject({ statusCode: 422 });
 });
 
 describe("final fix: request boundaries", () => {
   it.each(["generate", "fix-finding"])(
     "caps serialized content bytes on %s",
     async (route) => {
-      const content = { blocks: [], settings: { padding: "é".repeat(100_000) } };
+      const content = {
+        blocks: [],
+        settings: { padding: "é".repeat(100_000) },
+      };
       await expect(
         readAiRequest(
           post(`/templates/t/ai/${route}`, {
@@ -420,15 +455,11 @@ describe("final fix: request boundaries", () => {
       });
     },
   );
-  it("checks design content bytes too", async () => {
-    const form = new FormData();
-    form.set("image_upload", new Blob(["png"], { type: "image/png" }));
-    form.set("content", JSON.stringify({ blocks: [], settings: { padding: "é".repeat(100_000) } }));
-    await expect(readAiRequest(new Request("https://x.test/templates/t/ai/generate-from-design", { method: "POST", body: form }))).rejects.toMatchObject({ statusCode: 413, code: "content_too_large" });
-  });
   it("accepts exactly 200,000 UTF-8 content bytes and refuses the next byte", async () => {
     const content = { blocks: [], settings: { padding: "" } };
-    content.settings.padding = "x".repeat(200_000 - new TextEncoder().encode(JSON.stringify(content)).length);
+    content.settings.padding = "x".repeat(
+      200_000 - new TextEncoder().encode(JSON.stringify(content)).length,
+    );
     expect(
       await readAiRequest(
         post("/templates/t/ai/generate", { message: "Hi", content }),
@@ -441,15 +472,71 @@ describe("final fix: request boundaries", () => {
       ),
     ).rejects.toMatchObject({ statusCode: 413, code: "content_too_large" });
   });
-  it.each(["session", "selected"])("caps the %s id at 200 characters", async (kind) => {
-    const body = { message: "Hi", content, selectedBlockId: kind === "selected" ? "x".repeat(201) : null };
-    await expect(readAiRequest(post("/templates/t/ai/generate", body, kind === "session" ? "s".repeat(201) : "s"))).rejects.toMatchObject({ statusCode: 422 });
-  });
+  it.each(["session", "selected"])(
+    "caps the %s id at 200 characters",
+    async (kind) => {
+      const body = {
+        message: "Hi",
+        content,
+        selectedBlockId: kind === "selected" ? "x".repeat(201) : null,
+      };
+      await expect(
+        readAiRequest(
+          post(
+            "/templates/t/ai/generate",
+            body,
+            kind === "session" ? "s".repeat(201) : "s",
+          ),
+        ),
+      ).rejects.toMatchObject({ statusCode: 422 });
+    },
+  );
   it("counts every string boundary in code points", async () => {
     const emoji = "😀";
-    expect(await readAiRequest(post("/templates/t/ai/generate", { message: emoji.repeat(4000), content, selectedBlockId: emoji.repeat(200), mergeTags: { syntax: "custom", tags: [{ value: emoji.repeat(200), label: emoji.repeat(100), group: emoji.repeat(100), description: emoji.repeat(200) }] } }, "s".repeat(200)))).toMatchObject({ route: "generate" });
-    expect(await readAiRequest(post("/templates/t/ai/fix-finding", { content, finding: { ...lintFinding, message: emoji.repeat(1000), suggestion: emoji.repeat(1000) } }))).toMatchObject({ route: "fixFinding" });
-    expect(await readAiRequest(post("/templates/t/ai/rewrite-text", { html: emoji.repeat(20_000), instruction: emoji.repeat(500) }))).toMatchObject({ route: "rewriteText" });
+    expect(
+      await readAiRequest(
+        post(
+          "/templates/t/ai/generate",
+          {
+            message: emoji.repeat(4000),
+            content,
+            selectedBlockId: emoji.repeat(200),
+            mergeTags: {
+              syntax: "custom",
+              tags: [
+                {
+                  value: emoji.repeat(200),
+                  label: emoji.repeat(100),
+                  group: emoji.repeat(100),
+                  description: emoji.repeat(200),
+                },
+              ],
+            },
+          },
+          "s".repeat(200),
+        ),
+      ),
+    ).toMatchObject({ route: "generate" });
+    expect(
+      await readAiRequest(
+        post("/templates/t/ai/fix-finding", {
+          content,
+          finding: {
+            ...lintFinding,
+            message: emoji.repeat(1000),
+            suggestion: emoji.repeat(1000),
+          },
+        }),
+      ),
+    ).toMatchObject({ route: "fixFinding" });
+    expect(
+      await readAiRequest(
+        post("/templates/t/ai/rewrite-text", {
+          html: emoji.repeat(20_000),
+          instruction: emoji.repeat(500),
+        }),
+      ),
+    ).toMatchObject({ route: "rewriteText" });
   });
 });
 
@@ -528,159 +615,276 @@ describe("readAiRequest validation messages", () => {
       "Unknown preset.",
     );
   });
-
-  it("rejects a non-multipart design request with the exact validation error", async () => {
-    await validation(
-      post("/templates/t/ai/generate-from-design", { content }),
-      "Send the design as multipart form data.",
-    );
-  });
-
-  it.each([
-    "no file",
-    "a text file field",
-    "both upload fields",
-    "unsupported image type",
-    "unsupported PDF type",
-    "oversized image",
-    "malformed content JSON",
-    "malformed mergeTags JSON",
-    "oversized prompt",
-  ])(
-    "rejects a design with %s and the exact validation error",
-    async (scenario) => {
-      const form = new FormData();
-      form.set("content", JSON.stringify(content));
-      form.set(
-        "image_upload",
-        new Blob(["png"], { type: "image/png" }),
-        "design.png",
-      );
-      let message: string;
-      switch (scenario) {
-        case "no file":
-          form.delete("image_upload");
-          message = "Upload one image or one PDF.";
-          break;
-        case "a text file field":
-          form.set("image_upload", "design.png");
-          message = "Upload one image or one PDF.";
-          break;
-        case "both upload fields":
-          form.set(
-            "pdf_upload",
-            new Blob(["pdf"], { type: "application/pdf" }),
-            "design.pdf",
-          );
-          message = "Upload one image or one PDF.";
-          break;
-        case "unsupported image type":
-          form.set(
-            "image_upload",
-            new Blob(["svg"], { type: "image/svg+xml" }),
-            "design.svg",
-          );
-          message = "Upload a PNG, JPEG, WebP or GIF image, or a PDF.";
-          break;
-        case "unsupported PDF type":
-          form.delete("image_upload");
-          form.set(
-            "pdf_upload",
-            new Blob(["text"], { type: "text/plain" }),
-            "design.txt",
-          );
-          message = "Upload a PNG, JPEG, WebP or GIF image, or a PDF.";
-          break;
-        case "oversized image":
-          form.set(
-            "image_upload",
-            new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], {
-              type: "image/png",
-            }),
-            "large.png",
-          );
-          message = "The file must be 5 MB or smaller.";
-          break;
-        case "malformed content JSON":
-          form.set("content", "{broken");
-          message = "content must be JSON.";
-          break;
-        case "malformed mergeTags JSON":
-          form.set("mergeTags", "{broken");
-          message = "mergeTags must be JSON.";
-          break;
-        default:
-          form.set("prompt", "x".repeat(2001));
-          message = "The prompt must be at most 2,000 characters.";
-      }
-      await validation(
-        new Request("https://x.test/templates/t/ai/generate-from-design", {
-          method: "POST",
-          body: form,
-        }),
-        message,
-      );
-    },
-  );
-
-  it("reads a PDF design with omitted optional fields", async () => {
-    const form = new FormData();
-    form.set(
-      "pdf_upload",
-      new Blob(["PDF content"], { type: "application/pdf" }),
-      "design.pdf",
-    );
-    form.set("content", JSON.stringify(content));
-    const result = await readAiRequest(
-      new Request("https://x.test/templates/t/ai/generate-from-design", {
-        method: "POST",
-        body: form,
-      }),
-    );
-
-    expect(result).toMatchObject({
-      route: "generateFromDesign",
-      template: "t",
-      sessionId: null,
-      body: {
-        prompt: null,
-        fileKind: "pdf",
-        content,
-        mergeTags: null,
-        revision: null,
-      },
-    });
-    if (result?.route !== "generateFromDesign")
-      throw new Error("Expected a design request");
-    expect(result.body.file.type).toBe("application/pdf");
-    expect(await result.body.file.text()).toBe("PDF content");
-  });
 });
 
-
 describe("readAiRequest alt text", () => {
-  const body = { blockId: "image", image: { url: "https://example.com/image.png" }, currentAlt: null, linkHref: null, nearbyText: "Buy now", locale: "en-US", maxLength: 125 };
-  const read = (patch = {}) => readAiRequest(post("/templates/t-1/ai/alt-text", { ...body, ...patch }));
+  const body = {
+    blockId: "image",
+    image: { url: "https://example.com/image.png" },
+    currentAlt: null,
+    linkHref: null,
+    nearbyText: "Buy now",
+    locale: "en-US",
+    maxLength: 125,
+  };
+  const read = (patch = {}) =>
+    readAiRequest(post("/templates/t-1/ai/alt-text", { ...body, ...patch }));
   it("reads the exact body and session", async () => {
-    expect(await read()).toEqual({ route: "altText", template: "t-1", sessionId: "s-1", body });
+    expect(await read()).toEqual({
+      route: "altText",
+      template: "t-1",
+      sessionId: "s-1",
+      body,
+    });
   });
   it("accepts every inclusive boundary and counts nearby text in code points", async () => {
-    const boundary = { blockId: "b".repeat(200), image: { url: "https://x.test/" + "a".repeat(2033) }, currentAlt: "a".repeat(2048), linkHref: "h".repeat(2048), nearbyText: "😀".repeat(2000), locale: "en-12345678-12345678-12345678-12345", maxLength: 1000 };
+    const boundary = {
+      blockId: "b".repeat(200),
+      image: { url: "https://x.test/" + "a".repeat(2033) },
+      currentAlt: "a".repeat(2048),
+      linkHref: "h".repeat(2048),
+      nearbyText: "😀".repeat(2000),
+      locale: "en-12345678-12345678-12345678-12345",
+      maxLength: 1000,
+    };
     expect(boundary.image.url).toHaveLength(2048);
     expect(boundary.locale).toHaveLength(35);
     expect(await read(boundary)).toMatchObject({ body: boundary });
-    expect(await read({ maxLength: 1, image: { url: "http://x.test" }, currentAlt: "", linkHref: "" })).toMatchObject({ body: { maxLength: 1, currentAlt: "", linkHref: "" } });
+    expect(
+      await read({
+        maxLength: 1,
+        image: { url: "http://x.test" },
+        currentAlt: "",
+        linkHref: "",
+      }),
+    ).toMatchObject({ body: { maxLength: 1, currentAlt: "", linkHref: "" } });
   });
   it.each([
     [{ blockId: "" }, "blockId must be 1 to 200 characters."],
     [{ blockId: "x".repeat(201) }, "blockId must be 1 to 200 characters."],
     [{ blockId: null }, "blockId must be 1 to 200 characters."],
-    ...[null, {}, { url: "ftp://x.test/a" }, { url: "//x.test" }, { url: "nonsense" }, { url: "https://x.test/" + "a".repeat(2034) }].map(image => [{ image }, "image.url must be an http: or https: URL of at most 2,048 characters."]),
-    ...["currentAlt", "linkHref"].flatMap(key => [42, undefined, "x".repeat(2049)].map(value => [{ [key]: value }, `${key} must be a string of at most 2,048 characters or null.`])),
-    ...[42, undefined, "😀".repeat(2001)].map(nearbyText => [{ nearbyText }, "nearbyText must be at most 2,000 code points."]),
-    ...["", "x", "en_XX", "en-123456789", "en-12345678-12345678-12345678-123456", 42].map(locale => [{ locale }, "locale must be a BCP 47 tag of at most 35 characters."]),
-    ...[0, 1001, 1.5, "60", null].map(maxLength => [{ maxLength }, "maxLength must be an integer from 1 to 1,000."]),
+    ...[
+      null,
+      {},
+      { url: "ftp://x.test/a" },
+      { url: "//x.test" },
+      { url: "nonsense" },
+      { url: "https://x.test/" + "a".repeat(2034) },
+    ].map((image) => [
+      { image },
+      "image.url must be an http: or https: URL of at most 2,048 characters.",
+    ]),
+    ...["currentAlt", "linkHref"].flatMap((key) =>
+      [42, undefined, "x".repeat(2049)].map((value) => [
+        { [key]: value },
+        `${key} must be a string of at most 2,048 characters or null.`,
+      ]),
+    ),
+    ...[42, undefined, "😀".repeat(2001)].map((nearbyText) => [
+      { nearbyText },
+      "nearbyText must be at most 2,000 code points.",
+    ]),
+    ...[
+      "",
+      "x",
+      "en_XX",
+      "en-123456789",
+      "en-12345678-12345678-12345678-123456",
+      42,
+    ].map((locale) => [
+      { locale },
+      "locale must be a BCP 47 tag of at most 35 characters.",
+    ]),
+    ...[0, 1001, 1.5, "60", null].map((maxLength) => [
+      { maxLength },
+      "maxLength must be an integer from 1 to 1,000.",
+    ]),
   ])("rejects invalid alt-text input %#", async (patch, message) => {
-    await expect(read(patch as object)).rejects.toMatchObject({ name: "SdkError", statusCode: 422, message });
+    await expect(read(patch as object)).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 422,
+      message,
+    });
+  });
+});
+
+describe("generate multipart attachments", () => {
+  const mb = 1024 * 1024;
+  function form(files: { type: string; size?: number; name?: string }[] = []) {
+    const data = new FormData();
+    data.set("message", "Use these references");
+    data.set("content", JSON.stringify(content));
+    data.set("mergeTags", "null");
+    data.set("revision", "4");
+    for (const file of files)
+      data.append(
+        "attachment",
+        new Blob([new Uint8Array(file.size ?? 1)], { type: file.type }),
+        file.name ?? "reference.png",
+      );
+    return data;
+  }
+  const read = (data: FormData) =>
+    readAiRequest(
+      new Request("https://x.test/templates/t/ai/generate", {
+        method: "POST",
+        body: data,
+      }),
+    );
+  it.each([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+    "application/pdf",
+  ])("maps %s with the original name and bytes", async (type) => {
+    const result = await read(form([{ type, name: "reference", size: 7 }]));
+    expect(result).toMatchObject({
+      route: "generate",
+      body: {
+        message: "Use these references",
+        selectedBlockId: null,
+        revision: 4,
+        content,
+        mergeTags: null,
+        attachments: [
+          {
+            kind: type === "application/pdf" ? "pdf" : "image",
+            name: "reference",
+          },
+        ],
+      },
+    });
+    if (result?.route !== "generate") throw new Error("Expected generate");
+    expect(result.body.attachments[0].file.type).toBe(type);
+    expect(result.body.attachments[0].file.size).toBe(7);
+  });
+  it("accepts no attachments and preserves selectedBlockId", async () => {
+    const data = form();
+    data.set("selectedBlockId", "p1");
+    expect(await read(data)).toMatchObject({
+      body: { attachments: [], selectedBlockId: "p1" },
+    });
+  });
+  it("accepts four files and inclusive size, total and filename boundaries", async () => {
+    const result = await read(
+      form([
+        { type: "image/png", size: 5 * mb, name: "n".repeat(255) },
+        { type: "application/pdf", size: 5 * mb },
+        { type: "image/jpeg", size: 0 },
+        { type: "image/gif", size: 0 },
+      ]),
+    );
+    expect(
+      result?.route === "generate" && result.body.attachments,
+    ).toHaveLength(4);
+  });
+  it("rejects an unparseable multipart form with its exact error", async () => {
+    await expect(
+      readAiRequest(
+        new Request("https://x.test/templates/t/ai/generate", {
+          method: "POST",
+          headers: { "Content-Type": "multipart/form-data" },
+          body: "broken",
+        }),
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 422,
+      code: undefined,
+      message: "Send the message as multipart form data.",
+    });
+  });
+  it.each([
+    [
+      "count before type",
+      Array.from({ length: 5 }, () => ({ type: "text/plain" })),
+      "Attach at most 4 files.",
+    ],
+    [
+      "type before size",
+      [{ type: "image/svg+xml", size: 5 * mb + 1 }],
+      "Attach PNG, JPEG, WebP or GIF images, or PDFs.",
+    ],
+    [
+      "per file before total",
+      [
+        { type: "image/png", size: 6 * mb },
+        { type: "image/png", size: 5 * mb },
+      ],
+      "Each attachment must be 5 MB or smaller.",
+    ],
+    [
+      "total before name",
+      [
+        { type: "image/png", size: 5 * mb, name: "n".repeat(256) },
+        { type: "image/png", size: 5 * mb },
+        { type: "image/png" },
+      ],
+      "Attachments must be 10 MB or smaller together.",
+    ],
+    [
+      "filename",
+      [{ type: "image/png", name: "n".repeat(256) }],
+      "An attachment's file name must be at most 255 characters.",
+    ],
+  ] as const)(
+    "refuses %s without truncation",
+    async (_label, files, message) => {
+      await expect(read(form([...files]))).rejects.toMatchObject({
+        name: "SdkError",
+        statusCode: 422,
+        code: undefined,
+        message,
+      });
+    },
+  );
+  it("rejects a string attachment part", async () => {
+    const data = form();
+    data.append("attachment", "file.png");
+    await expect(read(data)).rejects.toMatchObject({
+      statusCode: 422,
+      message: "Attach PNG, JPEG, WebP or GIF images, or PDFs.",
+    });
+  });
+  it.each(["content", "mergeTags"])(
+    "keeps %s JSON validation",
+    async (field) => {
+      const data = form();
+      data.set(field, "{broken");
+      await expect(read(data)).rejects.toMatchObject({
+        statusCode: 422,
+        message: `${field} must be JSON.`,
+      });
+    },
+  );
+  it("keeps message, revision, selected block, merge tags and content limits", async () => {
+    for (const [key, value, message] of [
+      ["message", "", "The message must be 1 to 4,000 characters."],
+      ["revision", "-1", "revision must be a whole number or null."],
+      [
+        "selectedBlockId",
+        "x".repeat(201),
+        "selectedBlockId must be at most 200 characters.",
+      ],
+    ]) {
+      const data = form();
+      data.set(key, value);
+      await expect(read(data)).rejects.toMatchObject({
+        statusCode: 422,
+        message,
+      });
+    }
+    const data = form();
+    data.set(
+      "content",
+      JSON.stringify({
+        blocks: [],
+        settings: { padding: "é".repeat(100_000) },
+      }),
+    );
+    await expect(read(data)).rejects.toMatchObject({
+      statusCode: 413,
+      code: "content_too_large",
+    });
   });
 });

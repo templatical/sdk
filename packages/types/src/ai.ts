@@ -47,11 +47,20 @@ export interface AiRequestBase {
   mergeTags: AiMergeTags | null;
 }
 
+/** One chat reference: PNG, JPEG, WebP, GIF or PDF. */
+export interface AiChatAttachment {
+  file: Blob;
+  kind: "image" | "pdf";
+  name: string;
+}
+
 export interface AiChatRequest extends AiRequestBase {
   /** 1–4,000 characters. */
   message: string;
   /** The selected block, when the backend has it; `null` otherwise. */
   selectedBlockId: string | null;
+  /** Always present; at most 4 files, each at most 5 MB, at most 10 MB together. */
+  attachments: AiChatAttachment[];
 }
 
 /**
@@ -76,14 +85,6 @@ export interface AiFixFinding {
 
 export interface AiFixRequest extends AiRequestBase {
   finding: AiFixFinding;
-}
-
-export interface AiDesignRequest extends AiRequestBase {
-  /** Notes from the user, ≤ 2,000 characters. */
-  prompt: string | null;
-  /** A PNG, JPEG, WebP or GIF image, or a PDF; ≤ 5 MB. */
-  file: Blob;
-  fileKind: "image" | "pdf";
 }
 
 export type AiRewritePreset =
@@ -139,7 +140,7 @@ export type AiOperationsResult =
     };
 
 /**
- * What a chat, fix or design turn reports as it runs. A turn hands its edits
+ * What a chat or fix turn reports as it runs. A turn hands its edits
  * over one of two ways, and may mix them:
  *
  * - `onOperations`: the editor applies the batch at once and answers with its
@@ -176,7 +177,7 @@ export type AiReplay =
 // History
 // ---------------------------------------------------------------------------
 
-export type AiMessageKind = "chat" | "fix" | "design";
+export type AiMessageKind = "chat" | "fix";
 
 /**
  * A batch an assistant message applied: `revision` is the backend's for a
@@ -193,8 +194,10 @@ export interface AiChatMessage {
   id: string;
   role: "user" | "assistant";
   kind: AiMessageKind;
-  /** A fix's user message reads "Fix: {message}"; a design's "Built from design". */
+  /** The author's message, a fix's "Fix: {message}", or the assistant's reply. */
   text: string;
+  /** Reference metadata on user messages only; file retention is the backend's choice. */
+  attachments?: { name: string; kind: "image" | "pdf" }[];
   /** What the assistant's turn applied; empty for user messages. */
   batches: AiMessageBatch[];
   /** `true` after Undo, `false` after Redo. */
@@ -309,13 +312,8 @@ export interface AiProvider {
         on: AiTurnHandlers,
         signal: AbortSignal,
       ) => Promise<AiTurnResult>);
-  design:
-    | false
-    | ((
-        request: AiDesignRequest,
-        on: AiTurnHandlers,
-        signal: AbortSignal,
-      ) => Promise<AiTurnResult>);
+  /** True means chat accepts attachments; has no effect while chat is false. */
+  chatAttachments: false | true;
   rewrite:
     | false
     | ((

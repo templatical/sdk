@@ -810,10 +810,16 @@ const ca: typeof en = {
       chat: "Assistent d'IA",
       chatDescription:
         "Parleu amb la IA per crear o modificar la vostra plantilla",
-      design: "De disseny a plantilla",
-      designDescription: "Creeu una plantilla a partir d'una imatge o un PDF",
     },
     chat: {
+      attach: "Adjuntar fitxers",
+      dropHint: "Deixeu anar imatges o PDF per adjuntar-los",
+      removeAttachment: "Eliminar {name}",
+      attachTooMany: "Adjunteu com a màxim 4 fitxers.",
+      attachTooLarge: "{name} supera els 5 MB.",
+      attachTotalTooLarge:
+        "Els fitxers adjunts poden ocupar com a màxim 10 MB en total.",
+      attachWrongType: "{name} no és una imatge ni un PDF.",
       title: "Assistent d'IA",
       notice: "Les respostes i els canvis provenen d'una IA.",
       close: "Tanca",
@@ -831,35 +837,18 @@ const ca: typeof en = {
       redo: "Refés",
       disclaimer: "La IA pot cometre errors. Reviseu els canvis.",
     },
-    design: {
-      title: "Disseny a plantilla",
-      close: "Tanca",
-      remove: "Elimina el fitxer",
-      dropHint:
-        "Arrossega una imatge o un PDF aquí, o fes clic per triar-ne un",
-      accepted: "PNG, JPEG, WebP, GIF o PDF, fins a 5 MB",
-      promptLabel: "Notes (opcional)",
-      promptPlaceholder: "Què ha de saber la IA sobre el disseny...",
-      generate: "Crea a partir del disseny",
-      generating: "S'està llegint el disseny i creant la plantilla...",
-      replaceWarning:
-        "Crear una plantilla a partir d'un disseny substitueix el contingut del llenç. Ho pots desfer.",
-      replaceConfirm: "Substitueix i crea",
-      replaceCancel: "Cancel·la",
-      fileTooLarge: "Aquest fitxer supera els 5 MB.",
-      invalidFileType: "Puja una imatge PNG, JPEG, WebP o GIF, o un PDF.",
-      built: "S'ha creat la plantilla a partir del teu disseny.",
-      undo: "Desfés",
-      redo: "Refés",
-      buildAnother: "Crea'n una altra",
+    import: {
+      menu: "Importar des d’una captura de pantalla o un PDF",
+      prompt: "Crear aquest correu a partir del disseny adjunt.",
+      placeholderNote:
+        "Les imatges es mostren com a marcadors de posició. Substituïu-les després de la importació.",
+      description: "Crear un correu a partir d’una imatge o un PDF",
     },
     canvas: {
+      importHint: "Ja teniu un disseny?",
       chatHint: "o deixeu que",
       chatHintSuffix:
         "generi una plantilla completa per a vosaltres en pocs segons",
-      designHint:
-        "Teniu un disseny existent? Pugeu una captura de pantalla, una imatge o un PDF i",
-      designHintSuffix: "el recrearà a l'instant",
     },
   },
   versionHistory: {

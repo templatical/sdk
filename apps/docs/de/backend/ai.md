@@ -1,6 +1,6 @@
 ---
 title: KI
-description: Chat, Lint-Korrekturen, Alt-Text-Entwürfe, Umformulieren und Design zu Template über Ihr eigenes KI-Backend.
+description: Chat, Lint-Korrekturen, Alt-Text-Entwürfe, Umformulieren und Chat-Anhänge über Ihr eigenes KI-Backend.
 ---
 
 # KI
@@ -13,14 +13,23 @@ Der Editor übernimmt die Oberflächen, das Streaming, das Anwenden der KI-Ände
 
 ```ts
 import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
+import type { Template } from '@templatical/types';
 
 const editor = await init({
   container: '#editor',
-  templates: myTemplateStore,
+  templates: {
+    load: async (id): Promise<Template> => {
+      const response = await fetch(`/api/templates/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error('Template load failed.');
+      return response.json();
+    },
+    create: false,
+    save: false,
+  },
   ai: createHttpAiProvider({
     baseUrl: '/api/ai',
-    headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   }),
 });
 
@@ -34,42 +43,62 @@ await editor.load('tpl_123');
 ## Der Vertrag
 
 ```ts
-import type { AiProvider } from '@templatical/types';
+import type { AiChatRequest, AiFixRequest, AiRewriteRequest, AiAltTextRequest, AiTurnHandlers, AiTurnResult, AiRewriteHandlers, AiConversationProvider } from '@templatical/types';
 
-interface AiProvider {
-  chat: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
-  conversation?: {
-    settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
-    list(templateId: string): Promise<AiChatMessage[]>;
-    clear: false | ((templateId: string) => Promise<void>);
-    undo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-    redo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-  };
-}
-
-type AiReplay = { operations: Operation[]; replayId: string } | { applied: { batchId: string; revision: number } };
-interface AiReplayOutcome {
-  replayId: string;
-  direction: 'undo' | 'redo';
-  applied: boolean;
-  sessionId: string;
+export interface AiProvider {
+  chat:
+    | false
+    | ((
+        request: AiChatRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  fixFinding:
+    | false
+    | ((
+        request: AiFixRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  /** True means chat accepts attachments; has no effect while chat is false. */
+  chatAttachments: false | true;
+  rewrite:
+    | false
+    | ((
+        request: AiRewriteRequest,
+        on: AiRewriteHandlers,
+        signal: AbortSignal,
+      ) => Promise<{ html: string }>);
+  altText:
+    | false
+    | ((
+        request: AiAltTextRequest,
+        signal: AbortSignal,
+      ) => Promise<{ alt: string }>);
+  conversation?: AiConversationProvider;
 }
 ```
 
-Anfragen für Chat, Fix, Design und Umformulieren enthalten `templateId`, `content` (das Template im Editor, nachdem ausstehende Änderungen gesendet wurden), `revision` (die Zusammenarbeitsrevision oder `null`), `sessionId` und `mergeTags` (`{ syntax, tags }` oder `null`, wenn keine deklariert sind). Jeder Aufruf erhält ein `AbortSignal`: „Stop“ bricht ihn ab.
+Anfragen für Chat, Fix und Umformulieren enthalten `templateId`, `content` (das Template im Editor, nachdem ausstehende Änderungen gesendet wurden), `revision` (die Zusammenarbeitsrevision oder `null`), `sessionId` und `mergeTags` (`{ syntax, tags }` oder `null`, wenn keine deklariert sind). Jeder Aufruf erhält ein `AbortSignal`: „Stop“ bricht ihn ab.
 
-### Durchläufe: Chat, Beheben und Design
+### Durchläufe: Chat und Beheben
 
 Ein Durchlauf streamt seine Antwort über `on.onText` und übergibt Änderungen auf einem von zwei Wegen:
 
 - **`on.onOperations(ops)`**: [Operationen](/de/api/operations), die der Editor anwenden soll. Er wendet sie sofort an und antwortet mit `{ applied: true, inverse }` oder mit `{ applied: false, code, opIndex, message }`, wenn sie nicht mehr zum Template passen (jemand hat einen Block geändert oder hält seine Sperre). Die Batches eines Durchlaufs bilden einen Rückgängig-Schritt.
 - **`on.onApplied({ batchId, revision, operationCount })`**: Ihr Backend hat den Batch bereits auf seine Kopie angewendet. Mit einem [Zusammenarbeits-Provider](/de/backend/collaboration) folgt der Editor der Revision; mit einem reinen Templates-Provider lädt er das Template am Ende des Durchlaufs neu. Ohne beide verweigert er den Batch.
 
-`chat` sendet `message` und `selectedBlockId` (nur einen Block, den Ihr Backend kennt), `fixFinding` die unten beschriebene Lint-Projektion, `design` ein Bild oder eine PDF (`file`, `fileKind`) und einen optionalen `prompt`.
+`chat` sendet `message`, `selectedBlockId` (nur einen Block, den Ihr Backend kennt) und `attachments`, immer als Array. `fixFinding` sendet die unten beschriebene Lint-Projektion.
+
+### Chat-Anhänge
+
+`AiChatAttachment` ist `{ file: Blob; kind: "image" | "pdf"; name: string }`. `AiChatRequest.attachments` ist immer vorhanden: `[]` ohne Dateien. `chatAttachments: true` bedeutet, dass Ihre `chat`-Funktion Anhänge akzeptiert; bei `chat: false` hat das Flag keine Wirkung. Die Steuerung braucht beide Funktionen und ein geladenes Template. Der HTTP-Provider aktiviert das Flag standardmäßig bei aktivem Chat; setzen Sie für ein reines Text-Backend `features: { chatAttachments: false }`.
+
+Personen können PNG-, JPEG-, WebP-, GIF- oder PDF-Dateien über **Dateien anhängen** oder per Drag-and-drop hinzufügen. Pro Nachricht sind höchstens 4 Dateien erlaubt, jede höchstens 5 MB (`5 * 1024 * 1024` Byte), zusammen höchstens 10 MB (`10 * 1024 * 1024` Byte). Ungültige Dateien zeigen Validierungsnachrichten. Dateinamen-Chips haben Entfernen-Schaltflächen; die Steuerung ist während eines Durchlaufs deaktiviert. Senden leert die Anhänge; ein fehlgeschlagener Durchlauf stellt Text und Dateien wieder her.
+
+**Aus Screenshot oder PDF importieren** ist eine Chat-Anhang-Verknüpfung im KI-Menü und auf der leeren Arbeitsfläche. Zuerst öffnet sie die Dateiauswahl; nach einer Auswahl öffnet sie den Chat, hängt die Dateien an und füllt einen leeren Eingabebereich mit „Diese E-Mail aus dem angehängten Design aufbauen“. Vorhandener Text bleibt erhalten. Die Person sendet selbst; nichts wird automatisch gesendet. Bilder werden Platzhalter; ersetzen Sie sie nach dem Import. Der Prompt ersetzt das ganze Template nur bei leerem Inhalt oder ausdrücklicher Aufforderung; sonst dienen Anhänge als Referenz für die angeforderte Änderung. Ein Ersatz ist ein Rückgängig-Schritt.
+
+Der Verlauf hat Typ `chat` und speichert nur optionale `attachments: { name: string; kind: "image" | "pdf" }[]` auf Benutzernachrichten. Die Dateiaufbewahrung bestimmt das Backend. Das [Multipart-Generate-Protokoll](/de/api/ai-kit#chat-anhange) und der [Backend-Leitfaden](/de/guide/bring-your-own-ai) zeigen Einlesen und Modellzuordnung.
 
 ### Mit KI beheben
 
@@ -137,7 +166,7 @@ Nach Operationen bestätigt der Editor das Ergebnis mit `settleReplay(templateId
 
 ## Funktionen steuern
 
-Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die Schaltflächen „Mit KI beheben“ bei Lint-Befunden, `design: false` Design zu Template. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
+Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die Schaltflächen „Mit KI beheben“ bei Lint-Befunden, `chatAttachments: false` die Anhang-Steuerung und Import-Verknüpfungen. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
 
 ## Fehler
 
@@ -157,11 +186,11 @@ Rückgängig und Wiederholen dürfen mit einem Operationscode (`precondition_fai
 
 ## Im Editor
 
-- **Header:** ein „AI“-Menü mit Assistent und Design zu Template.
+- **Header:** ein „AI“-Menü mit Assistent und **Aus Screenshot oder PDF importieren**.
 - **Chat:** als „AI assistant“ gekennzeichnet („Replies and changes come from AI.“), pro Durchlauf „Applied N changes“ mit „Undo“ und „Redo“, „Stop“ während eines Durchlaufs, „New chat“ und statische Einstiegsanfragen. Cmd/Strg+Z macht einen ganzen Durchlauf rückgängig.
 - **Absatz-Werkzeugleiste:** „AI“ mit den Vorgaben, 16 Zielsprachen zum Übersetzen und einer freien Anweisung. Das Ergebnis erscheint als „AI suggestion“, Merge-Tags als Tags und das Markup bereinigt; „Replace“ übernimmt es als eigene Änderung der Person.
-- **Design zu Template:** PNG, JPEG, WebP, GIF oder PDF bis 5 MB; der Aufbau ist ein rückgängig machbarer Durchlauf.
-- **Leere Arbeitsfläche:** Verknüpfungen zum Assistenten und zu Design zu Template.
+- **Chat-Anhänge:** Dateien per Schaltfläche oder Drag-and-drop hinzufügen, Dateinamen prüfen und Dateien vor dem Senden entfernen.
+- **Leere Arbeitsfläche:** Verknüpfungen zum Assistenten und zu **Aus Screenshot oder PDF importieren**.
 
 KI-Inhalte werden immer als KI gekennzeichnet, wie Artikel 50 des EU AI Act es für Systeme vorsieht, die mit Menschen interagieren.
 
@@ -190,3 +219,5 @@ Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` 
 Öffnen Sie das Issues-Panel mit einem Befund aus der obigen Liste ohne deterministischen Fix. **Mit KI beheben** sendet die Lint-Projektion; nach der erneuten Prüfung verschwindet der Befund oder zeigt **Nach der Korrektur weiterhin markiert**. Ein Undo nimmt den gesamten Fix zurück.
 
 Öffnen Sie einen Bildbefund und wählen Sie **Alt-Text schreiben**. Bearbeiten und übernehmen Sie den Entwurf, dann wählen Sie Rückgängig: `alt` und `decorative` erhalten ihre vorherigen Werte. **Als dekorativ markieren** entfernt `img-missing-alt` nach der erneuten Lint-Prüfung. Abbrechen lässt das Bild unverändert.
+
+Wählen Sie für Anhänge **Aus Screenshot oder PDF importieren**, wählen Sie eine Datei und prüfen Sie, dass der Chat ohne Senden öffnet. Senden Sie die vorausgefüllte Nachricht und machen Sie die Änderungen rückgängig. Prüfen Sie die Upload-Limits mit der Protokoll-Konformitätssuite bei aktiven Anhängen.

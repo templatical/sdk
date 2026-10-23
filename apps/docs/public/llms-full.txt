@@ -37,9 +37,8 @@ import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   credentials: 'include',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
@@ -71,8 +70,8 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
-| `rewriteInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
+| `rewriteInstructions` | The other prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
@@ -138,7 +137,28 @@ interface AiModelAdapter {
 }
 ```
 
-[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All accept image URLs; only the Anthropic example accepts image and PDF Blobs. The OpenAI and Vercel client configurations turn off design and stored conversation history.
+[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. All examples take chat, fix, rewrite and alt text and accept image URLs for alt text. Only the Anthropic example accepts image and PDF Blobs in chat. The OpenAI and Vercel client configurations set `chatAttachments: false` and turn off stored conversation history.
+
+### Chat attachments
+
+`AiChatRequest.attachments` is always present: `[]` without files, otherwise `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` is a flag: `true` means the `chat` function accepts attachments; it has no effect when `chat` is `false`. The HTTP provider enables it by default when chat is on; `features: { chatAttachments: false }` disables it.
+
+Without attachments the HTTP client keeps the JSON body unchanged. With attachments, `AI_GENERATE_FIELDS` names `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`.
+
+`readAiRequest` accepts MIME types `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`. It refuses, never truncates, with status 422 and no code, in this order:
+
+| Condition | Message |
+| --- | --- |
+| Form cannot be parsed | Send the message as multipart form data. |
+| More than 4 files | Attach at most 4 files. |
+| Non-file part or unsupported MIME type | Attach PNG, JPEG, WebP or GIF images, or PDFs. |
+| Any file over `5 * 1024 * 1024` bytes | Each attachment must be 5 MB or smaller. |
+| Total over `10 * 1024 * 1024` bytes | Attachments must be 10 MB or smaller together. |
+| File name over 255 UTF-16 units | An attachment's file name must be at most 255 characters. |
+
+`buildChatRequest(message: string, options?: { hasAttachments?: boolean })` returns the text-only request unchanged by default; with `hasAttachments: true` it appends a blank line and `prompts/chat-attachments.md`. Map the parsed files to model attachments with `{ kind, mediaType: file.type, data: file }`, as the guide does. The prompt uses references for the requested change and replaces the whole template only when empty or explicitly requested; pictures become placeholders.
+
+The conformance suites send one 1×1 PNG when chat attachments are on; wire conformance also requires a 422 for five attachments. History stores only `{ name, kind }` in optional user-message `attachments`; retaining the files is the backend's choice.
 
 ## Testing
 
@@ -170,9 +190,8 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Un
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
-| `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
 | `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
@@ -242,7 +261,7 @@ unmount();
 | `onDirtyChange`      | `(isDirty: boolean) => void`                                      | No       | Called whenever the unsaved-changes state flips. Works with or without a `templates` provider — use it to guard a client-side router, which `beforeunload` cannot cover. See [Saving & Loading](/backend/templates#unsaved-changes)                                                                                                                                                                                                                                                                                            |
 | `templates`          | `TemplatesProvider`                                               | No       | Storage backend for the template itself — the save/load lifecycle. The same object also carries `autoSave`, `unsavedChangesGuard` and `nameField` config, plus the `onSaved` / `onCreated` / `onLoaded` events — none of it means anything without somewhere to save to. The editor provides the name field, save button, save status and Cmd+S; you provide persistence. Omit `templates` and the feature is off entirely: no name field, no save button, no status indicator. See [Saving & Loading](/backend/templates)     |
 | `render`             | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render)                                                                                                                                                                                                                                  |
-| `ai` | `AiProvider` | No | AI over your own backend: chat with Undo, rewrite, design to template and static localized chat starters. Each member is a function or `false`; entry points appear after `create()` or `load()`. Omit to disable the feature and its UI chunks. See [AI](/backend/ai). |
+| `ai` | `AiProvider` | No | AI over your own backend: chat with Undo and attachments, **Import from screenshot or PDF**, rewrite and static localized chat starters. `chat`, `fixFinding`, `rewrite` and `altText` are functions or `false`. `chatAttachments` is a boolean flag with an effect only when `chat` is a function; entry points appear after `create()` or `load()`. Omit to disable the feature and its UI chunks. See [AI](/backend/ai). |
 | `versionHistory`     | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. The same object also carries the `onCreated` and `onRestored` events. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history)                                                                              |
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `collaboration`      | `CollaborationProvider`                                           | No       | Real-time collaboration over your backend: every edit is sent as a batch of [operations](/api/operations) through `submit`, other sessions' batches are applied in revision order, selecting a block takes its lock, the header shows who else is here, and undo sends inverse operations your backend can refuse. **Requires `templates`**, whose `load` returns the template's `revision`; `templates.save` then receives only renames. The three lock methods are optional together. See [Collaboration](/backend/collaboration) |
@@ -2307,14 +2326,23 @@ The editor owns every surface, the streaming, applying the AI's edits with Undo,
 
 ```ts
 import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
+import type { Template } from '@templatical/types';
 
 const editor = await init({
   container: '#editor',
-  templates: myTemplateStore,
+  templates: {
+    load: async (id): Promise<Template> => {
+      const response = await fetch(`/api/templates/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error('Template load failed.');
+      return response.json();
+    },
+    create: false,
+    save: false,
+  },
   ai: createHttpAiProvider({
     baseUrl: '/api/ai',
-    headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   }),
 });
 
@@ -2328,42 +2356,62 @@ await editor.load('tpl_123');
 ## The contract
 
 ```ts
-import type { AiProvider } from '@templatical/types';
+import type { AiChatRequest, AiFixRequest, AiRewriteRequest, AiAltTextRequest, AiTurnHandlers, AiTurnResult, AiRewriteHandlers, AiConversationProvider } from '@templatical/types';
 
-interface AiProvider {
-  chat: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
-  rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  altText: false | ((request: AiAltTextRequest, signal: AbortSignal) => Promise<{ alt: string }>);
-  conversation?: {
-    settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
-    list(templateId: string): Promise<AiChatMessage[]>;
-    clear: false | ((templateId: string) => Promise<void>);
-    undo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-    redo: false | ((templateId: string, messageId: string, context: { sessionId: string }) => Promise<AiReplay>);
-  };
-}
-
-type AiReplay = { operations: Operation[]; replayId: string } | { applied: { batchId: string; revision: number } };
-interface AiReplayOutcome {
-  replayId: string;
-  direction: 'undo' | 'redo';
-  applied: boolean;
-  sessionId: string;
+export interface AiProvider {
+  chat:
+    | false
+    | ((
+        request: AiChatRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  fixFinding:
+    | false
+    | ((
+        request: AiFixRequest,
+        on: AiTurnHandlers,
+        signal: AbortSignal,
+      ) => Promise<AiTurnResult>);
+  /** True means chat accepts attachments; has no effect while chat is false. */
+  chatAttachments: false | true;
+  rewrite:
+    | false
+    | ((
+        request: AiRewriteRequest,
+        on: AiRewriteHandlers,
+        signal: AbortSignal,
+      ) => Promise<{ html: string }>);
+  altText:
+    | false
+    | ((
+        request: AiAltTextRequest,
+        signal: AbortSignal,
+      ) => Promise<{ alt: string }>);
+  conversation?: AiConversationProvider;
 }
 ```
 
-Chat, fix, design and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
 
-### Turns: chat, fix and design
+### Turns: chat and fix
 
 A turn streams its reply through `on.onText` and hands its edits over in one of two ways:
 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` the lint projection described below, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message`, `selectedBlockId` (only a block your backend has) and `attachments`, always an array. `fixFinding` sends the lint projection described below.
+
+### Chat attachments
+
+`AiChatAttachment` is `{ file: Blob; kind: "image" | "pdf"; name: string }`. `AiChatRequest.attachments` is always present: `[]` without files. `chatAttachments: true` means your `chat` function accepts attachments; the flag has no effect when `chat: false`. The controls need both features and a loaded template. The HTTP provider defaults the flag to true when chat is on; set `features: { chatAttachments: false }` for a text-only backend.
+
+Authors can attach PNG, JPEG, WebP, GIF or PDF files with **Attach files** or drag files onto chat. The limits are at most 4 files per message, each at most 5 MB (`5 * 1024 * 1024` bytes), at most 10 MB (`10 * 1024 * 1024` bytes) together. Invalid files show validation messages. File-name chips have remove buttons; controls are disabled during a turn. Sending clears attachments; a failed turn restores the text and files.
+
+**Import from screenshot or PDF** is a chat-attachments shortcut in the AI menu and on the empty canvas. It opens a file picker first; after a pick it opens chat, attaches the files and fills an empty composer with “Build this email from the attached design.” Existing composer text is preserved. The author sends the message; nothing sends automatically. Pictures come in as placeholders; replace them after import. The prompt replaces the whole template only when empty or when the message asks for it; otherwise attachments guide the requested edit. A replacement is one undo step.
+
+History has kind `chat` and stores only optional user-message `attachments: { name: string; kind: "image" | "pdf" }[]`. The backend decides whether to retain files. The [multipart generate wire](/api/ai-kit#chat-attachments) and [backend guide](/guide/bring-your-own-ai) show parsing and model mapping.
 
 ### Fix with AI
 
@@ -2431,7 +2479,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `chatAttachments: false` the attachment controls and import shortcuts. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -2451,11 +2499,11 @@ Undo and Redo may reject with an operation's code (`precondition_failed`, …) a
 
 ## In the editor
 
-- **Header:** an **AI** menu with the assistant and design to template.
+- **Header:** an **AI** menu with the assistant and **Import from screenshot or PDF**.
 - **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
 - **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
-- **Design to template:** PNG, JPEG, WebP, GIF or PDF up to 5 MB; the build is one undoable turn.
-- **The empty canvas:** shortcuts to the assistant and to design to template.
+- **Chat attachments:** add files with the attach button or drag them into the panel, review name chips and remove files before sending.
+- **The empty canvas:** shortcuts to the assistant and to **Import from screenshot or PDF**.
 
 AI content is always marked as AI, as the EU AI Act's Article 50 asks of systems that interact with people.
 
@@ -2484,6 +2532,8 @@ Open the assistant for a loaded template without blocks: it shows three starters
 Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
 
 For alt text, open an image finding and choose **Write alt text**. Edit the draft, accept it, and Undo: both `alt` and `decorative` return to their previous values. **Mark decorative** clears `img-missing-alt` after re-lint. Cancel leaves the image unchanged.
+
+For attachments, choose **Import from screenshot or PDF**, pick a file and check that chat opens without sending. Send the prefilled message and Undo its changes. Run the wire conformance suite with attachments enabled to check the upload limits.
 
 ---
 
@@ -3002,7 +3052,7 @@ await init({
   media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
-  ai: myAiBackend, // chat, rewrite, design
+  ai: myAiBackend, // chat attachments, rewrite, screenshot/PDF import
 });
 ```
 
@@ -3023,7 +3073,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
-| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, design to template, static localized chat starters, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite`, and optionally `conversation` |
+| [AI](/backend/ai) | a chat that edits the template with Undo and attachments, the **Import from screenshot or PDF** shortcut, rewrite in the paragraph toolbar, static localized chat starters, AI labels | callable members: `chat` · `fixFinding` · `rewrite` · `altText` (each `false \| fn`); boolean flag `chatAttachments`, effective only when `chat` is a function; optional `conversation` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
@@ -7902,7 +7952,6 @@ import {
   buildAltTextRequest,
   checkAltText,
   buildChatRequest,
-  buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
@@ -7939,8 +7988,7 @@ export async function handle(request: Request): Promise<Response> {
 
   switch (read.route) {
     case 'generate':
-    case 'fixFinding':
-    case 'generateFromDesign': {
+    case 'fixFinding': {
       const turn = read;
       return aiEventStream(async (stream) => {
         await runEditingTurn({
@@ -7952,13 +8000,11 @@ export async function handle(request: Request): Promise<Response> {
             selectedBlockId: turn.route === 'generate' ? turn.body.selectedBlockId : null,
             request:
               turn.route === 'generate'
-                ? buildChatRequest(turn.body.message)
-                : turn.route === 'fixFinding'
-                  ? buildFixRequest(turn.body.finding)
-                  : buildDesignRequest(turn.body.prompt),
-            ...(turn.route === 'generateFromDesign'
-              ? { attachments: [{ kind: turn.body.fileKind, mediaType: turn.body.file.type, data: turn.body.file }] }
-              : {}),
+                ? buildChatRequest(turn.body.message, { hasAttachments: turn.body.attachments.length > 0 })
+                : buildFixRequest(turn.body.finding),
+            attachments: turn.route === 'generate'
+              ? turn.body.attachments.map(({ kind, file }) => ({ kind, mediaType: file.type, data: file }))
+              : [],
           },
           model,
           write: stream.send,
@@ -8001,30 +8047,30 @@ export async function handle(request: Request): Promise<Response> {
 
 In the editor, turn history off to match: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. To store history, keep each turn's messages and `result.batches[].inverse` (last batch first) and implement the conversation routes including `settleReplay`, as described under [History](/backend/ai#history). Authorize the template id and message ids against the signed-in user before answering every AI route, conversation routes included.
 
-Set your framework's whole-body request limit to about 6 MB with design uploads, or about 300 kB otherwise. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
+The generate route accepts JSON without attachments and multipart with attachments. Set your framework's whole-body request limit above 10 MB plus the 200,000-byte template content and multipart overhead, or about 300 kB when chat attachments are disabled. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
 
 ## Model adapters
 
 Each adapter maps the kit's neutral messages and tools to one SDK and back. Install only the one you use.
 
-OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All three adapters accept `image-url` attachments. Blob attachments for design stay Anthropic-only. Use this client configuration with OpenAI or Vercel to turn off design-to-template and stored conversation history:
+All three adapters take chat, fix, rewrite and alt text, and accept `image-url` attachments for alt text. Only the Anthropic example maps image and PDF Blobs for chat. The OpenAI and Vercel chat examples take text only; set `chatAttachments: false` and turn off stored conversation history:
 
 | Adapter | Features | Attachments |
 | --- | --- | --- |
 | OpenAI | Chat, fix, rewrite, alt text | Image URL |
 | Vercel AI SDK | Chat, fix, rewrite, alt text | Image URL |
-| Anthropic | Chat, fix, rewrite, alt text, design | Image URL, image Blob, PDF Blob |
+| Anthropic | Chat, fix, rewrite, alt text | Image URL, image Blob, PDF Blob |
 
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
-For design-to-template, use the [Anthropic example](#anthropic), which maps image and PDF attachments to the model.
+For chat attachments, use the [Anthropic example](#anthropic), which maps image and PDF Blobs to the model. The import shortcut uses this same chat route; the author sends the prefilled request after choosing the files.
 
 ### Vercel AI SDK
 
@@ -8046,7 +8092,7 @@ export const model: AiModelAdapter = {
           : m.role === 'assistant'
             ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
             : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
-                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                 return { type: 'image' as const, image: new URL(a.url) };
               })] },
       ),
@@ -8085,7 +8131,7 @@ export const model: AiModelAdapter = {
               : m.role === 'assistant'
                 ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
                 : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
-                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                     return { type: 'image_url' as const, image_url: { url: a.url } };
                   })] },
           ),
@@ -8185,7 +8231,7 @@ import { model } from './model';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, design: false }, // adapters without design
+  features: { conversation: false, chatAttachments: false }, // adapters without Blob attachments
 });
 const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
 console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
@@ -8200,6 +8246,8 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 ## Other languages
 
 A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
+
+Chat can translate an email in place as one undoable turn, on request, with no field-coverage or merge-tag check. The paragraph rewrite `translate` preset remains available. Whole-template translation by language version belongs to localization.
 
 ---
 
@@ -9613,7 +9661,7 @@ export default translations;
 
 ### Cloud strings are optional
 
-Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. AI chat, static starters, rewrite and design strings live in the main chunk too. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
+Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. AI chat, static starters, rewrite, chat attachments and the **Import from screenshot or PDF** shortcut live in the main chunk too, including `ai.chat.*`, `ai.import.*` and `ai.canvas.importHint`. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 

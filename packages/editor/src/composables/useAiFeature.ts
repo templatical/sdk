@@ -49,13 +49,11 @@ import {
 export const AI_SETTLE_TIMEOUT_MS = 3000;
 /** How long a live channel gets to deliver a server-applied batch before a catch-up. */
 export const AI_BROADCAST_GRACE_MS = 1000;
-/** The largest design file (D24). */
-export const AI_DESIGN_MAX_BYTES = 5 * 1024 * 1024;
 export { AI_MISSING_PROVIDER_MESSAGE } from "../utils/aiErrors";
 /** UTF-8 bytes of serialized content, matching the wire's AI_LIMITS. */
 export const AI_CONTENT_MAX_BYTES = 200_000;
 
-export type AiPanel = "chat" | "design" | "translate";
+export type AiPanel = "chat";
 export type { AiErrorContext } from "../utils/aiErrors";
 
 export interface AiFailure {
@@ -69,6 +67,7 @@ export interface AiChatItem {
   role: "user" | "assistant";
   kind: AiMessageKind;
   text: string;
+  attachments: { name: string; kind: "image" | "pdf" }[];
   /** Operations this turn changed, client- and server-applied together. */
   operationCount: number;
   undone: boolean;
@@ -192,13 +191,12 @@ export interface UseAiFeatureReturn {
   isRunning: Ref<boolean>;
   failure: Ref<AiFailure | null>;
   failedPrompt: Ref<string | null>;
+  failedAttachments: Ref<File[]>;
+  importQueue: Ref<File[]>;
   isTemplateEmpty: ComputedRef<boolean>;
-  send: (message: string) => Promise<AiTurnOutcome>;
+  send: (message: string, attachments?: File[]) => Promise<AiTurnOutcome>;
+  startImport: (files: File[]) => void;
   fix: (finding: AiFixFinding) => Promise<AiTurnOutcome>;
-  design: (input: {
-    file: File;
-    prompt: string | null;
-  }) => Promise<AiTurnOutcome>;
   stop: () => void;
   newChat: () => Promise<void>;
   undoMessage: (id: string) => Promise<void>;
@@ -244,6 +242,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     busy: Ref<boolean>;
     failure: Ref<AiFailure | null>;
     failedPrompt: Ref<string | null>;
+    failedAttachments: Ref<File[]>;
+    importQueue: Ref<File[]>;
     loaded: boolean;
     historyGeneration: number;
     pendingHistory: { generation: number; promise: Promise<void> } | null;
@@ -273,6 +273,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       busy: ref(false),
       failure: ref(null),
       failedPrompt: ref(null),
+      failedAttachments: shallowRef([]),
+      importQueue: shallowRef([]),
       loaded: false,
       historyGeneration: 0,
       pendingHistory: null,
@@ -296,7 +298,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       currentSession.value !== null && !destroyed && templateId.value !== null,
   );
   const has = (feature: AiFeatureName): boolean =>
-    typeof provider[feature] === "function";
+    feature === "chatAttachments"
+      ? isAvailable.value &&
+        provider.chatAttachments === true &&
+        typeof provider.chat === "function"
+      : typeof provider[feature] === "function";
   const scopeOf = (): Session | null =>
     destroyed ? null : currentSession.value;
   const isCurrent = (scope: Session): boolean =>
@@ -324,6 +330,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   const isRunning = sessionRef((scope) => scope.busy, false);
   const failure = sessionRef((scope) => scope.failure, null);
   const failedPrompt = sessionRef((scope) => scope.failedPrompt, null);
+  const failedAttachments = sessionRef((scope) => scope.failedAttachments, []);
+  const importQueue = sessionRef((scope) => scope.importQueue, []);
 
   function invalidateHistory(scope: Session): void {
     scope.historyGeneration++;
@@ -637,6 +645,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       handlers: AiTurnHandlers,
       signal: AbortSignal,
     ) => Promise<AiTurnResult>,
+    attachments: File[] = [],
   ): Promise<AiTurnOutcome> {
     const scope = scopeOf();
     if (
@@ -755,6 +764,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             check(job);
             scope.failure.value = null;
             scope.failedPrompt.value = null;
+            scope.failedAttachments.value = [];
             const now = new Date().toISOString();
             saved.records.set(key, record);
             saved.items = [
@@ -764,6 +774,10 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
                 role: "user",
                 kind,
                 text: userText,
+                attachments: attachments.map((file) => ({
+                  name: file.name,
+                  kind: file.type === "application/pdf" ? "pdf" : "image",
+                })),
                 operationCount: 0,
                 undone: false,
                 canUndo: false,
@@ -776,6 +790,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
                 role: "assistant",
                 kind,
                 text: "",
+                attachments: [],
                 operationCount: 0,
                 undone: false,
                 canUndo: false,
@@ -815,7 +830,10 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               if (isCurrent(scope)) {
                 scope.messages.value = saved.items;
                 if (!interrupted) {
-                  if (kind === "chat") scope.failedPrompt.value = userText;
+                  if (kind === "chat") {
+                    scope.failedPrompt.value = userText;
+                    scope.failedAttachments.value = attachments;
+                  }
                   scope.failure.value = {
                     error: asError(error),
                     context: "turn",
@@ -1028,6 +1046,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       role: message.role,
       kind: message.kind,
       text: message.text,
+      attachments: message.attachments ?? [],
       operationCount: sum(message),
       undone: message.undone,
       canUndo: false,
@@ -1193,6 +1212,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           scope.loaded = true;
           scope.failure.value = null;
           scope.failedPrompt.value = null;
+          scope.failedAttachments.value = [];
           if (isCurrent(scope)) memory.set(scope.id, scope.memory);
         } catch (error) {
           if (!isCurrent(scope)) return;
@@ -1218,6 +1238,12 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     panel.value = next;
     if (options.commentsOpen) options.commentsOpen.value = false;
     if (next === "chat") bootstrap(scope);
+  }
+
+  function startImport(files: File[]): void {
+    if (files.length === 0 || !has("chatAttachments")) return;
+    importQueue.value = [...files];
+    open("chat");
   }
 
   function stopSession(scope: Session): void {
@@ -1375,6 +1401,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     capability: {
       isFeatureEnabled: (feature) => isAvailable.value && has(feature),
       open,
+      startImport,
       highlightOf: (blockId) =>
         currentSession.value?.highlights.value.get(blockId) ?? null,
     },
@@ -1392,16 +1419,32 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     busy: isRunning,
     failure,
     failedPrompt,
+    failedAttachments,
+    importQueue,
+    startImport,
     isTemplateEmpty,
-    send: (message) => {
+    send: (message, attachments = []) => {
       const chat = provider.chat;
       return typeof chat === "function"
-        ? runTurn("chat", message, (base, handlers, signal) =>
-            chat(
-              { ...base, message, selectedBlockId: selectedBlockId() },
-              handlers,
-              signal,
-            ),
+        ? runTurn(
+            "chat",
+            message,
+            (base, handlers, signal) =>
+              chat(
+                {
+                  ...base,
+                  message,
+                  selectedBlockId: selectedBlockId(),
+                  attachments: attachments.map((file) => ({
+                    file,
+                    name: file.name,
+                    kind: file.type === "application/pdf" ? "pdf" : "image",
+                  })),
+                },
+                handlers,
+                signal,
+              ),
+            attachments,
           )
         : Promise.resolve({
             messageId: null,
@@ -1415,23 +1458,6 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       return typeof fixFinding === "function"
         ? runTurn("fix", `Fix: ${finding.message}`, (base, handlers, signal) =>
             fixFinding({ ...base, finding }, handlers, signal),
-          )
-        : Promise.resolve({
-            messageId: null,
-            operationCount: 0,
-            text: "",
-            failed: true,
-          });
-    },
-    design: ({ file, prompt }) => {
-      const design = provider.design;
-      const fileKind = file.type === "application/pdf" ? "pdf" : "image";
-      return typeof design === "function"
-        ? runTurn(
-            "design",
-            prompt ? `Built from design\n${prompt}` : "Built from design",
-            (base, handlers, signal) =>
-              design({ ...base, prompt, file, fileKind }, handlers, signal),
           )
         : Promise.resolve({
             messageId: null,

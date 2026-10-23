@@ -11,6 +11,7 @@ import {
 } from "../wire";
 import {
   evaluateConformanceCheck,
+  tinyPng,
   runAiProviderConformance,
   withConformanceDeadline,
   type AiConformanceCheck,
@@ -89,13 +90,7 @@ export async function runAiWireConformance(
         response,
         streamed:
           response.ok &&
-          [
-            "generate",
-            "fixFinding",
-            "generateFromDesign",
-            "rewriteText",
-            "altText",
-          ].includes(route),
+          ["generate", "fixFinding", "rewriteText", "altText"].includes(route),
       });
       if (!response.body) {
         release();
@@ -175,10 +170,12 @@ export async function runAiWireConformance(
             ...own,
             [AI_WIRE_HEADER]: AI_WIRE_VERSION,
             [AI_SESSION_HEADER]: "conformance-session",
-            "Content-Type": "application/json",
+            ...(body instanceof FormData
+              ? {}
+              : { "Content-Type": "application/json" }),
             Accept: "text/event-stream",
           },
-          body: JSON.stringify(body),
+          body: body instanceof FormData ? body : JSON.stringify(body),
         },
       );
       return response;
@@ -228,6 +225,40 @@ export async function runAiWireConformance(
       };
     },
   );
+  if (
+    options.features?.chat !== false &&
+    options.features?.chatAttachments !== false
+  ) {
+    const form = new FormData();
+    form.set("message", "Use these references");
+    form.set("content", JSON.stringify(AI_EVAL_TEMPLATES.welcome));
+    for (let i = 0; i < 5; i++)
+      form.append("attachment", tinyPng(), "reference.png");
+    const refused = await probe("generate", form);
+    checks.push(
+      await evaluateConformanceCheck(
+        "refuses more than 4 attachments with 422",
+        async () => {
+          const body: unknown = refused
+            ? await withConformanceDeadline(
+                "generate: attachment refusal JSON",
+                timeoutMs,
+                () => refused.json(),
+              )
+            : null;
+          return {
+            ok:
+              refused?.status === 422 &&
+              typeof (body as { message?: unknown } | null)?.message ===
+                "string",
+            detail: refused
+              ? `${refused.status} ${JSON.stringify(body)}`
+              : "no response",
+          };
+        },
+      ),
+    );
+  }
   const report = await runAiProviderConformance(
     createHttpAiProviderWithFetch(
       { baseUrl: base, headers: readHeaders, features: options.features },

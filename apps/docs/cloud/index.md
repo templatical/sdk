@@ -28,7 +28,7 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 | Feature | Description |
 |---------|-------------|
-| [AI Assistant](/cloud/ai) | Generate email content from prompts, rewrite text, design-to-template conversion |
+| [AI Assistant](/cloud/ai) | Generate email content from prompts, rewrite text, chat attachments |
 | [Collaboration](/cloud/collaboration) | Real-time co-editing with live cursors and block locking |
 | [Comments](/cloud/comments) | Inline review threads on specific blocks |
 | [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |

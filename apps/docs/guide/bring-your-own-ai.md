@@ -18,7 +18,6 @@ import {
   buildAltTextRequest,
   checkAltText,
   buildChatRequest,
-  buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
@@ -55,8 +54,7 @@ export async function handle(request: Request): Promise<Response> {
 
   switch (read.route) {
     case 'generate':
-    case 'fixFinding':
-    case 'generateFromDesign': {
+    case 'fixFinding': {
       const turn = read;
       return aiEventStream(async (stream) => {
         await runEditingTurn({
@@ -68,13 +66,11 @@ export async function handle(request: Request): Promise<Response> {
             selectedBlockId: turn.route === 'generate' ? turn.body.selectedBlockId : null,
             request:
               turn.route === 'generate'
-                ? buildChatRequest(turn.body.message)
-                : turn.route === 'fixFinding'
-                  ? buildFixRequest(turn.body.finding)
-                  : buildDesignRequest(turn.body.prompt),
-            ...(turn.route === 'generateFromDesign'
-              ? { attachments: [{ kind: turn.body.fileKind, mediaType: turn.body.file.type, data: turn.body.file }] }
-              : {}),
+                ? buildChatRequest(turn.body.message, { hasAttachments: turn.body.attachments.length > 0 })
+                : buildFixRequest(turn.body.finding),
+            attachments: turn.route === 'generate'
+              ? turn.body.attachments.map(({ kind, file }) => ({ kind, mediaType: file.type, data: file }))
+              : [],
           },
           model,
           write: stream.send,
@@ -117,30 +113,30 @@ export async function handle(request: Request): Promise<Response> {
 
 In the editor, turn history off to match: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. To store history, keep each turn's messages and `result.batches[].inverse` (last batch first) and implement the conversation routes including `settleReplay`, as described under [History](/backend/ai#history). Authorize the template id and message ids against the signed-in user before answering every AI route, conversation routes included.
 
-Set your framework's whole-body request limit to about 6 MB with design uploads, or about 300 kB otherwise. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
+The generate route accepts JSON without attachments and multipart with attachments. Set your framework's whole-body request limit above 10 MB plus the 200,000-byte template content and multipart overhead, or about 300 kB when chat attachments are disabled. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
 
 ## Model adapters
 
 Each adapter maps the kit's neutral messages and tools to one SDK and back. Install only the one you use.
 
-OpenAI and Vercel take chat, fix, rewrite and alt text; Anthropic adds design. All three adapters accept `image-url` attachments. Blob attachments for design stay Anthropic-only. Use this client configuration with OpenAI or Vercel to turn off design-to-template and stored conversation history:
+All three adapters take chat, fix, rewrite and alt text, and accept `image-url` attachments for alt text. Only the Anthropic example maps image and PDF Blobs for chat. The OpenAI and Vercel chat examples take text only; set `chatAttachments: false` and turn off stored conversation history:
 
 | Adapter | Features | Attachments |
 | --- | --- | --- |
 | OpenAI | Chat, fix, rewrite, alt text | Image URL |
 | Vercel AI SDK | Chat, fix, rewrite, alt text | Image URL |
-| Anthropic | Chat, fix, rewrite, alt text, design | Image URL, image Blob, PDF Blob |
+| Anthropic | Chat, fix, rewrite, alt text | Image URL, image Blob, PDF Blob |
 
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
-For design-to-template, use the [Anthropic example](#anthropic), which maps image and PDF attachments to the model.
+For chat attachments, use the [Anthropic example](#anthropic), which maps image and PDF Blobs to the model. The import shortcut uses this same chat route; the author sends the prefilled request after choosing the files.
 
 ### Vercel AI SDK
 
@@ -162,7 +158,7 @@ export const model: AiModelAdapter = {
           : m.role === 'assistant'
             ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
             : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
-                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                 return { type: 'image' as const, image: new URL(a.url) };
               })] },
       ),
@@ -201,7 +197,7 @@ export const model: AiModelAdapter = {
               : m.role === 'assistant'
                 ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
                 : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
-                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                     return { type: 'image_url' as const, image_url: { url: a.url } };
                   })] },
           ),
@@ -301,7 +297,7 @@ import { model } from './model';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, design: false }, // adapters without design
+  features: { conversation: false, chatAttachments: false }, // adapters without Blob attachments
 });
 const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
 console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
@@ -316,3 +312,5 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 ## Other languages
 
 A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
+
+Chat can translate an email in place as one undoable turn, on request, with no field-coverage or merge-tag check. The paragraph rewrite `translate` preset remains available. Whole-template translation by language version belongs to localization.

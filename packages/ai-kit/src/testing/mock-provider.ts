@@ -6,7 +6,6 @@ import type {
   TemplateContent,
   AiChatMessage,
   AiChatRequest,
-  AiDesignRequest,
   AiFixRequest,
   AiMessageKind,
   AiProvider,
@@ -41,7 +40,7 @@ export interface AiRecordedTurn {
 export interface AiMockScript {
   chat?: false | AiRecordedTurn[];
   fixFinding?: false | AiRecording<AiFixRequest>;
-  design?: false | AiRecording<AiDesignRequest>;
+  chatAttachments?: boolean;
   rewrite?: false | AiRecording<AiRewriteRequest>;
   altText?: false | AiRecording<AiAltTextRequest>;
   /** Keep a conversation in memory per template, with Undo and Redo. */
@@ -123,7 +122,11 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
   }
 
   async function turn<
-    R extends { templateId: string; content: TemplateContent },
+    R extends {
+      templateId: string;
+      content: TemplateContent;
+      attachments?: { name: string; kind: "image" | "pdf" }[];
+    },
   >(
     kind: AiMessageKind,
     userText: string,
@@ -181,6 +184,14 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
           role: "user",
           kind,
           text: userText,
+          ...(request.attachments?.length
+            ? {
+                attachments: request.attachments.map(({ name, kind }) => ({
+                  name,
+                  kind,
+                })),
+              }
+            : {}),
           batches: [],
           undone: false,
           createdAt,
@@ -223,6 +234,7 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
   }
 
   return {
+    chatAttachments: !!script.chat && script.chatAttachments === true,
     chat: script.chat
       ? (request, on, signal) => {
           const recorded = (script.chat as AiRecordedTurn[]).find(
@@ -246,19 +258,6 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
             "fix",
             `Fix: ${request.finding.message}`,
             script.fixFinding as AiRecording<AiFixRequest>,
-            request,
-            on,
-            signal,
-          )
-      : false,
-    design: script.design
-      ? (request, on, signal) =>
-          turn(
-            "design",
-            request.prompt
-              ? `Built from design\n${request.prompt}`
-              : "Built from design",
-            script.design as AiRecording<AiDesignRequest>,
             request,
             on,
             signal,

@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/ai-kit?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/ai-kit)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
 
-The editor's AI (a chat that edits the template with Undo, rewrite, static localized chat starters and design-to-template) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
+The editor's AI (a chat that edits the template with Undo, rewrite, static localized chat starters and chat attachments) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
 
 | Entry | What it is |
 |---|---|
@@ -25,16 +25,25 @@ npm install @templatical/ai-kit
 
 ```ts
 import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 
-await init({
+const editor = await init({
   container: "#editor",
-  templates,
+  templates: {
+    load: async (id) => {
+      const response = await fetch(`/api/templates/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error("Template load failed.");
+      return response.json();
+    },
+    create: false,
+    save: false,
+  },
   ai: createHttpAiProvider({
     baseUrl: "/api/ai",
-    headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   }),
 });
+await editor.load("tpl_123");
 ```
 
 ## On your server

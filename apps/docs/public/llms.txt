@@ -72,7 +72,7 @@ Documentation for SDK version 0.49.0. Every page below is also available as raw 
 
 ## Connect your backend
 
-- [AI](https://docs.templatical.com/backend/ai): Chat, lint fixes, alt-text drafts, rewrite and design to template over your own AI backend.
+- [AI](https://docs.templatical.com/backend/ai): Chat, lint fixes, alt-text drafts, rewrite and chat attachments over your own AI backend.
 - [Collaboration](https://docs.templatical.com/backend/collaboration): Live co-editing over your own backend — ordered operations, presence and block locks.
 - [Comments](https://docs.templatical.com/backend/comments): A threaded review conversation on a template — over your own storage, or Templatical Cloud's.
 - [Connect your backend](https://docs.templatical.com/backend/): Saving, version history, comments, collaboration, saved blocks, media, test emails, rendering and AI are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.

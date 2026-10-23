@@ -34,9 +34,8 @@ import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
   credentials: 'include',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
@@ -68,8 +67,8 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | Der System-Prompt zum Bearbeiten: die Regeln, die [Operationen](/de/api/operations) und das Template-Schema |
-| `rewriteInstructions`, `designInstructions` | Die anderen Prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Prompts pro Anfrage |
+| `rewriteInstructions` | Die anderen Prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildRewritePrompt`, `buildAltTextRequest` | Prompts pro Anfrage |
 | `applyOperationsTool` | Das einzige Tool: `apply_operations`, dessen `ops` ein JSON-String ist |
 | `createEditingSession` | Die Arbeitskopie eines Durchlaufs: prüft jeden Aufruf (Form, die Grenze von 100 Operationen, keine neuen Custom-, Slot- oder Wrapper-Blöcke, deklarierte Merge-Tags, die Engine, eine Größenbegrenzung) und antwortet mit einem Satz, auf den das Modell reagieren kann |
 | `runEditingTurn` | Die Referenzschleife über einen `AiModelAdapter`, höchstens drei Modellaufrufe |
@@ -135,7 +134,28 @@ interface AiModelAdapter {
 }
 ```
 
-[Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. OpenAI und Vercel unterstützen Chat, Fix, Umformulieren und Alt-Text; Anthropic ergänzt Design. Alle unterstützen Bild-URLs; nur das Anthropic-Beispiel akzeptiert Bild- und PDF-Blobs. Die Client-Konfigurationen für OpenAI und Vercel schalten Design und den gespeicherten Gesprächsverlauf aus.
+[Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. Alle Beispiele unterstützen Chat, Fix, Umformulieren und Alt-Text sowie Bild-URLs für Alt-Text. Nur das Anthropic-Beispiel akzeptiert Bild- und PDF-Blobs im Chat. Die Client-Konfigurationen für OpenAI und Vercel setzen `chatAttachments: false` und schalten den gespeicherten Gesprächsverlauf aus.
+
+### Chat-Anhänge
+
+`AiChatRequest.attachments` ist immer vorhanden: `[]` ohne Dateien, sonst `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` ist ein Flag: `true` bedeutet, dass die `chat`-Funktion Anhänge akzeptiert; bei `chat: false` hat es keine Wirkung. Der HTTP-Provider aktiviert es standardmäßig bei aktivem Chat; `features: { chatAttachments: false }` deaktiviert es.
+
+Ohne Anhänge bleibt der JSON-Body unverändert. Mit Anhängen benennt `AI_GENERATE_FIELDS` die Felder `message`, `selectedBlockId`, `mergeTags`, `content`, `revision` und wiederholte `attachment`-Dateiteile. `message` und `selectedBlockId` sind Text; `mergeTags` und `content` sind JSON-Strings; `revision` ist eine Zahl als Text. Fehlende `selectedBlockId` und `revision` werden `null`. Multipart ohne Dateiteile ist gültig. JSON-Bodys ergeben immer `attachments: []`.
+
+`readAiRequest` akzeptiert die MIME-Typen `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`. Es lehnt ohne Kürzung mit Status 422 und ohne Code in dieser Reihenfolge ab:
+
+| Bedingung | Nachricht |
+| --- | --- |
+| Formular nicht lesbar | Send the message as multipart form data. |
+| Mehr als 4 Dateien | Attach at most 4 files. |
+| Kein Dateiteil oder nicht unterstützter MIME-Typ | Attach PNG, JPEG, WebP or GIF images, or PDFs. |
+| Eine Datei über `5 * 1024 * 1024` Byte | Each attachment must be 5 MB or smaller. |
+| Zusammen über `10 * 1024 * 1024` Byte | Attachments must be 10 MB or smaller together. |
+| Dateiname über 255 UTF-16-Einheiten | An attachment's file name must be at most 255 characters. |
+
+`buildChatRequest(message: string, options?: { hasAttachments?: boolean })` lässt die reine Textanfrage standardmäßig unverändert; mit `hasAttachments: true` hängt es eine Leerzeile und `prompts/chat-attachments.md` an. Übergeben Sie die eingelesenen Dateien als Modellanhänge `{ kind, mediaType: file.type, data: file }`, wie im Leitfaden. Der Prompt nutzt Referenzen für die angeforderte Änderung und ersetzt das ganze Template nur bei leerem Inhalt oder ausdrücklicher Aufforderung; Bilder werden Platzhalter.
+
+Die Konformitätssuiten senden bei aktiven Chat-Anhängen ein 1×1-PNG; die Protokollsuite erwartet außerdem 422 bei fünf Anhängen. Der Verlauf speichert nur `{ name, kind }` im optionalen `attachments` der Benutzernachricht; die Dateiaufbewahrung bestimmt das Backend.
 
 ## Testen
 
@@ -167,9 +187,8 @@ Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Alt-Tex
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }`, oder Multipart mit wiederholten `attachment`-Dateiteilen | SSE |
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
-| `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
 | `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |

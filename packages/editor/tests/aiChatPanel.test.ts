@@ -23,7 +23,7 @@ const CONTENT = {
 const off = {
   chat: false,
   fixFinding: false,
-  design: false,
+  chatAttachments: false,
   rewrite: false,
 } as const;
 
@@ -347,5 +347,208 @@ describe("AiChatPanel", () => {
     await flushPromises();
 
     expect(feature.messages.value).toEqual([]);
+  });
+});
+
+const attachment = (name = "shot.png", size = 1, type = "image/png") =>
+  new File([new Uint8Array(size)], name, { type });
+async function pick(
+  wrapper: Awaited<ReturnType<typeof setup>>["wrapper"],
+  files: File[],
+) {
+  const input = wrapper.get('[data-testid="ai-chat-files"]');
+  Object.defineProperty(input.element, "files", {
+    configurable: true,
+    value: files,
+  });
+  await input.trigger("change");
+}
+describe("chat attachment controls", () => {
+  it("opens its picker, shows removable chips and clears them when sending", async () => {
+    const chat = vi.fn(async () => ({ messageId: null, text: "OK" }));
+    const { wrapper } = await setup({ chat, chatAttachments: true });
+    const input = wrapper.get('[data-testid="ai-chat-files"]');
+    const click = vi.spyOn(input.element as HTMLInputElement, "click");
+    await wrapper.get('[aria-label="Attach files"]').trigger("click");
+    expect(click).toHaveBeenCalledOnce();
+    expect(input.attributes("accept")).toBe(
+      "image/png,image/jpeg,image/webp,image/gif,application/pdf",
+    );
+    expect(input.attributes()).toHaveProperty("multiple");
+    await pick(wrapper, [
+      attachment(),
+      attachment("plan.pdf", 1, "application/pdf"),
+    ]);
+    expect(
+      wrapper
+        .findAll('[data-testid="ai-chat-attachment"]')
+        .map((c) => c.text()),
+    ).toEqual(["shot.png", "plan.pdf"]);
+    expect(wrapper.text()).toContain(
+      "Pictures come in as placeholders. Replace them after the import.",
+    );
+    await wrapper.get('[aria-label="Remove shot.png"]').trigger("click");
+    await wrapper.get('[data-testid="ai-chat-input"]').setValue("Use the PDF");
+    await wrapper.get('[data-testid="ai-chat-send"]').trigger("click");
+    await flushPromises();
+    expect(chat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({ name: "plan.pdf", kind: "pdf" }),
+        ],
+      }),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(
+      0,
+    );
+    expect(
+      wrapper.get('[data-testid="ai-chat-history-attachment"]').text(),
+    ).toBe("plan.pdf");
+  });
+  it("uses a counter for file drags, ignores text drags and attaches drops", async () => {
+    const { wrapper } = await setup({
+      chat: vi.fn(async () => ({ messageId: null, text: "" })),
+      chatAttachments: true,
+    });
+    const panel = wrapper.get('[data-testid="ai-chat-dropzone"]');
+    await panel.trigger("dragenter", {
+      dataTransfer: { types: ["text/plain"] },
+    });
+    expect(wrapper.find('[data-testid="ai-chat-drop-hint"]').exists()).toBe(
+      false,
+    );
+    const dataTransfer = { types: ["Files"], files: [attachment()] };
+    await panel.trigger("dragenter", { dataTransfer });
+    await panel.trigger("dragenter", { dataTransfer });
+    await panel.trigger("dragleave", { dataTransfer });
+    expect(wrapper.get('[data-testid="ai-chat-drop-hint"]').text()).toBe(
+      "Drop images or PDFs to attach them",
+    );
+    await panel.trigger("drop", { dataTransfer });
+    expect(wrapper.find('[data-testid="ai-chat-drop-hint"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.get('[data-testid="ai-chat-attachment"]').text()).toBe(
+      "shot.png",
+    );
+  });
+  it.each([
+    [
+      [attachment("bad.txt", 1, "text/plain")],
+      "bad.txt isn't an image or a PDF.",
+    ],
+    [
+      [attachment("large.png", 5 * 1024 * 1024 + 1)],
+      "large.png is larger than 5 MB.",
+    ],
+    [
+      Array.from({ length: 5 }, (_, i) => attachment(`${i}.png`)),
+      "Attach at most 4 files.",
+    ],
+    [
+      [
+        attachment("a", 5 * 1024 * 1024),
+        attachment("b", 5 * 1024 * 1024),
+        attachment("c"),
+      ],
+      "Attachments can be at most 10 MB together.",
+    ],
+  ])(
+    "announces validation errors %# and clears them on the next attach",
+    async (files, message) => {
+      const { wrapper } = await setup({
+        chat: vi.fn(async () => ({ messageId: null, text: "" })),
+        chatAttachments: true,
+      });
+      await pick(wrapper, files as File[]);
+      expect(wrapper.get('[aria-live="polite"]').text()).toContain(message);
+      await pick(wrapper, []);
+      expect(wrapper.get('[aria-live="polite"]').text()).toBe("");
+    },
+  );
+  it("hides all attachment controls when support is false", async () => {
+    const { wrapper } = await setup({
+      chat: vi.fn(async () => ({ messageId: null, text: "" })),
+      chatAttachments: false,
+    });
+    expect(wrapper.find('[aria-label="Attach files"]').exists()).toBe(false);
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false);
+  });
+  it("disables attachment controls and ignores drops while busy", async () => {
+    const { wrapper, feature } = await setup({
+      chat: vi.fn(async () => ({ messageId: null, text: "" })),
+      chatAttachments: true,
+    });
+    await pick(wrapper, [attachment()]);
+    feature.busy.value = true;
+    await nextTick();
+    expect(
+      wrapper.get('[aria-label="Attach files"]').attributes(),
+    ).toHaveProperty("disabled");
+    expect(
+      wrapper.get('[aria-label="Remove shot.png"]').attributes(),
+    ).toHaveProperty("disabled");
+    expect(wrapper.get('input[type="file"]').attributes()).toHaveProperty(
+      "disabled",
+    );
+    await wrapper
+      .get('[data-testid="ai-chat-dropzone"]')
+      .trigger("drop", {
+        dataTransfer: { types: ["Files"], files: [attachment("other.png")] },
+      });
+    expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(
+      1,
+    );
+  });
+  it("restores files together with the failed prompt", async () => {
+    const { wrapper } = await setup({
+      chat: async () => {
+        throw new SdkError("offline", 502, "ai_provider_error");
+      },
+      chatAttachments: true,
+    });
+    await pick(wrapper, [attachment()]);
+    await wrapper.get('[data-testid="ai-chat-input"]').setValue("Use this");
+    await wrapper.get('[data-testid="ai-chat-send"]').trigger("click");
+    await flushPromises();
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Use this",
+    );
+    expect(wrapper.get('[data-testid="ai-chat-attachment"]').text()).toBe(
+      "shot.png",
+    );
+  });
+  it("consumes the import queue on mount and later without overwriting text or sending", async () => {
+    const chat = vi.fn(async () => ({ messageId: null, text: "" }));
+    const { wrapper, feature } = await setup({ chat, chatAttachments: true });
+    feature.startImport([attachment()]);
+    await flushPromises();
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Build this email from the attached design.",
+    );
+    expect(feature.importQueue.value).toEqual([]);
+    await wrapper.get("textarea").setValue("Keep my text");
+    feature.startImport([attachment("more.png")]);
+    await flushPromises();
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Keep my text",
+    );
+    expect(chat).not.toHaveBeenCalled();
+    wrapper.unmount();
+    feature.startImport([attachment("mount.png")]);
+    const remount = mountEditor(AiChatPanel, {
+      props: { feature },
+      provides: { [TRANSLATIONS_KEY]: await loadTranslations("en") },
+    });
+    await flushPromises();
+    expect((remount.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Build this email from the attached design.",
+    );
+    expect(remount.get('[data-testid="ai-chat-attachment"]').text()).toBe(
+      "mount.png",
+    );
+    expect(chat).not.toHaveBeenCalled();
   });
 });

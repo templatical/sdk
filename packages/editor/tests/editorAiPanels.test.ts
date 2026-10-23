@@ -31,7 +31,7 @@ async function mountWithAi(extra: Record<string, unknown> = {}) {
         ai: {
           chat: vi.fn(async () => ({ messageId: null, text: "Hi." })),
           fixFinding: false,
-          design: false,
+          chatAttachments: false,
           rewrite: false,
         },
         ...extra,

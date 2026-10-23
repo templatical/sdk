@@ -32,7 +32,39 @@ function lastTopLevelId(content: TemplateContent): string | null {
  */
 export const AI_RECORDINGS: AiMockScript = {
   delayMs: 40,
+  chatAttachments: true,
   chat: [
+    {
+      match: /attached design/i,
+      events: (request) => [
+        text("Building the template from your design."),
+        {
+          type: "operations",
+          ops: [
+            {
+              op: "setContent",
+              content: {
+                blocks: [
+                  createTitleBlock({
+                    content: "<p>Built from your design</p>",
+                  }),
+                  createParagraphBlock({
+                    content: "<p>A short introduction, as in the image.</p>",
+                  }),
+                  createButtonBlock({
+                    text: "Learn more",
+                    url: "https://example.com",
+                  }),
+                ],
+                settings: request.content.settings,
+              },
+            },
+          ],
+        },
+        text(" Done: a title, a paragraph and a button."),
+        done,
+      ],
+    },
     {
       match: /fail|error/i,
       events: [
@@ -143,32 +175,6 @@ export const AI_RECORDINGS: AiMockScript = {
           done,
         ];
   },
-  design: (request) => [
-    text("Building the template from your design."),
-    {
-      type: "operations",
-      ops: [
-        {
-          op: "setContent",
-          content: {
-            blocks: [
-              createTitleBlock({ content: "<p>Built from your design</p>" }),
-              createParagraphBlock({
-                content: "<p>A short introduction, as in the image.</p>",
-              }),
-              createButtonBlock({
-                text: "Learn more",
-                url: "https://example.com",
-              }),
-            ],
-            settings: request.content.settings,
-          },
-        },
-      ],
-    },
-    text(" Done: a title, a paragraph and a button."),
-    done,
-  ],
   altText: (request) => [
     { type: "done", alt: "Shop new arrivals".slice(0, request.maxLength) },
   ],

@@ -868,7 +868,7 @@ defineExpose({
          configured; the sidebar's own chunk loads the first time it opens. -->
     <CommentsPanel v-if="comments?.isAvailable.value" :feature="comments" />
 
-    <!-- The AI panels: chat and design share the right gutter with
+    <!-- The AI chat panel shares the right gutter with
          comments, one at a time (D18). -->
     <AiPanels v-if="ai" :feature="ai" />
 

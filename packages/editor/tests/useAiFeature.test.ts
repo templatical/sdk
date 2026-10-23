@@ -48,7 +48,7 @@ async function settle(): Promise<void> {
 const off = {
   chat: false,
   fixFinding: false,
-  design: false,
+  chatAttachments: false,
   rewrite: false,
 } as const;
 
@@ -135,7 +135,11 @@ describe("useAiFeature without collaboration", () => {
       return {
         editor,
         ai: useAiFeature({
-          provider: { ...off, chat: chatting(() => {}) } as AiProvider,
+          provider: {
+            ...off,
+            chat: chatting(() => {}),
+            chatAttachments: true,
+          } as AiProvider,
           editor,
           collaboration: null,
           history: () => history,
@@ -149,9 +153,13 @@ describe("useAiFeature without collaboration", () => {
     })!;
 
     expect(ai.capability.isFeatureEnabled("chat")).toBe(false);
+    expect(ai.has("chatAttachments")).toBe(false);
+    expect(ai.capability.isFeatureEnabled("chatAttachments")).toBe(false);
     await editor.load("tpl-1");
     expect(ai.capability.isFeatureEnabled("chat")).toBe(true);
     expect(ai.capability.isFeatureEnabled("rewrite")).toBe(false);
+    expect(ai.has("chatAttachments")).toBe(true);
+    expect(ai.capability.isFeatureEnabled("chatAttachments")).toBe(true);
   });
 
   it("sends the snapshot, the session and the merge tags, and names a selected block in the snapshot", async () => {
@@ -170,6 +178,7 @@ describe("useAiFeature without collaboration", () => {
         mergeTags: { syntax: "liquid", tags: MERGE_TAGS.tags },
         message: "Make it bold",
         selectedBlockId: "p1",
+        attachments: [],
       },
       expect.any(Object),
       expect.any(AbortSignal),
@@ -469,7 +478,8 @@ describe("useAiFeature with a conversation (D14)", () => {
     }));
     const { ai, editor } = await openLocal({
       chat: chatting(() => {}),
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: vi.fn(async () => stored),
         clear: false,
         undo,
@@ -593,14 +603,33 @@ describe("useAiFeature with collaboration", () => {
   });
 
   it("applies alt text as the user's AI batch with one collaboration undo and no chat", async () => {
-    const { ai, editor, collaboration, submitted } = await openCollaborative({});
-    editor.addBlock({ id: "i", type: "image", src: "https://example.com/i.png", alt: "Old", decorative: true } as never);
+    const { ai, editor, collaboration, submitted } = await openCollaborative(
+      {},
+    );
+    editor.addBlock({
+      id: "i",
+      type: "image",
+      src: "https://example.com/i.png",
+      alt: "Old",
+      decorative: true,
+    } as never);
     await settle();
     const before = safeClone(editor.content.value);
     submitted.length = 0;
     await ai.applyAltTexts([{ blockId: "i", alt: "Shop", decorative: false }]);
     await settle();
-    expect(submitted).toEqual([expect.objectContaining({ origin: "ai", ops: [{ op: "updateBlock", blockId: "i", set: { alt: "Shop", decorative: false } }] })]);
+    expect(submitted).toEqual([
+      expect.objectContaining({
+        origin: "ai",
+        ops: [
+          {
+            op: "updateBlock",
+            blockId: "i",
+            set: { alt: "Shop", decorative: false },
+          },
+        ],
+      }),
+    ]);
     expect(ai.messages.value).toEqual([]);
     collaboration.history.undo();
     await settle();
@@ -643,7 +672,8 @@ describe("useAiFeature with collaboration", () => {
       applied: { batchId: string; revision: number };
     }>();
     const { ai, editor, collaboration } = await openCollaborative({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo: () => response.promise,
@@ -775,7 +805,8 @@ describe("useAiFeature fix round 1", () => {
       }>();
       const replay = vi.fn(() => response.promise);
       const { ai, editor } = await openLocal({
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () => [persistedMessage("same-id", direction === "redo")],
           clear: false,
           undo: direction === "undo" ? replay : false,
@@ -804,7 +835,8 @@ describe("useAiFeature fix round 1", () => {
 
   it("keeps chat history when only the template name changes (generation guard)", async () => {
     const { ai, editor } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo: false,
@@ -821,7 +853,8 @@ describe("useAiFeature fix round 1", () => {
   it("discards delayed remote replay after reloading the same template (R1)", async () => {
     const response = deferred<{ operations: Operation[]; replayId: string }>();
     const { ai, editor } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo: () => response.promise,
@@ -848,7 +881,8 @@ describe("useAiFeature fix round 1", () => {
     }>();
     const { ai, editor, reload } = await openLocal(
       {
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () => [persistedMessage()],
           clear: false,
           undo: () => response.promise,
@@ -922,7 +956,7 @@ describe("useAiFeature fix round 1", () => {
     });
   });
 
-  it.each(["chat", "fixFinding", "design"] as const)(
+  it.each(["chat", "fixFinding"] as const)(
     "marks %s stopped during its final server reload as unsuccessful",
     async (feature) => {
       const { editor, history, scope } = await openLocal({});
@@ -930,7 +964,11 @@ describe("useAiFeature fix round 1", () => {
       const reload = vi.fn(() => reloaded.promise);
       const onError = vi.fn();
       const complete = async (_request: unknown, on: AiTurnHandlers) => {
-        on.onApplied({ batchId: "server-final", revision: 2, operationCount: 1 });
+        on.onApplied({
+          batchId: "server-final",
+          revision: 2,
+          operationCount: 1,
+        });
         return { messageId: null, text: "Applied on the server." };
       };
       const ai = scope.run(() =>
@@ -949,18 +987,13 @@ describe("useAiFeature fix round 1", () => {
       const pending =
         feature === "chat"
           ? ai.send("Change the template")
-          : feature === "design"
-            ? ai.design({
-                file: new Blob(["png"], { type: "image/png" }),
-                prompt: null,
-              })
-            : ai.fix({
-                ruleId: "a11y.text-all-caps",
-                message: "All caps.",
-                suggestion: "Use sentence case.",
-                reference: "https://docs.templatical.com/quality/",
-                blockId: "t1",
-              });
+          : ai.fix({
+              ruleId: "a11y.text-all-caps",
+              message: "All caps.",
+              suggestion: "Use sentence case.",
+              reference: "https://docs.templatical.com/quality/",
+              blockId: "t1",
+            });
       await settle();
       expect(reload).toHaveBeenCalledTimes(1);
       expect(ai.busy.value).toBe(true);
@@ -1026,7 +1059,8 @@ describe("useAiFeature fix round 1", () => {
         "Done.",
         "saved-turn",
       ),
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [],
         clear: false,
         undo: false,
@@ -1046,7 +1080,7 @@ describe("useAiFeature fix round 1", () => {
     });
   });
 
-  it.each(["comments", "design"] as const)(
+  it.each(["comments"] as const)(
     "stops a running chat when opening %s (R4)",
     async (destination) => {
       const commentsOpen = ref(false);
@@ -1064,13 +1098,12 @@ describe("useAiFeature fix round 1", () => {
       const turn = ai.send("Working");
       await settle();
       if (destination === "comments") commentsOpen.value = true;
-      else ai.open("design");
       await nextTick();
       const abortedByTransition = received?.aborted;
       ai.stop();
       await turn;
       expect(abortedByTransition).toBe(true);
-      expect(ai.panel.value).toBe(destination === "comments" ? null : "design");
+      expect(ai.panel.value).toBe(null);
       expect(onError).not.toHaveBeenCalled();
     },
   );
@@ -1091,7 +1124,8 @@ describe("useAiFeature fix round 1", () => {
     }));
     const { ai, editor } = await openLocal({
       chat,
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: () => history.promise,
         clear: false,
         undo,
@@ -1127,7 +1161,8 @@ describe("useAiFeature fix round 1", () => {
     const chat = chatting(() => {});
     const { ai } = await openLocal({
       chat,
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: () => history.promise,
         clear: false,
         undo: false,
@@ -1164,7 +1199,13 @@ describe("useAiFeature fix round 1", () => {
         })
         .mockResolvedValueOnce([persistedMessage()]);
       const { ai } = await openLocal({
-        conversation: { settleReplay: async () => {}, list, clear: false, undo: false, redo: false },
+        conversation: {
+          settleReplay: async () => {},
+          list,
+          clear: false,
+          undo: false,
+          redo: false,
+        },
       });
       ai.open("chat");
       await settle();
@@ -1181,7 +1222,8 @@ describe("useAiFeature fix round 1", () => {
   it("invalidates a pending history list when chat is cleared (R5)", async () => {
     const history = deferred<AiChatMessage[]>();
     const { ai } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: () => history.promise,
         clear: async () => {},
         undo: false,
@@ -1203,7 +1245,13 @@ describe("useAiFeature fix round 1", () => {
       .mockImplementationOnce(() => stale.promise)
       .mockResolvedValue([persistedMessage("new-history")]);
     const { ai, editor } = await openLocal({
-      conversation: { settleReplay: async () => {}, list, clear: false, undo: false, redo: false },
+      conversation: {
+        settleReplay: async () => {},
+        list,
+        clear: false,
+        undo: false,
+        redo: false,
+      },
     });
     ai.open("chat");
     await editor.load("tpl-1");
@@ -1233,7 +1281,8 @@ describe("useAiFeature fix round 1", () => {
           persisted = true;
           throw error;
         },
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () =>
             persisted
               ? [messageWithBatch("failed-stored", "failed-batch")]
@@ -1292,7 +1341,8 @@ describe("useAiFeature fix round 1", () => {
         );
         throw first ? firstError : secondError;
       },
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [...persisted],
         clear: false,
         undo: async () => ({ operations: [], replayId: "replay" }),
@@ -1327,7 +1377,8 @@ describe("useAiFeature fix round 1", () => {
           persisted = true;
           return waitForStop(signal);
         },
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () =>
             persisted ? [messageWithBatch("stopped-stored", "server")] : [],
           clear: false,
@@ -1360,7 +1411,8 @@ describe("useAiFeature fix round 1", () => {
 
   it("offers only the supported direction on stored messages (R7)", async () => {
     const { ai } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [
           persistedMessage("done"),
           persistedMessage("undone", true),
@@ -1386,7 +1438,8 @@ describe("useAiFeature fix round 1", () => {
 
   it("recomputes both replay flags after Undo and Redo (R7)", async () => {
     const { ai } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo: async () => ({ operations: greet, replayId: "replay" }),
@@ -1418,7 +1471,8 @@ describe("useAiFeature fix round 1", () => {
         "Done",
         "remote-only",
       ),
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [],
         clear: false,
         undo: false,
@@ -1492,7 +1546,8 @@ describe("useAiFeature fix round 2", () => {
     const response = deferred<{ operations: Operation[]; replayId: string }>();
     const undo = vi.fn(() => response.promise);
     const { ai, editor } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo,
@@ -1523,7 +1578,8 @@ describe("useAiFeature fix round 2", () => {
     });
     const { ai, editor } = await openLocal({
       chat,
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [],
         clear: () => cleared.promise,
         undo: false,
@@ -1557,7 +1613,8 @@ describe("useAiFeature fix round 2", () => {
     let serverCleared = false;
     const list = vi.fn(async () => (serverCleared ? [] : oldRead.promise));
     const { ai } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list,
         clear: async () => {
           await cleared.promise;
@@ -1643,7 +1700,8 @@ describe("useAiFeature fix round 2", () => {
           persisted = true;
           throw new SdkError("Partial failure", 502, "ai_provider_error");
         },
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () =>
             persisted
               ? [
@@ -1751,7 +1809,8 @@ describe("useAiFeature fix round 2", () => {
           applied = true;
           throw error;
         },
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list,
           clear: false,
           undo: async () => ({ operations: greet, replayId: "replay" }),
@@ -1809,7 +1868,8 @@ describe("useAiFeature fix round 2", () => {
     const { ai } = await openAiSession(
       {
         chat,
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () => [persistedMessage()],
           clear: false,
           undo: () => response.promise,
@@ -1851,7 +1911,8 @@ describe("useAiFeature fix round 2", () => {
   it("stops a pending replay and ignores its eventual operations (lane Stop)", async () => {
     const response = deferred<{ operations: Operation[]; replayId: string }>();
     const { ai, editor, onError } = await openLocal({
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () => [persistedMessage()],
         clear: false,
         undo: () => response.promise,
@@ -1881,7 +1942,8 @@ describe("useAiFeature fix round 2", () => {
         persisted = true;
         throw new SdkError("Local partial failure", 502, "ai_provider_error");
       },
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async () =>
           persisted ? [messageWithBatch("other-session", "unknown-batch")] : [],
         clear: false,
@@ -1922,15 +1984,20 @@ describe("useAiFeature fix round 3", () => {
       }));
       const { ai, editor, onError } = await openAiSession(
         {
-          conversation: { settleReplay: async () => {},
+          conversation: {
+            settleReplay: async () => {},
             list: async () => [
               persistedMessage("replayed", direction === "redo"),
             ],
             clear: false,
             undo:
-              direction === "undo" ? remote : async () => ({ operations: [], replayId: "replay" }),
+              direction === "undo"
+                ? remote
+                : async () => ({ operations: [], replayId: "replay" }),
             redo:
-              direction === "redo" ? remote : async () => ({ operations: [], replayId: "replay" }),
+              direction === "redo"
+                ? remote
+                : async () => ({ operations: [], replayId: "replay" }),
           },
         },
         async (id) =>
@@ -1993,7 +2060,16 @@ describe("useAiFeature fix round 3", () => {
       return { messageId: "b-new", text: "B reply" };
     });
     const { ai, editor } = await openLocal(
-      { chat, conversation: { settleReplay: async () => {}, list, clear: false, undo: false, redo: false } },
+      {
+        chat,
+        conversation: {
+          settleReplay: async () => {},
+          list,
+          clear: false,
+          undo: false,
+          redo: false,
+        },
+      },
       { reload: vi.fn() },
     );
     ai.open("chat");
@@ -2033,7 +2109,8 @@ describe("useAiFeature fix round 3", () => {
         partial = true;
         throw new SdkError("Unresolved A failure", 502, "ai_provider_error");
       },
-      conversation: { settleReplay: async () => {},
+      conversation: {
+        settleReplay: async () => {},
         list: async (id) => {
           if (id === "tpl-2") return [persistedMessage("b-row")];
           if (partial && !aCleared) throw new Error("A recovery unavailable");
@@ -2121,7 +2198,8 @@ describe("useAiFeature fix round 4", () => {
     let loads = 0;
     const { ai, editor, onError } = await openAiSession(
       {
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list,
           clear: false,
           undo,
@@ -2187,7 +2265,8 @@ describe("useAiFeature fix round 4", () => {
     }));
     const { ai, editor, onError } = await openAiSession(
       {
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list,
           clear: false,
           undo,
@@ -2232,76 +2311,163 @@ describe("useAiFeature fix round 4", () => {
 });
 
 describe("final fix: replay settlement", () => {
-  it.each([true, false])("settles the actual application result %s inside the lane", async (accept) => {
-    const finished = deferred<void>();
-    const settleReplay = vi.fn(() => finished.promise);
-    const { ai, editor, onError } = await openLocal({ conversation: {
-      list: async () => [persistedMessage()], clear: false, redo: false, settleReplay,
-      undo: async () => ({ replayId: "r1", operations: accept ? greet : [{ op: "updateBlock", blockId: "t1", set: { content: "x" }, expect: { content: "changed" } }] }),
-    } });
-    ai.open("chat"); await settle();
-    const replay = ai.undoMessage("persisted"); await settle();
-    expect(settleReplay).toHaveBeenCalledWith("tpl-1", "persisted", { replayId: "r1", direction: "undo", applied: accept, sessionId: expect.any(String) });
-    expect(ai.busy.value).toBe(true);
-    finished.resolve(); await replay;
-    expect(ai.messages.value.at(-1)?.undone).toBe(accept);
-    expect(editor.content.value.blocks[0]).toMatchObject({ content: accept ? "<p>Hello</p>" : "<p>Hi</p>" });
-    expect(onError).toHaveBeenCalledTimes(accept ? 0 : 1);
-  });
+  it.each([true, false])(
+    "settles the actual application result %s inside the lane",
+    async (accept) => {
+      const finished = deferred<void>();
+      const settleReplay = vi.fn(() => finished.promise);
+      const { ai, editor, onError } = await openLocal({
+        conversation: {
+          list: async () => [persistedMessage()],
+          clear: false,
+          redo: false,
+          settleReplay,
+          undo: async () => ({
+            replayId: "r1",
+            operations: accept
+              ? greet
+              : [
+                  {
+                    op: "updateBlock",
+                    blockId: "t1",
+                    set: { content: "x" },
+                    expect: { content: "changed" },
+                  },
+                ],
+          }),
+        },
+      });
+      ai.open("chat");
+      await settle();
+      const replay = ai.undoMessage("persisted");
+      await settle();
+      expect(settleReplay).toHaveBeenCalledWith("tpl-1", "persisted", {
+        replayId: "r1",
+        direction: "undo",
+        applied: accept,
+        sessionId: expect.any(String),
+      });
+      expect(ai.busy.value).toBe(true);
+      finished.resolve();
+      await replay;
+      expect(ai.messages.value.at(-1)?.undone).toBe(accept);
+      expect(editor.content.value.blocks[0]).toMatchObject({
+        content: accept ? "<p>Hello</p>" : "<p>Hi</p>",
+      });
+      expect(onError).toHaveBeenCalledTimes(accept ? 0 : 1);
+    },
+  );
   it("reports settlement failure while retaining the applied local direction", async () => {
     const error = new Error("Settlement failed");
-    const { ai, editor, onError } = await openLocal({ conversation: {
-      list: async () => [persistedMessage()], clear: false, redo: false,
-      undo: async () => ({ operations: greet, replayId: "r1" }),
-      settleReplay: async () => { throw error; },
-    } });
-    ai.open("chat"); await settle(); await ai.undoMessage("persisted");
-    expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Hello</p>" });
-    expect(ai.messages.value.at(-1)).toMatchObject({ undone: true, canRedo: false });
+    const { ai, editor, onError } = await openLocal({
+      conversation: {
+        list: async () => [persistedMessage()],
+        clear: false,
+        redo: false,
+        undo: async () => ({ operations: greet, replayId: "r1" }),
+        settleReplay: async () => {
+          throw error;
+        },
+      },
+    });
+    ai.open("chat");
+    await settle();
+    await ai.undoMessage("persisted");
+    expect(editor.content.value.blocks[0]).toMatchObject({
+      content: "<p>Hello</p>",
+    });
+    expect(ai.messages.value.at(-1)).toMatchObject({
+      undone: true,
+      canRedo: false,
+    });
     expect(onError).toHaveBeenCalledWith(error);
   });
   it("does not settle an abandoned session's late replay", async () => {
     const response = deferred<{ operations: Operation[]; replayId: string }>();
     const settleReplay = vi.fn(async () => {});
-    const { ai, editor } = await openLocal({ conversation: {
-      list: async () => [persistedMessage()], clear: false, redo: false, settleReplay,
-      undo: () => response.promise,
-    } });
-    ai.open("chat"); await settle();
-    const pending = ai.undoMessage("persisted"); await settle();
+    const { ai, editor } = await openLocal({
+      conversation: {
+        list: async () => [persistedMessage()],
+        clear: false,
+        redo: false,
+        settleReplay,
+        undo: () => response.promise,
+      },
+    });
+    ai.open("chat");
+    await settle();
+    const pending = ai.undoMessage("persisted");
+    await settle();
     await editor.load("tpl-2");
-    response.resolve({ operations: greet, replayId: "r1" }); await pending;
+    response.resolve({ operations: greet, replayId: "r1" });
+    await pending;
     expect(settleReplay).not.toHaveBeenCalled();
     expect(editor.content.value).toEqual(CONTENT);
   });
   it("never settles a server-applied replay", async () => {
     const settleReplay = vi.fn(async () => {});
-    const { ai, reload } = await openLocal({ conversation: {
-      list: async () => [persistedMessage()], clear: false, redo: false, settleReplay,
-      undo: async () => ({ applied: { batchId: "b", revision: 3 } }),
-    } }, { reload: async () => {} });
-    ai.open("chat"); await settle(); await ai.undoMessage("persisted");
+    const { ai, reload } = await openLocal(
+      {
+        conversation: {
+          list: async () => [persistedMessage()],
+          clear: false,
+          redo: false,
+          settleReplay,
+          undo: async () => ({ applied: { batchId: "b", revision: 3 } }),
+        },
+      },
+      { reload: async () => {} },
+    );
+    ai.open("chat");
+    await settle();
+    await ai.undoMessage("persisted");
     expect(reload).toHaveBeenCalled();
     expect(settleReplay).not.toHaveBeenCalled();
   });
 });
 
 it("undoes a stored merge-tag paragraph turn over the HTTP wire with editor normalization", async () => {
-  const handle = createReferenceHandler({ async *stream({ messages }) {
-    if (messages.at(-1)?.role === "tool") { yield { type: "text", text: "Done" }; return; }
-    yield { type: "tool-call", id: "tags", name: "apply_operations", input: { ops: JSON.stringify([{ op: "updateBlock", blockId: "p1", set: { content: "<p>Hello {{first_name}}</p>" } }]) } };
-  } });
-  vi.stubGlobal("fetch", (input: string, init: RequestInit) => handle(new Request(input, init)));
+  const handle = createReferenceHandler({
+    async *stream({ messages }) {
+      if (messages.at(-1)?.role === "tool") {
+        yield { type: "text", text: "Done" };
+        return;
+      }
+      yield {
+        type: "tool-call",
+        id: "tags",
+        name: "apply_operations",
+        input: {
+          ops: JSON.stringify([
+            {
+              op: "updateBlock",
+              blockId: "p1",
+              set: { content: "<p>Hello {{first_name}}</p>" },
+            },
+          ]),
+        },
+      };
+    },
+  });
+  vi.stubGlobal("fetch", (input: string, init: RequestInit) =>
+    handle(new Request(input, init)),
+  );
   try {
     const provider = createHttpAiProvider({ baseUrl: "https://example.test" });
     const { ai, editor, onError } = await openLocal(provider);
     const turn = await ai.send("Greet the reader");
     expect(turn.operationCount).toBe(1);
-    expect((editor.content.value.blocks[1] as { content: string }).content).toContain('data-merge-tag="{{first_name}}"');
+    expect(
+      (editor.content.value.blocks[1] as { content: string }).content,
+    ).toContain('data-merge-tag="{{first_name}}"');
     await ai.undoMessage(turn.messageId!);
-    expect(editor.content.value.blocks[1]).toMatchObject({ content: "<p>Body</p>" });
+    expect(editor.content.value.blocks[1]).toMatchObject({
+      content: "<p>Body</p>",
+    });
     expect(ai.messages.value.at(-1)?.undone).toBe(true);
-    expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(true);
+    expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(
+      true,
+    );
     expect(onError).not.toHaveBeenCalled();
   } finally {
     vi.unstubAllGlobals();
@@ -2313,7 +2479,10 @@ it("pre-checks UTF-8 content bytes before send reaches a provider", async () => 
   const { ai, editor } = await openLocal({ chat });
   editor.updateBlock("p1", { content: "é".repeat(100_000) } as never);
   await ai.send("Hi");
-  expect(ai.failure.value?.error).toMatchObject({ code: "content_too_large", statusCode: 413 });
+  expect(ai.failure.value?.error).toMatchObject({
+    code: "content_too_large",
+    statusCode: 413,
+  });
   expect(chat).not.toHaveBeenCalled();
 });
 
@@ -2333,53 +2502,115 @@ it("reloads a stopped HTTP turn after its buffered applied fact arrives", async 
       .map((event) => `data: ${JSON.stringify(event)}\n\n`)
       .join(""),
   );
-  vi.stubGlobal("fetch", async () => new Response(new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } })));
+  vi.stubGlobal(
+    "fetch",
+    async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        }),
+      ),
+  );
   try {
-    const http = createHttpAiProvider({ baseUrl: "https://example.test", features: { conversation: false } });
+    const http = createHttpAiProvider({
+      baseUrl: "https://example.test",
+      features: { conversation: false },
+    });
     let stop = () => {};
-    const { ai, reload, editor, onError } = await openLocal({ chat: (request, on, signal) => (http.chat as Exclude<AiProvider["chat"], false>)(request, { ...on, onText: (text) => { on.onText(text); stop(); } }, signal) }, { reload: async () => {} });
+    const { ai, reload, editor, onError } = await openLocal(
+      {
+        chat: (request, on, signal) =>
+          (http.chat as Exclude<AiProvider["chat"], false>)(
+            request,
+            {
+              ...on,
+              onText: (text) => {
+                on.onText(text);
+                stop();
+              },
+            },
+            signal,
+          ),
+      },
+      { reload: async () => {} },
+    );
     stop = ai.stop;
     await ai.send("Change background");
     // The already-received fact can finish draining after Stop releases send.
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
     expect(editor.content.value).toEqual(CONTENT);
-    expect(ai.messages.value.at(-1)).toMatchObject({ operationCount: 1, status: "done" });
+    expect(ai.messages.value.at(-1)).toMatchObject({
+      operationCount: 1,
+      status: "done",
+    });
     expect(onError).not.toHaveBeenCalled();
-  } finally { vi.unstubAllGlobals(); }
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("replays a mock merge-tag turn with guarded Redo and refuses a later user edit", async () => {
-  const provider = createMockAiProvider({ conversation: true, chat: [{ events: [
-    { type: "operations", ops: [{ op: "updateBlock", blockId: "p1", set: { content: "<p>Hello {{first_name}}</p>" } }] },
-    { type: "done", messageId: null },
-  ] }] });
+  const provider = createMockAiProvider({
+    conversation: true,
+    chat: [
+      {
+        events: [
+          {
+            type: "operations",
+            ops: [
+              {
+                op: "updateBlock",
+                blockId: "p1",
+                set: { content: "<p>Hello {{first_name}}</p>" },
+              },
+            ],
+          },
+          { type: "done", messageId: null },
+        ],
+      },
+    ],
+  });
   const { ai, editor, onError } = await openLocal(provider);
   const turn = await ai.send("Greet");
   await ai.undoMessage(turn.messageId!);
-  expect(editor.content.value.blocks[1]).toMatchObject({ content: "<p>Body</p>" });
+  expect(editor.content.value.blocks[1]).toMatchObject({
+    content: "<p>Body</p>",
+  });
   await ai.redoMessage(turn.messageId!);
   expect(ai.messages.value.at(-1)?.undone).toBe(false);
   expect(onError).not.toHaveBeenCalled();
   await ai.undoMessage(turn.messageId!);
   editor.updateBlock("p1", { content: "<p>User edit</p>" } as never);
   await ai.redoMessage(turn.messageId!);
-  expect(editor.content.value.blocks[1]).toMatchObject({ content: "<p>User edit</p>" });
-  expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(true);
+  expect(editor.content.value.blocks[1]).toMatchObject({
+    content: "<p>User edit</p>",
+  });
+  expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(
+    true,
+  );
 });
 
-it.each(["stop", "close"] as const)("releases the lane on %s even when a provider ignores abort", async (action) => {
-  const pending = deferred<{ messageId: string | null; text: string }>();
-  const { ai } = await openLocal({ chat: () => pending.promise });
-  let done = false;
-  const turn = ai.send("Waiting").then(() => { done = true; });
-  await settle();
-  ai[action]();
-  await settle();
-  expect(done).toBe(true);
-  expect(ai.busy.value).toBe(false);
-  pending.resolve({ messageId: null, text: "Late" });
-  await turn;
-});
+it.each(["stop", "close"] as const)(
+  "releases the lane on %s even when a provider ignores abort",
+  async (action) => {
+    const pending = deferred<{ messageId: string | null; text: string }>();
+    const { ai } = await openLocal({ chat: () => pending.promise });
+    let done = false;
+    const turn = ai.send("Waiting").then(() => {
+      done = true;
+    });
+    await settle();
+    ai[action]();
+    await settle();
+    expect(done).toBe(true);
+    expect(ai.busy.value).toBe(false);
+    pending.resolve({ messageId: null, text: "Late" });
+    await turn;
+  },
+);
 
 it("serializes a late server fact's reload ahead of the next turn", async () => {
   const waiting = deferred<{ messageId: string | null; text: string }>();
@@ -2387,33 +2618,54 @@ it("serializes a late server fact's reload ahead of the next turn", async () => 
   let handlers!: AiTurnHandlers;
   let calls = 0;
   const chat = vi.fn(async (_request, on: AiTurnHandlers) => {
-    if (calls++ === 0) { handlers = on; return waiting.promise; }
+    if (calls++ === 0) {
+      handlers = on;
+      return waiting.promise;
+    }
     return { messageId: null, text: "Next" };
   });
-  const { ai, reload, onError } = await openLocal({ chat }, { reload: async () => {} });
+  const { ai, reload, onError } = await openLocal(
+    { chat },
+    { reload: async () => {} },
+  );
   reload.mockImplementation(() => loaded.promise);
-  const first = ai.send("First"); await settle(); ai.stop(); await first;
+  const first = ai.send("First");
+  await settle();
+  ai.stop();
+  await first;
   handlers.onApplied({ batchId: "late", revision: 3, operationCount: 1 });
-  const next = ai.send("Next"); await settle();
+  const next = ai.send("Next");
+  await settle();
   expect(reload).toHaveBeenCalledTimes(1);
   expect(chat).toHaveBeenCalledTimes(1);
   expect(ai.busy.value).toBe(true);
   ai.stop();
-  loaded.resolve(); await next;
+  loaded.resolve();
+  await next;
   expect(onError).not.toHaveBeenCalled();
   waiting.resolve({ messageId: null, text: "Ignored" });
 });
 
 it("ignores settlement errors after the requesting session was abandoned", async () => {
   const settled = deferred<void>();
-  const { ai, editor, onError } = await openLocal({ conversation: {
-    list: async () => [persistedMessage()], clear: false, redo: false,
-    undo: async () => ({ operations: greet, replayId: "r" }), settleReplay: () => settled.promise,
-  } });
-  ai.open("chat"); await settle();
-  const replay = ai.undoMessage("persisted"); await settle();
-  await editor.load("tpl-2"); await replay; await settle();
-  settled.reject(new Error("Old session settlement failed")); await settle();
+  const { ai, editor, onError } = await openLocal({
+    conversation: {
+      list: async () => [persistedMessage()],
+      clear: false,
+      redo: false,
+      undo: async () => ({ operations: greet, replayId: "r" }),
+      settleReplay: () => settled.promise,
+    },
+  });
+  ai.open("chat");
+  await settle();
+  const replay = ai.undoMessage("persisted");
+  await settle();
+  await editor.load("tpl-2");
+  await replay;
+  await settle();
+  settled.reject(new Error("Old session settlement failed"));
+  await settle();
   expect(ai.messages.value.at(-1)?.undone).toBe(false);
   expect(editor.content.value).toEqual(CONTENT);
   expect(onError).not.toHaveBeenCalled();
@@ -2423,21 +2675,33 @@ it("reloads again when another applied fact arrives during stopped-turn cleanup"
   const firstReload = deferred<Template>();
   const firstContent = safeClone(CONTENT);
   const latestContent = safeClone(CONTENT);
-  Object.assign(firstContent.blocks[0], { content: "<p>First server revision</p>" });
-  Object.assign(latestContent.blocks[0], { content: "<p>Latest server revision</p>" });
+  Object.assign(firstContent.blocks[0], {
+    content: "<p>First server revision</p>",
+  });
+  Object.assign(latestContent.blocks[0], {
+    content: "<p>Latest server revision</p>",
+  });
   let handlers!: AiTurnHandlers;
   let loads = 0;
-  const { ai, editor } = await openAiSession({ chat: async (_request, on, signal) => {
-    handlers = on;
-    on.onApplied({ batchId: "a", revision: 1, operationCount: 1 });
-    return waitForStop(signal);
-  } }, async (id) => {
-    loads++;
-    if (loads === 1) return { id, content: safeClone(CONTENT) };
-    if (loads === 2) return firstReload.promise;
-    return { id, content: latestContent };
-  });
-  const turn = ai.send("Server turn"); await settle(); ai.stop(); await settle();
+  const { ai, editor } = await openAiSession(
+    {
+      chat: async (_request, on, signal) => {
+        handlers = on;
+        on.onApplied({ batchId: "a", revision: 1, operationCount: 1 });
+        return waitForStop(signal);
+      },
+    },
+    async (id) => {
+      loads++;
+      if (loads === 1) return { id, content: safeClone(CONTENT) };
+      if (loads === 2) return firstReload.promise;
+      return { id, content: latestContent };
+    },
+  );
+  const turn = ai.send("Server turn");
+  await settle();
+  ai.stop();
+  await settle();
   expect(loads).toBe(2);
   handlers.onApplied({ batchId: "b", revision: 2, operationCount: 1 });
   firstReload.resolve({ id: "tpl-1", content: firstContent });
@@ -2447,70 +2711,266 @@ it("reloads again when another applied fact arrives during stopped-turn cleanup"
   expect(ai.busy.value).toBe(false);
 });
 
-
 describe("useAiFeature alt text", () => {
-  const image = { id: "i", type: "image", src: "https://example.com/i.png", alt: "Old", decorative: true } as const;
+  const image = {
+    id: "i",
+    type: "image",
+    src: "https://example.com/i.png",
+    alt: "Old",
+    decorative: true,
+  } as const;
   it("sends the effective limit, image context and template locale without becoming busy", async () => {
     const requests: unknown[] = [];
-    const { ai, editor } = await openLocal({ altText: async (request, signal) => { signal.throwIfAborted(); requests.push(request); return { alt: "Shop arrivals" }; } }, { altMaxLength: () => effectiveAltMaxLength(resolveLintOptions({ lint: { accessibility: { thresholds: { altMaxLength: 60 } } } })) });
-    editor.setContent({ ...CONTENT, blocks: [safeClone(image)], settings: { ...CONTENT.settings, locale: "de-DE" } } as TemplateContent);
+    const { ai, editor } = await openLocal(
+      {
+        altText: async (request, signal) => {
+          signal.throwIfAborted();
+          requests.push(request);
+          return { alt: "Shop arrivals" };
+        },
+      },
+      {
+        altMaxLength: () =>
+          effectiveAltMaxLength(
+            resolveLintOptions({
+              lint: { accessibility: { thresholds: { altMaxLength: 60 } } },
+            }),
+          ),
+      },
+    );
+    editor.setContent({
+      ...CONTENT,
+      blocks: [safeClone(image)],
+      settings: { ...CONTENT.settings, locale: "de-DE" },
+    } as TemplateContent);
     const draft = ai.draftAltText("i");
     expect(ai.busy.value).toBe(false);
     expect(await draft).toBe("Shop arrivals");
-    expect(requests).toEqual([{ templateId: "tpl-1", sessionId: expect.any(String), blockId: "i", image: { url: image.src }, currentAlt: null, linkHref: null, nearbyText: "", locale: "de-DE", maxLength: 60 }]);
+    expect(requests).toEqual([
+      {
+        templateId: "tpl-1",
+        sessionId: expect.any(String),
+        blockId: "i",
+        image: { url: image.src },
+        currentAlt: null,
+        linkHref: null,
+        nearbyText: "",
+        locale: "de-DE",
+        maxLength: 60,
+      },
+    ]);
     expect(ai.messages.value).toEqual([]);
     expect(editor.content.value.blocks[0]).toEqual(image);
   });
   it("applies all image fields in one undo step and leaves no chat history", async () => {
     const { ai, editor, history } = await openLocal({});
-    editor.setContent({ ...CONTENT, blocks: [safeClone(image), { ...image, id: "i2", decorative: false }] } as TemplateContent);
+    editor.setContent({
+      ...CONTENT,
+      blocks: [safeClone(image), { ...image, id: "i2", decorative: false }],
+    } as TemplateContent);
     const before = safeClone(editor.content.value);
     const record = vi.spyOn(history, "record");
-    await ai.applyAltTexts([{ blockId: "i", alt: "Arrivals", decorative: false }, { blockId: "i2", alt: "", decorative: true }]);
-    expect(editor.content.value.blocks).toMatchObject([{ alt: "Arrivals", decorative: false }, { alt: "", decorative: true }]);
+    await ai.applyAltTexts([
+      { blockId: "i", alt: "Arrivals", decorative: false },
+      { blockId: "i2", alt: "", decorative: true },
+    ]);
+    expect(editor.content.value.blocks).toMatchObject([
+      { alt: "Arrivals", decorative: false },
+      { alt: "", decorative: true },
+    ]);
     expect(record).toHaveBeenCalledTimes(1);
     expect(ai.messages.value).toEqual([]);
     history.undo();
     expect(editor.content.value).toEqual(before);
   });
-  it.each(["switch", "destroy", "stop"] as const)("aborts every pending independent draft on %s", async action => {
-    const signals: AbortSignal[] = [];
-    const { ai, editor } = await openLocal({ altText: async (_r, signal) => { signals.push(signal); return new Promise(() => {}); } });
-    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
-    const controller = new AbortController();
-    const first = ai.draftAltText("i", controller.signal);
-    const second = ai.draftAltText("i", controller.signal);
-    const outcomes = Promise.allSettled([first, second]);
-    expect(signals).toHaveLength(2);
-    expect(signals[0]).not.toBe(signals[1]);
-    expect(ai.busy.value).toBe(false);
-    if (action === "switch") await editor.load("tpl-2");
-    else if (action === "destroy") ai.destroy();
-    else controller.abort();
-    expect(signals.every(s => s.aborted)).toBe(true);
-    expect((await outcomes).map(r => r.status)).toEqual(["rejected", "rejected"]);
-  });
+  it.each(["switch", "destroy", "stop"] as const)(
+    "aborts every pending independent draft on %s",
+    async (action) => {
+      const signals: AbortSignal[] = [];
+      const { ai, editor } = await openLocal({
+        altText: async (_r, signal) => {
+          signals.push(signal);
+          return new Promise(() => {});
+        },
+      });
+      editor.setContent({
+        ...CONTENT,
+        blocks: [safeClone(image)],
+      } as TemplateContent);
+      const controller = new AbortController();
+      const first = ai.draftAltText("i", controller.signal);
+      const second = ai.draftAltText("i", controller.signal);
+      const outcomes = Promise.allSettled([first, second]);
+      expect(signals).toHaveLength(2);
+      expect(signals[0]).not.toBe(signals[1]);
+      expect(ai.busy.value).toBe(false);
+      if (action === "switch") await editor.load("tpl-2");
+      else if (action === "destroy") ai.destroy();
+      else controller.abort();
+      expect(signals.every((s) => s.aborted)).toBe(true);
+      expect((await outcomes).map((r) => r.status)).toEqual([
+        "rejected",
+        "rejected",
+      ]);
+    },
+  );
   it("reports draft failures through onError", async () => {
     const error = new SdkError("Unavailable", 502, "ai_provider_error");
-    const { ai, editor, onError } = await openLocal({ altText: async () => { throw error; } });
-    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
+    const { ai, editor, onError } = await openLocal({
+      altText: async () => {
+        throw error;
+      },
+    });
+    editor.setContent({
+      ...CONTENT,
+      blocks: [safeClone(image)],
+    } as TemplateContent);
     await expect(ai.draftAltText("i")).rejects.toBe(error);
     expect(onError).toHaveBeenCalledWith(error);
   });
   it("drafting does not occupy the fix lane, but apply waits behind a turn", async () => {
     let finish!: () => void;
-    const { ai, editor } = await openLocal({ altText: async () => new Promise(() => {}), chat: chatting(() => new Promise<void>(resolve => { finish = resolve; })) });
-    editor.setContent({ ...CONTENT, blocks: [safeClone(image)] } as TemplateContent);
+    const { ai, editor } = await openLocal({
+      altText: async () => new Promise(() => {}),
+      chat: chatting(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      ),
+    });
+    editor.setContent({
+      ...CONTENT,
+      blocks: [safeClone(image)],
+    } as TemplateContent);
     const draft = ai.draftAltText("i").catch(() => {});
     const turn = ai.send("Wait");
     await settle();
-    const apply = ai.applyAltTexts([{ blockId: "i", alt: "New", decorative: false }]);
+    const apply = ai.applyAltTexts([
+      { blockId: "i", alt: "New", decorative: false },
+    ]);
     expect(editor.content.value.blocks[0]).toMatchObject({ alt: "Old" });
     finish();
     await turn;
     await apply;
-    expect(editor.content.value.blocks[0]).toMatchObject({ alt: "New", decorative: false });
+    expect(editor.content.value.blocks[0]).toMatchObject({
+      alt: "New",
+      decorative: false,
+    });
     ai.destroy();
     await draft;
+  });
+});
+
+describe("chat attachments and import queue", () => {
+  it("passes blobs and stores only attachment metadata on user items", async () => {
+    const chat = chatting(() => {});
+    const { ai } = await openLocal({ chat, chatAttachments: true });
+    const files = [
+      new File(["image"], "shot.png", { type: "image/png" }),
+      new File(["pdf"], "plan.pdf", { type: "application/pdf" }),
+    ];
+    await ai.send("Use these", files);
+    expect(chat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attachments: [
+          { file: files[0], kind: "image", name: "shot.png" },
+          { file: files[1], kind: "pdf", name: "plan.pdf" },
+        ],
+      }),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(ai.messages.value.map((item) => item.attachments)).toEqual([
+      [
+        { name: "shot.png", kind: "image" },
+        { name: "plan.pdf", kind: "pdf" },
+      ],
+      [],
+    ]);
+  });
+  it("restores a failed turn's text and files and clears both on retry", async () => {
+    const files = [new File(["image"], "shot.png", { type: "image/png" })];
+    let failed = true;
+    const { ai } = await openLocal({
+      chat: async () => {
+        if (failed) throw new SdkError("offline", 502, "ai_provider_error");
+        return { text: "Done", messageId: null };
+      },
+      chatAttachments: true,
+    });
+    await ai.send("Use this", files);
+    expect(ai.failedPrompt.value).toBe("Use this");
+    expect(ai.failedAttachments.value).toEqual(files);
+    failed = false;
+    await ai.send("Retry", files);
+    expect(ai.failedPrompt.value).toBe(null);
+    expect(ai.failedAttachments.value).toEqual([]);
+  });
+  it("maps history metadata and defaults absent metadata to an empty array", async () => {
+    const { ai } = await openLocal({
+      chat: chatting(() => {}),
+      conversation: {
+        list: async () => [
+          {
+            id: "u",
+            role: "user",
+            kind: "chat",
+            text: "Reference",
+            attachments: [{ name: "shot.png", kind: "image" }],
+            batches: [],
+            undone: false,
+            createdAt: "2026-10-23T00:00:00Z",
+          },
+          {
+            id: "a",
+            role: "assistant",
+            kind: "chat",
+            text: "OK",
+            batches: [],
+            undone: false,
+            createdAt: "2026-10-23T00:00:00Z",
+          },
+        ],
+        clear: false,
+        undo: false,
+        redo: false,
+        settleReplay: async () => {},
+      },
+    });
+    ai.open("chat");
+    await settle();
+    expect(ai.messages.value.map((item) => item.attachments)).toEqual([
+      [{ name: "shot.png", kind: "image" }],
+      [],
+    ]);
+  });
+  it.each([
+    [true, true],
+    [false, false],
+  ])(
+    "gates attachment support and import on %s",
+    async (chatAttachments, expected) => {
+      const chat = chatting(() => {});
+      const { ai } = await openLocal({ chat, chatAttachments });
+      const files = [new File(["x"], "ref.png", { type: "image/png" })];
+      expect(ai.has("chatAttachments")).toBe(expected);
+      expect(ai.capability.isFeatureEnabled("chatAttachments")).toBe(expected);
+      ai.startImport(files);
+      expect(ai.panel.value).toBe(expected ? "chat" : null);
+      expect(ai.importQueue.value).toEqual(expected ? files : []);
+      expect(chat).not.toHaveBeenCalled();
+    },
+  );
+  it("requires chat and a loaded template for attachment support", async () => {
+    const { ai, editor } = await openLocal({
+      chat: false,
+      chatAttachments: true,
+    });
+    expect(ai.has("chatAttachments")).toBe(false);
+    ai.capability.startImport([new File(["x"], "x.png")]);
+    expect(ai.panel.value).toBe(null);
+    editor.state.template = null;
+    expect(ai.has("chatAttachments")).toBe(false);
   });
 });

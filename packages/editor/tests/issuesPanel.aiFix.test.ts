@@ -101,7 +101,12 @@ async function setup(
           return { messageId: null, text: "Fixed." };
         };
     const ai = useAiFeature({
-      provider: { chat: false, fixFinding, rewrite: false, design: false },
+      provider: {
+        chat: false,
+        fixFinding,
+        rewrite: false,
+        chatAttachments: false,
+      },
       editor,
       history: () => history,
       collaboration: null,

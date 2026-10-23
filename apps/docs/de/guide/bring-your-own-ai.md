@@ -18,7 +18,6 @@ import {
   buildAltTextRequest,
   checkAltText,
   buildChatRequest,
-  buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
@@ -55,8 +54,7 @@ export async function handle(request: Request): Promise<Response> {
 
   switch (read.route) {
     case 'generate':
-    case 'fixFinding':
-    case 'generateFromDesign': {
+    case 'fixFinding': {
       const turn = read;
       return aiEventStream(async (stream) => {
         await runEditingTurn({
@@ -68,13 +66,11 @@ export async function handle(request: Request): Promise<Response> {
             selectedBlockId: turn.route === 'generate' ? turn.body.selectedBlockId : null,
             request:
               turn.route === 'generate'
-                ? buildChatRequest(turn.body.message)
-                : turn.route === 'fixFinding'
-                  ? buildFixRequest(turn.body.finding)
-                  : buildDesignRequest(turn.body.prompt),
-            ...(turn.route === 'generateFromDesign'
-              ? { attachments: [{ kind: turn.body.fileKind, mediaType: turn.body.file.type, data: turn.body.file }] }
-              : {}),
+                ? buildChatRequest(turn.body.message, { hasAttachments: turn.body.attachments.length > 0 })
+                : buildFixRequest(turn.body.finding),
+            attachments: turn.route === 'generate'
+              ? turn.body.attachments.map(({ kind, file }) => ({ kind, mediaType: file.type, data: file }))
+              : [],
           },
           model,
           write: stream.send,
@@ -117,30 +113,30 @@ export async function handle(request: Request): Promise<Response> {
 
 Schalten Sie im Editor passend dazu den gespeicherten Verlauf aus: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. Um den Verlauf zu speichern, bewahren Sie die Nachrichten jedes Durchlaufs und `result.batches[].inverse` auf (letzter Batch zuerst) und implementieren Sie die Gesprächsrouten einschließlich `settleReplay`, wie unter [Verlauf](/de/backend/ai#verlauf) beschrieben. Prüfen Sie bei jeder KI-Route, auch bei Gesprächsrouten, ob die angemeldete Person auf die Template-ID und Nachrichten-IDs zugreifen darf.
 
-Setzen Sie im Framework ein Limit für den gesamten Request-Body: etwa 6 MB mit Design-Uploads, sonst etwa 300 kB. Das Kit prüft Inhalt und Dateigröße nach dem Einlesen; das Framework-Limit begrenzt das Puffern.
+Die Generate-Route akzeptiert JSON ohne Anhänge und Multipart mit Anhängen. Setzen Sie im Framework ein Limit für den gesamten Request-Body über 10 MB zuzüglich 200.000 Byte Template-Inhalt und Multipart-Overhead; ohne Chat-Anhänge genügen etwa 300 kB. Das Kit prüft Inhalt und Dateigröße nach dem Einlesen; das Framework-Limit begrenzt das Puffern.
 
 ## Modell-Adapter
 
 Jeder Adapter übersetzt die neutralen Nachrichten und Tools des Kits für ein SDK und zurück. Installieren Sie nur das SDK, das Sie verwenden.
 
-OpenAI und Vercel unterstützen Chat, Fix, Umformulieren und Alt-Text; Anthropic ergänzt Design. Alle drei Adapter unterstützen `image-url`-Anhänge. Blob-Anhänge für Design bleiben auf Anthropic beschränkt. Verwenden Sie für OpenAI oder Vercel diese Client-Konfiguration, die Design zu Template und den gespeicherten Gesprächsverlauf ausschaltet:
+Alle drei Adapter unterstützen Chat, Fix, Umformulieren und Alt-Text sowie `image-url`-Anhänge für Alt-Text. Nur das Anthropic-Beispiel übergibt Bild- und PDF-Blobs im Chat. Die Chat-Beispiele für OpenAI und Vercel unterstützen nur Text; setzen Sie `chatAttachments: false` und schalten Sie den gespeicherten Gesprächsverlauf aus:
 
 | Adapter | Features | Anhänge |
 | --- | --- | --- |
 | OpenAI | Chat, Fix, Umformulieren, Alt-Text | Bild-URL |
 | Vercel AI SDK | Chat, Fix, Umformulieren, Alt-Text | Bild-URL |
-| Anthropic | Chat, Fix, Umformulieren, Alt-Text, Design | Bild-URL, Bild-Blob, PDF-Blob |
+| Anthropic | Chat, Fix, Umformulieren, Alt-Text | Bild-URL, Bild-Blob, PDF-Blob |
 
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  features: { design: false, conversation: false },
+  features: { chatAttachments: false, conversation: false },
 });
 ```
 
-Für Design zu Template verwenden Sie das [Anthropic-Beispiel](#anthropic), das Bild- und PDF-Anhänge an das Modell weitergibt.
+Für Chat-Anhänge verwenden Sie das [Anthropic-Beispiel](#anthropic), das Bild- und PDF-Blobs an das Modell weitergibt. Die Import-Verknüpfung nutzt dieselbe Chat-Route; nach der Dateiauswahl sendet die Person die vorausgefüllte Anfrage selbst.
 
 ### Vercel AI SDK
 
@@ -162,7 +158,7 @@ export const model: AiModelAdapter = {
           : m.role === 'assistant'
             ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
             : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
-                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                 return { type: 'image' as const, image: new URL(a.url) };
               })] },
       ),
@@ -201,7 +197,7 @@ export const model: AiModelAdapter = {
               : m.role === 'assistant'
                 ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
                 : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
-                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Disable design.');
+                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
                     return { type: 'image_url' as const, image_url: { url: a.url } };
                   })] },
           ),
@@ -301,7 +297,7 @@ import { model } from './model';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, design: false }, // adapters without design
+  features: { conversation: false, chatAttachments: false }, // adapters without Blob attachments
 });
 const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
 console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
@@ -316,3 +312,5 @@ Die KI läuft bei Ihrem Provider unter Ihren Vereinbarungen mit ihm. Templatical
 ## Andere Sprachen
 
 Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai-kit#das-protokoll) und liest Prompts, Schemas und Testsatz aus den Paketdateien (`prompts/*.md`, `schema/*.json`, `eval/*.json`), die Sie kopieren können. Nur `eval/` enthält `MANIFEST.sha256`. `runAiWireConformance` prüft es von Node aus.
+
+Der Chat kann auf Anfrage eine E-Mail direkt im Template als einen rückgängig machbaren Durchlauf übersetzen, ohne Prüfung aller Felder oder Merge-Tags. Die Absatz-Vorgabe `translate` bleibt verfügbar. Die Übersetzung ganzer Sprachversionen gehört zur Lokalisierung.

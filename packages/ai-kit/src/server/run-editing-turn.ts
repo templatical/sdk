@@ -24,11 +24,11 @@ export interface EditingTurnRequest {
   revision?: number | null;
   mergeTags: AiMergeTags | null;
   selectedBlockId: string | null;
-  /** `buildChatRequest`, `buildFixRequest` or `buildDesignRequest`. */
+  /** `buildChatRequest` or `buildFixRequest`. */
   request: string;
   /** Earlier messages of the conversation, if you keep them. */
   history?: AiModelMessage[];
-  /** A design turn's image or PDF. */
+  /** A chat turn's attachments. */
   attachments?: AiModelAttachment[];
   limits?: Partial<EditingSessionLimits>;
   locks?: readonly NamedLock[];

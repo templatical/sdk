@@ -647,7 +647,7 @@ export interface TemplaticalEditorConfig {
   /**
    * Your AI backend: a chat that edits the template with Undo, rewrite in the
    * paragraph toolbar, static localized chat starters and
-   * design-to-template. One member per feature; `false` leaves it out and the
+   * chat attachments. One member per feature; `false` leaves it out and the
    * editor hides its entry point:
    *
    * ```ts
@@ -1648,7 +1648,7 @@ export type {
   AiChatRequest,
   AiAltTextRequest,
   AiConversationProvider,
-  AiDesignRequest,
+  AiChatAttachment,
   AiFeatureName,
   AiFixFinding,
   AiFixRequest,

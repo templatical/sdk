@@ -8,7 +8,7 @@ import type {
 import {
   ALT_TEXT_INSTRUCTIONS,
   CHAT_REQUEST,
-  DESIGN_REQUEST,
+  CHAT_ATTACHMENTS,
   EDITING_RULES,
   FIX_REQUEST,
   FIX_RULE_GUIDANCE,
@@ -22,7 +22,7 @@ import { fill } from "./fill";
 import { flattenMergeTags } from "./merge-tags";
 
 /**
- * The system prompt of chat, fix and design turns: the rules
+ * The system prompt of chat and fix turns: the rules
  * (`prompts/editing.md`), the operation vocabulary (`prompts/operations.md`)
  * and the content schema (`schema/template-content.schema.json`), joined as
  * below. Static, so a provider can cache it with the tool definition.
@@ -31,13 +31,6 @@ export const editingInstructions = `${EDITING_RULES}\n\n# Operations\n\n${OPERAT
 
 /** The rewrite system prompt (`prompts/rewrite.md`). */
 export const rewriteInstructions = REWRITE_INSTRUCTIONS;
-/**
- * The design request (`prompts/design.md`), with `{notes}` for the user's
- * prompt. A design turn runs with `editingInstructions` as its system prompt
- * and this as its request, the image or PDF attached.
- */
-export const designInstructions = DESIGN_REQUEST;
-
 /** What each rewrite preset asks for (`prompts/rewrite-presets.json`). */
 export const REWRITE_PRESET_INSTRUCTIONS: Readonly<
   Record<AiRewritePreset, string>
@@ -60,7 +53,7 @@ export interface EditingPromptInput {
   revision?: number | null;
   mergeTags: AiMergeTags | null;
   selectedBlockId: string | null;
-  /** `buildChatRequest`, `buildFixRequest` or `buildDesignRequest`. */
+  /** `buildChatRequest` or `buildFixRequest`. */
   request: string;
 }
 
@@ -91,8 +84,14 @@ export function buildEditingPrompt(input: EditingPromptInput): string {
   ].join("\n");
 }
 
-export function buildChatRequest(message: string): string {
-  return fill(CHAT_REQUEST, { message });
+export function buildChatRequest(
+  message: string,
+  options?: { hasAttachments?: boolean },
+): string {
+  return (
+    fill(CHAT_REQUEST, { message }) +
+    (options?.hasAttachments ? `\n\n${CHAT_ATTACHMENTS}` : "")
+  );
 }
 
 export function buildFixRequest(finding: AiFixFinding): string {
@@ -105,12 +104,6 @@ export function buildFixRequest(finding: AiFixFinding): string {
     message: finding.message,
     suggestion: finding.suggestion,
     block: finding.blockId ?? "the whole template",
-  });
-}
-
-export function buildDesignRequest(prompt: string | null): string {
-  return fill(DESIGN_REQUEST, {
-    notes: prompt !== null && prompt.trim() !== "" ? prompt : "none",
   });
 }
 

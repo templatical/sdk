@@ -34,20 +34,17 @@ export interface AiConformanceOptions {
   timeoutMs?: number;
   /** An optional shorter call limit; every call is also bounded by `timeoutMs`. */
   callTimeoutMs?: number;
-  /** The design turn's file; a 1×1 PNG by default. */
-  design?: { file: Blob; fileKind: "image" | "pdf" };
 }
 
-const FEATURES: AiFeatureName[] = [
+const FEATURES: Exclude<AiFeatureName, "chatAttachments">[] = [
   "chat",
   "fixFinding",
-  "design",
   "rewrite",
   "altText",
 ];
 
 /** A 1×1 transparent PNG. */
-function tinyPng(): Blob {
+export function tinyPng(): Blob {
   const base64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
   const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
@@ -196,7 +193,12 @@ export async function runAiProviderConformance(
     const chat = provider.chat;
     probes.chat = (signal) =>
       chat(
-        { ...base(), message: "Make the button green", selectedBlockId: null },
+        {
+          ...base(),
+          message: "Make the button green",
+          selectedBlockId: null,
+          attachments: [],
+        },
         createStandInEditor(editor.content).handlers(),
         signal,
       );
@@ -208,6 +210,7 @@ export async function runAiProviderConformance(
           message:
             "Change the headline to 'Hello there' and keep the first name in it",
           selectedBlockId: null,
+          attachments: [],
         },
         handlers,
         signal,
@@ -269,25 +272,34 @@ export async function runAiProviderConformance(
         ok: typeof result?.text === "string",
       }));
   }
-  if (typeof provider.design === "function") {
-    const design = provider.design;
-    const file = options.design ?? {
-      file: tinyPng(),
-      fileKind: "image" as const,
-    };
-    probes.design = (signal) =>
-      design(
-        { ...base(), prompt: null, ...file },
-        createStandInEditor(editor.content).handlers(),
+  if (
+    provider.chatAttachments === true &&
+    typeof provider.chat === "function"
+  ) {
+    const chat = provider.chat;
+    const result = await call("chatAttachments", (signal) =>
+      chat(
+        {
+          ...base(),
+          message: "Use this reference",
+          selectedBlockId: null,
+          attachments: [
+            { file: tinyPng(), kind: "image", name: "reference.png" },
+          ],
+        },
+        editor.handlers(),
         signal,
-      );
-    const result = await call("design", (signal) =>
-      design({ ...base(), prompt: null, ...file }, editor.handlers(), signal),
+      ),
     );
     if (result !== NO_RESULT)
-      await add("design: answers", () => ({
-        ok: typeof result?.text === "string",
+      await add("chatAttachments: answers", () => ({
+        ok: typeof result?.text === "string" && result.text.trim() !== "",
       }));
+  } else {
+    await add("chatAttachments: off", () => ({
+      ok: true,
+      detail: "skipped: chatAttachments or chat is false",
+    }));
   }
 
   await add("operations apply cleanly to the snapshot", () => ({

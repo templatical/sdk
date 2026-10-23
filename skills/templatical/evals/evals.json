@@ -126,6 +126,12 @@
       "prompt": "Scaffold Templatical in our React app. We use pnpm. Propose the install before editing.",
       "expected_output": "Proposes @templatical/editor and @templatical/quality as direct app dependencies, using pnpm add. Explains that quality enables the Issues panel and lint badges and lets the user decline it. Explains that quality installs by default as an optional dependency; leaving it out is supported, with the editor working and the Issues tab hidden. Does not add vue, tailwindcss or @templatical/core, and adds renderer or pusher-js only if their feature is requested. Names the files and mount point, then waits for approval before editing.",
       "files": []
+    },
+    {
+      "id": 22,
+      "prompt": "Our Templatical editor uses our own AI backend. Add screenshot and PDF import, and make chat accept image references without sending until the author is ready.",
+      "expected_output": "Routes through providers.md and the authoritative backend/ai, api/ai-kit and guide/bring-your-own-ai pages. Uses chat with the boolean flag chatAttachments: true; the flag has an effect only when chat is a function. Requires a loaded template, PNG/JPEG/WebP/GIF/PDF only, at most 4 files, each at most 5 MB and at most 10 MB together. Explains multipart generate, placeholder pictures, metadata-only history and author-initiated send after the import picker. Text-only adapters declare chatAttachments: false. Names runAiWireConformance as the self-check.",
+      "files": []
     }
   ]
 }

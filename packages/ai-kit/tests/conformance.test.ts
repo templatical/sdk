@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AiProvider } from "../src";
 import { createHttpAiProvider } from "../src/client";
-import { AI_RECORDINGS, createMockAiProvider, runAiProviderConformance } from "../src/testing";
+import {
+  AI_RECORDINGS,
+  createMockAiProvider,
+  runAiProviderConformance,
+} from "../src/testing";
 import { createReferenceHandler } from "./helpers/reference-server";
 import { serve } from "./helpers/serve";
 
@@ -13,21 +17,28 @@ const disabled: AiProvider = {
   altText: false,
   chat: false,
   fixFinding: false,
-  design: false,
+  chatAttachments: false,
   rewrite: false,
 };
 const assistant = {
-  id: "a-1", role: "assistant", kind: "chat", text: "Done.",
+  id: "a-1",
+  role: "assistant",
+  kind: "chat",
+  text: "Done.",
   batches: [{ batchId: "b-1", revision: null, operationCount: 1 }],
-  undone: false, createdAt: "2026-10-21T00:00:00Z",
+  undone: false,
+  createdAt: "2026-10-21T00:00:00Z",
 };
 
 async function within<T>(pending: Promise<T>, ms = 200): Promise<T | null> {
   let timer: ReturnType<typeof setTimeout>;
   try {
-    return await Promise.race([pending, new Promise<null>((resolve) => {
-      timer = setTimeout(() => resolve(null), ms);
-    })]);
+    return await Promise.race([
+      pending,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
   } finally {
     clearTimeout(timer!);
   }
@@ -57,40 +68,72 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
   });
   it("bounds a chat promise that never settles and aborts its signal", async () => {
     let signal: AbortSignal | undefined;
-    const report = await within(runAiProviderConformance({
-      ...disabled,
-      chat: (_request, _handlers, received) => {
-        signal ??= received;
-        return new Promise(() => {});
-      },
-    }, { timeoutMs: 20, callTimeoutMs: 20 }));
+    const report = await within(
+      runAiProviderConformance(
+        {
+          ...disabled,
+          chat: (_request, _handlers, received) => {
+            signal ??= received;
+            return new Promise(() => {});
+          },
+        },
+        { timeoutMs: 20, callTimeoutMs: 20 },
+      ),
+    );
     expect(report).not.toBeNull();
-    expect(report?.checks.find((check) => check.name === "chat: answers")).toMatchObject({
-      ok: false, detail: expect.stringMatching(/chat.*20 ms/),
+    expect(
+      report?.checks.find((check) => check.name === "chat: answers"),
+    ).toMatchObject({
+      ok: false,
+      detail: expect.stringMatching(/chat.*20 ms/),
     });
     expect(signal?.aborted).toBe(true);
-    expect(report?.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
+    expect(report?.checks.at(-1)?.name).toBe(
+      "errors are SdkErrors with known codes",
+    );
   });
 
   it("bounds conversation.list even though it receives no signal", async () => {
-    const report = await within(runAiProviderConformance({
-      ...disabled,
-      conversation: { settleReplay: async () => {},
-        list: () => new Promise(() => {}),
-        undo: false, redo: false, clear: false,
-      },
-    }, { timeoutMs: 20, callTimeoutMs: 20 }));
+    const report = await within(
+      runAiProviderConformance(
+        {
+          ...disabled,
+          conversation: {
+            settleReplay: async () => {},
+            list: () => new Promise(() => {}),
+            undo: false,
+            redo: false,
+            clear: false,
+          },
+        },
+        { timeoutMs: 20, callTimeoutMs: 20 },
+      ),
+    );
     expect(report).not.toBeNull();
-    expect(report?.checks.find((check) => check.name === "conversation.list: answers")).toMatchObject({
-      ok: false, detail: expect.stringMatching(/conversation.list.*20 ms/),
+    expect(
+      report?.checks.find(
+        (check) => check.name === "conversation.list: answers",
+      ),
+    ).toMatchObject({
+      ok: false,
+      detail: expect.stringMatching(/conversation.list.*20 ms/),
     });
-    expect(report?.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
+    expect(report?.checks.at(-1)?.name).toBe(
+      "errors are SdkErrors with known codes",
+    );
   });
 
   it("fails the abort check of a rewrite-only provider that ignores its signal", async () => {
-    const report = await runAiProviderConformance({ ...disabled, rewrite: async () => ({ html: "<p>Rewritten.</p>" }) }, { timeoutMs: 20 });
+    const report = await runAiProviderConformance(
+      { ...disabled, rewrite: async () => ({ html: "<p>Rewritten.</p>" }) },
+      { timeoutMs: 20 },
+    );
     expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "rewrite: stops on abort with an AbortError")).toMatchObject({ ok: false, detail: expect.stringContaining("resolved") });
+    expect(
+      report.checks.find(
+        (check) => check.name === "rewrite: stops on abort with an AbortError",
+      ),
+    ).toMatchObject({ ok: false, detail: expect.stringContaining("resolved") });
   });
 
   it("reports a rewrite result without html as a failed check", async () => {
@@ -100,7 +143,9 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
     });
     expect(report.ok).toBe(false);
     expect(
-      report.checks.find((check) => check.name === "rewrite: answers with html"),
+      report.checks.find(
+        (check) => check.name === "rewrite: answers with html",
+      ),
     ).toMatchObject({
       ok: false,
       detail: expect.stringContaining("undefined"),
@@ -108,7 +153,9 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
   });
 
   it("probes abort for all declared features without changing valid passes", async () => {
-    const report = await runAiProviderConformance(createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0 }));
+    const report = await runAiProviderConformance(
+      createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0 }),
+    );
     expect(report.ok).toBe(true);
     expect(
       report.checks
@@ -117,7 +164,6 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
     ).toEqual([
       ["chat: stops on abort with an AbortError", true],
       ["fixFinding: stops on abort with an AbortError", true],
-      ["design: stops on abort with an AbortError", true],
       ["rewrite: stops on abort with an AbortError", true],
       ["altText: stops on abort with an AbortError", true],
     ]);
@@ -156,67 +202,122 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
       },
     });
     expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "chat: streams text and resolves with it")).toMatchObject({
-      ok: false, detail: expect.stringContaining("number"),
+    expect(
+      report.checks.find(
+        (check) => check.name === "chat: streams text and resolves with it",
+      ),
+    ).toMatchObject({
+      ok: false,
+      detail: expect.stringContaining("number"),
     });
     expect(
       report.checks.find((check) => check.name === "rewrite: answers with html")
         ?.ok,
     ).toBe(true);
-    expect(report.checks.at(-1)).toMatchObject({ name: "errors are SdkErrors with known codes", ok: true });
+    expect(report.checks.at(-1)).toMatchObject({
+      name: "errors are SdkErrors with known codes",
+      ok: true,
+    });
   });
 
-  it.each([null, undefined, false, 0])("reports a malformed resolved chat result %#", async (result) => {
-    const report = await runAiProviderConformance({
-      ...disabled,
-      chat: async (_request, _handlers, signal) => {
-        signal.throwIfAborted();
-        return result as never;
-      },
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "chat: streams text and resolves with it")?.ok).toBe(false);
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
-  });
+  it.each([null, undefined, false, 0])(
+    "reports a malformed resolved chat result %#",
+    async (result) => {
+      const report = await runAiProviderConformance({
+        ...disabled,
+        chat: async (_request, _handlers, signal) => {
+          signal.throwIfAborted();
+          return result as never;
+        },
+      });
+      expect(report.ok).toBe(false);
+      expect(
+        report.checks.find(
+          (check) => check.name === "chat: streams text and resolves with it",
+        )?.ok,
+      ).toBe(false);
+      expect(report.checks.at(-1)?.name).toBe(
+        "errors are SdkErrors with known codes",
+      );
+    },
+  );
 
-  it.each([{}, [null], [{ ...assistant, batches: [null] }]])("reports malformed history %# and still checks clear", async (messages) => {
-    let cleared = false;
-    const report = await runAiProviderConformance({
-      ...disabled,
-      conversation: { settleReplay: async () => {},
-        list: async () => (cleared ? [] : messages) as never,
-        undo: false, redo: false,
-        clear: async () => { cleared = true; },
-      },
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "conversation: lists messages in the Y7 shape")?.ok).toBe(false);
-    expect(cleared).toBe(true);
-    expect(report.checks.find((check) => check.name === "conversation: clear empties it")?.ok).toBe(true);
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
-  });
+  it.each([{}, [null], [{ ...assistant, batches: [null] }]])(
+    "reports malformed history %# and still checks clear",
+    async (messages) => {
+      let cleared = false;
+      const report = await runAiProviderConformance({
+        ...disabled,
+        conversation: {
+          settleReplay: async () => {},
+          list: async () => (cleared ? [] : messages) as never,
+          undo: false,
+          redo: false,
+          clear: async () => {
+            cleared = true;
+          },
+        },
+      });
+      expect(report.ok).toBe(false);
+      expect(
+        report.checks.find(
+          (check) =>
+            check.name === "conversation: lists messages in the Y7 shape",
+        )?.ok,
+      ).toBe(false);
+      expect(cleared).toBe(true);
+      expect(
+        report.checks.find(
+          (check) => check.name === "conversation: clear empties it",
+        )?.ok,
+      ).toBe(true);
+      expect(report.checks.at(-1)?.name).toBe(
+        "errors are SdkErrors with known codes",
+      );
+    },
+  );
 
-  it.each([42, { operations: null }])("reports malformed replay %# and still checks clear", async (replay) => {
-    let cleared = false;
-    const report = await runAiProviderConformance({
-      ...disabled,
-      conversation: { settleReplay: async () => {},
-        list: async () => (cleared ? [] : [assistant]) as never,
-        undo: async () => replay as never,
-        redo: async () => replay as never,
-        clear: async () => { cleared = true; },
-      },
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "conversation: undo and redo replay")?.ok).toBe(false);
-    expect(cleared).toBe(true);
-    expect(report.checks.find((check) => check.name === "conversation: clear empties it")?.ok).toBe(true);
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
-  });
+  it.each([42, { operations: null }])(
+    "reports malformed replay %# and still checks clear",
+    async (replay) => {
+      let cleared = false;
+      const report = await runAiProviderConformance({
+        ...disabled,
+        conversation: {
+          settleReplay: async () => {},
+          list: async () => (cleared ? [] : [assistant]) as never,
+          undo: async () => replay as never,
+          redo: async () => replay as never,
+          clear: async () => {
+            cleared = true;
+          },
+        },
+      });
+      expect(report.ok).toBe(false);
+      expect(
+        report.checks.find(
+          (check) => check.name === "conversation: undo and redo replay",
+        )?.ok,
+      ).toBe(false);
+      expect(cleared).toBe(true);
+      expect(
+        report.checks.find(
+          (check) => check.name === "conversation: clear empties it",
+        )?.ok,
+      ).toBe(true);
+      expect(report.checks.at(-1)?.name).toBe(
+        "errors are SdkErrors with known codes",
+      );
+    },
+  );
 
   it("passes the mock provider playing the playground's recordings", async () => {
     const report = await runAiProviderConformance(
-      createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0, conversation: true }),
+      createMockAiProvider({
+        ...AI_RECORDINGS,
+        delayMs: 0,
+        conversation: true,
+      }),
     );
     expect(failed(report)).toEqual([]);
     expect(report.ok).toBe(true);
@@ -240,7 +341,17 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
   it("fails a provider whose operations don't apply", async () => {
     const report = await runAiProviderConformance(
       createMockAiProvider({
-        chat: [{ events: [{ type: "operations", ops: [{ op: "deleteBlock", blockId: "nope" }] }, { type: "done", messageId: null }] }],
+        chat: [
+          {
+            events: [
+              {
+                type: "operations",
+                ops: [{ op: "deleteBlock", blockId: "nope" }],
+              },
+              { type: "done", messageId: null },
+            ],
+          },
+        ],
       }),
     );
     expect(report.ok).toBe(false);
@@ -254,7 +365,7 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
       altText: false,
       chat: false,
       fixFinding: false,
-      design: false,
+      chatAttachments: false,
       rewrite: async () => {
         throw new Error("boom");
       },
@@ -270,14 +381,18 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
       altText: false,
       chat: false,
       fixFinding: false,
-      design: false,
+      chatAttachments: false,
       rewrite: () =>
         new Promise((resolve) =>
           setTimeout(() => resolve({ html: "<p>Late</p>" }), 300),
         ),
     };
     const report = await runAiProviderConformance(provider, { timeoutMs: 50 });
-    expect(failed(report).find((check) => check.name === "stops on abort with an AbortError")?.detail).toMatch(/still running after 50 ms|resolved/);
+    expect(
+      failed(report).find(
+        (check) => check.name === "stops on abort with an AbortError",
+      )?.detail,
+    ).toMatch(/still running after 50 ms|resolved/);
   });
 
   describe("over HTTP, against a reference server built from the kit", () => {
@@ -296,31 +411,48 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
   });
 });
 
-it.each(["early", "never", "repeat", "refused"] as const)("fails a provider with %s history settlement", async (fault) => {
-  const provider = createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0, conversation: true });
-  const real = provider.conversation!;
-  const settled = new Map<string, Parameters<typeof real.settleReplay>[2]>();
-  provider.conversation = { ...real,
-    list: async (id) => {
-      const messages = await real.list(id);
-      if (fault === "early" && messages.at(-1)) messages.at(-1)!.undone = true;
-      return messages;
-    },
-    settleReplay: async (t, m, outcome) => {
-      if (fault === "never") return;
-      if (fault === "refused" && !outcome.applied) return real.settleReplay(t, m, { ...outcome, applied: true });
-      if (fault === "repeat" && settled.has(outcome.replayId)) {
-        const retry = await (real[outcome.direction] as Function)(t, m, { sessionId: outcome.sessionId });
-        return real.settleReplay(t, m, { ...outcome, replayId: retry.replayId });
-      }
-      settled.set(outcome.replayId, outcome);
-      return real.settleReplay(t, m, outcome);
-    },
-  };
-  const report = await runAiProviderConformance(provider);
-  expect(report.ok).toBe(false);
-  expect(report.checks.some((check) => !check.ok && /replay/.test(check.name))).toBe(true);
-});
+it.each(["early", "never", "repeat", "refused"] as const)(
+  "fails a provider with %s history settlement",
+  async (fault) => {
+    const provider = createMockAiProvider({
+      ...AI_RECORDINGS,
+      delayMs: 0,
+      conversation: true,
+    });
+    const real = provider.conversation!;
+    const settled = new Map<string, Parameters<typeof real.settleReplay>[2]>();
+    provider.conversation = {
+      ...real,
+      list: async (id) => {
+        const messages = await real.list(id);
+        if (fault === "early" && messages.at(-1))
+          messages.at(-1)!.undone = true;
+        return messages;
+      },
+      settleReplay: async (t, m, outcome) => {
+        if (fault === "never") return;
+        if (fault === "refused" && !outcome.applied)
+          return real.settleReplay(t, m, { ...outcome, applied: true });
+        if (fault === "repeat" && settled.has(outcome.replayId)) {
+          const retry = await (real[outcome.direction] as Function)(t, m, {
+            sessionId: outcome.sessionId,
+          });
+          return real.settleReplay(t, m, {
+            ...outcome,
+            replayId: retry.replayId,
+          });
+        }
+        settled.set(outcome.replayId, outcome);
+        return real.settleReplay(t, m, outcome);
+      },
+    };
+    const report = await runAiProviderConformance(provider);
+    expect(report.ok).toBe(false);
+    expect(
+      report.checks.some((check) => !check.ok && /replay/.test(check.name)),
+    ).toBe(true);
+  },
+);
 
 describe("runAiProviderConformance: precise diagnostics", () => {
   it.each([undefined, null, 42])(
@@ -576,17 +708,73 @@ describe("runAiProviderConformance: precise diagnostics", () => {
   });
 });
 
-
 describe("altText conformance", () => {
-  it.each(["", " ", "x".repeat(126), 42])("rejects an invalid alt result %j", async alt => {
-    const report = await runAiProviderConformance({ ...disabled, altText: async (_r, signal) => { signal.throwIfAborted(); return { alt } as never; } });
-    expect(report.checks.find(c => c.name === "altText: answers within maxLength")).toMatchObject({ ok: false });
-  });
+  it.each(["", " ", "x".repeat(126), 42])(
+    "rejects an invalid alt result %j",
+    async (alt) => {
+      const report = await runAiProviderConformance({
+        ...disabled,
+        altText: async (_r, signal) => {
+          signal.throwIfAborted();
+          return { alt } as never;
+        },
+      });
+      expect(
+        report.checks.find(
+          (c) => c.name === "altText: answers within maxLength",
+        ),
+      ).toMatchObject({ ok: false });
+    },
+  );
   it("passes a valid recorded alt draft and records disabled members as off", async () => {
-    const report = await runAiProviderConformance(createMockAiProvider({ altText: [{ type: "done", alt: "Shop arrivals" }] }));
+    const report = await runAiProviderConformance(
+      createMockAiProvider({
+        altText: [{ type: "done", alt: "Shop arrivals" }],
+      }),
+    );
     expect(report.ok).toBe(true);
-    expect(report.checks.find(c => c.name === "altText: answers within maxLength")).toMatchObject({ ok: true });
-    const off = await runAiProviderConformance(createMockAiProvider({ rewrite: [{ type: "done", html: "<p>Hi</p>" }], altText: false }));
-    expect(off.checks.find(c => c.name === "altText: off")).toMatchObject({ ok: true });
+    expect(
+      report.checks.find((c) => c.name === "altText: answers within maxLength"),
+    ).toMatchObject({ ok: true });
+    const off = await runAiProviderConformance(
+      createMockAiProvider({
+        rewrite: [{ type: "done", html: "<p>Hi</p>" }],
+        altText: false,
+      }),
+    );
+    expect(off.checks.find((c) => c.name === "altText: off")).toMatchObject({
+      ok: true,
+    });
   });
+});
+
+it("probes a chat turn with a 1×1 PNG when attachments are enabled", async () => {
+  const requests: any[] = [];
+  const report = await runAiProviderConformance({
+    ...disabled,
+    chatAttachments: true,
+    chat: async (request, on, signal) => {
+      signal.throwIfAborted();
+      requests.push(request);
+      on.onText("OK");
+      return { text: "OK", messageId: null };
+    },
+  });
+  expect(report.ok).toBe(true);
+  expect(
+    report.checks.find((c) => c.name === "chatAttachments: answers"),
+  ).toMatchObject({ ok: true });
+  const attached = requests.find((r) => r.attachments.length === 1);
+  expect(attached.attachments[0]).toMatchObject({
+    kind: "image",
+    name: "reference.png",
+    file: expect.any(Blob),
+  });
+  expect(attached.attachments[0].file.type).toBe("image/png");
+  expect(
+    [...new Uint8Array(await attached.attachments[0].file.arrayBuffer())].slice(
+      0,
+      8,
+    ),
+  ).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
 });

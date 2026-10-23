@@ -1,0 +1,1 @@
+Attachments are designs or references from the author. Replace the whole template only when it is empty or the message asks for it; otherwise make the change the message asks for, using the attachments as reference. Use placeholder images where a design has pictures.

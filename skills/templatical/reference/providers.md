@@ -31,8 +31,8 @@ and owns a lock by session id and user identity together. `onRemoteChange`
 reports another session's edits.
 
 `ai` brings your own AI backend: one `false | fn` member per feature
-(`chat`, `fixFinding`, `design`, `rewrite`, `altText`), plus
-an optional `conversation` (`list`, `clear`, `undo`, `redo`,
+(`chat`, `fixFinding`, `rewrite`, `altText`), plus
+`chatAttachments: false | true` (true means chat accepts image/PDF files; no effect with chat false), and an optional `conversation` (`list`, `clear`, `undo`, `redo`,
 `settleReplay`) for stored history, whose Undo and Redo are settled in two
 phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai-kit/client`
 speaks the documented wire, and `@templatical/ai-kit/server` builds that
@@ -50,3 +50,5 @@ already up.
 
 Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
 the `backend/` pages.
+
+Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. Text-only adapters set `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.

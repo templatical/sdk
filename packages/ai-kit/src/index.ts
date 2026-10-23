@@ -13,7 +13,7 @@ export type {
   AiChatRequest,
   AiAltTextRequest,
   AiConversationProvider,
-  AiDesignRequest,
+  AiChatAttachment,
   AiErrorCode,
   AiFeatureName,
   AiFixFinding,

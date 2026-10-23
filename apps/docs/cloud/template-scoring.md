@@ -58,7 +58,8 @@ const editor = await initCloud({
   ai: {
     chat: true,
     scoring: true,        // Enable scoring (default: true)
-    designToTemplate: false,
   },
 });
 ```
+
+Chat attachments and **Import from screenshot or PDF** use the [BYO AI provider](/backend/ai#chat-attachments). Its `chatAttachments` boolean flag has an effect only when `chat` is a function.

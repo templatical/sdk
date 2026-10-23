@@ -11,7 +11,7 @@ import { useI18n } from "../../composables/useI18n";
 const props = defineProps<{
   feature: Pick<
     UseAiFeatureReturn,
-    "panel" | "isAvailable" | "has" | "open" | "close"
+    "panel" | "isAvailable" | "has" | "open" | "close" | "startImport"
   >;
 }>();
 
@@ -22,33 +22,38 @@ onClickOutside(root, () => (isOpen.value = false));
 
 const ITEMS = [
   { panel: "chat", feature: "chat", icon: Sparkles },
-  { panel: "design", feature: "design", icon: ImageUp },
+  { panel: "import", feature: "chatAttachments", icon: ImageUp },
 ] as const;
 
 const items = computed(() =>
-  ITEMS.filter((item) => props.feature.has(item.feature)),
+  ITEMS.filter(
+    (item) => props.feature.has("chat") && props.feature.has(item.feature),
+  ),
 );
 const isActive = computed(
   () => isOpen.value || props.feature.panel.value !== null,
 );
 
-function title(panel: AiPanel): string {
-  return panel === "chat"
-    ? t.ai.menu.chat
-    : panel === "design"
-      ? t.ai.menu.design
-      : "";
+const importInput = ref<HTMLInputElement | null>(null);
+function importPicked(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
+  if (files.length) props.feature.startImport(files);
+}
+function title(panel: "chat" | "import"): string {
+  return panel === "chat" ? t.ai.menu.chat : t.ai.import.menu;
+}
+function description(panel: "chat" | "import"): string {
+  return panel === "chat" ? t.ai.menu.chatDescription : t.ai.import.description;
 }
 
-function description(panel: AiPanel): string {
-  return panel === "chat"
-    ? t.ai.menu.chatDescription
-    : panel === "design"
-      ? t.ai.menu.designDescription
-      : "";
-}
-
-function choose(panel: AiPanel): void {
+function choose(panel: AiPanel | "import"): void {
+  if (panel === "import") {
+    importInput.value?.click();
+    isOpen.value = false;
+    return;
+  }
   isOpen.value = false;
   if (props.feature.panel.value === panel) props.feature.close();
   else props.feature.open(panel);
@@ -61,6 +66,15 @@ function choose(panel: AiPanel): void {
     ref="root"
     class="tpl:relative"
   >
+    <input
+      v-if="feature.has('chat') && feature.has('chatAttachments')"
+      ref="importInput"
+      type="file"
+      multiple
+      accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+      hidden
+      @change="importPicked"
+    />
     <button
       type="button"
       data-testid="ai-menu-trigger"

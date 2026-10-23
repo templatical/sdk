@@ -2,6 +2,7 @@ import type {
   AiAppliedBatch,
   AiAltTextRequest,
   AiChatMessage,
+  AiChatAttachment,
   AiErrorCode,
   AiFixFinding,
   AiMergeTags,
@@ -19,7 +20,6 @@ export const AI_SESSION_HEADER = "X-Templatical-Session";
 export type AiRouteName =
   | "generate"
   | "fixFinding"
-  | "generateFromDesign"
   | "rewriteText"
   | "altText"
   | "conversationMessages"
@@ -38,10 +38,6 @@ export interface AiRoute {
 export const AI_ROUTES: Readonly<Record<AiRouteName, AiRoute>> = {
   generate: { method: "POST", path: "/templates/{template}/ai/generate" },
   fixFinding: { method: "POST", path: "/templates/{template}/ai/fix-finding" },
-  generateFromDesign: {
-    method: "POST",
-    path: "/templates/{template}/ai/generate-from-design",
-  },
   rewriteText: {
     method: "POST",
     path: "/templates/{template}/ai/rewrite-text",
@@ -134,7 +130,7 @@ export function matchAiRoute(
 // Server-sent events: `data: {json}` lines, `: ping` comments
 // ---------------------------------------------------------------------------
 
-/** A chunk of the reply (chat, fix, design) or of the rewritten text. */
+/** A chunk of the reply (chat, fix) or of the rewritten text. */
 export interface AiTextEvent {
   type: "text";
   text: string;
@@ -178,6 +174,7 @@ export type AiWireEvent =
 export type AiAltTextBody = Omit<AiAltTextRequest, "templateId" | "sessionId">;
 
 export interface AiGenerateBody {
+  attachments: AiChatAttachment[];
   message: string;
   selectedBlockId: string | null;
   mergeTags: AiMergeTags | null;
@@ -200,18 +197,14 @@ export interface AiRewriteBody {
   mergeTags: AiMergeTags | null;
 }
 
-/**
- * The multipart fields of `generate-from-design`. `mergeTags` and `content`
- * are JSON strings; `revision` is a number as text, or absent. The file field
- * names keep the wire's snake case.
- */
-export const AI_DESIGN_FIELDS = {
-  prompt: "prompt",
-  image: "image_upload",
-  pdf: "pdf_upload",
+/** The multipart fields of generate; mergeTags and content are JSON strings. */
+export const AI_GENERATE_FIELDS = {
+  message: "message",
+  selectedBlockId: "selectedBlockId",
   mergeTags: "mergeTags",
   content: "content",
   revision: "revision",
+  attachment: "attachment",
 } as const;
 
 /** `GET …/conversation-messages`. */
@@ -264,8 +257,9 @@ export const AI_ERROR_MESSAGES: Readonly<Record<AiErrorCode, string>> = {
 export const AI_LIMITS = {
   contentMaxBytes: 200_000,
   messageMaxChars: 4000,
-  designPromptMaxChars: 2000,
-  designMaxBytes: 5 * 1024 * 1024,
+  attachmentsMax: 4,
+  attachmentMaxBytes: 5 * 1024 * 1024,
+  attachmentsTotalMaxBytes: 10 * 1024 * 1024,
   rewriteHtmlMaxChars: 20_000,
   instructionMaxChars: 500,
   mergeTagsMax: 500,

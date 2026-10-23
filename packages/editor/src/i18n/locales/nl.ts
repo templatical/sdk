@@ -741,10 +741,15 @@ const nl: typeof en = {
       button: "AI",
       chat: "AI-assistent",
       chatDescription: "Chat met AI om uw sjabloon te maken of te wijzigen",
-      design: "Van ontwerp naar sjabloon",
-      designDescription: "Maak een sjabloon van een afbeelding of PDF",
     },
     chat: {
+      attach: "Bestanden bijvoegen",
+      dropHint: "Sleep afbeeldingen of pdf’s hierheen om ze bij te voegen",
+      removeAttachment: "{name} verwijderen",
+      attachTooMany: "Voeg maximaal 4 bestanden bij.",
+      attachTooLarge: "{name} is groter dan 5 MB.",
+      attachTotalTooLarge: "Bijlagen mogen samen maximaal 10 MB groot zijn.",
+      attachWrongType: "{name} is geen afbeelding of pdf.",
       title: "AI-assistent",
       notice: "Antwoorden en wijzigingen komen van AI.",
       close: "Sluiten",
@@ -762,36 +767,18 @@ const nl: typeof en = {
       redo: "Opnieuw uitvoeren",
       disclaimer: "AI kan fouten maken. Controleer de wijzigingen.",
     },
-    design: {
-      title: "Van ontwerp naar sjabloon",
-      close: "Sluiten",
-      remove: "Bestand verwijderen",
-      dropHint:
-        "Sleep een afbeelding of PDF hierheen, of klik om er een te kiezen",
-      accepted: "PNG, JPEG, WebP, GIF of PDF, tot 5 MB",
-      promptLabel: "Notities (optioneel)",
-      promptPlaceholder: "Wat de AI over het ontwerp moet weten...",
-      generate: "Maken vanuit ontwerp",
-      generating: "Je ontwerp wordt gelezen en het sjabloon wordt gemaakt...",
-      replaceWarning:
-        "Een sjabloon maken vanuit een ontwerp vervangt de inhoud van het canvas. Je kunt dit ongedaan maken.",
-      replaceConfirm: "Vervangen en maken",
-      replaceCancel: "Annuleren",
-      fileTooLarge: "Dit bestand is groter dan 5 MB.",
-      invalidFileType:
-        "Upload een PNG-, JPEG-, WebP- of GIF-afbeelding, of een PDF.",
-      built: "Sjabloon gemaakt vanuit je ontwerp.",
-      undo: "Ongedaan maken",
-      redo: "Opnieuw uitvoeren",
-      buildAnother: "Nog een maken",
+    import: {
+      menu: "Importeren vanuit een schermafbeelding of pdf",
+      prompt: "Deze e-mail opbouwen vanuit het bijgevoegde ontwerp.",
+      placeholderNote:
+        "Afbeeldingen worden als tijdelijke aanduidingen geïmporteerd. Vervang ze na de import.",
+      description: "Een e-mail maken vanuit een afbeelding of pdf",
     },
     canvas: {
+      importHint: "Hebt u al een ontwerp?",
       chatHint: "of laat",
       chatHintSuffix:
         "in enkele seconden een volledig sjabloon voor u genereren",
-      designHint:
-        "Heeft u al een ontwerp? Upload een schermafbeelding, afbeelding of PDF en",
-      designHintSuffix: "maakt het direct na",
     },
   },
   versionHistory: {

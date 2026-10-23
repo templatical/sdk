@@ -58,7 +58,8 @@ const editor = await initCloud({
   ai: {
     chat: true,
     scoring: true,        // Bewertung aktivieren (Standard: true)
-    designToTemplate: false,
   },
 });
 ```
+
+Chat-Anhänge und **Aus Screenshot oder PDF importieren** nutzen den [BYO-KI-Provider](/de/backend/ai#chat-anhange). Sein boolesches Flag `chatAttachments` wirkt nur, wenn `chat` eine Funktion ist.

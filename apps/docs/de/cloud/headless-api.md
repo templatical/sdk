@@ -188,7 +188,6 @@ Alle Routen sind auf ein Projekt und einen Mandanten bezogen:
 | `templates/{id}/ai/rewrite-text` | POST | KI-Text-Umschreibung |
 | `templates/{id}/ai/score` | POST | Template-Qualitätsbewertung |
 | `templates/{id}/ai/fix-finding` | POST | KI-Behebung eines Bewertungs-Findings |
-| `templates/{id}/ai/generate-from-design` | POST | Umwandlung von Design zu Template |
 | `saved-modules` | GET | Gespeicherte Blöcke auflisten |
 | `saved-modules` | POST | Gespeicherten Block erstellen |
 | `saved-modules/{id}` | PUT | Gespeicherten Block aktualisieren |

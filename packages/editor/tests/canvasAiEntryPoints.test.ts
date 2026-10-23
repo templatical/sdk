@@ -26,25 +26,52 @@ async function mountCanvas(ai: unknown) {
 }
 
 describe("the empty canvas's AI shortcuts (D17)", () => {
-  it("offers chat and design when the provider has them, and opens them", async () => {
-    const open = vi.fn();
+  it("offers chat and import, opening the picker synchronously before chat", async () => {
+    const open = vi.fn(),
+      startImport = vi.fn();
     const wrapper = await mountCanvas({
       isFeatureEnabled: (feature: string) =>
-        feature === "chat" || feature === "design",
+        feature === "chat" || feature === "chatAttachments",
       open,
+      startImport,
       highlightOf: () => null,
     });
-
     await wrapper.get('[data-testid="canvas-ai-chat"]').trigger("click");
-    await wrapper.get('[data-testid="canvas-ai-design"]').trigger("click");
-
-    expect(open.mock.calls).toEqual([["chat"], ["design"]]);
+    expect(open.mock.calls).toEqual([["chat"]]);
+    const input = wrapper.get('input[type="file"]');
+    const click = vi.spyOn(input.element as HTMLInputElement, "click");
+    (
+      wrapper.get('[data-testid="canvas-ai-import"]')
+        .element as HTMLButtonElement
+    ).click();
+    expect(click).toHaveBeenCalledOnce();
+    expect(startImport).not.toHaveBeenCalled();
+    const files = [new File(["x"], "ref.pdf", { type: "application/pdf" })];
+    Object.defineProperty(input.element, "files", {
+      configurable: true,
+      value: files,
+    });
+    await input.trigger("change");
+    expect(startImport).toHaveBeenCalledExactlyOnceWith(files);
+    Object.defineProperty(input.element, "files", { value: [] });
+    await input.trigger("change");
+    expect(startImport).toHaveBeenCalledOnce();
+  });
+  it("hides import when chat attachments are disabled", async () => {
+    const wrapper = await mountCanvas({
+      isFeatureEnabled: (feature: string) => feature === "chat",
+      open: vi.fn(),
+      highlightOf: () => null,
+    });
+    expect(wrapper.find('[data-testid="canvas-ai-import"]').exists()).toBe(
+      false,
+    );
   });
 
   it("shows neither without an AI provider", async () => {
     const wrapper = await mountCanvas(null);
     expect(wrapper.find('[data-testid="canvas-ai-chat"]').exists()).toBe(false);
-    expect(wrapper.find('[data-testid="canvas-ai-design"]').exists()).toBe(
+    expect(wrapper.find('[data-testid="canvas-ai-import"]').exists()).toBe(
       false,
     );
   });

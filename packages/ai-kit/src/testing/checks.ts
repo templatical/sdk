@@ -45,8 +45,16 @@ export function messageProblem(message: unknown): string | null {
     !m ||
     typeof m.id !== "string" ||
     !["user", "assistant"].includes(m.role) ||
-    !["chat", "fix", "design"].includes(m.kind) ||
+    !["chat", "fix"].includes(m.kind) ||
     typeof m.text !== "string" ||
+    (m.attachments !== undefined &&
+      (!Array.isArray(m.attachments) ||
+        !m.attachments.every(
+          (a) =>
+            a &&
+            typeof a.name === "string" &&
+            ["image", "pdf"].includes(a.kind),
+        ))) ||
     !Array.isArray(m.batches) ||
     typeof m.undone !== "boolean" ||
     typeof m.createdAt !== "string" ||

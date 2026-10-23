@@ -48,7 +48,7 @@ async function setup(
       provider: {
         chat: false,
         rewrite: false,
-        design: false,
+        chatAttachments: false,
         fixFinding: async () => ({ messageId: null, text: "" }),
         altText,
       },

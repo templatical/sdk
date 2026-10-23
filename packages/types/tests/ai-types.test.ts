@@ -26,10 +26,10 @@ describe("the AI provider contract (BYO contract)", () => {
 
   it("has one false-or-function member per feature, and history as an extra", () => {
     const body = interfaceBody(ai, "AiProvider");
+    expect(body).toContain("chatAttachments: false | true;");
     for (const member of [
       /\n  chat:\s+\| false\s+\| \(\(\s*request: AiChatRequest,\s*on: AiTurnHandlers,\s*signal: AbortSignal,?\s*\) => Promise<AiTurnResult>\);/,
       /\n  fixFinding:\s+\| false\s+\| \(\(\s*request: AiFixRequest,\s*on: AiTurnHandlers,\s*signal: AbortSignal,?\s*\) => Promise<AiTurnResult>\);/,
-      /\n  design:\s+\| false\s+\| \(\(\s*request: AiDesignRequest,\s*on: AiTurnHandlers,\s*signal: AbortSignal,?\s*\) => Promise<AiTurnResult>\);/,
       /\n  rewrite:\s+\| false\s+\| \(\(\s*request: AiRewriteRequest,\s*on: AiRewriteHandlers,\s*signal: AbortSignal,?\s*\) => Promise<\{ html: string \}>\);/,
       /\n  conversation\?: AiConversationProvider;/,
     ]) {
@@ -39,8 +39,12 @@ describe("the AI provider contract (BYO contract)", () => {
 
   it("lets a backend withhold each part of history", () => {
     const body = interfaceBody(ai, "AiConversationProvider");
-    expect(body).toMatch(/\n  list\(templateId: string\): Promise<AiChatMessage\[\]>;/);
-    expect(body).toMatch(/\n  clear: false \| \(\(templateId: string\) => Promise<void>\);/);
+    expect(body).toMatch(
+      /\n  list\(templateId: string\): Promise<AiChatMessage\[\]>;/,
+    );
+    expect(body).toMatch(
+      /\n  clear: false \| \(\(templateId: string\) => Promise<void>\);/,
+    );
     expect(body).toMatch(
       /\n  undo:\s+\| false\s+\| \(\(\s*templateId: string,\s*messageId: string,\s*context: AiReplayContext,?\s*\) => Promise<AiReplay>\);/,
     );
@@ -63,8 +67,11 @@ describe("the AI provider contract (BYO contract)", () => {
     expect(interfaceBody(ai, "AiChatRequest")).toContain(
       "selectedBlockId: string | null;",
     );
-    expect(interfaceBody(ai, "AiDesignRequest")).toContain(
-      'fileKind: "image" | "pdf";',
+    expect(interfaceBody(ai, "AiChatRequest")).toContain(
+      "attachments: AiChatAttachment[];",
+    );
+    expect(interfaceBody(ai, "AiChatAttachment")).toContain(
+      'kind: "image" | "pdf";',
     );
     expect(interfaceBody(ai, "AiRewriteRequest")).toContain("html: string;");
   });
@@ -95,16 +102,21 @@ describe("the AI provider contract (BYO contract)", () => {
     ]) {
       expect(body).toContain(field);
     }
-    expect(ai).toContain('export type AiMessageKind = "chat" | "fix" | "design";');
+    expect(ai).toContain('export type AiMessageKind = "chat" | "fix";');
   });
 });
 
 describe("errors", () => {
   it("carries a refusal's details only when there are some", () => {
-    const limited = new SdkError("You've used this month's AI.", 403, "limit_reached", {
-      limit: "aiMonthly",
-      resetsAt: "2026-11-01T00:00:00Z",
-    });
+    const limited = new SdkError(
+      "You've used this month's AI.",
+      403,
+      "limit_reached",
+      {
+        limit: "aiMonthly",
+        resetsAt: "2026-11-01T00:00:00Z",
+      },
+    );
     expect(limited.details).toEqual({
       limit: "aiMonthly",
       resetsAt: "2026-11-01T00:00:00Z",

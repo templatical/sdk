@@ -29,7 +29,6 @@ describe("the wire", () => {
     ).toEqual({
       generate: "POST /templates/{template}/ai/generate",
       fixFinding: "POST /templates/{template}/ai/fix-finding",
-      generateFromDesign: "POST /templates/{template}/ai/generate-from-design",
       rewriteText: "POST /templates/{template}/ai/rewrite-text",
       altText: "POST /templates/{template}/ai/alt-text",
       conversationMessages:
@@ -43,20 +42,22 @@ describe("the wire", () => {
   });
 
   it("fills a route's ids, encoded", () => {
-    expect(aiRoutePath("undoMessage", { template: "tpl 1", message: "m/2" })).toBe(
-      "/templates/tpl%201/ai/messages/m%2F2/undo",
-    );
+    expect(
+      aiRoutePath("undoMessage", { template: "tpl 1", message: "m/2" }),
+    ).toBe("/templates/tpl%201/ai/messages/m%2F2/undo");
   });
 
   it("matches a request to its route under any base path", () => {
-    expect(matchAiRoute("post", "/api/ai/templates/tpl%201/ai/generate")).toEqual({
+    expect(
+      matchAiRoute("post", "/api/ai/templates/tpl%201/ai/generate"),
+    ).toEqual({
       route: "generate",
       template: "tpl 1",
       message: null,
     });
-    expect(
-      matchAiRoute("POST", "/templates/t-1/ai/messages/m-9/redo"),
-    ).toEqual({ route: "redoMessage", template: "t-1", message: "m-9" });
+    expect(matchAiRoute("POST", "/templates/t-1/ai/messages/m-9/redo")).toEqual(
+      { route: "redoMessage", template: "t-1", message: "m-9" },
+    );
     expect(matchAiRoute("GET", "/templates/t-1/ai/generate")).toBe(null);
     expect(matchAiRoute("POST", "/templates/t-1/ai/generate/extra")).toBe(null);
   });
@@ -87,8 +88,9 @@ describe("the wire", () => {
     expect(AI_LIMITS).toEqual({
       contentMaxBytes: 200_000,
       messageMaxChars: 4000,
-      designPromptMaxChars: 2000,
-      designMaxBytes: 5 * 1024 * 1024,
+      attachmentsMax: 4,
+      attachmentMaxBytes: 5 * 1024 * 1024,
+      attachmentsTotalMaxBytes: 10 * 1024 * 1024,
       rewriteHtmlMaxChars: 20_000,
       instructionMaxChars: 500,
       mergeTagsMax: 500,
@@ -98,11 +100,28 @@ describe("the wire", () => {
 });
 
 it("matches and encodes replay settlement", () => {
-  expect(aiRoutePath("settleReplay", { template: "t/1", message: "m 2", replayId: "r/3" })).toBe("/templates/t%2F1/ai/messages/m%202/replays/r%2F3");
-  expect(matchAiRoute("POST", "/templates/t%2F1/ai/messages/m%202/replays/r%2F3")).toEqual({ route: "settleReplay", template: "t/1", message: "m 2", replayId: "r/3" });
+  expect(
+    aiRoutePath("settleReplay", {
+      template: "t/1",
+      message: "m 2",
+      replayId: "r/3",
+    }),
+  ).toBe("/templates/t%2F1/ai/messages/m%202/replays/r%2F3");
+  expect(
+    matchAiRoute("POST", "/templates/t%2F1/ai/messages/m%202/replays/r%2F3"),
+  ).toEqual({
+    route: "settleReplay",
+    template: "t/1",
+    message: "m 2",
+    replayId: "r/3",
+  });
 });
 
-it.each(["/templates/%ZZ/ai/generate", "/templates/t/ai/messages/%/undo", "/templates/t/ai/messages/m/replays/%E0%A4"])("treats malformed route escapes as no route: %s", (path) => {
+it.each([
+  "/templates/%ZZ/ai/generate",
+  "/templates/t/ai/messages/%/undo",
+  "/templates/t/ai/messages/m/replays/%E0%A4",
+])("treats malformed route escapes as no route: %s", (path) => {
   expect(matchAiRoute("POST", path)).toBe(null);
 });
 

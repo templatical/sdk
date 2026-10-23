@@ -739,10 +739,16 @@ const fr: typeof en = {
       button: "IA",
       chat: "Assistant IA",
       chatDescription: "Discutez avec l'IA pour créer ou modifier votre modèle",
-      design: "Du design au modèle",
-      designDescription: "Créez un modèle à partir d'une image ou d'un PDF",
     },
     chat: {
+      attach: "Joindre des fichiers",
+      dropHint: "Déposez des images ou des PDF pour les joindre",
+      removeAttachment: "Supprimer {name}",
+      attachTooMany: "Joignez au maximum 4 fichiers.",
+      attachTooLarge: "{name} dépasse 5 Mo.",
+      attachTotalTooLarge:
+        "Les pièces jointes peuvent totaliser au maximum 10 Mo.",
+      attachWrongType: "{name} n’est ni une image ni un PDF.",
       title: "Assistant IA",
       notice: "Les réponses et les modifications proviennent d'une IA.",
       close: "Fermer",
@@ -760,35 +766,18 @@ const fr: typeof en = {
       redo: "Rétablir",
       disclaimer: "L'IA peut faire des erreurs. Vérifiez les modifications.",
     },
-    design: {
-      title: "Du design au modèle",
-      close: "Fermer",
-      remove: "Supprimer le fichier",
-      dropHint:
-        "Déposez une image ou un PDF ici, ou cliquez pour en choisir un",
-      accepted: "PNG, JPEG, WebP, GIF ou PDF, jusqu'à 5 Mo",
-      promptLabel: "Notes (facultatif)",
-      promptPlaceholder: "Ce que l'IA doit savoir sur le design...",
-      generate: "Créer à partir du design",
-      generating: "Lecture de votre design et création du modèle...",
-      replaceWarning:
-        "Créer un modèle à partir d'un design remplace le contenu de la zone de travail. Vous pouvez annuler cette action.",
-      replaceConfirm: "Remplacer et créer",
-      replaceCancel: "Annuler",
-      fileTooLarge: "Ce fichier dépasse 5 Mo.",
-      invalidFileType: "Importez une image PNG, JPEG, WebP ou GIF, ou un PDF.",
-      built: "Modèle créé à partir de votre design.",
-      undo: "Annuler",
-      redo: "Rétablir",
-      buildAnother: "Créer un autre modèle",
+    import: {
+      menu: "Importer depuis une capture d’écran ou un PDF",
+      prompt: "Créer cet e-mail à partir du design joint.",
+      placeholderNote:
+        "Les images sont importées sous forme de substituts. Remplacez-les après l’importation.",
+      description: "Créer un e-mail à partir d’une image ou d’un PDF",
     },
     canvas: {
+      importHint: "Vous avez déjà un design ?",
       chatHint: "ou laissez",
       chatHintSuffix:
         "générer un modèle complet pour vous en quelques secondes",
-      designHint:
-        "Vous avez déjà un design ? Téléversez une capture d'écran, une image ou un PDF et",
-      designHintSuffix: "le recréera instantanément",
     },
   },
   versionHistory: {

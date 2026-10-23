@@ -104,7 +104,7 @@ async function setup(
       provider: {
         chat: false,
         rewrite: false,
-        design: false,
+        chatAttachments: false,
         fixFinding: false,
         altText,
       },

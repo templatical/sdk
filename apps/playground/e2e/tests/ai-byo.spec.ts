@@ -13,7 +13,11 @@ import { ScenePage } from "../pages/scene.page";
 
 const ORIGINAL_TITLE = "Your March product update";
 
-async function openScene(page: Page, shadowDom: boolean, query: Record<string, string> = {}) {
+async function openScene(
+  page: Page,
+  shadowDom: boolean,
+  query: Record<string, string> = {},
+) {
   const editor = new EditorPage(page);
   await new ScenePage(page, { shadowDom }).goto("ai", query);
   await editor.waitForReady();
@@ -29,13 +33,19 @@ test.describe("AI over a BYO provider", () => {
     const { ai } = await openScene(page, shadowDom);
 
     await ai.openPanel("chat");
-    await expect(page.locator('[data-testid="ai-panel-subtitle"]')).toHaveText("Replies and changes come from AI.");
+    await expect(page.locator('[data-testid="ai-panel-subtitle"]')).toHaveText(
+      "Replies and changes come from AI.",
+    );
 
     await ai.ask("Change the title");
-    await expect(ai.lastReply()).toHaveText("Updating the title. It now reads “Hello there”.");
+    await expect(ai.lastReply()).toHaveText(
+      "Updating the title. It now reads “Hello there”.",
+    );
     await expect(ai.lastApplied()).toContainText("Applied 1 change");
     await expect(ai.title()).toContainText("Hello there");
-    await expect(ai.title().locator('[data-testid="block-agent-highlight"]')).toBeVisible();
+    await expect(
+      ai.title().locator('[data-testid="block-agent-highlight"]'),
+    ).toBeVisible();
 
     await ai.lastUndo().click();
     await expect(ai.lastApplied()).toContainText("Undone");
@@ -104,7 +114,10 @@ test.describe("AI over a BYO provider", () => {
     await expect(ai.title()).toContainText(ORIGINAL_TITLE);
   });
 
-  test("a failed turn says why and gives the prompt back", async ({ page, shadowDom }) => {
+  test("a failed turn says why and gives the prompt back", async ({
+    page,
+    shadowDom,
+  }) => {
     const { ai } = await openScene(page, shadowDom);
     await ai.openPanel("chat");
 
@@ -113,10 +126,15 @@ test.describe("AI over a BYO provider", () => {
     await expect(page.locator('[data-testid="ai-chat-error"]')).toHaveText(
       "AI is unavailable right now. Try again later.",
     );
-    await expect(page.locator('[data-testid="ai-chat-input"]')).toHaveValue("This will fail");
+    await expect(page.locator('[data-testid="ai-chat-input"]')).toHaveValue(
+      "This will fail",
+    );
   });
 
-  test("history survives closing the chat, with New chat to clear it", async ({ page, shadowDom }) => {
+  test("history survives closing the chat, with New chat to clear it", async ({
+    page,
+    shadowDom,
+  }) => {
     const { ai } = await openScene(page, shadowDom, { history: "1" });
     await ai.openPanel("chat");
     await ai.ask("Use a dark background");
@@ -124,13 +142,18 @@ test.describe("AI over a BYO provider", () => {
 
     await page.locator('[data-testid="ai-panel-close"]').click();
     await ai.openPanel("chat");
-    await expect(page.locator('[data-testid="ai-chat-prompt"]')).toHaveText(["Use a dark background"]);
+    await expect(page.locator('[data-testid="ai-chat-prompt"]')).toHaveText([
+      "Use a dark background",
+    ]);
 
     await page.locator('[data-testid="ai-chat-new"]').click();
     await expect(page.locator('[data-testid="ai-chat-prompt"]')).toHaveCount(0);
   });
 
-  test("rewrite streams into a labelled preview and Replace makes it the user's edit", async ({ page, shadowDom }) => {
+  test("rewrite streams into a labelled preview and Replace makes it the user's edit", async ({
+    page,
+    shadowDom,
+  }) => {
     const { editor } = await openScene(page, shadowDom);
     await editor.doubleClickBlock("paragraph");
 
@@ -138,33 +161,17 @@ test.describe("AI over a BYO provider", () => {
     await toolbar.locator('[data-testid="ai-rewrite-trigger"]').click();
     await toolbar.locator('[data-testid="ai-rewrite-preset-shorten"]').click();
 
-    await expect(toolbar.locator('[data-testid="ai-rewrite-label"]')).toHaveText("AI suggestion");
-    await expect(toolbar.locator('[data-testid="ai-rewrite-preview"]')).toContainText("✨ Three releases");
+    await expect(
+      toolbar.locator('[data-testid="ai-rewrite-label"]'),
+    ).toHaveText("AI suggestion");
+    await expect(
+      toolbar.locator('[data-testid="ai-rewrite-preview"]'),
+    ).toContainText("✨ Three releases");
     await toolbar.locator('[data-testid="ai-rewrite-replace"]').click();
 
-    await expect(page.locator('[data-block-type="paragraph"]').first()).toContainText("✨ Three releases");
-  });
-
-  test("design builds a template from an image, with Undo", async ({ page, shadowDom }) => {
-    const { ai } = await openScene(page, shadowDom);
-    await ai.openPanel("design");
-
-    await page.locator('[data-testid="ai-design-file"]').setInputFiles({
-      name: "shot.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-        "base64",
-      ),
-    });
-    await page.locator('[data-testid="ai-design-build"]').click();
-    await page.locator('[data-testid="ai-design-replace"]').click();
-
-    await expect(page.locator('[data-testid="ai-design-built"]')).toContainText("Template built from your design.");
-    await expect(ai.title()).toContainText("Built from your design");
-
-    await page.locator('[data-testid="ai-design-undo"]').click();
-    await expect(ai.title()).toContainText(ORIGINAL_TITLE);
+    await expect(
+      page.locator('[data-block-type="paragraph"]').first(),
+    ).toContainText("✨ Three releases");
   });
 
   test("other editors see the AI's batch as AI (for Ada); the editor that asked sees only the outline", async ({
@@ -175,17 +182,29 @@ test.describe("AI over a BYO provider", () => {
     shadowDom: boolean;
   }) => {
     const adaPage = await context.newPage();
-    const ada = await openScene(adaPage, shadowDom, { collaboration: "1", user: "Ada" });
+    const ada = await openScene(adaPage, shadowDom, {
+      collaboration: "1",
+      user: "Ada",
+    });
     const gracePage = await context.newPage();
-    await openScene(gracePage, shadowDom, { collaboration: "1", user: "Grace" });
+    await openScene(gracePage, shadowDom, {
+      collaboration: "1",
+      user: "Grace",
+    });
 
     await ada.ai.openPanel("chat");
     await ada.ai.ask("Change the title");
     await expect(ada.ai.title()).toContainText("Hello there");
 
-    await expect(gracePage.locator('[data-kind="aiEdited"]')).toHaveText("AI (for Ada) changed a block.");
-    await expect(gracePage.locator('[data-block-type="title"]').first()).toContainText("Hello there");
+    await expect(gracePage.locator('[data-kind="aiEdited"]')).toHaveText(
+      "AI (for Ada) changed a block.",
+    );
+    await expect(
+      gracePage.locator('[data-block-type="title"]').first(),
+    ).toContainText("Hello there");
     await expect(adaPage.locator('[data-kind="aiEdited"]')).toHaveCount(0);
-    await expect(ada.ai.title().locator('[data-testid="block-agent-highlight"]')).toBeVisible();
+    await expect(
+      ada.ai.title().locator('[data-testid="block-agent-highlight"]'),
+    ).toBeVisible();
   });
 });
