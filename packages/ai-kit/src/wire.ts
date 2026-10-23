@@ -3,11 +3,9 @@ import type {
   AiChatMessage,
   AiErrorCode,
   AiFixFinding,
-  AiLintFinding,
   AiMergeTags,
   AiRewritePreset,
   Operation,
-  ScoringResult,
   TemplateContent,
 } from "@templatical/types";
 
@@ -22,8 +20,6 @@ export type AiRouteName =
   | "fixFinding"
   | "generateFromDesign"
   | "rewriteText"
-  | "score"
-  | "suggestions"
   | "conversationMessages"
   | "undoMessage"
   | "redoMessage"
@@ -48,8 +44,6 @@ export const AI_ROUTES: Readonly<Record<AiRouteName, AiRoute>> = {
     method: "POST",
     path: "/templates/{template}/ai/rewrite-text",
   },
-  score: { method: "POST", path: "/templates/{template}/ai/score" },
-  suggestions: { method: "POST", path: "/templates/{template}/ai/suggestions" },
   conversationMessages: {
     method: "GET",
     path: "/templates/{template}/ai/conversation-messages",
@@ -154,26 +148,12 @@ export interface AiAppliedEvent extends AiAppliedBatch {
   type: "applied";
 }
 
-/**
- * The last event of a successful stream: turns require `messageId`, a string
- * or `null` without history; other routes require `html`
- * (rewrite), `result` (score), `suggestions` (suggestions).
+/** The last event of a successful stream: turns require `messageId`, or `null`
+ * without history; rewrite requires `html`.
  */
 export type AiDoneEvent = { type: "done" } & (
-  | {
-      messageId: string | null;
-      html?: never;
-      result?: never;
-      suggestions?: never;
-    }
-  | { html: string; messageId?: never; result?: never; suggestions?: never }
-  | {
-      result: ScoringResult;
-      messageId?: never;
-      html?: never;
-      suggestions?: never;
-    }
-  | { suggestions: string[]; messageId?: never; html?: never; result?: never }
+  | { messageId: string | null; html?: never }
+  | { html: string; messageId?: never }
 );
 
 /** The last event of a failed stream; other fields are the error's details. */
@@ -212,16 +192,6 @@ export interface AiRewriteBody {
   language: string | null;
   instruction: string | null;
   mergeTags: AiMergeTags | null;
-}
-
-export interface AiScoreBody {
-  lintFindings: AiLintFinding[];
-  content: TemplateContent;
-}
-
-export interface AiSuggestionsBody {
-  mergeTags: AiMergeTags | null;
-  content: TemplateContent;
 }
 
 /**
@@ -292,10 +262,6 @@ export const AI_LIMITS = {
   designMaxBytes: 5 * 1024 * 1024,
   rewriteHtmlMaxChars: 20_000,
   instructionMaxChars: 500,
-  lintFindingsMax: 200,
-  suggestionsMax: 4,
-  suggestionMaxChars: 80,
-  findingsPerCategoryMax: 10,
   mergeTagsMax: 500,
   opsPerBatchMax: 100,
 } as const;

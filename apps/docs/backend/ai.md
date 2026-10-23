@@ -1,11 +1,11 @@
 ---
 title: AI
-description: Chat that edits the template, rewrite, scoring with fixes and design to template, over your own AI backend.
+description: Chat that edits the template, rewrite and design to template over your own AI backend.
 ---
 
 # AI
 
-Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, a template score with one-click fixes, starter suggestions, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
 The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
@@ -41,8 +41,6 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  score: false | ((request, signal: AbortSignal) => Promise<ScoringResult>);
-  suggestions: false | ((request, signal: AbortSignal) => Promise<string[]>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -70,11 +68,19 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a scoring `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
 
-### Rewrite, scoring and suggestions
+### Rewrite
 
-`rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML. `score` gets the linter's findings (`lintFindings`) so it doesn't repeat them, and answers three categories (`spam`, `readability`, `bestPractices`) of integer scores 0–100 with findings. `suggestions` answers up to four short requests for the chat's empty state.
+`rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
+
+### Chat starters
+
+A chat without messages shows three static localized starters for a template without blocks, and four for a template with blocks. Clicking a starter sends its displayed text as a chat message. Starters require no model call and have no integrator override.
+
+### Content checks
+
+Deterministic lint reports specific content, client and size findings. It does not predict inbox placement. See [Deliverability](/quality/deliverability/) and [Compatibility](/quality/compatibility/).
 
 ### History
 
@@ -84,7 +90,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `score: false` the template score, `design: false` design to template, `suggestions: false` the starters. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -104,10 +110,9 @@ Undo and Redo may reject with an operation's code (`precondition_failed`, …) a
 
 ## In the editor
 
-- **Header:** an **AI** menu with the assistant, design to template and the template score.
-- **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, starter suggestions. Cmd/Ctrl+Z undoes a whole turn.
+- **Header:** an **AI** menu with the assistant and design to template.
+- **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
 - **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
-- **Template score:** three categories, a link to the Issues panel (accessibility is the linter's), and **Fix with AI** on every finding, with Undo.
 - **Design to template:** PNG, JPEG, WebP, GIF or PDF up to 5 MB; the build is one undoable turn.
 - **The empty canvas:** shortcuts to the assistant and to design to template.
 
@@ -123,10 +128,14 @@ Failures reach `init({ onError })`. Batches from another session, an AI's includ
 
 ## Headless use
 
-The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
+The provider is a plain object: call `chat` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
 
 ## In the playground
 
-The **AI** setup plays recorded turns through `createMockAiProvider`: no model and no keys. Ask to change the title, double-click a paragraph and rewrite it, or score the template and fix a finding. `?history=1` keeps a conversation; `?collaboration=1&user=Ada` in two tabs shows the AI's edits arriving elsewhere.
+The **AI** setup plays recorded turns through `createMockAiProvider`: no model and no keys. Ask to change the title, or double-click a paragraph and rewrite it. `?history=1` keeps a conversation; `?collaboration=1&user=Ada` in two tabs shows the AI's edits arriving elsewhere.
 
 [Open in playground](https://play.templatical.com/scenes/ai)
+
+## Check it
+
+Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).

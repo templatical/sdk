@@ -14,7 +14,7 @@ export const ai: Scene = {
   job: "Edit the template with an AI chat",
   initKey: "ai",
   summary:
-    "init({ templates, ai }) — chat, rewrite, scoring with fixes and design to template over your AI backend; here a recorded mock, no model and no keys.",
+    "init({ templates, ai }) — chat, static starters, rewrite and design to template over your AI backend; here a recorded mock, no model and no keys.",
   catalog: "oss",
   group: "backend",
   docs: "/backend/ai",

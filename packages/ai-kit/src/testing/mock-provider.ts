@@ -10,11 +10,9 @@ import type {
   AiMessageKind,
   AiProvider,
   AiRewriteRequest,
-  AiScoreRequest,
   AiTurnHandlers,
   AiTurnResult,
   Operation,
-  ScoringResult,
 } from "@templatical/types";
 import {
   applyOperations,
@@ -44,8 +42,6 @@ export interface AiMockScript {
   fixFinding?: false | AiRecording<AiFixRequest>;
   design?: false | AiRecording<AiDesignRequest>;
   rewrite?: false | AiRecording<AiRewriteRequest>;
-  score?: false | ScoringResult | ((request: AiScoreRequest) => ScoringResult);
-  suggestions?: false | string[];
   /** Keep a conversation in memory per template, with Undo and Redo. */
   conversation?: boolean;
   /** A pause before every event, in ms (0 by default). */
@@ -278,22 +274,6 @@ export function createMockAiProvider(script: AiMockScript): AiProvider {
           );
           if (typeof done.html !== "string") throw failure();
           return { html: done.html };
-        }
-      : false,
-    score: script.score
-      ? async (request, signal) => {
-          await wait(delay, signal);
-          const score = script.score as
-            ScoringResult | ((r: AiScoreRequest) => ScoringResult);
-          return safeClone(
-            typeof score === "function" ? score(request) : score,
-          );
-        }
-      : false,
-    suggestions: script.suggestions
-      ? async (_request, signal) => {
-          await wait(delay, signal);
-          return [...(script.suggestions as string[])];
         }
       : false,
     ...(script.conversation

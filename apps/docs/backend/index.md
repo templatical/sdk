@@ -25,7 +25,7 @@ await init({
   media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
-  ai: myAiBackend, // chat, rewrite, scoring, design
+  ai: myAiBackend, // chat, rewrite, design
 });
 ```
 
@@ -46,7 +46,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
-| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, template score with fixes, design to template, starter suggestions, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite` · `score` · `suggestions`, and optionally `conversation` |
+| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, design to template, static localized chat starters, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite`, and optionally `conversation` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 

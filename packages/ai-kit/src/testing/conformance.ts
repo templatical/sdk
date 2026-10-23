@@ -8,13 +8,7 @@ import type {
 } from "@templatical/types";
 import { safeClone } from "@templatical/types";
 import { AI_EVAL_MERGE_TAGS, AI_EVAL_TEMPLATES } from "./eval-set";
-import {
-  describeError,
-  errorProblem,
-  messageProblem,
-  scoringProblem,
-  suggestionsProblem,
-} from "./checks";
+import { describeError, errorProblem, messageProblem } from "./checks";
 import { createStandInEditor } from "./stand-in-editor";
 
 export interface AiConformanceCheck {
@@ -41,14 +35,7 @@ export interface AiConformanceOptions {
   design?: { file: Blob; fileKind: "image" | "pdf" };
 }
 
-const FEATURES: AiFeatureName[] = [
-  "chat",
-  "fixFinding",
-  "design",
-  "rewrite",
-  "score",
-  "suggestions",
-];
+const FEATURES: AiFeatureName[] = ["chat", "fixFinding", "design", "rewrite"];
 
 /** A 1×1 transparent PNG. */
 function tinyPng(): Blob {
@@ -538,39 +525,6 @@ export async function runAiProviderConformance(
         };
       });
   }
-  if (typeof provider.score === "function") {
-    const score = provider.score;
-    probes.score = (signal) => score({ ...base(), lintFindings: [] }, signal);
-    const result = await call("score", (signal) =>
-      score({ ...base(), lintFindings: [] }, signal),
-    );
-    if (result !== NO_RESULT) {
-      await add("score: three categories scored 0–100", () => {
-        const problem = scoringProblem(result);
-        return {
-          ok: problem === null,
-          detail: problem ?? `score ${result.score}`,
-        };
-      });
-    }
-  }
-  if (typeof provider.suggestions === "function") {
-    const suggestions = provider.suggestions;
-    probes.suggestions = (signal) => suggestions(base(), signal);
-    const result = await call("suggestions", (signal) =>
-      suggestions(base(), signal),
-    );
-    if (result !== NO_RESULT) {
-      await add("suggestions: at most 4 of at most 80 characters", () => {
-        const problem = suggestionsProblem(result);
-        return {
-          ok: problem === null,
-          detail: problem ?? JSON.stringify(result),
-        };
-      });
-    }
-  }
-
   // Each feature must reject an already-aborted call, fast or slow.
   const abortChecks: AiConformanceCheck[] = [];
   for (const feature of declared) {

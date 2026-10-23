@@ -1,8 +1,4 @@
-import type {
-  AiChatRequest,
-  ScoringResult,
-  TemplateContent,
-} from "@templatical/types";
+import type { AiChatRequest, TemplateContent } from "@templatical/types";
 import {
   createButtonBlock,
   createParagraphBlock,
@@ -177,43 +173,4 @@ export const AI_RECORDINGS: AiMockScript = {
     const html = request.html.replace(/^(<p[^>]*>)/, "$1✨ ");
     return [text("✨ "), text("Rewritten"), { type: "done", html }];
   },
-  score: (request): ScoringResult => {
-    const paragraph = firstOfType(request.content, "paragraph");
-    return {
-      score: 78,
-      categories: {
-        spam: { score: 92, findings: [] },
-        readability: {
-          score: 70,
-          findings: [
-            {
-              id: "readability-1",
-              severity: "medium",
-              message: "This paragraph is long for a phone screen.",
-              blockId: paragraph?.id ?? null,
-              suggestion: "Cut it to two short sentences.",
-            },
-          ],
-        },
-        bestPractices: {
-          score: 74,
-          findings: [
-            {
-              id: "best-practices-1",
-              severity: "low",
-              message: "The email has no preheader.",
-              blockId: null,
-              suggestion: "Add a preheader that sums up the email.",
-            },
-          ],
-        },
-      },
-    };
-  },
-  suggestions: [
-    "Make the title shorter",
-    "Add a closing line",
-    "Use a dark background",
-    "Translate the email into German",
-  ],
 };

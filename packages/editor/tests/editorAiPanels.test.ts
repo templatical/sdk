@@ -3,14 +3,11 @@ import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import {
   createDefaultTemplateContent,
-  createImageBlock,
   createParagraphBlock,
   type AiChatRequest,
-  type AiScoreRequest,
   type AiTurnHandlers,
   type MergeTag,
   type ParagraphBlock,
-  type ScoringResult,
   type Template,
   type TemplateContent,
 } from "@templatical/types";
@@ -36,8 +33,6 @@ async function mountWithAi(extra: Record<string, unknown> = {}) {
           fixFinding: false,
           design: false,
           rewrite: false,
-          score: false,
-          suggestions: false,
         },
         ...extra,
       },
@@ -49,7 +44,7 @@ async function mountWithAi(extra: Record<string, unknown> = {}) {
   return wrapper;
 }
 
-async function openAiPanel(wrapper: VueWrapper, panel: "chat" | "scoring") {
+async function openAiPanel(wrapper: VueWrapper, panel: "chat") {
   await (
     wrapper.vm as unknown as { load: (id: string) => Promise<Template> }
   ).load("tpl-1");
@@ -302,92 +297,4 @@ describe("Editor.vue with an AI provider", () => {
       ).getContent(),
     ).toEqual(createDefaultTemplateContent());
   });
-
-  it.each([false, true])(
-    "passes live lint findings to scoring and opens Issues (lint disabled: %s)",
-    async (disabled) => {
-      const content = {
-        ...createDefaultTemplateContent(),
-        blocks: [
-          createImageBlock({
-            id: "image-1",
-            src: "https://example.com/banner.png",
-            alt: "",
-          }),
-        ],
-      };
-      const result: ScoringResult = {
-        score: 90,
-        categories: {
-          spam: { score: 90, findings: [] },
-          readability: { score: 90, findings: [] },
-          bestPractices: { score: 90, findings: [] },
-        },
-      };
-      const score = vi.fn(async (_request: AiScoreRequest) => result);
-      const wrapper = await mountWithAi({
-        content,
-        templates: {
-          load: async (id: string): Promise<Template> => ({ id, content }),
-          create: false,
-          save: false,
-        },
-        ai: { score },
-        lint: {
-          disabled,
-          structure: false,
-          links: false,
-          deliverability: false,
-          compatibility: false,
-          accessibility: { rules: { "a11y.missing-preheader": "off" } },
-        },
-      });
-      onTestFinished(() => wrapper.unmount());
-      if (!disabled) {
-        await vi.waitFor(() =>
-          expect(wrapper.get("#tpl-tab-issues").text()).toContain("1"),
-        );
-      }
-      await openAiPanel(wrapper, "scoring");
-      await vi.waitFor(() =>
-        expect(wrapper.get('[data-testid="scoring-overall"]').text()).toContain(
-          "90",
-        ),
-      );
-
-      expect(score.mock.calls[0][0].lintFindings).toEqual(
-        disabled
-          ? []
-          : [
-              {
-                ruleId: "a11y.img-missing-alt",
-                blockId: "image-1",
-                message:
-                  "Image is missing alt text.",
-              },
-            ],
-      );
-      if (disabled) {
-        expect(
-          wrapper.find('[data-testid="scoring-open-issues"]').exists(),
-        ).toBe(false);
-        expect(wrapper.find("#tpl-tab-issues").exists()).toBe(false);
-      } else {
-        expect(
-          wrapper.get("#tpl-tab-content").attributes("aria-selected"),
-        ).toBe("true");
-        await wrapper
-          .get('[data-testid="scoring-open-issues"]')
-          .trigger("click");
-        expect(wrapper.get("#tpl-tab-issues").attributes("aria-selected")).toBe(
-          "true",
-        );
-        await vi.waitFor(() =>
-          expect(wrapper.get("#tpl-tabpanel-issues").text()).toContain(
-            "Image is missing alt text.",
-          ),
-        );
-      }
-    },
-  );
 });

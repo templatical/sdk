@@ -1,6 +1,5 @@
 import type {
   AiFixFinding,
-  AiLintFinding,
   AiMergeTags,
   AiRewritePreset,
   TemplateContent,
@@ -13,8 +12,6 @@ import {
   OPERATIONS_GUIDE,
   REWRITE_INSTRUCTIONS,
   REWRITE_PRESETS,
-  SCORE_INSTRUCTIONS,
-  SUGGESTIONS_INSTRUCTIONS,
   TEMPLATE_CONTENT_SCHEMA,
 } from "../generated/assets";
 import { fill } from "./fill";
@@ -30,10 +27,6 @@ export const editingInstructions = `${EDITING_RULES}\n\n# Operations\n\n${OPERAT
 
 /** The rewrite system prompt (`prompts/rewrite.md`). */
 export const rewriteInstructions = REWRITE_INSTRUCTIONS;
-/** The scoring system prompt (`prompts/score.md`); answer with `scoringResultSchema`. */
-export const scoreInstructions = SCORE_INSTRUCTIONS;
-/** The suggestions system prompt (`prompts/suggestions.md`); answer with `suggestionsSchema`. */
-export const suggestionsInstructions = SUGGESTIONS_INSTRUCTIONS;
 /**
  * The design request (`prompts/design.md`), with `{notes}` for the user's
  * prompt. A design turn runs with `editingInstructions` as its system prompt
@@ -138,29 +131,4 @@ export function buildRewritePrompt(input: RewritePromptInput): string {
     parts.push(input.preset === null ? instruction : `Also: ${instruction}`);
   }
   return `Instruction: ${parts.join(" ")}\n\nText:\n${flattenMergeTags(input.html)}`;
-}
-
-export function buildScorePrompt(input: {
-  content: TemplateContent;
-  lintFindings: readonly AiLintFinding[];
-}): string {
-  const lint =
-    input.lintFindings.length === 0
-      ? "None."
-      : input.lintFindings
-          .map((finding) => `- ${finding.ruleId}: ${finding.message}`)
-          .join("\n");
-  return `# Linter findings (don't repeat these)\n${lint}\n\n# Template\n\`\`\`json\n${JSON.stringify(input.content)}\n\`\`\``;
-}
-
-export function buildSuggestionsPrompt(input: {
-  content: TemplateContent;
-  mergeTags: AiMergeTags | null;
-}): string {
-  return buildEditingPrompt({
-    content: input.content,
-    mergeTags: input.mergeTags,
-    selectedBlockId: null,
-    request: "Suggest the requests.",
-  });
 }

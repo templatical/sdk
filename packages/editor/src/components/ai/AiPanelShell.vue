@@ -4,7 +4,7 @@ import { Sparkles, X } from "@lucide/vue";
 defineProps<{
   title: string;
   subtitle?: string;
-  /** `ai-panel-chat`, `ai-panel-scoring`, `ai-panel-design`. */
+  /** `ai-panel-chat`, `ai-panel-design`. */
   testid: string;
   closeLabel: string;
 }>();

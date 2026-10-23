@@ -662,6 +662,15 @@ const nl: typeof en = {
     agentUpdatedTemplate: "{who} heeft de template bijgewerkt.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Een welkomstmail voor nieuwe klanten opstellen",
+      emptyLaunch: "Een productlancering aankondigen",
+      emptyNewsletter: "Een lay-out voor een maandelijkse nieuwsbrief maken",
+      filledShorten: "De tekst inkorten",
+      filledFriendlier: "De toon vriendelijker maken",
+      filledDates: "De datums en de aanbieding bijwerken",
+      filledCta: "Een duidelijke oproep tot actie toevoegen",
+    },
     rewrite: {
       tooLarge:
         "Deze alinea is te lang voor AI. Kies een alinea met maximaal 20.000 tekens.",
@@ -714,9 +723,6 @@ const nl: typeof en = {
       chatDescription: "Chat met AI om uw sjabloon te maken of te wijzigen",
       design: "Van ontwerp naar sjabloon",
       designDescription: "Maak een sjabloon van een afbeelding of PDF",
-      scoring: "Sjabloonscore",
-      scoringDescription:
-        "Controleer spamrisico, leesbaarheid en aanbevolen werkwijzen",
     },
     chat: {
       title: "AI-assistent",
@@ -758,35 +764,6 @@ const nl: typeof en = {
       undo: "Ongedaan maken",
       redo: "Opnieuw uitvoeren",
       buildAnother: "Nog een maken",
-    },
-    scoring: {
-      title: "Sjabloonscore",
-      close: "Sluiten",
-      rescore: "Opnieuw beoordelen",
-      scoring: "Het sjabloon wordt beoordeeld...",
-      overallScore: "Totaalscore",
-      categories: {
-        spam: "Spamrisico",
-        readability: "Leesbaarheid",
-        bestPractices: "Goede praktijken",
-      },
-      severity: {
-        high: "Hoog",
-        medium: "Gemiddeld",
-        low: "Laag",
-      },
-      fix: "Herstellen met AI",
-      fixing: "Bezig met herstellen...",
-      fixed: "Hersteld",
-      undoFix: "Ongedaan maken",
-      finding: "1 bevinding",
-      findings: "{count} bevindingen",
-      noFindings: "Geen problemen gevonden",
-      accessibilityNote:
-        "Toegankelijkheid wordt gecontroleerd in het paneel Problemen.",
-      openIssues: "Problemen openen ({count})",
-      emptyState:
-        "Beoordeel uw sjabloon op spamrisico, leesbaarheid en goede praktijken.",
     },
     canvas: {
       chatHint: "of laat",

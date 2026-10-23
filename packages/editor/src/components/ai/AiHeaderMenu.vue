@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ImageUp, ShieldCheck, Sparkles } from "@lucide/vue";
+import { ImageUp, Sparkles } from "@lucide/vue";
 import { computed, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import type {
@@ -23,7 +23,6 @@ onClickOutside(root, () => (isOpen.value = false));
 const ITEMS = [
   { panel: "chat", feature: "chat", icon: Sparkles },
   { panel: "design", feature: "design", icon: ImageUp },
-  { panel: "scoring", feature: "score", icon: ShieldCheck },
 ] as const;
 
 const items = computed(() =>
@@ -38,7 +37,7 @@ function title(panel: AiPanel): string {
     ? t.ai.menu.chat
     : panel === "design"
       ? t.ai.menu.design
-      : t.ai.menu.scoring;
+      : "";
 }
 
 function description(panel: AiPanel): string {
@@ -46,7 +45,7 @@ function description(panel: AiPanel): string {
     ? t.ai.menu.chatDescription
     : panel === "design"
       ? t.ai.menu.designDescription
-      : t.ai.menu.scoringDescription;
+      : "";
 }
 
 function choose(panel: AiPanel): void {

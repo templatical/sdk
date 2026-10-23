@@ -7,7 +7,6 @@ import type {
   AiRequestBase,
   AiTurnHandlers,
   AiTurnResult,
-  ScoringResult,
 } from "@templatical/types";
 import { CollaborationConflict, SdkError } from "@templatical/types";
 import {
@@ -57,44 +56,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isScore(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 0 &&
-    value <= 100
-  );
-}
-
-function isScoringResult(value: unknown): value is ScoringResult {
-  if (!isRecord(value) || !isScore(value.score) || !isRecord(value.categories))
-    return false;
-  const categories = value.categories;
-  return ["spam", "readability", "bestPractices"].every((name) => {
-    const category = categories[name];
-    if (
-      !isRecord(category) ||
-      !isScore(category.score) ||
-      !Array.isArray(category.findings)
-    )
-      return false;
-    return category.findings.every(
-      (finding: unknown) =>
-        isRecord(finding) &&
-        typeof finding.id === "string" &&
-        typeof finding.message === "string" &&
-        typeof finding.suggestion === "string" &&
-        (finding.severity === "high" ||
-          finding.severity === "medium" ||
-          finding.severity === "low") &&
-        (typeof finding.blockId === "string" || finding.blockId === null),
-    );
-  });
-}
-
 /**
  * An `AiProvider` over the wire (A1 §4): JSON or multipart requests, SSE
- * answers for turns, rewrite, scoring and suggestions, JSON for history.
+ * answers for turns and rewrite, JSON for history.
  * Errors are `SdkError`s; stopping a call rejects with an `AbortError`.
  */
 export function createHttpAiProvider(
@@ -379,29 +343,6 @@ export function createHttpAiProviderWithFetch(
             },
             (done) =>
               typeof done.html === "string" ? { html: done.html } : undefined,
-          )
-      : false,
-    score: on("score")
-      ? (req, signal) =>
-          streamed(
-            "score",
-            req.templateId,
-            { json: { lintFindings: req.lintFindings, content: req.content } },
-            signal,
-            () => {},
-            (done) => (isScoringResult(done.result) ? done.result : undefined),
-          )
-      : false,
-    suggestions: on("suggestions")
-      ? (req, signal) =>
-          streamed(
-            "suggestions",
-            req.templateId,
-            { json: { mergeTags: req.mergeTags, content: req.content } },
-            signal,
-            () => {},
-            (done) =>
-              Array.isArray(done.suggestions) ? done.suggestions : undefined,
           )
       : false,
     ...(on("conversation")

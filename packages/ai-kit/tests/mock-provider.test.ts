@@ -95,30 +95,31 @@ describe("createMockAiProvider (D35)", () => {
     expect(await ai.conversation!.list("t-1")).toEqual([]);
   });
 
-  it("answers scoring, suggestions and rewrite from the script", async () => {
-    const result = {
-      score: 50,
-      categories: { spam: { score: 50, findings: [] }, readability: { score: 50, findings: [] }, bestPractices: { score: 50, findings: [] } },
-    };
+  it("derives rewrite HTML from the request and forwards streamed text", async () => {
     const ai = createMockAiProvider({
-      score: result,
-      suggestions: ["One"],
-      rewrite: (request) => [{ type: "text", text: "<p>X" }, { type: "done", html: `${request.html}!` }],
+      rewrite: (request) => [
+        { type: "text", text: "<p>X" },
+        { type: "done", html: `${request.html}!` },
+      ],
     });
     const signal = new AbortController().signal;
     const onText = vi.fn();
-    expect(await (ai.score as Function)({ ...base, lintFindings: [] }, signal)).toEqual(result);
-    expect(await (ai.suggestions as Function)(base, signal)).toEqual(["One"]);
-    expect(await (ai.rewrite as Function)({ ...base, html: "<p>a</p>", preset: "shorten", language: null, instruction: null }, { onText }, signal)).toEqual({ html: "<p>a</p>!" });
+    expect(
+      await (ai.rewrite as Function)(
+        { ...base, html: "<p>a</p>", preset: "shorten", language: null, instruction: null },
+        { onText },
+        signal,
+      ),
+    ).toEqual({ html: "<p>a</p>!" });
     expect(onText).toHaveBeenCalledWith("<p>X");
   });
 
   it("normalizes a non-Error abort reason and preserves a supplied AbortError", async () => {
-    const ai = createMockAiProvider({ suggestions: ["One"] });
+    const ai = createMockAiProvider({ rewrite: [{ type: "done", html: "<p>One</p>" }] });
     const stopped = new AbortController();
     stopped.abort("Stop now");
     await expect(
-      (ai.suggestions as Function)(base, stopped.signal),
+      (ai.rewrite as Function)({ ...base, html: "<p>One</p>", preset: "shorten", language: null, instruction: null }, { onText: () => {} }, stopped.signal),
     ).rejects.toMatchObject({
       name: "AbortError",
       message: "The AI request was stopped.",
@@ -127,7 +128,7 @@ describe("createMockAiProvider (D35)", () => {
     const preserve = new AbortController();
     preserve.abort(supplied);
     await expect(
-      (ai.suggestions as Function)(base, preserve.signal),
+      (ai.rewrite as Function)({ ...base, html: "<p>One</p>", preset: "shorten", language: null, instruction: null }, { onText: () => {} }, preserve.signal),
     ).rejects.toBe(supplied);
   });
 

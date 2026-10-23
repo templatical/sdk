@@ -42,9 +42,7 @@ const { t } = useI18n();
 export type RightSidebarTab = "content" | "settings" | "issues";
 type Tab = RightSidebarTab;
 
-// `v-model:tab`: `Editor.vue` owns the tab so other chrome can open one (the
-// AI scoring panel opens Issues through `capabilities.issues`). Without a
-// parent binding it is local state.
+// `v-model:tab`: `Editor.vue` owns the tab. Without a parent binding it is local state.
 const activeTab = defineModel<Tab>("tab", { default: "content" });
 
 const lint = inject(TEMPLATE_LINT_KEY, null);

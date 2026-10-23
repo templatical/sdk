@@ -51,7 +51,7 @@ describe("aiEventStream (D32)", () => {
       (stream) =>
         new Promise<void>((resolve) => {
           finish = () => {
-            stream.send({ type: "done", suggestions: [] });
+            stream.send({ type: "done", html: "<p>Done</p>" });
             resolve();
           };
         }),
@@ -63,7 +63,7 @@ describe("aiEventStream (D32)", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(await response.text()).toBe(
-      ': ping\n\ndata: {"type":"done","suggestions":[]}\n\n',
+      ': ping\n\ndata: {"type":"done","html":"<p>Done</p>"}\n\n',
     );
   });
 

@@ -1,6 +1,5 @@
 import type {
   AiFixFinding,
-  AiLintFinding,
   AiMergeTags,
   AiRewritePreset,
   TemplateContent,
@@ -15,8 +14,6 @@ import {
   type AiFixFindingBody,
   type AiGenerateBody,
   type AiRewriteBody,
-  type AiScoreBody,
-  type AiSuggestionsBody,
 } from "../wire";
 
 export interface AiDesignBody {
@@ -40,8 +37,6 @@ export type AiWireRequest = Base &
     | { route: "fixFinding"; body: AiFixFindingBody }
     | { route: "generateFromDesign"; body: AiDesignBody }
     | { route: "rewriteText"; body: AiRewriteBody }
-    | { route: "score"; body: AiScoreBody }
-    | { route: "suggestions"; body: AiSuggestionsBody }
     | { route: "conversationMessages" | "clearConversation" }
     | { route: "undoMessage" | "redoMessage"; message: string }
     | {
@@ -168,25 +163,6 @@ function finding(value: unknown): AiFixFinding {
     );
   }
   return value as unknown as AiFixFinding;
-}
-
-function lintFindings(value: unknown): AiLintFinding[] {
-  if (!Array.isArray(value) || value.length > AI_LIMITS.lintFindingsMax) {
-    invalid("lintFindings must be a list of at most 200 findings.");
-  }
-  for (const entry of value) {
-    if (
-      !isRecord(entry) ||
-      !isBoundedText(entry.ruleId, 100) ||
-      !(entry.blockId === null || typeof entry.blockId === "string") ||
-      !isBoundedText(entry.message, 500)
-    ) {
-      invalid(
-        "Each lint finding must have string ruleId (at most 100 characters), string or null blockId, and string message (at most 500 characters).",
-      );
-    }
-  }
-  return value as AiLintFinding[];
 }
 
 /**
@@ -365,23 +341,5 @@ export async function readAiRequest(
         },
       };
     }
-    case "score":
-      return {
-        ...base,
-        route: "score",
-        body: {
-          lintFindings: lintFindings(body.lintFindings),
-          content: content(body.content),
-        },
-      };
-    case "suggestions":
-      return {
-        ...base,
-        route: "suggestions",
-        body: {
-          mergeTags: mergeTags(body.mergeTags),
-          content: content(body.content),
-        },
-      };
   }
 }

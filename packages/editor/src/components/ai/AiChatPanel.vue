@@ -30,8 +30,22 @@ const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 const promptInput = ref("");
 const messagesContainer = ref<HTMLElement | null>(null);
-const visibleSuggestionCount = ref(0);
+const visibleStarterCount = ref(0);
 
+const starters = computed(() =>
+  props.feature.isTemplateEmpty.value
+    ? [
+        t.ai.starters.emptyWelcome,
+        t.ai.starters.emptyLaunch,
+        t.ai.starters.emptyNewsletter,
+      ]
+    : [
+        t.ai.starters.filledShorten,
+        t.ai.starters.filledFriendlier,
+        t.ai.starters.filledDates,
+        t.ai.starters.filledCta,
+      ],
+);
 const messages = computed(() => props.feature.messages.value);
 const isBusy = computed(() => props.feature.isRunning.value);
 const failureText = computed(() => {
@@ -49,8 +63,8 @@ const failureText = computed(() => {
 
 const { pause: pauseReveal, resume: resumeReveal } = useIntervalFn(
   () => {
-    if (visibleSuggestionCount.value < props.feature.suggestions.value.length) {
-      visibleSuggestionCount.value++;
+    if (visibleStarterCount.value < starters.value.length) {
+      visibleStarterCount.value++;
     } else {
       pauseReveal();
     }
@@ -63,10 +77,10 @@ const { start: startReveal } = useTimeoutFn(() => resumeReveal(), 100, {
 });
 
 watch(
-  () => props.feature.suggestions.value.length,
+  () => starters.value.length,
   (count) => {
     pauseReveal();
-    visibleSuggestionCount.value = 0;
+    visibleStarterCount.value = 0;
     if (count > 0) startReveal();
   },
   { immediate: true },
@@ -123,9 +137,9 @@ function toggleUndo(item: AiChatItem): void {
   else void props.feature.undoMessage(item.id);
 }
 
-function chooseSuggestion(suggestion: string): void {
+function chooseStarter(starter: string): void {
   pauseReveal();
-  promptInput.value = suggestion;
+  promptInput.value = starter;
   void send();
 }
 
@@ -271,7 +285,7 @@ function onKeydown(event: KeyboardEvent): void {
 
     <!-- Starter prompts, over the empty state (D21). -->
     <div
-      v-if="messages.length === 0 && feature.suggestions.value.length > 0"
+      v-if="messages.length === 0 && starters.length > 0"
       class="tpl:absolute tpl:right-0 tpl:bottom-0 tpl:left-0 tpl:z-10 tpl:px-3 tpl:pb-3"
       style="
         background-color: color-mix(in srgb, var(--tpl-bg) 50%, transparent);
@@ -280,14 +294,13 @@ function onKeydown(event: KeyboardEvent): void {
     >
       <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
         <button
-          v-for="(suggestion, index) in feature.suggestions.value"
+          v-for="(starter, index) in starters"
           :key="index"
           type="button"
-          data-testid="ai-chat-suggestion"
-          class="tpl-suggestion-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
+          data-testid="ai-chat-starter"
+          class="tpl-starter-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
           :class="
-            feature.suggestions.value.length - 1 - index <
-            visibleSuggestionCount
+            starters.length - 1 - index < visibleStarterCount
               ? 'tpl:translate-y-0 tpl:opacity-100'
               : 'tpl:pointer-events-none tpl:-translate-y-2 tpl:opacity-0'
           "
@@ -297,9 +310,9 @@ function onKeydown(event: KeyboardEvent): void {
             background-color: var(--tpl-bg);
             box-shadow: var(--tpl-shadow);
           "
-          @click="chooseSuggestion(suggestion)"
+          @click="chooseStarter(starter)"
         >
-          {{ suggestion }}
+          {{ starter }}
         </button>
       </div>
     </div>
@@ -382,7 +395,7 @@ function onKeydown(event: KeyboardEvent): void {
   transform: scale(1.05);
 }
 
-.tpl-suggestion-btn:hover {
+.tpl-starter-btn:hover {
   border-color: var(--tpl-primary) !important;
   background-color: var(--tpl-primary-light) !important;
 }

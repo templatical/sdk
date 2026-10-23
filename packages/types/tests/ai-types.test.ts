@@ -31,8 +31,6 @@ describe("the AI provider contract (BYO contract)", () => {
       /\n  fixFinding:\s+\| false\s+\| \(\(\s*request: AiFixRequest,\s*on: AiTurnHandlers,\s*signal: AbortSignal,?\s*\) => Promise<AiTurnResult>\);/,
       /\n  design:\s+\| false\s+\| \(\(\s*request: AiDesignRequest,\s*on: AiTurnHandlers,\s*signal: AbortSignal,?\s*\) => Promise<AiTurnResult>\);/,
       /\n  rewrite:\s+\| false\s+\| \(\(\s*request: AiRewriteRequest,\s*on: AiRewriteHandlers,\s*signal: AbortSignal,?\s*\) => Promise<\{ html: string \}>\);/,
-      /\n  score:\s+\| false\s+\| \(\(\s*request: AiScoreRequest,\s*signal: AbortSignal,?\s*\) => Promise<ScoringResult>\);/,
-      /\n  suggestions:\s+\| false\s+\| \(\(\s*request: AiSuggestionsRequest,\s*signal: AbortSignal,?\s*\) => Promise<string\[\]>\);/,
       /\n  conversation\?: AiConversationProvider;/,
     ]) {
       expect(body).toMatch(member);
@@ -69,9 +67,6 @@ describe("the AI provider contract (BYO contract)", () => {
       'fileKind: "image" | "pdf";',
     );
     expect(interfaceBody(ai, "AiRewriteRequest")).toContain("html: string;");
-    expect(interfaceBody(ai, "AiScoreRequest")).toContain(
-      "lintFindings: AiLintFinding[];",
-    );
   });
 
   it("has a turn hand edits over as operations or as batches already applied", () => {
@@ -101,15 +96,6 @@ describe("the AI provider contract (BYO contract)", () => {
       expect(body).toContain(field);
     }
     expect(ai).toContain('export type AiMessageKind = "chat" | "fix" | "design";');
-  });
-
-  it("scores in three categories", () => {
-    expect(ai).toContain(
-      'export type ScoringCategory = "spam" | "readability" | "bestPractices";',
-    );
-    expect(read("cloud.ts")).not.toMatch(
-      /AiStreamEvent|RewriteData|AiScoreOptions|AiGenerateOptions|interface AiChatMessage|ScoringCategory/,
-    );
   });
 });
 
@@ -235,7 +221,6 @@ describe("invertOperations, now in @templatical/types", () => {
     ]);
   });
 });
-
 
 it("gives a provider's default ThrottledError its rate_limited code", () => {
   expect(new ThrottledError("Slow down", 1000).code).toBe("rate_limited");

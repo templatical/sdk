@@ -60,8 +60,6 @@ import {
   checkRewrite,
   createEditingSession,
   editingInstructions,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   runEditingTurn,
 } from '@templatical/ai-kit/server';
@@ -70,16 +68,15 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
-| `rewriteInstructions`, `scoreInstructions`, `suggestionsInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildScorePrompt`, `buildSuggestionsPrompt` | Per-request prompts |
+| `rewriteInstructions`, `designInstructions` | The other prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
 | `aiEventStream` | The event-stream `Response` for any Fetch-API server |
 | `aiErrorResponse`, `aiJsonResponse` | Errors before the stream, and JSON answers, with the wire's header |
 | `readAiRequest` | A wire request, parsed and checked |
-| `checkRewrite`, `buildRewriteRepairPrompt`, `normalizeScoringResult`, `parseSuggestions` | Output checks |
-| `scoringResultSchema`, `suggestionsSchema` | JSON schemas for structured output |
+| `checkRewrite`, `buildRewriteRepairPrompt` | Output checks |
 
 There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview and the HTML applied by Replace. HTML blocks the AI writes keep their markup unchanged; follow the [server-side sanitizing advice before saving or sending](/guide/blocks#html).
 
@@ -136,14 +133,12 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
-| `POST /templates/{t}/ai/score` | JSON `{ lintFindings, content }` | SSE: `done { result }` |
-| `POST /templates/{t}/ai/suggestions` | JSON `{ mergeTags, content }` | SSE: `done { suggestions }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite), `done { result }` (score) or `done { suggestions }` (suggestions); `error { code, message }`. `done` or `error` is the last event.
+**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite); `error { code, message }`. `done` or `error` is the last event.
 
 **Errors before the stream** are JSON `{ message, code, …details }` with the status of the code: `feature_unavailable` and `limit_reached` 403, `rate_limited` 429 with `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, an operation's code 409 (`invalid_operation` 422). A validation failure is a 422 `{ message }`.
 

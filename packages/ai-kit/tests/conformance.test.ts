@@ -5,12 +5,15 @@ import { AI_RECORDINGS, createMockAiProvider, runAiProviderConformance } from ".
 import { createReferenceHandler } from "./helpers/reference-server";
 import { serve } from "./helpers/serve";
 
-const failed = (report: { checks: { name: string; ok: boolean; detail: string }[] }) =>
-  report.checks.filter((check) => !check.ok);
+const failed = (report: {
+  checks: { name: string; ok: boolean; detail: string }[];
+}) => report.checks.filter((check) => !check.ok);
 
 const disabled: AiProvider = {
-  chat: false, fixFinding: false, design: false, rewrite: false, score: false,
-  suggestions: false,
+  chat: false,
+  fixFinding: false,
+  design: false,
+  rewrite: false,
 };
 const assistant = {
   id: "a-1", role: "assistant", kind: "chat", text: "Done.",
@@ -68,43 +71,48 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
     expect(report.checks.find((check) => check.name === "rewrite: stops on abort with an AbortError")).toMatchObject({ ok: false, detail: expect.stringContaining("resolved") });
   });
 
-  it("checks chat and score aborts independently", async () => {
+  it("reports a rewrite result without html as a failed check", async () => {
     const report = await runAiProviderConformance({
       ...disabled,
-      chat: async (_request, _handlers, signal) => {
-        signal.throwIfAborted();
-        return { messageId: null, text: "Done." };
-      },
-      score: async () => ({ score: 50, categories: {
-        spam: { score: 50, findings: [] }, readability: { score: 50, findings: [] },
-        bestPractices: { score: 50, findings: [] },
-      } }),
-    }, { timeoutMs: 20 });
+      rewrite: async () => ({}) as never,
+    });
     expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "chat: stops on abort with an AbortError")?.ok).toBe(true);
-    expect(report.checks.find((check) => check.name === "score: stops on abort with an AbortError")?.ok).toBe(false);
+    expect(
+      report.checks.find((check) => check.name === "rewrite: answers with html"),
+    ).toMatchObject({
+      ok: false,
+      detail: expect.stringContaining("undefined"),
+    });
   });
 
-  it("probes abort for all six declared features without changing valid passes", async () => {
+  it("probes abort for all declared features without changing valid passes", async () => {
     const report = await runAiProviderConformance(createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0 }));
     expect(report.ok).toBe(true);
-    expect(report.checks.filter((check) => check.name.includes(": stops on abort")).map((check) => [check.name, check.ok])).toEqual([
+    expect(
+      report.checks
+        .filter((check) => check.name.includes(": stops on abort"))
+        .map((check) => [check.name, check.ok]),
+    ).toEqual([
       ["chat: stops on abort with an AbortError", true],
       ["fixFinding: stops on abort with an AbortError", true],
       ["design: stops on abort with an AbortError", true],
       ["rewrite: stops on abort with an AbortError", true],
-      ["score: stops on abort with an AbortError", true],
-      ["suggestions: stops on abort with an AbortError", true],
     ]);
   });
 
   it("clears deadline timers when the calls settle first", async () => {
     vi.useFakeTimers();
     try {
-      const report = await runAiProviderConformance({
-        ...disabled,
-        suggestions: async (_request, signal) => { signal.throwIfAborted(); return ["One"]; },
-      }, { timeoutMs: 20 });
+      const report = await runAiProviderConformance(
+        {
+          ...disabled,
+          rewrite: async (_request, _handlers, signal) => {
+            signal.throwIfAborted();
+            return { html: "<p>One</p>" };
+          },
+        },
+        { timeoutMs: 20 },
+      );
       expect(report.ok).toBe(true);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
@@ -119,16 +127,19 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
         signal.throwIfAborted();
         return { messageId: null, text: 42 } as never;
       },
-      suggestions: async (_request, signal) => {
+      rewrite: async (_request, _handlers, signal) => {
         signal.throwIfAborted();
-        return ["Try another change"];
+        return { html: "<p>Try another change</p>" };
       },
     });
     expect(report.ok).toBe(false);
     expect(report.checks.find((check) => check.name === "chat: streams text and resolves with it")).toMatchObject({
       ok: false, detail: expect.stringContaining("number"),
     });
-    expect(report.checks.find((check) => check.name === "suggestions: at most 4 of at most 80 characters")?.ok).toBe(true);
+    expect(
+      report.checks.find((check) => check.name === "rewrite: answers with html")
+        ?.ok,
+    ).toBe(true);
     expect(report.checks.at(-1)).toMatchObject({ name: "errors are SdkErrors with known codes", ok: true });
   });
 
@@ -142,56 +153,6 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
     });
     expect(report.ok).toBe(false);
     expect(report.checks.find((check) => check.name === "chat: streams text and resolves with it")?.ok).toBe(false);
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
-  });
-
-  it("reports a rewrite without html and continues to scoring", async () => {
-    const report = await runAiProviderConformance({
-      ...disabled,
-      rewrite: async () => ({}) as never,
-      score: async () => ({ score: 50, categories: {
-        spam: { score: 50, findings: [] },
-        readability: { score: 50, findings: [] },
-        bestPractices: { score: 50, findings: [] },
-      } }),
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "rewrite: answers with html")).toMatchObject({
-      ok: false, detail: expect.stringContaining("undefined"),
-    });
-    expect(report.checks.find((check) => check.name === "score: three categories scored 0–100")?.ok).toBe(true);
-  });
-
-  it("catches a score check's null-category error and continues", async () => {
-    const report = await runAiProviderConformance({
-      ...disabled,
-      score: async () => ({ score: 50, categories: {
-        spam: null, readability: { score: 50, findings: [] },
-        bestPractices: { score: 50, findings: [] },
-      } }) as never,
-      suggestions: async (_request, signal) => {
-        signal.throwIfAborted();
-        return ["Try another change"];
-      },
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "score: three categories scored 0–100")).toMatchObject({
-      ok: false, detail: expect.stringMatching(/null.*score|score.*null/),
-    });
-    expect(report.checks.find((check) => check.name === "suggestions: at most 4 of at most 80 characters")?.ok).toBe(true);
-    expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
-  });
-
-  it("reports an undefined suggestion rather than treating it as no bad item", async () => {
-    const report = await runAiProviderConformance({
-      ...disabled,
-      suggestions: async (_request, signal) => {
-        signal.throwIfAborted();
-        return [undefined] as never;
-      },
-    });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "suggestions: at most 4 of at most 80 characters")?.ok).toBe(false);
     expect(report.checks.at(-1)?.name).toBe("errors are SdkErrors with known codes");
   });
 
@@ -243,8 +204,7 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
         "operations apply cleanly to the snapshot",
         "applied events carry increasing revisions",
         "rewrite: answers with html",
-        "score: three categories scored 0–100",
-        "suggestions: at most 4 of at most 80 characters",
+
         "stops on abort with an AbortError",
         "errors are SdkErrors with known codes",
         "conversation: lists messages in the Y7 shape",
@@ -268,8 +228,10 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
 
   it("fails a provider that rejects with a plain Error", async () => {
     const provider: AiProvider = {
-      chat: false, fixFinding: false, design: false, rewrite: false, score: false,
-      suggestions: async () => {
+      chat: false,
+      fixFinding: false,
+      design: false,
+      rewrite: async () => {
         throw new Error("boom");
       },
     };
@@ -281,8 +243,13 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
 
   it("fails a provider that ignores an abort", async () => {
     const provider: AiProvider = {
-      chat: false, fixFinding: false, design: false, rewrite: false, score: false,
-      suggestions: () => new Promise((resolve) => setTimeout(() => resolve(["Late"]), 300)),
+      chat: false,
+      fixFinding: false,
+      design: false,
+      rewrite: () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ html: "<p>Late</p>" }), 300),
+        ),
     };
     const report = await runAiProviderConformance(provider, { timeoutMs: 50 });
     expect(failed(report).find((check) => check.name === "stops on abort with an AbortError")?.detail).toMatch(/still running after 50 ms|resolved/);
@@ -303,7 +270,6 @@ describe("runAiProviderConformance (the suite tests itself)", () => {
     });
   });
 });
-
 
 it.each(["early", "never", "repeat", "refused"] as const)("fails a provider with %s history settlement", async (fault) => {
   const provider = createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0, conversation: true });
@@ -433,7 +399,7 @@ describe("runAiProviderConformance: precise diagnostics", () => {
   it("skips replay when a conversation has no assistant changes", async () => {
     const report = await runAiProviderConformance(
       createMockAiProvider({
-        suggestions: ["Add a footer"],
+        rewrite: [{ type: "done", html: "<p>Rewritten.</p>" }],
         conversation: true,
       }),
     );
@@ -541,7 +507,9 @@ describe("runAiProviderConformance: precise diagnostics", () => {
       ok: false,
     },
   ])("checks a $label server-applied replay", async ({ applied, ok }) => {
-    const provider = createMockAiProvider({ suggestions: ["Add a footer"] });
+    const provider = createMockAiProvider({
+      rewrite: [{ type: "done", html: "<p>Rewritten.</p>" }],
+    });
     provider.conversation = {
       list: async () => [assistant] as never,
       undo: async () => ({ applied }) as never,

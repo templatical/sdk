@@ -25,19 +25,21 @@ const off = {
   fixFinding: false,
   design: false,
   rewrite: false,
-  score: false,
-  suggestions: false,
 } as const;
 
-async function setup(provider: Partial<AiProvider>) {
+async function setup(
+  provider: Partial<AiProvider>,
+  content: TemplateContent = CONTENT,
+  locale = "en",
+) {
   const scope = effectScope();
   const { editor, feature } = scope.run(() => {
     const editor = useEditor({
-      content: safeClone(CONTENT),
+      content: safeClone(content),
       templates: {
         load: async (id: string): Promise<Template> => ({
           id,
-          content: safeClone(CONTENT),
+          content: safeClone(content),
         }),
         create: false,
         save: false,
@@ -55,7 +57,7 @@ async function setup(provider: Partial<AiProvider>) {
       reload: null,
       mergeTags: () => null,
       normalize: (ops) => [...ops],
-      lintFindings: () => [],
+
       commentsOpen: null,
       onError: () => {},
     });
@@ -66,8 +68,8 @@ async function setup(provider: Partial<AiProvider>) {
   const wrapper = mountEditor(AiChatPanel, {
     props: { feature },
     provides: {
-      [TRANSLATIONS_KEY]: await loadTranslations("en"),
-      [UI_LOCALE_KEY]: "en",
+      [TRANSLATIONS_KEY]: await loadTranslations(locale),
+      [UI_LOCALE_KEY]: locale,
     },
   });
   await flushPromises();
@@ -87,28 +89,67 @@ describe("AiChatPanel", () => {
     );
   });
 
-  it("shows the starter suggestions, and sends one when clicked", async () => {
-    const chat = vi.fn(async () => ({ messageId: null, text: "Sure." }));
-    const { wrapper } = await setup({
-      chat,
-      suggestions: vi.fn(async () => ["Add a footer", "Use a dark background"]),
-    });
+  it.each([
+    {
+      name: "empty EN",
+      locale: "en",
+      content: { ...CONTENT, blocks: [] },
+      starters: [
+        "Draft a welcome email for new customers",
+        "Create a product launch announcement",
+        "Build a monthly newsletter layout",
+      ],
+    },
+    {
+      name: "filled EN",
+      locale: "en",
+      content: CONTENT,
+      starters: [
+        "Shorten the copy",
+        "Make the tone friendlier",
+        "Update the dates and the offer",
+        "Add a clear call to action",
+      ],
+    },
+    {
+      name: "empty DE",
+      locale: "de",
+      content: { ...CONTENT, blocks: [] },
+      starters: [
+        "Willkommens-E-Mail für neue Kunden entwerfen",
+        "Ankündigung für einen Produktstart erstellen",
+        "Layout für einen monatlichen Newsletter aufbauen",
+      ],
+    },
+    {
+      name: "filled DE",
+      locale: "de",
+      content: CONTENT,
+      starters: [
+        "Den Text kürzen",
+        "Den Ton freundlicher machen",
+        "Daten und Angebot aktualisieren",
+        "Einen klaren Call-to-Action ergänzen",
+      ],
+    },
+  ])(
+    "shows static starters for an $name template and sends the clicked text",
+    async ({ content, locale, starters }) => {
+      const chat = vi.fn(async () => ({ messageId: null, text: "Sure." }));
+      const { wrapper } = await setup({ chat }, content, locale);
+      const buttons = wrapper.findAll('[data-testid="ai-chat-starter"]');
+      expect(buttons.map((button) => button.text())).toEqual(starters);
+      expect(chat).not.toHaveBeenCalled();
 
-    const buttons = wrapper.findAll('[data-testid="ai-chat-suggestion"]');
-    expect(buttons.map((button) => button.text())).toEqual([
-      "Add a footer",
-      "Use a dark background",
-    ]);
-
-    await buttons[0].trigger("click");
-    await flushPromises();
-
-    expect(chat).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Add a footer" }),
-      expect.anything(),
-      expect.anything(),
-    );
-  });
+      await buttons[0].trigger("click");
+      await flushPromises();
+      expect(chat).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: starters[0] }),
+        expect.anything(),
+        expect.anything(),
+      );
+    },
+  );
 
   it("shows Applied N changes with Undo, then Undone with Redo", async () => {
     const { wrapper, editor } = await setup({
@@ -197,12 +238,11 @@ describe("AiChatPanel", () => {
     ).toBe("Hello");
   });
 
-  it("keeps a failed turn's alert above the composer outside the suggestions' containing block", async () => {
+  it("keeps a failed turn's alert above the composer outside the starters' containing block", async () => {
     const { wrapper, feature } = await setup({
       chat: vi.fn(async () => {
         throw new SdkError("x", 409, "ai_turn_running");
       }),
-      suggestions: vi.fn(async () => ["Add a footer"]),
     });
 
     await wrapper.get('[data-testid="ai-chat-input"]').setValue("Hello");
@@ -214,13 +254,13 @@ describe("AiChatPanel", () => {
     expect(alert.text()).toBe(
       "An AI request is already running on this template.",
     );
-    const suggestion = wrapper.get('[data-testid="ai-chat-suggestion"]');
-    expect(suggestion.text()).toBe("Add a footer");
-    const suggestionsContainingBlock = suggestion.element.closest(
+    const starter = wrapper.get('[data-testid="ai-chat-starter"]');
+    expect(starter.text()).toBe("Shorten the copy");
+    const startersContainingBlock = starter.element.closest(
       '[class~="tpl:relative"]',
     );
-    expect(suggestionsContainingBlock).not.toBeNull();
-    expect(suggestionsContainingBlock!.contains(alert.element)).toBe(false);
+    expect(startersContainingBlock).not.toBeNull();
+    expect(startersContainingBlock!.contains(alert.element)).toBe(false);
     const composer = wrapper.get(".tpl-ai-input-wrapper").element;
     expect(alert.element.parentElement).toBe(composer.parentElement);
     expect(alert.element.nextElementSibling).toBe(composer);

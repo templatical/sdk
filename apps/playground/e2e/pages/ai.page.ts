@@ -8,10 +8,12 @@ export class AiPage {
     return this.page.locator('[data-testid="ai-menu-trigger"]');
   }
 
-  async openPanel(panel: "chat" | "scoring" | "design"): Promise<void> {
+  async openPanel(panel: "chat" | "design"): Promise<void> {
     await this.menu().click();
     await this.page.locator(`[data-testid="ai-menu-item-${panel}"]`).click();
-    await expect(this.page.locator(`[data-testid="ai-panel-${panel}"]`)).toBeVisible();
+    await expect(
+      this.page.locator(`[data-testid="ai-panel-${panel}"]`),
+    ).toBeVisible();
   }
 
   async ask(message: string): Promise<void> {

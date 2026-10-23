@@ -727,6 +727,15 @@ const es: typeof en = {
     agentUpdatedTemplate: "{who} actualizó la plantilla.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Redactar un correo de bienvenida para nuevos clientes",
+      emptyLaunch: "Crear un anuncio de lanzamiento de producto",
+      emptyNewsletter: "Crear el diseño de un boletín mensual",
+      filledShorten: "Acortar el texto",
+      filledFriendlier: "Usar un tono más cercano",
+      filledDates: "Actualizar las fechas y la oferta",
+      filledCta: "Añadir una llamada a la acción clara",
+    },
     rewrite: {
       tooLarge:
         "Este párrafo es demasiado largo para la IA. Selecciona un párrafo de hasta 20.000 caracteres.",
@@ -780,9 +789,6 @@ const es: typeof en = {
       chatDescription: "Habla con la IA para crear o modificar tu plantilla",
       design: "De diseño a plantilla",
       designDescription: "Crea una plantilla a partir de una imagen o un PDF",
-      scoring: "Puntuación de la plantilla",
-      scoringDescription:
-        "Comprueba el riesgo de spam, la legibilidad y las buenas prácticas",
     },
     chat: {
       title: "Asistente de IA",
@@ -821,35 +827,6 @@ const es: typeof en = {
       undo: "Deshacer",
       redo: "Rehacer",
       buildAnother: "Crear otra",
-    },
-    scoring: {
-      title: "Puntuación de la plantilla",
-      close: "Cerrar",
-      rescore: "Volver a puntuar",
-      scoring: "Puntuando la plantilla...",
-      overallScore: "Puntuación global",
-      categories: {
-        spam: "Riesgo de spam",
-        readability: "Legibilidad",
-        bestPractices: "Buenas prácticas",
-      },
-      severity: {
-        high: "Alta",
-        medium: "Media",
-        low: "Baja",
-      },
-      fix: "Corregir con IA",
-      fixing: "Corrigiendo...",
-      fixed: "Corregido",
-      undoFix: "Deshacer",
-      finding: "1 resultado",
-      findings: "{count} resultados",
-      noFindings: "No se han encontrado problemas",
-      accessibilityNote:
-        "La accesibilidad se comprueba en el panel de problemas.",
-      openIssues: "Abrir problemas ({count})",
-      emptyState:
-        "Puntúa la plantilla según el riesgo de spam, la legibilidad y las buenas prácticas.",
     },
     canvas: {
       chatHint: "o deja que",

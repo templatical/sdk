@@ -15,23 +15,16 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
-  blockIds,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
-  buildScorePrompt,
-  buildSuggestionsPrompt,
   checkRewrite,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   rewriteInstructions,
   runEditingTurn,
-  scoreInstructions,
   SdkError,
-  suggestionsInstructions,
   type AiModelAdapter,
 } from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
@@ -100,20 +93,6 @@ export async function handle(request: Request): Promise<Response> {
         stream.send({ type: 'done', html: check.html });
       });
     }
-    case 'score': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(scoreInstructions, buildScorePrompt(body), stream.signal);
-        stream.send({ type: 'done', result: normalizeScoringResult(answer, blockIds(body.content.blocks)) });
-      });
-    }
-    case 'suggestions': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(suggestionsInstructions, buildSuggestionsPrompt(body), stream.signal);
-        stream.send({ type: 'done', suggestions: parseSuggestions(answer) });
-      });
-    }
     default:
       // No stored history here: the editor keeps the chat in memory.
       return aiJsonResponse({ message: 'Not found.', code: 'not_found' }, 404);
@@ -122,8 +101,6 @@ export async function handle(request: Request): Promise<Response> {
 ```
 
 Schalten Sie im Editor passend dazu den gespeicherten Verlauf aus: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. Um den Verlauf zu speichern, bewahren Sie die Nachrichten jedes Durchlaufs und `result.batches[].inverse` auf (letzter Batch zuerst) und implementieren Sie die Gesprächsrouten einschließlich `settleReplay`, wie unter [Verlauf](/de/backend/ai#verlauf) beschrieben. Prüfen Sie bei jeder KI-Route, auch bei Gesprächsrouten, ob die angemeldete Person auf die Template-ID und Nachrichten-IDs zugreifen darf.
-
-Für strukturierte Ausgabe übergeben Sie `scoringResultSchema` und `suggestionsSchema` an Ihr Modell, statt JSON im Text anzufordern; die Prüfungen des Kits normalisieren beides.
 
 Setzen Sie im Framework ein Limit für den gesamten Request-Body: etwa 6 MB mit Design-Uploads, sonst etwa 300 kB. Das Kit prüft Inhalt und Dateigröße nach dem Einlesen; das Framework-Limit begrenzt das Puffern.
 

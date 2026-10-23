@@ -54,15 +54,12 @@ export interface AiChatRequest extends AiRequestBase {
   selectedBlockId: string | null;
 }
 
-export type ScoringCategory = "spam" | "readability" | "bestPractices";
-export type FindingSeverity = "high" | "medium" | "low";
-
-/** A scoring finding to fix, as the editor sends it. */
+/** A finding to fix, as the editor sends it. */
 export interface AiFixFinding {
   id: string;
   message: string;
   suggestion: string;
-  category: ScoringCategory;
+  category: "spam" | "readability" | "bestPractices";
   /** `null` when the finding is about the whole template. */
   blockId: string | null;
 }
@@ -94,20 +91,6 @@ export interface AiRewriteRequest extends AiRequestBase {
   /** ≤ 500 characters. At least one of `preset` and `instruction` is set. */
   instruction: string | null;
 }
-
-/** A finding of the editor's linter, sent as context so scoring doesn't repeat it. */
-export interface AiLintFinding {
-  ruleId: string;
-  blockId: string | null;
-  message: string;
-}
-
-export interface AiScoreRequest extends AiRequestBase {
-  /** At most 200. */
-  lintFindings: AiLintFinding[];
-}
-
-export type AiSuggestionsRequest = AiRequestBase;
 
 // ---------------------------------------------------------------------------
 // Turns
@@ -245,31 +228,6 @@ export interface AiReplayContext {
 }
 
 // ---------------------------------------------------------------------------
-// Scoring
-// ---------------------------------------------------------------------------
-
-export interface ScoringFinding {
-  id: string;
-  severity: FindingSeverity;
-  message: string;
-  /** `null` when the finding isn't about one block. */
-  blockId: string | null;
-  suggestion: string;
-}
-
-export interface CategoryScore {
-  /** An integer 0–100. */
-  score: number;
-  findings: ScoringFinding[];
-}
-
-export interface ScoringResult {
-  /** An integer 0–100. */
-  score: number;
-  categories: Record<ScoringCategory, CategoryScore>;
-}
-
-// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
@@ -340,18 +298,6 @@ export interface AiProvider {
         on: AiRewriteHandlers,
         signal: AbortSignal,
       ) => Promise<{ html: string }>);
-  score:
-    | false
-    | ((
-        request: AiScoreRequest,
-        signal: AbortSignal,
-      ) => Promise<ScoringResult>);
-  suggestions:
-    | false
-    | ((
-        request: AiSuggestionsRequest,
-        signal: AbortSignal,
-      ) => Promise<string[]>);
   conversation?: AiConversationProvider;
 }
 

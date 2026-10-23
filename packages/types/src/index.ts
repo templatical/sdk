@@ -395,7 +395,6 @@ export type {
   AiFixFinding,
   AiFixRequest,
   AiLimitDetails,
-  AiLintFinding,
   AiMergeTag,
   AiMergeTags,
   AiMergeTagSyntax,
@@ -410,15 +409,8 @@ export type {
   AiRewriteHandlers,
   AiRewritePreset,
   AiRewriteRequest,
-  AiScoreRequest,
-  AiSuggestionsRequest,
   AiTurnHandlers,
   AiTurnResult,
-  CategoryScore,
-  FindingSeverity,
-  ScoringCategory,
-  ScoringFinding,
-  ScoringResult,
 } from "./ai";
 
 // Cloud types (zero runtime cost — all type-only except re-exported ViewportSize/SyntaxPreset)

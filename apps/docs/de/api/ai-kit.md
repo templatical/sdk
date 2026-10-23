@@ -60,8 +60,6 @@ import {
   checkRewrite,
   createEditingSession,
   editingInstructions,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   runEditingTurn,
 } from '@templatical/ai-kit/server';
@@ -70,16 +68,15 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | Der System-Prompt zum Bearbeiten: die Regeln, die [Operationen](/de/api/operations) und das Template-Schema |
-| `rewriteInstructions`, `scoreInstructions`, `suggestionsInstructions`, `designInstructions` | Die anderen Prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildScorePrompt`, `buildSuggestionsPrompt` | Prompts pro Anfrage |
+| `rewriteInstructions`, `designInstructions` | Die anderen Prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Prompts pro Anfrage |
 | `applyOperationsTool` | Das einzige Tool: `apply_operations`, dessen `ops` ein JSON-String ist |
 | `createEditingSession` | Die Arbeitskopie eines Durchlaufs: prüft jeden Aufruf (Form, die Grenze von 100 Operationen, keine neuen Custom-, Slot- oder Wrapper-Blöcke, deklarierte Merge-Tags, die Engine, eine Größenbegrenzung) und antwortet mit einem Satz, auf den das Modell reagieren kann |
 | `runEditingTurn` | Die Referenzschleife über einen `AiModelAdapter`, höchstens drei Modellaufrufe |
 | `aiEventStream` | Die Event-Stream-`Response` für jeden Fetch-API-Server |
 | `aiErrorResponse`, `aiJsonResponse` | Fehler vor dem Stream und JSON-Antworten, mit dem Header des Protokolls |
 | `readAiRequest` | Eine Anfrage des Protokolls, eingelesen und geprüft |
-| `checkRewrite`, `buildRewriteRepairPrompt`, `normalizeScoringResult`, `parseSuggestions` | Prüfungen der Ausgabe |
-| `scoringResultSchema`, `suggestionsSchema` | JSON-Schemas für strukturierte Ausgabe |
+| `checkRewrite`, `buildRewriteRepairPrompt` | Prüfungen der Ausgabe |
 
 Das Kit enthält keine HTML-Bereinigung. Der Editor bereinigt die Vorschau einer Umformulierung und das mit „Replace“ übernommene HTML. HTML-Blöcke, die die KI schreibt, behalten ihr Markup unverändert; befolgen Sie die [Hinweise zur serverseitigen Bereinigung vor dem Speichern oder Versenden](/de/guide/blocks#html).
 
@@ -136,14 +133,12 @@ Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Rückg�
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
-| `POST /templates/{t}/ai/score` | JSON `{ lintFindings, content }` | SSE: `done { result }` |
-| `POST /templates/{t}/ai/suggestions` | JSON `{ mergeTags, content }` | SSE: `done { suggestions }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** sind `data: {json}`-Zeilen mit jeweils einem `type`; `: ping`-Kommentare halten die Verbindung offen. `text { text }`; `operations { ops }` (der Editor wendet sie an); `applied { batchId, revision, operationCount }`; `done { messageId }` (Durchläufe: String oder `null` ohne Verlauf), `done { html }` (Umformulieren), `done { result }` (Bewertung) oder `done { suggestions }` (Vorschläge); `error { code, message }`. `done` oder `error` ist das letzte Event.
+**Events** sind `data: {json}`-Zeilen mit jeweils einem `type`; `: ping`-Kommentare halten die Verbindung offen. `text { text }`; `operations { ops }` (der Editor wendet sie an); `applied { batchId, revision, operationCount }`; `done { messageId }` (Durchläufe: String oder `null` ohne Verlauf), `done { html }` (Umformulieren); `error { code, message }`. `done` oder `error` ist das letzte Event.
 
 **Fehler vor dem Stream** sind JSON `{ message, code, …details }` mit dem Status des Codes: `feature_unavailable` und `limit_reached` 403, `rate_limited` 429 mit `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, ein Operationscode 409 (`invalid_operation` 422). Ein Validierungsfehler ist ein 422 `{ message }`.
 

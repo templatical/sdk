@@ -646,7 +646,7 @@ export interface TemplaticalEditorConfig {
 
   /**
    * Your AI backend: a chat that edits the template with Undo, rewrite in the
-   * paragraph toolbar, scoring with one-click fixes, starter suggestions and
+   * paragraph toolbar, static localized chat starters and
    * design-to-template. One member per feature; `false` leaves it out and the
    * editor hides its entry point:
    *
@@ -1651,7 +1651,6 @@ export type {
   AiFeatureName,
   AiFixFinding,
   AiFixRequest,
-  AiLintFinding,
   AiMergeTags,
   AiMessageBatch,
   AiOperationsResult,
@@ -1661,11 +1660,8 @@ export type {
   AiReplayOutcome,
   AiRequestBase,
   AiRewriteRequest,
-  AiScoreRequest,
-  AiSuggestionsRequest,
   AiTurnHandlers,
   AiTurnResult,
-  ScoringResult,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks / media providers. Re-exported here

@@ -16,7 +16,7 @@ import {
   type AiConformanceCheck,
   type AiConformanceReport,
 } from "./conformance";
-import { AI_EVAL_MERGE_TAGS, AI_EVAL_TEMPLATES } from "./eval-set";
+import { AI_EVAL_TEMPLATES } from "./eval-set";
 
 export interface AiWireConformanceOptions {
   baseUrl: string;
@@ -92,8 +92,6 @@ export async function runAiWireConformance(
             "fixFinding",
             "generateFromDesign",
             "rewriteText",
-            "score",
-            "suggestions",
           ].includes(route),
       });
       if (!response.body) {
@@ -162,7 +160,7 @@ export async function runAiWireConformance(
   if (!headersCheck.ok) checks.push(headersCheck);
 
   async function probe(
-    route: "suggestions" | "generate",
+    route: "generate",
     body: unknown,
   ): Promise<Response | null> {
     try {
@@ -191,15 +189,6 @@ export async function runAiWireConformance(
       return null;
     }
   }
-
-  const stream =
-    options.features?.suggestions === false
-      ? null
-      : await probe("suggestions", {
-          mergeTags: AI_EVAL_MERGE_TAGS,
-          content: AI_EVAL_TEMPLATES.welcome,
-        });
-  await stream?.body?.cancel().catch(() => {});
 
   const invalid =
     options.features?.chat === false

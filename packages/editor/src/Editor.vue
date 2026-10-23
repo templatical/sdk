@@ -24,7 +24,7 @@ import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
-import { toAiLintFindings, useAiFeature } from "./composables/useAiFeature";
+import { useAiFeature } from "./composables/useAiFeature";
 import { toAiMergeTags } from "./utils/aiMergeTags";
 import { useMediaFeature } from "./composables/useMediaFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
@@ -316,7 +316,7 @@ const AiPanels = defineAsyncComponent(
 
 // --- AI (opt-in: an `ai` provider) ---
 // Built before `useEditorCore` so its capability is in the object core
-// provides. It reads core (the history, the merge tags, the linter) through
+// provides. It reads core (the history and the merge tags) through
 // getters, at call time. Its UI is lazy: `AiPanels` and the header menu.
 const ai = props.config.ai
   ? useAiFeature({
@@ -330,8 +330,6 @@ const ai = props.config.ai
       mergeTags: () => toAiMergeTags(core.mergeTags.value, core.mergeTagSyntax),
       normalize: (ops, content) =>
         normalizeRemoteOperations(ops, content, props.config.mergeTags),
-      lintFindings: () =>
-        toAiLintFindings(core.templateLint?.issues.value ?? []),
       commentsOpen: comments?.isOpen ?? null,
       onError: props.config.onError,
     })
@@ -478,17 +476,7 @@ const core = useEditorCore({
   history: collaboration?.history,
 });
 
-// The right sidebar's tab, owned here so other chrome can open one: the AI
-// scoring panel opens Issues through `capabilities.issues`. Set only while
-// the linter runs, because the tab exists only then.
 const rightSidebarTab = ref<RightSidebarTab>("content");
-if (core.templateLint) {
-  capabilities.issues = {
-    open: () => {
-      rightSidebarTab.value = "issues";
-    },
-  };
-}
 
 // Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
 // `core.templateLint`) and the capability entries Cloud contributes — mutated
@@ -877,7 +865,7 @@ defineExpose({
          configured; the sidebar's own chunk loads the first time it opens. -->
     <CommentsPanel v-if="comments?.isAvailable.value" :feature="comments" />
 
-    <!-- The AI panels: chat, scoring and design share the right gutter with
+    <!-- The AI panels: chat and design share the right gutter with
          comments, one at a time (D18). -->
     <AiPanels v-if="ai" :feature="ai" />
 

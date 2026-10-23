@@ -63,8 +63,6 @@ import {
   checkRewrite,
   createEditingSession,
   editingInstructions,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   runEditingTurn,
 } from '@templatical/ai-kit/server';
@@ -73,16 +71,15 @@ import {
 | Export | |
 | --- | --- |
 | `editingInstructions` | The editing system prompt: the rules, the [operations](/api/operations) and the template schema |
-| `rewriteInstructions`, `scoreInstructions`, `suggestionsInstructions`, `designInstructions` | The other prompts |
-| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt`, `buildScorePrompt`, `buildSuggestionsPrompt` | Per-request prompts |
+| `rewriteInstructions`, `designInstructions` | The other prompts |
+| `buildEditingPrompt`, `buildChatRequest`, `buildFixRequest`, `buildDesignRequest`, `buildRewritePrompt` | Per-request prompts |
 | `applyOperationsTool` | The one tool: `apply_operations`, its `ops` a JSON string |
 | `createEditingSession` | A turn's working copy: checks each call (shape, the 100-operation cap, no custom, slot or wrapper blocks, declared merge tags, the engine, a size cap) and answers a sentence the model can act on |
 | `runEditingTurn` | The reference loop over an `AiModelAdapter`, at most three model calls |
 | `aiEventStream` | The event-stream `Response` for any Fetch-API server |
 | `aiErrorResponse`, `aiJsonResponse` | Errors before the stream, and JSON answers, with the wire's header |
 | `readAiRequest` | A wire request, parsed and checked |
-| `checkRewrite`, `buildRewriteRepairPrompt`, `normalizeScoringResult`, `parseSuggestions` | Output checks |
-| `scoringResultSchema`, `suggestionsSchema` | JSON schemas for structured output |
+| `checkRewrite`, `buildRewriteRepairPrompt` | Output checks |
 
 There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview and the HTML applied by Replace. HTML blocks the AI writes keep their markup unchanged; follow the [server-side sanitizing advice before saving or sending](/guide/blocks#html).
 
@@ -139,14 +136,12 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 | `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
 | `POST /templates/{t}/ai/generate-from-design` | multipart: `prompt?`, `image_upload` or `pdf_upload`, `mergeTags` and `content` as JSON strings, `revision` | SSE |
 | `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
-| `POST /templates/{t}/ai/score` | JSON `{ lintFindings, content }` | SSE: `done { result }` |
-| `POST /templates/{t}/ai/suggestions` | JSON `{ mergeTags, content }` | SSE: `done { suggestions }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
 | `POST /templates/{t}/ai/messages/{m}/replays/{replayId}` | JSON `{ direction, applied }`, `X-Templatical-Session` | 204 |
 | `DELETE /templates/{t}/ai/conversation` | — | 204 |
 
-**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite), `done { result }` (score) or `done { suggestions }` (suggestions); `error { code, message }`. `done` or `error` is the last event.
+**Events** are `data: {json}` lines, each with a `type`; `: ping` comments keep the connection alive. `text { text }`; `operations { ops }` (the editor applies them); `applied { batchId, revision, operationCount }`; `done { messageId }` (turns: a string, or `null` without history), `done { html }` (rewrite); `error { code, message }`. `done` or `error` is the last event.
 
 **Errors before the stream** are JSON `{ message, code, …details }` with the status of the code: `feature_unavailable` and `limit_reached` 403, `rate_limited` 429 with `Retry-After`, `ai_turn_running` 409, `content_too_large` 413, `ai_output_invalid` 422, `ai_provider_error` 502, `not_found` 404, an operation's code 409 (`invalid_operation` 422). A validation failure is a 422 `{ message }`.
 
@@ -208,7 +203,7 @@ unmount();
 | `onDirtyChange`      | `(isDirty: boolean) => void`                                      | No       | Called whenever the unsaved-changes state flips. Works with or without a `templates` provider — use it to guard a client-side router, which `beforeunload` cannot cover. See [Saving & Loading](/backend/templates#unsaved-changes)                                                                                                                                                                                                                                                                                            |
 | `templates`          | `TemplatesProvider`                                               | No       | Storage backend for the template itself — the save/load lifecycle. The same object also carries `autoSave`, `unsavedChangesGuard` and `nameField` config, plus the `onSaved` / `onCreated` / `onLoaded` events — none of it means anything without somewhere to save to. The editor provides the name field, save button, save status and Cmd+S; you provide persistence. Omit `templates` and the feature is off entirely: no name field, no save button, no status indicator. See [Saving & Loading](/backend/templates)     |
 | `render`             | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render)                                                                                                                                                                                                                                  |
-| `ai` | `AiProvider` | No | AI over your own backend: chat with Undo, rewrite, scoring with fixes, design to template and suggestions. Each member is a function or `false`; entry points appear after `create()` or `load()`. Omit to disable the feature and its UI chunks. See [AI](/backend/ai). |
+| `ai` | `AiProvider` | No | AI over your own backend: chat with Undo, rewrite, design to template and static localized chat starters. Each member is a function or `false`; entry points appear after `create()` or `load()`. Omit to disable the feature and its UI chunks. See [AI](/backend/ai). |
 | `versionHistory`     | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. The same object also carries the `onCreated` and `onRestored` events. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history)                                                                              |
 | `comments`           | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The same object also carries the `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` events. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
 | `collaboration`      | `CollaborationProvider`                                           | No       | Real-time collaboration over your backend: every edit is sent as a batch of [operations](/api/operations) through `submit`, other sessions' batches are applied in revision order, selecting a block takes its lock, the header shows who else is here, and undo sends inverse operations your backend can refuse. **Requires `templates`**, whose `load` returns the template's `revision`; `templates.save` then receives only renames. The three lock methods are optional together. See [Collaboration](/backend/collaboration) |
@@ -2251,7 +2246,7 @@ unsubscribe(); // Remove listener
 
 ## AI
 
-`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage`, `AiMergeTags` and the three scoring categories form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai-kit) covers the HTTP client, server kit and wire.
+`AiProvider`, `AiConversationProvider`, the AI requests, handlers, results, `AiChatMessage` and `AiMergeTags` form the MIT provider contract in `@templatical/types`. [AI](/backend/ai#the-contract) describes the contract; the [AI API reference](/api/ai-kit) covers the HTTP client, server kit and wire.
 
 `SdkError(message, statusCode?, code?, details?)` carries AI error codes and optional `details`. `ThrottledError` extends it with `retryAfterMs`, status 429 and code `rate_limited`. `invertOperations(content, ops)` returns a batch's guarded inverse; it lives in `@templatical/types` and is re-exported by `@templatical/core`.
 
@@ -2261,7 +2256,7 @@ unsubscribe(); // Remove listener
 
 Source: https://docs.templatical.com/backend/ai
 
-Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, a template score with one-click fixes, starter suggestions, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
 The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
@@ -2297,8 +2292,6 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  score: false | ((request, signal: AbortSignal) => Promise<ScoringResult>);
-  suggestions: false | ((request, signal: AbortSignal) => Promise<string[]>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -2326,11 +2319,19 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a scoring `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
 
-### Rewrite, scoring and suggestions
+### Rewrite
 
-`rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML. `score` gets the linter's findings (`lintFindings`) so it doesn't repeat them, and answers three categories (`spam`, `readability`, `bestPractices`) of integer scores 0–100 with findings. `suggestions` answers up to four short requests for the chat's empty state.
+`rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
+
+### Chat starters
+
+A chat without messages shows three static localized starters for a template without blocks, and four for a template with blocks. Clicking a starter sends its displayed text as a chat message. Starters require no model call and have no integrator override.
+
+### Content checks
+
+Deterministic lint reports specific content, client and size findings. It does not predict inbox placement. See [Deliverability](/quality/deliverability/) and [Compatibility](/quality/compatibility/).
 
 ### History
 
@@ -2340,7 +2341,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `score: false` the template score, `design: false` design to template, `suggestions: false` the starters. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -2360,10 +2361,9 @@ Undo and Redo may reject with an operation's code (`precondition_failed`, …) a
 
 ## In the editor
 
-- **Header:** an **AI** menu with the assistant, design to template and the template score.
-- **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, starter suggestions. Cmd/Ctrl+Z undoes a whole turn.
+- **Header:** an **AI** menu with the assistant and design to template.
+- **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
 - **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
-- **Template score:** three categories, a link to the Issues panel (accessibility is the linter's), and **Fix with AI** on every finding, with Undo.
 - **Design to template:** PNG, JPEG, WebP, GIF or PDF up to 5 MB; the build is one undoable turn.
 - **The empty canvas:** shortcuts to the assistant and to design to template.
 
@@ -2379,13 +2379,17 @@ Failures reach `init({ onError })`. Batches from another session, an AI's includ
 
 ## Headless use
 
-The provider is a plain object: call `chat`, `score` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
+The provider is a plain object: call `chat` or `rewrite` from your own code with the same requests, and apply the operations with `applyOperations` from `@templatical/types`. `@templatical/ai-kit/testing` has `createMockAiProvider` for UI tests and `runAiProviderConformance` to check a provider you wrote.
 
 ## In the playground
 
-The **AI** setup plays recorded turns through `createMockAiProvider`: no model and no keys. Ask to change the title, double-click a paragraph and rewrite it, or score the template and fix a finding. `?history=1` keeps a conversation; `?collaboration=1&user=Ada` in two tabs shows the AI's edits arriving elsewhere.
+The **AI** setup plays recorded turns through `createMockAiProvider`: no model and no keys. Ask to change the title, or double-click a paragraph and rewrite it. `?history=1` keeps a conversation; `?collaboration=1&user=Ada` in two tabs shows the AI's edits arriving elsewhere.
 
 [Open in playground](https://play.templatical.com/scenes/ai)
+
+## Check it
+
+Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
 
 ---
 
@@ -2904,7 +2908,7 @@ await init({
   media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
-  ai: myAiBackend, // chat, rewrite, scoring, design
+  ai: myAiBackend, // chat, rewrite, design
 });
 ```
 
@@ -2925,7 +2929,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
-| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, template score with fixes, design to template, starter suggestions, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite` · `score` · `suggestions`, and optionally `conversation` |
+| [AI](/backend/ai) | a chat that edits the template with Undo, rewrite in the paragraph toolbar, design to template, static localized chat starters, AI labels | any of `chat` · `fixFinding` · `design` · `rewrite`, and optionally `conversation` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
@@ -7774,23 +7778,16 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
-  blockIds,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
-  buildScorePrompt,
-  buildSuggestionsPrompt,
   checkRewrite,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   rewriteInstructions,
   runEditingTurn,
-  scoreInstructions,
   SdkError,
-  suggestionsInstructions,
   type AiModelAdapter,
 } from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
@@ -7859,20 +7856,6 @@ export async function handle(request: Request): Promise<Response> {
         stream.send({ type: 'done', html: check.html });
       });
     }
-    case 'score': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(scoreInstructions, buildScorePrompt(body), stream.signal);
-        stream.send({ type: 'done', result: normalizeScoringResult(answer, blockIds(body.content.blocks)) });
-      });
-    }
-    case 'suggestions': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(suggestionsInstructions, buildSuggestionsPrompt(body), stream.signal);
-        stream.send({ type: 'done', suggestions: parseSuggestions(answer) });
-      });
-    }
     default:
       // No stored history here: the editor keeps the chat in memory.
       return aiJsonResponse({ message: 'Not found.', code: 'not_found' }, 404);
@@ -7881,8 +7864,6 @@ export async function handle(request: Request): Promise<Response> {
 ```
 
 In the editor, turn history off to match: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. To store history, keep each turn's messages and `result.batches[].inverse` (last batch first) and implement the conversation routes including `settleReplay`, as described under [History](/backend/ai#history). Authorize the template id and message ids against the signed-in user before answering every AI route, conversation routes included.
-
-With structured output, pass `scoringResultSchema` and `suggestionsSchema` to your model instead of asking for JSON in prose; the kit's checks normalize either.
 
 Set your framework's whole-body request limit to about 6 MB with design uploads, or about 300 kB otherwise. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
 
@@ -9483,7 +9464,7 @@ export default translations;
 
 ### Cloud strings are optional
 
-Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. AI chat, rewrite, scoring and design strings live in the main chunk too. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
+Translations are split into two chunks. The main chunk (`locales/*.ts`) covers everything `init()` renders. AI chat, static starters, rewrite and design strings live in the main chunk too. A separate cloud chunk (`locales/cloud/*.ts`) covers features only available via `initCloud()` — the lint save gate and plan limits. You don't need to translate the cloud chunk: if `locales/cloud/<locale>.ts` doesn't exist, cloud features fall back to English while the rest of the editor renders in your language.
 
 Submit a pull request with your translation file. Contributions for any language are welcome.
 

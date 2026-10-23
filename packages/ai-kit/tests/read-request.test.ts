@@ -55,10 +55,39 @@ describe("readAiRequest", () => {
   });
 
   it.each([
-    ["/templates/t-1/ai/generate", { message: "", selectedBlockId: null, mergeTags: null, content, revision: null }, "The message must be 1 to 4,000 characters."],
-    ["/templates/t-1/ai/rewrite-text", { html: "<p>x</p>", preset: null, language: null, instruction: null, mergeTags: null }, "Choose a preset or write an instruction."],
-    ["/templates/t-1/ai/rewrite-text", { html: "<p>x</p>", preset: "translate", language: null, instruction: null, mergeTags: null }, "Choose a language to translate into."],
-    ["/templates/t-1/ai/score", { lintFindings: "x", content }, "lintFindings must be a list of at most 200 findings."],
+    [
+      "/templates/t-1/ai/generate",
+      {
+        message: "",
+        selectedBlockId: null,
+        mergeTags: null,
+        content,
+        revision: null,
+      },
+      "The message must be 1 to 4,000 characters.",
+    ],
+    [
+      "/templates/t-1/ai/rewrite-text",
+      {
+        html: "<p>x</p>",
+        preset: null,
+        language: null,
+        instruction: null,
+        mergeTags: null,
+      },
+      "Choose a preset or write an instruction.",
+    ],
+    [
+      "/templates/t-1/ai/rewrite-text",
+      {
+        html: "<p>x</p>",
+        preset: "translate",
+        language: null,
+        instruction: null,
+        mergeTags: null,
+      },
+      "Choose a language to translate into.",
+    ],
   ])("refuses a bad %s body with a 422", async (path, body, message) => {
     await expect(readAiRequest(post(path, body))).rejects.toMatchObject({
       name: "SdkError",
@@ -91,19 +120,25 @@ describe("readAiRequest merge-tag field validation", () => {
     ["a 201-character description", { ...tag, description: "d".repeat(201) }],
   ])("rejects %s with 422", async (_name, entry) => {
     await expect(
-      readAiRequest(post("/templates/t-1/ai/suggestions", {
-        content,
-        mergeTags: { syntax: "liquid", tags: [entry] },
-      })),
+      readAiRequest(
+        post("/templates/t-1/ai/generate", {
+          message: "Hi",
+          content,
+          mergeTags: { syntax: "liquid", tags: [entry] },
+        }),
+      ),
     ).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
   });
 
   it("rejects an unknown syntax with 422", async () => {
     await expect(
-      readAiRequest(post("/templates/t-1/ai/suggestions", {
-        content,
-        mergeTags: { syntax: "unknown", tags: [tag] },
-      })),
+      readAiRequest(
+        post("/templates/t-1/ai/generate", {
+          message: "Hi",
+          content,
+          mergeTags: { syntax: "unknown", tags: [tag] },
+        }),
+      ),
     ).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
   });
 
@@ -119,63 +154,38 @@ describe("readAiRequest merge-tag field validation", () => {
           description: "d".repeat(200),
         }],
       };
-      expect(await readAiRequest(post("/templates/t-1/ai/suggestions", {
-        content,
-        mergeTags,
-      }))).toMatchObject({ route: "suggestions", body: { mergeTags } });
+      expect(
+        await readAiRequest(
+          post("/templates/t-1/ai/generate", {
+            message: "Hi",
+            content,
+            mergeTags,
+          }),
+        ),
+      ).toMatchObject({ route: "generate", body: { mergeTags } });
     },
   );
 
   it("keeps the 500-tag cap (guard)", async () => {
-    const body = { content, mergeTags: { syntax: "liquid", tags: Array(500).fill(tag) } };
-    const result = await readAiRequest(post("/templates/t-1/ai/suggestions", body));
-    expect(result?.route === "suggestions" && result.body.mergeTags?.tags).toHaveLength(500);
-    await expect(readAiRequest(post("/templates/t-1/ai/suggestions", {
-      ...body,
-      mergeTags: { syntax: "liquid", tags: Array(501).fill(tag) },
-    }))).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
-  });
-});
-
-describe("readAiRequest lint-finding field validation", () => {
-  const finding = { ruleId: "subject-length", blockId: null, message: "Too long." };
-
-  it.each([
-    ["a null entry", null],
-    ["a scalar entry", 7],
-    ["an array entry", []],
-    ["a missing ruleId", { blockId: null, message: "Too long." }],
-    ["a non-string ruleId", { ...finding, ruleId: 7 }],
-    ["a 101-character ruleId", { ...finding, ruleId: "r".repeat(101) }],
-    ["a missing blockId", { ruleId: "subject-length", message: "Too long." }],
-    ["a non-string blockId", { ...finding, blockId: 7 }],
-    ["a missing message", { ruleId: "subject-length", blockId: null }],
-    ["a non-string message", { ...finding, message: null }],
-    ["a 501-character message", { ...finding, message: "m".repeat(501) }],
-  ])("rejects %s with 422", async (_name, entry) => {
-    await expect(readAiRequest(post("/templates/t-1/ai/score", {
+    const body = {
+      message: "Hi",
       content,
-      lintFindings: [entry],
-    }))).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
-  });
-
-  it("accepts field limits and null or string blockIds at the 200-entry cap (guard)", async () => {
-    const lintFindings = Array.from({ length: 200 }, (_, index) => ({
-      ruleId: "r".repeat(100),
-      blockId: index % 2 === 0 ? null : "t1",
-      message: "m".repeat(500),
-    }));
-    expect(await readAiRequest(post("/templates/t-1/ai/score", {
-      content,
-      lintFindings,
-    }))).toMatchObject({ route: "score", body: { lintFindings } });
-  });
-
-  it("rejects 201 entries (guard)", async () => {
-    await expect(readAiRequest(post("/templates/t-1/ai/score", {
-      content,
-      lintFindings: Array(201).fill(finding),
-    }))).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
+      mergeTags: { syntax: "liquid", tags: Array(500).fill(tag) },
+    };
+    const result = await readAiRequest(
+      post("/templates/t-1/ai/generate", body),
+    );
+    expect(
+      result?.route === "generate" && result.body.mergeTags?.tags,
+    ).toHaveLength(500);
+    await expect(
+      readAiRequest(
+        post("/templates/t-1/ai/generate", {
+          ...body,
+          mergeTags: { syntax: "liquid", tags: Array(501).fill(tag) },
+        }),
+      ),
+    ).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
   });
 });
 
@@ -259,19 +269,39 @@ describe("readAiRequest language field validation", () => {
   });
 });
 
-
 it("reads replay settlement and refuses malformed outcomes", async () => {
   expect(await readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "undo", applied: false }))).toEqual({ route: "settleReplay", template: "t", message: "m", replayId: "r", sessionId: "s-1", body: { direction: "undo", applied: false } });
   await expect(readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "other", applied: true }))).rejects.toMatchObject({ statusCode: 422 });
   await expect(readAiRequest(post("/templates/t/ai/messages/m/replays/r", { direction: "undo", applied: "true" }))).rejects.toMatchObject({ statusCode: 422 });
 });
 
-
 describe("final fix: request boundaries", () => {
-  it.each(["generate", "fix-finding", "score", "suggestions"])("caps serialized content bytes on %s", async (route) => {
-    const content = { blocks: [], settings: { padding: "é".repeat(100_000) } };
-    await expect(readAiRequest(post(`/templates/t/ai/${route}`, { message: "Hi", selectedBlockId: null, content, lintFindings: [], finding: { id: "f", message: "m", suggestion: "s", category: "spam", blockId: null } }))).rejects.toMatchObject({ statusCode: 413, code: "content_too_large", message: "This template is too large for AI." });
-  });
+  it.each(["generate", "fix-finding"])(
+    "caps serialized content bytes on %s",
+    async (route) => {
+      const content = { blocks: [], settings: { padding: "é".repeat(100_000) } };
+      await expect(
+        readAiRequest(
+          post(`/templates/t/ai/${route}`, {
+            message: "Hi",
+            selectedBlockId: null,
+            content,
+            finding: {
+              id: "f",
+              message: "m",
+              suggestion: "s",
+              category: "spam",
+              blockId: null,
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({
+        statusCode: 413,
+        code: "content_too_large",
+        message: "This template is too large for AI.",
+      });
+    },
+  );
   it("checks design content bytes too", async () => {
     const form = new FormData();
     form.set("image_upload", new Blob(["png"], { type: "image/png" }));
@@ -281,9 +311,17 @@ describe("final fix: request boundaries", () => {
   it("accepts exactly 200,000 UTF-8 content bytes and refuses the next byte", async () => {
     const content = { blocks: [], settings: { padding: "" } };
     content.settings.padding = "x".repeat(200_000 - new TextEncoder().encode(JSON.stringify(content)).length);
-    expect(await readAiRequest(post("/templates/t/ai/suggestions", { content }))).toMatchObject({ route: "suggestions" });
+    expect(
+      await readAiRequest(
+        post("/templates/t/ai/generate", { message: "Hi", content }),
+      ),
+    ).toMatchObject({ route: "generate" });
     content.settings.padding += "x";
-    await expect(readAiRequest(post("/templates/t/ai/suggestions", { content }))).rejects.toMatchObject({ statusCode: 413, code: "content_too_large" });
+    await expect(
+      readAiRequest(
+        post("/templates/t/ai/generate", { message: "Hi", content }),
+      ),
+    ).rejects.toMatchObject({ statusCode: 413, code: "content_too_large" });
   });
   it.each(["session", "selected"])("caps the %s id at 200 characters", async (kind) => {
     const body = { message: "Hi", content, selectedBlockId: kind === "selected" ? "x".repeat(201) : null };
@@ -293,7 +331,6 @@ describe("final fix: request boundaries", () => {
     const emoji = "😀";
     expect(await readAiRequest(post("/templates/t/ai/generate", { message: emoji.repeat(4000), content, selectedBlockId: emoji.repeat(200), mergeTags: { syntax: "custom", tags: [{ value: emoji.repeat(200), label: emoji.repeat(100), group: emoji.repeat(100), description: emoji.repeat(200) }] } }, "s".repeat(200)))).toMatchObject({ route: "generate" });
     expect(await readAiRequest(post("/templates/t/ai/fix-finding", { content, finding: { id: emoji.repeat(64), message: emoji.repeat(1000), suggestion: emoji.repeat(1000), category: "spam", blockId: null } }))).toMatchObject({ route: "fixFinding" });
-    expect(await readAiRequest(post("/templates/t/ai/score", { content, lintFindings: [{ ruleId: emoji.repeat(100), message: emoji.repeat(500), blockId: null }] }))).toMatchObject({ route: "score" });
     expect(await readAiRequest(post("/templates/t/ai/rewrite-text", { html: emoji.repeat(20_000), instruction: emoji.repeat(500) }))).toMatchObject({ route: "rewriteText" });
   });
 });
@@ -316,7 +353,7 @@ describe("readAiRequest validation messages", () => {
     "rejects %s content with the exact validation error",
     async (_label, content) => {
       await validation(
-        post("/templates/t/ai/suggestions", { content }),
+        post("/templates/t/ai/generate", { message: "Hi", content }),
         "content must be the template's content.",
       );
     },

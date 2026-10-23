@@ -85,7 +85,7 @@ See the [Shadow DOM guide](https://docs.templatical.com/guide/shadow-dom) for tr
 
 ## Cloud features
 
-AI chat, rewrite and scoring use an `AiProvider` passed to `init({ ai })`. Configure comments, version history, saved blocks, test email, rendering and real-time collaboration against your own backend with `init()`. See [Connect your backend](https://docs.templatical.com/backend/).
+AI chat and rewrite use an `AiProvider` passed to `init({ ai })`. Configure comments, version history, saved blocks, test email, rendering and real-time collaboration against your own backend with `init()`. See [Connect your backend](https://docs.templatical.com/backend/).
 
 ## Documentation
 

@@ -5,23 +5,16 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
-  blockIds,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
-  buildScorePrompt,
-  buildSuggestionsPrompt,
   checkRewrite,
   editingInstructions,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   rewriteInstructions,
   runEditingTurn,
-  scoreInstructions,
-  suggestionsInstructions,
   type AiModelAdapter,
 } from "../../src/server";
 
@@ -53,37 +46,6 @@ export function referenceModel(): AiModelAdapter {
         yield { type: "text", text: "<p>Hello " };
         yield { type: "text", text: "there.</p>" };
         return;
-      }
-      if (system === scoreInstructions) {
-        yield {
-          type: "text",
-          text: JSON.stringify({
-            score: 82,
-            categories: {
-              spam: { score: 90, findings: [] },
-              readability: {
-                score: 75,
-                findings: [
-                  {
-                    id: "r1",
-                    severity: "medium",
-                    message: "The intro is long.",
-                    blockId: "intro",
-                    suggestion: "Shorten it.",
-                  },
-                ],
-              },
-              bestPractices: { score: 80, findings: [] },
-            },
-          }),
-        };
-        return;
-      }
-      if (system === suggestionsInstructions) {
-        yield {
-          type: "text",
-          text: '{"suggestions":["Shorten the intro","Add a second button"]}',
-        };
       }
     },
   };
@@ -124,7 +86,16 @@ export function createReferenceHandler(
   model: AiModelAdapter = referenceModel(),
 ): (request: Request) => Promise<Response> {
   const conversations = new Map<string, Stored[]>();
-  const pending = new Map<string, { template: string; message: string; entry: Stored; direction: "undo" | "redo"; sessionId: string | null }>();
+  const pending = new Map<
+    string,
+    {
+      template: string;
+      message: string;
+      entry: Stored;
+      direction: "undo" | "redo";
+      sessionId: string | null;
+    }
+  >();
   const now = () => new Date().toISOString();
 
   return async (request) => {
@@ -244,28 +215,6 @@ export function createReferenceHandler(
             throw new SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 422, "ai_output_invalid");
           }
           stream.send({ type: "done", html: check.html });
-        });
-      }
-      case "score": {
-        const body = read.body;
-        return aiEventStream(async (stream) => {
-          const answer = await textOf(model, scoreInstructions, buildScorePrompt(body), stream.signal);
-          stream.send({
-            type: "done",
-            result: normalizeScoringResult(answer, blockIds(body.content.blocks)),
-          });
-        });
-      }
-      case "suggestions": {
-        const body = read.body;
-        return aiEventStream(async (stream) => {
-          const answer = await textOf(
-            model,
-            suggestionsInstructions,
-            buildSuggestionsPrompt(body),
-            stream.signal,
-          );
-          stream.send({ type: "done", suggestions: parseSuggestions(answer) });
         });
       }
       case "conversationMessages":

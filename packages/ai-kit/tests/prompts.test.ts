@@ -7,12 +7,8 @@ import {
   buildEditingPrompt,
   buildFixRequest,
   buildRewritePrompt,
-  buildScorePrompt,
-  buildSuggestionsPrompt,
   editingInstructions,
   rewriteInstructions,
-  scoreInstructions,
-  suggestionsInstructions,
 } from "../src/server";
 
 const PKG = resolve(import.meta.dirname, "..");
@@ -37,8 +33,6 @@ describe("the prompts (D29)", () => {
 
   it("ships the other instructions as their files say", () => {
     expect(rewriteInstructions).toBe(file("prompts/rewrite.md"));
-    expect(scoreInstructions).toBe(file("prompts/score.md"));
-    expect(suggestionsInstructions).toBe(file("prompts/suggestions.md"));
   });
 
   it("builds a turn's prompt: merge tags, the template, the selected block, the request", () => {
@@ -124,24 +118,5 @@ describe("the prompts (D29)", () => {
     expect(
       buildRewritePrompt({ html, preset: null, language: null, instruction: "Rhyme" }),
     ).toBe("Instruction: Rhyme\n\nText:\n<p>Hi {{first_name}}</p>");
-  });
-
-  it("builds scoring's prompt with the linter's findings, and suggestions' as a turn", () => {
-    expect(
-      buildScorePrompt({
-        content,
-        lintFindings: [{ ruleId: "img-alt", blockId: "i1", message: "No alt." }],
-      }),
-    ).toBe(
-      "# Linter findings (don't repeat these)\n- img-alt: No alt.\n\n# Template\n```json\n" +
-        '{"blocks":[{"id":"p1","type":"paragraph","content":"<p>Hi</p>"}],"settings":{"width":600}}' +
-        "\n```",
-    );
-    expect(buildScorePrompt({ content, lintFindings: [] })).toContain(
-      "(don't repeat these)\nNone.",
-    );
-    expect(buildSuggestionsPrompt({ content, mergeTags })).toMatch(
-      /# Request\nSuggest the requests\.$/,
-    );
   });
 });

@@ -728,6 +728,15 @@ const ca: typeof en = {
     agentUpdatedTemplate: "{who} ha actualitzat la plantilla.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Redactar un correu de benvinguda per a nous clients",
+      emptyLaunch: "Crear un anunci de llançament de producte",
+      emptyNewsletter: "Crear el disseny d’un butlletí mensual",
+      filledShorten: "Escurçar el text",
+      filledFriendlier: "Fer servir un to més proper",
+      filledDates: "Actualitzar les dates i l’oferta",
+      filledCta: "Afegir una crida a l’acció clara",
+    },
     rewrite: {
       tooLarge:
         "Aquest paràgraf és massa llarg per a la IA. Tria un paràgraf de com a màxim 20.000 caràcters.",
@@ -783,9 +792,6 @@ const ca: typeof en = {
         "Parleu amb la IA per crear o modificar la vostra plantilla",
       design: "De disseny a plantilla",
       designDescription: "Creeu una plantilla a partir d'una imatge o un PDF",
-      scoring: "Puntuació de la plantilla",
-      scoringDescription:
-        "Comproveu el risc de correu brossa, la llegibilitat i les bones pràctiques",
     },
     chat: {
       title: "Assistent d'IA",
@@ -826,34 +832,6 @@ const ca: typeof en = {
       undo: "Desfés",
       redo: "Refés",
       buildAnother: "Crea'n una altra",
-    },
-    scoring: {
-      title: "Puntuació de la plantilla",
-      close: "Tanca",
-      rescore: "Torna a puntuar",
-      scoring: "S’està puntuant la plantilla...",
-      overallScore: "Puntuació global",
-      categories: {
-        spam: "Risc de correu brossa",
-        readability: "Llegibilitat",
-        bestPractices: "Bones pràctiques",
-      },
-      severity: {
-        high: "Alta",
-        medium: "Mitjana",
-        low: "Baixa",
-      },
-      fix: "Corregeix amb IA",
-      fixing: "S’està corregint...",
-      fixed: "Corregit",
-      undoFix: "Desfés",
-      finding: "1 resultat",
-      findings: "{count} resultats",
-      noFindings: "No s’han trobat problemes",
-      accessibilityNote: "L’accessibilitat es comprova al panell Problemes.",
-      openIssues: "Obre Problemes ({count})",
-      emptyState:
-        "Puntua la plantilla segons el risc de correu brossa, la llegibilitat i les bones pràctiques.",
     },
     canvas: {
       chatHint: "o deixeu que",

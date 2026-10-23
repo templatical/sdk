@@ -18,7 +18,7 @@ function feature(features: string[]) {
 
 describe("AiHeaderMenu", () => {
   it("lists the features the provider offers, and opens one", async () => {
-    const ai = feature(["chat", "score"]);
+    const ai = feature(["chat", "design"]);
     const wrapper = mountEditor(AiHeaderMenu, {
       props: { feature: ai },
       provides: { [TRANSLATIONS_KEY]: await loadTranslations("en") },
@@ -28,11 +28,11 @@ describe("AiHeaderMenu", () => {
     const items = wrapper.findAll('[data-testid^="ai-menu-item-"]');
     expect(items.map((item) => item.attributes("data-testid"))).toEqual([
       "ai-menu-item-chat",
-      "ai-menu-item-scoring",
+      "ai-menu-item-design",
     ]);
 
     await items[1].trigger("click");
-    expect(ai.open).toHaveBeenCalledWith("scoring");
+    expect(ai.open).toHaveBeenCalledWith("design");
   });
 
   it("closes the open panel when its item is chosen again", async () => {

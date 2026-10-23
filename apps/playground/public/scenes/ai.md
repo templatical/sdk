@@ -2,7 +2,7 @@
 
 Edit the template with an AI chat
 
-init({ templates, ai }) — chat, rewrite, scoring with fixes and design to template over your AI backend; here a recorded mock, no model and no keys.
+init({ templates, ai }) — chat, static starters, rewrite and design to template over your AI backend; here a recorded mock, no model and no keys.
 
 Contract: https://docs.templatical.com/backend/ai
 Live: https://play.templatical.com/scenes/ai

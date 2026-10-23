@@ -41,8 +41,6 @@ function constants() {
     ["FIX_REQUEST", prompt("prompts/fix.md")],
     ["DESIGN_REQUEST", prompt("prompts/design.md")],
     ["REWRITE_INSTRUCTIONS", prompt("prompts/rewrite.md")],
-    ["SCORE_INSTRUCTIONS", prompt("prompts/score.md")],
-    ["SUGGESTIONS_INSTRUCTIONS", prompt("prompts/suggestions.md")],
   ];
 }
 
@@ -59,9 +57,7 @@ export async function buildAssetsModule() {
   lines.push(
     `export const REWRITE_PRESETS = ${JSON.stringify(json("prompts/rewrite-presets.json"))} as const;`,
     "",
-    `export const SCORING_RESULT_SCHEMA: Record<string, unknown> = ${JSON.stringify(json("schema/scoring-result.schema.json"))};`,
     "",
-    `export const SUGGESTIONS_SCHEMA: Record<string, unknown> = ${JSON.stringify(json("schema/suggestions.schema.json"))};`,
     "",
   );
   return format(lines.join("\n"), { parser: "typescript" });

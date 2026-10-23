@@ -31,7 +31,7 @@ and owns a lock by session id and user identity together. `onRemoteChange`
 reports another session's edits.
 
 `ai` brings your own AI backend: one `false | fn` member per feature
-(`chat`, `fixFinding`, `design`, `rewrite`, `score`, `suggestions`), plus
+(`chat`, `fixFinding`, `design`, `rewrite`), plus
 an optional `conversation` (`list`, `clear`, `undo`, `redo`,
 `settleReplay`) for stored history, whose Undo and Redo are settled in two
 phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai-kit/client`

@@ -1,6 +1,5 @@
-import type { AiChatMessage, ScoringResult } from "@templatical/types";
+import type { AiChatMessage } from "@templatical/types";
 import { SdkError } from "@templatical/types";
-import { AI_LIMITS } from "../wire";
 
 const KNOWN_CODES = new Set([
   "feature_unavailable",
@@ -38,53 +37,6 @@ export function errorProblem(error: unknown): string | null {
     return `unknown code: ${describeError(error)}`;
   }
   return null;
-}
-
-const isScore = (value: unknown) =>
-  typeof value === "number" &&
-  Number.isInteger(value) &&
-  value >= 0 &&
-  value <= 100;
-
-export function scoringProblem(result: unknown): string | null {
-  const root = result as ScoringResult | null;
-  if (!root || !isScore(root.score)) return "score must be an integer 0–100";
-  const names = Object.keys(root.categories ?? {}).sort();
-  if (names.join() !== "bestPractices,readability,spam") {
-    return `categories must be spam, readability, bestPractices (got ${names.join(", ")})`;
-  }
-  for (const [name, category] of Object.entries(root.categories)) {
-    if (!isScore(category.score))
-      return `${name}.score must be an integer 0–100`;
-    if (!Array.isArray(category.findings))
-      return `${name}.findings must be a list`;
-    for (const finding of category.findings) {
-      if (
-        typeof finding.id !== "string" ||
-        !["high", "medium", "low"].includes(finding.severity) ||
-        typeof finding.message !== "string" ||
-        typeof finding.suggestion !== "string" ||
-        !(finding.blockId === null || typeof finding.blockId === "string")
-      ) {
-        return `${name} has a malformed finding: ${JSON.stringify(finding)}`;
-      }
-    }
-  }
-  return null;
-}
-
-export function suggestionsProblem(list: unknown): string | null {
-  if (!Array.isArray(list)) return "must be a list";
-  if (list.length > AI_LIMITS.suggestionsMax)
-    return `${list.length} suggestions (at most 4)`;
-  const bad = list.findIndex(
-    (item) =>
-      typeof item !== "string" ||
-      Array.from(item).length > AI_LIMITS.suggestionMaxChars,
-  );
-  return bad === -1
-    ? null
-    : `not a string of at most 80 characters: ${JSON.stringify(list[bad])}`;
 }
 
 export function messageProblem(message: unknown): string | null {

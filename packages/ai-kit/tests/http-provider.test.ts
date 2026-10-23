@@ -3,6 +3,7 @@ import {
   CollaborationConflict,
   SdkError,
   ThrottledError,
+  matchAiRoute,
   type AiChatRequest,
   type AiTurnHandlers,
 } from "../src";
@@ -51,23 +52,40 @@ describe.each([
     feature: "fixFinding",
     request: {
       ...base,
-      finding: { id: "f", message: "m", suggestion: "s", category: "spam", blockId: null },
+      finding: {
+        id: "f",
+        message: "m",
+        suggestion: "s",
+        category: "spam",
+        blockId: null,
+      },
     },
   },
   {
     feature: "design",
-    request: { ...base, prompt: null, file: new Blob(["%PDF"], { type: "application/pdf" }), fileKind: "pdf" },
+    request: {
+      ...base,
+      prompt: null,
+      file: new Blob(["%PDF"], { type: "application/pdf" }),
+      fileKind: "pdf",
+    },
   },
-] as const)("createHttpAiProvider: $feature turn completion", ({ feature, request }) => {
-  it.each([
-    ["missing", {}],
-    ["number", { messageId: 7 }],
-    ["boolean", { messageId: false }],
-    ["object", { messageId: {} }],
-    ["array", { messageId: [] }],
-  ])("rejects a done event with a %s messageId", async (_label, fields) => {
-    fakeFetch(() => streamResponse(sse(`data: ${JSON.stringify({ type: "done", ...fields })}\n\n`)));
-    await expect(
+] as const)(
+  "createHttpAiProvider: $feature turn completion",
+  ({ feature, request }) => {
+    it.each([
+      ["missing", {}],
+      ["number", { messageId: 7 }],
+      ["boolean", { messageId: false }],
+      ["object", { messageId: {} }],
+      ["array", { messageId: [] }],
+    ])("rejects a done event with a %s messageId", async (_label, fields) => {
+      fakeFetch(() =>
+        streamResponse(
+          sse(`data: ${JSON.stringify({ type: "done", ...fields })}\n\n`),
+        ),
+      );
+      await expect(
       (provider()[feature] as Function)(request, handlers(), new AbortController().signal),
     ).rejects.toMatchObject({
       name: "SdkError",
@@ -75,15 +93,16 @@ describe.each([
       statusCode: 502,
       code: "ai_provider_error",
     });
-  });
+    });
 
-  it("accepts an explicit null messageId without history", async () => {
+    it("accepts an explicit null messageId without history", async () => {
     fakeFetch(() => streamResponse(sse({ type: "done", messageId: null })));
     await expect(
       (provider()[feature] as Function)(request, handlers(), new AbortController().signal),
     ).resolves.toEqual({ messageId: null, text: "" });
   });
-});
+  },
+);
 
 describe("createHttpAiProvider: turns", () => {
   it("posts the wire's body and headers, and plays the stream into the handlers", async () => {
@@ -209,11 +228,15 @@ describe("createHttpAiProvider: turns", () => {
   });
 
   it("stops before buffered operations when onText aborts a single decoded chunk", async () => {
-    fakeFetch(() => streamResponse(sse(
-      `data: ${JSON.stringify({ type: "text", text: "Hi" })}\n\n` +
-      `data: ${JSON.stringify({ type: "operations", ops })}\n\n` +
-      `data: ${JSON.stringify({ type: "done", messageId: "m-1" })}\n\n`,
-    )));
+    fakeFetch(() =>
+      streamResponse(
+        sse(
+          `data: ${JSON.stringify({ type: "text", text: "Hi" })}\n\n` +
+            `data: ${JSON.stringify({ type: "operations", ops })}\n\n` +
+            `data: ${JSON.stringify({ type: "done", messageId: "m-1" })}\n\n`,
+        ),
+      ),
+    );
     const stop = new AbortController();
     const on = handlers({ onText: vi.fn(() => stop.abort()) });
     const turn = (provider().chat as Function)(chat, on, stop.signal);
@@ -288,88 +311,6 @@ describe("createHttpAiProvider: one-shot features", () => {
     });
     expect(seen[0].headers.get("X-Templatical-Session")).toBe(null);
   });
-
-  it("scores and suggests from one done event", async () => {
-    const result = {
-      score: 80,
-      categories: {
-        spam: { score: 90, findings: [] },
-        readability: { score: 70, findings: [] },
-        bestPractices: { score: 80, findings: [] },
-      },
-    };
-    const seen = fakeFetch((request) =>
-      streamResponse(
-        request.url.endsWith("/score")
-          ? sse({ type: "done", result })
-          : sse({ type: "done", suggestions: ["Add a footer"] }),
-      ),
-    );
-    expect(
-      await (provider().score as Function)({ ...base, lintFindings: [] }, new AbortController().signal),
-    ).toEqual(result);
-    expect(
-      await (provider().suggestions as Function)(base, new AbortController().signal),
-    ).toEqual(["Add a footer"]);
-    expect(seen[0].body).toEqual({ lintFindings: [], content: { blocks: [], settings: { width: 600 } } });
-    expect(seen[1].body).toEqual({ mergeTags: base.mergeTags, content: { blocks: [], settings: { width: 600 } } });
-  });
-});
-
-describe("createHttpAiProvider: scoring validation", () => {
-  const finding = { id: "f-1", message: "Missing footer", suggestion: "Add a footer", severity: "high", blockId: null };
-  const category = { score: 0, findings: [finding] };
-  const result = {
-    score: 100,
-    categories: {
-      spam: category,
-      readability: { score: 100, findings: [{ ...finding, severity: "medium", blockId: "b-1" }] },
-      bestPractices: { score: 80, findings: [{ ...finding, severity: "low" }] },
-    },
-  };
-  const withCategory = (value: unknown) => ({ ...result, categories: { ...result.categories, spam: value } });
-  const withFinding = (value: unknown) => withCategory({ score: 50, findings: [value] });
-
-  it.each([
-    ["null", null],
-    ["empty object", {}],
-    ["array", []],
-    ["string score", { ...result, score: "100" }],
-    ["fractional score", { ...result, score: 99.5 }],
-    ["negative score", { ...result, score: -1 }],
-    ["score above 100", { ...result, score: 101 }],
-    ["null categories", { ...result, categories: null }],
-    ["array categories", { ...result, categories: [] }],
-    ["missing bestPractices", { ...result, categories: { spam: category, readability: category } }],
-    ["null readability", { ...result, categories: { ...result.categories, readability: null } }],
-    ["null spam", withCategory(null)],
-    ["array category", withCategory([])],
-    ["string category score", withCategory({ ...category, score: "0" })],
-    ["fractional category score", withCategory({ ...category, score: 0.5 })],
-    ["negative category score", withCategory({ ...category, score: -1 })],
-    ["category score above 100", withCategory({ ...category, score: 101 })],
-    ["non-array findings", withCategory({ ...category, findings: {} })],
-    ["null finding", withFinding(null)],
-    ["array finding", withFinding([])],
-    ["non-string finding id", withFinding({ ...finding, id: 1 })],
-    ["non-string finding message", withFinding({ ...finding, message: null })],
-    ["non-string finding suggestion", withFinding({ ...finding, suggestion: false })],
-    ["unknown severity", withFinding({ ...finding, severity: "critical" })],
-    ["non-string blockId", withFinding({ ...finding, blockId: 1 })],
-    ["missing blockId", withFinding({ id: "f-1", message: "Missing footer", suggestion: "Add a footer", severity: "high" })],
-  ])("rejects a malformed scoring result: %s", async (_label, value) => {
-    fakeFetch(() => streamResponse(sse(`data: ${JSON.stringify({ type: "done", result: value })}\n\n`)));
-    await expect(
-      (provider().score as Function)({ ...base, lintFindings: [] }, new AbortController().signal),
-    ).rejects.toMatchObject({ name: "SdkError", statusCode: 502, code: "ai_provider_error" });
-  });
-
-  it("accepts valid scores at both bounds and complete findings", async () => {
-    fakeFetch(() => streamResponse(sse(`data: ${JSON.stringify({ type: "done", result })}\n\n`)));
-    await expect(
-      (provider().score as Function)({ ...base, lintFindings: [] }, new AbortController().signal),
-    ).resolves.toEqual(result);
-  });
 });
 
 describe("createHttpAiProvider: history and features", () => {
@@ -411,7 +352,12 @@ describe("createHttpAiProvider: history and features", () => {
     expect(await (conversation.redo as Function)("t-1", "m-1", { sessionId: "s-1" })).toEqual({
       applied: { batchId: "b-2", revision: 7 },
     });
-    expect(seen.map(({ method, url }) => `${method} ${url.replace("https://api.example.com/ai", "")}`)).toEqual([
+    expect(
+      seen.map(
+        ({ method, url }) =>
+          `${method} ${url.replace("https://api.example.com/ai", "")}`,
+      ),
+    ).toEqual([
       "GET /templates/t-1/ai/conversation-messages",
       "DELETE /templates/t-1/ai/conversation",
       "POST /templates/t-1/ai/messages/m-1/undo",
@@ -432,18 +378,21 @@ describe("createHttpAiProvider: history and features", () => {
     const off = provider({ chat: false, rewrite: false, conversation: false });
     expect(off.chat).toBe(false);
     expect(off.rewrite).toBe(false);
-    expect(typeof off.score).toBe("function");
+    expect(typeof off.design).toBe("function");
     expect(off.conversation).toBe(undefined);
   });
 
   it("fails a network error as the provider's failure, not a TypeError", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     await expect(
-      (provider().suggestions as Function)(base, new AbortController().signal),
+      (provider().chat as Function)(
+        chat,
+        handlers(),
+        new AbortController().signal,
+      ),
     ).rejects.toMatchObject({ name: "SdkError", code: "ai_provider_error" });
   });
 });
-
 
 describe("two-phase replay transport", () => {
   it("settles an encoded replay with the session and only the outcome in JSON", async () => {
@@ -459,15 +408,22 @@ describe("two-phase replay transport", () => {
   });
 });
 
-
 it("delivers received applied facts after Stop while suppressing buffered text and operations", async () => {
-  fakeFetch(() => streamResponse(sse([
-    { type: "text", text: "First" },
-    { type: "text", text: "Ignored" },
-    { type: "operations", ops },
-    { type: "applied", batchId: "a", revision: 2, operationCount: 1 },
-    { type: "done", messageId: null },
-  ].map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""))));
+  fakeFetch(() =>
+    streamResponse(
+      sse(
+        [
+          { type: "text", text: "First" },
+          { type: "text", text: "Ignored" },
+          { type: "operations", ops },
+          { type: "applied", batchId: "a", revision: 2, operationCount: 1 },
+          { type: "done", messageId: null },
+        ]
+          .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+          .join(""),
+      ),
+    ),
+  );
   const stop = new AbortController();
   const on = handlers({ onText: vi.fn(() => stop.abort()) });
   await expect((provider().chat as Function)(chat, on, stop.signal)).rejects.toMatchObject({ name: "AbortError" });
@@ -524,8 +480,7 @@ describe("createHttpAiProvider: transport edge cases", () => {
         fixFinding: false,
         design: false,
         rewrite: false,
-        score: false,
-        suggestions: false,
+
         conversation: false,
       }),
     ).toEqual({
@@ -533,8 +488,6 @@ describe("createHttpAiProvider: transport edge cases", () => {
       fixFinding: false,
       design: false,
       rewrite: false,
-      score: false,
-      suggestions: false,
     });
   });
 
@@ -561,34 +514,20 @@ describe("createHttpAiProvider: transport edge cases", () => {
     expect(form.get("pdf_upload")).toBe(null);
     expect(form.get("revision")).toBe(null);
   });
+});
 
-  it("accepts progress text before scoring and suggestions finish", async () => {
-    const result = {
-      score: 80,
-      categories: {
-        spam: { score: 90, findings: [] },
-        readability: { score: 70, findings: [] },
-        bestPractices: { score: 80, findings: [] },
-      },
-    };
-    fakeFetch((request) =>
-      streamResponse(
-        sse(
-          { type: "text", text: "Thinking" },
-          request.url.endsWith("/score")
-            ? { type: "done", result }
-            : { type: "done", suggestions: ["Add a footer"] },
-        ),
-      ),
+it.each(["score", "suggestions"])(
+  "does not match the removed %s route",
+  (route) => {
+    expect(matchAiRoute("POST", `/templates/t-1/ai/${route}`)).toBe(null);
+  },
+);
+
+it("opens chat without requesting model starters", async () => {
+  const seen = fakeFetch(() =>
+      streamResponse(sse({ type: "done", messageId: null })),
     );
-    await expect(
-      (provider().score as Function)(
-        { ...base, lintFindings: [] },
-        new AbortController().signal,
-      ),
-    ).resolves.toEqual(result);
-    await expect(
-      (provider().suggestions as Function)(base, new AbortController().signal),
-    ).resolves.toEqual(["Add a footer"]);
-  });
+  const ai = provider();
+  expect("suggestions" in ai).toBe(false);
+  expect(seen).toEqual([]);
 });

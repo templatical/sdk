@@ -22,12 +22,14 @@ async function openScene(page: Page, shadowDom: boolean, query: Record<string, s
 }
 
 test.describe("AI over a BYO provider", () => {
-  test("chat says it's AI, offers starters, changes the template and undoes the turn", async ({ page, shadowDom }) => {
+  test("chat says it's AI, changes the template and undoes the turn", async ({
+    page,
+    shadowDom,
+  }) => {
     const { ai } = await openScene(page, shadowDom);
 
     await ai.openPanel("chat");
     await expect(page.locator('[data-testid="ai-panel-subtitle"]')).toHaveText("Replies and changes come from AI.");
-    await expect(page.locator('[data-testid="ai-chat-suggestion"]')).toHaveCount(4);
 
     await ai.ask("Change the title");
     await expect(ai.lastReply()).toHaveText("Updating the title. It now reads “Hello there”.");
@@ -42,6 +44,53 @@ test.describe("AI over a BYO provider", () => {
     await ai.lastUndo().click();
     await expect(ai.title()).toContainText("Hello there");
   });
+
+  for (const { empty, starters } of [
+    {
+      empty: true,
+      starters: [
+        "Draft a welcome email for new customers",
+        "Create a product launch announcement",
+        "Build a monthly newsletter layout",
+      ],
+    },
+    {
+      empty: false,
+      starters: [
+        "Shorten the copy",
+        "Make the tone friendlier",
+        "Update the dates and the offer",
+        "Add a clear call to action",
+      ],
+    },
+  ]) {
+    test(`static starters for an ${empty ? "empty" : "filled"} template send their displayed text`, async ({
+      page,
+      shadowDom,
+    }) => {
+      const { ai, editor } = await openScene(page, shadowDom);
+      if (empty) {
+        while ((await editor.getBlocks().count()) > 0) {
+          const count = await editor.getBlocks().count();
+          await editor.selectBlock(0);
+          await editor.deleteSelectedBlock();
+          await expect
+            .poll(() => editor.getBlocks().count())
+            .toBeLessThan(count);
+        }
+      }
+      await ai.openPanel("chat");
+      const buttons = page.locator('[data-testid="ai-chat-starter"]');
+      await expect(buttons).toHaveText(starters);
+      await buttons.first().click();
+      await expect(page.locator('[data-testid="ai-chat-prompt"]')).toHaveText([
+        starters[0],
+      ]);
+      await expect(ai.lastReply()).toHaveText(
+        "Adding a closing line at the end. I added it below the last block.",
+      );
+    });
+  }
 
   test("Cmd/Ctrl+Z reverts a whole turn", async ({ page, shadowDom }) => {
     const { ai, editor } = await openScene(page, shadowDom);
@@ -94,25 +143,6 @@ test.describe("AI over a BYO provider", () => {
     await toolbar.locator('[data-testid="ai-rewrite-replace"]').click();
 
     await expect(page.locator('[data-block-type="paragraph"]').first()).toContainText("✨ Three releases");
-  });
-
-  test("scoring shows three categories, links to Issues, and fixes a finding with Undo", async ({ page, shadowDom }) => {
-    const { ai } = await openScene(page, shadowDom);
-    await ai.openPanel("scoring");
-
-    await expect(page.locator('[data-testid="scoring-overall"]')).toContainText("78");
-    await expect(page.locator('[data-testid="scoring-category"]')).toHaveCount(3);
-    await expect(page.locator('[data-testid="scoring-accessibility-note"]')).toContainText(
-      "Accessibility is checked in the Issues panel.",
-    );
-
-    await page.locator('[data-testid="scoring-fix"]').first().click();
-    await expect(page.locator('[data-testid="scoring-fixed"]')).toBeVisible();
-    await expect(page.locator('[data-block-type="paragraph"]').first()).toContainText("A shorter, clearer line.");
-
-    await page.locator('[data-testid="scoring-undo-fix"]').click();
-    await expect(page.locator('[data-testid="scoring-fixed"]')).toHaveCount(0);
-    await expect(page.locator('[data-block-type="paragraph"]').first()).toContainText("Three releases landed");
   });
 
   test("design builds a template from an image, with Undo", async ({ page, shadowDom }) => {

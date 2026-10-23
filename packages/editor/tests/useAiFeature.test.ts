@@ -15,7 +15,6 @@ import { safeClone, SdkError } from "@templatical/types";
 import {
   AI_BROADCAST_GRACE_MS,
   AI_MISSING_PROVIDER_MESSAGE,
-  toAiLintFindings,
   useAiFeature,
   type UseAiFeatureOptions,
 } from "../src/composables/useAiFeature";
@@ -49,8 +48,6 @@ const off = {
   fixFinding: false,
   design: false,
   rewrite: false,
-  score: false,
-  suggestions: false,
 } as const;
 
 /** A chat that plays `script` into the handlers, then answers `text`. */
@@ -97,7 +94,7 @@ async function openLocal(
       mergeTags: () => ({ syntax: "liquid", tags: MERGE_TAGS.tags }),
       normalize: (ops, content) =>
         normalizeRemoteOperations(ops, content, MERGE_TAGS),
-      lintFindings: () => [],
+
       commentsOpen: null,
       onError,
       ...extra,
@@ -110,6 +107,14 @@ async function openLocal(
 }
 
 describe("useAiFeature without collaboration", () => {
+  it("reports template emptiness when a block is added", async () => {
+    const { ai, editor } = await openLocal({ chat: chatting(() => {}) });
+    editor.setContent({ ...CONTENT, blocks: [] });
+    expect(ai.isTemplateEmpty.value).toBe(true);
+    editor.setContent({ ...CONTENT, blocks: [safeClone(CONTENT.blocks[0])] });
+    expect(ai.isTemplateEmpty.value).toBe(false);
+  });
+
   it("is off until a template is loaded, and for features the provider withholds", async () => {
     const scope = effectScope();
     const { ai, editor } = scope.run(() => {
@@ -135,7 +140,7 @@ describe("useAiFeature without collaboration", () => {
           reload: null,
           mergeTags: () => null,
           normalize: (ops) => [...ops],
-          lintFindings: () => [],
+
           commentsOpen: null,
         }),
       };
@@ -429,22 +434,6 @@ describe("useAiFeature without collaboration", () => {
     await settle();
     expect(ai.panel.value).toBe(null);
   });
-
-  it("cuts the lint findings it sends (D23)", () => {
-    const issues = Array.from({ length: 205 }, (_, i) => ({
-      blockId: i === 0 ? null : `b${i}`,
-      ruleId: i === 0 ? "r".repeat(120) : "img-alt",
-      severity: "warning" as const,
-      message: i === 0 ? "m".repeat(600) : "No alt.",
-    }));
-    const findings = toAiLintFindings(issues);
-    expect(findings).toHaveLength(200);
-    expect(findings[0]).toEqual({
-      ruleId: "r".repeat(100),
-      blockId: null,
-      message: "m".repeat(500),
-    });
-  });
 });
 
 describe("useAiFeature with a conversation (D14)", () => {
@@ -566,7 +555,7 @@ describe("useAiFeature with collaboration", () => {
         reload: null,
         mergeTags: () => null,
         normalize: (ops) => [...ops],
-        lintFindings: () => [],
+
         commentsOpen: null,
       });
       return { editor, collaboration, ai };
@@ -750,7 +739,7 @@ async function openReloading() {
       reload: (id, shouldApply) => editor.load(id, shouldApply),
       mergeTags: () => null,
       normalize: (ops) => [...ops],
-      lintFindings: () => [],
+
       commentsOpen: null,
     });
     return { editor, ai };
@@ -763,7 +752,10 @@ describe("useAiFeature fix round 1", () => {
   it.each(["undo", "redo"] as const)(
     "discards delayed remote %s operations after switching templates (R1)",
     async (direction) => {
-      const response = deferred<{ operations: Operation[]; replayId: string }>();
+      const response = deferred<{
+        operations: Operation[];
+        replayId: string;
+      }>();
       const replay = vi.fn(() => response.promise);
       const { ai, editor } = await openLocal({
         conversation: { settleReplay: async () => {},
@@ -896,7 +888,7 @@ describe("useAiFeature fix round 1", () => {
         reload: () => reloaded.promise,
         mergeTags: () => null,
         normalize: (ops) => [...ops],
-        lintFindings: () => [],
+
         commentsOpen: null,
       }),
     )!;
@@ -1405,7 +1397,7 @@ async function openAiSession(
       reload: (id, shouldApply) => editor.load(id, shouldApply),
       mergeTags: () => null,
       normalize: (ops) => [...ops],
-      lintFindings: () => [],
+
       commentsOpen: null,
       onError,
     });
@@ -1626,7 +1618,8 @@ describe("useAiFeature fix round 2", () => {
           });
           throw errors[turnNumber - 1];
         },
-        conversation: { settleReplay: async () => {},
+        conversation: {
+          settleReplay: async () => {},
           list: async () => {
             if (turnNumber === 0) return [];
             if (!rejected) {
@@ -2005,12 +1998,16 @@ describe("useAiFeature fix round 3", () => {
   it("prevents bootstraps, later loads and enqueues after destroy (F4)", async () => {
     const history = deferred<AiChatMessage[]>();
     const list = vi.fn(() => history.promise);
-    const suggestions = vi.fn(async () => ["Try this"]);
     const chat = chatting(() => {});
     const { ai, editor } = await openLocal({
       chat,
-      suggestions,
-      conversation: { settleReplay: async () => {}, list, clear: false, undo: false, redo: false },
+      conversation: {
+        settleReplay: async () => {},
+        list,
+        clear: false,
+        undo: false,
+        redo: false,
+      },
     });
     ai.open("chat");
     await settle();
@@ -2019,7 +2016,6 @@ describe("useAiFeature fix round 3", () => {
     ai.destroy();
     const availableAfterDestroy = ai.isAvailable.value;
     await settle();
-    const requestsAfterDestroy = suggestions.mock.calls.length;
     history.resolve([]);
     await settle();
     await editor.load("tpl-2");
@@ -2028,13 +2024,10 @@ describe("useAiFeature fix round 3", () => {
     const watchBusy = watch(ai.busy, (value) => busyStates.push(value), {
       flush: "sync",
     });
-    await ai.loadSuggestions();
     await ai.send("After destroy");
     ai.open("chat");
     await settle();
     watchBusy();
-    expect(requestsAfterDestroy).toBe(0);
-    expect(suggestions).not.toHaveBeenCalled();
     expect(list).toHaveBeenCalledTimes(1);
     expect(chat).not.toHaveBeenCalled();
     expect(availableAfterDestroy).toBe(false);
@@ -2165,7 +2158,6 @@ describe("useAiFeature fix round 4", () => {
   });
 });
 
-
 describe("final fix: replay settlement", () => {
   it.each([true, false])("settles the actual application result %s inside the lane", async (accept) => {
     const finished = deferred<void>();
@@ -2221,7 +2213,6 @@ describe("final fix: replay settlement", () => {
   });
 });
 
-
 it("undoes a stored merge-tag paragraph turn over the HTTP wire with editor normalization", async () => {
   const handle = createReferenceHandler({ async *stream({ messages }) {
     if (messages.at(-1)?.role === "tool") { yield { type: "text", text: "Done" }; return; }
@@ -2229,7 +2220,7 @@ it("undoes a stored merge-tag paragraph turn over the HTTP wire with editor norm
   } });
   vi.stubGlobal("fetch", (input: string, init: RequestInit) => handle(new Request(input, init)));
   try {
-    const provider = createHttpAiProvider({ baseUrl: "https://example.test", features: { suggestions: false } });
+    const provider = createHttpAiProvider({ baseUrl: "https://example.test" });
     const { ai, editor, onError } = await openLocal(provider);
     const turn = await ai.send("Greet the reader");
     expect(turn.operationCount).toBe(1);
@@ -2239,29 +2230,36 @@ it("undoes a stored merge-tag paragraph turn over the HTTP wire with editor norm
     expect(ai.messages.value.at(-1)?.undone).toBe(true);
     expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(true);
     expect(onError).not.toHaveBeenCalled();
-  } finally { vi.unstubAllGlobals(); }
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
-
-it.each(["send", "score", "loadSuggestions"] as const)("pre-checks UTF-8 content bytes before %s reaches a provider", async (method) => {
+it("pre-checks UTF-8 content bytes before send reaches a provider", async () => {
   const chat = chatting(() => {});
-  const score = vi.fn(async () => ({ score: 0, categories: { spam: { score: 0, findings: [] }, readability: { score: 0, findings: [] }, bestPractices: { score: 0, findings: [] } } }));
-  const suggestions = vi.fn(async () => []);
-  const { ai, editor } = await openLocal({ chat, score, suggestions });
+  const { ai, editor } = await openLocal({ chat });
   editor.updateBlock("p1", { content: "é".repeat(100_000) } as never);
-  if (method === "send") { await ai.send("Hi"); expect(ai.failure.value?.error).toMatchObject({ code: "content_too_large", statusCode: 413 }); }
-  else if (method === "score") await expect(ai.score(new AbortController().signal)).rejects.toMatchObject({ code: "content_too_large", statusCode: 413 });
-  else await ai.loadSuggestions();
-  expect(chat).not.toHaveBeenCalled(); expect(score).not.toHaveBeenCalled(); expect(suggestions).not.toHaveBeenCalled();
+  await ai.send("Hi");
+  expect(ai.failure.value?.error).toMatchObject({ code: "content_too_large", statusCode: 413 });
+  expect(chat).not.toHaveBeenCalled();
 });
 
 it("reloads a stopped HTTP turn after its buffered applied fact arrives", async () => {
-  const bytes = new TextEncoder().encode([
-    { type: "text", text: "Starting" },
-    { type: "operations", ops: greet },
-    { type: "applied", batchId: "stopped-applied", revision: 2, operationCount: 1 },
-    { type: "done", messageId: null },
-  ].map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""));
+  const bytes = new TextEncoder().encode(
+    [
+      { type: "text", text: "Starting" },
+      { type: "operations", ops: greet },
+      {
+        type: "applied",
+        batchId: "stopped-applied",
+        revision: 2,
+        operationCount: 1,
+      },
+      { type: "done", messageId: null },
+    ]
+      .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+      .join(""),
+  );
   vi.stubGlobal("fetch", async () => new Response(new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } })));
   try {
     const http = createHttpAiProvider({ baseUrl: "https://example.test", features: { conversation: false } });
@@ -2276,7 +2274,6 @@ it("reloads a stopped HTTP turn after its buffered applied fact arrives", async 
     expect(onError).not.toHaveBeenCalled();
   } finally { vi.unstubAllGlobals(); }
 });
-
 
 it("replays a mock merge-tag turn with guarded Redo and refuses a later user edit", async () => {
   const provider = createMockAiProvider({ conversation: true, chat: [{ events: [
@@ -2297,7 +2294,6 @@ it("replays a mock merge-tag turn with guarded Redo and refuses a later user edi
   expect((await provider.conversation!.list("tpl-1")).at(-1)?.undone).toBe(true);
 });
 
-
 it.each(["stop", "close"] as const)("releases the lane on %s even when a provider ignores abort", async (action) => {
   const pending = deferred<{ messageId: string | null; text: string }>();
   const { ai } = await openLocal({ chat: () => pending.promise });
@@ -2311,7 +2307,6 @@ it.each(["stop", "close"] as const)("releases the lane on %s even when a provide
   pending.resolve({ messageId: null, text: "Late" });
   await turn;
 });
-
 
 it("serializes a late server fact's reload ahead of the next turn", async () => {
   const waiting = deferred<{ messageId: string | null; text: string }>();
@@ -2350,7 +2345,6 @@ it("ignores settlement errors after the requesting session was abandoned", async
   expect(editor.content.value).toEqual(CONTENT);
   expect(onError).not.toHaveBeenCalled();
 });
-
 
 it("reloads again when another applied fact arrives during stopped-turn cleanup", async () => {
   const firstReload = deferred<Template>();

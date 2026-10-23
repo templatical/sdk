@@ -1,11 +1,11 @@
 ---
 title: KI
-description: Chat mit Template-Bearbeitung, Umformulieren, Bewertung mit Korrekturen und Design zu Template über Ihr eigenes KI-Backend.
+description: Chat mit Template-Bearbeitung, Umformulieren und Design zu Template über Ihr eigenes KI-Backend.
 ---
 
 # KI
 
-Geben Sie dem Editor einen KI-Provider, und Ihre Nutzenden erhalten einen Assistenten, der das geöffnete Template bearbeitet: einen Chat mit Rückgängig, „Rewrite with AI“ in der Absatz-Werkzeugleiste, eine Template-Bewertung mit Korrekturen per Klick, Vorschläge zum Einstieg und ein Template aus einem Screenshot oder einer PDF. Ihr Backend spricht mit dem Modell — mit Ihren Schlüsseln, Ihren Vereinbarungen zur Datenverarbeitung und Ihren Regeln.
+Geben Sie dem Editor einen KI-Provider, und Ihre Nutzenden erhalten einen Assistenten, der das geöffnete Template bearbeitet: einen Chat mit Rückgängig, „Rewrite with AI“ in der Absatz-Werkzeugleiste, statische, lokalisierte Einstiegsanfragen und ein Template aus einem Screenshot oder einer PDF. Ihr Backend spricht mit dem Modell — mit Ihren Schlüsseln, Ihren Vereinbarungen zur Datenverarbeitung und Ihren Regeln.
 
 Der Editor übernimmt die Oberflächen, das Streaming, das Anwenden der KI-Änderungen mit Rückgängig und die Kennzeichnung der Inhalte als KI-generiert. Sie übernehmen den Modellaufruf: eine Funktion pro Feature oder einige HTTP-Endpunkte, deren Großteil `@templatical/ai-kit` bereitstellt.
 
@@ -41,8 +41,6 @@ interface AiProvider {
   fixFinding: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   design: false | ((request, on: AiTurnHandlers, signal: AbortSignal) => Promise<{ messageId: string | null; text: string }>);
   rewrite: false | ((request, on: { onText(text: string): void }, signal: AbortSignal) => Promise<{ html: string }>);
-  score: false | ((request, signal: AbortSignal) => Promise<ScoringResult>);
-  suggestions: false | ((request, signal: AbortSignal) => Promise<string[]>);
   conversation?: {
     settleReplay(templateId: string, messageId: string, outcome: AiReplayOutcome): Promise<void>;
     list(templateId: string): Promise<AiChatMessage[]>;
@@ -70,11 +68,19 @@ Ein Durchlauf streamt seine Antwort über `on.onText` und übergibt Änderungen 
 - **`on.onOperations(ops)`**: [Operationen](/de/api/operations), die der Editor anwenden soll. Er wendet sie sofort an und antwortet mit `{ applied: true, inverse }` oder mit `{ applied: false, code, opIndex, message }`, wenn sie nicht mehr zum Template passen (jemand hat einen Block geändert oder hält seine Sperre). Die Batches eines Durchlaufs bilden einen Rückgängig-Schritt.
 - **`on.onApplied({ batchId, revision, operationCount })`**: Ihr Backend hat den Batch bereits auf seine Kopie angewendet. Mit einem [Zusammenarbeits-Provider](/de/backend/collaboration) folgt der Editor der Revision; mit einem reinen Templates-Provider lädt er das Template am Ende des Durchlaufs neu. Ohne beide verweigert er den Batch.
 
-`chat` sendet `message` und `selectedBlockId` (nur einen Block, den Ihr Backend kennt), `fixFinding` einen Bewertungsbefund (`finding`), `design` ein Bild oder eine PDF (`file`, `fileKind`) und einen optionalen `prompt`.
+`chat` sendet `message` und `selectedBlockId` (nur einen Block, den Ihr Backend kennt), `fixFinding` einen Befund (`finding`), `design` ein Bild oder eine PDF (`file`, `fileKind`) und einen optionalen `prompt`.
 
-### Umformulieren, Bewertung und Vorschläge
+### Umformulieren
 
-`rewrite` erhält das `html` eines Absatzes und ein `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` mit einer `language`), eine `instruction` oder beides. Es streamt den Text für eine Live-Vorschau und liefert das fertige HTML. `score` erhält die Befunde des Linters (`lintFindings`), damit es sie nicht wiederholt, und liefert drei Kategorien (`spam`, `readability`, `bestPractices`) mit ganzzahligen Bewertungen von 0–100 und Befunden. `suggestions` liefert bis zu vier kurze Anfragen für den leeren Chat.
+`rewrite` erhält das `html` eines Absatzes und ein `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` mit einer `language`), eine `instruction` oder beides. Es streamt den Text für eine Live-Vorschau und liefert das fertige HTML.
+
+### Einstiegsanfragen
+
+Ein Chat ohne Nachrichten zeigt drei statische, lokalisierte Einstiegsanfragen für eine Vorlage ohne Blöcke und vier für eine Vorlage mit Blöcken. Ein Klick sendet den angezeigten Text als Chat-Nachricht. Die Anfragen benötigen keinen Modellaufruf und lassen sich nicht durch den Integrator überschreiben.
+
+### Inhaltsprüfungen
+
+Der deterministische Linter meldet konkrete Inhalts-, Client- und Größenbefunde. Er sagt die Platzierung im Posteingang nicht voraus. Siehe [Zustellbarkeit](/de/quality/deliverability/) und [Kompatibilität](/de/quality/compatibility/).
 
 ### Verlauf
 
@@ -84,7 +90,7 @@ Nach Operationen bestätigt der Editor das Ergebnis mit `settleReplay(templateId
 
 ## Funktionen steuern
 
-Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die „Fix“-Schaltflächen bei Befunden, `score: false` die Template-Bewertung, `design: false` Design zu Template und `suggestions: false` die Vorschläge zum Einstieg. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
+Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die „Fix“-Schaltflächen bei Befunden, `design: false` Design zu Template. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
 
 ## Fehler
 
@@ -104,10 +110,9 @@ Rückgängig und Wiederholen dürfen mit einem Operationscode (`precondition_fai
 
 ## Im Editor
 
-- **Header:** ein „AI“-Menü mit Assistent, Design zu Template und Template-Bewertung.
-- **Chat:** als „AI assistant“ gekennzeichnet („Replies and changes come from AI.“), pro Durchlauf „Applied N changes“ mit „Undo“ und „Redo“, „Stop“ während eines Durchlaufs, „New chat“ und Vorschläge zum Einstieg. Cmd/Strg+Z macht einen ganzen Durchlauf rückgängig.
+- **Header:** ein „AI“-Menü mit Assistent und Design zu Template.
+- **Chat:** als „AI assistant“ gekennzeichnet („Replies and changes come from AI.“), pro Durchlauf „Applied N changes“ mit „Undo“ und „Redo“, „Stop“ während eines Durchlaufs, „New chat“ und statische Einstiegsanfragen. Cmd/Strg+Z macht einen ganzen Durchlauf rückgängig.
 - **Absatz-Werkzeugleiste:** „AI“ mit den Vorgaben, 16 Zielsprachen zum Übersetzen und einer freien Anweisung. Das Ergebnis erscheint als „AI suggestion“, Merge-Tags als Tags und das Markup bereinigt; „Replace“ übernimmt es als eigene Änderung der Person.
-- **Template-Bewertung:** drei Kategorien, ein Link zum „Issues“-Panel (Barrierefreiheit prüft der Linter) und „Fix with AI“ bei jedem Befund, mit Rückgängig.
 - **Design zu Template:** PNG, JPEG, WebP, GIF oder PDF bis 5 MB; der Aufbau ist ein rückgängig machbarer Durchlauf.
 - **Leere Arbeitsfläche:** Verknüpfungen zum Assistenten und zu Design zu Template.
 
@@ -123,10 +128,14 @@ Fehler erreichen `init({ onError })`. Batches aus einer anderen Sitzung, auch di
 
 ## Headless-Nutzung
 
-Der Provider ist ein einfaches Objekt: Rufen Sie `chat`, `score` oder `rewrite` aus Ihrem eigenen Code mit denselben Anfragen auf, und wenden Sie die Operationen mit `applyOperations` aus `@templatical/types` an. `@templatical/ai-kit/testing` bietet `createMockAiProvider` für Oberflächentests und `runAiProviderConformance` zum Prüfen eines selbst geschriebenen Providers.
+Der Provider ist ein einfaches Objekt: Rufen Sie `chat` oder `rewrite` aus Ihrem eigenen Code mit denselben Anfragen auf, und wenden Sie die Operationen mit `applyOperations` aus `@templatical/types` an. `@templatical/ai-kit/testing` bietet `createMockAiProvider` für Oberflächentests und `runAiProviderConformance` zum Prüfen eines selbst geschriebenen Providers.
 
 ## Im Playground
 
-Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` ab: kein Modell und keine Schlüssel. Bitten Sie um eine Titeländerung, klicken Sie doppelt auf einen Absatz und formulieren Sie ihn um, oder bewerten Sie das Template und beheben Sie einen Befund. `?history=1` behält einen Gesprächsverlauf; `?collaboration=1&user=Ada` in zwei Tabs zeigt, wie KI-Änderungen anderswo ankommen.
+Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` ab: kein Modell und keine Schlüssel. Bitten Sie um eine Titeländerung, oder klicken Sie doppelt auf einen Absatz und formulieren Sie ihn um. `?history=1` behält einen Gesprächsverlauf; `?collaboration=1&user=Ada` in zwei Tabs zeigt, wie KI-Änderungen anderswo ankommen.
 
 [Im Playground öffnen](https://play.templatical.com/scenes/ai)
+
+## Prüfen
+
+Öffnen Sie den Assistenten für eine geladene Vorlage ohne Blöcke: Er zeigt drei Einstiegsanfragen. Fügen Sie einen Block hinzu: Er zeigt vier. Ein Klick sendet den angezeigten Text. Prüfen Sie den Provider mit [der Konformitätssuite](/de/api/ai-kit#testen).

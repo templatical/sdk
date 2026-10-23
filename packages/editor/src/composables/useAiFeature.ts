@@ -12,7 +12,6 @@ import type {
   AiChatMessage,
   AiFeatureName,
   AiFixFinding,
-  AiLintFinding,
   AiMergeTags,
   AiMessageKind,
   AiOperationsResult,
@@ -23,7 +22,6 @@ import type {
   AiTurnResult,
   Block,
   Operation,
-  ScoringResult,
   TemplateContent,
 } from "@templatical/types";
 import {
@@ -55,11 +53,7 @@ export { AI_MISSING_PROVIDER_MESSAGE } from "../utils/aiErrors";
 /** UTF-8 bytes of serialized content, matching the wire's AI_LIMITS. */
 export const AI_CONTENT_MAX_BYTES = 200_000;
 
-const LINT_FINDINGS_MAX = 200;
-const RULE_ID_MAX = 100;
-const LINT_MESSAGE_MAX = 500;
-
-export type AiPanel = "chat" | "scoring" | "design";
+export type AiPanel = "chat" | "design" | "translate";
 export type { AiErrorContext } from "../utils/aiErrors";
 
 export interface AiFailure {
@@ -124,7 +118,6 @@ export interface UseAiFeatureOptions {
     ops: readonly Operation[],
     content: TemplateContent,
   ) => Operation[];
-  lintFindings: () => AiLintFinding[];
   /** The comments panel's state: AI panels and comments are exclusive (D18). */
   commentsOpen: Ref<boolean> | null;
   onError?: (error: Error) => void;
@@ -168,26 +161,6 @@ function hasBlock(blocks: readonly Block[], blockId: string): boolean {
   );
 }
 
-function cut(text: string, max: number): string {
-  const points = Array.from(text);
-  return points.length > max ? points.slice(0, max).join("") : text;
-}
-
-/** The linter's issues as scoring's context: the first 200, cut (D23). */
-export function toAiLintFindings(
-  issues: readonly {
-    ruleId: string;
-    blockId: string | null;
-    message: string;
-  }[],
-): AiLintFinding[] {
-  return issues.slice(0, LINT_FINDINGS_MAX).map((issue) => ({
-    ruleId: cut(issue.ruleId, RULE_ID_MAX),
-    blockId: issue.blockId,
-    message: cut(issue.message, LINT_MESSAGE_MAX),
-  }));
-}
-
 function refusalOf(error: OperationError): AiOperationsResult {
   return {
     applied: false,
@@ -216,7 +189,7 @@ export interface UseAiFeatureReturn {
   isRunning: Ref<boolean>;
   failure: Ref<AiFailure | null>;
   failedPrompt: Ref<string | null>;
-  suggestions: Ref<string[]>;
+  isTemplateEmpty: ComputedRef<boolean>;
   send: (message: string) => Promise<AiTurnOutcome>;
   fix: (finding: AiFixFinding) => Promise<AiTurnOutcome>;
   design: (input: {
@@ -227,8 +200,6 @@ export interface UseAiFeatureReturn {
   newChat: () => Promise<void>;
   undoMessage: (id: string) => Promise<void>;
   redoMessage: (id: string) => Promise<void>;
-  loadSuggestions: () => Promise<void>;
-  score: (signal: AbortSignal) => Promise<ScoringResult>;
   rewrite: (
     input: Pick<
       AiRewriteRequest,
@@ -262,13 +233,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     id: string;
     memory: Memory;
     messages: Ref<AiChatItem[]>;
-    suggestions: Ref<string[]>;
     isLoadingHistory: Ref<boolean>;
     busy: Ref<boolean>;
     failure: Ref<AiFailure | null>;
     failedPrompt: Ref<string | null>;
     loaded: boolean;
-    suggestionsLoaded: boolean;
     historyGeneration: number;
     pendingHistory: { generation: number; promise: Promise<void> } | null;
     active: Job | null;
@@ -293,13 +262,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       id,
       memory: saved,
       messages: ref(saved.items),
-      suggestions: ref([]),
       isLoadingHistory: ref(false),
       busy: ref(false),
       failure: ref(null),
       failedPrompt: ref(null),
       loaded: false,
-      suggestionsLoaded: false,
       historyGeneration: 0,
       pendingHistory: null,
       active: null,
@@ -343,7 +310,9 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     });
   }
   const messages = sessionRef((scope) => scope.messages, []);
-  const suggestions = sessionRef((scope) => scope.suggestions, []);
+  const isTemplateEmpty = computed(
+    () => editor.content.value.blocks.length === 0,
+  );
   const isLoadingHistory = sessionRef((scope) => scope.isLoadingHistory, false);
   const isRunning = sessionRef((scope) => scope.busy, false);
   const failure = sessionRef((scope) => scope.failure, null);
@@ -1225,50 +1194,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     );
   }
 
-  async function loadSuggestions(scope = scopeOf()): Promise<void> {
-    const suggest = provider.suggestions;
-    if (
-      !scope ||
-      !isCurrent(scope) ||
-      typeof suggest !== "function" ||
-      scope.suggestionsLoaded
-    )
-      return;
-    scope.suggestionsLoaded = true;
-    await enqueue(
-      "read",
-      scope,
-      async (job) => {
-        try {
-          if (scope.messages.value.length > 0) return;
-          await abortable(settle(scope), job.controller.signal);
-          check(job);
-          const list = await abortable(
-            suggest(requestBase(scope.id), job.controller.signal),
-            job.controller.signal,
-          );
-          check(job);
-          scope.suggestions.value = list.slice(0, 4);
-        } catch (error) {
-          if (isCurrent(scope)) report(error);
-        }
-      },
-      () => {},
-    );
-  }
-
   // --- Panels (D17, D18) -------------------------------------------------------------
 
   function bootstrap(scope: Session): void {
     if (!isCurrent(scope)) return;
-    void loadConversation(scope).then(() => {
-      if (
-        isCurrent(scope) &&
-        panel.value === "chat" &&
-        scope.messages.value.length === 0
-      )
-        void loadSuggestions(scope);
-    });
+    void loadConversation(scope);
   }
 
   function open(next: AiPanel): void {
@@ -1358,7 +1288,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     busy: isRunning,
     failure,
     failedPrompt,
-    suggestions,
+    isTemplateEmpty,
     send: (message) => {
       const chat = provider.chat;
       return typeof chat === "function"
@@ -1410,41 +1340,6 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     newChat,
     undoMessage: (id) => replay(id, "undo"),
     redoMessage: (id) => replay(id, "redo"),
-    loadSuggestions: () => loadSuggestions(),
-    score: (signal) => {
-      const scope = scopeOf();
-      const score = provider.score;
-      if (!scope || typeof score !== "function")
-        return Promise.reject(new Error("Scoring isn't available."));
-      return enqueue(
-        "read",
-        scope,
-        async (job) => {
-          const abort = () => job.controller.abort(signal.reason);
-          signal.addEventListener("abort", abort, { once: true });
-          try {
-            signal.throwIfAborted();
-            await abortable(settle(scope), job.controller.signal);
-            check(job);
-            return await abortable(
-              score(
-                {
-                  ...requestBase(scope.id),
-                  lintFindings: options.lintFindings(),
-                },
-                job.controller.signal,
-              ),
-              job.controller.signal,
-            );
-          } finally {
-            signal.removeEventListener("abort", abort);
-          }
-        },
-        () => {
-          throw new DOMException("Scoring stopped.", "AbortError");
-        },
-      );
-    },
     rewrite: (input, onText, signal) => {
       const scope = scopeOf();
       const rewrite = provider.rewrite;

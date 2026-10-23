@@ -726,6 +726,15 @@ const ptBR: typeof en = {
     agentUpdatedTemplate: "{who} atualizou o template.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Redigir um e-mail de boas-vindas para novos clientes",
+      emptyLaunch: "Criar um anúncio de lançamento de produto",
+      emptyNewsletter: "Criar o layout de uma newsletter mensal",
+      filledShorten: "Encurtar o texto",
+      filledFriendlier: "Usar um tom mais amigável",
+      filledDates: "Atualizar as datas e a oferta",
+      filledCta: "Adicionar uma chamada para ação clara",
+    },
     rewrite: {
       tooLarge:
         "Este parágrafo é longo demais para a IA. Selecione um parágrafo com até 20.000 caracteres.",
@@ -779,9 +788,6 @@ const ptBR: typeof en = {
       chatDescription: "Converse com a IA para criar ou alterar seu template",
       design: "De design a template",
       designDescription: "Crie um template a partir de uma imagem ou PDF",
-      scoring: "Pontuação do template",
-      scoringDescription:
-        "Verifique o risco de spam, a legibilidade e as boas práticas",
     },
     chat: {
       title: "Assistente de IA",
@@ -820,34 +826,6 @@ const ptBR: typeof en = {
       undo: "Desfazer",
       redo: "Refazer",
       buildAnother: "Criar outro",
-    },
-    scoring: {
-      title: "Pontuação do modelo",
-      close: "Fechar",
-      rescore: "Avaliar novamente",
-      scoring: "Avaliando o modelo...",
-      overallScore: "Pontuação geral",
-      categories: {
-        spam: "Risco de spam",
-        readability: "Legibilidade",
-        bestPractices: "Boas práticas",
-      },
-      severity: {
-        high: "Alta",
-        medium: "Média",
-        low: "Baixa",
-      },
-      fix: "Corrigir com IA",
-      fixing: "Corrigindo...",
-      fixed: "Corrigido",
-      undoFix: "Desfazer",
-      finding: "1 resultado",
-      findings: "{count} resultados",
-      noFindings: "Nenhum problema encontrado",
-      accessibilityNote: "A acessibilidade é verificada no painel Problemas.",
-      openIssues: "Abrir Problemas ({count})",
-      emptyState:
-        "Avalie o risco de spam, a legibilidade e as boas práticas do seu modelo.",
     },
     canvas: {
       chatHint: "ou deixe a",

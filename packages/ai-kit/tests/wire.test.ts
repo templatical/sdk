@@ -31,12 +31,12 @@ describe("the wire", () => {
       fixFinding: "POST /templates/{template}/ai/fix-finding",
       generateFromDesign: "POST /templates/{template}/ai/generate-from-design",
       rewriteText: "POST /templates/{template}/ai/rewrite-text",
-      score: "POST /templates/{template}/ai/score",
-      suggestions: "POST /templates/{template}/ai/suggestions",
-      conversationMessages: "GET /templates/{template}/ai/conversation-messages",
+      conversationMessages:
+        "GET /templates/{template}/ai/conversation-messages",
       undoMessage: "POST /templates/{template}/ai/messages/{message}/undo",
       redoMessage: "POST /templates/{template}/ai/messages/{message}/redo",
-      settleReplay: "POST /templates/{template}/ai/messages/{message}/replays/{replayId}",
+      settleReplay:
+        "POST /templates/{template}/ai/messages/{message}/replays/{replayId}",
       clearConversation: "DELETE /templates/{template}/ai/conversation",
     });
   });
@@ -90,23 +90,24 @@ describe("the wire", () => {
       designMaxBytes: 5 * 1024 * 1024,
       rewriteHtmlMaxChars: 20_000,
       instructionMaxChars: 500,
-      lintFindingsMax: 200,
-      suggestionsMax: 4,
-      suggestionMaxChars: 80,
-      findingsPerCategoryMax: 10,
       mergeTagsMax: 500,
       opsPerBatchMax: 100,
     });
   });
 });
 
-
 it("matches and encodes replay settlement", () => {
   expect(aiRoutePath("settleReplay", { template: "t/1", message: "m 2", replayId: "r/3" })).toBe("/templates/t%2F1/ai/messages/m%202/replays/r%2F3");
   expect(matchAiRoute("POST", "/templates/t%2F1/ai/messages/m%202/replays/r%2F3")).toEqual({ route: "settleReplay", template: "t/1", message: "m 2", replayId: "r/3" });
 });
 
-
 it.each(["/templates/%ZZ/ai/generate", "/templates/t/ai/messages/%/undo", "/templates/t/ai/messages/m/replays/%E0%A4"])("treats malformed route escapes as no route: %s", (path) => {
   expect(matchAiRoute("POST", path)).toBe(null);
 });
+
+it.each(["score", "suggestions"])(
+  "does not match the removed %s route",
+  (route) => {
+    expect(matchAiRoute("POST", `/templates/t-1/ai/${route}`)).toBe(null);
+  },
+);

@@ -734,6 +734,15 @@ const de: typeof en = {
     agentUpdatedTemplate: "{who} hat die Vorlage aktualisiert.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Willkommens-E-Mail für neue Kunden entwerfen",
+      emptyLaunch: "Ankündigung für einen Produktstart erstellen",
+      emptyNewsletter: "Layout für einen monatlichen Newsletter aufbauen",
+      filledShorten: "Den Text kürzen",
+      filledFriendlier: "Den Ton freundlicher machen",
+      filledDates: "Daten und Angebot aktualisieren",
+      filledCta: "Einen klaren Call-to-Action ergänzen",
+    },
     rewrite: {
       tooLarge:
         "Dieser Absatz ist zu lang für KI. Wählen Sie einen Absatz mit höchstens 20.000 Zeichen.",
@@ -788,8 +797,6 @@ const de: typeof en = {
       chatDescription: "Mit der KI eine Vorlage erstellen oder ändern",
       design: "Design zu Vorlage",
       designDescription: "Eine Vorlage aus einem Bild oder PDF erstellen",
-      scoring: "Vorlagenbewertung",
-      scoringDescription: "Spam-Risiko, Lesbarkeit und Best Practices prüfen",
     },
     chat: {
       title: "KI-Assistent",
@@ -830,34 +837,6 @@ const de: typeof en = {
       undo: "Rückgängig",
       redo: "Wiederholen",
       buildAnother: "Weiteres erstellen",
-    },
-    scoring: {
-      title: "Vorlagenbewertung",
-      close: "Schließen",
-      rescore: "Neu bewerten",
-      scoring: "Die Vorlage wird bewertet...",
-      overallScore: "Gesamtbewertung",
-      categories: {
-        spam: "Spam-Risiko",
-        readability: "Lesbarkeit",
-        bestPractices: "Best Practices",
-      },
-      severity: {
-        high: "Hoch",
-        medium: "Mittel",
-        low: "Niedrig",
-      },
-      fix: "Mit KI beheben",
-      fixing: "Wird behoben...",
-      fixed: "Behoben",
-      undoFix: "Rückgängig",
-      finding: "1 Ergebnis",
-      findings: "{count} Ergebnisse",
-      noFindings: "Keine Probleme gefunden",
-      accessibilityNote: "Die Barrierefreiheit prüft der Bereich „Probleme“.",
-      openIssues: "Probleme öffnen ({count})",
-      emptyState:
-        "Bewerten Sie Ihre Vorlage nach Spam-Risiko, Lesbarkeit und Best Practices.",
     },
     canvas: {
       chatHint: "oder lassen Sie",

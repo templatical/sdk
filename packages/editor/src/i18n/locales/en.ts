@@ -726,6 +726,15 @@ export default {
     agentUpdatedTemplate: "{who} updated the template.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Draft a welcome email for new customers",
+      emptyLaunch: "Create a product launch announcement",
+      emptyNewsletter: "Build a monthly newsletter layout",
+      filledShorten: "Shorten the copy",
+      filledFriendlier: "Make the tone friendlier",
+      filledDates: "Update the dates and the offer",
+      filledCta: "Add a clear call to action",
+    },
     rewrite: {
       tooLarge:
         "This paragraph is too long for AI. Select a paragraph with at most 20,000 characters.",
@@ -776,8 +785,6 @@ export default {
       chatDescription: "Chat with AI to create or change your template",
       design: "Design to template",
       designDescription: "Build a template from an image or PDF",
-      scoring: "Template score",
-      scoringDescription: "Check spam risk, readability and best practices",
     },
     chat: {
       title: "AI assistant",
@@ -817,34 +824,6 @@ export default {
       undo: "Undo",
       redo: "Redo",
       buildAnother: "Build another",
-    },
-    scoring: {
-      title: "Template score",
-      close: "Close",
-      rescore: "Score again",
-      scoring: "Scoring the template...",
-      overallScore: "Overall score",
-      categories: {
-        spam: "Spam risk",
-        readability: "Readability",
-        bestPractices: "Best practices",
-      },
-      severity: {
-        high: "High",
-        medium: "Medium",
-        low: "Low",
-      },
-      fix: "Fix with AI",
-      fixing: "Fixing...",
-      fixed: "Fixed",
-      undoFix: "Undo",
-      finding: "1 finding",
-      findings: "{count} findings",
-      noFindings: "No issues found",
-      accessibilityNote: "Accessibility is checked in the Issues panel.",
-      openIssues: "Open Issues ({count})",
-      emptyState:
-        "Score your template for spam risk, readability and best practices.",
     },
     canvas: {
       chatHint: "or let",

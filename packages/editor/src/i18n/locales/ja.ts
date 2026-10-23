@@ -647,6 +647,15 @@ const translations: typeof en = {
     agentUpdatedTemplate: "{who}がテンプレートを更新しました。",
   },
   ai: {
+    starters: {
+      emptyWelcome: "新規顧客向けのウェルカムメールを作成する",
+      emptyLaunch: "新商品の発売案内を作成する",
+      emptyNewsletter: "月刊ニュースレターのレイアウトを作成する",
+      filledShorten: "文章を短くする",
+      filledFriendlier: "親しみやすいトーンにする",
+      filledDates: "日付と特典を更新する",
+      filledCta: "明確な行動喚起を追加する",
+    },
     rewrite: {
       tooLarge:
         "この段落はAIで処理するには長すぎます。20,000文字以内の段落を選択してください。",
@@ -699,9 +708,6 @@ const translations: typeof en = {
       chatDescription: "AIとチャットしてテンプレートを作成・変更します",
       design: "デザインからテンプレートへ",
       designDescription: "画像やPDFからテンプレートを作成します",
-      scoring: "テンプレートの評価",
-      scoringDescription:
-        "迷惑メールのリスク、読みやすさ、推奨事項を確認します",
     },
     chat: {
       title: "AIアシスタント",
@@ -742,34 +748,6 @@ const translations: typeof en = {
       undo: "元に戻す",
       redo: "やり直す",
       buildAnother: "別のテンプレートを作成",
-    },
-    scoring: {
-      title: "テンプレートのスコア",
-      close: "閉じる",
-      rescore: "再評価",
-      scoring: "テンプレートを評価中...",
-      overallScore: "総合スコア",
-      categories: {
-        spam: "迷惑メールのリスク",
-        readability: "読みやすさ",
-        bestPractices: "ベストプラクティス",
-      },
-      severity: {
-        high: "高",
-        medium: "中",
-        low: "低",
-      },
-      fix: "AIで修正",
-      fixing: "修正中...",
-      fixed: "修正済み",
-      undoFix: "元に戻す",
-      finding: "指摘1件",
-      findings: "指摘{count}件",
-      noFindings: "問題は見つかりませんでした",
-      accessibilityNote: "アクセシビリティは「問題」パネルで確認できます。",
-      openIssues: "問題を開く（{count}件）",
-      emptyState:
-        "迷惑メールのリスク、読みやすさ、ベストプラクティスについてテンプレートを評価します。",
     },
     canvas: {
       chatHint: "または",

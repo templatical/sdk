@@ -23,20 +23,6 @@ afterEach(async () => {
 });
 
 describe("runAiWireConformance", () => {
-  it("fails the wire header check when only score omits the header", async () => {
-    const reference = createReferenceHandler();
-    server = await serve(async (request) => {
-      const response = await reference(request);
-      if (!new URL(request.url).pathname.endsWith("/score")) return response;
-      const headers = new Headers(response.headers);
-      headers.delete("Templatical-AI-Wire");
-      return new Response(response.body, { status: response.status, headers });
-    });
-    const report = await runAiWireConformance({ baseUrl: server.baseUrl });
-    expect(report.ok).toBe(false);
-    expect(report.checks.find((check) => check.name === "responses carry Templatical-AI-Wire: 1")).toMatchObject({ ok: false, detail: expect.stringContaining("score") });
-  });
-
   it("fails the MIME check when only rewrite uses the wrong content type", async () => {
     const reference = createReferenceHandler();
     server = await serve(async (request) => {
@@ -63,10 +49,14 @@ describe("runAiWireConformance", () => {
 
   it("bounds a probe fetch that never receives response headers", async () => {
     const reference = createReferenceHandler();
-    server = await serve((request) => new URL(request.url).pathname.endsWith("/suggestions") ? new Promise(() => {}) : reference(request));
+    server = await serve((request) =>
+      new URL(request.url).pathname.endsWith("/generate")
+        ? new Promise(() => {})
+        : reference(request),
+    );
     const report = await within(runAiWireConformance({ baseUrl: server.baseUrl, timeoutMs: 20, callTimeoutMs: 20 }));
     expect(report).not.toBeNull();
-    expect(report?.checks.some((check) => !check.ok && /suggestions.*20 ms/.test(check.detail))).toBe(true);
+    expect(report?.checks.some((check) => !check.ok && /generate.*20 ms/.test(check.detail))).toBe(true);
   });
 
   it("bounds a JSON body read that never completes", async () => {
@@ -121,7 +111,6 @@ describe("runAiWireConformance", () => {
   });
 });
 
-
 it("settles reference-server replay only once, after editor acceptance", async () => {
   server = await serve(createReferenceHandler());
   const ai = createHttpAiProvider({ baseUrl: server.baseUrl });
@@ -162,7 +151,7 @@ it("passes a backend without history or design and reports disabled checks as sk
   expect(requests.some((path) => /conversation|messages|generate-from-design/.test(path))).toBe(false);
 });
 
-it("skips chat and suggestions probes when those features are disabled", async () => {
+it("skips the invalid-generate probe when chat is disabled", async () => {
   const reference = createReferenceHandler();
   const requests: string[] = [];
   server = await serve((request) => {
@@ -171,7 +160,7 @@ it("skips chat and suggestions probes when those features are disabled", async (
   });
   const report = await runAiWireConformance({
     baseUrl: server.baseUrl,
-    features: { chat: false, suggestions: false },
+    features: { chat: false },
   });
   expect(report.checks.filter((check) => !check.ok)).toEqual([]);
   expect(
@@ -185,9 +174,7 @@ it("skips chat and suggestions probes when those features are disabled", async (
     ok: true,
     detail: "skipped: chat is disabled",
   });
-  expect(
-    requests.filter((path) => /\/ai\/(generate|suggestions)$/.test(path)),
-  ).toEqual([]);
+  expect(requests.filter((path) => /\/ai\/generate$/.test(path))).toEqual([]);
 });
 
 it("reports an unreadable response body without leaking the transport TypeError", async () => {
@@ -206,15 +193,13 @@ it("reports an unreadable response body without leaking the transport TypeError"
       chat: false,
       fixFinding: false,
       design: false,
-      rewrite: false,
-      score: false,
-      suggestions: true,
+      rewrite: true,
       conversation: false,
     },
   });
   expect(report.checks.filter((check) => !check.ok)).toEqual([
     {
-      name: "suggestions: answers",
+      name: "rewrite: answers",
       ok: false,
       detail:
         "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
@@ -227,6 +212,6 @@ it("reports an unreadable response body without leaking the transport TypeError"
   ).toEqual({
     name: "responses carry Templatical-AI-Wire: 1",
     ok: true,
-    detail: "2 response(s)",
+    detail: "1 response(s)",
   });
 });

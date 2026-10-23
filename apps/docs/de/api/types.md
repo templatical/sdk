@@ -720,6 +720,6 @@ unsubscribe(); // Listener entfernen
 
 ## KI
 
-`AiProvider`, `AiConversationProvider`, die KI-Anfragen, Handler, Ergebnisse, `AiChatMessage`, `AiMergeTags` und die drei Bewertungskategorien bilden den MIT-Provider-Vertrag in `@templatical/types`. [KI](/de/backend/ai#der-vertrag) beschreibt den Vertrag; die [KI-API-Referenz](/de/api/ai-kit) beschreibt HTTP-Client, Server-Kit und Protokoll.
+`AiProvider`, `AiConversationProvider`, die KI-Anfragen, Handler, Ergebnisse, `AiChatMessage` und `AiMergeTags` bilden den MIT-Provider-Vertrag in `@templatical/types`. [KI](/de/backend/ai#der-vertrag) beschreibt den Vertrag; die [KI-API-Referenz](/de/api/ai-kit) beschreibt HTTP-Client, Server-Kit und Protokoll.
 
 `SdkError(message, statusCode?, code?, details?)` trägt KI-Fehlercodes und optionale `details`. `ThrottledError` erweitert ihn um `retryAfterMs`, Status 429 und den Code `rate_limited`. `invertOperations(content, ops)` liefert die abgesicherte Umkehrung eines Batches; es liegt in `@templatical/types` und wird von `@templatical/core` erneut exportiert.

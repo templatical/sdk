@@ -661,6 +661,15 @@ const fr: typeof en = {
     agentUpdatedTemplate: "{who} a mis à jour le modèle.",
   },
   ai: {
+    starters: {
+      emptyWelcome: "Rédiger un e-mail de bienvenue pour les nouveaux clients",
+      emptyLaunch: "Créer une annonce de lancement de produit",
+      emptyNewsletter: "Créer la mise en page d’une newsletter mensuelle",
+      filledShorten: "Raccourcir le texte",
+      filledFriendlier: "Adopter un ton plus chaleureux",
+      filledDates: "Mettre à jour les dates et l’offre",
+      filledCta: "Ajouter un appel à l’action clair",
+    },
     rewrite: {
       tooLarge:
         "Ce paragraphe est trop long pour l’IA. Sélectionnez un paragraphe de 20 000 caractères maximum.",
@@ -712,9 +721,6 @@ const fr: typeof en = {
       chatDescription: "Discutez avec l'IA pour créer ou modifier votre modèle",
       design: "Du design au modèle",
       designDescription: "Créez un modèle à partir d'une image ou d'un PDF",
-      scoring: "Évaluation du modèle",
-      scoringDescription:
-        "Vérifiez le risque de spam, la lisibilité et les bonnes pratiques",
     },
     chat: {
       title: "Assistant IA",
@@ -755,35 +761,6 @@ const fr: typeof en = {
       undo: "Annuler",
       redo: "Rétablir",
       buildAnother: "Créer un autre modèle",
-    },
-    scoring: {
-      title: "Score du modèle",
-      close: "Fermer",
-      rescore: "Évaluer à nouveau",
-      scoring: "Évaluation du modèle...",
-      overallScore: "Score global",
-      categories: {
-        spam: "Risque de spam",
-        readability: "Lisibilité",
-        bestPractices: "Bonnes pratiques",
-      },
-      severity: {
-        high: "Élevée",
-        medium: "Moyenne",
-        low: "Faible",
-      },
-      fix: "Corriger avec l’IA",
-      fixing: "Correction...",
-      fixed: "Corrigé",
-      undoFix: "Annuler",
-      finding: "1 résultat",
-      findings: "{count} résultats",
-      noFindings: "Aucun problème détecté",
-      accessibilityNote:
-        "L’accessibilité est vérifiée dans le panneau Problèmes.",
-      openIssues: "Ouvrir Problèmes ({count})",
-      emptyState:
-        "Évaluez le risque de spam, la lisibilité et les bonnes pratiques de votre modèle.",
     },
     canvas: {
       chatHint: "ou laissez",

@@ -15,23 +15,16 @@ import {
   aiErrorResponse,
   aiEventStream,
   aiJsonResponse,
-  blockIds,
   buildChatRequest,
   buildDesignRequest,
   buildFixRequest,
   buildRewritePrompt,
   buildRewriteRepairPrompt,
-  buildScorePrompt,
-  buildSuggestionsPrompt,
   checkRewrite,
-  normalizeScoringResult,
-  parseSuggestions,
   readAiRequest,
   rewriteInstructions,
   runEditingTurn,
-  scoreInstructions,
   SdkError,
-  suggestionsInstructions,
   type AiModelAdapter,
 } from '@templatical/ai-kit/server';
 import { model } from './model'; // one of the adapters below
@@ -100,20 +93,6 @@ export async function handle(request: Request): Promise<Response> {
         stream.send({ type: 'done', html: check.html });
       });
     }
-    case 'score': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(scoreInstructions, buildScorePrompt(body), stream.signal);
-        stream.send({ type: 'done', result: normalizeScoringResult(answer, blockIds(body.content.blocks)) });
-      });
-    }
-    case 'suggestions': {
-      const body = read.body;
-      return aiEventStream(async (stream) => {
-        const answer = await complete(suggestionsInstructions, buildSuggestionsPrompt(body), stream.signal);
-        stream.send({ type: 'done', suggestions: parseSuggestions(answer) });
-      });
-    }
     default:
       // No stored history here: the editor keeps the chat in memory.
       return aiJsonResponse({ message: 'Not found.', code: 'not_found' }, 404);
@@ -122,8 +101,6 @@ export async function handle(request: Request): Promise<Response> {
 ```
 
 In the editor, turn history off to match: `createHttpAiProvider({ baseUrl: '/api/ai', features: { conversation: false } })`. To store history, keep each turn's messages and `result.batches[].inverse` (last batch first) and implement the conversation routes including `settleReplay`, as described under [History](/backend/ai#history). Authorize the template id and message ids against the signed-in user before answering every AI route, conversation routes included.
-
-With structured output, pass `scoringResultSchema` and `suggestionsSchema` to your model instead of asking for JSON in prose; the kit's checks normalize either.
 
 Set your framework's whole-body request limit to about 6 MB with design uploads, or about 300 kB otherwise. The kit checks content and file sizes after reading them; the framework limit bounds buffering.
 
