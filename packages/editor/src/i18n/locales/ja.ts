@@ -725,7 +725,6 @@ const translations: typeof en = {
     menu: {
       button: "AI",
       chat: "AIアシスタント",
-      chatDescription: "AIとチャットしてテンプレートを作成・変更します",
     },
     chat: {
       attach: "ファイルを添付",
@@ -757,7 +756,6 @@ const translations: typeof en = {
       prompt: "添付したデザインからこのメールを作成する。",
       placeholderNote:
         "画像はプレースホルダーとして取り込まれます。インポート後に置き換えてください。",
-      description: "画像またはPDFからメールを作成",
     },
     canvas: {
       importHint: "既存のデザインをお持ちですか？",

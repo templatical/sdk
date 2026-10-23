@@ -740,7 +740,6 @@ const nl: typeof en = {
     menu: {
       button: "AI",
       chat: "AI-assistent",
-      chatDescription: "Chat met AI om uw sjabloon te maken of te wijzigen",
     },
     chat: {
       attach: "Bestanden bijvoegen",
@@ -772,7 +771,6 @@ const nl: typeof en = {
       prompt: "Deze e-mail opbouwen vanuit het bijgevoegde ontwerp.",
       placeholderNote:
         "Afbeeldingen worden als tijdelijke aanduidingen geïmporteerd. Vervang ze na de import.",
-      description: "Een e-mail maken vanuit een afbeelding of pdf",
     },
     canvas: {
       importHint: "Hebt u al een ontwerp?",

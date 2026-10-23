@@ -23,7 +23,6 @@ export class AiPage {
 
   async openPanel(panel: "chat"): Promise<void> {
     await this.menu().click();
-    await this.page.locator(`[data-testid="ai-menu-item-${panel}"]`).click();
     await expect(
       this.page.locator(`[data-testid="ai-panel-${panel}"]`),
     ).toBeVisible();
@@ -135,11 +134,8 @@ export class AiPage {
   }
 
   async importPng(): Promise<void> {
-    await this.menu().click();
     const chooser = this.page.waitForEvent("filechooser");
-    await this.page
-      .getByRole("button", { name: "Import from screenshot or PDF" })
-      .click();
+    await this.page.getByTestId("canvas-ai-import").click();
     await (await chooser).setFiles(png());
     await expect(this.page.getByTestId("ai-panel-chat")).toBeVisible();
   }

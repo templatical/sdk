@@ -26,6 +26,19 @@ async function openScene(
 }
 
 test.describe("AI over a BYO provider", () => {
+  test("the AI assistant button opens chat and a second click closes it", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom);
+    await expect(ai.menu()).toHaveAttribute("aria-pressed", "false");
+    await ai.openPanel("chat");
+    await expect(ai.menu()).toHaveAttribute("aria-pressed", "true");
+    await ai.menu().click();
+    await expect(page.getByTestId("ai-panel-chat")).toBeHidden();
+    await expect(ai.menu()).toHaveAttribute("aria-pressed", "false");
+  });
+
   test("chat says it's AI, changes the template and undoes the turn", async ({
     page,
     shadowDom,
@@ -334,11 +347,17 @@ test.describe("AI over a BYO provider", () => {
     await expect(page.getByTestId("ai-chat-reply")).toHaveCount(0);
   });
 
-  test("Import from screenshot or PDF opens chat with an attachment and an unsent request", async ({
+  test("the empty canvas import shortcut opens chat with an attachment and an unsent request", async ({
     page,
     shadowDom,
   }) => {
-    const { ai } = await openScene(page, shadowDom);
+    const { ai, editor } = await openScene(page, shadowDom);
+    while ((await editor.getBlocks().count()) > 0) {
+      const count = await editor.getBlocks().count();
+      await editor.selectBlock(0);
+      await editor.deleteSelectedBlock();
+      await expect.poll(() => editor.getBlocks().count()).toBeLessThan(count);
+    }
     await ai.importPng();
     await expect(page.getByTestId("ai-chat-attachment")).toContainText(
       "design.png",
@@ -349,7 +368,7 @@ test.describe("AI over a BYO provider", () => {
     await expect(page.getByTestId("ai-chat-send")).toBeEnabled();
     await expect(page.getByTestId("ai-chat-prompt")).toHaveCount(0);
     await expect(page.getByTestId("ai-chat-reply")).toHaveCount(0);
-    await expect(ai.title()).toContainText(ORIGINAL_TITLE);
+    await expect(editor.getBlocks()).toHaveCount(0);
   });
 
   test("other editors see the AI's batch as AI (for Ada); the editor that asked sees only the outline", async ({

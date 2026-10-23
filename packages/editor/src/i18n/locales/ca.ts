@@ -808,8 +808,6 @@ const ca: typeof en = {
     menu: {
       button: "IA",
       chat: "Assistent d'IA",
-      chatDescription:
-        "Parleu amb la IA per crear o modificar la vostra plantilla",
     },
     chat: {
       attach: "Adjuntar fitxers",
@@ -842,7 +840,6 @@ const ca: typeof en = {
       prompt: "Crear aquest correu a partir del disseny adjunt.",
       placeholderNote:
         "Les imatges es mostren com a marcadors de posició. Substituïu-les després de la importació.",
-      description: "Crear un correu a partir d’una imatge o un PDF",
     },
     canvas: {
       importHint: "Ja teniu un disseny?",

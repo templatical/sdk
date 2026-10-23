@@ -52,7 +52,6 @@ async function openAiPanel(wrapper: VueWrapper, panel: "chat") {
     expect(wrapper.find('[data-testid="ai-menu-trigger"]').exists()).toBe(true),
   );
   await wrapper.get('[data-testid="ai-menu-trigger"]').trigger("click");
-  await wrapper.get(`[data-testid="ai-menu-item-${panel}"]`).trigger("click");
   await vi.waitFor(() =>
     expect(wrapper.find(`[data-testid="ai-panel-${panel}"]`).exists()).toBe(
       true,
@@ -69,7 +68,7 @@ async function sendChat(wrapper: VueWrapper, prompt: string, reply: string) {
 }
 
 describe("Editor.vue with an AI provider", () => {
-  it("shows the AI menu once a template is loaded", async () => {
+  it("shows the AI button once a template is loaded", async () => {
     const wrapper = await mountWithAi();
     await flushPromises();
     expect(wrapper.find('[data-testid="ai-menu-trigger"]').exists()).toBe(
@@ -112,7 +111,6 @@ describe("Editor.vue with an AI provider", () => {
       ),
     );
     await wrapper.get('[data-testid="ai-menu-trigger"]').trigger("click");
-    await wrapper.get('[data-testid="ai-menu-item-chat"]').trigger("click");
 
     await vi.waitFor(() =>
       expect(wrapper.find('[data-testid="ai-panel-chat"]').exists()).toBe(true),

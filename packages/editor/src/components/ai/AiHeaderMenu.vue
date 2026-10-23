@@ -1,164 +1,43 @@
 <script setup lang="ts">
-import { ImageUp, Sparkles } from "@lucide/vue";
-import { computed, ref } from "vue";
-import { onClickOutside } from "@vueuse/core";
-import type {
-  AiPanel,
-  UseAiFeatureReturn,
-} from "../../composables/useAiFeature";
+import { Sparkles } from "@lucide/vue";
+import { computed } from "vue";
+import type { UseAiFeatureReturn } from "../../composables/useAiFeature";
 import { useI18n } from "../../composables/useI18n";
 
 const props = defineProps<{
   feature: Pick<
     UseAiFeatureReturn,
-    "panel" | "isAvailable" | "has" | "open" | "close" | "startImport"
+    "panel" | "isAvailable" | "has" | "open" | "close"
   >;
 }>();
 
 const { t } = useI18n();
-const isOpen = ref(false);
-const root = ref<HTMLElement | null>(null);
-onClickOutside(root, () => (isOpen.value = false));
+const isActive = computed(() => props.feature.panel.value === "chat");
 
-const ITEMS = [
-  { panel: "chat", feature: "chat", icon: Sparkles },
-  { panel: "import", feature: "chatAttachments", icon: ImageUp },
-] as const;
-
-const items = computed(() =>
-  ITEMS.filter(
-    (item) => props.feature.has("chat") && props.feature.has(item.feature),
-  ),
-);
-const isActive = computed(
-  () => isOpen.value || props.feature.panel.value !== null,
-);
-
-const importInput = ref<HTMLInputElement | null>(null);
-function importPicked(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const files = Array.from(input.files ?? []);
-  input.value = "";
-  if (files.length) props.feature.startImport(files);
-}
-function title(panel: "chat" | "import"): string {
-  return panel === "chat" ? t.ai.menu.chat : t.ai.import.menu;
-}
-function description(panel: "chat" | "import"): string {
-  return panel === "chat" ? t.ai.menu.chatDescription : t.ai.import.description;
-}
-
-function choose(panel: AiPanel | "import"): void {
-  if (panel === "import") {
-    importInput.value?.click();
-    isOpen.value = false;
-    return;
-  }
-  isOpen.value = false;
-  if (props.feature.panel.value === panel) props.feature.close();
-  else props.feature.open(panel);
+function toggle(): void {
+  if (isActive.value) props.feature.close();
+  else props.feature.open("chat");
 }
 </script>
 
 <template>
-  <div
-    v-if="feature.isAvailable.value && items.length > 0"
-    ref="root"
-    class="tpl:relative"
+  <button
+    v-if="feature.isAvailable.value && feature.has('chat')"
+    type="button"
+    data-testid="ai-menu-trigger"
+    :aria-pressed="isActive"
+    :aria-label="t.ai.menu.chat"
+    :title="t.ai.menu.chat"
+    class="tpl-ai-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:whitespace-nowrap tpl:transition-all tpl:duration-200"
+    :class="isActive ? 'tpl-ai-btn--active' : 'tpl-ai-btn--idle'"
+    @click.stop="toggle"
   >
-    <input
-      v-if="feature.has('chat') && feature.has('chatAttachments')"
-      ref="importInput"
-      type="file"
-      multiple
-      accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
-      hidden
-      @change="importPicked"
+    <Sparkles
+      :size="16"
+      :stroke-width="2"
+      class="tpl-ai-btn-icon"
+      aria-hidden="true"
     />
-    <button
-      type="button"
-      data-testid="ai-menu-trigger"
-      :aria-expanded="isOpen"
-      class="tpl-ai-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:whitespace-nowrap tpl:transition-all tpl:duration-200"
-      :class="isActive ? 'tpl-ai-btn--active' : 'tpl-ai-btn--idle'"
-      @click.stop="isOpen = !isOpen"
-    >
-      <Sparkles
-        :size="16"
-        :stroke-width="2"
-        class="tpl-ai-btn-icon"
-        aria-hidden="true"
-      />
-      {{ t.ai.menu.button }}
-    </button>
-    <Transition
-      enter-active-class="tpl:transition-all tpl:ease-out"
-      enter-from-class="tpl:scale-95 tpl:opacity-0"
-      enter-to-class="tpl:scale-100 tpl:opacity-100"
-      leave-active-class="tpl:transition-all tpl:duration-100 tpl:ease-in"
-      leave-from-class="tpl:scale-100 tpl:opacity-100"
-      leave-to-class="tpl:scale-95 tpl:opacity-0"
-    >
-      <div
-        v-if="isOpen"
-        class="tpl:absolute tpl:right-0 tpl:top-full tpl:z-50 tpl:mt-1 tpl:origin-top-right"
-      >
-        <div
-          class="tpl-ai-feature-menu tpl:w-[280px] tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:py-1 tpl:bg-[var(--tpl-bg)] tpl:border tpl:border-[var(--tpl-border)] tpl:shadow-[var(--tpl-shadow-lg)]"
-        >
-          <button
-            v-for="item in items"
-            :key="item.panel"
-            type="button"
-            :data-testid="`ai-menu-item-${item.panel}`"
-            class="tpl-ai-feature-menu-item tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-start tpl:gap-3 tpl:border-none tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors"
-            :style="{
-              backgroundColor:
-                feature.panel.value === item.panel
-                  ? 'var(--tpl-primary-light)'
-                  : 'transparent',
-            }"
-            @click="choose(item.panel)"
-          >
-            <div
-              class="tpl:mt-0.5 tpl:flex tpl:size-7 tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)]"
-              :style="{
-                backgroundColor:
-                  feature.panel.value === item.panel
-                    ? 'var(--tpl-primary)'
-                    : 'var(--tpl-bg-active)',
-                color:
-                  feature.panel.value === item.panel
-                    ? 'var(--tpl-bg)'
-                    : 'var(--tpl-text-muted)',
-              }"
-            >
-              <component
-                :is="item.icon"
-                :size="15"
-                :stroke-width="2"
-                aria-hidden="true"
-              />
-            </div>
-            <div class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:gap-0.5">
-              <span
-                class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)]"
-                >{{ title(item.panel) }}</span
-              >
-              <span
-                class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text-muted)]"
-                >{{ description(item.panel) }}</span
-              >
-            </div>
-          </button>
-        </div>
-      </div>
-    </Transition>
-  </div>
+    {{ t.ai.menu.button }}
+  </button>
 </template>
-
-<style scoped>
-.tpl-ai-feature-menu-item:hover {
-  background-color: var(--tpl-bg-hover) !important;
-}
-</style>

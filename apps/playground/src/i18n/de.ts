@@ -211,8 +211,8 @@ export default {
     ai: {
       title: "KI",
       seeIt:
-        "Öffnen Sie „AI“ und bitten Sie, den Titel zu ändern, oder doppelklicken Sie einen Absatz und formulieren Sie ihn um.",
-      note: "KI",
+        "Öffnen Sie den KI-Assistenten und bitten Sie ihn, den Titel zu ändern, oder doppelklicken Sie einen Absatz und formulieren Sie ihn um.",
+      note: "KI-Assistent",
     },
     "saved-blocks": {
       title: "Gespeicherte Blöcke",
@@ -469,7 +469,7 @@ export default {
     features: {
       versionHistory: "Versionsverlauf",
       autoSave: "Automatisches Speichern",
-      aiWriting: "KI-Schreiben",
+      aiAssistant: "KI-Assistent",
       realtimeCollaboration: "Echtzeit-Zusammenarbeit",
       mediaLibrary: "Medienbibliothek",
       savedBlocks: "Gespeicherte Blöcke",

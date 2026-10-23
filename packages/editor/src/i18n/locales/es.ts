@@ -806,7 +806,6 @@ const es: typeof en = {
     menu: {
       button: "IA",
       chat: "Asistente de IA",
-      chatDescription: "Habla con la IA para crear o modificar tu plantilla",
     },
     chat: {
       attach: "Adjuntar archivos",
@@ -838,7 +837,6 @@ const es: typeof en = {
       prompt: "Crear este correo a partir del diseño adjunto.",
       placeholderNote:
         "Las imágenes se importan como marcadores de posición. Sustitúyalas después de la importación.",
-      description: "Crear un correo a partir de una imagen o un PDF",
     },
     canvas: {
       importHint: "¿Ya tiene un diseño?",

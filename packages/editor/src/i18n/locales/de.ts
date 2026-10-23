@@ -814,7 +814,6 @@ const de: typeof en = {
     menu: {
       button: "KI",
       chat: "KI-Assistent",
-      chatDescription: "Mit der KI eine Vorlage erstellen oder ändern",
     },
     chat: {
       attach: "Dateien anhängen",
@@ -846,7 +845,6 @@ const de: typeof en = {
       prompt: "Diese E-Mail aus dem angehängten Design aufbauen",
       placeholderNote:
         "Bilder werden als Platzhalter übernommen. Ersetzen Sie sie nach dem Import.",
-      description: "Eine E-Mail aus einem Bild oder PDF erstellen",
     },
     canvas: {
       importHint: "Haben Sie bereits ein Design?",

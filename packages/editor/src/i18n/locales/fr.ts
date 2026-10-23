@@ -738,7 +738,6 @@ const fr: typeof en = {
     menu: {
       button: "IA",
       chat: "Assistant IA",
-      chatDescription: "Discutez avec l'IA pour créer ou modifier votre modèle",
     },
     chat: {
       attach: "Joindre des fichiers",
@@ -771,7 +770,6 @@ const fr: typeof en = {
       prompt: "Créer cet e-mail à partir du design joint.",
       placeholderNote:
         "Les images sont importées sous forme de substituts. Remplacez-les après l’importation.",
-      description: "Créer un e-mail à partir d’une image ou d’un PDF",
     },
     canvas: {
       importHint: "Vous avez déjà un design ?",

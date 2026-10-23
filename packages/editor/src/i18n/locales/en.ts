@@ -801,7 +801,6 @@ export default {
     menu: {
       button: "AI",
       chat: "AI assistant",
-      chatDescription: "Chat with AI to create or change your template",
     },
     chat: {
       attach: "Attach files",
@@ -833,7 +832,6 @@ export default {
       prompt: "Build this email from the attached design.",
       placeholderNote:
         "Pictures come in as placeholders. Replace them after the import.",
-      description: "Build an email from an image or a PDF",
     },
     canvas: {
       importHint: "Have an existing design?",

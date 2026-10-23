@@ -2351,7 +2351,7 @@ await editor.load('tpl_123');
 
 `createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` in about a hundred lines, and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
 
-**AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no menu, no toolbar button, and none of its UI is downloaded.
+**AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no AI button, no toolbar button, and none of its UI is downloaded.
 
 ## The contract
 
@@ -2409,7 +2409,9 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 
 Authors can attach PNG, JPEG, WebP, GIF or PDF files with **Attach files** or drag files onto chat. The limits are at most 4 files per message, each at most 5 MB (`5 * 1024 * 1024` bytes), at most 10 MB (`10 * 1024 * 1024` bytes) together. Invalid files show validation messages. File-name chips have remove buttons; controls are disabled during a turn. Sending clears attachments; a failed turn restores the text and files.
 
-**Import from screenshot or PDF** is a chat-attachments shortcut in the AI menu and on the empty canvas. It opens a file picker first; after a pick it opens chat, attaches the files and fills an empty composer with “Build this email from the attached design.” Existing composer text is preserved. The author sends the message; nothing sends automatically. Pictures come in as placeholders; replace them after import. The prompt replaces the whole template only when empty or when the message asks for it; otherwise attachments guide the requested edit. A replacement is one undo step.
+**Import from screenshot or PDF** is the empty canvas's chat-attachments shortcut. The import shortcut opens a file picker first, then opens chat after a pick, attaches the files and fills an empty composer with “Build this email from the attached design.” Existing composer text is preserved. The author sends the message; nothing sends automatically. Pictures come in as placeholders; replace them after import. The prompt replaces the whole template only when empty or when the message asks for it; otherwise attachments guide the requested edit. A replacement is one undo step.
+
+The header button labelled **AI** opens and closes the AI assistant.
 
 History has kind `chat` and stores only optional user-message `attachments: { name: string; kind: "image" | "pdf" }[]`. The backend decides whether to retain files. The [multipart generate wire](/api/ai-kit#chat-attachments) and [backend guide](/guide/bring-your-own-ai) show parsing and model mapping.
 
@@ -2499,10 +2501,10 @@ Undo and Redo may reject with an operation's code (`precondition_failed`, …) a
 
 ## In the editor
 
-- **Header:** an **AI** menu with the assistant and **Import from screenshot or PDF**.
+- **Header:** the button labelled **AI** opens and closes the AI assistant. It appears when `chat` is a function and a template is loaded.
 - **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
 - **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
-- **Chat attachments:** add files with the attach button or drag them into the panel, review name chips and remove files before sending.
+- **Chat attachments:** add files with the attach button or drag them into the panel, review name chips and remove files before sending. The composer has a full-width textarea above a toolbar with attach on the left and send or stop on the right. Attachment chips stay above the composer.
 - **The empty canvas:** shortcuts to the assistant and to **Import from screenshot or PDF**.
 
 AI content is always marked as AI, as the EU AI Act's Article 50 asks of systems that interact with people.
@@ -2527,13 +2529,13 @@ The **AI** setup plays recorded turns through `createMockAiProvider`: no model a
 
 ## Check it
 
-Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
+Click the header button labelled **AI** to open the AI assistant, then click it again to close it. Open the AI assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
 
 Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
 
 For alt text, open an image finding and choose **Write alt text**. Edit the draft, accept it, and Undo: both `alt` and `decorative` return to their previous values. **Mark decorative** clears `img-missing-alt` after re-lint. Cancel leaves the image unchanged.
 
-For attachments, choose **Import from screenshot or PDF**, pick a file and check that chat opens without sending. Send the prefilled message and Undo its changes. Run the wire conformance suite with attachments enabled to check the upload limits.
+For attachments, choose **Import from screenshot or PDF** on the empty canvas, pick a file and check that chat opens without sending. Send the prefilled message and Undo its changes. Run the wire conformance suite with attachments enabled to check the upload limits.
 
 ---
 

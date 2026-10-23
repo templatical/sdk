@@ -805,7 +805,6 @@ const ptBR: typeof en = {
     menu: {
       button: "IA",
       chat: "Assistente de IA",
-      chatDescription: "Converse com a IA para criar ou alterar seu template",
     },
     chat: {
       attach: "Anexar arquivos",
@@ -836,7 +835,6 @@ const ptBR: typeof en = {
       prompt: "Criar este e-mail a partir do design anexado.",
       placeholderNote:
         "As imagens são importadas como espaços reservados. Substitua-as após a importação.",
-      description: "Criar um e-mail a partir de uma imagem ou PDF",
     },
     canvas: {
       importHint: "Já tem um design?",

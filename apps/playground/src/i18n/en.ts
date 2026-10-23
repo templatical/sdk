@@ -212,8 +212,8 @@ export default {
     ai: {
       title: "AI",
       seeIt:
-        "Open AI and ask to change the title, or double-click a paragraph and rewrite it.",
-      note: "AI",
+        "Open the AI assistant and ask to change the title, or double-click a paragraph and rewrite it.",
+      note: "AI assistant",
     },
     "saved-blocks": {
       title: "Saved blocks",
@@ -460,7 +460,7 @@ export default {
     features: {
       versionHistory: "Version History",
       autoSave: "Auto Save",
-      aiWriting: "AI Writing",
+      aiAssistant: "AI assistant",
       realtimeCollaboration: "Real-time Collaboration",
       mediaLibrary: "Media Library",
       savedBlocks: "Saved Blocks",

@@ -38,7 +38,7 @@ await editor.load('tpl_123');
 
 `createHttpAiProvider` spricht ein dokumentiertes REST- und Server-Sent-Events-Protokoll. [Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai) baut die Serverseite mit `@templatical/ai-kit/server` in etwa hundert Zeilen auf; die [KI-API-Referenz](/de/api/ai-kit#das-protokoll) dokumentiert das Protokoll für Backends in jeder Sprache.
 
-**KI braucht ein geladenes Template.** Jede Anfrage benennt es, daher erscheinen die Einstiegspunkte, sobald `create()` oder `load()` abgeschlossen ist. **Lassen Sie `ai` weg, fehlt das Feature**: kein Menü, keine Schaltfläche in der Werkzeugleiste, und kein Code seiner Oberfläche wird geladen.
+**KI braucht ein geladenes Template.** Jede Anfrage benennt es, daher erscheinen die Einstiegspunkte, sobald `create()` oder `load()` abgeschlossen ist. **Lassen Sie `ai` weg, fehlt das Feature**: keine KI-Schaltfläche, keine Schaltfläche in der Werkzeugleiste, und kein Code seiner Oberfläche wird geladen.
 
 ## Der Vertrag
 
@@ -96,7 +96,9 @@ Ein Durchlauf streamt seine Antwort über `on.onText` und übergibt Änderungen 
 
 Personen können PNG-, JPEG-, WebP-, GIF- oder PDF-Dateien über **Dateien anhängen** oder per Drag-and-drop hinzufügen. Pro Nachricht sind höchstens 4 Dateien erlaubt, jede höchstens 5 MB (`5 * 1024 * 1024` Byte), zusammen höchstens 10 MB (`10 * 1024 * 1024` Byte). Ungültige Dateien zeigen Validierungsnachrichten. Dateinamen-Chips haben Entfernen-Schaltflächen; die Steuerung ist während eines Durchlaufs deaktiviert. Senden leert die Anhänge; ein fehlgeschlagener Durchlauf stellt Text und Dateien wieder her.
 
-**Aus Screenshot oder PDF importieren** ist eine Chat-Anhang-Verknüpfung im KI-Menü und auf der leeren Arbeitsfläche. Zuerst öffnet sie die Dateiauswahl; nach einer Auswahl öffnet sie den Chat, hängt die Dateien an und füllt einen leeren Eingabebereich mit „Diese E-Mail aus dem angehängten Design aufbauen“. Vorhandener Text bleibt erhalten. Die Person sendet selbst; nichts wird automatisch gesendet. Bilder werden Platzhalter; ersetzen Sie sie nach dem Import. Der Prompt ersetzt das ganze Template nur bei leerem Inhalt oder ausdrücklicher Aufforderung; sonst dienen Anhänge als Referenz für die angeforderte Änderung. Ein Ersatz ist ein Rückgängig-Schritt.
+**Aus Screenshot oder PDF importieren** ist die Chat-Anhang-Verknüpfung auf der leeren Arbeitsfläche. Die Import-Verknüpfung öffnet zuerst die Dateiauswahl, öffnet nach einer Auswahl den Chat, hängt die Dateien an und füllt einen leeren Eingabebereich mit „Diese E-Mail aus dem angehängten Design aufbauen“. Vorhandener Text bleibt erhalten. Die Person sendet selbst; nichts wird automatisch gesendet. Bilder werden Platzhalter; ersetzen Sie sie nach dem Import. Der Prompt ersetzt das ganze Template nur bei leerem Inhalt oder ausdrücklicher Aufforderung; sonst dienen Anhänge als Referenz für die angeforderte Änderung. Ein Ersatz ist ein Rückgängig-Schritt.
+
+Die mit **KI** beschriftete Schaltfläche im Header öffnet und schließt den KI-Assistenten.
 
 Der Verlauf hat Typ `chat` und speichert nur optionale `attachments: { name: string; kind: "image" | "pdf" }[]` auf Benutzernachrichten. Die Dateiaufbewahrung bestimmt das Backend. Das [Multipart-Generate-Protokoll](/de/api/ai-kit#chat-anhange) und der [Backend-Leitfaden](/de/guide/bring-your-own-ai) zeigen Einlesen und Modellzuordnung.
 
@@ -186,10 +188,10 @@ Rückgängig und Wiederholen dürfen mit einem Operationscode (`precondition_fai
 
 ## Im Editor
 
-- **Header:** ein „AI“-Menü mit Assistent und **Aus Screenshot oder PDF importieren**.
+- **Header:** Die mit **KI** beschriftete Schaltfläche öffnet und schließt den KI-Assistenten. Sie erscheint, wenn `chat` eine Funktion ist und ein Template geladen ist.
 - **Chat:** als „AI assistant“ gekennzeichnet („Replies and changes come from AI.“), pro Durchlauf „Applied N changes“ mit „Undo“ und „Redo“, „Stop“ während eines Durchlaufs, „New chat“ und statische Einstiegsanfragen. Cmd/Strg+Z macht einen ganzen Durchlauf rückgängig.
 - **Absatz-Werkzeugleiste:** „AI“ mit den Vorgaben, 16 Zielsprachen zum Übersetzen und einer freien Anweisung. Das Ergebnis erscheint als „AI suggestion“, Merge-Tags als Tags und das Markup bereinigt; „Replace“ übernimmt es als eigene Änderung der Person.
-- **Chat-Anhänge:** Dateien per Schaltfläche oder Drag-and-drop hinzufügen, Dateinamen prüfen und Dateien vor dem Senden entfernen.
+- **Chat-Anhänge:** Dateien per Schaltfläche oder Drag-and-drop hinzufügen, Dateinamen prüfen und Dateien vor dem Senden entfernen. Der Eingabebereich hat ein Textfeld über die volle Breite und darunter eine Werkzeugleiste mit Anhängen links und Senden oder Stoppen rechts. Die Dateinamen-Chips bleiben über dem Eingabebereich.
 - **Leere Arbeitsfläche:** Verknüpfungen zum Assistenten und zu **Aus Screenshot oder PDF importieren**.
 
 KI-Inhalte werden immer als KI gekennzeichnet, wie Artikel 50 des EU AI Act es für Systeme vorsieht, die mit Menschen interagieren.
@@ -214,10 +216,10 @@ Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` 
 
 ## Prüfen
 
-Öffnen Sie den Assistenten für eine geladene Vorlage ohne Blöcke: Er zeigt drei Einstiegsanfragen. Fügen Sie einen Block hinzu: Er zeigt vier. Ein Klick sendet den angezeigten Text. Prüfen Sie den Provider mit [der Konformitätssuite](/de/api/ai-kit#testen).
+Klicken Sie auf die mit **KI** beschriftete Schaltfläche im Header, um den KI-Assistenten zu öffnen, und erneut, um ihn zu schließen. Öffnen Sie den KI-Assistenten für eine geladene Vorlage ohne Blöcke: Er zeigt drei Einstiegsanfragen. Fügen Sie einen Block hinzu: Er zeigt vier. Ein Klick sendet den angezeigten Text. Prüfen Sie den Provider mit [der Konformitätssuite](/de/api/ai-kit#testen).
 
 Öffnen Sie das Issues-Panel mit einem Befund aus der obigen Liste ohne deterministischen Fix. **Mit KI beheben** sendet die Lint-Projektion; nach der erneuten Prüfung verschwindet der Befund oder zeigt **Nach der Korrektur weiterhin markiert**. Ein Undo nimmt den gesamten Fix zurück.
 
 Öffnen Sie einen Bildbefund und wählen Sie **Alt-Text schreiben**. Bearbeiten und übernehmen Sie den Entwurf, dann wählen Sie Rückgängig: `alt` und `decorative` erhalten ihre vorherigen Werte. **Als dekorativ markieren** entfernt `img-missing-alt` nach der erneuten Lint-Prüfung. Abbrechen lässt das Bild unverändert.
 
-Wählen Sie für Anhänge **Aus Screenshot oder PDF importieren**, wählen Sie eine Datei und prüfen Sie, dass der Chat ohne Senden öffnet. Senden Sie die vorausgefüllte Nachricht und machen Sie die Änderungen rückgängig. Prüfen Sie die Upload-Limits mit der Protokoll-Konformitätssuite bei aktiven Anhängen.
+Wählen Sie für Anhänge auf der leeren Arbeitsfläche **Aus Screenshot oder PDF importieren**, wählen Sie eine Datei und prüfen Sie, dass der Chat ohne Senden öffnet. Senden Sie die vorausgefüllte Nachricht und machen Sie die Änderungen rückgängig. Prüfen Sie die Upload-Limits mit der Protokoll-Konformitätssuite bei aktiven Anhängen.

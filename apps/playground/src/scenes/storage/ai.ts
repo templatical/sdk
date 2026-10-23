@@ -12,10 +12,10 @@ import { COLLABORATION_TEMPLATE_ID } from "./collaboration";
 export const ai: Scene = {
   id: "ai",
   title: "AI",
-  job: "Edit the template with an AI chat",
+  job: "Chat, rewrite and fix issues",
   initKey: "ai",
   summary:
-    "init({ templates, ai }) covers chat with attachments, Import from screenshot or PDF, static starters, rewrite, Fix with AI and alt text using a recorded mock.",
+    "init({ templates, ai }) adds an AI assistant button that opens and closes chat. Attach files in chat or use Import from screenshot or PDF on the empty canvas; try static starters, Rewrite, Fix with AI and Write alt text using a recorded mock.",
   catalog: "oss",
   group: "backend",
   docs: "/backend/ai",

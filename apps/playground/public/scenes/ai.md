@@ -1,8 +1,8 @@
 # AI
 
-Edit the template with an AI chat
+Chat, rewrite and fix issues
 
-init({ templates, ai }) covers chat with attachments, Import from screenshot or PDF, static starters, rewrite, Fix with AI and alt text using a recorded mock.
+init({ templates, ai }) adds an AI assistant button that opens and closes chat. Attach files in chat or use Import from screenshot or PDF on the empty canvas; try static starters, Rewrite, Fix with AI and Write alt text using a recorded mock.
 
 Contract: https://docs.templatical.com/backend/ai
 Live: https://play.templatical.com/scenes/ai
