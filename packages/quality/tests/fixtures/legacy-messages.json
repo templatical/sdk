@@ -1,0 +1,108 @@
+{
+  "accessibility": {
+    "en": {
+      "a11y.img-missing-alt": "Image is missing alt text. Add a short description, or mark the image as decorative.",
+      "a11y.img-alt-is-filename": "Alt text looks like a filename (\"{alt}\"). Replace with a short description of what the image conveys.",
+      "a11y.img-alt-too-long": "Alt text is {length} characters; aim for under {max}.",
+      "a11y.img-decorative-needs-empty-alt": "Decorative image has alt text. Either clear the alt text or unmark the image as decorative.",
+      "a11y.img-linked-no-context": "Linked image alt describes the image but not the link destination. Include where the link goes (e.g. 'Buy spring sale').",
+      "a11y.heading-empty": "Heading is empty. Add text or remove the block.",
+      "a11y.heading-skip-level": "Heading jumps from H{from} to H{to}. Step one level at a time.",
+      "a11y.heading-multiple-h1": "Email has more than one H1. Use H1 once for the main heading.",
+      "a11y.link-empty": "A link in this block has no text and no described image.",
+      "a11y.link-vague-text": "Link text \"{text}\" is vague. Describe the destination instead.",
+      "a11y.link-href-empty": "A link in this block has an empty or '#' href.",
+      "a11y.link-target-blank-no-rel": "Link opens in a new tab but is missing rel=\"noopener\" — add it to prevent the destination from accessing window.opener.",
+      "a11y.link-nested-anchor": "A link is nested inside another link. Nested anchors are invalid HTML and clients render them inconsistently — flatten to a single anchor.",
+      "a11y.text-all-caps": "Long all-caps text is harder to read for everyone. Use sentence case.",
+      "a11y.text-justified": "Justified text stretches word spacing into uneven 'rivers' of white space, which is hardest to track for dyslexic and low-vision readers. Use left-aligned text.",
+      "a11y.text-low-contrast": "Heading contrast is {ratio}:1; WCAG AA requires at least {required}:1.",
+      "a11y.text-too-small": "Text is {size}px; aim for at least {min}px.",
+      "a11y.button-vague-label": "Button label \"{text}\" is vague. Describe the action.",
+      "a11y.button-touch-target": "Button is roughly {height}px tall; aim for at least {min}px to avoid mis-taps on mobile.",
+      "a11y.button-low-contrast": "Button text contrast is {ratio}:1; WCAG AA requires at least {required}:1.",
+      "a11y.missing-preheader": "No preheader text set. Inboxes will fall back to fragments of the first block."
+    },
+    "de": {
+      "a11y.img-missing-alt": "Bild ohne Alt-Text. Füge eine kurze Beschreibung hinzu oder markiere das Bild als dekorativ.",
+      "a11y.img-alt-is-filename": "Alt-Text sieht wie ein Dateiname aus (\"{alt}\"). Beschreibe stattdessen kurz, was das Bild zeigt.",
+      "a11y.img-alt-too-long": "Alt-Text ist {length} Zeichen lang; bleibe unter {max}.",
+      "a11y.img-decorative-needs-empty-alt": "Dekoratives Bild hat Alt-Text. Entferne den Alt-Text oder hebe die Markierung als dekorativ auf.",
+      "a11y.img-linked-no-context": "Verlinktes Bild beschreibt nur das Motiv, nicht das Linkziel. Nenne das Ziel (z. B. „Frühlingssale ansehen“).",
+      "a11y.heading-empty": "Überschrift ist leer. Füge Text hinzu oder entferne den Block.",
+      "a11y.heading-skip-level": "Überschrift springt von H{from} auf H{to}. Eine Ebene pro Schritt.",
+      "a11y.heading-multiple-h1": "E-Mail enthält mehr als eine H1. Verwende H1 nur einmal für die Hauptüberschrift.",
+      "a11y.link-empty": "Ein Link in diesem Block hat keinen Text und kein beschriebenes Bild.",
+      "a11y.link-vague-text": "Link-Text „{text}“ ist unspezifisch. Beschreibe stattdessen das Ziel.",
+      "a11y.link-href-empty": "Ein Link in diesem Block hat ein leeres oder „#“-href.",
+      "a11y.link-target-blank-no-rel": "Link öffnet in neuem Tab, aber rel=\"noopener\" fehlt – ergänze es, damit das Ziel nicht auf window.opener zugreifen kann.",
+      "a11y.link-nested-anchor": "Ein Link liegt innerhalb eines anderen Links. Verschachtelte Anker sind ungültiges HTML und werden von E-Mail-Clients unterschiedlich gerendert – flache einen einzigen Anker daraus.",
+      "a11y.text-all-caps": "Längere Texte in Großbuchstaben sind schwerer lesbar. Verwende Groß- und Kleinschreibung.",
+      "a11y.text-justified": "Blocksatz dehnt die Wortabstände zu ungleichmäßigen „Flüssen“ aus Leerraum, die für Menschen mit Legasthenie und Sehbeeinträchtigung am schwersten zu verfolgen sind. Verwende linksbündigen Text.",
+      "a11y.text-low-contrast": "Überschriftskontrast beträgt {ratio}:1; WCAG AA verlangt mindestens {required}:1.",
+      "a11y.text-too-small": "Text ist {size}px; mindestens {min}px verwenden.",
+      "a11y.button-vague-label": "Button-Beschriftung „{text}“ ist unspezifisch. Beschreibe die Aktion.",
+      "a11y.button-touch-target": "Button ist etwa {height}px hoch; mindestens {min}px verwenden, um Fehltipper auf Mobilgeräten zu vermeiden.",
+      "a11y.button-low-contrast": "Buttontextkontrast beträgt {ratio}:1; WCAG AA verlangt mindestens {required}:1.",
+      "a11y.missing-preheader": "Kein Preheader-Text gesetzt. Postfächer zeigen sonst Bruchstücke des ersten Blocks an."
+    }
+  },
+  "structure": {
+    "en": {
+      "structure.duplicate-block-id": "Block id appears {count} times in the tree. Each block must have a unique id.",
+      "structure.section-column-mismatch": "Section uses layout \"{layout}\" (expects {expected} columns) but has {actual}. Indicates corrupted state.",
+      "structure.nested-section": "Section is nested inside another section. Sections cannot nest — the renderer will misbehave.",
+      "structure.empty-section": "Section has no blocks. Remove it or add content.",
+      "structure.empty-column": "Column {columnIndex} of this section is empty. Add content or reduce the column count.",
+      "structure.wrapper-color-over-background-image": "Outlook on Windows paints the wrapper's background color over this section's background image. Remove the wrapper color or put the image on the wrapper.",
+      "structure.nested-background-image": "This section and its wrapper both have a background image. Outlook on Windows can't layer them and breaks the layout. Keep the image on one of them.",
+      "structure.hero-not-applied.columns": "Hero mode needs a one-column section, so this section renders as a regular one. Switch it back to one column, or turn hero mode off.",
+      "structure.hero-not-applied.image": "Hero mode needs a background image, so this section renders as a regular one until it has one.",
+      "structure.hero-not-applied.size": "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image file's size."
+    },
+    "de": {
+      "structure.duplicate-block-id": "Block-ID erscheint {count}-mal im Baum. Jeder Block muss eine eindeutige ID haben.",
+      "structure.section-column-mismatch": "Sektion verwendet Layout „{layout}\" (erwartet {expected} Spalten), hat aber {actual}. Deutet auf beschädigten Zustand hin.",
+      "structure.nested-section": "Sektion ist in einer anderen Sektion verschachtelt. Sektionen können nicht verschachtelt werden – der Renderer wird sich falsch verhalten.",
+      "structure.empty-section": "Sektion enthält keine Blöcke. Entferne sie oder füge Inhalt hinzu.",
+      "structure.empty-column": "Spalte {columnIndex} dieser Sektion ist leer. Füge Inhalt hinzu oder reduziere die Spaltenanzahl.",
+      "structure.wrapper-color-over-background-image": "Outlook unter Windows malt die Hintergrundfarbe des Wrappers über das Hintergrundbild dieser Sektion. Entferne die Wrapper-Farbe oder lege das Bild auf den Wrapper.",
+      "structure.nested-background-image": "Diese Sektion und ihr Wrapper haben beide ein Hintergrundbild. Outlook unter Windows kann sie nicht übereinanderlegen und zerstört das Layout. Behalte das Bild nur auf einem von beiden.",
+      "structure.hero-not-applied.columns": "Der Hero-Modus braucht eine einspaltige Sektion, deshalb wird diese Sektion als normale Sektion dargestellt. Stelle wieder eine Spalte ein oder schalte den Hero-Modus aus.",
+      "structure.hero-not-applied.image": "Der Hero-Modus braucht ein Hintergrundbild, deshalb wird diese Sektion als normale Sektion dargestellt, bis sie eines hat.",
+      "structure.hero-not-applied.size": "Der Hero-Modus kann die Form dieses Hintergrundbilds nicht übernehmen, weil seine Größe unbekannt ist (eine Merge-Tag-URL oder ein Bild, das der Editor nicht vermessen hat), deshalb wird die Sektion als normale Sektion dargestellt. Gib ihr eine feste Höhe oder trage die Größe der Bilddatei ein."
+    }
+  },
+  "links": {
+    "en": {
+      "link.javascript-protocol": "URL uses the \"{protocol}:\" protocol, which can execute arbitrary script and is stripped at render time for safety. Replace it with a real link or remove the URL.",
+      "link.unsupported-protocol": "URL uses the \"{protocol}\" protocol, which most email clients do not support. Use http, https, mailto, tel, or sms.",
+      "link.malformed-mailto": "mailto: link is malformed. Expected a single recipient address before any query string (e.g. mailto:hello@example.com).",
+      "link.malformed-tel": "tel: link contains characters that are not digits, +, spaces, dashes, parentheses, or dots.",
+      "link.localhost-or-staging": "URL host \"{host}\" matches a non-production pattern. Replace with the production URL before sending.",
+      "link.relative-url": "URL \"{url}\" is relative. A sent email has no page address to resolve it against, so the link breaks. Use an absolute URL (https://…)."
+    },
+    "de": {
+      "link.javascript-protocol": "Die URL verwendet das Protokoll „{protocol}:\", das beliebigen Skriptcode ausführen kann und aus Sicherheitsgründen beim Rendern entfernt wird. Ersetze sie durch eine echte URL oder entferne sie.",
+      "link.unsupported-protocol": "Die URL verwendet das Protokoll „{protocol}\", das von den meisten E-Mail-Clients nicht unterstützt wird. Verwende http, https, mailto, tel oder sms.",
+      "link.malformed-mailto": "Der mailto:-Link ist fehlerhaft. Erwartet wird eine einzelne Empfängeradresse vor einer eventuellen Querystring (z. B. mailto:hallo@example.com).",
+      "link.malformed-tel": "Der tel:-Link enthält Zeichen, die keine Ziffern, +, Leerzeichen, Bindestriche, Klammern oder Punkte sind.",
+      "link.localhost-or-staging": "Der URL-Host „{host}\" entspricht einem Nicht-Produktionsmuster. Ersetze ihn vor dem Versand durch die Produktions-URL.",
+      "link.relative-url": "Die URL „{url}\" ist relativ. Eine versendete E-Mail hat keine Seitenadresse, gegen die sie aufgelöst werden kann, daher funktioniert der Link nicht. Verwende eine absolute URL (https://…)."
+    }
+  },
+  "deliverability": {
+    "en": {
+      "deliverability.link-text-domain-mismatch": "The link text shows {textHost}, but the link goes to {linkHost}. Spam filters flag links like this as phishing. Make the text match the destination, or use words instead of an address.",
+      "deliverability.url-shortener": "This link goes through the URL shortener {host}. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead.",
+      "deliverability.ip-address-url": "This link points to the IP address {host} instead of a domain. Spam filters score links like this as spam. Link to your domain.",
+      "deliverability.low-text": "This email has images but only {count} characters of text (under {min}). Some spam filters score image-heavy emails with little text, and readers who block images see almost nothing. Add text that carries the message."
+    },
+    "de": {
+      "deliverability.link-text-domain-mismatch": "Der Linktext zeigt {textHost}, der Link führt aber zu {linkHost}. Spamfilter werten solche Links als Phishing. Lass den Text zum Ziel passen oder verwende Wörter statt einer Adresse.",
+      "deliverability.url-shortener": "Dieser Link läuft über den URL-Kürzer {host}. Spamfilter behandeln gekürzte Links mit Misstrauen, weil sie das Ziel verbergen. Verlinke direkt auf das Ziel.",
+      "deliverability.ip-address-url": "Dieser Link führt zur IP-Adresse {host} statt zu einer Domain. Spamfilter werten solche Links als Spam. Verlinke auf deine Domain.",
+      "deliverability.low-text": "Diese E-Mail enthält Bilder, aber nur {count} Zeichen Text (weniger als {min}). Manche Spamfilter bewerten bildlastige E-Mails mit wenig Text negativ, und wer Bilder blockiert, sieht fast nichts. Ergänze Text, der die Botschaft trägt."
+    }
+  }
+}

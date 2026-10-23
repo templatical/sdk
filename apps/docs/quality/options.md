@@ -1,10 +1,10 @@
 ---
-description: Reference for LintOptions — the disabled, locale, accessibility, structure, and links fields accepted by lintTemplate and the editor's lint config.
+description: Reference for LintOptions — disabled, locale, accessibility, structure, links, deliverability, and compatibility fields accepted by lintTemplate and editor lint config.
 ---
 
 # Options
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` all accept the same `LintOptions` shape. Every field is optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility` all accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
@@ -13,6 +13,8 @@ interface LintOptions {
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
+  deliverability?: false | DeliverabilityLintOptions;
+  compatibility?: false | CompatibilityLintOptions;
 }
 
 interface AccessibilityLintOptions {
@@ -29,12 +31,32 @@ interface LinksLintOptions {
   nonProductionHosts?: string[];
 }
 
+interface CompatibilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<CompatibilityThresholds>;
+}
+
+interface CompatibilityThresholds {
+  maxHtmlBytes: number;
+}
+
+interface DeliverabilityThresholds {
+  minTextLength: number;
+}
+
+interface DeliverabilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<DeliverabilityThresholds>;
+  shortenerHosts?: string[];
+}
+
 type Severity = "error" | "warning" | "info" | "off";
+type RuleOverrides = Record<string, Severity>;
 ```
 
 The same object also gates the editor's `init({ lint })` config — every option here applies to every linter via the shared `useTemplateLint` composable.
 
-Severity overrides and tool-specific knobs (`thresholds`, `nonProductionHosts`) are namespaced under their owning linter, so each linter only sees the config that's relevant to it.
+Severity overrides and tool-specific knobs (`thresholds`, `nonProductionHosts`, `shortenerHosts`) are namespaced under their owning linter, so each linter only sees the config that's relevant to it.
 
 ## `disabled`
 
@@ -50,7 +72,7 @@ When `true`:
 Use this when a tenant has explicitly opted out, or to keep the default editor bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
 
 ::: tip Disabling every linter individually has the same effect
-The editor treats `{ accessibility: false, structure: false, links: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
+The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
 :::
 
 ## `locale`
@@ -66,6 +88,8 @@ Drives the message templates the linter returns (one file per locale per linter)
 lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
+lintDeliverability(content, { locale: "de" });
+lintCompatibility(content, { locale: "de" });
 
 // Editor — linter automatically follows the editor locale
 init({ locale: "de" });
@@ -74,7 +98,7 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` directly) keep full control.
+Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` / `lintCompatibility(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
@@ -209,3 +233,52 @@ lintLinks(content, { links: { nonProductionHosts: [] } });
 ```
 
 `DEFAULT_NON_PRODUCTION_HOSTS` is exported as the baseline. See the [links overview](./links/) for more.
+
+## `deliverability`
+
+| Default | `{}` |
+|---|---|
+
+Configuration for `lintDeliverability`. Set `deliverability: false` to disable this category.
+
+```ts
+lintDeliverability(content, { deliverability: false, compatibility: false });
+```
+
+### `deliverability.rules`
+
+Keys are full `deliverability.*` rule IDs. `"off"` disables one rule; other severities override its default. See the [deliverability rule catalog](./deliverability/rule-catalog).
+
+```ts
+lintDeliverability(content, {
+  deliverability: { rules: { "deliverability.low-text": "off" } },
+});
+```
+
+### `deliverability.thresholds.minTextLength`
+
+Default `200` visible characters. `deliverability.low-text` fires below this threshold when an image-producing block exists. A partial override preserves other defaults:
+
+```ts
+lintDeliverability(content, {
+  deliverability: { thresholds: { minTextLength: 250 } },
+});
+```
+
+`DEFAULT_DELIVERABILITY_THRESHOLDS` exports the baseline.
+
+### `deliverability.shortenerHosts`
+
+Replaces `DEFAULT_SHORTENER_HOSTS`. Spread the default to extend it:
+
+```ts
+import { DEFAULT_SHORTENER_HOSTS, lintDeliverability } from "@templatical/quality";
+
+const issues = lintDeliverability(content, {
+  deliverability: { shortenerHosts: [...DEFAULT_SHORTENER_HOSTS, "go.example.com"] },
+});
+```
+
+## `compatibility`
+
+Enabled by default. Set `compatibility: false` to disable client compatibility checks. Full `compat.*` rule IDs in `compatibility.rules` accept severity overrides, including `"off"`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB) for `lintCompiledHtml`; it does not affect pass-through scanning. See the [compatibility catalog](./compatibility/rule-catalog).

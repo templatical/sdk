@@ -1,11 +1,15 @@
 import type { CustomBlockDefinition } from "@templatical/types";
 
-export type CustomBlockIssueSeverity = "error" | "warning";
+export type CustomBlockIssueSeverity = "error" | "warning" | "info";
 
 export interface CustomBlockIssue {
   ruleId: string;
   severity: CustomBlockIssueSeverity;
   message: string;
+  suggestion?: string;
+  reference?: string;
+  clients?: import("@templatical/quality").ClientSupport[];
+  excerpt?: string;
   /** JSON-pointer-ish location, e.g. "/fields/2/default". Absent for whole-definition issues. */
   path?: string;
 }

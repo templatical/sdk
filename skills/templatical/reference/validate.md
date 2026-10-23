@@ -20,15 +20,22 @@ from prose.
 
 | Exit | Means | Do |
 |---|---|---|
-| `0` | Structurally valid | Report any lint issues rather than passing them on silently |
-| `1` | The template is invalid | `errors[]` names the exact path. Fix the JSON, not the tool |
-| `2` | Misuse, or the tool broke | A file the JSON parser cannot read arrives here too — check it parses before blaming the template |
-| `3` | An optional package is missing | Not a validation result. Install what it names and re-run |
+| `0` | Valid, with no error-severity lint | Report warnings and info without treating them as failure |
+| `1` | Invalid structure or any `severity: "error"` lint issue | Fix `errors[]` for structure or error-severity `issues[]` for lint; output can still say `valid: true` |
+| `2` | Misuse or a broken tool | A file the JSON parser cannot read arrives here too — check it parses before blaming the template |
+| `3` | A missing optional dependency | Not a validation result. Install what it names and re-run |
 
-## Issues are not errors
+`valid: true` alone does not mean exit 0. Act on the exit code as the command's result. Usage and tool errors (2, 3) go to stderr without a result document, even with `--json`.
 
-`issues[]` is the quality lint — accessibility, structure, links — with severity
-`error`, `warning` or `info`. **Only structural failure moves the exit code.** A
-missing preheader (`info`) is worth one mention; a `warning` is worth fixing
-before the user sends. Never present a lint issue as though the template were
-invalid.
+## Lint severity
+
+`issues[]` is the quality lint — accessibility, structure, links, deliverability, compatibility — with severity
+`error`, `warning` or `info`. Structural failure or any error-severity lint issue
+returns exit 1. Warnings and info never change the exit code. A missing preheader
+(`info`) is worth one mention; a `warning` is worth fixing before the user sends.
+`valid` reports structural validity only; error-severity lint can fail the command
+while `valid` remains `true` and `errors[]` stays empty.
+`deliverability.*` issues are warning or info advice in this CLI and never
+cause exit 1.
+
+For compiled size, run `npx -y @templatical/template-tools@0.49.0 validate <file> --html --json`. Read `htmlBytes` and any `compat.gmail-clipping` warning. This flag needs the optional `mjml` peer; if it is missing, exit `3` with an install hint and no JSON. `compat.*` issues are warning/info for template validation and never cause exit `1` by themselves. Each lint issue supplies `suggestion` and `reference`; use them when repairing the template.

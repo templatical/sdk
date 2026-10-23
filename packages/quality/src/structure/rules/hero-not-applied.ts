@@ -3,6 +3,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "structure.hero-not-applied",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#content-presence",
   severity: "warning",
   messageVariants: ["columns", "image", "size"],
 };

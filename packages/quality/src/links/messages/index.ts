@@ -1,4 +1,5 @@
 import en from "./en";
+import { formatMessagePair } from "../../format-message";
 
 export type LinkMessageMap = typeof en;
 export type LinkRuleMessageId = keyof LinkMessageMap;
@@ -27,12 +28,8 @@ export function formatLinkMessage(
   locale: string,
   ruleId: LinkRuleMessageId,
   params?: Record<string, string | number>,
-): string {
+): { message: string; suggestion: string } {
   const map = getLinkMessages(locale);
   const template = map[ruleId] ?? en[ruleId];
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
-    const value = params[key];
-    return value === undefined ? `{${key}}` : String(value);
-  });
+  return formatMessagePair(template, params);
 }

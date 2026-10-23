@@ -21,8 +21,8 @@ describe("link rule messages", () => {
   });
 
   it("placeholders match between locales for every key", () => {
-    const placeholders = (s: string) =>
-      Array.from(s.matchAll(/\{(\w+)\}/g))
+    const placeholders = (s: { message: string; suggestion: string }) =>
+      Array.from((s.message + " " + s.suggestion).matchAll(/\{(\w+)\}/g))
         .map((m) => m[1])
         .sort();
     for (const key of Object.keys(en) as Array<keyof typeof en>) {
@@ -42,22 +42,22 @@ describe("link rule messages", () => {
     const out = formatLinkMessage("en", "link.unsupported-protocol", {
       protocol: "ftp",
     });
-    expect(out).toContain('"ftp"');
+    expect(out.message).toContain('"ftp"');
   });
 
   it("interpolates {host} for localhost-or-staging", () => {
     const out = formatLinkMessage("en", "link.localhost-or-staging", {
       host: "localhost",
     });
-    expect(out).toContain('"localhost"');
+    expect(out.message).toContain('"localhost"');
   });
 
   it("interpolates {url} for relative-url", () => {
     expect(
-      formatLinkMessage("en", "link.relative-url", { url: "/contact" }),
+      formatLinkMessage("en", "link.relative-url", { url: "/contact" }).message,
     ).toContain('"/contact"');
     expect(
-      formatLinkMessage("de", "link.relative-url", { url: "/contact" }),
+      formatLinkMessage("de", "link.relative-url", { url: "/contact" }).message,
     ).toContain('„/contact"');
   });
 
@@ -65,16 +65,16 @@ describe("link rule messages", () => {
     const out = formatLinkMessage("de", "link.javascript-protocol", {
       protocol: "javascript",
     });
-    expect(out).toContain("javascript");
-    expect(out).toContain("entfernt");
+    expect(out.message).toContain("javascript");
+    expect(out.message).toContain("entfernt");
   });
 
   it("interpolates {protocol} for javascript-protocol", () => {
     expect(
-      formatLinkMessage("en", "link.javascript-protocol", { protocol: "data" }),
+      formatLinkMessage("en", "link.javascript-protocol", { protocol: "data" }).message,
     ).toContain('"data:"');
     expect(
-      formatLinkMessage("en", "link.javascript-protocol", { protocol: "vbscript" }),
+      formatLinkMessage("en", "link.javascript-protocol", { protocol: "vbscript" }).message,
     ).toContain('"vbscript:"');
   });
 

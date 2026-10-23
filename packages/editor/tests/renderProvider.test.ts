@@ -150,6 +150,15 @@ describe('usesLocalRenderer', () => {
   });
 });
 
+describe('canRenderHtml', () => {
+  it('requires an HTML method or compiler on the provider', () => {
+    expect(methods(null).canRenderHtml()).toBe(false);
+    expect(methods({ toMjml: vi.fn() }).canRenderHtml()).toBe(false);
+    expect(methods({ toHtml: vi.fn() }).canRenderHtml()).toBe(true);
+    expect(methods({ compileMjml: vi.fn() }).canRenderHtml()).toBe(true);
+  });
+});
+
 describe('toHtml resolution', () => {
   it('uses the provider when it implements toHtml', async () => {
     const toHtml = vi.fn().mockResolvedValue('<html>provider</html>');

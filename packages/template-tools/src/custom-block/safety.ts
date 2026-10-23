@@ -1,74 +1,21 @@
-// Email-client safety over a custom block's rendered HTML. Custom blocks are
-// raw HTML the SDK passes through untouched (inside <mj-text>), so nothing
-// downstream repairs a layout Outlook can't draw; this is the only check.
-// Rules run on every specimen state's output so both sides of each {% if %}
-// are seen, and an empty optional image surfaces as src="".
-
+// Authoring checks over custom block HTML and CSS. Client support facts live
+// in @templatical/quality and are applied by checkCustomBlock.
 import { Parser } from "htmlparser2";
 import type { RenderedState } from "./render";
 import type { CustomBlockIssue, CustomBlockWorkingFile } from "./types";
 
-const FLEX_GRID = /(^|;)\s*display\s*:\s*(inline-)?(flex|grid)\b/i;
-const POSITION = /(^|;)\s*position\s*:\s*(absolute|fixed)\b/i;
-const DIV_LAYOUT = /(^|;)\s*(width|max-width|float)\s*:/i;
-// `var(--x)` anywhere: Gmail and Outlook drop custom properties, and with them
-// the whole declaration that reads one.
-const CSS_VARIABLE = /\bvar\(\s*--/i;
-// A colour value in a `background:` shorthand: hex, or an rgb()/hsl() call.
-const COLOR_VALUE = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i;
-const FORM_CONTROLS = new Set(["form", "input", "select", "textarea"]);
-
-// The same two layout rules over stylesheet text, where a declaration can
-// also follow `{` or a newline.
-const CSS_FLEX_GRID = /(^|[;{\s])display\s*:\s*(inline-)?(flex|grid)\b/i;
-const CSS_POSITION = /(^|[;{\s])position\s*:\s*(absolute|fixed)\b/i;
-
-const IMPORT_MESSAGE =
-  "`@import` is dropped by most email clients; inline the rules.";
-const FLEX_GRID_MESSAGE =
-  "`display: flex`/`grid` is ignored by Outlook and Gmail on many clients; use tables.";
-const POSITION_MESSAGE =
-  "`position: absolute/fixed` is unsupported in email clients.";
-const CSS_VARIABLE_MESSAGE =
-  "CSS custom properties (`var(--…)`) are dropped by Gmail and Outlook, and the whole declaration with them; write the value itself.";
-
-/** A style attribute's declarations as lowercase property → raw value pairs. */
+/** Style-attribute declarations reused by the custom-block accessibility checks. */
 export function declarations(style: string): [string, string][] {
   const out: [string, string][] = [];
   for (const part of style.split(";")) {
     const colon = part.indexOf(":");
-    if (colon > 0) {
+    if (colon > 0)
       out.push([
         part.slice(0, colon).trim().toLowerCase(),
         part.slice(colon + 1),
       ]);
-    }
   }
   return out;
-}
-
-/**
- * Whether a background image here has a colour to fall back on when images
- * are blocked: `background-color`, a colour inside the `background:`
- * shorthand, or the `bgcolor` attribute Outlook reads.
- */
-function backgroundIssue(
-  style: string,
-  attrs: Record<string, string>,
-): boolean {
-  const decls = declarations(style);
-  const hasImage = decls.some(
-    ([prop, value]) =>
-      (prop === "background" || prop === "background-image") &&
-      /url\(/i.test(value),
-  );
-  if (!hasImage || "bgcolor" in attrs) return false;
-  return !decls.some(
-    ([prop, value]) =>
-      prop === "background-color" ||
-      (prop === "background" &&
-        COLOR_VALUE.test(stripCssUrlsAndStrings(value))),
-  );
 }
 
 /** Drops `/* … *\/` comments in one linear pass; an unterminated comment drops the rest. */
@@ -121,67 +68,6 @@ export function stripCssUrlsAndStrings(css: string): string {
   }
 }
 
-/** Layout rules that hold for stylesheet text: the definition's and a `<style>`'s. */
-function cssLayoutIssues(css: string, path?: string): CustomBlockIssue[] {
-  const text = stripCssComments(css);
-  const issues: CustomBlockIssue[] = [];
-  const at = path === undefined ? {} : { path };
-  if (CSS_FLEX_GRID.test(text))
-    issues.push({
-      ruleId: "safety.flex-grid",
-      severity: "error",
-      ...at,
-      message: FLEX_GRID_MESSAGE,
-    });
-  if (CSS_POSITION.test(text))
-    issues.push({
-      ruleId: "safety.position",
-      severity: "error",
-      ...at,
-      message: POSITION_MESSAGE,
-    });
-  if (CSS_VARIABLE.test(text))
-    issues.push({
-      ruleId: "safety.css-variable",
-      severity: "warning",
-      ...at,
-      message: CSS_VARIABLE_MESSAGE,
-    });
-  return issues;
-}
-
-function stylesheetIssues(
-  def: CustomBlockWorkingFile,
-  css: string,
-): CustomBlockIssue[] {
-  const issues: CustomBlockIssue[] = [];
-  if (/@import\b/i.test(stripCssComments(css))) {
-    issues.push({
-      ruleId: "safety.import",
-      severity: "error",
-      path: "/stylesheet",
-      message: IMPORT_MESSAGE,
-    });
-  }
-  issues.push(...cssLayoutIssues(css, "/stylesheet"));
-  const stripped = stripCssUrlsAndStrings(stripCssComments(css));
-  const prefix = `tplc-${def.type}-`;
-  const unscoped = [
-    ...new Set(
-      [...stripped.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]),
-    ),
-  ].filter((cls) => !cls.startsWith(prefix));
-  if (unscoped.length > 0) {
-    issues.push({
-      ruleId: "safety.unscoped-class",
-      severity: "warning",
-      path: "/stylesheet",
-      message: `Classes ${unscoped.map((c) => `.${c}`).join(", ")} aren't prefixed \`${prefix}\`; the SDK doesn't scope them, so they can collide with other blocks.`,
-    });
-  }
-  return issues;
-}
-
 export function checkEmailSafety(
   def: CustomBlockWorkingFile,
   rendered: RenderedState[],
@@ -189,116 +75,77 @@ export function checkEmailSafety(
   const issues: CustomBlockIssue[] = [];
   const add = (
     ruleId: string,
-    severity: CustomBlockIssue["severity"],
     message: string,
-  ) => issues.push({ ruleId, severity, message });
-
+    suggestion: string,
+    path?: string,
+  ) => {
+    issues.push({
+      ruleId,
+      severity: "warning",
+      message,
+      suggestion,
+      reference: "https://docs.templatical.com/guide/custom-blocks",
+      ...(path ? { path } : {}),
+    });
+  };
   for (const { state, html } of rendered) {
-    let inStyle = false;
-    let styleText = "";
     const parser = new Parser(
       {
         onopentag(name, attrs) {
-          const style = attrs.style ?? "";
-          if (FLEX_GRID.test(style))
-            add("safety.flex-grid", "error", FLEX_GRID_MESSAGE);
-          if (POSITION.test(style))
-            add("safety.position", "error", POSITION_MESSAGE);
-          if (CSS_VARIABLE.test(style))
-            add("safety.css-variable", "warning", CSS_VARIABLE_MESSAGE);
-          if (backgroundIssue(style, attrs))
-            add(
-              "safety.bg-image-fallback",
-              "warning",
-              "A background image needs a fallback colour (`background-color`, a colour in `background:`, or `bgcolor`); many clients block images.",
-            );
-          if (name === "svg")
-            add(
-              "safety.svg",
-              "error",
-              "Inline `<svg>` is stripped by Gmail and not drawn by Outlook; use a PNG `<img>`.",
-            );
-          if (FORM_CONTROLS.has(name))
-            add(
-              "safety.form",
-              "warning",
-              `\`<${name}>\` doesn't work in most email clients (Gmail and Outlook disable forms); link to a page instead.`,
-            );
-          if (name === "script")
-            add(
-              "safety.script",
-              "error",
-              "`<script>` is stripped by every email client.",
-            );
-          if (
-            name === "link" &&
-            (attrs.rel ?? "").toLowerCase() === "stylesheet"
-          )
-            add(
-              "safety.external-stylesheet",
-              "error",
-              "External stylesheets are not loaded by email clients; use inline styles or `stylesheet`.",
-            );
-          if (name === "style") {
-            inStyle = true;
-            styleText = "";
+          if (name === "style")
             add(
               "safety.style-tag",
-              "warning",
-              "Move `<style>` rules into the definition's `stylesheet`, which the renderer places in `<mj-head>`.",
+              "A <style> element is inside the custom block HTML.",
+              "Move its rules into the definition's stylesheet, which the renderer places in <mj-head>.",
             );
-          }
-          if (name === "div" && DIV_LAYOUT.test(style))
+          if (name !== "img") return;
+          if (!("alt" in attrs))
             add(
-              "safety.div-layout",
-              "warning",
-              "A `<div>` carrying width or float is unreliable in Outlook; lay out with tables.",
+              "safety.img-alt",
+              "An <img> element has no alt attribute.",
+              'Add alt text, or alt="" for a decorative image.',
             );
-          if (name === "img") {
-            if (!("alt" in attrs))
-              add(
-                "safety.img-alt",
-                "warning",
-                'Every `<img>` needs an `alt` attribute (`alt=""` for decorative images), ideally bound to a field.',
-              );
-            if (!("width" in attrs))
-              add(
-                "safety.img-width",
-                "warning",
-                "Give `<img>` a `width` attribute; Outlook ignores CSS widths on images.",
-              );
-            if ((attrs.src ?? "") === "")
-              add(
-                "safety.empty-img-src",
-                "warning",
-                `An \`<img>\` renders with an empty \`src\` in the "${state}" state; wrap it in \`{% if <field> != blank %}\` (Liquid treats an empty string as true, so a bare \`{% if <field> %}\` doesn't hide it).`,
-              );
-          }
-        },
-        ontext(text) {
-          if (inStyle) styleText += text;
-        },
-        onclosetag(name) {
-          if (name === "style") {
-            inStyle = false;
-            if (/@import\b/i.test(stripCssComments(styleText)))
-              add("safety.import", "error", IMPORT_MESSAGE);
-            issues.push(...cssLayoutIssues(styleText));
-          }
+          if (!("width" in attrs))
+            add(
+              "safety.img-width",
+              "An <img> element has no width attribute.",
+              "Add a width attribute for Outlook.",
+            );
+          if ((attrs.src ?? "") === "")
+            add(
+              "safety.empty-img-src",
+              `An <img> element has an empty src in the "${state}" state.`,
+              "Wrap the image in a Liquid condition that checks the source against blank.",
+            );
         },
       },
       { decodeEntities: true },
     );
-    parser.write(html);
-    parser.end();
+    parser.end(html);
   }
-  if (def.stylesheet) issues.push(...stylesheetIssues(def, def.stylesheet));
-
+  if (def.stylesheet) {
+    const stripped = stripCssUrlsAndStrings(stripCssComments(def.stylesheet));
+    const prefix = `tplc-${def.type}-`;
+    const unscoped = [
+      ...new Set(
+        [...stripped.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(
+          (match) => match[1],
+        ),
+      ),
+    ].filter((name) => !name.startsWith(prefix));
+    if (unscoped.length > 0)
+      add(
+        "safety.unscoped-class",
+        `Classes ${unscoped.map((name) => `.${name}`).join(", ")} aren't prefixed \`${prefix}\`; the SDK doesn't scope them, so they can collide with other blocks.`,
+        `Prefix each class with ${prefix}.`,
+        "/stylesheet",
+      );
+  }
   const seen = new Set<string>();
-  return issues.filter((i) => {
-    const k = `${i.ruleId}\0${i.path ?? ""}\0${i.message}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
+  return issues.filter((issue) => {
+    const key = `${issue.ruleId}\0${issue.path ?? ""}\0${issue.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }

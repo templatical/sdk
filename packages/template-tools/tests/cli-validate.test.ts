@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runValidate } from "../src/cli/commands/validate";
@@ -52,47 +54,43 @@ afterEach(() => {
 });
 
 describe("validate command", () => {
-  it("exits 0 on a structurally valid template", () => {
+  it("exits 0 on a structurally valid template", async () => {
     const f = fixture("ok.json", VALID);
-    expect(runValidate(parseArgs(["validate", f]))).toBe(0);
+    expect(await runValidate(parseArgs(["validate", f]))).toBe(0);
   });
 
-  it("exits 1 and names the block path on a structural error", () => {
+  it("exits 1 and names the block path on a structural error", async () => {
     const f = fixture("bad.json", {
       ...VALID,
       blocks: [{ id: "button_1", type: "button", styles: { padding: {} } }],
     });
     setJsonMode(true);
-    expect(runValidate(parseArgs(["validate", f, "--json"]))).toBe(1);
+    expect(await runValidate(parseArgs(["validate", f, "--json"]))).toBe(1);
     const out = JSON.parse(stdout.join(""));
     expect(out.valid).toBe(false);
     expect(out.errors.join(" ")).toContain("blocks[0] (button)");
   });
 
-  it("emits only parseable JSON on stdout under --json", () => {
+  it("emits only parseable JSON on stdout under --json", async () => {
     const f = fixture("ok.json", VALID);
     setJsonMode(true);
-    runValidate(parseArgs(["validate", f, "--json"]));
+    await runValidate(parseArgs(["validate", f, "--json"]));
     const out = JSON.parse(stdout.join(""));
     expect(out).toMatchObject({ valid: true });
     expect(Array.isArray(out.issues)).toBe(true);
   });
 
-  it("exits 2 with no file argument", () => {
-    expect(() => runValidate(parseArgs(["validate"]))).toThrow(
-      /needs a template file/i,
-    );
+  it("exits 2 with no file argument", async () => {
+    await expect(runValidate(parseArgs(["validate"]))).rejects.toThrow(/needs a template file/i);
   });
 
-  it("exits 2 on unparseable JSON", () => {
+  it("exits 2 on unparseable JSON", async () => {
     const p = join(dir, "broken.json");
     writeFileSync(p, "{ not json", "utf8");
-    expect(() => runValidate(parseArgs(["validate", p]))).toThrow(
-      /not valid JSON/,
-    );
+    await expect(runValidate(parseArgs(["validate", p]))).rejects.toThrow(/not valid JSON/);
   });
 
-  it("reports lint warnings but still exits 0", () => {
+  it("reports lint warnings but still exits 0", async () => {
     // A button with vague text is a warning-level accessibility issue, not a
     // structural one — advisory, so the command must not fail on it.
     const f = fixture("warn.json", {
@@ -114,7 +112,7 @@ describe("validate command", () => {
       ],
     });
     setJsonMode(true);
-    expect(runValidate(parseArgs(["validate", f, "--json"]))).toBe(0);
+    expect(await runValidate(parseArgs(["validate", f, "--json"]))).toBe(0);
     const out = JSON.parse(stdout.join(""));
     expect(out.valid).toBe(true);
     // Not just "some issue exists": a11y.missing-preheader (severity "info")
@@ -126,5 +124,25 @@ describe("validate command", () => {
         severity: "warning",
       }),
     );
+  });
+
+  it("keeps the built CLI at exit 0 for a deliverability warning", () => {
+    const f = fixture("shortener.json", {
+      ...VALID,
+      blocks: [{
+        id: "button_1", type: "button", text: "Open the report",
+        url: "https://bit.ly/x", backgroundColor: "#1d4ed8",
+        textColor: "#ffffff", borderRadius: 6, fontSize: 16,
+        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
+        align: "center", styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+      }],
+    });
+    const result = spawnSync(process.execPath, [resolve(import.meta.dirname, "../dist/bin.js"), "validate", f, "--json"], { encoding: "utf8" });
+    expect(result.status).toBe(0);
+    const out = JSON.parse(result.stdout);
+    expect(out.valid).toBe(true);
+    expect(out.issues).toContainEqual(expect.objectContaining({
+      ruleId: "deliverability.url-shortener", severity: "warning",
+    }));
   });
 });

@@ -3,6 +3,8 @@ import { walkUrls } from "../../url-walker";
 
 export const meta: RuleMeta = {
   id: "link.javascript-protocol",
+  reference:
+    "https://docs.templatical.com/quality/links/rule-catalog#dangerous-protocols",
   severity: "error",
 };
 

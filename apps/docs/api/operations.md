@@ -16,13 +16,15 @@ An operation is one change to a template: add, move, delete or update a block, u
 ## The six operations
 
 ```json
-{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>"}, "parent": null, "after": "b1"}
+{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>", "styles": {"padding": {"top": 0, "right": 0, "bottom": 0, "left": 0}}}, "parent": null, "after": "b1"}
 {"op": "moveBlock",      "blockId": "b2", "parent": {"sectionId": "s1", "column": 0}, "after": null}
 {"op": "deleteBlock",    "blockId": "b2"}
 {"op": "updateBlock",    "blockId": "b1", "set": {"content": "<p>Hello</p>"}, "unset": ["visibility"]}
-{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheader"]}
-{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600}}}
+{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheaderText"]}
+{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600, "backgroundColor": "#ffffff", "textColor": "#1a1a1a", "linkUnderline": true, "fontFamily": "Arial", "locale": "en"}}}
 ```
+
+Engine acceptance of an operation does not replace schema validation: run `template-tools validate` on the resulting template.
 
 A batch is a list of operations. It applies in order, each operation seeing the ones before it, and all or nothing: when one is refused, none of the batch applies.
 

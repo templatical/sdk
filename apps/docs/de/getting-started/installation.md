@@ -111,7 +111,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/types`           | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards                                                      | Automatisch installiert                                                                                      |
 | `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Automatisch installiert                                                                                      |
 | `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
-| `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
+| `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
 | `@templatical/media-library`   | Eigenständiges Medien-SDK (`init()`, `useMediaLibrary`, `MediaLibraryModal` in einer Vue-App). Die Durchsuchen-Oberfläche des Editors ist in `@templatical/editor` gebündelt. | Optional – nur für eigenständige Nutzung, nicht für `init({ media })` oder Clouds Speicher |
 | `@templatical/template-tools`  | CLI und Bibliothek zum Validieren, Rendern, Bearbeiten, Importieren und Live-Vorschauen von Templates außerhalb des Editors | Optional – per `npx` ausführen, nichts zu installieren; für CI-Checks, Skripte oder das Erzeugen von Templates ohne gemounteten Editor |
 | `@templatical/ai-kit`             | KI über Ihr eigenes Backend: `createHttpAiProvider` für `init({ ai })`, dazu ein Server-Kit und ein Test-Kit für Ihr Backend. MIT. | Optional – dort installieren, wo Sie KI nutzen (Client und Server) |
@@ -133,7 +133,7 @@ Der Editor lädt drei optionale Peers zur Laufzeit per dynamischem `import()`, a
 | Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
 | `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
-| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit, Struktur und Link-Lint in der Issues-Sidebar nutzen möchten |
+| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit, Struktur, Link-, Zustellbarkeits- und Kompatibilitäts-Lint in der Issues-Sidebar nutzen möchten |
 | `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 
 Wenn Sie sie nicht installieren, mountet der Editor trotzdem. Der Issues-Tab von Quality und Pusher bleiben aus. `editor.toMjml()` wirft einen klaren Fehler, der das fehlende Paket nennt. Durchsuchen braucht kein Extra-Paket — das Modal ist ein Lazy-Chunk des Editors.

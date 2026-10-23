@@ -27,7 +27,7 @@ const issues = lintStructure(content); // options ist ein optionales zweites Arg
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "structure." beginnt
 ```
 
-Gleiche Signatur wie `lintAccessibility`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können beide Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
+Gleiche Signatur wie `lintAccessibility`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können alle fünf Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
 
 Struktur-spezifische Konfiguration liegt unter `LintOptions.structure`. Setzen Sie `structure: false`, um den Linter komplett zu deaktivieren.
 
@@ -37,11 +37,11 @@ lintStructure(content, {
 });
 ```
 
-Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dynamischem Import und führt beide Linter bei jeder (entprellten) Inhaltsänderung aus. Struktur-Issues erscheinen im **Issues**-Sidebar-Tab neben Barrierefreiheits-Issues.
+Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dynamischem Import und führt alle fünf Linter bei jeder (entprellten) Inhaltsänderung aus. Struktur-Issues erscheinen im **Issues**-Sidebar-Tab neben Barrierefreiheits-Issues.
 
 ## Schnellzugriff
 
 - [Regelkatalog](./rule-catalog) — jede Struktur-Regel mit Schweregrad, Begründung und Auto-Fix-Hinweis.
-- [Optionen](../options) — geteilt über beide Linter.
+- [Optionen](../options) — geteilt über alle fünf Linter.
 - [Schweregrade & Fixes](../severity-and-fixes) — wie das Schweregrad-Modell funktioniert und wie Auto-Fix-Patches angewendet werden.
 - [Headless-Nutzung](../headless-usage) — Validierung gespeicherter Templates in CI.

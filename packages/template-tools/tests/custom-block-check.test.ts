@@ -25,10 +25,32 @@ describe("checkCustomBlock", () => {
   });
   it("combines liquid, safety and recipe findings; warnings alone stay valid", async () => {
     const r = await checkCustomBlock({ ...good, template: `<div style="width:10px">{{ text }}</div>` });
-    expect(r).toEqual({ valid: true, issues: [expect.objectContaining({ ruleId: "safety.div-layout", severity: "warning" })] });
+    expect(r.valid).toBe(true);
+    expect(r.issues.map(({ ruleId, severity, path, excerpt }) => ({ ruleId, severity, path, excerpt }))).toEqual([
+      { ruleId: "compat.css-width", severity: "warning", path: "/template", excerpt: "width: 10px" },
+    ]);
     const bad = await checkCustomBlock({ ...good, dataSourcePreview: { label: "F", request: { url: "https://x.test/{{ sku }}" }, map: {} } });
     expect(bad.valid).toBe(false);
     expect(bad.issues.map((i) => i.ruleId)).toEqual(["recipe.undefined-variable"]);
+  });
+  it("raises selected compatibility findings to errors and keeps style-tag as authoring", async () => {
+    const r = await checkCustomBlock({ ...good, template: '<style>.tplc-quote-cell{display:flex}</style><script>x</script><p>{{ text }}</p>' });
+    expect(r.valid).toBe(false);
+    expect(r.issues.map(({ ruleId, severity, path }) => ({ ruleId, severity, path }))).toEqual([
+      { ruleId: "safety.style-tag", severity: "warning", path: undefined },
+      { ruleId: "compat.css-display-flex", severity: "error", path: "/template" },
+      { ruleId: "compat.html-script", severity: "error", path: "/template" },
+    ]);
+    expect(r.issues.find((issue) => issue.ruleId === "compat.html-script")?.reference).toBe(
+      "https://docs.templatical.com/quality/compatibility/rule-catalog#compat-html-script",
+    );
+  });
+  it("checks the definition stylesheet once with a stylesheet path", async () => {
+    const r = await checkCustomBlock({ ...good, stylesheet: '.tplc-quote-cell{position:fixed}' });
+    expect(r.issues.map(({ ruleId, severity, path }) => ({ ruleId, severity, path }))).toEqual([
+      { ruleId: "compat.css-position", severity: "error", path: "/stylesheet" },
+    ]);
+    expect(r.valid).toBe(false);
   });
   it("reports a template that throws while rendering as an error, not a crash", async () => {
     const r = await checkCustomBlock({ ...good, template: `${good.template}{{ "2024-01-01" | date: "%Y", "Not/AZone" }}` });

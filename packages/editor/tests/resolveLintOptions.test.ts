@@ -41,11 +41,18 @@ describe("resolveLintOptions", () => {
   it("preserves per-tool false disables", () => {
     const out = resolveLintOptions({
       locale: "en",
-      lint: { accessibility: false, structure: false, links: false },
+      lint: {
+        accessibility: false,
+        structure: false,
+        links: false,
+        deliverability: false,
+        compatibility: false,
+      },
     });
     expect(out.accessibility).toBe(false);
     expect(out.structure).toBe(false);
     expect(out.links).toBe(false);
+    expect(out.deliverability).toBe(false);
   });
 
   it("returns undefined locale when editor locale is unset", () => {

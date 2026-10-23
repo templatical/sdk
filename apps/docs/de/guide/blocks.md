@@ -18,7 +18,7 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Überschriften, Titel | [Title](#title) | Überschriften mit fester Größe (H1-H4) mit Formatierung auf Blockebene |
 | Fließtext, Absätze | [Paragraph](#paragraph) | Rich Text mit Inline-Formatierung über TipTap |
 | Fotos, Banner, Logos | [Image](#image) | Optionales Link-Wrapping, responsive Breite |
-| Call-to-Action | [Button](#button) | Bulletproof-Schaltflächen, die in allen E-Mail-Clients funktionieren |
+| Call-to-Action | [Button](#button) | Bulletproof-Schaltflächen, über `mj-button` als HTML-Tabellen gerendert |
 | Mehrspaltiges Layout | [Section](#section) | Der einzige Block, der andere Blöcke enthält |
 | Visuelle Trennung | [Divider](#divider) | Horizontale Linie mit Stiloptionen |
 | Vertikaler Abstand | [Spacer](#spacer) | Leerraum zwischen Blöcken |
@@ -113,6 +113,8 @@ Leerer vertikaler Raum.
 
 Fügt rohes HTML in das Template ein. Verwenden Sie dies für Inhalte, die mit anderen Blocktypen nicht ausgedrückt werden können.
 
+Der Inhalt von HTML-Blöcken wird von MJML durchgereicht und dadurch nicht automatisch E-Mail-tauglich. Prüfen Sie Client-Support bei [caniemail](https://www.caniemail.com/) und führen Sie den [Kompatibilitäts-Linter](/de/quality/compatibility/) aus.
+
 Editor und Renderer geben dieses Markup unverändert aus; keiner von beiden bereinigt es. Kann das HTML aus nicht vertrauenswürdigen Quellen stammen, bereinigen Sie `content` auf Ihrem Server, bevor Sie es speichern oder versenden. Um HTML-Blöcke ganz aus der gerenderten E-Mail zu entfernen, übergeben Sie [`allowHtmlBlocks: false`](/de/api/renderer-typescript) an `renderToMjml`.
 
 | Eigenschaft | Typ | Beschreibung |
@@ -194,6 +196,8 @@ Eine Datentabelle mit optionaler Formatierung der Kopfzeile.
 | `textAlign` | `'left' \| 'center' \| 'right'` | Textausrichtung der Zelle |
 
 ## Video
+
+Videoblöcke verwenden ein verlinktes Vorschaubild statt eingebettetem `<video>`; siehe [caniemail](https://www.caniemail.com/features/html-video/).
 
 Zeigt ein Video-Thumbnail an, das zur Video-URL verlinkt.
 

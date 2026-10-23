@@ -29,7 +29,7 @@ const issues = lintAccessibility(content); // options is an optional second argu
 // issues: LintIssue[] — each entry has ruleId starting with "a11y."
 ```
 
-The function takes a `TemplateContent` and an optional [`LintOptions`](../options) object. It returns a flat array of `LintIssue` objects with `ruleId`, `severity`, `message`, `blockId`, and optionally a `fix` patch.
+The function takes a `TemplateContent` and an optional [`LintOptions`](../options) object. It returns a flat array of `LintIssue` objects with `ruleId`, `severity`, `message`, `blockId`, required `suggestion` and `reference`, and optionally a `fix` patch.
 
 Accessibility-specific config lives under `LintOptions.accessibility`. Set `accessibility: false` to disable the linter entirely.
 
@@ -47,7 +47,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every accessibility rule with severity, rationale, and examples.
-- [Options](../options) — shared across both linters.
+- [Options](../options) — shared across all five linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 - [Contributing locales](../contributing-locales) — adding rule messages + vague-text dictionaries.

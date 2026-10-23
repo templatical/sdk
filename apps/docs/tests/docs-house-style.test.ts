@@ -28,6 +28,7 @@ const SKIP_FILES = new Set(["changelog.md", "de/changelog.md"]);
 const ADVERBS = /\b(deliberately|genuinely|precisely|merely)\b/i;
 const DERIVED_BLOCK_COUNT = /\ball\s+\d+\s+built-in block/i;
 const RENDERER_AS_HTML = /JSON\s*→\s*MJML\s*→\s*HTML/;
+const UNIVERSAL_EMAIL_CLIENTS = /\b(?:all email clients|every email client|allen E-Mail-Clients|alle E-Mail-Clients|jedem E-Mail-Client|jeder E-Mail-Client)\b/i;
 const BANNED_HEADINGS = [
   "## What's actually happening here",
   "## Trying it out",
@@ -101,6 +102,11 @@ describe("OSS docs house style", () => {
     for (const rel of pages) {
       if (DERIVED_BLOCK_COUNT.test(readDocs(rel))) hits.push(rel);
     }
+    expect(hits).toEqual([]);
+  });
+
+  it("does not promise universal email-client support", () => {
+    const hits = pages.filter((rel) => UNIVERSAL_EMAIL_CLIENTS.test(readDocs(rel)));
     expect(hits).toEqual([]);
   });
 
@@ -289,4 +295,79 @@ describe("OSS docs house style", () => {
       /docs\.templatical\.com\/guide\/saved-blocks/,
     );
   });
+});
+
+describe("collaboration transport examples", () => {
+  const surfaces = [
+    ["backend/collaboration.md", readDocs("backend/collaboration.md")],
+    ["de/backend/collaboration.md", readDocs("de/backend/collaboration.md")],
+    [
+      "scene markdown",
+      readRepo("apps/playground/public/scenes/collaboration.md"),
+    ],
+    [
+      "displayed scene",
+      readRepo("apps/playground/src/scenes/storage/collaboration.ts"),
+    ],
+  ].map(([name, src]) => [name, src.replaceAll("'", '\"')] as const);
+
+  it.each(surfaces)("%s captures the joined session id", (_name, src) => {
+    expect(src.includes('let sessionId = "";')).toBe(true);
+    expect(src.includes("sessionId = session.sessionId;")).toBe(true);
+  });
+
+  for (const method of [
+    "submit",
+    "operationsAfter",
+    "acquireLock",
+    "renewLock",
+    "releaseLock",
+  ]) {
+    it.each(surfaces)(`%s sends X-Session-Id on ${method}`, (_name, src) => {
+      const call =
+        src.match(
+          new RegExp(`    ${method}:[\\s\\S]*?(?=\\n    [a-zA-Z]+:|\\n  },)`),
+        )?.[0] ?? "";
+      expect(call.includes('headers: { "X-Session-Id": sessionId }')).toBe(
+        true,
+      );
+      if (method === "releaseLock")
+        expect(call.includes("keepalive: true")).toBe(true);
+    });
+  }
+
+  it.each(["backend/collaboration.md", "de/backend/collaboration.md"])(
+    "%s requires statusCode to classify retries",
+    (rel) => {
+      const sentence =
+        readDocs(rel)
+          .split("\n")
+          .find((line) => line.startsWith("`api`")) ?? "";
+      expect(sentence.includes("`statusCode`")).toBe(true);
+      expect(
+        sentence.includes(
+          rel.startsWith("de/") ? "Netzwerkfehler" : "network failure",
+        ),
+      ).toBe(true);
+      expect(
+        sentence.includes(rel.startsWith("de/") ? "erneut" : "retried"),
+      ).toBe(true);
+    },
+  );
+
+  it.each(surfaces.slice(2))(
+    "%s preserves HTTP status and request headers",
+    (_name, src) => {
+      expect(
+        src.includes(
+          "Object.assign(new Error(body.message), body, { statusCode: res.status })",
+        ),
+      ).toBe(true);
+      expect(
+        src.includes(
+          'headers: { "Content-Type": "application/json", ...init.headers }',
+        ),
+      ).toBe(true);
+    },
+  );
 });

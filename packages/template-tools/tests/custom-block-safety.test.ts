@@ -5,84 +5,34 @@ const def = (stylesheet = "") => ({ type: "promo", name: "P", fields: [], templa
 const lint = (html: string, stylesheet = "", state = "defaults") =>
   checkEmailSafety(def(stylesheet), [{ state: state as never, html }]).map((i) => `${i.severity}:${i.ruleId}`);
 
-describe("checkEmailSafety", () => {
-  it("passes table-based, inline-styled markup", () => {
-    expect(lint('<table role="presentation" width="100%"><tr><td style="padding:8px;background-color:#fff"><img src="a.png" alt="" width="40"></td></tr></table>')).toEqual([]);
-  });
-  it.each([
-    ['<div style="display:flex">x</div>', "error:safety.flex-grid"],
-    ['<td style="display: inline-grid">x</td>', "error:safety.flex-grid"],
-    ['<td style="position:absolute">x</td>', "error:safety.position"],
-    ["<script>x</script>", "error:safety.script"],
-    ['<link rel="stylesheet" href="x.css">', "error:safety.external-stylesheet"],
-    ['<img src="a.png" width="4">', "warning:safety.img-alt"],
-    ['<img src="a.png" alt="x">', "warning:safety.img-width"],
-    ['<div style="width:300px">x</div>', "warning:safety.div-layout"],
-    ['<td style="background-image:url(a.png)">x</td>', "warning:safety.bg-image-fallback"],
-    ['<td style="background: url(a.png) no-repeat center">x</td>', "warning:safety.bg-image-fallback"],
-    ['<svg width="10" height="10"><circle r="4"/></svg>', "error:safety.svg"],
-    ['<form action="/s"></form>', "warning:safety.form"],
-    ['<input type="email">', "warning:safety.form"],
-    ['<td style="color: var(--brand)">x</td>', "warning:safety.css-variable"],
-  ])("flags %s", (html, expected) => {
-    expect(lint(html)).toEqual([expected]);
-  });
-  it.each([
-    '<td style="background: #ffffff url(a.png) no-repeat">x</td>',
-    '<td style="background:rgba(0,0,0,.5) url(a.png)">x</td>',
-    '<td style="background-image:url(a.png)" bgcolor="#123456">x</td>',
-  ])("accepts a background image with a fallback colour: %s", (html) => {
-    expect(lint(html)).toEqual([]);
-  });
-  it("checks a background's fallback colour in linear time", () => {
-    const t = performance.now();
-    expect(lint(`<td style="background: ${"url(".repeat(50000)}">x</td>`)).toEqual(["warning:safety.bg-image-fallback"]);
-    expect(performance.now() - t).toBeLessThan(1000);
-  });
-  it("ignores @import inside a comment, in the stylesheet and in <style>", () => {
-    expect(lint("<p>x</p>", "/* no @import here */ .tplc-promo-a { color: red; }")).toEqual([]);
-    expect(lint("<style>/* @import x */ .a{}</style>")).toEqual(["warning:safety.style-tag"]);
-  });
-  it("warns on var() in the stylesheet, with its path", () => {
-    const issues = checkEmailSafety(def(".tplc-promo-a { color: var(--brand); }"), [{ state: "defaults", html: "<p>x</p>" }]);
-    expect(issues).toEqual([expect.objectContaining({ ruleId: "safety.css-variable", severity: "warning", path: "/stylesheet" })]);
-  });
-  it("flags a template <style> tag, and @import inside it", () => {
-    expect(lint("<style>@import url(x.css); .a{}</style>")).toEqual(["warning:safety.style-tag", "error:safety.import"]);
-  });
-  it("names the state for an empty image src", () => {
-    const issues = checkEmailSafety(def(), [{ state: "empty", html: '<img src="" alt="" width="4">' }]);
-    expect(issues).toEqual([expect.objectContaining({ ruleId: "safety.empty-img-src", severity: "warning" })]);
-    expect(issues[0].message).toContain("empty");
-    // Liquid treats "" as truthy, and a cleared field is "", so a bare
-    // `{% if <field> %}` guard still renders the image.
-    expect(issues[0].message).toContain("`{% if <field> != blank %}`");
-  });
-  it("checks the stylesheet: @import is an error, unprefixed classes warn, url() and decimals don't false-positive", () => {
-    expect(lint("<p>x</p>", '@import "x.css"; .tplc-promo-a { margin: 0.5em; background: url(x.png); } .hero {}'))
-      .toEqual(["error:safety.import", "warning:safety.unscoped-class"]);
-  });
-  it.each([
-    [".tplc-promo-a { display: flex; }", "error:safety.flex-grid"],
-    [".tplc-promo-a{display:inline-grid}", "error:safety.flex-grid"],
-    [".tplc-promo-a {\n  position: fixed;\n}", "error:safety.position"],
-  ])("checks layout in the stylesheet: %s", (css, expected) => {
-    const issues = checkEmailSafety(def(css), [{ state: "defaults", html: "<p>x</p>" }]);
-    expect(issues.map((i) => `${i.severity}:${i.ruleId}:${i.path}`)).toEqual([`${expected}:/stylesheet`]);
-  });
-  it("leaves harmless stylesheet display and position values alone", () => {
-    expect(lint("<p>x</p>", ".tplc-promo-a { display: block; position: relative; }")).toEqual([]);
-  });
-  it("checks layout inside a template <style> tag", () => {
-    expect(lint("<style>.a { display: grid } .b{position:absolute}</style>"))
-      .toEqual(["warning:safety.style-tag", "error:safety.flex-grid", "error:safety.position"]);
-  });
-  it("de-duplicates the same finding across states", () => {
-    const r = checkEmailSafety(def(), [
-      { state: "defaults", html: '<div style="display:flex"></div>' },
-      { state: "long", html: '<div style="display:flex"></div>' },
+describe("checkEmailSafety authoring rules", () => {
+  it("keeps only authoring diagnostics", () => {
+    const issues = checkEmailSafety(def(), [{ state: "defaults", html: '<style>p{color:red}</style><img src="" width="4"><img src="a.png" alt="x">' }]);
+    expect(issues.map((issue) => issue.ruleId)).toEqual([
+      "safety.style-tag", "safety.img-alt", "safety.empty-img-src", "safety.img-width",
     ]);
-    expect(r.map((i) => i.ruleId)).toEqual(["safety.flex-grid"]);
+    expect(issues[2].message).toContain('"defaults" state');
+    expect(issues[2].suggestion).toBe("Wrap the image in a Liquid condition that checks the source against blank.");
+  });
+
+  it("finds unscoped stylesheet classes without reading URLs or strings", () => {
+    const issues = checkEmailSafety(def('.tplc-promo-a { background: url(icon.png); content: "x.y" } .hero {}'), [{ state: "defaults", html: "<p>x</p>" }]);
+    expect(issues.map(({ ruleId, severity, path }) => ({ ruleId, severity, path }))).toEqual([
+      { ruleId: "safety.unscoped-class", severity: "warning", path: "/stylesheet" },
+    ]);
+    expect(issues[0].suggestion).toBe("Prefix each class with tplc-promo-.");
+  });
+
+  it("does not duplicate authoring findings across specimen states", () => {
+    const issues = checkEmailSafety(def(), [
+      { state: "defaults", html: "<style>p{color:red}</style>" },
+      { state: "long", html: "<style>p{color:red}</style>" },
+    ]);
+    expect(issues.map((issue) => issue.ruleId)).toEqual(["safety.style-tag"]);
+  });
+
+  it("does not repeat client-fact diagnostics", () => {
+    expect(lint('<div style="display:flex;position:absolute;width:200px"><svg></svg><form></form></div>')).toEqual([]);
   });
 });
 

@@ -60,3 +60,89 @@ describe("per-page canonical URL", () => {
     expect(ogUrlOf(head)).toEqual([]);
   });
 });
+
+describe("per-page social metadata", () => {
+  it.each([
+    [
+      "guide/theming.md",
+      "Theming",
+      "Customize the editor's appearance with CSS variables, theme overrides, dark mode, and custom fonts.",
+      "Theming",
+    ],
+    [
+      "de/guide/theming.md",
+      "Theming",
+      "Passen Sie das Erscheinungsbild des Editors mit CSS-Variablen, Theme-Überschreibungen, Dark Mode und benutzerdefinierten Schriftarten an.",
+      "Theming",
+    ],
+    [
+      "index.md",
+      "",
+      "Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.",
+      "Templatical — Drag-and-Drop Email Editor",
+    ],
+  ])(
+    "%s emits one exact title and description per social tag",
+    async (relativePath, title, description, expectedTitle) => {
+      const transform = config.transformHead!;
+      const head = [
+        ...(config.head ?? []),
+        ...((await transform({
+          pageData: {
+            relativePath,
+            filePath: relativePath,
+            title,
+            frontmatter: { description },
+          },
+        } as never)) ?? []),
+      ] as HeadEntry[];
+      for (const [key, expected] of [
+        ["og:title", expectedTitle],
+        ["og:description", description],
+        ["twitter:title", expectedTitle],
+        ["twitter:description", description],
+      ]) {
+        expect
+          .soft(
+            head
+              .filter(
+                ([tag, attrs]) =>
+                  tag === "meta" &&
+                  (attrs.property === key || attrs.name === key),
+              )
+              .map(([, attrs]) => attrs.content),
+            key,
+          )
+          .toEqual([expected]);
+      }
+      const fallback = [
+        ...(config.head ?? []),
+        ...(await headFor("404.md", "")),
+      ] as HeadEntry[];
+      for (const key of ["og:title", "twitter:title"]) {
+        expect(
+          fallback
+            .filter(
+              ([tag, attrs]) =>
+                tag === "meta" &&
+                (attrs.property === key || attrs.name === key),
+            )
+            .map(([, attrs]) => attrs.content),
+        ).toEqual(["Templatical — Drag-and-Drop Email Editor"]);
+      }
+      for (const key of ["og:description", "twitter:description"]) {
+        expect(
+          fallback
+            .filter(
+              ([tag, attrs]) =>
+                tag === "meta" &&
+                (attrs.property === key || attrs.name === key),
+            )
+            .map(([, attrs]) => attrs.content),
+        ).toEqual([
+          "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.",
+        ]);
+      }
+    },
+  );
+});

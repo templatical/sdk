@@ -1,6 +1,6 @@
 # Optionen
 
-`lintTemplate`, `lintAccessibility`, `lintStructure` und `lintLinks` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
 
 ```ts
 interface LintOptions {
@@ -9,6 +9,8 @@ interface LintOptions {
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
+  deliverability?: false | DeliverabilityLintOptions;
+  compatibility?: false | CompatibilityLintOptions;
 }
 
 interface AccessibilityLintOptions {
@@ -25,12 +27,32 @@ interface LinksLintOptions {
   nonProductionHosts?: string[];
 }
 
+interface CompatibilityThresholds {
+  maxHtmlBytes: number;
+}
+
+interface CompatibilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<CompatibilityThresholds>;
+}
+
+interface DeliverabilityThresholds {
+  minTextLength: number;
+}
+
+interface DeliverabilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<DeliverabilityThresholds>;
+  shortenerHosts?: string[];
+}
+
 type Severity = "error" | "warning" | "info" | "off";
+type RuleOverrides = Record<string, Severity>;
 ```
 
 Dasselbe Objekt steuert auch die `init({ lint })`-Konfiguration des Editors — jede Option hier wirkt sich über das geteilte `useTemplateLint`-Composable auf jeden Linter aus.
 
-Schweregrad-Overrides und tool-spezifische Stellschrauben (`thresholds`, `nonProductionHosts`) sind unter ihrem jeweiligen Linter namensraum-getrennt, sodass jeder Linter nur die für ihn relevante Konfiguration sieht.
+Schweregrad-Overrides und tool-spezifische Stellschrauben (`thresholds`, `nonProductionHosts`, `shortenerHosts`) sind unter ihrem jeweiligen Linter namensraum-getrennt, sodass jeder Linter nur die für ihn relevante Konfiguration sieht.
 
 ## `disabled`
 
@@ -46,7 +68,7 @@ Bei `true`:
 Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-Editor-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
 
 ::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
-Der Editor behandelt `{ accessibility: false, structure: false, links: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
+Der Editor behandelt `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
 :::
 
 ## `locale`
@@ -62,6 +84,8 @@ Steuert die Nachrichtentemplates des Linters (eine Datei pro Locale pro Linter) 
 lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
+lintDeliverability(content, { locale: "de" });
+lintCompatibility(content, { locale: "de" });
 
 // Editor — Linter folgt automatisch der Editor-Locale
 init({ locale: "de" });
@@ -70,7 +94,7 @@ init({ locale: "de" });
 ::: warning Im Editor-Modus wird `lint.locale` ignoriert
 Im Editor-Modus wird die Linter-Locale **erzwungen** auf den `locale`-Wert aus `init({ locale })`. `lint.locale` zu setzen, hat keinen Effekt — es wird auf dem Weg überschrieben.
 
-Headless-Aufrufer (`lintTemplate(...)` oder `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` direkt) behalten volle Kontrolle.
+Headless-Aufrufer (`lintTemplate(...)` oder `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` direkt) behalten volle Kontrolle.
 :::
 
 ::: tip Vague-Text-Dictionaries sind sprachübergreifend
@@ -201,3 +225,52 @@ lintLinks(content, { links: { nonProductionHosts: [] } });
 ```
 
 `DEFAULT_NON_PRODUCTION_HOSTS` wird als Baseline exportiert. Mehr in der [Links-Übersicht](./links/).
+
+## `deliverability`
+
+| Standard | `{}` |
+|---|---|
+
+Konfiguration für `lintDeliverability`. Mit `deliverability: false` deaktivieren Sie diese Kategorie.
+
+```ts
+lintDeliverability(content, { deliverability: false, compatibility: false });
+```
+
+### `deliverability.rules`
+
+Die Schlüssel sind vollständige `deliverability.*`-Regel-IDs. Ein Wert `"off"` deaktiviert nur diese Regel; andere Schweregrade überschreiben den Standard. Siehe [Zustellbarkeits-Regelkatalog](./deliverability/rule-catalog).
+
+```ts
+lintDeliverability(content, {
+  deliverability: { rules: { "deliverability.low-text": "off" } },
+});
+```
+
+### `deliverability.thresholds.minTextLength`
+
+Standard `200` sichtbare Zeichen. `deliverability.low-text` meldet bei einem bilderzeugenden Block weniger Text als diese Grenze. Die partielle Konfiguration erhält andere Standards:
+
+```ts
+lintDeliverability(content, {
+  deliverability: { thresholds: { minTextLength: 250 } },
+});
+```
+
+`DEFAULT_DELIVERABILITY_THRESHOLDS` exportiert den Standard.
+
+### `deliverability.shortenerHosts`
+
+Ersetzt `DEFAULT_SHORTENER_HOSTS`. Erweitern Sie die Liste durch Spread, wenn die Standardhosts erhalten bleiben sollen:
+
+```ts
+import { DEFAULT_SHORTENER_HOSTS, lintDeliverability } from "@templatical/quality";
+
+const issues = lintDeliverability(content, {
+  deliverability: { shortenerHosts: [...DEFAULT_SHORTENER_HOSTS, "go.example.com"] },
+});
+```
+
+## `compatibility`
+
+Standardmäßig aktiv. `compatibility: false` deaktiviert die Client-Kompatibilitätsprüfung. Vollständige `compat.*`-IDs in `compatibility.rules` erlauben Schweregrad-Overrides einschließlich `"off"`. `compatibility.thresholds.maxHtmlBytes` beträgt standardmäßig `92_160` Byte (90 KiB) für `lintCompiledHtml`. Siehe den [Kompatibilitätskatalog](./compatibility/rule-catalog).

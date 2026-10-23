@@ -32,7 +32,7 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     env:
-      TAG: v1.64.0-jammy
+      TAG: v1.64.1-jammy
     steps:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin

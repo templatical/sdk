@@ -10,6 +10,7 @@ import { checkLiquid } from "./liquid";
 import { checkRecipe } from "./recipe";
 import { renderSpecimenMjml, renderStates, type RenderedState } from "./render";
 import { checkEmailSafety } from "./safety";
+import { lintHtmlFragment } from "@templatical/quality";
 import type {
   CustomBlockCheckResult,
   CustomBlockIssue,
@@ -58,6 +59,45 @@ export async function checkCustomBlock(
     return finish(issues);
   }
   issues.push(...checkEmailSafety(def, rendered));
+  const strict = [
+    "compat.css-display-flex",
+    "compat.css-display-grid",
+    "compat.css-position",
+    "compat.html-svg",
+    "compat.html-script",
+    "compat.css-at-import",
+    "compat.html-link",
+  ];
+  const compatibility = {
+    rules: {
+      ...Object.fromEntries(strict.map((id) => [id, "error"] as const)),
+      "compat.html-style": "off",
+    },
+  } as const;
+  const seenCompatibility = new Set<string>();
+  const addCompatibility = (
+    html: string,
+    path: string,
+    stylesheet?: string,
+  ) => {
+    for (const issue of lintHtmlFragment(html, { stylesheet, compatibility })) {
+      const key = `${path}\0${issue.ruleId}\0${issue.excerpt ?? ""}`;
+      if (seenCompatibility.has(key)) continue;
+      seenCompatibility.add(key);
+      issues.push({
+        ruleId: issue.ruleId,
+        severity: issue.severity,
+        path,
+        message: issue.message,
+        suggestion: issue.suggestion,
+        reference: issue.reference,
+        clients: issue.clients,
+        excerpt: issue.excerpt,
+      });
+    }
+  };
+  for (const { html } of rendered) addCompatibility(html, "/template");
+  if (def.stylesheet) addCompatibility("", "/stylesheet", def.stylesheet);
   issues.push(...checkAccessibility(rendered));
   const mjml = await renderSpecimenMjml(def);
   // The renderer trims the stylesheet before emitting it.

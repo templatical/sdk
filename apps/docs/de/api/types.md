@@ -177,12 +177,14 @@ Detaillierte Beschreibungen der einzelnen Blocktypen finden Sie im [Blocks-Leitf
 ```ts
 interface TitleBlock extends BaseBlock {
   type: 'title';
-  content: string;          // HTML-Inhalt
-  level: 1 | 2 | 3 | 4;   // H1=36px, H2=28px, H3=22px, H4=18px
-  color: string;
+  content: string;
+  level: HeadingLevel;
+  color?: string;
   textAlign: 'left' | 'center' | 'right';
   fontFamily?: string;
 }
+
+type HeadingLevel = 1 | 2 | 3 | 4;
 ```
 
 ### ParagraphBlock
@@ -190,7 +192,8 @@ interface TitleBlock extends BaseBlock {
 ```ts
 interface ParagraphBlock extends BaseBlock {
   type: 'paragraph';
-  content: string;          // HTML-Inhalt (alle Formatierungen sind inline über TipTap)
+  content: string;
+  paragraphSpacing?: number;
 }
 ```
 
@@ -248,12 +251,20 @@ Container für mehrspaltige Layouts.
 interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
-  border?: BorderValue;     // ohne Angabe: kein Rahmen
-  backgroundImage?: BackgroundImage; // ohne Angabe: kein Bild; styles.backgroundColor dient als Fallback
-  hero?: SectionHero;       // ohne Angabe: normale Sektion; gilt mit einer Spalte und einem Bild
-  children: Block[][];      // Array von Spalten, die jeweils Blöcke enthalten
-  stackOnMobile?: boolean;  // fehlt/true: Spalten stapeln auf Mobilgeräten (MJML-Standard).
-                            // false: als <mj-group> gerendert, bleiben nebeneinander.
+  children: Block[][];
+  stackOnMobile?: boolean;
+  borderRadius?: BorderRadiusValue;
+  border?: BorderValue;
+  backgroundImage?: BackgroundImage;
+  hero?: SectionHero;
+  wrapper?: SectionWrapper;
+}
+
+interface SectionWrapper {
+  backgroundColor?: string;
+  padding?: SpacingValue;
+  borderRadius?: BorderRadiusValue;
+  backgroundImage?: BackgroundImage;
 }
 
 type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
@@ -265,13 +276,13 @@ interface BackgroundImage {
     x: 'left' | 'center' | 'right';
     y: 'top' | 'center' | 'bottom';
   };
-  repeat: boolean; // false: einmal gezeichnet
-  naturalWidth?: number;   // eigene Größe der Bilddatei in px; die Höhe 'image' eines Heros übernimmt diese Form
+  repeat: boolean; // false: painted once
+  naturalWidth?: number;   // the image file's own size in px; a hero's 'image' height keeps this shape
   naturalHeight?: number;
 }
 
 interface SectionHero {
-  height: 'image' | number; // 'image': so hoch wie das Bild über die Desktop-Box; eine Zahl: feste Höhe in px, Innenabstand eingeschlossen
+  height: 'image' | number; // 'image': as tall as the image across the desktop box; a number: fixed px, padding included
   verticalAlign: 'top' | 'middle' | 'bottom';
 }
 ```

@@ -3,6 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.img-missing-alt",
+  reference: "https://www.w3.org/WAI/tutorials/images/",
   severity: "error",
 };
 

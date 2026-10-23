@@ -48,6 +48,18 @@
 - **Colors** are hex strings (`"#4CBB17"`). **Images**: use a real URL when
   given, else a placeholder like `https://placehold.co/600x300`, and always write
   meaningful `alt` text.
+- **Use destination URLs, not shortened links.** `deliverability.url-shortener`
+  warns on hosts such as `bit.ly`; link directly to the destination.
+- **Keep address-shaped link text aligned with its destination.**
+  `deliverability.link-text-domain-mismatch` warns when a link label shows a
+  different site. Prefer descriptive words. An address as the whole label is
+  acceptable when it is the link's own URL, such as a copy-link fallback.
+- **Use domain names in links, not raw IP addresses.**
+  `deliverability.ip-address-url` warns on public and private IP links.
+- **Carry the message in text when images lead the email.**
+  `deliverability.low-text` checks for at least 200 visible characters when
+  an image, video, or countdown is present. Add real text readers can use when
+  images are blocked.
 - **Settings** must include `width` (usually `600`), `backgroundColor`,
   `textColor`, `fontFamily`, `linkUnderline`, and `locale` (BCP-47, e.g. `"en"`).
   Set `locale` to **the language of the copy you are writing**, not to `"en"`
@@ -58,3 +70,9 @@
   and other RTL copy, also set `direction: "rtl"` (or omit it — those locales
   resolve as RTL). That value is the canvas `dir` and the exported
   `<mjml dir>`.
+
+## Pass-through HTML and CSS
+
+HTML blocks, title and paragraph rich text, and table-cell content pass through MJML. Build layout with native sections and columns or presentation tables. In pass-through content, avoid `display:flex` (`compat.css-display-flex`), grid (`compat.css-display-grid`), absolute/fixed/sticky positioning (`compat.css-position`), CSS variables (`compat.css-variables`), `@import` (`compat.css-at-import`), external stylesheets (`compat.html-link`), and body `<style>` tags (`compat.html-style`). Prefer style attributes and table-safe widths (`compat.css-width`, `compat.css-max-width`) over `float` (`compat.css-float`). Give background images a readable fallback color (`compat.css-background-image`).
+
+Use hosted PNG/JPEG images instead of inline `<svg>` (`compat.html-svg`) or base64 image URLs (`compat.image-base64`). Link to a web form or media page rather than embedding `<form>` (`compat.html-form`), `<object>` (`compat.html-object`), `<video>` (`compat.html-video`), or `<audio>` (`compat.html-audio`). Do not embed `<script>` (`compat.html-script`) or `<iframe>` (`compat.html-iframe`). Check the [caniemail support tables](https://www.caniemail.com/) and the [compatibility catalog](https://docs.templatical.com/quality/compatibility/rule-catalog) for affected clients. Compiled HTML over 90 KiB triggers `compat.gmail-clipping`; shorten the message before send.

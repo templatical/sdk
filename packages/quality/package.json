@@ -1,6 +1,6 @@
 {
   "name": "@templatical/quality",
-  "description": "Accessibility linter for Templatical email templates",
+  "description": "Quality linting for Templatical email templates",
   "version": "0.49.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
@@ -19,7 +19,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "homepage": "https://templatical.com",
   "keywords": [
@@ -42,6 +43,7 @@
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
+    "sync:caniemail": "node scripts/sync-caniemail.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -59,8 +59,9 @@ describe(RULE, () => {
       severity: "warning",
     });
     expect(issues[0].message).toBe(
-      "Hero mode needs a one-column section, so this section renders as a regular one. Switch it back to one column, or turn hero mode off.",
+      "Hero mode needs a one-column section, so this section renders as a regular one.",
     );
+    expect(issues[0].suggestion).toBe("Switch it back to one column, or turn hero mode off.");
   });
 
   it("explains a hero without a background image", () => {
@@ -68,6 +69,7 @@ describe(RULE, () => {
     expect(issues[0].message).toBe(
       "Hero mode needs a background image, so this section renders as a regular one until it has one.",
     );
+    expect(issues[0].suggestion).toBe("Add a background image or turn hero mode off.");
   });
 
   it("explains a hero that can't match an image of unknown size", () => {
@@ -78,8 +80,9 @@ describe(RULE, () => {
       }),
     ]);
     expect(issues[0].message).toBe(
-      "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one. Give it a fixed height, or set the image file's size.",
+      "Hero mode can't match this background image's shape because its size is unknown (a merge-tag URL, or an image the editor didn't measure), so the section renders as a regular one.",
     );
+    expect(issues[0].suggestion).toBe("Give it a fixed height, or set the image file's size.");
   });
 
   it("explains in German", () => {
@@ -87,8 +90,9 @@ describe(RULE, () => {
       locale: "de",
     });
     expect(issues[0].message).toBe(
-      "Der Hero-Modus braucht ein Hintergrundbild, deshalb wird diese Sektion als normale Sektion dargestellt, bis sie eines hat.",
+      "Der Hero-Modus braucht ein Hintergrundbild, deshalb wird diese Sektion bis dahin als normale Sektion dargestellt.",
     );
+    expect(issues[0].suggestion).toBe("Ergänze ein Hintergrundbild oder schalte den Hero-Modus aus.");
   });
 
   describe("severity override", () => {

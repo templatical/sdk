@@ -4,6 +4,8 @@ import { DANGEROUS_SCRIPT_PROTOCOLS } from "./javascript-protocol";
 
 export const meta: RuleMeta = {
   id: "link.unsupported-protocol",
+  reference:
+    "https://docs.templatical.com/quality/links/rule-catalog#unsupported-protocols",
   severity: "warning",
 };
 

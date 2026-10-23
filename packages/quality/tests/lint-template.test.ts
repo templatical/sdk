@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createDefaultTemplateContent,
   createImageBlock,
@@ -8,10 +8,20 @@ import {
 } from "@templatical/types";
 import {
   lintAccessibility,
+  lintDeliverability,
   lintLinks,
   lintStructure,
   lintTemplate,
+  isLintFullyDisabled,
 } from "../src";
+
+vi.mock("../src/deliverability", () => ({
+  lintDeliverability: (content: TemplateContent, options: { disabled?: boolean; deliverability?: false } = {}) =>
+    options.disabled || options.deliverability === false || content.blocks.length === 0
+      ? []
+      : [{ blockId: null, ruleId: "deliverability.low-text", severity: "info", message: "stub" }],
+  DELIVERABILITY_RULES: [],
+}));
 
 /**
  * A template that trips at least one rule from each linter:
@@ -40,22 +50,23 @@ const fingerprint = (issues: { ruleId: string; blockId: string | null }[]) =>
   issues.map((i) => `${i.ruleId}@${i.blockId ?? "template"}`);
 
 describe("lintTemplate", () => {
-  it("returns the concatenation of every linter, a11y then structure then links", () => {
+  it("returns the concatenation of every linter in category order", () => {
     const content = buildMultiIssueTemplate();
 
     const expected = [
       ...lintAccessibility(content),
       ...lintStructure(content),
-      ...lintLinks(content),
+    ...lintLinks(content),
+    ...lintDeliverability(content),
     ];
 
     expect(fingerprint(lintTemplate(content))).toEqual(fingerprint(expected));
   });
 
-  it("surfaces issues from all three linter categories at once", () => {
+  it("surfaces issues from all four linter categories at once", () => {
     const issues = lintTemplate(buildMultiIssueTemplate());
 
-    expect(namespaces(issues)).toEqual(new Set(["a11y", "structure", "link"]));
+    expect(namespaces(issues)).toEqual(new Set(["a11y", "structure", "link", "deliverability"]));
     expect(issues.some((i) => i.ruleId === "a11y.img-missing-alt")).toBe(true);
     expect(issues.some((i) => i.ruleId === "link.javascript-protocol")).toBe(
       true,
@@ -73,6 +84,7 @@ describe("lintTemplate", () => {
       accessibility: false,
       structure: false,
       links: false,
+      deliverability: false,
     });
     expect(issues).toEqual([]);
   });
@@ -82,8 +94,23 @@ describe("lintTemplate", () => {
       structure: false,
     });
 
-    expect(namespaces(issues)).toEqual(new Set(["a11y", "link"]));
+    expect(namespaces(issues)).toEqual(new Set(["a11y", "link", "deliverability"]));
     expect(issues.some((i) => i.ruleId.startsWith("structure."))).toBe(false);
+  });
+
+  it("keeps deliverability on unless explicitly disabled", () => {
+    const content = buildMultiIssueTemplate();
+    const threeOff = { accessibility: false, structure: false, links: false } as const;
+    expect(isLintFullyDisabled(threeOff)).toBe(false);
+    expect(lintTemplate(content, threeOff).map((issue) => issue.ruleId)).toEqual([
+      "deliverability.low-text",
+    ]);
+    expect(isLintFullyDisabled({ ...threeOff, deliverability: false })).toBe(false);
+    expect(isLintFullyDisabled({ ...threeOff, deliverability: false, compatibility: false })).toBe(true);
+    expect(isLintFullyDisabled({ disabled: true })).toBe(true);
+    expect(lintTemplate(content, { deliverability: false }).some((issue) =>
+      issue.ruleId.startsWith("deliverability."),
+    )).toBe(false);
   });
 
   it("forwards per-category options to the underlying linter", () => {

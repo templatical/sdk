@@ -5,6 +5,8 @@ import { extractAnchors } from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.link-empty",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#links",
   severity: "error",
 };
 

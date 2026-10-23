@@ -645,3 +645,5 @@ The **Custom blocks** setup registers one block type, which appears on the palet
 ## With the Agent Skill
 
 The [Agent Skill](/guide/agent-skill) defines a custom block from a description, previews it live and writes it into your codebase.
+
+Custom block templates and stylesheets pass through the renderer. Check their HTML and CSS with `custom-block validate` and the [compatibility catalog](/quality/compatibility/rule-catalog); [caniemail](https://www.caniemail.com/) supplies the client-support facts.

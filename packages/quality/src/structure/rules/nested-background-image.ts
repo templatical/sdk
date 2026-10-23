@@ -4,6 +4,8 @@ import { enclosingBand } from "../band";
 
 export const meta: RuleMeta = {
   id: "structure.nested-background-image",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#email-client-compatibility",
   severity: "warning",
 };
 

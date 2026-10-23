@@ -1,6 +1,6 @@
 /**
  * CI guard: run every @templatical/quality linter (accessibility, structure,
- * and links) against every showcase template via the single `lintTemplate`
+ * links, and deliverability) against every showcase template via the single `lintTemplate`
  * entry point. New linter categories are covered automatically — `lintTemplate`
  * fans out to all registered linters, so this guard never needs editing when
  * one is added.

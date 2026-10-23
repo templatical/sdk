@@ -5,6 +5,8 @@ import { hasNestedAnchors } from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.link-nested-anchor",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#links",
   severity: "error",
 };
 

@@ -236,14 +236,14 @@ describe("a11y.text-low-contrast", () => {
     // Same 3.5:1 color pair fails strict 4.5:1 requirement for H3.
     const issues = lintTitle("#888888", "#ffffff", 3);
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/4\.5:1/);
+    expect(issues[0].suggestion).toMatch(/4\.5:1/);
   });
 
   it("uses 4.5:1 threshold for H4 (18px < 24px, not WCAG large)", () => {
     // Previously passed (18px ≥ 18 → relaxed 3:1); now fails strict.
     const issues = lintTitle("#888888", "#ffffff", 4);
     expect(issues).toHaveLength(1);
-    expect(issues[0].message).toMatch(/4\.5:1/);
+    expect(issues[0].suggestion).toMatch(/4\.5:1/);
   });
 
   it("does not fire when colors are not opaque hex", () => {

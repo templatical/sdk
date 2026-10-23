@@ -10,30 +10,42 @@ Give the editor a collaboration provider and several people can edit one templat
 ```ts
 import { init } from '@templatical/editor';
 
+let sessionId = '';
+
 const editor = await init({
   container: '#editor',
   user: { id: 'u_7', name: 'Ada Lovelace' },
   templates: myTemplatesProvider, // `load` returns the template's `revision`
   collaboration: {
-    join: (templateId, session, handlers) =>
-      myRealtime.join(templateId, session, handlers),
+    join: (templateId, session, handlers) => {
+      sessionId = session.sessionId;
+      return myRealtime.join(templateId, session, handlers);
+    },
     submit: (templateId, batch) =>
       api(`/api/templates/${templateId}/operations`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify(batch),
       }),
     operationsAfter: (templateId, revision) =>
-      api(`/api/templates/${templateId}/operations?after=${revision}`),
+      api(`/api/templates/${templateId}/operations?after=${revision}`, {
+        headers: { 'X-Session-Id': sessionId },
+      }),
     acquireLock: (templateId, blockId) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify({ blockId }),
       }),
     renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, { method: 'PUT' }),
+      api(`/api/templates/${templateId}/locks/${blockId}`, {
+        method: 'PUT',
+        headers: { 'X-Session-Id': sessionId },
+      }),
     releaseLock: async (templateId, blockId) => {
       await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
         method: 'DELETE',
+        headers: { 'X-Session-Id': sessionId },
         keepalive: true,
       });
     },
@@ -43,7 +55,9 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`api` is your own fetch helper. When a request is refused, it must reject with an error that keeps the response's `code`, `holder` and `holders` (see [Refusals](#refusals)).
+`api` is your own fetch helper; a refused request must reject with the HTTP status as `statusCode` and the response's `code`, `holder` and `holders` (see [Refusals](#refusals)), because a missing status counts as a network failure and is retried.
+
+The backend combines `X-Session-Id` with the authenticated user to identify the lock owner.
 
 ## What the editor does
 
@@ -122,7 +136,7 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 ### Refusals
 
-The editor reads three fields off a rejected promise: `code`, and `holder` or `holders`. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
+The editor reads `statusCode` for retry classification, plus `code` and `holder` or `holders` for refusals. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
 
 | `code` | From | The editor |
 |---|---|---|

@@ -3,6 +3,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.img-alt-too-long",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#images",
   severity: "warning",
 };
 

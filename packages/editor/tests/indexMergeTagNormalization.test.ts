@@ -44,7 +44,12 @@ const fakeRuntime = { attach: vi.fn(), ready: vi.fn(), destroy: vi.fn() };
 const fakeProviders = {
   templates: { load: vi.fn(), create: vi.fn(), save: vi.fn() },
   render: { toMjml: vi.fn(async () => "<mjml/>") },
-  versionHistory: { list: vi.fn(), get: vi.fn(), create: false, restore: false },
+  versionHistory: {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: false,
+    restore: false,
+  },
   savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
   testEmail: { send: vi.fn() },
 };
@@ -262,9 +267,10 @@ describe("instance.create() normalizes supplied content", () => {
       container: container(),
       mergeTags: MERGE_TAGS,
     });
-    const create = vi.fn(
-      async (): Promise<Template> => ({ id: "t1", content: bareContent() }),
-    );
+    const create = vi.fn(async (): Promise<Template> => ({
+      id: "t1",
+      content: bareContent(),
+    }));
     attachInstance({ create });
 
     await instance.create({ name: "New", content: bareContent() });
@@ -278,13 +284,49 @@ describe("instance.create() normalizes supplied content", () => {
       container: container(),
       mergeTags: MERGE_TAGS,
     });
-    const create = vi.fn(
-      async (): Promise<Template> => ({ id: "t1", content: bareContent() }),
-    );
+    const create = vi.fn(async (): Promise<Template> => ({
+      id: "t1",
+      content: bareContent(),
+    }));
     attachInstance({ create });
 
     await instance.create({ name: "New" });
 
     expect(create.mock.calls[0][0]).toEqual({ name: "New" });
+  });
+});
+
+describe("entry HTML size callbacks", () => {
+  it("passes the configured renderer through the Editor props", async () => {
+    const toHtml = vi.fn(async () => "<html>compiled</html>");
+    const instance = await initFn({
+      container: container(),
+      content: bareContent(),
+      render: { toHtml },
+    });
+    const props = captured.props as {
+      renderHtml: () => Promise<string>;
+      canRenderHtml: () => boolean;
+    };
+
+    expect(props.canRenderHtml()).toBe(true);
+    await expect(props.renderHtml()).resolves.toBe("<html>compiled</html>");
+    expect(toHtml).toHaveBeenCalledWith(
+      expect.objectContaining({ content: instance.getContent() }),
+    );
+    instance.unmount();
+  });
+
+  it("reports unavailable compilation when no renderer is configured", async () => {
+    const instance = await initFn({ container: container() });
+    const props = captured.props as {
+      renderHtml: () => Promise<string>;
+      canRenderHtml: () => boolean;
+    };
+    expect(props.canRenderHtml()).toBe(false);
+    await expect(props.renderHtml()).rejects.toThrow(
+      "toHtml() requires a `render` provider",
+    );
+    instance.unmount();
   });
 });

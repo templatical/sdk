@@ -1,4 +1,4 @@
-import { defineConfig, type DefaultTheme } from "vitepress";
+import { defineConfig, type DefaultTheme, type HeadConfig } from "vitepress";
 // @ts-expect-error — plain .mjs generator, no types
 import { copyMarkdownSources, SITE_URL, urlFor } from "../scripts/build-agent-surface.mjs";
 // @ts-expect-error — plain .mjs helper, no types
@@ -47,6 +47,20 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Overview", link: "/quality/links/" },
         { text: "Rule catalog", link: "/quality/links/rule-catalog" },
+      ],
+    },
+    {
+      text: "Deliverability",
+      items: [
+        { text: "Overview", link: "/quality/deliverability/" },
+        { text: "Rule catalog", link: "/quality/deliverability/rule-catalog" },
+      ],
+    },
+    {
+      text: "Compatibility",
+      items: [
+        { text: "Overview", link: "/quality/compatibility/" },
+        { text: "Rule catalog", link: "/quality/compatibility/rule-catalog" },
       ],
     },
   ],
@@ -236,6 +250,20 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Überblick", link: "/de/quality/links/" },
         { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
+      ],
+    },
+    {
+      text: "Zustellbarkeit",
+      items: [
+        { text: "Überblick", link: "/de/quality/deliverability/" },
+        { text: "Regelkatalog", link: "/de/quality/deliverability/rule-catalog" },
+      ],
+    },
+    {
+      text: "Kompatibilität",
+      items: [
+        { text: "Überblick", link: "/de/quality/compatibility/" },
+        { text: "Regelkatalog", link: "/de/quality/compatibility/rule-catalog" },
       ],
     },
   ],
@@ -432,9 +460,20 @@ export default defineConfig({
   // urlFor that writes the page urls in llms.txt. A site-wide value would mark
   // every page a duplicate of the home page.
   transformHead: ({ pageData }) => {
-    if (!pageData.filePath) return [];
+    const title = pageData.title || "Templatical — Drag-and-Drop Email Editor";
+    const description =
+      pageData.frontmatter?.description ||
+      "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.";
+    const social: HeadConfig[] = [
+      ["meta", { property: "og:title", content: title }],
+      ["meta", { property: "og:description", content: description }],
+      ["meta", { name: "twitter:title", content: title }],
+      ["meta", { name: "twitter:description", content: description }],
+    ];
+    if (!pageData.filePath) return social;
     const url = urlFor(pageData.relativePath);
     return [
+      ...social,
       [
         "link",
         {
@@ -457,21 +496,6 @@ export default defineConfig({
       },
     ],
     ["meta", { name: "author", content: "Templatical" }],
-    [
-      "meta",
-      {
-        property: "og:title",
-        content: "Templatical — Drag-and-Drop Email Editor",
-      },
-    ],
-    [
-      "meta",
-      {
-        property: "og:description",
-        content:
-          "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.",
-      },
-    ],
     ["meta", { property: "og:type", content: "website" }],
     [
       "meta",
@@ -481,21 +505,6 @@ export default defineConfig({
       },
     ],
     ["meta", { name: "twitter:card", content: "summary_large_image" }],
-    [
-      "meta",
-      {
-        name: "twitter:title",
-        content: "Templatical — Drag-and-Drop Email Editor",
-      },
-    ],
-    [
-      "meta",
-      {
-        name: "twitter:description",
-        content:
-          "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output.",
-      },
-    ],
     [
       "meta",
       {

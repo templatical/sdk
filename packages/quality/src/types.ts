@@ -13,7 +13,19 @@ export interface LintIssue {
   ruleId: string;
   severity: Exclude<Severity, "off">;
   message: string;
+  suggestion: string;
+  reference: string;
+  clients?: ClientSupport[];
+  excerpt?: string;
   fix?: LintPatch;
+}
+
+export interface ClientSupport {
+  id: string;
+  name: string;
+  support: "unsupported" | "partial";
+  notes: string[];
+  testedAt: string;
 }
 
 export interface LintPatchContext {
@@ -36,7 +48,7 @@ export interface LintThresholds {
 
 /**
  * Per-rule severity override. Set a rule to `'off'` to disable it.
- * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`)
+ * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`)
  * so a value copied from `LintIssue.ruleId` pastes straight in.
  */
 export type RuleOverrides = Record<string, Severity>;
@@ -67,6 +79,35 @@ export interface LinksLintOptions {
   nonProductionHosts?: string[];
 }
 
+export interface DeliverabilityThresholds {
+  /** Visible characters below which `deliverability.low-text` fires. */
+  minTextLength: number;
+}
+
+export const DEFAULT_DELIVERABILITY_THRESHOLDS: DeliverabilityThresholds = {
+  minTextLength: 200,
+};
+
+export interface DeliverabilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<DeliverabilityThresholds>;
+  /** Hosts treated as URL shorteners. Replaces DEFAULT_SHORTENER_HOSTS; spread the default to extend it. */
+  shortenerHosts?: string[];
+}
+
+export interface CompatibilityThresholds {
+  maxHtmlBytes: number;
+}
+
+export const DEFAULT_COMPATIBILITY_THRESHOLDS: CompatibilityThresholds = {
+  maxHtmlBytes: 92_160,
+};
+
+export interface CompatibilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<CompatibilityThresholds>;
+}
+
 export interface LintOptions {
   /**
    * Fully disable linting. When true, the editor skips lazy-loading the
@@ -90,10 +131,26 @@ export interface LintOptions {
    * linter without enumerating its rules.
    */
   links?: false | LinksLintOptions;
+  /**
+   * Deliverability linter config. Set to `false` to disable the whole
+   * `lintDeliverability` linter without enumerating its rules.
+   */
+  deliverability?: false | DeliverabilityLintOptions;
+  /** Email-client compatibility checks over pass-through content. */
+  compatibility?: false | CompatibilityLintOptions;
 }
 
 export interface ResolvedLinksOptions {
   nonProductionHosts: string[];
+}
+
+export interface ResolvedDeliverabilityOptions {
+  minTextLength: number;
+  shortenerHosts: string[];
+}
+
+export interface ResolvedCompatibilityOptions {
+  maxHtmlBytes: number;
 }
 
 export interface ResolvedOptions {
@@ -101,6 +158,8 @@ export interface ResolvedOptions {
   rules: RuleOverrides;
   thresholds: LintThresholds;
   links: ResolvedLinksOptions;
+  deliverability: ResolvedDeliverabilityOptions;
+  compatibility: ResolvedCompatibilityOptions;
   /** Returns the effective severity for a rule (override or default). */
   severity: (ruleId: string) => Severity;
 }
@@ -128,6 +187,8 @@ export interface RuleMeta {
   id: string;
   /** Default severity when no override is supplied. */
   severity: Exclude<Severity, "off">;
+  /** Absolute documentation or source URL explaining the rule. */
+  reference: string;
   /**
    * For a rule whose hits explain themselves in more than one way: each
    * variant has its own localized message, keyed `<id>.<variant>`, and a hit
@@ -148,6 +209,8 @@ export interface RuleHit {
   params?: Record<string, string | number>;
   /** One of the rule's `meta.messageVariants`: formats the message `<id>.<variant>`. */
   messageVariant?: string;
+  clients?: ClientSupport[];
+  excerpt?: string;
   fix?: LintPatch;
 }
 
@@ -161,6 +224,7 @@ export interface Rule {
   ) => RuleHit | null;
   /** Template-level rule. Runs once after the walk. */
   template?: (content: TemplateContent, opts: ResolvedOptions) => RuleHit[];
+  compiledHtml?: (html: string, opts: ResolvedOptions) => RuleHit[];
 }
 
 export const DEFAULT_A11Y_THRESHOLDS: LintThresholds = {

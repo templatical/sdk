@@ -18,7 +18,7 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Headings, titles | [Title](#title) | Fixed-size headings (H1-H4) with block-level formatting |
 | Body text, paragraphs | [Paragraph](#paragraph) | Rich text with inline formatting via TipTap |
 | Photos, banners, logos | [Image](#image) | Optional link wrapping, responsive width |
-| Call-to-action | [Button](#button) | Bulletproof buttons that work in all email clients |
+| Call-to-action | [Button](#button) | Bulletproof buttons rendered through `mj-button` as HTML tables |
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
@@ -113,6 +113,8 @@ Empty vertical space.
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
 
+HTML block content passes through MJML without making it email-safe. Check client support on [caniemail](https://www.caniemail.com/) and run the [compatibility linter](/quality/compatibility/) for common failures, including inline SVG, forms and unsupported CSS.
+
 The editor and the renderer output this markup unchanged; neither sanitizes it. If the HTML can come from untrusted sources, sanitize `content` on your server before saving or sending. To leave HTML blocks out of the rendered email entirely, pass [`allowHtmlBlocks: false`](/api/renderer-typescript) to `renderToMjml`.
 
 | Property | Type | Description |
@@ -194,6 +196,8 @@ A data table with optional header row styling.
 | `textAlign` | `'left' \| 'center' \| 'right'` | Cell text alignment |
 
 ## Video
+
+Video blocks use a linked thumbnail rather than an embedded `<video>`; see [caniemail video support](https://www.caniemail.com/features/html-video/).
 
 Displays a video thumbnail that links to the video URL.
 

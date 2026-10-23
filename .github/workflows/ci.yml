@@ -172,7 +172,7 @@ jobs:
     # must match the pinned `@playwright/test` version in pnpm-lock.yaml AND the
     # tag that workflow mirrors.
     container:
-      image: ghcr.io/templatical/playwright:v1.64.0-jammy
+      image: ghcr.io/templatical/playwright:v1.64.1-jammy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -223,7 +223,7 @@ jobs:
     # system-dep install step, pulled from our GHCR mirror to dodge MCR's
     # intermittent edge throttling (see the `e2e` job + mirror-playwright.yml).
     container:
-      image: ghcr.io/templatical/playwright:v1.64.0-jammy
+      image: ghcr.io/templatical/playwright:v1.64.1-jammy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -288,7 +288,7 @@ jobs:
       packages: read
     # Same image and mirror as the `e2e` job.
     container:
-      image: ghcr.io/templatical/playwright:v1.64.0-jammy
+      image: ghcr.io/templatical/playwright:v1.64.1-jammy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

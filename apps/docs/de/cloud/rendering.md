@@ -59,3 +59,5 @@ Das rendert die *aktuelle* Arbeitsfläche statt der gespeicherten Fassung und er
 ## Headless-Nutzung
 
 Rendern Sie ganz ohne Editor über die [Headless-API](/de/cloud/headless-api#export).
+
+**Größe prüfen** ist im Cloud-Modus ausgeblendet, weil der aktuelle HTML-Renderpfad zuerst speichert. Für eine kompilierte Größenprüfung auf Anforderung können Sie `validate --html` verwenden.

@@ -355,6 +355,16 @@ export const TEMPLATE_LINT_KEY: InjectionKey<
   import("./composables/useTemplateLint").UseTemplateLintReturn | null
 > = Symbol("templateLint");
 
+export interface SizeCheckContext {
+  renderHtml: () => Promise<string>;
+  canRenderHtml: () => boolean;
+  cloud: boolean;
+  options: import("@templatical/quality").LintOptions;
+}
+
+export const SIZE_CHECK_KEY: InjectionKey<SizeCheckContext> =
+  Symbol("sizeCheck");
+
 /**
  * The editor's effective DOM root — `Document` in light-DOM mode, `ShadowRoot`
  * when `shadowDom: true`. Composables that read `document.activeElement`,

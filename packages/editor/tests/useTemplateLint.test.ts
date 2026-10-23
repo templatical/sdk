@@ -148,12 +148,18 @@ describe("useTemplateLint", () => {
 
   it("surfaces the merged issues lintTemplate returns", async () => {
     const mock = await setupQualityMock();
-    // lintTemplate already merges accessibility + structure + links inside the
+    // lintTemplate merges the four categories inside the
     // quality package; the composable just surfaces whatever it returns.
     mock.lintTemplate.mockReturnValue([
       { ruleId: "a11y.x", blockId: "b1", severity: "error", message: "a" },
       { ruleId: "structure.x", blockId: "b1", severity: "error", message: "b" },
       { ruleId: "link.x", blockId: "b1", severity: "error", message: "c" },
+      {
+        ruleId: "deliverability.x",
+        blockId: "b1",
+        severity: "warning",
+        message: "d",
+      },
     ]);
     const useTemplateLint = await loadComposable();
 
@@ -174,6 +180,7 @@ describe("useTemplateLint", () => {
       "a11y.x",
       "structure.x",
       "link.x",
+      "deliverability.x",
     ]);
   });
 
@@ -203,7 +210,13 @@ describe("useTemplateLint", () => {
 
     useTemplateLint({
       content: ref(createContent()),
-      options: { accessibility: false, structure: false, links: false },
+      options: {
+        accessibility: false,
+        structure: false,
+        links: false,
+        deliverability: false,
+        compatibility: false,
+      },
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
       removeBlock: vi.fn(),
@@ -214,6 +227,32 @@ describe("useTemplateLint", () => {
     await nextTick();
 
     expect(mock.lintTemplate).not.toHaveBeenCalled();
+  });
+
+  it("starts lint when only the original three categories are false", async () => {
+    const mock = await setupQualityMock();
+    const useTemplateLint = await loadComposable();
+    const options = {
+      accessibility: false,
+      structure: false,
+      links: false,
+    } as const;
+
+    const result = useTemplateLint({
+      content: ref(createContent()),
+      options,
+      updateBlock: vi.fn(),
+      updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
+    });
+
+    mock.resolveImport();
+    await vi.waitFor(() => expect(result.ready.value).toBe(true));
+    expect(mock.lintTemplate).toHaveBeenCalledTimes(1);
+    expect(mock.lintTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ blocks: expect.any(Array) }),
+      options,
+    );
   });
 
   it("still starts lint when only some tools are disabled", async () => {
@@ -267,7 +306,22 @@ describe("isLintFullyDisabled", () => {
     expect(isLintFullyDisabled({ disabled: true })).toBe(true);
   });
 
-  it("returns true only when ALL three tool keys are false", async () => {
+  it("returns true only when all five tool keys are false", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(
+      isLintFullyDisabled({
+        accessibility: false,
+        structure: false,
+        links: false,
+        deliverability: false,
+        compatibility: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false when only the original three tool keys are false", async () => {
     const { isLintFullyDisabled } = await import(
       "../src/composables/useTemplateLint"
     );
@@ -277,7 +331,7 @@ describe("isLintFullyDisabled", () => {
         structure: false,
         links: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("returns false when only two tools are disabled", async () => {

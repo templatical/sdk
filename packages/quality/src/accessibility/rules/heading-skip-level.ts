@@ -4,6 +4,8 @@ import type { Rule, RuleHit, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.heading-skip-level",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#headings",
   severity: "error",
 };
 

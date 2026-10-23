@@ -90,7 +90,7 @@ A few notes:
 - **One file per drop.** `files` is an array for forward-compatibility, but the editor currently sends a single file (`files[0]`).
 - **Images only.** The editor pre-filters dropped files to image MIME types before calling you.
 - **No picker, no drop.** Without `onRequestMedia` and without a `media` provider whose `create` is a function, the drop affordance doesn't appear and drops are ignored.
-- **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
+- **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL. [Base64 images fail in Gmail](https://www.caniemail.com/features/image-base64/).
 
 With a `media` provider whose `create` is a function, dropped files upload through that provider — no `onRequestMedia` needed. A custom handler still takes precedence.
 
@@ -180,7 +180,7 @@ When a section's columns stack on a phone, each column there is wider than on de
 
 To render a **circular** avatar or portrait, give the block a square source image and a radius of at least half its rendered size: a 240px square needs `120`, and any larger value (`999` is the usual shorthand) resolves to the same circle. A non-square image rounds to an ellipse, since there is no cropping step -- see Height above for why.
 
-Support is good but not universal. Apple Mail, iOS Mail, Gmail and Outlook.com honour it; Outlook on Windows ignores it and shows square corners. Treat it as a progressive enhancement rather than something a layout depends on.
+Support is good but not universal. Apple Mail, iOS Mail, Gmail and Outlook.com honour it; Outlook on Windows ignores it and shows square corners. Treat it as a progressive enhancement rather than something a layout depends on. See [caniemail border-radius support](https://www.caniemail.com/features/css-border-radius/).
 
 ### Placeholder URL
 

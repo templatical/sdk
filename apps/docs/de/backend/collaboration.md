@@ -10,30 +10,42 @@ Geben Sie dem Editor einen Collaboration-Provider, und mehrere Personen können 
 ```ts
 import { init } from '@templatical/editor';
 
+let sessionId = '';
+
 const editor = await init({
   container: '#editor',
   user: { id: 'u_7', name: 'Ada Lovelace' },
-  templates: myTemplatesProvider, // `load` liefert die `revision` des Templates
+  templates: myTemplatesProvider, // `load` returns the template's `revision`
   collaboration: {
-    join: (templateId, session, handlers) =>
-      myRealtime.join(templateId, session, handlers),
+    join: (templateId, session, handlers) => {
+      sessionId = session.sessionId;
+      return myRealtime.join(templateId, session, handlers);
+    },
     submit: (templateId, batch) =>
       api(`/api/templates/${templateId}/operations`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify(batch),
       }),
     operationsAfter: (templateId, revision) =>
-      api(`/api/templates/${templateId}/operations?after=${revision}`),
+      api(`/api/templates/${templateId}/operations?after=${revision}`, {
+        headers: { 'X-Session-Id': sessionId },
+      }),
     acquireLock: (templateId, blockId) =>
       api(`/api/templates/${templateId}/locks`, {
         method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
         body: JSON.stringify({ blockId }),
       }),
     renewLock: (templateId, blockId) =>
-      api(`/api/templates/${templateId}/locks/${blockId}`, { method: 'PUT' }),
+      api(`/api/templates/${templateId}/locks/${blockId}`, {
+        method: 'PUT',
+        headers: { 'X-Session-Id': sessionId },
+      }),
     releaseLock: async (templateId, blockId) => {
       await fetch(`/api/templates/${templateId}/locks/${blockId}`, {
         method: 'DELETE',
+        headers: { 'X-Session-Id': sessionId },
         keepalive: true,
       });
     },
@@ -43,7 +55,9 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`api` ist Ihr eigener Fetch-Helfer. Wird eine Anfrage abgelehnt, muss er mit einem Fehler ablehnen, der `code`, `holder` und `holders` der Antwort behält (siehe [Ablehnungen](#ablehnungen)).
+`api` ist Ihr eigener Fetch-Helfer; bei einer abgelehnten Anfrage muss der Fehler den HTTP-Status als `statusCode` sowie `code`, `holder` und `holders` der Antwort enthalten (siehe [Ablehnungen](#ablehnungen)), weil ein fehlender Status als Netzwerkfehler zählt und die Anfrage erneut versucht wird.
+
+Das Backend kombiniert `X-Session-Id` mit dem authentifizierten Nutzer, um den Besitzer der Sperre zu bestimmen.
 
 ## Was der Editor macht
 
@@ -122,7 +136,7 @@ Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht m
 
 ### Ablehnungen
 
-Der Editor liest drei Felder aus einem abgelehnten Promise: `code` und `holder` oder `holders`. `CollaborationConflict` aus `@templatical/types` trägt sie, und jeder Fehler mit denselben Feldern funktioniert.
+Der Editor liest `statusCode` für die Entscheidung über Wiederholungen sowie `code` und `holder` oder `holders` für Ablehnungen. `CollaborationConflict` aus `@templatical/types` trägt sie, und jeder Fehler mit denselben Feldern funktioniert.
 
 | `code` | Von | Der Editor |
 |---|---|---|

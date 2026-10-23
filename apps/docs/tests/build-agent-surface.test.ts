@@ -301,8 +301,9 @@ describe("the committed artifacts", () => {
     const { full } = buildOutputs();
     // The changelog is ~27% of the English tree and answers no "how do I"
     // question; public/changelog.json already serves it machine-readably.
-    // The cap sits between the corpus without the changelog, which carries the
-    // inlined example code, and the corpus with it.
+    // The cap leaves room for the AI pages and the compatibility guide with
+    // its 20-rule catalog while still sitting well below the corpus with the
+    // changelog.
     expect(full).not.toContain("Version Packages");
     expect(full.length).toBeLessThan(850_000);
   });
@@ -350,6 +351,12 @@ describe("the buildEnd hook", () => {
 });
 
 describe("the transformHead hook", () => {
+  const fallbackSocial: HeadConfig[] = [
+    ["meta", { property: "og:title", content: "Templatical — Drag-and-Drop Email Editor" }],
+    ["meta", { property: "og:description", content: "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output." }],
+    ["meta", { name: "twitter:title", content: "Templatical — Drag-and-Drop Email Editor" }],
+    ["meta", { name: "twitter:description", content: "Production-ready drag-and-drop email editor. Merge tags, custom blocks, dark mode, and MJML output." }],
+  ];
   // buildEnd writes the twin; this hook is what tells a reader it exists.
   // robots.txt advertises the convention to crawlers, but an agent that lands
   // on a rendered page never fetches robots.txt — the in-band <link> is the
@@ -362,12 +369,13 @@ describe("the transformHead hook", () => {
     expect(await headEntriesFor("license-faq.md")).toContainEqual(alternate("/license-faq.md"));
   });
 
-  it("advertises the twin beside the page's own canonical and og:url, and emits nothing else", async () => {
+  it("advertises the twin beside canonical, og:url and social metadata", async () => {
     // The one case that pins the hook's whole output, so an unexpected head
     // entry fails here. The other cases pin only the twin's href;
-    // docs-seo.test.ts owns the canonical and og:url values.
+    // docs-seo.test.ts owns per-page canonical and social values.
     const url = "https://docs.templatical.com/getting-started/installation";
     expect(await headEntriesFor("getting-started/installation.md")).toEqual([
+      ...fallbackSocial,
       alternate("/getting-started/installation.md"),
       ["link", { rel: "canonical", href: url }],
       ["meta", { property: "og:url", content: url }],
@@ -397,11 +405,11 @@ describe("the transformHead hook", () => {
     );
   });
 
-  it("emits nothing for a virtual page, which has no markdown source to point at", async () => {
+  it("emits only fallback social metadata for a virtual page without a source", async () => {
     // VitePress renders 404.html from a built-in page whose filePath is empty;
     // there is no 404.md in the docs tree for copyMarkdownSources to copy, so
     // a link there would advertise a file that does not exist.
-    expect(await headEntriesFor("")).toEqual([]);
+    expect(await headEntriesFor("")).toEqual(fallbackSocial);
   });
 });
 

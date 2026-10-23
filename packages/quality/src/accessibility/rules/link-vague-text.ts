@@ -6,6 +6,8 @@ import { getDictionary, normalizeForMatch } from "../dictionaries";
 
 export const meta: RuleMeta = {
   id: "a11y.link-vague-text",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#links",
   severity: "warning",
 };
 

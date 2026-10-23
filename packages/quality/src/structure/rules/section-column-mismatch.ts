@@ -4,6 +4,8 @@ import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "structure.section-column-mismatch",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#section-layout",
   severity: "error",
 };
 

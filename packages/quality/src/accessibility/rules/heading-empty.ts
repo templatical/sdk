@@ -4,6 +4,8 @@ import { extractText } from "../../html-utils";
 
 export const meta: RuleMeta = {
   id: "a11y.heading-empty",
+  reference:
+    "https://docs.templatical.com/quality/accessibility/rule-catalog#headings",
   severity: "error",
 };
 

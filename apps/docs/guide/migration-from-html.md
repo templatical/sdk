@@ -298,3 +298,5 @@ A wrapper the importer descends through contributes no entry of its own: nothing
 ::: warning Entry counts changed
 Sections and lost layouts are reported where they previously were not, so `report.summary.total` is higher for the same document, and `approximated` now covers cases that raised only a `warnings` string or went unreported. Code that asserts on exact totals needs updating; code that filters by `status` or `templaticalBlockType` does not.
 :::
+
+HTML fallback blocks remain pass-through content. Check their client support with the [compatibility linter](/quality/compatibility/) and [caniemail](https://www.caniemail.com/) after import.

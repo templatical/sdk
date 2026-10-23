@@ -337,6 +337,8 @@ describe("Editor.vue with an AI provider", () => {
           disabled,
           structure: false,
           links: false,
+          deliverability: false,
+          compatibility: false,
           accessibility: { rules: { "a11y.missing-preheader": "off" } },
         },
       });
@@ -361,7 +363,7 @@ describe("Editor.vue with an AI provider", () => {
                 ruleId: "a11y.img-missing-alt",
                 blockId: "image-1",
                 message:
-                  "Image is missing alt text. Add a short description, or mark the image as decorative.",
+                  "Image is missing alt text.",
               },
             ],
       );

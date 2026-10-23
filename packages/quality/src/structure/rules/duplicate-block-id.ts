@@ -4,6 +4,8 @@ import type { Rule, RuleHit, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "structure.duplicate-block-id",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#tree-integrity",
   severity: "error",
 };
 

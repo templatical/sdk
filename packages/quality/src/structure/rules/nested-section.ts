@@ -4,6 +4,8 @@ import type { Rule, RuleMeta, WalkContext } from "../../types";
 
 export const meta: RuleMeta = {
   id: "structure.nested-section",
+  reference:
+    "https://docs.templatical.com/quality/structure/rule-catalog#tree-integrity",
   severity: "error",
 };
 

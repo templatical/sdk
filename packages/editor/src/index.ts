@@ -1242,6 +1242,8 @@ async function mountEditor(
           // a test carries when they configured one. `render` is declared below
           // and read at send time, never during this render.
           renderMjml: () => render.toMjml(),
+          renderHtml: () => render.toHtml(),
+          canRenderHtml: () => render.canRenderHtml(),
           usesLocalRenderer: () => render.usesLocalRenderer(),
           ref: editorRef,
         });

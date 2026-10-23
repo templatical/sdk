@@ -17,7 +17,7 @@ Jeder Befehl hat dieselbe Form:
 npx -y @templatical/template-tools <command> [options]
 ```
 
-Mit `--json` gibt jeder Befehl ein einzelnes, parsebares JSON-Dokument auf stdout aus. Als Projekt-Abhängigkeit installiert heißt die ausführbare Datei `templatical`.
+Mit `--json` erscheint ein maschinenlesbares Ergebnis auf stdout, wenn ein Befehl ein Ergebnis erzeugt; Nutzungs- und Tool-Fehler (2, 3) gehen ohne Ergebnisdokument an stderr. Als Projekt-Abhängigkeit installiert heißt die ausführbare Datei `templatical`.
 
 **Pinnen Sie in CI eine exakte Version.** Die CLI und das Blockmodell, gegen das sie validiert (`@templatical/types`), werden gemeinsam veröffentlicht — ein Aufruf ohne Version passt also immer zu sich selbst, kann aber zwischen zwei Durchläufen strenger werden, ohne dass eine Änderung von Ihnen das erklärt. Mit einer gepinnten Version wird ein Versionssprung zu einem überprüfbaren Diff.
 
@@ -25,7 +25,7 @@ Mit `--json` gibt jeder Befehl ein einzelnes, parsebares JSON-Dokument auf stdou
 
 | Befehl | Funktion |
 |---|---|
-| `validate <file>` | Strukturprüfung, dann der Qualitäts-Lint |
+| `validate <file> [--html]` | Strukturprüfung, dann der Qualitäts-Lint |
 | `schema [--out <file>]` | Gibt das Block-JSON-Schema aus |
 | `render <file> [--format mjml\|html] [-o <file>]` | Rendert zu MJML oder zu versandfertigem HTML |
 | `edit <file> --op '<json>'` \| `--ops <file>` | Wendet eine Operation oder einen Batch an und schreibt das Ergebnis |
@@ -130,10 +130,10 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 
 | Code | Bedeutung |
 |---|---|
-| `0` | Erfolg. `validate` kann trotzdem `warning`-/`info`-Probleme melden — siehe unten. |
-| `1` | Das Template ist ungültig: ein struktureller Fehler, oder ein Lint-Problem mit Schweregrad `error`. Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
-| `2` | Fehlerhafte Nutzung — falsche Flags, ein fehlendes Argument, eine unlesbare oder nicht parsbare Eingabedatei. |
-| `3` | Eine optionale Abhängigkeit ist nicht installiert. Die Fehlermeldung nennt den genauen Installationsbefehl. |
+| `0` | Gültig, ohne Lint-Probleme mit Schweregrad `error` bei `validate`; Erfolg bei anderen Befehlen. |
+| `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
+| `2` | Fehlbedienung oder ein defektes Tool — falsche Flags, ein fehlendes Argument, unlesbare oder nicht parsbare Eingaben oder ein unerwarteter interner Fehler. |
+| `3` | Eine optionale Abhängigkeit fehlt. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
 ::: tip Exit-Code 3 ist kein Fehlschlag
 Er bedeutet, dass die CLI ihre Arbeit getan hat und dabei auf einen optionalen Baustein gestoßen ist, ohne den es nicht weitergeht — das Paket `mjml` für `render --format html`, oder ein Konverter-Paket für `import`. Behandeln Sie ihn in jedem Skript oder CI-Schritt anders als `1`/`2`: `3` bedeutet „ein Paket installieren und erneut ausführen", nicht „mit diesem Template stimmt etwas nicht".
@@ -141,11 +141,11 @@ Er bedeutet, dass die CLI ihre Arbeit getan hat und dabei auf einen optionalen B
 
 ## Die `--json`-Ausgabe lesen
 
-Die `--json`-Ausgabe jedes Befehls ist genau ein parsbares Dokument auf stdout — in diesem Modus wird dort sonst nichts geschrieben. Diagnosen, Fortschrittsmeldungen und menschenlesbare Fehler gehen stattdessen auf stderr, in beiden Modi — `<Befehl> --json | jq .` lässt sich also immer gefahrlos pipen.
+Wenn ein Befehl ein Ergebnis erzeugt, gibt `--json` ein parsbares Ergebnisdokument auf stdout aus. Nutzungs- und Tool-Fehler (2, 3) gehen ohne Ergebnisdokument an stderr. Diagnosen und Fortschrittsmeldungen gehen ebenfalls an stderr; prüfen Sie den Exit-Code, bevor Sie stdout verarbeiten.
 
 `validate --json` liefert `{ valid, errors, issues }`. `errors` ist die Liste der Strukturfehler, nur gefüllt, wenn `valid` auf `false` steht. `issues` ist der vollständige Bericht von `@templatical/quality` zum Template — jedes Barrierefreiheits-, Struktur- und Link-Problem, mit dem Schweregrad, den die jeweilige Regel standardmäßig hat (`error`, `warning` oder `info`) — unabhängig davon, ob dieses Problem den Exit-Code beeinflusst hat.
 
-**Der Stolperstein:** `issues.length > 0` bedeutet nicht „das Template ist gescheitert". Die meisten Regeln stehen standardmäßig auf `warning` oder `info` und sind rein beratend. Eine Handvoll — fehlender `alt`-Text bei Bildern, eine `javascript:`-URL, eine doppelte Block-ID, zu geringer Kontrast und ein paar weitere — steht standardmäßig auf `error`, und die lassen den Befehl tatsächlich scheitern: `validate` hat das bereits für Sie berechnet, wofür genau der Exit-Code da ist (`1` bei einem strukturellen Fehler oder einem Problem mit `severity: "error"`, sonst `0`). Ein CI-Skript, das den Build allein deshalb scheitern lässt, weil das `issues`-Array nicht leer ist, weist Templates zurück, die der Befehl selbst als bestanden einstuft. Vertrauen Sie dem Exit-Code — oder dem obersten `valid`-Feld, wenn Sie es im selben Prozess brauchen — statt selbst eine „jedes Problem lässt scheitern"-Prüfung gegen `issues` zu bauen.
+`valid: true` allein bedeutet nicht Exit-Code 0: `valid` beschreibt die strukturelle Gültigkeit, während jedes Lint-Problem mit `severity: "error"` bei `validate` zu Exit-Code 1 führt, mit `valid: true` und einem leeren `errors`-Array. Warnungen und Info-Meldungen ändern den Exit-Code nie. Verwenden Sie den Exit-Code als Ergebnis des Befehls; `issues.length > 0` allein ist kein Fehlerkriterium.
 
 ## Einsatz in CI
 
@@ -252,3 +252,5 @@ Das JSON-Schema für eine Custom-Block-Arbeitsdatei — eine `CustomBlockDefinit
 Baut auf drei MIT-Paketen auf, allesamt echte `dependencies` statt Peers, also keines davon optional: `@templatical/types` für das Blockmodell, aus dem das Schema generiert wird, `@templatical/quality` für den Lint, den `validate` darüberlegt, und `@templatical/renderer` für die MJML-Ausgabe, die `render` erzeugt. Es ist nicht der Editor — dieses Paket hat keine visuelle Oberfläche, und nichts darin mountet UI oder fasst ein DOM an.
 
 Es importiert nie `@templatical/core`, das wie Editor und Media-Library unter [FSL-1.1-MIT](/de/license-faq) statt reinem MIT steht. `edit` verwendet die Operations-Engine aus `@templatical/types`, die unter MIT steht: dieselbe Engine, die die Collaboration des Editors und Templatical Cloud anwenden, über gemeinsame Fixtures mit der von Cloud identisch gehalten. Das hält die Lizenz dieses Pakets rein MIT — sicher über ein bloßes, unauthentifiziertes `npx` auszuführen, ohne Lizenzbedingungen jenseits von MIT abwägen zu müssen.
+
+Mit `validate <file> --html --json` rendert und kompiliert die CLI zusätzlich die E-Mail und liefert `htmlBytes` sowie gegebenenfalls `compat.gmail-clipping`. Dafür wird das optionale `mjml` benötigt; fehlt es, endet der Befehl mit Exit-Code `3` und einem Installationshinweis, ohne JSON-Ausgabe. `compat.*` ist standardmäßig `warning` oder `info` und führt nicht zu Exit-Code `1`. `custom-block validate` verwendet `compat.*` statt der bisherigen Client-Fakten unter `safety.*`; Flex/Grid, Position, SVG, Script, `@import` und externe Stylesheets bleiben dort `error`, während `compat.html-style` deaktiviert ist. Issues enthalten `suggestion` und `reference`, gegebenenfalls auch `clients` und `excerpt`.

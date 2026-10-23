@@ -44,7 +44,7 @@ const issues = lintLinks(content); // options ist ein optionales zweites Argumen
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "link." beginnt
 ```
 
-Gleiche Signatur wie `lintAccessibility` und `lintStructure`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können alle drei Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
+Gleiche Signatur wie `lintAccessibility` und `lintStructure`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können alle fünf Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
 
 Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dynamischem Import und führt jeden Linter bei jeder (entprellten) Inhaltsänderung aus. Link-Issues erscheinen im **Issues**-Sidebar-Tab neben Barrierefreiheits- und Struktur-Issues.
 

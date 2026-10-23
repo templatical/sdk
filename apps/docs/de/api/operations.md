@@ -16,13 +16,15 @@ Eine Operation ist eine Änderung an einem Template: einen Block hinzufügen, ve
 ## Die sechs Operationen
 
 ```json
-{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>"}, "parent": null, "after": "b1"}
+{"op": "addBlock",       "block": {"id": "b2", "type": "paragraph", "content": "<p>Hi</p>", "styles": {"padding": {"top": 0, "right": 0, "bottom": 0, "left": 0}}}, "parent": null, "after": "b1"}
 {"op": "moveBlock",      "blockId": "b2", "parent": {"sectionId": "s1", "column": 0}, "after": null}
 {"op": "deleteBlock",    "blockId": "b2"}
 {"op": "updateBlock",    "blockId": "b1", "set": {"content": "<p>Hello</p>"}, "unset": ["visibility"]}
-{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheader"]}
-{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600}}}
+{"op": "updateSettings", "set": {"width": 640}, "unset": ["preheaderText"]}
+{"op": "setContent",     "content": {"blocks": [], "settings": {"width": 600, "backgroundColor": "#ffffff", "textColor": "#1a1a1a", "linkUnderline": true, "fontFamily": "Arial", "locale": "en"}}}
 ```
+
+Die Annahme einer Operation durch die Engine ersetzt keine Schema-Validierung: Führen Sie `template-tools validate` für das resultierende Template aus.
 
 Ein Batch ist eine Liste von Operationen. Er wird der Reihe nach angewendet, jede Operation sieht die vorherigen, und alles oder nichts: Wird eine abgelehnt, gilt keine Operation des Batches.
 
