@@ -22,7 +22,7 @@ npm run dev
 
 ## The editor component
 
-The component mounts the editor in an effect. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after React StrictMode has cleaned the effect up. Without `?id=` in the URL, it creates a template and writes the new id into the URL with `navigate` from `useNavigate`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
+The component mounts the editor in an effect. It imports `init()` inside the effect, so the editor never runs on the server, and its cleanup unmounts the editor, including one that finishes loading after the component has gone. Without `?id=` in the URL, it creates a template and writes the new id into the URL with `navigate` from `useNavigate`. If opening the template fails, the toolbar shows the server's message, such as "Template not found.", with a link that starts a new template. The toolbar also shows errors the editor reports through `onError`, such as a saved-block library that fails to load, and a failed export; the next export clears them.
 
 `app/components/email-editor.tsx`
 

@@ -102,10 +102,10 @@ export function EmailEditor() {
 }
 ```
 
-If the effect re-runs before `init()` resolves (React StrictMode does this in
-development), `cancelled` unmounts the editor that arrives late and `instance`
-is what the cleanup unmounts once one has settled; unmounting only the ref
-leaks an editor.
+If the component unmounts while `init()` is pending (a route change, a
+conditional render), that call still mounts an editor when it resolves:
+`cancelled` unmounts that late editor, and `instance` is what the cleanup
+unmounts once one has settled. Unmounting only the ref leaks an editor.
 
 ## Working examples
 

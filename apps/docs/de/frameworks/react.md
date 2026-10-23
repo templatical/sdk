@@ -22,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Die Komponente bindet den Editor in einem Effect ein, und ihr Cleanup unmountet ihn – auch einen Editor, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. `onChange` schreibt jede Änderung nach `localStorage`, und der nächste Mount übergibt sie als `content` zurück an den Editor. Startet der Editor nicht, zeigt die Werkzeugleiste die Fehlermeldung an. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa gespeicherte Blöcke, die er nicht aus `localStorage` lesen kann, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
+Die Komponente bindet den Editor in einem Effect ein, und ihr Cleanup unmountet ihn – auch einen Editor, der erst fertig lädt, nachdem die Komponente entfernt wurde. `onChange` schreibt jede Änderung nach `localStorage`, und der nächste Mount übergibt sie als `content` zurück an den Editor. Startet der Editor nicht, zeigt die Werkzeugleiste die Fehlermeldung an. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa gespeicherte Blöcke, die er nicht aus `localStorage` lesen kann, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `src/email-editor.tsx`
 

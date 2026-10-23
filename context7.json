@@ -17,7 +17,7 @@
   "rules": [
     "Mount with `init({ container })` from `@templatical/editor`; `container` is a CSS selector or an element. It is framework-agnostic and ships no Vue or React component: call it from your framework's mount hook, in the browser only.",
     "Import `@templatical/editor/style.css` next to `init()`: it loads the editor's font, and with `shadowDom: false` it is the only stylesheet. Give the container a definite height, such as `height: 100vh`, or the editor's sidebar, footer and panels clip.",
-    "Call `editor.unmount()` when the component is removed. In React, use the StrictMode-safe effect from the installation guide: when the effect was cleaned up before `init()` resolved, unmount the instance that arrives late.",
+    "Call `editor.unmount()` when the component is removed. Use your framework's snippet from the installation guide: when the component unmounts before `init()` resolves, that call still mounts an editor, so unmount the instance that arrives late.",
     "Templates are JSON: a `TemplateContent` object (`{ blocks, settings }`). Read it with `editor.getContent()`, restore it with `init({ content })` or `editor.setContent()`, and store it as JSON.",
     "Render a template to MJML with `await renderToMjml(content)` from `@templatical/renderer`, then compile the MJML to HTML on your server with the `mjml` package. The SDK bundles no MJML compiler, so `editor.toHtml()` needs a `render` provider.",
     "Storage features are providers: plain objects passed to `init()` as `templates`, `versionHistory`, `comments`, `savedBlocks`, `media` and `testEmail`. Each is off until its key is passed, and none needs Cloud; `initCloud()` is the hosted variant.",

@@ -231,19 +231,26 @@ import type { TemplaticalEditor } from "@templatical/editor";
 
 const container = ref<HTMLElement>();
 let editor: TemplaticalEditor | null = null;
+let unmounted = false;
 
 onMounted(async () => {
   if (!container.value) return;
 
-  editor = await init({
+  const instance = await init({
     container: container.value,
     onChange(content) {
       console.log("Content changed", content);
     },
   });
+  if (unmounted) {
+    instance.unmount();
+    return;
+  }
+  editor = instance;
 });
 
 onUnmounted(() => {
+  unmounted = true;
   editor?.unmount();
 });
 </script>
@@ -262,17 +269,24 @@ onUnmounted(() => {
 
   let containerEl: HTMLElement;
   let editor: TemplaticalEditor | null = null;
+  let destroyed = false;
 
   onMount(async () => {
-    editor = await init({
+    const instance = await init({
       container: containerEl,
       onChange(content) {
         console.log('Content changed', content);
       },
     });
+    if (destroyed) {
+      instance.unmount();
+      return;
+    }
+    editor = instance;
   });
 
   onDestroy(() => {
+    destroyed = true;
     editor?.unmount();
   });
 </script>
@@ -302,17 +316,24 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
   containerRef!: ElementRef<HTMLElement>;
 
   private editor: TemplaticalEditor | null = null;
+  private destroyed = false;
 
   async ngOnInit(): Promise<void> {
-    this.editor = await init({
+    const instance = await init({
       container: this.containerRef.nativeElement,
       onChange(content) {
         console.log("Content changed", content);
       },
     });
+    if (this.destroyed) {
+      instance.unmount();
+      return;
+    }
+    this.editor = instance;
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.editor?.unmount();
   }
 }
@@ -320,7 +341,7 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
 
 :::
 
-Wenn der Effect erneut läuft, bevor `init()` auflöst — React StrictMode macht das in der Entwicklung — unmounten Sie die Instanz, die gerade fertig wurde, nicht nur die Ref.
+Eine Komponente kann ausgebunden werden, während `init()` noch aussteht, etwa bei einem Routenwechsel oder bei bedingtem Rendern. Dieser Aufruf mountet seinen Editor trotzdem, sobald er auflöst, also erst nach dem Cleanup der Komponente; deshalb setzt jedes Framework-Snippet in seinem Cleanup ein Flag (`cancelled`, `unmounted` oder `destroyed`) und unmountet den Editor, der zu spät ankommt.
 
 ::: warning Wichtig
 Rufen Sie immer `unmount()` auf, wenn Sie den Editor von der Seite entfernen. Dadurch werden Event-Listener, Timer und DOM-Elemente aufgeräumt. Dies ist besonders wichtig in Single-Page-Anwendungen, bei denen Komponenten während der Navigation ein- und ausgebunden werden.

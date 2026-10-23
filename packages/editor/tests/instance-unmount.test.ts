@@ -454,10 +454,12 @@ describe.each([
       return ed;
     })();
     cancelled = true;
-    // Vitest hands the real module to the second of two `import()`s of a
-    // mocked module made in one tick, and each `initCloud()` imports
-    // `createCloudRuntime`. So the second call starts once the first is waiting
-    // on its bootstrap, which is still before that bootstrap settles.
+    // Vitest hands the real module to an `import()` of a factory-mocked module
+    // that starts before an earlier `import()` of it from the same importing
+    // module has resolved, even one microtask later (vitest-dev/vitest#7040).
+    // Each `initCloud()` imports `createCloudRuntime` from `src/index.ts`, so
+    // the second call starts once the first is waiting on its bootstrap, which
+    // is still before that bootstrap settles.
     await vi.waitFor(() => expect(bootstrapCloud).toHaveBeenCalledTimes(1));
     const secondEffect = initCloud(cloudConfig("b"));
 
