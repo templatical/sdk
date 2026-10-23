@@ -106,6 +106,16 @@ Templatical's docs are published in **English and German**. When you change docs
 
 The same rule applies to i18n keys in `packages/editor/src/i18n/` and `packages/media-library/src/i18n/`, except that CI enforces it: tests fail if any locale's keys diverge from `en.ts`, so a new string needs a translation in every locale file.
 
+## caniemail data
+
+The `compatibility` lint rules in `@templatical/quality` read a reduced [caniemail](https://www.caniemail.com/) snapshot, checked in as `packages/quality/src/compatibility/data/caniemail.generated.ts`. Builds and CI never fetch caniemail. Instead, `.github/workflows/caniemail-freshness.yml` compares the snapshot with caniemail's live data once a month. When upstream is newer, it opens or updates one issue titled "caniemail data update available" (label `caniemail`), which lists the changes that matter and the refresh steps. It closes that issue once the snapshot matches upstream again.
+
+`pnpm --filter @templatical/quality run report:caniemail` prints the same report locally, and prints nothing when the snapshot is current. To refresh:
+
+1. Run `pnpm --filter @templatical/quality run sync:caniemail`. Never edit the generated file by hand.
+2. Follow the remaining steps in the issue: update the snapshot date in the compatibility docs, build and test `@templatical/quality`, test `apps/docs`, and add a changeset. A changed pinned note fails `tests/compatibility/data.test.ts` until you re-check its predicate in `noteExcludes` and update `src/compatibility/pinned-notes.json`. `apps/docs/tests/docs-caniemail-parity.test.ts` fails until the docs state the new snapshot date and each rule catalog's Narrowing line cites that rule's pinned notes.
+3. Treat candidate features as leads, not rules. Add a detector only when a feature loses content or layout in Gmail or Outlook, not when it only degrades. Register its slug in `src/compatibility/slugs.json` and run the sync again.
+
 ## Changesets
 
 Templatical uses [`@changesets/cli`](https://github.com/changesets/changesets) for versioning. **Every PR that changes code in a published package must include a changeset.**

@@ -13440,7 +13440,7 @@ This catalog explains every `compat.*` rule, its trigger, exclusions, severity a
 
 **What does not:** A link to a web form.
 
-**Narrowing:** Gmail web supports forms; Outlook Windows does not. The rule follows the client cells rather than a blanket claim.
+**Narrowing:** No note narrowing.
 
 **Source:** [caniemail html-form](https://www.caniemail.com/features/html-form/).
 

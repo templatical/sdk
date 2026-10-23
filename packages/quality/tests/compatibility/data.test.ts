@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import slugs from "../../src/compatibility/slugs.json";
-import {
-  CANIEMAIL_DATA,
-  CANIEMAIL_DATA_DATE,
-} from "../../src/compatibility/data/caniemail.generated";
+import { CANIEMAIL_DATA } from "../../src/compatibility/data/caniemail.generated";
 import { PINNED_NOTES } from "../../src/compatibility/support";
 import { COMPATIBILITY_RULES } from "../../src";
 import { transformCaniemail } from "../../scripts/sync-caniemail.mjs";
@@ -21,7 +18,6 @@ describe("caniemail snapshot", () => {
       ),
     );
     expect(Object.keys(CANIEMAIL_DATA)).toEqual(slugs);
-    expect(CANIEMAIL_DATA_DATE).toBe("2026-09-16");
   });
 
   it("pins every note used for narrowing to exact dataset text", () => {
