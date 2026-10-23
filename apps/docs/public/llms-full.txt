@@ -9625,6 +9625,7 @@ mergeTags: {
 
 - **The query ends at whitespace.** For tags written with a space after the opener, such as <code v-pre>{{ first_name }}</code>, include the space: <code v-pre>opener: '{{ '</code>.
 - **A whitespace-only `opener` or `closer` counts as unset**, and the editor logs a warning for it. So does a `closer` on a custom syntax with no `opener`.
+- **A syntax spread from a preset keeps its delimiters.** Every `SYNTAX_PRESETS` entry declares its `opener` and `closer`, so `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` still opens autocomplete on <code v-pre>{{</code>. To turn that off, set both to `undefined`: clearing only the `opener` leaves the inherited `closer`, which the editor warns about.
 
 ## Autocomplete
 
@@ -9878,7 +9879,7 @@ The editor handles merge tags on every surface it owns — rich-text blocks, the
 
 The package (MIT) exports the full toolkit:
 
-- `SYNTAX_PRESETS` — the built-in syntax definitions (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `SYNTAX_PRESETS` — the built-in syntax definitions (`liquid`, `handlebars`, `mailchimp`, `ampscript`), each with its `opener` and `closer`
 - `getSyntaxTriggerChar` / `getSyntaxClosingChar` — a preset's opening/closing delimiters, for autocomplete detection
 - `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — matching and label resolution
 - `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — the same for logic tags

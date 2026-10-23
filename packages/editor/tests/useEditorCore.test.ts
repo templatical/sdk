@@ -867,6 +867,30 @@ describe('useEditorCore', () => {
       expect(warningsFor({ ...SYNTAX_PRESETS.liquid, closer: '}}' })).toEqual([]);
     });
 
+    it('warns when a syntax spread from a preset clears only its opener', () => {
+      expect(
+        warningsFor({
+          ...SYNTAX_PRESETS.liquid,
+          value: /\[\[\w+\]\]/g,
+          opener: undefined,
+        }),
+      ).toEqual([
+        'config.mergeTags.syntax.closer has no effect without an opener — ' +
+          'set opener to turn on autocomplete for this syntax.',
+      ]);
+    });
+
+    it('does not warn about a syntax spread from a preset that clears both', () => {
+      expect(
+        warningsFor({
+          ...SYNTAX_PRESETS.liquid,
+          value: /\[\[\w+\]\]/g,
+          opener: undefined,
+          closer: undefined,
+        }),
+      ).toEqual([]);
+    });
+
     it('does not warn about a complete opener and closer', () => {
       expect(warningsFor({ ...CUSTOM, opener: '<<', closer: '>>' })).toEqual([]);
     });

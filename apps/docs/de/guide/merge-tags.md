@@ -205,6 +205,7 @@ mergeTags: {
 
 - **Der Suchbegriff endet am ersten Leerraum.** Schreiben Sie Tags mit einem Leerzeichen nach dem Öffner, etwa <code v-pre>{{ first_name }}</code>, nehmen Sie das Leerzeichen in den Öffner auf: <code v-pre>opener: '{{ '</code>.
 - **Ein `opener` oder `closer` aus reinem Leerraum gilt als nicht gesetzt**, und der Editor gibt dazu eine Warnung aus. Ebenso für einen `closer` bei einer benutzerdefinierten Syntax ohne `opener`.
+- **Eine Syntax, die ein Preset per Spread übernimmt, behält dessen Trennzeichen.** Jeder Eintrag in `SYNTAX_PRESETS` deklariert seinen `opener` und `closer`, daher öffnet `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` die Autovervollständigung weiterhin mit <code v-pre>{{</code>. Um das abzuschalten, setzen Sie beide auf `undefined`: Entfernen Sie nur den `opener`, bleibt der übernommene `closer` stehen, und der Editor warnt davor.
 
 ## Autovervollständigung
 
@@ -458,7 +459,7 @@ Der Editor verwaltet Merge-Tags auf allen Oberflächen, die zu ihm gehören — 
 
 Das Paket (MIT) exportiert das vollständige Toolkit:
 
-- `SYNTAX_PRESETS` — die integrierten Syntaxdefinitionen (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `SYNTAX_PRESETS` — die integrierten Syntaxdefinitionen (`liquid`, `handlebars`, `mailchimp`, `ampscript`), jeweils mit `opener` und `closer`
 - `getSyntaxTriggerChar` / `getSyntaxClosingChar` — die öffnenden/schließenden Trennzeichen eines Presets, für die Autovervollständigungs-Erkennung
 - `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — Abgleich und Label-Auflösung
 - `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — dasselbe für Logik-Tags

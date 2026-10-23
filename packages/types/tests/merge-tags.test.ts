@@ -519,6 +519,35 @@ describe('getSyntaxClosingChar', () => {
     });
 });
 
+describe('built-in preset delimiters', () => {
+    it.each([
+        ['liquid', '{{', '}}'],
+        ['handlebars', '{{', '}}'],
+        ['mailchimp', '*|', '|*'],
+        ['ampscript', '%%=', '=%%'],
+    ] as const)('%s declares its opener and closer', (name, opener, closer) => {
+        expect(SYNTAX_PRESETS[name].opener).toBe(opener);
+        expect(SYNTAX_PRESETS[name].closer).toBe(closer);
+    });
+
+    it('keeps them on a syntax spread from a preset with its own value regex', () => {
+        const spread = { ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g };
+        expect(getSyntaxTriggerChar(spread)).toBe('{{');
+        expect(getSyntaxClosingChar(spread)).toBe('}}');
+    });
+
+    it('drops them when a spread clears both', () => {
+        const spread = {
+            ...SYNTAX_PRESETS.liquid,
+            value: /\[\[.+?\]\]/g,
+            opener: undefined,
+            closer: undefined,
+        };
+        expect(getSyntaxTriggerChar(spread)).toBe(null);
+        expect(getSyntaxClosingChar(spread)).toBe(null);
+    });
+});
+
 /**
  * Sample values — the previews' Sample mode.
  *
