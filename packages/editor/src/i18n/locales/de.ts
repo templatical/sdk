@@ -735,6 +735,10 @@ const de: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Fehlende Alt-Texte schreiben ({count})",
+      review: "Alt-Texte prüfen",
+      applyAccepted: "Ausgewählte übernehmen ({count})",
+      progress: "Alt-Texte werden geschrieben… {done} von {total}",
       button: "Alt-Text schreiben",
       drafting: "Alt-Text wird geschrieben…",
       title: "Alt-Text",

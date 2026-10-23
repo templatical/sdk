@@ -728,6 +728,10 @@ const es: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Escribir los textos alternativos que faltan ({count})",
+      review: "Revisar textos alternativos",
+      applyAccepted: "Aplicar seleccionados ({count})",
+      progress: "Escribiendo textos alternativos… {done} de {total}",
       button: "Escribir texto alternativo",
       drafting: "Escribiendo texto alternativo…",
       title: "Texto alternativo",

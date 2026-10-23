@@ -193,6 +193,8 @@ const BLOCK_COMPONENT_MAP: Record<string, Component> = {
  * the same spirit as `ConditionPreviewEditor` and `HistoryInterceptorEditor`.
  */
 export interface BaseEditorReturn {
+  /** Committed create/load version, supplied by core. */
+  loadVersion?: Readonly<Ref<number>>;
   state: DeepReadonly<{
     content: TemplateContent;
     selectedBlockId: string | null;

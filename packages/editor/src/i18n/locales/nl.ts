@@ -663,6 +663,10 @@ const nl: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Ontbrekende alt-teksten schrijven ({count})",
+      review: "Alt-teksten controleren",
+      applyAccepted: "Selectie toepassen ({count})",
+      progress: "Alt-teksten schrijven… {done} van {total}",
       button: "Alt-tekst schrijven",
       drafting: "Alt-tekst wordt geschreven…",
       title: "Alt-tekst",

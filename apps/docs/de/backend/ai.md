@@ -115,6 +115,8 @@ Das Issues-Panel bietet **Alt-Text schreiben** einmal je Bild für `a11y.img-mis
 
 Entwürfe laufen unabhängig, lassen sich stoppen und werden beim Template-Wechsel oder beim Zerstören des Editors abgebrochen. Das Anwenden nutzt einen KI-Batch und einen Rückgängig-Schritt, bei Bedarf in Teile mit 100 Operationen aufgeteilt; mit Zusammenarbeit ist es der Batch der Person mit `origin: 'ai'`. Beides legt keinen Chat-Verlauf an. `altText: false` blendet die Aktion aus; über HTTP gilt `features: { altText: false }`.
 
+Wenn mindestens zwei unterschiedliche Bilder Alt-Text-Befunde haben, öffnet **Fehlende Alt-Texte schreiben ({count})** eine gemeinsame Prüfung in Dokumentreihenfolge mit höchstens 3 gleichzeitigen Provider-Aufrufen. Prüfen Sie jedes Vorschaubild und den bearbeitbaren Entwurf, markieren Sie bei Bedarf dekorative Bilder und wählen Sie die zu übernehmenden Zeilen aus. **Stoppen** bricht laufende Entwürfe ab und lässt noch nicht entworfene Zeilen bearbeitbar. Vor **Ausgewählte übernehmen ({count})** wird nichts geschrieben; die ausgewählten Zeilen werden in einem Batch mit einem Rückgängig-Schritt angewendet. **Abbrechen** und Escape schreiben nichts.
+
 ### Umformulieren
 
 `rewrite` erhält das `html` eines Absatzes und ein `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` mit einer `language`), eine `instruction` oder beides. Es streamt den Text für eine Live-Vorschau und liefert das fertige HTML.

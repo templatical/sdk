@@ -648,6 +648,10 @@ const translations: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "不足している代替テキストを作成 ({count})",
+      review: "代替テキストを確認",
+      applyAccepted: "選択した項目を適用 ({count})",
+      progress: "代替テキストを作成中… {total} 件中 {done} 件",
       button: "代替テキストを作成",
       drafting: "代替テキストを作成中…",
       title: "代替テキスト",

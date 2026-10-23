@@ -39,6 +39,23 @@ import {
 const AiAltTextPopover = defineAsyncComponent(
   () => import("../ai/AiAltTextPopover.vue"),
 );
+const AiAltTextReview = defineAsyncComponent(
+  () => import("../ai/AiAltTextReview.vue"),
+);
+const bulkBlockIds = ref<string[] | null>(null);
+const bulkButton = ref<HTMLButtonElement | null>(null);
+function openBulkAltText(): void {
+  if (!ai || ai.busy.value) return;
+  void closeAltText();
+  bulkBlockIds.value = [...altTextTargets.value];
+}
+async function closeBulkAltText(): Promise<void> {
+  bulkBlockIds.value = null;
+  await nextTick();
+  if (!destroyed && altReview.value === null) {
+    (bulkButton.value ?? panelHeading.value)?.focus();
+  }
+}
 interface AltReviewRow {
   blockId: string;
   ruleId: string;
@@ -60,6 +77,7 @@ function ownsAltReview(issue: LintIssue): boolean {
 }
 function openAltText(issue: LintIssue, event: MouseEvent): void {
   if (!issue.blockId || ownsAltReview(issue)) return;
+  bulkBlockIds.value = null;
   altController.value?.abort();
   altController.value = null;
   altButton = event.currentTarget as HTMLButtonElement;
@@ -79,7 +97,8 @@ async function closeAltText(
   const button = altButton;
   altButton = null;
   await nextTick();
-  if (destroyed || altReview.value !== null) return;
+  if (destroyed || altReview.value !== null || bulkBlockIds.value !== null)
+    return;
   (focus === "button" && button?.isConnected
     ? button
     : panelHeading.value
@@ -199,6 +218,14 @@ if (lint) {
 }
 
 if (ai) {
+  // Close even while the lazy component is still loading and owns no watchers.
+  watch(
+    [ai.templateId, ai.isAvailable, () => editor?.loadVersion?.value],
+    () => {
+      if (bulkBlockIds.value !== null) void closeBulkAltText();
+    },
+    { flush: "sync" },
+  );
   watch(
     ai.templateId,
     () => {
@@ -237,6 +264,36 @@ const firstAltRows = computed(() => {
       return true;
     }),
   );
+});
+// The location helper supplies document order across root blocks and columns.
+const altTextTargets = computed(() => {
+  if (!editor) return [];
+  const ids = new Set(
+    visibleIssues.value
+      .filter((issue) =>
+        (AI_ALT_TEXT_RULES as readonly string[]).includes(issue.ruleId),
+      )
+      .map((issue) => issue.blockId)
+      .filter((id): id is string => id !== null),
+  );
+  const blocks = editor.content.value.blocks;
+  return [...ids]
+    .flatMap((id) => {
+      const location = editor.findBlockLocation(id);
+      if (!location) return [];
+      return [
+        {
+          id,
+          root: location.targetSectionId
+            ? blocks.findIndex((block) => block.id === location.targetSectionId)
+            : location.index,
+          column: location.columnIndex ?? -1,
+          index: location.index,
+        },
+      ];
+    })
+    .sort((a, b) => a.root - b.root || a.column - b.column || a.index - b.index)
+    .map(({ id }) => id);
 });
 // A lint refresh can remove or regroup the owning row before the whole image's
 // findings disappear. Clear the review now so a later row cannot restart it.
@@ -404,6 +461,27 @@ function applyFix(issue: LintIssue): void {
         {{ t.ai.chat.stop }}
       </button>
     </div>
+
+    <button
+      v-if="
+        ai?.isAvailable.value && ai.has('altText') && altTextTargets.length >= 2
+      "
+      ref="bulkButton"
+      type="button"
+      data-testid="issue-ai-alt-text-bulk"
+      :disabled="ai.busy.value"
+      class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
+      @click="openBulkAltText"
+    >
+      <Sparkles :size="12" :stroke-width="2" aria-hidden="true" />
+      {{ format(t.ai.altText.bulk, { count: altTextTargets.length }) }}
+    </button>
+    <AiAltTextReview
+      v-if="bulkBlockIds !== null && ai"
+      :block-ids="bulkBlockIds"
+      :feature="ai"
+      @close="closeBulkAltText"
+    />
 
     <div
       v-if="!lint || lint.unavailable.value"

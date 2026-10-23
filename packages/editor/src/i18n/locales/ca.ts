@@ -729,6 +729,10 @@ const ca: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Escriu els textos alternatius que falten ({count})",
+      review: "Revisa els textos alternatius",
+      applyAccepted: "Aplica els seleccionats ({count})",
+      progress: "S’estan escrivint els textos alternatius… {done} de {total}",
       button: "Escriu el text alternatiu",
       drafting: "S'està escrivint el text alternatiu…",
       title: "Text alternatiu",

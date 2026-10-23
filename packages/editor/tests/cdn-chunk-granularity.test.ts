@@ -202,6 +202,7 @@ describe("CDN chunk granularity", () => {
       "AiChatPanel",
       "AiDesignPanel",
       "AiRewriteMenu",
+      "AiAltTextReview",
       "CommentsSidebar",
       "TestEmailModal",
       // Was `SnapshotHistory`, a cloud-only component. Version history is a

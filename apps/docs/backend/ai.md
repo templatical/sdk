@@ -115,6 +115,8 @@ The Issues panel offers **Write alt text** once per image for `a11y.img-missing-
 
 Drafts run independently, can be stopped, and abort on template switches or editor destruction. Applying uses one AI batch and one undo step, split at 100 operations when needed; collaboration uses the user's batch with `origin: 'ai'`. Neither action adds chat history. `altText: false` hides the action; the HTTP equivalent is `features: { altText: false }`.
 
+When at least two distinct images have alt-text findings, **Write missing alt text ({count})** opens a bulk review in document order, with at most 3 provider calls at once. Review each thumbnail and editable draft, use the decorative toggle where needed, and select the rows to accept. **Stop** aborts pending drafts and leaves undrafted rows editable. Nothing is written before **Apply accepted ({count})**, which applies the selected rows in one batch with one undo step. **Cancel** and Escape write nothing.
+
 ### Rewrite
 
 `rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.

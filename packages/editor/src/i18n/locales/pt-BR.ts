@@ -727,6 +727,10 @@ const ptBR: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Escrever textos alternativos ausentes ({count})",
+      review: "Revisar textos alternativos",
+      applyAccepted: "Aplicar selecionados ({count})",
+      progress: "Escrevendo textos alternativos… {done} de {total}",
       button: "Escrever texto alternativo",
       drafting: "Escrevendo texto alternativo…",
       title: "Texto alternativo",

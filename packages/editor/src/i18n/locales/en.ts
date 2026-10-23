@@ -727,6 +727,10 @@ export default {
   },
   ai: {
     altText: {
+      bulk: "Write missing alt text ({count})",
+      review: "Review alt text",
+      applyAccepted: "Apply accepted ({count})",
+      progress: "Writing alt text… {done} of {total}",
       button: "Write alt text",
       drafting: "Writing alt text…",
       title: "Alt text",

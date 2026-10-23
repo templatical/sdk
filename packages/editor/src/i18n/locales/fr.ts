@@ -662,6 +662,10 @@ const fr: typeof en = {
   },
   ai: {
     altText: {
+      bulk: "Rédiger les textes alternatifs manquants ({count})",
+      review: "Vérifier les textes alternatifs",
+      applyAccepted: "Appliquer la sélection ({count})",
+      progress: "Rédaction des textes alternatifs… {done} sur {total}",
       button: "Rédiger le texte alternatif",
       drafting: "Rédaction du texte alternatif…",
       title: "Texte alternatif",
