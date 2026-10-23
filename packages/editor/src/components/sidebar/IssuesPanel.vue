@@ -7,6 +7,7 @@ import {
   Info,
   ArrowRight,
   Wrench,
+  Check,
 } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
 import { useScrollToBlock } from "../../composables/useScrollToBlock";
@@ -131,30 +132,52 @@ function applyFix(issue: LintIssue): void {
       </span>
     </header>
 
-    <div
+    <section
       v-if="sizeAvailable"
-      class="tpl:flex tpl:flex-col tpl:gap-1.5 tpl:text-xs"
+      class="tpl:flex tpl:flex-col tpl:gap-2 tpl:text-xs"
     >
+      <h4 class="tpl:m-0 tpl:font-semibold tpl:text-[var(--tpl-text)]">
+        {{ t.issues.emailSize }}
+      </h4>
+      <p class="tpl:m-0 tpl:text-[var(--tpl-text-muted)]">
+        {{ t.issues.sizeExplainer }}
+      </p>
       <button
         type="button"
         data-testid="issue-check-size"
         :disabled="checkingSize"
-        class="tpl:self-start tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2.5 tpl:py-1.5 tpl:font-medium tpl:text-[var(--tpl-text)] tpl:hover:bg-[var(--tpl-bg-active)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
+        class="tpl:w-full tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2.5 tpl:py-1.5 tpl:font-medium tpl:text-[var(--tpl-text)] tpl:hover:bg-[var(--tpl-bg-active)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
         @click="checkSize"
       >
-        {{ checkingSize ? t.issues.checkingSize : t.issues.checkSize }}
+        {{
+          checkingSize
+            ? t.issues.checkingSize
+            : sizeStale
+              ? t.issues.checkSizeAgain
+              : t.issues.checkSize
+        }}
       </button>
       <p
         v-if="sizeBytes !== null"
-        class="tpl:m-0 tpl:text-[var(--tpl-text-muted)]"
+        data-testid="issue-size-result"
+        class="tpl:m-0 tpl:flex tpl:items-center tpl:gap-1 tpl:text-[var(--tpl-text-muted)]"
       >
+        <Check
+          v-if="!sizeIssue && !sizeStale"
+          :size="14"
+          :stroke-width="2"
+          aria-hidden="true"
+        />
         {{
-          format(t.issues.sizeResult, {
-            size: new Intl.NumberFormat(locale, {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            }).format(sizeBytes / 1024),
-          })
+          format(
+            !sizeIssue && !sizeStale ? t.issues.sizePass : t.issues.sizeResult,
+            {
+              size: new Intl.NumberFormat(locale, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }).format(sizeBytes / 1024),
+            },
+          )
         }}
       </p>
       <p
@@ -171,7 +194,7 @@ function applyFix(issue: LintIssue): void {
       >
         {{ format(t.issues.sizeError, { error: sizeError }) }}
       </p>
-    </div>
+    </section>
 
     <div
       v-if="!lint || lint.unavailable.value"

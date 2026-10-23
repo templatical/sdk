@@ -233,6 +233,8 @@ Dieser Katalog erklärt jede `compat.*`-Regel mit Auslöser, Ausnahmen, Schwereg
 
 **Auslöser:** Kompiliertes HTML über `thresholds.maxHtmlBytes` (standardmäßig `92_160` UTF-8-Bytes); Gleichheit besteht die Prüfung.
 
-**Beleg:** Nur `lintCompiledHtml` prüft dies; Template-JSON und durchgereichte Inhalte schätzen die kompilierte Größe nicht. Die Grenze von etwa 102 KB stammt aus Anbieter-Dokumentation, nicht von Google.
+**Wo die Regel läuft:** Nie in `lintTemplate` oder in der Live-Liste des Issues-Panels. Drei Stellen messen sie: `lintCompiledHtml(html)` mit HTML, das Sie selbst kompilieren; `templatical validate --html`, das die optionale Peer-Abhängigkeit `mjml` braucht (ohne sie Exit-Code 3); und die Prüfung **E-Mail-Größe** im Editor, die nur erscheint, wenn der [Render-Provider](/de/backend/render) `toHtml` oder `compileMjml` implementiert, und nicht im Cloud-Modus.
 
-[Dokumentation eines E-Mail-Anbieters](https://docs.bird.com/applications/content/email-templates/concepts/gmail-clipping-of-emails).
+**Beleg:** Nur `lintCompiledHtml` prüft dies; Template-JSON und durchgereichte Inhalte schätzen die kompilierte Größe nicht. Google dokumentiert die Grenze von etwa 102 KB nicht; sie stammt aus Community-Tests, die auch ein Kürzen unterhalb der Grenze zeigen, sobald ein Versanddienst Markup ergänzt.
+
+[email-bugs#41: Gmail kürzt E-Mails ab 102 kB](https://github.com/hteumeuleu/email-bugs/issues/41).

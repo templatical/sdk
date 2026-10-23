@@ -30,7 +30,7 @@ const fragmentIssues = lintHtmlFragment('<div style="display:flex">Hi</div>', {
 
 `lintTemplate` führt die Kompatibilitätsregeln nach Barrierefreiheit, Struktur, Links und Zustellbarkeit aus. Mit `compatibility: false` deaktivieren Sie die Kategorie, mit `"off"` in `compatibility.rules` eine einzelne Regel. `compatibility.thresholds.maxHtmlBytes` ist standardmäßig `92_160` Byte (90 KiB). Nur wenn alle fünf Kategorien auf `false` stehen, lädt der Editor den optionalen Quality-Chunk nicht.
 
-`lintCompiledHtml(html, options?)` misst UTF-8-Bytes und meldet `compat.gmail-clipping` erst oberhalb dieser Grenze. [Dokumentation von E-Mail-Anbietern](https://docs.bird.com/applications/content/email-templates/concepts/gmail-clipping-of-emails) nennt **etwa 102 KB** für Gmail-Clipping; Google veröffentlicht keinen Grenzwert. Der Abstand berücksichtigt Tracking-Links von Versanddiensten. Quality rendert und kompiliert selbst kein HTML:
+`lintCompiledHtml(html, options?)` misst UTF-8-Bytes und meldet `compat.gmail-clipping` erst oberhalb dieser Grenze. Google veröffentlicht keinen Grenzwert für das Kürzen; Community-Tests in [email-bugs#41](https://github.com/hteumeuleu/email-bugs/issues/41) zeigen, dass Gmail bei **etwa 102 KB** kürzt, manchmal schon früher, wenn ein Versanddienst eigenes Markup ergänzt. Der Abstand berücksichtigt Tracking-Links von Versanddiensten. Quality rendert und kompiliert selbst kein HTML:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -44,7 +44,7 @@ const html = (await mjml2html(mjml, { validationLevel: "soft" })).html;
 const sizeIssues = lintCompiledHtml(html);
 ```
 
-Installieren Sie `mjml` für dieses Beispiel separat. Im Editor erscheint **Größe prüfen** im Issues-Panel, wenn der Render-Provider `toHtml` oder `compileMjml` anbietet. Nach einer Änderung wird das Ergebnis als veraltet markiert. Im Cloud-Modus fehlt die Aktion, weil der derzeitige HTML-Renderpfad zuerst speichert.
+Installieren Sie `mjml` für dieses Beispiel separat. Im Issues-Panel des Editors erscheint der Abschnitt **E-Mail-Größe**, wenn der Render-Provider `toHtml` oder `compileMjml` anbietet. Er erklärt, dass Gmail E-Mails über etwa 102 KB abschneidet. Mit **Größe prüfen** wird das kompilierte HTML gemessen. Ohne Clipping-Warnung erscheint die Größe mit dem Hinweis, dass Gmail die ganze E-Mail anzeigt; bei Überschreitung erscheint die Größe zusammen mit einer Clipping-Warnung in der Problemliste. Nach einer Änderung bleibt die letzte Größe mit einem Hinweis auf die veraltete Prüfung sichtbar und der Button heißt **Erneut prüfen**. Im Cloud-Modus fehlt der Abschnitt, weil der derzeitige HTML-Renderpfad zuerst speichert.
 
 ## Prüfen
 

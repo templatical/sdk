@@ -294,4 +294,4 @@ The **Render** setup runs `editor.toMjml()` in the browser and `toHtml()` throug
 - [Saving & Loading](/backend/templates) — the save/load lifecycle, separate from this
 - [Custom Blocks](/guide/custom-blocks) — why pre-rendering is part of the payload
 
-The editor’s **Check size** action is available when the render provider implements `toHtml` or `compileMjml`; it renders only on demand and never calls a save endpoint.
+The editor’s Issues panel shows an **Email size** section with a **Check size** button when the render provider implements `toHtml` or `compileMjml`. The check renders only on demand and never calls a save endpoint. The result stays visible after an edit, marked out of date until **Check again** runs.

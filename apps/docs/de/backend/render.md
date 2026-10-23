@@ -294,4 +294,4 @@ Das Setup **Render** führt `editor.toMjml()` im Browser aus und `toHtml()` übe
 - [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies getrennt ist
 - [Custom Blocks](/de/guide/custom-blocks) — warum das Vorrendern Teil des Payloads ist
 
-Die Editor-Aktion **Größe prüfen** erscheint, wenn der Render-Provider `toHtml` oder `compileMjml` implementiert. Sie rendert nur auf Anforderung und ruft keinen Speicher-Endpunkt auf.
+Im Issues-Panel des Editors erscheint der Abschnitt **E-Mail-Größe** mit **Größe prüfen**, wenn der Render-Provider `toHtml` oder `compileMjml` implementiert. Die Prüfung rendert nur auf Anforderung und ruft keinen Speicher-Endpunkt auf. Nach einer Änderung bleibt das Ergebnis als veraltet sichtbar, bis **Erneut prüfen** ausgeführt wird.

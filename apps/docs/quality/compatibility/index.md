@@ -30,7 +30,7 @@ const fragmentIssues = lintHtmlFragment('<div style="display:flex">Hi</div>', {
 
 `lintTemplate` runs compatibility last, after accessibility, structure, links and deliverability. Set `compatibility: false` to disable the category, or set a rule to `"off"` in `compatibility.rules`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB). Every category must be `false` to prevent the editor's optional quality chunk from loading.
 
-`lintCompiledHtml(html, options?)` measures UTF-8 bytes and flags `compat.gmail-clipping` only when the compiled HTML exceeds that threshold. Gmail clipping is commonly reported at **about 102 KB** by [email vendor documentation](https://docs.bird.com/applications/content/email-templates/concepts/gmail-clipping-of-emails); Google does not publish a threshold. The default margin allows for tracking links added by sending services. Quality never renders or compiles HTML itself:
+`lintCompiledHtml(html, options?)` measures UTF-8 bytes and flags `compat.gmail-clipping` only when the compiled HTML exceeds that threshold. Google does not publish a clipping threshold; community tests in [email-bugs#41](https://github.com/hteumeuleu/email-bugs/issues/41) show Gmail clipping at **about 102 KB**, and sometimes earlier once a sending service adds its markup. The default margin allows for tracking links added by sending services. Quality never renders or compiles HTML itself:
 
 ```ts
 import { readFile } from "node:fs/promises";
@@ -44,7 +44,7 @@ const html = (await mjml2html(mjml, { validationLevel: "soft" })).html;
 const sizeIssues = lintCompiledHtml(html);
 ```
 
-Install `mjml` separately for this example. In the editor, the Issues panel offers **Check size** when its render provider implements `toHtml` or `compileMjml`. It shows the size and any clipping issue, and marks the result out of date after an edit. Cloud mode does not show this action because its current HTML render path saves first.
+Install `mjml` separately for this example. In the editor, the Issues panel shows an **Email size** section when its render provider implements `toHtml` or `compileMjml`. It explains that Gmail cuts off emails over about 102 KB. Choose **Check size** to measure the compiled HTML. A passing result shows the size and confirms Gmail will show the whole email; an oversized result shows the size and a clipping warning in the issues list. After an edit, the last size remains visible with an out-of-date message and the button changes to **Check again**. Cloud mode does not show this section because its current HTML render path saves first.
 
 ## Check it
 

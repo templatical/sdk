@@ -4,6 +4,7 @@ import { nextTick, ref } from "vue";
 import { flushPromises } from "@vue/test-utils";
 import { createDefaultTemplateContent } from "@templatical/types";
 import { mount } from "@vue/test-utils";
+import { Check } from "@lucide/vue";
 import IssuesPanel from "../src/components/sidebar/IssuesPanel.vue";
 import {
   TEMPLATE_LINT_KEY,
@@ -41,10 +42,14 @@ const translationsStub = {
     badgeWarning: "Has warnings",
     issueCountTooltip: "{count} issue(s)",
     learnMore: "Learn more",
+    emailSize: "Email size",
+    sizeExplainer: "Gmail cuts off emails over about 102 KB.",
     checkSize: "Check size",
-    checkingSize: "Checking size",
-    sizeResult: "HTML size: {size} KB",
-    sizeOutdated: "Out of date",
+    checkingSize: "Checking…",
+    checkSizeAgain: "Check again",
+    sizeResult: "{size} KB",
+    sizePass: "{size} KB · Gmail shows the whole email.",
+    sizeOutdated: "Content changed since the check.",
     sizeError: "Size check failed: {error}",
   },
 } as never;
@@ -277,13 +282,62 @@ describe("IssuesPanel", () => {
       content,
     );
     expect(renderHtml).not.toHaveBeenCalled();
+    expect(wrapper.find("h4").text()).toBe("Email size");
+    expect(wrapper.find("section > p").text()).toBe(
+      "Gmail cuts off emails over about 102 KB.",
+    );
+    expect(wrapper.find('[data-testid="issue-check-size"]').text()).toBe(
+      "Check size",
+    );
+    expect(
+      wrapper.find('[data-testid="issue-check-size"]').classes(),
+    ).toContain("tpl:w-full");
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
-    await vi.waitFor(() => expect(wrapper.text()).toContain("90.0 KB"));
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-testid="issue-size-result"]').text()).toBe(
+        "90.0 KB",
+      ),
+    );
     expect(renderHtml).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain("Gmail clips");
+    expect(wrapper.find("li p").text()).toBe(
+      "This email's HTML is 90.0 KB. Gmail clips messages over about 102 KB and shows the rest only after a click, and sending services add tracking links before Gmail measures.",
+    );
+    expect(wrapper.findComponent(Check).exists()).toBe(false);
     content.value.settings.textColor = "#123456";
     await nextTick();
-    expect(wrapper.text()).toContain("Out of date");
+    expect(wrapper.find('[role="status"]').text()).toBe(
+      "Content changed since the check.",
+    );
+    expect(wrapper.find('[data-testid="issue-size-result"]').text()).toBe(
+      "90.0 KB",
+    );
+    expect(wrapper.find('[data-testid="issue-check-size"]').text()).toBe(
+      "Check again",
+    );
+    expect(wrapper.findComponent(Check).exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Gmail clips");
+  });
+
+  it("shows a muted success line with a check icon when Gmail will show the whole email", async () => {
+    const wrapper = mountPanel([], vi.fn(), {
+      renderHtml: async () => "x".repeat(1024),
+      canRenderHtml: () => true,
+      cloud: false,
+      options: {},
+    });
+    await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find('[data-testid="issue-size-result"]').text()).toBe(
+        "1.0 KB · Gmail shows the whole email.",
+      ),
+    );
+    expect(wrapper.findComponent(Check).exists()).toBe(true);
+    expect(wrapper.find('[data-testid="issue-check-size"]').text()).toBe(
+      "Check size",
+    );
+    expect(
+      wrapper.find('[data-testid="issue-size-result"]').classes(),
+    ).toContain("tpl:text-[var(--tpl-text-muted)]");
     expect(wrapper.text()).not.toContain("Gmail clips");
   });
 
@@ -347,8 +401,11 @@ describe("IssuesPanel", () => {
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
     await flushPromises();
-    expect(wrapper.find('[role="alert"]').text()).toContain(
-      "Network unavailable",
+    expect(wrapper.find('[role="alert"]').text()).toBe(
+      "Size check failed: Network unavailable",
+    );
+    expect(wrapper.find('[data-testid="issue-check-size"]').text()).toBe(
+      "Check size",
     );
   });
 
@@ -368,11 +425,20 @@ describe("IssuesPanel", () => {
     expect(
       wrapper.find('[data-testid="issue-check-size"]').attributes("disabled"),
     ).toBeDefined();
+    expect(wrapper.find('[data-testid="issue-check-size"]').text()).toBe(
+      "Checking…",
+    );
     content.value.settings.textColor = "#123456";
     await nextTick();
     finish("x".repeat(92_161));
-    await vi.waitFor(() => expect(wrapper.text()).toContain("Out of date"));
-    expect(wrapper.text()).toContain("90.0 KB");
+    await vi.waitFor(() =>
+      expect(wrapper.find('[role="status"]').text()).toBe(
+        "Content changed since the check.",
+      ),
+    );
+    expect(wrapper.find('[data-testid="issue-size-result"]').text()).toBe(
+      "90.0 KB",
+    );
     expect(wrapper.text()).not.toContain("Gmail clips");
     expect(renderHtml).toHaveBeenCalledTimes(1);
   });
@@ -389,7 +455,7 @@ describe("IssuesPanel", () => {
       options: {},
     });
     await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
-    expect(wrapper.text()).toContain("Checking size");
+    expect(wrapper.text()).toContain("Checking…");
     wrapper.unmount();
     finish("x".repeat(92_161));
     await flushPromises();
