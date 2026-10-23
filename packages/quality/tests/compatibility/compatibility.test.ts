@@ -13,8 +13,33 @@ import {
 } from "../../src";
 import { CANIEMAIL_DATA } from "../../src/compatibility/data/caniemail.generated";
 import { supportFor } from "../../src/compatibility/support";
+import { detect } from "../../src/compatibility/detect";
+import { scanHtml } from "../../src/compatibility/scan";
 
 describe("compatibility rules", () => {
+  it("ignores unknown detector IDs and disabled compatibility checks", () => {
+    expect(detect(scanHtml("<p>Hi</p>"), "compat.unknown")).toBeNull();
+    const content = createDefaultTemplateContent();
+    content.blocks = [createHtmlBlock({ content: "<script>x</script>" })];
+    expect(lintCompatibility(content, { compatibility: false })).toEqual([]);
+    expect(
+      lintHtmlFragment("<script>x</script>", { compatibility: false }),
+    ).toEqual([]);
+    expect(lintCompiledHtml("x".repeat(100_000), { disabled: true })).toEqual(
+      [],
+    );
+  });
+
+  it("scans a reused block for each occurrence", () => {
+    const content = createDefaultTemplateContent();
+    const block = createHtmlBlock({ content: "<script>x</script>" });
+    content.blocks = [block, block];
+    expect(
+      lintCompatibility(content)
+        .filter(({ ruleId }) => ruleId === "compat.html-script")
+        .map(({ blockId }) => blockId),
+    ).toEqual([block.id, block.id]);
+  });
   it("narrows a dataset-supported flex client only for inline-flex", () => {
     const narrowedCell = Object.entries(
       CANIEMAIL_DATA["css-display-flex"].cells,

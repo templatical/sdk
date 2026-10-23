@@ -9,9 +9,7 @@ const modules = import.meta.glob<{ default: CompatibilityMessageMap }>(
 );
 const MESSAGES: Record<string, CompatibilityMessageMap> = {};
 for (const path in modules) {
-  const match = /\.\/([^/]+)\.ts$/.exec(path);
-  if (!match || match[1] === "index") continue;
-  MESSAGES[match[1]] = modules[path].default;
+  MESSAGES[path.slice(2, -3)] = modules[path].default;
 }
 
 export const SUPPORTED_COMPATIBILITY_MESSAGE_LOCALES = Object.keys(MESSAGES);

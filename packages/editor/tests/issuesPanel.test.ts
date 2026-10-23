@@ -351,4 +351,49 @@ describe("IssuesPanel", () => {
       "Network unavailable",
     );
   });
+
+  it("marks a result stale when content changes during rendering", async () => {
+    let finish!: (html: string) => void;
+    const renderHtml = vi.fn(
+      () => new Promise<string>((resolve) => (finish = resolve)),
+    );
+    const content = ref(createDefaultTemplateContent());
+    const wrapper = mountPanel(
+      [],
+      vi.fn(),
+      { renderHtml, canRenderHtml: () => true, cloud: false, options: {} },
+      content,
+    );
+    await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
+    expect(
+      wrapper.find('[data-testid="issue-check-size"]').attributes("disabled"),
+    ).toBeDefined();
+    content.value.settings.textColor = "#123456";
+    await nextTick();
+    finish("x".repeat(92_161));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Out of date"));
+    expect(wrapper.text()).toContain("90.0 KB");
+    expect(wrapper.text()).not.toContain("Gmail clips");
+    expect(renderHtml).toHaveBeenCalledTimes(1);
+  });
+
+  it("discards a size result after the panel unmounts", async () => {
+    let finish!: (html: string) => void;
+    const renderHtml = vi.fn(
+      () => new Promise<string>((resolve) => (finish = resolve)),
+    );
+    const wrapper = mountPanel([], vi.fn(), {
+      renderHtml,
+      canRenderHtml: () => true,
+      cloud: false,
+      options: {},
+    });
+    await wrapper.find('[data-testid="issue-check-size"]').trigger("click");
+    expect(wrapper.text()).toContain("Checking size");
+    wrapper.unmount();
+    finish("x".repeat(92_161));
+    await flushPromises();
+    expect(renderHtml).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).not.toContain("90.0 KB");
+  });
 });

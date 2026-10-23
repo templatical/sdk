@@ -59,4 +59,10 @@ describe("compatibility messages", () => {
       suggestion: "Verwende stattdessen ein PNG- oder JPEG-Bild.",
     });
   });
+
+  it("rejects a missing rule message", () => {
+    expect(() => formatCompatibilityMessage("en", "compat.unknown")).toThrow(
+      "Missing compatibility message: compat.unknown",
+    );
+  });
 });
