@@ -2,6 +2,7 @@ import {
   CANIEMAIL_DATA,
   CANIEMAIL_NICENAMES,
 } from "./data/caniemail.generated";
+import pinnedNotes from "./pinned-notes.json";
 import type { ClientSupport } from "../types";
 
 type Feature = {
@@ -16,25 +17,12 @@ type Feature = {
 
 export const FEATURES: Record<string, Feature> = CANIEMAIL_DATA;
 
-/** Pinned notes narrow the support verdict for the detected usage. */
-export const PINNED_NOTES: Record<string, Record<number, string>> = {
-  "css-display-flex": { 2: "`display:inline-flex` is not supported." },
-  "css-position": {
-    1: "Partial. Supports `relative`, `absolute` but not `sticky` and `fixed`.",
-    2: "Partial. Supports `sticky` but not `relative`, `absolute` and `fixed`.",
-    3: "Partial. Supports `relative` but not  `absolute`, `sticky` and `fixed`.",
-    4: "Partial. Supports `relative` and `sticky` but not `absolute` and `fixed`.",
-  },
-  "html-style": { 1: "Partial. Not supported inside the `<body>`." },
-  "css-width": {
-    1: "Partial. Not supported on `<body>`, `<span>`, `<div>`, `<p>` or `<img>` elements.",
-  },
-  "css-max-width": { 1: "Partial. Only works on `<table>` elements." },
-  "image-base64": {
-    1: "Partial: Does not render Base 64 gif format.",
-    3: "Partial: Only supports Base 64 png format.",
-  },
-};
+/**
+ * Pinned notes narrow the support verdict for the detected usage; their
+ * predicates are in `noteExcludes`. The text lives in JSON so the caniemail
+ * freshness report (scripts/caniemail-report.mjs) can flag a changed note.
+ */
+export const PINNED_NOTES: Record<string, Record<number, string>> = pinnedNotes;
 
 const familyOrder = [
   "gmail",

@@ -7,7 +7,6 @@
     "@lucide/vue": "^1.60.0",
     "@templatical/core": "workspace:*",
     "@templatical/media-library": "workspace:*",
-    "@templatical/quality": "workspace:*",
     "@templatical/types": "workspace:*",
     "@tiptap/core": "^3.32.0",
     "@tiptap/extension-color": "^3.32.0",
@@ -63,16 +62,19 @@
   ],
   "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-editor.js",
+  "optionalDependencies": {
+    "@templatical/quality": "workspace:*"
+  },
   "peerDependencies": {
     "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "pusher-js": "^8.6.0"
   },
   "peerDependenciesMeta": {
-    "@templatical/renderer": {
+    "@templatical/quality": {
       "optional": true
     },
-    "@templatical/quality": {
+    "@templatical/renderer": {
       "optional": true
     },
     "pusher-js": {

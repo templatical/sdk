@@ -5,7 +5,7 @@ description: What people see in the editor — saved blocks, comments, version h
 
 # Author features
 
-What authors see. Each row is off until you pass its key (or, for Issues, install the optional quality package). The editor with only `container` still edits; it does not persist, comment, or send.
+What authors see. Provider features are off until you pass their key. `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab. The editor with only `container` still edits; it does not persist, comment, or send.
 
 Provider methods run in the browser. Hide a control with `false`; enforce the same rule on your server. See [Connect your backend](/backend/).
 
@@ -31,7 +31,7 @@ No provider. Configure on `init()` or in template settings.
 |---|---|---|---|
 | Merge tags | Insert CRM fields with a readable label | [Merge tags](/guide/merge-tags) | [merge-tags](https://play.templatical.com/scenes/merge-tags) |
 | Display conditions | Show or hide a block per recipient | [Display conditions](/guide/display-conditions) | [display-conditions](https://play.templatical.com/scenes/display-conditions) |
-| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — install `@templatical/quality` | [issues](https://play.templatical.com/scenes/issues) |
+| Issues | Jump to a lint finding, apply a fix | [Quality](/quality/) — `@templatical/quality`, optional dependency installed by default | [issues](https://play.templatical.com/scenes/issues) |
 | Custom blocks | Drop a type you registered | [Custom blocks](/guide/custom-blocks) | [custom-blocks](https://play.templatical.com/scenes/custom-blocks) |
 
-Issues is an optional peer: skip the package and the tab never downloads.
+See [Installation](/getting-started/installation#optional-peers) for package details.

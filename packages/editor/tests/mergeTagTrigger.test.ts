@@ -111,6 +111,100 @@ describe("findOpenMergeTagTrigger", () => {
     });
   });
 
+  describe("an opener that is also the closer (%NAME%)", () => {
+    const find = (value: string, caret: number) =>
+      findOpenMergeTagTrigger(value, caret, "%", "%", /%[A-Z_]+%/g);
+
+    it("opens while a tag is being typed", () => {
+      expect(find("Hi %FIR", 7)).toEqual({
+        triggerStart: 3,
+        caret: 7,
+        query: "FIR",
+      });
+    });
+
+    it("returns null right after a finished tag", () => {
+      expect(find("Hi %FIRSTNAME%", 14)).toBeNull();
+    });
+
+    it("opens on a second tag after a finished one", () => {
+      expect(find("Hi %FIRSTNAME% %LA", 18)).toEqual({
+        triggerStart: 15,
+        caret: 18,
+        query: "LA",
+      });
+    });
+
+    it("opens on a bare opener after a finished tag", () => {
+      expect(find("%FIRSTNAME% %", 13)).toEqual({
+        triggerStart: 12,
+        caret: 13,
+        query: "",
+      });
+    });
+
+    it("ignores the regex's own lastIndex and leaves it as it was", () => {
+      // Only the regex can close a %NAME% tag, so starting past it would reopen.
+      const regex = /%[A-Z_]+%/g;
+      regex.lastIndex = 5;
+      expect(
+        findOpenMergeTagTrigger("Hi %FIRSTNAME%", 14, "%", "%", regex),
+      ).toBeNull();
+      expect(regex.lastIndex).toBe(5);
+    });
+
+    it("keeps the value regex's other flags", () => {
+      // Without `i` this regex matches no upper-case tag, and the popup reopens.
+      expect(
+        findOpenMergeTagTrigger("Hi %FIRSTNAME%", 14, "%", "%", /%[a-z_]+%/gi),
+      ).toBeNull();
+    });
+
+    it("accepts a value regex without the global flag", () => {
+      expect(
+        findOpenMergeTagTrigger("Hi %FIRSTNAME%", 14, "%", "%", /%[A-Z_]+%/),
+      ).toBeNull();
+    });
+
+    it("treats text the regex does not match as unfinished", () => {
+      // `% off %` has spaces, so it is no tag: the last % opens one.
+      expect(find("50% off %LA", 11)).toEqual({
+        triggerStart: 8,
+        caret: 11,
+        query: "LA",
+      });
+    });
+  });
+
+  describe("with the syntax's value regex (liquid)", () => {
+    const find = (value: string, caret: number) =>
+      findOpenMergeTagTrigger(value, caret, "{{", "}}", /\{\{.+?\}\}/g);
+
+    it("returns null right after a finished tag", () => {
+      expect(find("Hi {{first_name}}", 17)).toBeNull();
+    });
+
+    it("still opens before a closer typed ahead of the caret", () => {
+      expect(find("Hi {{fir}} x", 8)).toEqual({
+        triggerStart: 3,
+        caret: 8,
+        query: "fir",
+      });
+    });
+
+    it("opens on a second tag after a finished one", () => {
+      expect(find("{{a}} {{b", 9)).toEqual({
+        triggerStart: 6,
+        caret: 9,
+        query: "b",
+      });
+    });
+
+    it("keeps the closer check for text the regex does not match", () => {
+      expect(find("{{}}", 4)).toBeNull();
+    });
+  });
+
   describe("guards", () => {
     it("returns null for an empty trigger char", () => {
       expect(findOpenMergeTagTrigger("{{a", 3, "", "}}")).toBeNull();

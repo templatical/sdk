@@ -207,6 +207,23 @@ describe("editor bundle topology", () => {
     expect(peers).not.toContain("@templatical/media-library");
   });
 
+  it("installs quality by default and preserves Vite's omitted-peer fallback", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"),
+    );
+    // optionalDependencies installs quality by default. Vite's node.js
+    // optional-peer rule also requires peerDependencies + optional peer meta
+    // to build when quality is omitted. Both declarations are intentional.
+    expect(pkg.optionalDependencies?.["@templatical/quality"]).toBe(
+      "workspace:*",
+    );
+    expect(pkg.peerDependencies?.["@templatical/quality"]).toBe("workspace:*");
+    expect(pkg.peerDependenciesMeta?.["@templatical/quality"]?.optional).toBe(
+      true,
+    );
+    expect(pkg.devDependencies?.["@templatical/quality"]).toBeUndefined();
+  });
+
   it("ships type declarations that import no package", () => {
     // The editor has no runtime dependencies, so nothing a declaration file
     // imports is guaranteed to be installed. An unresolved import is a TS2307

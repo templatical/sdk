@@ -11,7 +11,7 @@ import {
   inject,
 } from 'vue';
 import { mount } from '@vue/test-utils';
-import type { TemplateContent } from '@templatical/types';
+import { SYNTAX_PRESETS, type TemplateContent } from '@templatical/types';
 
 // --- Mocks: stub the composable dependencies so we can assert call-shape ---
 
@@ -827,6 +827,76 @@ describe('useEditorCore', () => {
       for (const f of fields) {
         expect(f in core).toBe(true);
       }
+    });
+  });
+
+  describe('merge tag syntax delimiters', () => {
+    const CUSTOM = { value: /<<\w+>>/g, logic: /(?!)/g };
+
+    function warningsFor(syntax: Record<string, unknown>): string[] {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({ config: { mergeTags: { syntax: syntax as typeof CUSTOM } } });
+      const messages = warnSpy.mock.calls
+        .filter(([prefix]) => prefix === '[Templatical]')
+        .map(([, message]) => String(message))
+        .filter((message) => message.startsWith('config.mergeTags.syntax'));
+      warnSpy.mockRestore();
+      return messages;
+    }
+
+    it('warns once about a whitespace-only opener', () => {
+      expect(warningsFor({ ...CUSTOM, opener: '  ', closer: '>>' })).toEqual([
+        'config.mergeTags.syntax.opener is blank — ignoring it.',
+      ]);
+    });
+
+    it('warns once about a whitespace-only closer', () => {
+      expect(warningsFor({ ...CUSTOM, opener: '<<', closer: ' ' })).toEqual([
+        'config.mergeTags.syntax.closer is blank — ignoring it.',
+      ]);
+    });
+
+    it('warns when a custom syntax sets a closer but no opener', () => {
+      expect(warningsFor({ ...CUSTOM, closer: '>>' })).toEqual([
+        'config.mergeTags.syntax.closer has no effect without an opener — ' +
+          'set opener to turn on autocomplete for this syntax.',
+      ]);
+    });
+
+    it('does not warn about a closer on a preset that supplies its opener', () => {
+      expect(warningsFor({ ...SYNTAX_PRESETS.liquid, closer: '}}' })).toEqual([]);
+    });
+
+    it('warns when a syntax spread from a preset clears only its opener', () => {
+      expect(
+        warningsFor({
+          ...SYNTAX_PRESETS.liquid,
+          value: /\[\[\w+\]\]/g,
+          opener: undefined,
+        }),
+      ).toEqual([
+        'config.mergeTags.syntax.closer has no effect without an opener — ' +
+          'set opener to turn on autocomplete for this syntax.',
+      ]);
+    });
+
+    it('does not warn about a syntax spread from a preset that clears both', () => {
+      expect(
+        warningsFor({
+          ...SYNTAX_PRESETS.liquid,
+          value: /\[\[\w+\]\]/g,
+          opener: undefined,
+          closer: undefined,
+        }),
+      ).toEqual([]);
+    });
+
+    it('does not warn about a complete opener and closer', () => {
+      expect(warningsFor({ ...CUSTOM, opener: '<<', closer: '>>' })).toEqual([]);
+    });
+
+    it('does not warn about a custom syntax with neither', () => {
+      expect(warningsFor(CUSTOM)).toEqual([]);
     });
   });
 

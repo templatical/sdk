@@ -20,6 +20,17 @@ describe("example @templatical ranges", () => {
     expect(exampleManifests()).toContain("examples/nextjs/package.json");
   });
 
+  it("installs quality explicitly beside the editor in every example", () => {
+    for (const label of exampleManifests()) {
+      const manifest = JSON.parse(
+        readFileSync(resolve(REPO_ROOT, label), "utf8"),
+      );
+      expect(manifest.dependencies["@templatical/quality"], label).toBe(
+        `^${version}`,
+      );
+    }
+  });
+
   it("pins every @templatical dependency to ^<release version>", () => {
     const wrong: string[] = [];
     for (const label of exampleManifests()) {

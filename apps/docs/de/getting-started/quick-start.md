@@ -27,6 +27,8 @@ bun add @templatical/editor @templatical/renderer
 
 :::
 
+`@templatical/quality` ist eine optionale Abhängigkeit des Editors und wird standardmäßig mitinstalliert. Sie können es weglassen: Der Editor funktioniert ohne das Paket und blendet den Tab „Probleme“ aus.
+
 ## 2. Editor einbinden {#mount-the-editor}
 
 Diese Datei in den Browser legen. Kein Bundler. Framework- und Paketmanager-Mounts stehen unter [Installation](/de/getting-started/installation). Für Produktion eine Version pinnen — [CDN](/de/getting-started/installation#cdn).

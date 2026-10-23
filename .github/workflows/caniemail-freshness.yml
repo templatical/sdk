@@ -1,0 +1,88 @@
+name: caniemail freshness
+
+# The `compatibility` lint category in @templatical/quality reads a vendored,
+# reduced caniemail snapshot (packages/quality/src/compatibility/data/
+# caniemail.generated.ts). Builds and CI never fetch caniemail, so nothing
+# else notices when upstream publishes newer data.
+#
+# This workflow compares upstream with the snapshot once a month and keeps ONE
+# open issue (stable title, `caniemail` label) up to date with the report from
+# `pnpm --filter @templatical/quality run report:caniemail`: verdict changes
+# in registered features, changed pinned notes, and candidate features. It
+# edits that issue in place, and closes it once the snapshot matches upstream
+# again. It deliberately opens no PR: a refresh needs a maintainer to re-check
+# pinned notes and to curate new detectors, and the issue body lists the steps.
+#
+# No `pnpm install`: the report uses only Node built-ins (Node strips the
+# generated module's types natively), so no install script runs next to a
+# token that can write issues.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:00 UTC on the 1st of each month.
+    - cron: "0 6 1 * *"
+
+concurrency: ${{ github.workflow }}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Compare caniemail with the vendored snapshot
+        run: node packages/quality/scripts/caniemail-report.mjs > "$RUNNER_TEMP/caniemail-report.md"
+
+      - name: Open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: caniemail data update available
+          LABEL: caniemail
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          REPORT="$RUNNER_TEMP/caniemail-report.md"
+          BODY="$RUNNER_TEMP/issue-body.md"
+          # Match the exact title, not the label, so a maintainer removing the
+          # label doesn't make the next run open a duplicate.
+          NUMBER="$(gh issue list --state open --search "\"$TITLE\" in:title" \
+            --json number,title --jq '[.[] | select(.title == env.TITLE)][0].number // empty')"
+
+          if [ ! -s "$REPORT" ]; then
+            echo "The vendored snapshot matches caniemail's latest data."
+            if [ -n "$NUMBER" ]; then
+              gh issue close "$NUMBER" --comment "The vendored snapshot matches caniemail's latest data again ($RUN_URL)."
+            fi
+            exit 0
+          fi
+
+          {
+            cat "$REPORT"
+            echo
+            echo "---"
+            echo "Kept up to date by \`.github/workflows/caniemail-freshness.yml\` (last run: $RUN_URL). It edits this issue each run and closes it once the snapshot matches upstream."
+          } > "$BODY"
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+
+          # With no match at all, gh prints nothing rather than running the jq.
+          LABELS="$(gh label list --search "$LABEL" --json name --jq '[.[] | select(.name == env.LABEL)] | length')"
+          if [ "${LABELS:-0}" = "0" ]; then
+            gh label create "$LABEL" --color "1d76db" --description "Vendored caniemail data in @templatical/quality"
+          fi
+          if [ -n "$NUMBER" ]; then
+            gh issue edit "$NUMBER" --body-file "$BODY" --add-label "$LABEL"
+          else
+            gh issue create --title "$TITLE" --label "$LABEL" --body-file "$BODY"
+          fi

@@ -7,7 +7,7 @@ export const issues: Scene = {
   job: "Lint the template as you edit",
   initKey: "lint",
   summary:
-    "init({ lint }) — Issues tab from the optional @templatical/quality peer.",
+    "init({ lint }) — Issues tab from @templatical/quality, an optional dependency of the editor installed by default.",
   catalog: "oss",
   group: "configure",
   docs: "/quality/#wire-into-the-editor",
@@ -25,7 +25,6 @@ export const issues: Scene = {
   }),
   snippet: `import { init } from "@templatical/editor";
 import "@templatical/editor/style.css";
-// pnpm add @templatical/quality
 
 const editor = await init({
   container: document.getElementById("editor"),

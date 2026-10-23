@@ -21,6 +21,8 @@ The visual editor for [Templatical](https://github.com/templatical/sdk) — a so
 npm install @templatical/editor
 ```
 
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
+
 `@templatical/renderer` is an optional peer — install it only if you need to convert templates to MJML. The two common cases are:
 
 - **In the browser, alongside the editor**, when you call `editor.toMjml()` to export from the user's session.

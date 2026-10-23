@@ -120,6 +120,12 @@
       "prompt": "we have a spring-sale banner we drop into some of our campaigns, always the same image and button. can you turn it into a block?",
       "expected_output": "Recognises nothing varies per use and it is placed in some emails only, so it is a saved block, not a custom block and not init({ layout }). Points to the saved-blocks provider (providers.md) and the bookmark action instead of generating a Liquid definition.",
       "files": []
+    },
+    {
+      "id": 21,
+      "prompt": "Scaffold Templatical in our React app. We use pnpm. Propose the install before editing.",
+      "expected_output": "Proposes @templatical/editor and @templatical/quality as direct app dependencies, using pnpm add. Explains that quality enables the Issues panel and lint badges and lets the user decline it. Explains that quality installs by default as an optional dependency; leaving it out is supported, with the editor working and the Issues tab hidden. Does not add vue, tailwindcss or @templatical/core, and adds renderer or pusher-js only if their feature is requested. Names the files and mount point, then waits for approval before editing.",
+      "files": []
     }
   ]
 }

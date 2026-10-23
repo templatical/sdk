@@ -27,6 +27,8 @@ bun add @templatical/editor @templatical/renderer
 
 :::
 
+`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
+
 ## 2. Mount the editor {#mount-the-editor}
 
 Paste this into an HTML file and open it. No bundler. Framework and package-manager mounts live on [Installation](/getting-started/installation). Pin a version for production — [CDN](/getting-started/installation#cdn).

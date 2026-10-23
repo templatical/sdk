@@ -1,5 +1,6 @@
 import { ref, shallowRef, watch, type Ref } from "vue";
 import { watchDebounced } from "@vueuse/core";
+import { logger } from "../utils/logger";
 import type {
   Block,
   TemplateContent,
@@ -56,6 +57,8 @@ interface Loaded {
   lintTemplate: typeof LintTemplateFn;
 }
 
+let warnedUnavailable = false;
+
 /**
  * Live template linting. Runs every linter in `@templatical/quality`
  * (accessibility + structure + links + deliverability + compatibility) on every content change,
@@ -103,9 +106,15 @@ export function useTemplateLint(
       });
     } catch {
       if (destroyed) return;
-      // The quality package is an optional peer; surface the unavailable
+      // The quality package is optional; surface the unavailable
       // flag so consumers can hide UI rather than crash.
       unavailable.value = true;
+      if (!warnedUnavailable) {
+        warnedUnavailable = true;
+        logger.info(
+          "@templatical/quality isn't installed, so the Issues panel and its lint badges are off. Add @templatical/quality to your dependencies to turn them on.",
+        );
+      }
     }
   }
 

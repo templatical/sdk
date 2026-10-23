@@ -9,10 +9,11 @@ const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");
 const tsxBlocks = (src: string) =>
   [...src.matchAll(/```tsx[^\n]*\n([\s\S]*?)```/g)].map(([, body]) => body);
 
-// init() is async. Under React StrictMode the effect's cleanup runs before the
-// promise settles, so an instance that resolves after cancellation must be
-// unmounted right there; storing it on a ref the cleanup already read leaks an
-// editor (troubleshooting.md documents the symptom). Agents copy this snippet.
+// init() is async. A component that unmounts while it is pending runs the
+// effect's cleanup before the promise settles, and that call still mounts an
+// editor, so an instance that resolves after cancellation must be unmounted
+// right there; storing it on a ref the cleanup already read leaks an editor
+// (troubleshooting.md documents the symptom). Agents copy this snippet.
 const CANCELLED_UNMOUNT =
   /if \(cancelled\) \{\s*ed\.unmount\(\);\s*return;\s*\}/;
 
@@ -33,7 +34,7 @@ const skillMount = () => {
 };
 
 describe("the React mount the skill hands to agents", () => {
-  it("unmounts an editor that resolves after StrictMode cancelled the effect", () => {
+  it("unmounts an editor that resolves after the effect was cancelled", () => {
     const block = skillMount();
     expect(block).toMatch(CANCELLED_UNMOUNT);
     expect(block).not.toMatch(/if \(!cancelled\) editorRef\.current = ed;/);

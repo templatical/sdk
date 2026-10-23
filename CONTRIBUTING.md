@@ -14,7 +14,7 @@ Not sure what to pick up?
 
 ## Architecture overview
 
-A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and declares **no runtime dependencies at all** — it bundles Vue, `core`, `types` and every transitive Vue library inline, so consumers get a single drop-in ESM file. A few things that surprise people:
+A pnpm workspace of `@templatical/*` packages. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and bundles its **required runtime** — Vue, `core`, `types` and every transitive Vue library — inline. `@templatical/quality` is an optional dependency installed separately by default. A few things that surprise people:
 
 - **`types` builds first, and nothing needs building before it** — the media types it references resolve through its tsconfig `paths` to media-library's *source*, so no `dist/` need exist. A workspace dependency there is forbidden: it would close `types → media-library → core → types`, which pnpm rejects with `ERR_PNPM_TASK_CYCLE` before running anything, and the cycle guard in `packages/editor/tests/consumer-fixture.test.ts` keeps it out.
 - **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the `init()` entry.
@@ -105,6 +105,16 @@ Templatical's docs are published in **English and German**. When you change docs
 - If you don't speak German, English-only PRs are fine — flag the missing translation in the PR description and someone will follow up.
 
 The same rule applies to i18n keys in `packages/editor/src/i18n/` and `packages/media-library/src/i18n/`, except that CI enforces it: tests fail if any locale's keys diverge from `en.ts`, so a new string needs a translation in every locale file.
+
+## caniemail data
+
+The `compatibility` lint rules in `@templatical/quality` read a reduced [caniemail](https://www.caniemail.com/) snapshot, checked in as `packages/quality/src/compatibility/data/caniemail.generated.ts`. Builds and CI never fetch caniemail. Instead, `.github/workflows/caniemail-freshness.yml` compares the snapshot with caniemail's live data once a month. When upstream is newer, it opens or updates one issue titled "caniemail data update available" (label `caniemail`), which lists the changes that matter and the refresh steps. It closes that issue once the snapshot matches upstream again.
+
+`pnpm --filter @templatical/quality run report:caniemail` prints the same report locally, and prints nothing when the snapshot is current. To refresh:
+
+1. Run `pnpm --filter @templatical/quality run sync:caniemail`. Never edit the generated file by hand.
+2. Follow the remaining steps in the issue: update the snapshot date in the compatibility docs, build and test `@templatical/quality`, test `apps/docs`, and add a changeset. A changed pinned note fails `tests/compatibility/data.test.ts` until you re-check its predicate in `noteExcludes` and update `src/compatibility/pinned-notes.json`. `apps/docs/tests/docs-caniemail-parity.test.ts` fails until the docs state the new snapshot date and each rule catalog's Narrowing line cites that rule's pinned notes.
+3. Treat candidate features as leads, not rules. Add a detector only when a feature loses content or layout in Gmail or Outlook, not when it only degrades. Register its slug in `src/compatibility/slugs.json` and run the sync again.
 
 ## Changesets
 

@@ -215,6 +215,94 @@ describe("useMergeTagAutocomplete — selection", () => {
   });
 });
 
+describe("useMergeTagAutocomplete — custom syntax with delimiters", () => {
+  const SINGLE_BRACE = {
+    value: /\{[^{}\s]+\}/g,
+    logic: /(?!)/g,
+    opener: "{",
+    closer: "}",
+  };
+  const SINGLE_BRACE_TAGS: MergeTag[] = [
+    { label: "First Name", value: "{first_name}" },
+    { label: "Last Name", value: "{last_name}" },
+  ];
+
+  function setupSingleBrace(value: string, caret: number) {
+    return setupDriver({
+      syntax: SINGLE_BRACE,
+      tags: SINGLE_BRACE_TAGS,
+      value,
+      caret,
+    });
+  }
+
+  it("is available and opens on the declared opener", () => {
+    const { driver } = setupSingleBrace("Hi {la", 6);
+    expect(driver.available.value).toBe(true);
+
+    driver.refresh();
+
+    expect(driver.isOpen()).toBe(true);
+  });
+
+  it("inserts the picked tag and absorbs the declared closer", () => {
+    const { driver, emit } = setupSingleBrace("Hi {la} there", 6);
+    driver.refresh();
+
+    driver.handleKeydown(key("Enter"));
+
+    expect(emit).toHaveBeenCalledWith("Hi {last_name} there");
+  });
+
+  it("does not reopen over a tag completed with the declared closer", () => {
+    const { driver } = setupSingleBrace("{first_name}", 12);
+    driver.refresh();
+    expect(driver.isOpen()).toBe(false);
+  });
+});
+
+describe("useMergeTagAutocomplete — opener and closer are the same", () => {
+  const PERCENT = {
+    value: /%[A-Z_]+%/g,
+    logic: /(?!)/g,
+    opener: "%",
+    closer: "%",
+  };
+  const PERCENT_TAGS: MergeTag[] = [
+    { label: "First Name", value: "%FIRSTNAME%" },
+    { label: "Last Name", value: "%LASTNAME%" },
+  ];
+
+  function setupPercent(value: string, caret: number) {
+    return setupDriver({ syntax: PERCENT, tags: PERCENT_TAGS, value, caret });
+  }
+
+  it("opens while a tag is being typed", () => {
+    const { driver } = setupPercent("Hi %FIR", 7);
+    driver.refresh();
+    expect(driver.isOpen()).toBe(true);
+  });
+
+  it("stays closed right after a finished tag, so Enter changes nothing", () => {
+    const { driver, emit } = setupPercent("Hi %FIRSTNAME%", 14);
+    driver.refresh();
+
+    expect(driver.isOpen()).toBe(false);
+    expect(driver.handleKeydown(key("Enter"))).toBe(false);
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("opens for a second tag after a finished one and inserts it", () => {
+    const { driver, emit } = setupPercent("Hi %FIRSTNAME% %LA", 18);
+    driver.refresh();
+    expect(driver.isOpen()).toBe(true);
+
+    driver.handleKeydown(key("Enter"));
+
+    expect(emit).toHaveBeenCalledWith("Hi %FIRSTNAME% %LASTNAME%");
+  });
+});
+
 describe("useMergeTagAutocomplete — keyboard routing", () => {
   it("returns false for any key when the popup is closed", () => {
     const { driver } = setupDriver();

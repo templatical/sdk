@@ -1,0 +1,78 @@
+{
+  "api_version": "1.0.4",
+  "last_update_date": "2026-10-20 08:00:00 +0000",
+  "nicenames": {
+    "family": { "gmail": "Gmail", "outlook": "Outlook", "yahoo": "Yahoo! Mail" },
+    "platform": { "webmail": "Webmail", "windows": "Windows", "outlook-com": "Outlook.com", "ios": "iOS" }
+  },
+  "data": [
+    {
+      "slug": "css-display-flex",
+      "title": "display:flex",
+      "url": "https://www.caniemail.com/features/css-display-flex/",
+      "last_test_date": "2026-10-01",
+      "notes_by_num": {
+        "2": "`display:inline-flex` is only partly supported.",
+        "3": "Ignored inside <table> cells."
+      },
+      "stats": {
+        "gmail": { "webmail": { "2024-05": "n #2", "2026-10": "a #3" } },
+        "outlook": {
+          "windows": { "2019": "y", "2026": "n" },
+          "outlook-com": { "2026-10": "u" }
+        }
+      }
+    },
+    {
+      "slug": "html-marquee",
+      "title": "<marquee> element",
+      "url": "https://www.caniemail.com/features/html-marquee/",
+      "last_test_date": "2026-10-05",
+      "notes_by_num": { "1": "Shown as static text." },
+      "stats": {
+        "gmail": { "webmail": { "2026-10": "y" } },
+        "outlook": {
+          "windows": { "2026-10": "n #1" },
+          "outlook-com": { "2026-10": "a" }
+        }
+      }
+    },
+    {
+      "slug": "css-same-day",
+      "title": "tested on the snapshot date",
+      "url": "https://www.caniemail.com/features/css-same-day/",
+      "last_test_date": "2026-09-16",
+      "notes_by_num": null,
+      "stats": { "gmail": { "webmail": { "2026-09": "n" } } }
+    },
+    {
+      "slug": "css-yahoo-only",
+      "title": "fails only outside Gmail and Outlook",
+      "url": "https://www.caniemail.com/features/css-yahoo-only/",
+      "last_test_date": "2026-10-10",
+      "notes_by_num": null,
+      "stats": {
+        "gmail": { "webmail": { "2026-10": "a" } },
+        "yahoo": { "webmail": { "2026-10": "n" } }
+      }
+    },
+    {
+      "slug": "css-integer-versions",
+      "title": "retested as supported",
+      "url": "https://www.caniemail.com/features/css-integer-versions/",
+      "last_test_date": "2026-10-11",
+      "notes_by_num": null,
+      "stats": { "gmail": { "ios": { "2024": "n", "2019": "y" } } }
+    },
+    {
+      "slug": "css-all-gmail",
+      "title": "fails in every Gmail platform",
+      "url": "https://www.caniemail.com/features/css-all-gmail/",
+      "last_test_date": "2026-10-12",
+      "notes_by_num": null,
+      "stats": {
+        "gmail": { "webmail": { "2026-10": "n" }, "ios": { "2026-10": "n" } }
+      }
+    }
+  ]
+}

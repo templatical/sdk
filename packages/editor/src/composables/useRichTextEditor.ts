@@ -29,7 +29,7 @@ import { logger } from "../utils/logger";
 export interface MergeTagContext {
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
   syntax: ReturnType<typeof useMergeTag>["syntax"];
-  /** Resolved trigger string for built-in syntaxes; null for custom syntax. */
+  /** Resolved trigger string; null for a custom syntax without an `opener`. */
   triggerChar: string | null;
   /** Whether the consumer has enabled autocomplete (default true). */
   autocompleteEnabled: boolean;

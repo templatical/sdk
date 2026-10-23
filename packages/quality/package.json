@@ -43,6 +43,7 @@
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
+    "report:caniemail": "node scripts/caniemail-report.mjs",
     "sync:caniemail": "node scripts/sync-caniemail.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"

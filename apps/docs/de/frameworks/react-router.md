@@ -22,7 +22,7 @@ npm run dev
 
 ## Die Editor-Komponente
 
-Die Komponente bindet den Editor in einem Effect ein. Sie importiert `init()` innerhalb des Effects, daher läuft der Editor nie auf dem Server, und ihr Cleanup unmountet den Editor – auch einen, der erst fertig lädt, nachdem React StrictMode den Effect aufgeräumt hat. Ohne `?id=` in der URL legt sie ein Template an und schreibt die neue ID mit `navigate` aus `useNavigate` in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa eine Bibliothek gespeicherter Blöcke, die nicht lädt, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
+Die Komponente bindet den Editor in einem Effect ein. Sie importiert `init()` innerhalb des Effects, daher läuft der Editor nie auf dem Server, und ihr Cleanup unmountet den Editor – auch einen, der erst fertig lädt, nachdem die Komponente entfernt wurde. Ohne `?id=` in der URL legt sie ein Template an und schreibt die neue ID mit `navigate` aus `useNavigate` in die URL. Schlägt das Öffnen des Templates fehl, zeigt die Werkzeugleiste die Meldung des Servers an, etwa „Template not found.“, mit einem Link, der ein neues Template anlegt. Die Werkzeugleiste zeigt auch Fehler, die der Editor über `onError` meldet, etwa eine Bibliothek gespeicherter Blöcke, die nicht lädt, und einen fehlgeschlagenen Export; der nächste Export entfernt sie.
 
 `app/components/email-editor.tsx`
 

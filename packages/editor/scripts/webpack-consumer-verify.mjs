@@ -3,7 +3,9 @@
  * Build the editor as a real Webpack 5 consumer would.
  *
  * The editor uses dynamic `import()` with try/catch to load three optional
- * peers (`pusher-js`, `@templatical/quality`, `@templatical/renderer`).
+ * packages (`pusher-js`, `@templatical/quality`, `@templatical/renderer`).
+ * Quality is installed by default from the local tarball through the shared
+ * materializer's optional-dependency closure; the others remain optional peers.
  * A Vite build stubs a missing one because the manifest declares it optional,
  * and esbuild leaves it external without a warning; Webpack 5 statically
  * resolves every `import()` regardless of try/catch and
@@ -16,7 +18,7 @@
  *   2. Materialize the webpack-consumer fixture into a clean cache dir.
  *   3. `npm install` the tarballs alongside webpack into that consumer.
  *   4. Run `webpack` against `entry.js`.
- *   5. Assert: zero errors, zero warnings about unresolved optional peers.
+ *   5. Assert: build succeeds; unresolved optional-peer warnings are allowed.
  *
  * The try/catch at each of the four sites is what holds Webpack at a warning;
  * unwrap any one of them and this script fails exactly as the reporter's build
@@ -76,7 +78,11 @@ try {
   try {
     webpackOutput = execSync(
       `node node_modules/webpack-cli/bin/cli.js --config webpack.config.cjs`,
-      { cwd: CONSUMER_DIR, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      {
+        cwd: CONSUMER_DIR,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
     );
   } catch (err) {
     webpackExitCode = err.status ?? 1;

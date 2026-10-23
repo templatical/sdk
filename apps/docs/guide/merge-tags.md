@@ -154,12 +154,14 @@ Examples of logic tags by preset:
 
 ## Custom syntax
 
-If the built-in presets don't match your platform, define a custom syntax with two regex patterns -- one for data tags and one for logic tags:
+If the built-in presets don't match your platform, define a custom syntax: one regex for data tags, one for logic tags, and optionally the characters that open and close a data tag:
 
 ```ts
 interface SyntaxPreset {
-  value: RegExp;  // matches data tags like ${user.name}
-  logic: RegExp;  // matches logic tags like $[IF ...]
+  value: RegExp;    // matches data tags like ${user.name}
+  logic: RegExp;    // matches logic tags like $[IF ...]
+  opener?: string;  // opens a data tag, e.g. '${'
+  closer?: string;  // closes a data tag, e.g. '}'
 }
 ```
 
@@ -170,6 +172,8 @@ mergeTags: {
   syntax: {
     value: /\$\{.+?\}/g,
     logic: /\$\[\s*(\w+).*?\]/g,
+    opener: '${',
+    closer: '}',
   },
   tags: [
     { label: 'User Name', value: '${user.name}' },
@@ -179,6 +183,29 @@ mergeTags: {
 ```
 
 The `value` regex detects data tags. The `logic` regex detects control flow statements — the first capture group `(\w+)` extracts the keyword (e.g., `IF`, `FOR`) which the editor uses as the display label.
+
+### Autocomplete for a custom syntax
+
+A regex doesn't say which characters start a tag, so a custom syntax gets [autocomplete](#autocomplete) only with an `opener`. Typing the opener opens the suggestion popup. Without one, the syntax has no autocomplete.
+
+- **`closer`** already typed after the caret is replaced along with the query, so picking a suggestion in `${us}` gives `${user.name}`, not `${user.name}}`.
+- **A finished tag closes the popup.** Any text the `value` regex matches counts as finished, so the popup stays closed right after one. This also holds when the opener and closer are the same characters:
+
+```ts
+mergeTags: {
+  syntax: {
+    value: /%[A-Z_]+%/g,
+    logic: /(?!)/g, // never matches: this syntax has no logic tags
+    opener: '%',
+    closer: '%',
+  },
+  tags: [{ label: 'First name', value: '%FIRSTNAME%' }],
+}
+```
+
+- **The query ends at whitespace.** For tags written with a space after the opener, such as <code v-pre>{{ first_name }}</code>, include the space: <code v-pre>opener: '{{ '</code>.
+- **A whitespace-only `opener` or `closer` counts as unset**, and the editor logs a warning for it. So does a `closer` on a custom syntax with no `opener`.
+- **A syntax spread from a preset keeps its delimiters.** Every `SYNTAX_PRESETS` entry declares its `opener` and `closer`, so `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` still opens autocomplete on <code v-pre>{{</code>. To turn that off, set both to `undefined`: clearing only the `opener` leaves the inherited `closer`, which the editor warns about.
 
 ## Autocomplete
 
@@ -191,7 +218,7 @@ Filtering is case-insensitive and matches against both `label` and `value`. The 
 Autocomplete is enabled by default. It is **automatically disabled** when:
 
 - `tags` is empty (no candidates to suggest), or
-- `syntax` is a custom regex (the editor cannot infer a trigger string from arbitrary regexes).
+- `syntax` is a custom syntax without an `opener` (see [Autocomplete for a custom syntax](#autocomplete-for-a-custom-syntax)).
 
 To opt out explicitly, set `autocomplete: false`:
 
@@ -432,7 +459,7 @@ The editor handles merge tags on every surface it owns — rich-text blocks, the
 
 The package (MIT) exports the full toolkit:
 
-- `SYNTAX_PRESETS` — the built-in syntax definitions (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `SYNTAX_PRESETS` — the built-in syntax definitions (`liquid`, `handlebars`, `mailchimp`, `ampscript`), each with its `opener` and `closer`
 - `getSyntaxTriggerChar` / `getSyntaxClosingChar` — a preset's opening/closing delimiters, for autocomplete detection
 - `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — matching and label resolution
 - `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — the same for logic tags
@@ -470,7 +497,7 @@ function segments(value: string) {
 
 ### Autocomplete on a plain input
 
-The delimiter helpers keep your own dropdown syntax-accurate across every preset:
+The delimiter helpers keep your own dropdown syntax-accurate across every preset, and return a custom syntax's `opener` and `closer`:
 
 ```ts
 import { SYNTAX_PRESETS, getSyntaxTriggerChar, getSyntaxClosingChar } from '@templatical/types';
@@ -479,9 +506,10 @@ const syntax = SYNTAX_PRESETS.liquid;
 const open = getSyntaxTriggerChar(syntax);   // '{{'
 const close = getSyntaxClosingChar(syntax);  // '}}'
 
-// On each keystroke, look at the text before the caret: if it contains an
-// unclosed `open` delimiter, take the fragment after it as the query and
-// filter your tags into a dropdown of your own.
+// On each keystroke, look at the text before the caret. Skip past the last
+// tag `syntax.value` matches; if an `open` delimiter follows it, take the
+// fragment after it as the query (it ends at whitespace) and filter your tags
+// into a dropdown of your own.
 ```
 
 Owning the field means it renders in your framework, styled to your design system, against your own tag model — which for something like a subject line is usually what you want.

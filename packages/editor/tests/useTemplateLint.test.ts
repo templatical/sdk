@@ -1,5 +1,5 @@
 import "./dom-stubs";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { ref, nextTick } from "vue";
 import type { TemplateContent } from "@templatical/types";
 
@@ -53,6 +53,46 @@ describe("useTemplateLint", () => {
   beforeEach(() => {
     vi.useRealTimers();
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it.each(["development", "production"])(
+    "logs one development hint through logger.info after two failed imports (%s)",
+    async (mode) => {
+      vi.stubEnv("NODE_ENV", mode);
+      const mock = await setupQualityMock();
+      const { logger } = await import("../src/utils/logger");
+      const info = vi.spyOn(logger, "info");
+      const consoleInfo = vi
+        .spyOn(console, "info")
+        .mockImplementation(() => {});
+      const useTemplateLint = await loadComposable();
+      const start = () =>
+        useTemplateLint({
+          content: ref(createContent()),
+          options: {},
+          updateBlock: vi.fn(),
+          updateSettings: vi.fn(),
+          removeBlock: vi.fn(),
+        });
+      const first = start();
+      mock.rejectImport(new Error("quality missing"));
+      await vi.waitFor(() => expect(first.unavailable.value).toBe(true));
+      const second = start();
+      await vi.waitFor(() => expect(second.unavailable.value).toBe(true));
+      expect(info).toHaveBeenCalledExactlyOnceWith(
+        "@templatical/quality isn't installed, so the Issues panel and its lint badges are off. Add @templatical/quality to your dependencies to turn them on.",
+      );
+      expect(consoleInfo).toHaveBeenCalledTimes(mode === "production" ? 0 : 1);
+      expect(first.ready.value).toBe(false);
+      expect(second.ready.value).toBe(false);
+      first.destroy();
+      second.destroy();
+    },
+  );
 
   it("does not run linters after destroy() if dynamic import resolves later", async () => {
     const mock = await setupQualityMock();
@@ -286,30 +326,26 @@ describe("useTemplateLint", () => {
 
 describe("isLintFullyDisabled", () => {
   it("returns false for undefined options", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(isLintFullyDisabled(undefined)).toBe(false);
   });
 
   it("returns false for empty options", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(isLintFullyDisabled({})).toBe(false);
   });
 
   it("returns true when disabled flag is set", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(isLintFullyDisabled({ disabled: true })).toBe(true);
   });
 
   it("returns true only when all five tool keys are false", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(
       isLintFullyDisabled({
         accessibility: false,
@@ -322,9 +358,8 @@ describe("isLintFullyDisabled", () => {
   });
 
   it("returns false when only the original three tool keys are false", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(
       isLintFullyDisabled({
         accessibility: false,
@@ -335,9 +370,8 @@ describe("isLintFullyDisabled", () => {
   });
 
   it("returns false when only two tools are disabled", async () => {
-    const { isLintFullyDisabled } = await import(
-      "../src/composables/useTemplateLint"
-    );
+    const { isLintFullyDisabled } =
+      await import("../src/composables/useTemplateLint");
     expect(
       isLintFullyDisabled({ accessibility: false, structure: false }),
     ).toBe(false);

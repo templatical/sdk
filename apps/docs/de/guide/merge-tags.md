@@ -154,12 +154,14 @@ Beispiele für Logik-Tags nach Preset:
 
 ## Benutzerdefinierte Syntax
 
-Wenn die integrierten Presets nicht zu Ihrer Plattform passen, definieren Sie eine benutzerdefinierte Syntax mit zwei Regex-Mustern -- eines für Daten-Tags und eines für Logik-Tags:
+Wenn die integrierten Presets nicht zu Ihrer Plattform passen, definieren Sie eine benutzerdefinierte Syntax: eine Regex für Daten-Tags, eine für Logik-Tags und optional die Zeichen, die ein Daten-Tag öffnen und schließen:
 
 ```ts
 interface SyntaxPreset {
-  value: RegExp;  // matches data tags like ${user.name}
-  logic: RegExp;  // matches logic tags like $[IF ...]
+  value: RegExp;    // matches data tags like ${user.name}
+  logic: RegExp;    // matches logic tags like $[IF ...]
+  opener?: string;  // opens a data tag, e.g. '${'
+  closer?: string;  // closes a data tag, e.g. '}'
 }
 ```
 
@@ -170,6 +172,8 @@ mergeTags: {
   syntax: {
     value: /\$\{.+?\}/g,
     logic: /\$\[\s*(\w+).*?\]/g,
+    opener: '${',
+    closer: '}',
   },
   tags: [
     { label: 'User Name', value: '${user.name}' },
@@ -179,6 +183,29 @@ mergeTags: {
 ```
 
 Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanweisungen — die erste Erfassungsgruppe `(\w+)` extrahiert das Schlüsselwort (z. B. `IF`, `FOR`), das der Editor als Anzeigelabel verwendet.
+
+### Autovervollständigung für eine benutzerdefinierte Syntax
+
+Eine Regex sagt nicht, mit welchen Zeichen ein Tag beginnt. Eine benutzerdefinierte Syntax erhält die [Autovervollständigung](#autovervollstandigung) deshalb nur mit einem `opener`. Die Eingabe des Öffners öffnet das Vorschlags-Popup. Ohne ihn hat die Syntax keine Autovervollständigung.
+
+- **`closer`**, der bereits hinter dem Cursor steht, wird zusammen mit dem Suchbegriff ersetzt, sodass ein Vorschlag in `${us}` zu `${user.name}` führt, nicht zu `${user.name}}`.
+- **Ein fertiges Tag schließt das Popup.** Jeder Text, auf den die `value`-Regex passt, gilt als fertig, sodass das Popup direkt danach geschlossen bleibt. Das gilt auch, wenn Öffner und Schließer dieselben Zeichen sind:
+
+```ts
+mergeTags: {
+  syntax: {
+    value: /%[A-Z_]+%/g,
+    logic: /(?!)/g, // never matches: this syntax has no logic tags
+    opener: '%',
+    closer: '%',
+  },
+  tags: [{ label: 'First name', value: '%FIRSTNAME%' }],
+}
+```
+
+- **Der Suchbegriff endet am ersten Leerraum.** Schreiben Sie Tags mit einem Leerzeichen nach dem Öffner, etwa <code v-pre>{{ first_name }}</code>, nehmen Sie das Leerzeichen in den Öffner auf: <code v-pre>opener: '{{ '</code>.
+- **Ein `opener` oder `closer` aus reinem Leerraum gilt als nicht gesetzt**, und der Editor gibt dazu eine Warnung aus. Ebenso für einen `closer` bei einer benutzerdefinierten Syntax ohne `opener`.
+- **Eine Syntax, die ein Preset per Spread übernimmt, behält dessen Trennzeichen.** Jeder Eintrag in `SYNTAX_PRESETS` deklariert seinen `opener` und `closer`, daher öffnet `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` die Autovervollständigung weiterhin mit <code v-pre>{{</code>. Um das abzuschalten, setzen Sie beide auf `undefined`: Entfernen Sie nur den `opener`, bleibt der übernommene `closer` stehen, und der Editor warnt davor.
 
 ## Autovervollständigung
 
@@ -191,7 +218,7 @@ Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `lab
 Die Autovervollständigung ist standardmäßig aktiviert. Sie wird **automatisch deaktiviert**, wenn:
 
 - `tags` leer ist (keine Kandidaten zum Vorschlagen) oder
-- `syntax` eine benutzerdefinierte Regex ist (der Editor kann aus beliebigen Regex-Mustern keine Trigger-Zeichenkette ableiten).
+- `syntax` eine benutzerdefinierte Syntax ohne `opener` ist (siehe [Autovervollständigung für eine benutzerdefinierte Syntax](#autovervollstandigung-fur-eine-benutzerdefinierte-syntax)).
 
 Um sie explizit zu deaktivieren, setzen Sie `autocomplete: false`:
 
@@ -432,7 +459,7 @@ Der Editor verwaltet Merge-Tags auf allen Oberflächen, die zu ihm gehören — 
 
 Das Paket (MIT) exportiert das vollständige Toolkit:
 
-- `SYNTAX_PRESETS` — die integrierten Syntaxdefinitionen (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `SYNTAX_PRESETS` — die integrierten Syntaxdefinitionen (`liquid`, `handlebars`, `mailchimp`, `ampscript`), jeweils mit `opener` und `closer`
 - `getSyntaxTriggerChar` / `getSyntaxClosingChar` — die öffnenden/schließenden Trennzeichen eines Presets, für die Autovervollständigungs-Erkennung
 - `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — Abgleich und Label-Auflösung
 - `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — dasselbe für Logik-Tags
@@ -470,7 +497,7 @@ function segments(value: string) {
 
 ### Autovervollständigung in einer einfachen Eingabe
 
-Die Trennzeichen-Helfer halten Ihr eigenes Dropdown über alle Presets hinweg syntaxgenau:
+Die Trennzeichen-Helfer halten Ihr eigenes Dropdown über alle Presets hinweg syntaxgenau und liefern bei einer benutzerdefinierten Syntax deren `opener` und `closer`:
 
 ```ts
 import { SYNTAX_PRESETS, getSyntaxTriggerChar, getSyntaxClosingChar } from '@templatical/types';
@@ -479,9 +506,10 @@ const syntax = SYNTAX_PRESETS.liquid;
 const open = getSyntaxTriggerChar(syntax);   // '{{'
 const close = getSyntaxClosingChar(syntax);  // '}}'
 
-// Prüfen Sie bei jedem Tastendruck den Text vor dem Cursor: Enthält er ein
-// nicht geschlossenes `open`-Trennzeichen, nehmen Sie das Fragment danach als
-// Suchbegriff und filtern Sie Ihre Tags in ein eigenes Dropdown.
+// Prüfen Sie bei jedem Tastendruck den Text vor dem Cursor. Überspringen Sie
+// das letzte Tag, auf das `syntax.value` passt; folgt danach ein `open`-
+// Trennzeichen, nehmen Sie das Fragment dahinter als Suchbegriff (er endet am
+// ersten Leerraum) und filtern Sie Ihre Tags in ein eigenes Dropdown.
 ```
 
 Ein eigenes Feld bedeutet, dass es in Ihrem Framework gerendert wird, im Stil Ihres Designsystems und gegen Ihr eigenes Tag-Modell — was für etwas wie eine Betreffzeile in der Regel genau das ist, was Sie möchten.

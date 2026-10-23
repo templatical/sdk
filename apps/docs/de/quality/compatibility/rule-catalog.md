@@ -111,7 +111,7 @@ Dieser Katalog erklärt jede `compat.*`-Regel mit Auslöser, Ausnahmen, Schwereg
 
 **Ausnahmen:** Ein Link zu einem Webformular.
 
-**Einschränkung:** Gmail Web unterstützt Formulare; Outlook Windows nicht. Die Regel nutzt Client-Daten statt einer pauschalen Behauptung.
+**Einschränkung:** Keine Einschränkung durch Anmerkungen.
 
 **Quelle:** [caniemail html-form](https://www.caniemail.com/features/html-form/).
 

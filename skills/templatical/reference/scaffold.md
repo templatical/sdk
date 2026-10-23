@@ -12,11 +12,13 @@ unannounced is the failure this procedure exists to avoid.
    `package-lock.json` / `yarn.lock` / `bun.lockb` / `bun.lock`). Framework
    and bundler from `package.json` and its config files. TypeScript from
    `tsconfig.json`. Whether `@templatical/editor` is already installed, and
-   at what version. Install **only** `@templatical/editor` unless a feature
-   that needs an optional peer was asked for — never `vue`, `tailwindcss`,
-   or `@templatical/core`.
+   at what version. Install `@templatical/editor` and `@templatical/quality`
+   as direct dependencies of the app.
+   Install other optional peers only when their feature was asked for — never
+   `vue`, `tailwindcss`, or `@templatical/core`.
 2. **Propose, then wait.** Name the packages to add, the files to create or
-   edit, and the mount point — then wait for a go-ahead. Don't edit an
+   edit, and the mount point. Propose quality for the Issues panel and lint badges
+   and let the user decline it — then wait for a go-ahead. Don't edit an
    unfamiliar codebase unannounced.
 3. **Write.** Install with the consumer's own package manager. Create the
    container with a definite height, the mount call, and the `style.css`
