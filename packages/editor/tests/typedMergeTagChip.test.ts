@@ -6,13 +6,20 @@ import type { Editor } from '@tiptap/core';
 import {
   createParagraphBlock,
   createTitleBlock,
+  type MergeTag,
   type ParagraphBlock,
+  type SyntaxPreset,
   type TitleBlock,
 } from '@templatical/types';
 import ParagraphEditor from '../src/components/blocks/ParagraphEditor.vue';
 import TitleEditor from '../src/components/blocks/TitleEditor.vue';
 import en from '../src/i18n/locales/en';
-import { EDITOR_KEY, MERGE_TAGS_KEY, TRANSLATIONS_KEY } from '../src/keys';
+import {
+  EDITOR_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAGS_KEY,
+  TRANSLATIONS_KEY,
+} from '../src/keys';
 import { mountEditor } from './helpers/mount';
 
 /**
@@ -85,6 +92,7 @@ afterEach(() => {
 async function mountWithStore(
   editorDef: (typeof EDITORS)[number],
   content: string,
+  merge: { syntax?: SyntaxPreset; tags?: MergeTag[] } = {},
 ) {
   const block = reactive(editorDef.block(content));
   const emailEditor = {
@@ -98,9 +106,10 @@ async function mountWithStore(
     provides: {
       [EDITOR_KEY]: emailEditor,
       [TRANSLATIONS_KEY]: en,
-      [MERGE_TAGS_KEY]: shallowRef([
-        { label: 'First Name', value: '{{first_name}}' },
-      ]),
+      [MERGE_TAGS_KEY]: shallowRef(
+        merge.tags ?? [{ label: 'First Name', value: '{{first_name}}' }],
+      ),
+      ...(merge.syntax ? { [MERGE_TAG_SYNTAX_KEY]: merge.syntax } : {}),
     },
     global: {
       stubs: { ParagraphToolbar: true, RichTextLinkDialog: true },
@@ -179,5 +188,55 @@ describe('a tag typed out in full becomes a chip', () => {
         expect(vueErrors).toEqual([]);
       });
     }
+  }
+});
+
+/**
+ * A custom syntax whose opener is also its closer. The rich-text popup opens on
+ * the declared opener, and the closing `%` turns the token into a chip, which
+ * takes the popup down with it: the closer is never read as a new opener here.
+ */
+describe('an opener that is also the closer', () => {
+  const PERCENT: SyntaxPreset = {
+    value: /%[A-Z_]+%/g,
+    logic: /(?!)/g,
+    opener: '%',
+    closer: '%',
+  };
+  const popups = () =>
+    document.querySelectorAll('[data-testid="merge-tag-suggestion-popup"]')
+      .length;
+
+  for (const editorDef of EDITORS) {
+    it(`${editorDef.name}: % opens the popup and the closing % makes a chip`, async () => {
+      const { block, editor } = await mountWithStore(
+        editorDef,
+        '<p>Hello.</p>',
+        {
+          syntax: PERCENT,
+          tags: [{ label: 'First Name', value: '%FIRSTNAME%' }],
+        },
+      );
+      editor.commands.focus('end');
+
+      typeText(editor, ' %');
+      await flushPromises();
+      expect(popups()).toBe(1);
+
+      for (const char of 'FIRSTNAME') typeText(editor, char);
+      await flushPromises();
+      expect(popups()).toBe(1);
+
+      typeText(editor, '%');
+      await flushPromises();
+      expect(popups()).toBe(0);
+
+      const types = nodeTypesIn(editor);
+      expect(types.filter((t) => t === 'mergeTagNode')).toHaveLength(1);
+      const stored = storedTags(block.content, 'span[data-merge-tag]');
+      expect(stored).toHaveLength(1);
+      expect(stored[0].getAttribute('data-merge-tag')).toBe('%FIRSTNAME%');
+      expect(vueErrors).toEqual([]);
+    });
   }
 });

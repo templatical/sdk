@@ -21,18 +21,27 @@ export interface OpenMergeTagTrigger {
  * between the opener and the caret ends at the first whitespace, and a closing
  * delimiter inside that run means the tag is already complete (`{{first_name}}`)
  * so the popup must not reappear over it.
+ *
+ * `complete` is the syntax's `value` regex. An opener inside a tag it matches
+ * never counts, which is what keeps a syntax whose opener and closer are the
+ * same (`%FIRSTNAME%`) from reading its own closer as a new opener. The closer
+ * check stays for text the regex rejects, such as liquid's `{{}}`.
  */
 export function findOpenMergeTagTrigger(
   value: string,
   caret: number,
   triggerChar: string,
   closingChar: string | null,
+  complete?: RegExp,
 ): OpenMergeTagTrigger | null {
   if (!triggerChar) return null;
 
   const before = value.slice(0, caret);
   const triggerStart = before.lastIndexOf(triggerChar);
   if (triggerStart === -1) return null;
+  if (complete && triggerStart < lastCompleteTagEnd(before, complete)) {
+    return null;
+  }
 
   const query = before.slice(triggerStart + triggerChar.length);
 
@@ -44,4 +53,22 @@ export function findOpenMergeTagTrigger(
   if (closingChar && query.includes(closingChar)) return null;
 
   return { triggerStart, caret, query };
+}
+
+/**
+ * Where the last tag `complete` matches in `text` ends, or 0 when none does.
+ * It scans a fresh global copy that keeps the other flags (`i` included):
+ * `matchAll` on the caller's regex would start from its `lastIndex`, throws on
+ * a non-global one, and sticky (`y`) would stop at the first gap.
+ */
+function lastCompleteTagEnd(text: string, complete: RegExp): number {
+  const scan = new RegExp(
+    complete.source,
+    `${complete.flags.replace(/[gy]/g, "")}g`,
+  );
+  let end = 0;
+  for (const match of text.matchAll(scan)) {
+    end = match.index + match[0].length;
+  }
+  return end;
 }

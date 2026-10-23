@@ -6,63 +6,99 @@ import { findOpenTagEnd, getTagAttrValue } from "./html-scan";
 export interface SyntaxPreset {
   value: RegExp;
   logic: RegExp;
+  /**
+   * The characters that open a data tag, e.g. `{` for `{first_name}` or `%`
+   * for `%FIRSTNAME%`. Typing them opens merge-tag autocomplete. Every
+   * built-in preset declares its own, so a syntax spread from one keeps it;
+   * a custom syntax without one, or with only whitespace, gets no
+   * autocomplete. A space inside it is kept, for tags written with one: the
+   * query ends at whitespace, so `{{ first_name }}` needs `'{{ '`.
+   */
+  opener?: string;
+  /**
+   * The characters that close a data tag, e.g. `}`. Inserting a suggestion
+   * absorbs a closer already typed after the caret, so `{fir}` becomes
+   * `{first_name}`, not `{first_name}}`. It may equal `opener`. Whitespace
+   * only counts as unset.
+   */
+  closer?: string;
 }
 
 export type SyntaxPresetName =
   "liquid" | "handlebars" | "mailchimp" | "ampscript";
 
-export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
-  liquid: { value: /\{\{.+?\}\}/g, logic: /\{%-?\s*(\w+).*?-?%\}/g },
+/**
+ * The built-in syntaxes. Each is a custom syntax with every field filled in,
+ * so the type makes a preset without its delimiters fail to compile.
+ */
+export const SYNTAX_PRESETS: Record<
+  SyntaxPresetName,
+  Required<SyntaxPreset>
+> = {
+  liquid: {
+    value: /\{\{.+?\}\}/g,
+    logic: /\{%-?\s*(\w+).*?-?%\}/g,
+    opener: "{{",
+    closer: "}}",
+  },
   handlebars: {
     value: /\{\{\{?.+?\}?\}\}/g,
     logic: /\{\{[#/](\w+).*?\}\}/g,
+    opener: "{{",
+    closer: "}}",
   },
-  mailchimp: { value: /\*\|\w+\|\*/g, logic: /\*\|(\w+)[:|].*?\|\*/g },
-  ampscript: { value: /%%=.+?=%%/g, logic: /%%\[\s*(\w+).*?\]%%/g },
+  mailchimp: {
+    value: /\*\|\w+\|\*/g,
+    logic: /\*\|(\w+)[:|].*?\|\*/g,
+    opener: "*|",
+    closer: "|*",
+  },
+  ampscript: {
+    value: /%%=.+?=%%/g,
+    logic: /%%\[\s*(\w+).*?\]%%/g,
+    opener: "%%=",
+    closer: "=%%",
+  },
 };
 
-const SYNTAX_TRIGGER_CHARS: Record<SyntaxPresetName, string> = {
-  liquid: "{{",
-  handlebars: "{{",
-  mailchimp: "*|",
-  ampscript: "%%=",
-};
-
-const SYNTAX_CLOSING_CHARS: Record<SyntaxPresetName, string> = {
-  liquid: "}}",
-  handlebars: "}}",
-  mailchimp: "|*",
-  ampscript: "=%%",
-};
-
-/**
- * Resolves the autocomplete trigger string for a syntax preset.
- * Returns null when the syntax doesn't match any built-in preset
- * (custom regex syntax — autocomplete cannot be enabled safely).
- */
-export function getSyntaxTriggerChar(syntax: SyntaxPreset): string | null {
-  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
-    if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
-      return SYNTAX_TRIGGER_CHARS[name];
-    }
-  }
-  return null;
+/** A declared delimiter counts only when it has a non-whitespace character. */
+function declaredDelimiter(value: string | undefined): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
 /**
- * Resolves the closing delimiter for a syntax preset (e.g. `}}` for liquid,
- * `|*` for mailchimp). The autocomplete trigger detector uses it to tell an
- * open tag (`{{first`) from a completed one (`{{first_name}}`) so the popup
- * doesn't reappear over a finished tag. Returns null for custom syntaxes —
- * the same set for which `getSyntaxTriggerChar` returns null.
+ * The built-in preset whose `value` regex `syntax` uses. Compared by source,
+ * so a preset re-created with other flags still resolves.
+ */
+function presetWithSource(syntax: SyntaxPreset): Required<SyntaxPreset> | null {
+  return (
+    Object.values(SYNTAX_PRESETS).find(
+      (preset) => preset.value.source === syntax.value.source,
+    ) ?? null
+  );
+}
+
+/**
+ * Resolves the autocomplete trigger for a syntax: its declared `opener`, else
+ * the opener of the built-in preset whose `value` regex it uses. Returns null
+ * for a custom syntax without an opener, which turns autocomplete off.
+ */
+export function getSyntaxTriggerChar(syntax: SyntaxPreset): string | null {
+  return (
+    declaredDelimiter(syntax.opener) ?? presetWithSource(syntax)?.opener ?? null
+  );
+}
+
+/**
+ * Resolves the closing delimiter for a syntax (e.g. `}}` for liquid, `|*` for
+ * mailchimp): its declared `closer`, else the closer of the built-in preset
+ * whose `value` regex it uses. Autocomplete absorbs it after the caret on
+ * insert. Returns null for a custom syntax without a closer.
  */
 export function getSyntaxClosingChar(syntax: SyntaxPreset): string | null {
-  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
-    if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
-      return SYNTAX_CLOSING_CHARS[name];
-    }
-  }
-  return null;
+  return (
+    declaredDelimiter(syntax.closer) ?? presetWithSource(syntax)?.closer ?? null
+  );
 }
 
 export function resolveSyntax(

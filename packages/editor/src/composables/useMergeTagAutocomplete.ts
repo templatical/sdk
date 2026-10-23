@@ -123,6 +123,7 @@ export function useMergeTagAutocomplete(
       caret,
       triggerChar as string,
       closingChar,
+      syntax.value,
     );
   }
 

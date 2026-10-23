@@ -47,6 +47,7 @@ import type {
 import {
   applyLayout,
   deepMergeDefaults,
+  getSyntaxTriggerChar,
   hasMergeTagSamples,
   resolveContentDirection,
   resolveSyntax,
@@ -668,6 +669,27 @@ export function useEditorCore(
   );
 
   const mergeTagSyntax = resolveSyntax(config.mergeTags?.syntax);
+
+  // `@templatical/types` treats a blank delimiter as unset; the warning for it
+  // is emitted here, once, at the config surface (the colours' split above).
+  for (const key of ["opener", "closer"] as const) {
+    const delimiter = mergeTagSyntax[key];
+    if (typeof delimiter === "string" && delimiter.trim() === "") {
+      logger.warn(`config.mergeTags.syntax.${key} is blank — ignoring it.`);
+    }
+  }
+  // A blank opener has its own warning above, so this one covers a missing one.
+  if (
+    typeof mergeTagSyntax.opener !== "string" &&
+    typeof mergeTagSyntax.closer === "string" &&
+    mergeTagSyntax.closer.trim() !== "" &&
+    getSyntaxTriggerChar(mergeTagSyntax) === null
+  ) {
+    logger.warn(
+      "config.mergeTags.syntax.closer has no effect without an opener — " +
+        "set opener to turn on autocomplete for this syntax.",
+    );
+  }
 
   // Seeded from config and replaced wholesale by `editor.setMergeTags()`.
   // Everything that renders a tag reads this, so a replacement repaints the

@@ -1,0 +1,24 @@
+{
+  "css-display-flex": {
+    "2": "`display:inline-flex` is not supported."
+  },
+  "css-position": {
+    "1": "Partial. Supports `relative`, `absolute` but not `sticky` and `fixed`.",
+    "2": "Partial. Supports `sticky` but not `relative`, `absolute` and `fixed`.",
+    "3": "Partial. Supports `relative` but not  `absolute`, `sticky` and `fixed`.",
+    "4": "Partial. Supports `relative` and `sticky` but not `absolute` and `fixed`."
+  },
+  "html-style": {
+    "1": "Partial. Not supported inside the `<body>`."
+  },
+  "css-width": {
+    "1": "Partial. Not supported on `<body>`, `<span>`, `<div>`, `<p>` or `<img>` elements."
+  },
+  "css-max-width": {
+    "1": "Partial. Only works on `<table>` elements."
+  },
+  "image-base64": {
+    "1": "Partial: Does not render Base 64 gif format.",
+    "3": "Partial: Only supports Base 64 png format."
+  }
+}
