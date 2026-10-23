@@ -2,6 +2,7 @@ import {
   AI_RECORDINGS,
   createMockAiProvider,
 } from "@templatical/ai-kit/testing";
+import { createImageBlock, createParagraphBlock } from "@templatical/types";
 import { createSharedCollaboration } from "../../host/collaboration/client";
 import { templatesProviderFor } from "../../host/providers";
 import type { Scene } from "../types";
@@ -14,7 +15,7 @@ export const ai: Scene = {
   job: "Edit the template with an AI chat",
   initKey: "ai",
   summary:
-    "init({ templates, ai }) — chat, static starters, rewrite and chat attachments over your AI backend; here a recorded mock, no model and no keys.",
+    "init({ templates, ai }) covers chat with attachments, Import from screenshot or PDF, static starters, rewrite, Fix with AI and alt text using a recorded mock.",
   catalog: "oss",
   group: "backend",
   docs: "/backend/ai",
@@ -23,12 +24,40 @@ export const ai: Scene = {
     root: "editor",
     side: "below",
   },
-  content: () => storageCanvas(),
+  content(ctx) {
+    const content = storageCanvas();
+    if (ctx.search.get("issues") !== "1") return content;
+    content.blocks.push(
+      createParagraphBlock({
+        id: "ai-vague-link",
+        content:
+          '<p>Read our update: <a href="https://example.com/march">click here</a>.</p>',
+      }),
+      createParagraphBlock({
+        id: "ai-domain-link",
+        content:
+          '<p>Our website: <a href="https://tracking.example.net/r/1">www.acme.com</a>.</p>',
+      }),
+      ...["speaker", "buds", "charger"].map((asset, index) =>
+        createImageBlock({
+          id: `ai-image-${index + 1}`,
+          // The alt-text contract takes an http(s) URL; these stay on the
+          // playground's origin and use its bundled example images.
+          src: new URL(`/examples/sable/${asset}.png`, location.origin).href,
+          alt: "",
+        }),
+      ),
+    );
+    return content;
+  },
   config(ctx) {
     // Recorded turns, played through the public contract (D38).
     const ai = createMockAiProvider({
       ...AI_RECORDINGS,
       conversation: ctx.search.get("history") === "1",
+      ...(ctx.search.get("noAltText") === "1"
+        ? { altText: false as const }
+        : {}),
     });
     if (ctx.search.get("collaboration") === "1") {
       // `?user=Ada` signs this tab in; the AI's batches reach the other tabs
@@ -78,6 +107,8 @@ const editor = await init({
 
 await editor.load("tpl_123");`,
   variants: [
+    { name: "With issues", query: { issues: "1" } },
+    { name: "Without alt text", query: { issues: "1", noAltText: "1" } },
     { name: "With history", query: { history: "1" } },
     {
       name: "As Ada, with collaboration",

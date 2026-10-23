@@ -37,7 +37,7 @@ export const AI_RECORDINGS: AiMockScript = {
     {
       match: /attached design/i,
       events: (request) => [
-        text("Building the template from your design."),
+        text("Built the email from your design."),
         {
           type: "operations",
           ops: [
@@ -61,7 +61,7 @@ export const AI_RECORDINGS: AiMockScript = {
             },
           ],
         },
-        text(" Done: a title, a paragraph and a button."),
+        text(" Pictures are placeholders."),
         done,
       ],
     },
@@ -144,6 +144,38 @@ export const AI_RECORDINGS: AiMockScript = {
           (candidate) => candidate.id === target,
         )
       : undefined;
+    const label =
+      request.finding.ruleId === "a11y.link-vague-text"
+        ? "Read the March update"
+        : request.finding.ruleId === "deliverability.link-text-domain-mismatch"
+          ? "Visit Acme"
+          : null;
+    if (
+      label &&
+      block &&
+      (block.type === "paragraph" || block.type === "title")
+    ) {
+      return [
+        text("Updating the link text."),
+        {
+          type: "operations",
+          ops: [
+            {
+              op: "updateBlock",
+              blockId: target as string,
+              set: {
+                content: (block.content as string).replace(
+                  /(<a\b[^>]*>)[\s\S]*?(<\/a>)/i,
+                  `$1${label}$2`,
+                ),
+              },
+            },
+          ],
+        },
+        text(" Fixed."),
+        done,
+      ];
+    }
     return block && (block.type === "paragraph" || block.type === "title")
       ? [
           text("Shortening that block."),

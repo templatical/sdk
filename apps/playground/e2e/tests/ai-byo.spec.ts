@@ -174,6 +174,184 @@ test.describe("AI over a BYO provider", () => {
     ).toContainText("✨ Three releases");
   });
 
+  for (const { ruleId, blockId, before, after, href } of [
+    {
+      ruleId: "a11y.link-vague-text",
+      blockId: "ai-vague-link",
+      before: "click here",
+      after: "Read the March update",
+      href: "https://example.com/march",
+    },
+    {
+      ruleId: "deliverability.link-text-domain-mismatch",
+      blockId: "ai-domain-link",
+      before: "www.acme.com",
+      after: "Visit Acme",
+      href: "https://tracking.example.net/r/1",
+    },
+  ]) {
+    test(`Fix with AI resolves ${ruleId} and one undo restores its text and finding`, async ({
+      page,
+      shadowDom,
+    }) => {
+      const { ai } = await openScene(page, shadowDom, { issues: "1" });
+      await ai.openIssues();
+      await ai.expectFindings(ruleId, [blockId]);
+      const row = await ai.finding(ruleId, blockId);
+      await row.getByTestId("issue-ai-fix").click();
+      await expect(ai.block(blockId)).toContainText(after);
+      await expect(ai.block(blockId).locator("a")).toHaveAttribute(
+        "href",
+        href,
+      );
+      await ai.expectFindings(ruleId, []);
+      await ai.undo();
+      await expect(ai.block(blockId)).toContainText(before);
+      await expect(ai.block(blockId).locator("a")).toHaveAttribute(
+        "href",
+        href,
+      );
+      await ai.expectFindings(ruleId, [blockId]);
+    });
+  }
+
+  test("Write alt text accepts a draft and Mark decorative clears another image's finding", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom, { issues: "1" });
+    const rule = "a11y.img-missing-alt";
+    await ai.openIssues();
+    await ai.expectFindings(rule, ["ai-image-1", "ai-image-2", "ai-image-3"]);
+    let row = await ai.finding(rule, "ai-image-1");
+    await row.getByTestId("issue-ai-alt-text").click();
+    await expect(row.getByRole("textbox")).toHaveValue("Shop new arrivals");
+    await row.getByRole("button", { name: "Accept", exact: true }).click();
+    await ai.expectFindings(rule, ["ai-image-2", "ai-image-3"]);
+    row = await ai.finding(rule, "ai-image-2");
+    await row.getByTestId("issue-ai-alt-text").click();
+    await expect(row.getByRole("textbox")).toHaveValue("Shop new arrivals");
+    await row
+      .getByRole("button", { name: "Mark decorative", exact: true })
+      .click();
+    await ai.expectFindings(rule, ["ai-image-3"]);
+    const content = await ai.content();
+    expect(
+      content.blocks.find((block) => block.id === "ai-image-1"),
+    ).toMatchObject({ alt: "Shop new arrivals", decorative: false });
+    expect(
+      content.blocks.find((block) => block.id === "ai-image-2"),
+    ).toMatchObject({ alt: "", decorative: true });
+  });
+
+  test("bulk alt text applies two of three reviews as one undo step", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom, { issues: "1" });
+    const rule = "a11y.img-missing-alt";
+    await ai.openIssues();
+    await ai.expectFindings(rule, ["ai-image-1", "ai-image-2", "ai-image-3"]);
+    await page
+      .getByRole("button", { name: "Write missing alt text (3)", exact: true })
+      .click();
+    const review = page.getByTestId("ai-alt-text-review");
+    const rows = review.getByTestId("ai-alt-text-row");
+    await expect(rows).toHaveCount(3);
+    for (const row of await rows.all()) {
+      await expect(row.getByRole("textbox")).toHaveValue("Shop new arrivals");
+      await expect(
+        row.getByRole("switch", { name: "Accept", exact: true }),
+      ).toBeChecked();
+    }
+    await rows
+      .nth(2)
+      .getByRole("switch", { name: "Accept", exact: true })
+      .click();
+    await review
+      .getByRole("button", { name: "Apply accepted (2)", exact: true })
+      .click();
+    await expect(review).toHaveCount(0);
+    await ai.expectFindings(rule, ["ai-image-3"]);
+    await ai.undo();
+    await ai.expectFindings(rule, ["ai-image-1", "ai-image-2", "ai-image-3"]);
+  });
+
+  test("altText false hides single and bulk entries while Fix with AI stays available", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom, {
+      issues: "1",
+      noAltText: "1",
+    });
+    await ai.openIssues();
+    await ai.expectFindings("a11y.img-missing-alt", [
+      "ai-image-1",
+      "ai-image-2",
+      "ai-image-3",
+    ]);
+    await expect(
+      (await ai.finding("a11y.link-vague-text", "ai-vague-link")).getByTestId(
+        "issue-ai-fix",
+      ),
+    ).toBeVisible();
+    await expect(page.getByTestId("issue-ai-alt-text")).toHaveCount(0);
+    await expect(page.getByTestId("issue-ai-alt-text-bulk")).toHaveCount(0);
+  });
+
+  test("the attach control sends a PNG with the chat turn and keeps its name in history", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom);
+    await ai.openPanel("chat");
+    await ai.attachPng();
+    await expect(page.getByTestId("ai-chat-attachment")).toContainText(
+      "design.png",
+    );
+    await ai.ask("Build this email from the attached design.");
+    await expect(ai.title()).toContainText("Built from your design");
+    await expect(ai.lastReply()).toHaveText(
+      "Built the email from your design. Pictures are placeholders.",
+    );
+    await expect(page.getByTestId("ai-chat-history-attachment")).toHaveText(
+      "design.png",
+    );
+    await expect(page.getByTestId("ai-chat-attachment")).toHaveCount(0);
+  });
+
+  test("dragging a PDF onto chat shows the drop state and attaches the file", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom);
+    await ai.openPanel("chat");
+    await ai.dropPdf();
+    await expect(page.getByTestId("ai-chat-attachment")).toContainText(
+      "design.pdf",
+    );
+    await expect(page.getByTestId("ai-chat-reply")).toHaveCount(0);
+  });
+
+  test("Import from screenshot or PDF opens chat with an attachment and an unsent request", async ({
+    page,
+    shadowDom,
+  }) => {
+    const { ai } = await openScene(page, shadowDom);
+    await ai.importPng();
+    await expect(page.getByTestId("ai-chat-attachment")).toContainText(
+      "design.png",
+    );
+    await expect(page.getByTestId("ai-chat-input")).toHaveValue(
+      "Build this email from the attached design.",
+    );
+    await expect(page.getByTestId("ai-chat-send")).toBeEnabled();
+    await expect(page.getByTestId("ai-chat-prompt")).toHaveCount(0);
+    await expect(page.getByTestId("ai-chat-reply")).toHaveCount(0);
+    await expect(ai.title()).toContainText(ORIGINAL_TITLE);
+  });
+
   test("other editors see the AI's batch as AI (for Ada); the editor that asked sees only the outline", async ({
     context,
     shadowDom,

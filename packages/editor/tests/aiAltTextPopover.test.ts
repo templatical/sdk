@@ -313,6 +313,7 @@ describe("AiAltTextPopover in IssuesPanel", () => {
   it("hides an unavailable member and disables during an editing turn", async () => {
     const { wrapper } = await setup(false);
     expect(button(wrapper, "Write alt text")).toBeUndefined();
+    expect(button(wrapper, "Fix with AI")).toBeDefined();
     const second = await setup();
     second.ai.busy.value = true;
     await flushPromises();

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createParagraphBlock } from "@templatical/types";
 import {
   AI_EVAL_TEMPLATES,
   AI_RECORDINGS,
@@ -116,6 +117,51 @@ describe("AI_RECORDINGS", () => {
           preheaderText: "Your update from Acme",
         },
       });
+    },
+  );
+});
+
+describe("AI_RECORDINGS lint fixes", () => {
+  it.each([
+    ["a11y.link-vague-text", "click here", "Read the March update"],
+    ["deliverability.link-text-domain-mismatch", "www.acme.com", "Visit Acme"],
+  ])(
+    "fixes %s with one update while preserving the href and surrounding HTML",
+    async (ruleId, label, replacement) => {
+      const before = `<p>Before <a href="https://tracking.example.net/r/1" title="March"><strong>${label}</strong></a> after <a href="https://example.com/other">Other news</a>.</p>`;
+      const content = {
+        ...base.content,
+        blocks: [createParagraphBlock({ id: "link", content: before })],
+      };
+      const editor = createStandInEditor(content);
+      const provider = createMockAiProvider({ ...AI_RECORDINGS, delayMs: 0 });
+      if (!provider.fixFinding) throw new Error("Fix must be enabled");
+      await provider.fixFinding(
+        {
+          ...base,
+          content,
+          finding: {
+            ruleId,
+            blockId: "link",
+            message: "Link text needs a change.",
+            suggestion: "Rewrite the visible text.",
+            reference: "https://docs.templatical.com/quality/",
+          },
+        },
+        editor.handlers(),
+        new AbortController().signal,
+      );
+      expect(editor.applied).toEqual([
+        [
+          {
+            op: "updateBlock",
+            blockId: "link",
+            set: {
+              content: `<p>Before <a href="https://tracking.example.net/r/1" title="March">${replacement}</a> after <a href="https://example.com/other">Other news</a>.</p>`,
+            },
+          },
+        ],
+      ]);
     },
   );
 });

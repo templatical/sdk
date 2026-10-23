@@ -239,8 +239,9 @@ export class EditorPage {
       // Chromium clamps document-level ranges at the shadow boundary, so
       // the caret must be set through ShadowRoot.getSelection() (a
       // Chromium-only API — these e2e projects are Chromium-only).
-      const root = el.getRootNode() as Document &
-        (ShadowRoot & { getSelection?: () => Selection | null });
+      const root = el.getRootNode() as (Document | ShadowRoot) & {
+        getSelection?: () => Selection | null;
+      };
       const selection =
         typeof root.getSelection === "function"
           ? root.getSelection()
@@ -253,8 +254,9 @@ export class EditorPage {
     await expect
       .poll(() =>
         editable.evaluate((el) => {
-          const root = el.getRootNode() as Document &
-            (ShadowRoot & { getSelection?: () => Selection | null });
+          const root = el.getRootNode() as (Document | ShadowRoot) & {
+            getSelection?: () => Selection | null;
+          };
           const selection =
             typeof root.getSelection === "function"
               ? root.getSelection()
