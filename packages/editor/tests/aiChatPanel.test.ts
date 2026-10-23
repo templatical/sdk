@@ -77,6 +77,54 @@ async function setup(
 }
 
 describe("AiChatPanel", () => {
+  it.each([
+    { chatAttachments: true, busy: false },
+    { chatAttachments: false, busy: false },
+    { chatAttachments: true, busy: true },
+    { chatAttachments: false, busy: true },
+  ])(
+    "puts the full-width textarea above the toolbar (attachments: $chatAttachments, busy: $busy)",
+    async ({ chatAttachments, busy }) => {
+      const { wrapper, feature } = await setup({
+        chat: vi.fn(async () => ({ messageId: null, text: "" })),
+        chatAttachments,
+      });
+      feature.busy.value = busy;
+      await nextTick();
+      const box = wrapper.get(".tpl-ai-input-wrapper");
+      const input = wrapper.get('[data-testid="ai-chat-input"]');
+      const action = wrapper.get(
+        `[data-testid="${busy ? "ai-chat-stop" : "ai-chat-send"}"]`,
+      );
+      const toolbar = action.element.parentElement!;
+      expect(Array.from(box.element.children)).toEqual([
+        input.element,
+        toolbar,
+      ]);
+      expect(box.classes()).toContain("tpl:flex-col");
+      expect(input.classes()).toContain("tpl:w-full");
+      expect(input.classes()).toContain("tpl:min-h-[44px]");
+      expect(Array.from(toolbar.classList)).toEqual(
+        expect.arrayContaining([
+          "tpl:flex",
+          "tpl:items-center",
+          "tpl:justify-between",
+        ]),
+      );
+      const buttons = chatAttachments
+        ? [wrapper.get('[aria-label="Attach files"]').element, action.element]
+        : [action.element];
+      expect(Array.from(toolbar.children)).toEqual(buttons);
+      expect(action.classes()).toContain("tpl:ml-auto");
+      expect(action.classes()).toContain("tpl:-mr-1.5");
+      if (chatAttachments) {
+        expect(wrapper.get('[aria-label="Attach files"]').classes()).toContain(
+          "tpl:-ml-1.5",
+        );
+      }
+    },
+  );
+
   it("says it is an AI assistant (Art. 50)", async () => {
     const { wrapper } = await setup({
       chat: vi.fn(async () => ({ messageId: null, text: "" })),
@@ -493,11 +541,9 @@ describe("chat attachment controls", () => {
     expect(wrapper.get('input[type="file"]').attributes()).toHaveProperty(
       "disabled",
     );
-    await wrapper
-      .get('[data-testid="ai-chat-dropzone"]')
-      .trigger("drop", {
-        dataTransfer: { types: ["Files"], files: [attachment("other.png")] },
-      });
+    await wrapper.get('[data-testid="ai-chat-dropzone"]').trigger("drop", {
+      dataTransfer: { types: ["Files"], files: [attachment("other.png")] },
+    });
     expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(
       1,
     );

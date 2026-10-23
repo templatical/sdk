@@ -511,24 +511,13 @@ function onKeydown(event: KeyboardEvent): void {
             <span>{{ failureText }}</span>
           </div>
           <div
-            class="tpl-ai-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+            class="tpl-ai-input-wrapper tpl-focus-ring-host tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
           >
-            <button
-              v-if="canAttach"
-              type="button"
-              :aria-label="t.ai.chat.attach"
-              :title="t.ai.chat.attach"
-              :disabled="isBusy"
-              class="tpl:shrink-0 tpl:rounded-md tpl:p-1.5 tpl:text-[var(--tpl-text-muted)] tpl:disabled:opacity-40"
-              @click="fileInput?.click()"
-            >
-              <Paperclip :size="16" aria-hidden="true" />
-            </button>
             <textarea
               ref="composer"
               v-model="promptInput"
               data-testid="ai-chat-input"
-              class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none tpl:text-[var(--tpl-text)]"
+              class="tpl:max-h-32 tpl:min-h-[44px] tpl:w-full tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none tpl:text-[var(--tpl-text)]"
               :placeholder="t.ai.chat.inputPlaceholder"
               :aria-label="t.ai.chat.inputPlaceholder"
               :disabled="isBusy"
@@ -536,29 +525,42 @@ function onKeydown(event: KeyboardEvent): void {
               rows="3"
               @keydown="onKeydown"
             />
-            <button
-              v-if="isBusy"
-              type="button"
-              data-testid="ai-chat-stop"
-              class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-primary)]"
-              :aria-label="t.ai.chat.stop"
-              :title="t.ai.chat.stop"
-              @click="feature.stop()"
-            >
-              <Square :size="16" :stroke-width="2" aria-hidden="true" />
-            </button>
-            <button
-              v-else
-              type="button"
-              data-testid="ai-chat-send"
-              class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
-              :aria-label="t.ai.chat.send"
-              :title="t.ai.chat.send"
-              :disabled="!promptInput.trim()"
-              @click="send"
-            >
-              <Send :size="16" :stroke-width="2" aria-hidden="true" />
-            </button>
+            <div class="tpl:flex tpl:items-center tpl:justify-between">
+              <button
+                v-if="canAttach"
+                type="button"
+                :aria-label="t.ai.chat.attach"
+                :title="t.ai.chat.attach"
+                :disabled="isBusy"
+                class="tpl:-ml-1.5 tpl:shrink-0 tpl:rounded-md tpl:p-1.5 tpl:text-[var(--tpl-text-muted)] tpl:disabled:opacity-40"
+                @click="fileInput?.click()"
+              >
+                <Paperclip :size="16" aria-hidden="true" />
+              </button>
+              <button
+                v-if="isBusy"
+                type="button"
+                data-testid="ai-chat-stop"
+                class="tpl-ai-send-btn tpl:ml-auto tpl:-mr-1.5 tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-primary)]"
+                :aria-label="t.ai.chat.stop"
+                :title="t.ai.chat.stop"
+                @click="feature.stop()"
+              >
+                <Square :size="16" :stroke-width="2" aria-hidden="true" />
+              </button>
+              <button
+                v-else
+                type="button"
+                data-testid="ai-chat-send"
+                class="tpl-ai-send-btn tpl:ml-auto tpl:-mr-1.5 tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+                :aria-label="t.ai.chat.send"
+                :title="t.ai.chat.send"
+                :disabled="!promptInput.trim()"
+                @click="send"
+              >
+                <Send :size="16" :stroke-width="2" aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <p
             class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
