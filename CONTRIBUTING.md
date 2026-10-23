@@ -28,7 +28,7 @@ For block-level concerns, the docs are usually the right reference: [block refer
 
 ### Prerequisites
 
-- Node.js >= 24.22.0 (the engine requirement)
+- Node.js >= 24.22.1 (the engine requirement)
 - [pnpm](https://pnpm.io/) (run `corepack enable` once and the version pinned in `packageManager` is used automatically)
 - A modern browser for the playground / E2E tests
 
