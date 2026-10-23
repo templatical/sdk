@@ -68,7 +68,25 @@ Ein Durchlauf streamt seine Antwort über `on.onText` und übergibt Änderungen 
 - **`on.onOperations(ops)`**: [Operationen](/de/api/operations), die der Editor anwenden soll. Er wendet sie sofort an und antwortet mit `{ applied: true, inverse }` oder mit `{ applied: false, code, opIndex, message }`, wenn sie nicht mehr zum Template passen (jemand hat einen Block geändert oder hält seine Sperre). Die Batches eines Durchlaufs bilden einen Rückgängig-Schritt.
 - **`on.onApplied({ batchId, revision, operationCount })`**: Ihr Backend hat den Batch bereits auf seine Kopie angewendet. Mit einem [Zusammenarbeits-Provider](/de/backend/collaboration) folgt der Editor der Revision; mit einem reinen Templates-Provider lädt er das Template am Ende des Durchlaufs neu. Ohne beide verweigert er den Batch.
 
-`chat` sendet `message` und `selectedBlockId` (nur einen Block, den Ihr Backend kennt), `fixFinding` einen Befund (`finding`), `design` ein Bild oder eine PDF (`file`, `fileKind`) und einen optionalen `prompt`.
+`chat` sendet `message` und `selectedBlockId` (nur einen Block, den Ihr Backend kennt), `fixFinding` die unten beschriebene Lint-Projektion, `design` ein Bild oder eine PDF (`file`, `fileKind`) und einen optionalen `prompt`.
+
+### Mit KI beheben
+
+`fixFinding` erhält `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`, die JSON-serialisierbare Projektion eines [Lint-Befunds](/de/quality/). `severity`, `clients` und die lokale `fix`-Funktion werden nie gesendet. Alle Felder sind unvertrauenswürdige Diagnosedaten, keine Anweisungen; das Modell darf den `reference`-Link nicht abrufen.
+
+Das Issues-Panel bietet **Mit KI beheben** für diese Regel-IDs an, wenn der Befund keine deterministische `fix`-Funktion hat, `fixFinding` eine Funktion ist und ein Template geladen ist:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+Der Editor zeigt eine Schaltfläche pro `ruleId`/`blockId`-Paar, unabhängig vom Schweregrad. Während KI-Arbeit sind alle Schaltflächen deaktiviert; der laufende Fix zeigt **Wird behoben…** und **Stoppen**. Der Durchlauf bleibt ein Undo-Schritt mit Verlaufstyp `fix`. Erst die nächste, um 500 ms verzögerte Lint-Aktualisierung entscheidet über die Behebung: Bleibt ein Treffer für das Paar, erscheint **Nach der Korrektur weiterhin markiert**. Das ist keine Aussage über einzelne Vorkommen innerhalb eines Blocks.
+
+Bei Domain-Abweichungen wird nur der sichtbare Linktext in beschreibende Wörter umgeschrieben, nie das `href`. Bei zu wenig Text (`blockId: null`) wird Text im E-Mail-Inhalt aus vorhandenen Fakten ergänzt, nicht im Alt-Text oder Preheader. `a11y.missing-preheader` setzt über `updateSettings` einen `preheaderText` mit höchstens 100 Zeichen aus dem einleitenden Inhalt.
 
 ### Umformulieren
 
@@ -90,7 +108,7 @@ Nach Operationen bestätigt der Editor das Ergebnis mit `settleReplay(templateId
 
 ## Funktionen steuern
 
-Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die „Fix“-Schaltflächen bei Befunden, `design: false` Design zu Template. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
+Setzen Sie ein Mitglied auf `false`, entfällt sein Einstiegspunkt: `chat: false` blendet den Assistenten aus, `rewrite: false` die Schaltfläche der Werkzeugleiste, `fixFinding: false` die Schaltflächen „Mit KI beheben“ bei Lint-Befunden, `design: false` Design zu Template. Bei `createHttpAiProvider` übergeben Sie `features: { rewrite: false, conversation: false }`.
 
 ## Fehler
 
@@ -139,3 +157,5 @@ Das **AI**-Setup spielt aufgezeichnete Durchläufe über `createMockAiProvider` 
 ## Prüfen
 
 Öffnen Sie den Assistenten für eine geladene Vorlage ohne Blöcke: Er zeigt drei Einstiegsanfragen. Fügen Sie einen Block hinzu: Er zeigt vier. Ein Klick sendet den angezeigten Text. Prüfen Sie den Provider mit [der Konformitätssuite](/de/api/ai-kit#testen).
+
+Öffnen Sie das Issues-Panel mit einem Befund aus der obigen Liste ohne deterministischen Fix. **Mit KI beheben** sendet die Lint-Projektion; nach der erneuten Prüfung verschwindet der Befund oder zeigt **Nach der Korrektur weiterhin markiert**. Ein Undo nimmt den gesamten Fix zurück.

@@ -63,7 +63,6 @@ const MERGE_TAG_SYNTAXES = [
   "ampscript",
   "custom",
 ];
-const CATEGORIES = ["spam", "readability", "bestPractices"];
 
 function invalid(message: string): never {
   throw new SdkError(message, 422);
@@ -143,25 +142,44 @@ function optionalText(
 }
 
 function finding(value: unknown): AiFixFinding {
-  if (
-    !isRecord(value) ||
-    typeof value.id !== "string" ||
-    typeof value.message !== "string" ||
-    typeof value.suggestion !== "string" ||
-    !CATEGORIES.includes(value.category as string) ||
-    !(value.blockId === null || typeof value.blockId === "string")
-  ) {
-    invalid("finding must be { id, message, suggestion, category, blockId }.");
-  }
-  if (
-    Array.from(value.id).length > 64 ||
-    Array.from(value.message).length > 1000 ||
-    Array.from(value.suggestion).length > 1000
-  ) {
+  if (!isRecord(value))
     invalid(
-      "finding.id must be at most 64 characters, and finding.message and finding.suggestion at most 1,000 characters.",
+      "finding must be { ruleId, message, suggestion, reference, blockId, excerpt? }.",
     );
+  if (
+    typeof value.ruleId !== "string" ||
+    value.ruleId.length === 0 ||
+    value.ruleId.length > 200
+  )
+    invalid("finding.ruleId must be 1 to 200 characters.");
+  if (!isBoundedText(value.message, 1000))
+    invalid("finding.message must be at most 1,000 code points.");
+  if (!isBoundedText(value.suggestion, 1000))
+    invalid("finding.suggestion must be at most 1,000 code points.");
+  let reference: URL | null = null;
+  if (typeof value.reference === "string" && value.reference.length <= 2048) {
+    try {
+      reference = new URL(value.reference);
+    } catch {
+      /* Invalid URL. */
+    }
   }
+  if (
+    !reference ||
+    (reference.protocol !== "http:" && reference.protocol !== "https:")
+  )
+    invalid(
+      "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+    );
+  if (
+    value.blockId !== null &&
+    (typeof value.blockId !== "string" || value.blockId.length > 200)
+  )
+    invalid(
+      "finding.blockId must be a string of at most 200 characters or null.",
+    );
+  if (value.excerpt !== undefined && !isBoundedText(value.excerpt, 1000))
+    invalid("finding.excerpt must be at most 1,000 code points when present.");
   return value as unknown as AiFixFinding;
 }
 

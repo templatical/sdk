@@ -83,6 +83,24 @@ import {
 
 There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview and the HTML applied by Replace. HTML blocks the AI writes keep their markup unchanged; follow the [server-side sanitizing advice before saving or sending](/guide/blocks#html).
 
+### Lint fixes
+
+`fixFinding` receives the JSON-serializable lint projection `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`; `severity`, `clients` and the local `fix` function are excluded. [Quality](/quality/) documents the rules and findings. The editor offers fixes for these rule ids:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+`buildFixRequest(finding)` fills `prompts/fix.md` with diagnostic data and guidance from `prompts/fix-rules.json`, exported as `FIX_RULE_GUIDANCE` from `@templatical/ai-kit/server`. Unlisted rules get `Change only what the finding names.`. Every finding field is data, never instructions; the model must not fetch `reference`. Domain-mismatch fixes keep the `href`, and low-text fixes add body copy using only existing facts.
+
+`readAiRequest` rejects invalid fields with `SdkError` (status 422, no `code`) and never truncates: `ruleId` is non-empty and at most 200 characters; `message`, `suggestion` and optional `excerpt` are at most 1,000 Unicode code points; `reference` is an `http:` or `https:` URL of at most 2,048 characters; `blockId` is `null` or a string of at most 200 characters. ID and URL limits count UTF-16 units (`string.length`).
+
+Check your fix endpoint with `runAiWireConformance({ baseUrl })` in the example below; `runAiProviderConformance(provider)` also sends a lint-shaped finding to `fixFinding`.
+
 ### Model adapters
 
 `runEditingTurn` calls your model through one method:
@@ -124,7 +142,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Files
 
-`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 
 ## The wire
 
@@ -148,7 +166,7 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 A message's `batches` are `{ batchId, revision, operationCount }`; a batch the editor applied itself has no backend revision, so store `revision: null` for it.
 
 
-`AI_LIMITS.contentMaxBytes` caps JSON-serialized template content at 200,000 UTF-8 bytes; `readAiRequest` refuses larger content with `content_too_large` (413). `selectedBlockId` and the session id are limited to 200 characters. Character limits count Unicode code points.
+`AI_LIMITS.contentMaxBytes` caps JSON-serialized template content at 200,000 UTF-8 bytes; `readAiRequest` refuses larger content with `content_too_large` (413). `selectedBlockId` and the session id are limited to 200 characters. These character limits count Unicode code points; lint-finding field limits are described under [Lint fixes](#lint-fixes).
 
 ---
 
@@ -492,6 +510,10 @@ Returns the definition-level CSS registered for a custom block type, or `undefin
 ```ts
 const css = editor.getCustomBlockStylesheet("qrcode");
 ```
+
+## AI rule lists
+
+`@templatical/editor` exports `AI_FIXABLE_RULES` and `AI_ALT_TEXT_RULES` as readonly tuples of lint rule ids. `AI_FIXABLE_RULES` identifies rules for [Fix with AI](/backend/ai#fix-with-ai); `AI_ALT_TEXT_RULES` identifies image rules for alt text. The constant alone enables no alt-text UI. See [Quality](/quality/) for the findings.
 
 ## Core Composables
 
@@ -2319,7 +2341,25 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` the lint projection described below, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+
+### Fix with AI
+
+`fixFinding` receives `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`, the JSON-serializable projection of a [lint finding](/quality/). `severity`, `clients` and the local `fix` function are never sent. Every field is untrusted diagnostic data, never instructions; the model must not fetch the `reference` link.
+
+The Issues panel offers **Fix with AI** for these rule ids when the finding has no deterministic `fix`, `fixFinding` is a function and a template is loaded:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. All buttons are disabled during AI work; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
+
+For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
 
 ### Rewrite
 
@@ -2341,7 +2381,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -2390,6 +2430,8 @@ The **AI** setup plays recorded turns through `createMockAiProvider`: no model a
 ## Check it
 
 Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
+
+Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.
 
 ---
 

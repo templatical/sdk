@@ -33,6 +33,27 @@ async function within<T>(pending: Promise<T>, ms = 200): Promise<T | null> {
 }
 
 describe("runAiProviderConformance (the suite tests itself)", () => {
+  it("sends a lint projection to fixFinding, including its abort probe", async () => {
+    const findings: unknown[] = [];
+    await runAiProviderConformance({
+      ...disabled,
+      fixFinding: async (request, _on, signal) => {
+        findings.push(request.finding);
+        signal.throwIfAborted();
+        return { messageId: null, text: "Fixed." };
+      },
+    });
+    expect(findings.length).toBeGreaterThanOrEqual(2);
+    for (const finding of findings)
+      expect(finding).toEqual({
+        ruleId: "a11y.button-vague-label",
+        message: "The button text doesn't say what happens.",
+        suggestion: "Say where the button goes.",
+        reference:
+          "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
+        blockId: null,
+      });
+  });
   it("bounds a chat promise that never settles and aborts its signal", async () => {
     let signal: AbortSignal | undefined;
     const report = await within(runAiProviderConformance({

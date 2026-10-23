@@ -728,6 +728,11 @@ const ca: typeof en = {
     agentUpdatedTemplate: "{who} ha actualitzat la plantilla.",
   },
   ai: {
+    fix: {
+      button: "Corregeix amb IA",
+      fixing: "S’està corregint…",
+      stillFlagged: "Encara marcat després de la correcció",
+    },
     starters: {
       emptyWelcome: "Redactar un correu de benvinguda per a nous clients",
       emptyLaunch: "Crear un anunci de llançament de producte",

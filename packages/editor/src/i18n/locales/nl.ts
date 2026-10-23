@@ -662,6 +662,11 @@ const nl: typeof en = {
     agentUpdatedTemplate: "{who} heeft de template bijgewerkt.",
   },
   ai: {
+    fix: {
+      button: "Oplossen met AI",
+      fixing: "Bezig met oplossen…",
+      stillFlagged: "Nog steeds gemarkeerd na de correctie",
+    },
     starters: {
       emptyWelcome: "Een welkomstmail voor nieuwe klanten opstellen",
       emptyLaunch: "Een productlancering aankondigen",

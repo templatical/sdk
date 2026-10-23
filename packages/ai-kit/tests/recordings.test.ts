@@ -52,8 +52,8 @@ describe("AI_RECORDINGS", () => {
         throw new Error("The recordings must enable fixing findings.");
       const editor = createStandInEditor(base.content);
       const finding = {
-        id: "f-1",
-        category: "readability" as const,
+        ruleId: "custom.too-long",
+        reference: "https://docs.templatical.com/quality/",
         blockId,
         message: "Too long.",
         suggestion: "Shorten.",
@@ -88,8 +88,8 @@ describe("AI_RECORDINGS", () => {
         throw new Error("The recordings must enable fixing findings.");
       const editor = createStandInEditor(base.content);
       const finding = {
-        id: "f-1",
-        category: "bestPractices" as const,
+        ruleId: "a11y.missing-preheader",
+        reference: "https://docs.templatical.com/quality/",
         blockId,
         message: "No preheader.",
         suggestion: "Add one.",

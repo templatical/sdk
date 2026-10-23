@@ -647,6 +647,11 @@ const translations: typeof en = {
     agentUpdatedTemplate: "{who}がテンプレートを更新しました。",
   },
   ai: {
+    fix: {
+      button: "AIで修正",
+      fixing: "修正中…",
+      stillFlagged: "修正後も検出されています",
+    },
     starters: {
       emptyWelcome: "新規顧客向けのウェルカムメールを作成する",
       emptyLaunch: "新商品の発売案内を作成する",

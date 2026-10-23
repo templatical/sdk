@@ -55,6 +55,8 @@ export async function buildAssetsModule() {
     lines.push(`export const ${name} = ${JSON.stringify(value)};`, "");
   }
   lines.push(
+    `export const FIX_RULE_GUIDANCE = ${JSON.stringify(json("prompts/fix-rules.json"))} as const;`,
+    "",
     `export const REWRITE_PRESETS = ${JSON.stringify(json("prompts/rewrite-presets.json"))} as const;`,
     "",
     "",

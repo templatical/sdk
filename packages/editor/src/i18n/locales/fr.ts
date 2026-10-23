@@ -661,6 +661,11 @@ const fr: typeof en = {
     agentUpdatedTemplate: "{who} a mis à jour le modèle.",
   },
   ai: {
+    fix: {
+      button: "Corriger avec l’IA",
+      fixing: "Correction en cours…",
+      stillFlagged: "Toujours signalé après la correction",
+    },
     starters: {
       emptyWelcome: "Rédiger un e-mail de bienvenue pour les nouveaux clients",
       emptyLaunch: "Créer une annonce de lancement de produit",

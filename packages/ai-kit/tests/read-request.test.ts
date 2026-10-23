@@ -189,42 +189,164 @@ describe("readAiRequest merge-tag field validation", () => {
   });
 });
 
+const lintFinding = {
+  ruleId: "a11y.text-all-caps",
+  message: "All caps.",
+  suggestion: "Use sentence case.",
+  reference: "https://docs.templatical.com/quality/",
+  blockId: null,
+};
+
 describe("readAiRequest fix-finding field validation", () => {
-  const finding = {
-    id: "f1",
-    message: "Too long.",
-    suggestion: "Shorten it.",
-    category: "readability",
-    blockId: null,
-  };
-
+  const read = (finding: unknown) =>
+    readAiRequest(
+      post("/templates/t-1/ai/fix-finding", {
+        content,
+        mergeTags: null,
+        revision: null,
+        finding,
+      }),
+    );
   it.each([
-    ["id", "i".repeat(65)],
-    ["message", "m".repeat(1001)],
-    ["suggestion", "s".repeat(1001)],
-  ])("rejects an oversized %s with 422", async (field, value) => {
-    await expect(readAiRequest(post("/templates/t-1/ai/fix-finding", {
-      content,
-      mergeTags: null,
-      revision: null,
-      finding: { ...finding, [field]: value },
-    }))).rejects.toMatchObject({ name: "SdkError", statusCode: 422 });
+    ["ruleId", "", "finding.ruleId must be 1 to 200 characters."],
+    ["ruleId", "r".repeat(201), "finding.ruleId must be 1 to 200 characters."],
+    [
+      "message",
+      "m".repeat(1001),
+      "finding.message must be at most 1,000 code points.",
+    ],
+    [
+      "suggestion",
+      "s".repeat(1001),
+      "finding.suggestion must be at most 1,000 code points.",
+    ],
+    [
+      "reference",
+      "https://example.com/" + "x".repeat(2048),
+      "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+    ],
+    [
+      "reference",
+      "ftp://example.com/",
+      "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+    ],
+    [
+      "reference",
+      "not a URL",
+      "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+    ],
+    [
+      "reference",
+      "",
+      "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+    ],
+    [
+      "blockId",
+      "b".repeat(201),
+      "finding.blockId must be a string of at most 200 characters or null.",
+    ],
+    [
+      "excerpt",
+      "😀".repeat(1001),
+      "finding.excerpt must be at most 1,000 code points when present.",
+    ],
+  ])("refuses invalid %s without truncating", async (field, value, message) => {
+    await expect(
+      read({ ...lintFinding, [field]: value }),
+    ).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 422,
+      code: undefined,
+      message,
+    });
   });
-
-  it("accepts strings at all three limits (guard)", async () => {
+  it.each([
+    "ruleId",
+    "message",
+    "suggestion",
+    "reference",
+    "blockId",
+    "excerpt",
+  ])("rejects a non-string %s", async (field) => {
+    await expect(read({ ...lintFinding, [field]: 7 })).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 422,
+      code: undefined,
+      message:
+        field === "ruleId"
+          ? "finding.ruleId must be 1 to 200 characters."
+          : field === "reference"
+            ? "finding.reference must be an http: or https: URL of at most 2,048 characters."
+            : field === "blockId"
+              ? "finding.blockId must be a string of at most 200 characters or null."
+              : field === "excerpt"
+                ? "finding.excerpt must be at most 1,000 code points when present."
+                : `finding.${field} must be at most 1,000 code points.`,
+    });
+  });
+  it.each([
+    ["null", null],
+    ["array", []],
+    ["scalar", 7],
+  ])("rejects a non-object finding %s", async (_label, finding) => {
+    await expect(read(finding)).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 422,
+      code: undefined,
+      message:
+        "finding must be { ruleId, message, suggestion, reference, blockId, excerpt? }.",
+    });
+  });
+  it("preserves every field exactly at its limit, counting diagnostic prose in code points", async () => {
     const atLimits = {
-      ...finding,
-      id: "i".repeat(64),
-      message: "m".repeat(1000),
-      suggestion: "s".repeat(1000),
+      ruleId: "r".repeat(200),
+      message: "😀".repeat(1000),
+      suggestion: "😀".repeat(1000),
+      reference: "https://example.com/" + "x".repeat(2028),
+      blockId: "b".repeat(200),
+      excerpt: "😀".repeat(1000),
     };
-    expect(await readAiRequest(post("/templates/t-1/ai/fix-finding", {
-      content,
-      mergeTags: null,
-      revision: null,
-      finding: atLimits,
-    }))).toMatchObject({ route: "fixFinding", body: { finding: atLimits } });
+    expect(atLimits.reference).toHaveLength(2048);
+    expect(await read(atLimits)).toMatchObject({
+      route: "fixFinding",
+      body: { finding: atLimits },
+    });
   });
+  it.each(["http://example.com/", "https://example.com/"])(
+    "accepts %s, null block and an absent excerpt",
+    async (reference) => {
+      const result = await read({ ...lintFinding, reference });
+      expect(result).toMatchObject({
+        route: "fixFinding",
+        body: { finding: { ...lintFinding, reference } },
+      });
+      if (result?.route !== "fixFinding")
+        throw new Error("Expected fixFinding");
+      expect(result.body.finding).not.toHaveProperty("excerpt");
+    },
+  );
+  it.each(["ruleId", "message", "suggestion", "reference", "blockId"])(
+    "refuses a missing %s",
+    async (field) => {
+      const finding: Record<string, unknown> = { ...lintFinding };
+      delete finding[field];
+      const messages: Record<string, string> = {
+        ruleId: "finding.ruleId must be 1 to 200 characters.",
+        message: "finding.message must be at most 1,000 code points.",
+        suggestion: "finding.suggestion must be at most 1,000 code points.",
+        reference:
+          "finding.reference must be an http: or https: URL of at most 2,048 characters.",
+        blockId:
+          "finding.blockId must be a string of at most 200 characters or null.",
+      };
+      await expect(read(finding)).rejects.toMatchObject({
+        name: "SdkError",
+        statusCode: 422,
+        code: undefined,
+        message: messages[field],
+      });
+    },
+  );
 });
 
 describe("readAiRequest language field validation", () => {
@@ -287,11 +409,7 @@ describe("final fix: request boundaries", () => {
             selectedBlockId: null,
             content,
             finding: {
-              id: "f",
-              message: "m",
-              suggestion: "s",
-              category: "spam",
-              blockId: null,
+              ...lintFinding,
             },
           }),
         ),
@@ -330,7 +448,7 @@ describe("final fix: request boundaries", () => {
   it("counts every string boundary in code points", async () => {
     const emoji = "😀";
     expect(await readAiRequest(post("/templates/t/ai/generate", { message: emoji.repeat(4000), content, selectedBlockId: emoji.repeat(200), mergeTags: { syntax: "custom", tags: [{ value: emoji.repeat(200), label: emoji.repeat(100), group: emoji.repeat(100), description: emoji.repeat(200) }] } }, "s".repeat(200)))).toMatchObject({ route: "generate" });
-    expect(await readAiRequest(post("/templates/t/ai/fix-finding", { content, finding: { id: emoji.repeat(64), message: emoji.repeat(1000), suggestion: emoji.repeat(1000), category: "spam", blockId: null } }))).toMatchObject({ route: "fixFinding" });
+    expect(await readAiRequest(post("/templates/t/ai/fix-finding", { content, finding: { ...lintFinding, message: emoji.repeat(1000), suggestion: emoji.repeat(1000) } }))).toMatchObject({ route: "fixFinding" });
     expect(await readAiRequest(post("/templates/t/ai/rewrite-text", { html: emoji.repeat(20_000), instruction: emoji.repeat(500) }))).toMatchObject({ route: "rewriteText" });
   });
 });
@@ -382,44 +500,6 @@ describe("readAiRequest validation messages", () => {
           instruction,
         }),
         "The instruction must be at most 500 characters.",
-      );
-    },
-  );
-
-  it.each([
-    ["non-object", null],
-    [
-      "missing id",
-      { message: "m", suggestion: "s", category: "spam", blockId: null },
-    ],
-    [
-      "non-string message",
-      { id: "f", message: 7, suggestion: "s", category: "spam", blockId: null },
-    ],
-    [
-      "non-string suggestion",
-      { id: "f", message: "m", suggestion: 7, category: "spam", blockId: null },
-    ],
-    [
-      "unknown category",
-      {
-        id: "f",
-        message: "m",
-        suggestion: "s",
-        category: "accessibility",
-        blockId: null,
-      },
-    ],
-    [
-      "non-string block id",
-      { id: "f", message: "m", suggestion: "s", category: "spam", blockId: 7 },
-    ],
-  ])(
-    "rejects a %s finding with the exact validation error",
-    async (_label, finding) => {
-      await validation(
-        post("/templates/t/ai/fix-finding", { finding, content }),
-        "finding must be { id, message, suggestion, category, blockId }.",
       );
     },
   );

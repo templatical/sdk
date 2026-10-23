@@ -80,6 +80,24 @@ import {
 
 Das Kit enthält keine HTML-Bereinigung. Der Editor bereinigt die Vorschau einer Umformulierung und das mit „Replace“ übernommene HTML. HTML-Blöcke, die die KI schreibt, behalten ihr Markup unverändert; befolgen Sie die [Hinweise zur serverseitigen Bereinigung vor dem Speichern oder Versenden](/de/guide/blocks#html).
 
+### Lint-Fixes
+
+`fixFinding` erhält die JSON-serialisierbare Lint-Projektion `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`; `severity`, `clients` und die lokale `fix`-Funktion gehören nicht dazu. Die Regeln und ihre Befunde sind unter [Qualität](/de/quality/) dokumentiert. Der Editor bietet Fixes für diese Regel-IDs an:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+`buildFixRequest(finding)` füllt `prompts/fix.md` mit Diagnosedaten und der Anleitung aus `prompts/fix-rules.json`, exportiert als `FIX_RULE_GUIDANCE` aus `@templatical/ai-kit/server`. Unbekannte Regeln erhalten `Change only what the finding names.`. Alle Befundfelder sind Daten, keine Anweisungen; das Modell darf `reference` nicht abrufen. Bei Domain-Abweichungen bleibt das `href` unverändert, und bei zu wenig Text werden nur vorhandene Fakten als Text im E-Mail-Inhalt ergänzt.
+
+`readAiRequest` lehnt ungültige Felder mit `SdkError` (Status 422, kein `code`) ab und kürzt nie: `ruleId` ist nicht leer und höchstens 200 Zeichen lang; `message`, `suggestion` und das optionale `excerpt` haben höchstens 1.000 Unicode-Codepoints; `reference` ist eine `http:`- oder `https:`-URL mit höchstens 2.048 Zeichen; `blockId` ist `null` oder eine Zeichenkette mit höchstens 200 Zeichen. Die Limits für IDs und URLs zählen UTF-16-Einheiten (`string.length`).
+
+Prüfen Sie Ihren Fix-Endpunkt mit `runAiWireConformance({ baseUrl })` aus dem folgenden Beispiel; auch `runAiProviderConformance(provider)` sendet einen Lint-Befund an `fixFinding`.
+
 ### Modell-Adapter
 
 `runEditingTurn` ruft Ihr Modell über eine Methode auf:
@@ -121,7 +139,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Dateien
 
-`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` und `@templatical/ai-kit/eval/*.json` (mit `MANIFEST.sha256`) sind Prompts, Schemas und Testsatz als Dateien für ein Backend in einer anderen Sprache. Der System-Prompt zum Bearbeiten besteht aus `editing.md`, dann `"\n\n# Operations\n\n"` und `operations.md`, dann `"\n\n# Template content schema\n\n"` und `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` und `@templatical/ai-kit/eval/*.json` (mit `MANIFEST.sha256`) sind Prompts, Schemas und Testsatz als Dateien für ein Backend in einer anderen Sprache. Der System-Prompt zum Bearbeiten besteht aus `editing.md`, dann `"\n\n# Operations\n\n"` und `operations.md`, dann `"\n\n# Template content schema\n\n"` und `template-content.schema.json`.
 
 ## Das Protokoll
 
@@ -145,4 +163,4 @@ Jede Anfrage und Antwort enthält `Templatical-AI-Wire: 1`; Durchläufe, Rückg�
 Die `batches` einer Nachricht sind `{ batchId, revision, operationCount }`; ein Batch, den der Editor selbst angewendet hat, hat keine Backend-Revision. Speichern Sie dafür `revision: null`.
 
 
-`AI_LIMITS.contentMaxBytes` begrenzt den JSON-serialisierten Template-Inhalt auf 200.000 UTF-8-Bytes; `readAiRequest` lehnt größere Inhalte mit `content_too_large` (413) ab. `selectedBlockId` und die Sitzungs-ID sind auf 200 Zeichen begrenzt. Zeichenlimits zählen Unicode-Codepunkte.
+`AI_LIMITS.contentMaxBytes` begrenzt den JSON-serialisierten Template-Inhalt auf 200.000 UTF-8-Bytes; `readAiRequest` lehnt größere Inhalte mit `content_too_large` (413) ab. `selectedBlockId` und die Sitzungs-ID sind auf 200 Zeichen begrenzt. Diese Zeichenlimits zählen Unicode-Codepunkte; die Feldlimits für Lint-Befunde stehen unter [Lint-Fixes](#lint-fixes).

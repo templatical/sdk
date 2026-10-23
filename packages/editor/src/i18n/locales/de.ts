@@ -734,6 +734,11 @@ const de: typeof en = {
     agentUpdatedTemplate: "{who} hat die Vorlage aktualisiert.",
   },
   ai: {
+    fix: {
+      button: "Mit KI beheben",
+      fixing: "Wird behoben…",
+      stillFlagged: "Nach der Korrektur weiterhin markiert",
+    },
     starters: {
       emptyWelcome: "Willkommens-E-Mail für neue Kunden entwerfen",
       emptyLaunch: "Ankündigung für einen Produktstart erstellen",

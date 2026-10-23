@@ -11,6 +11,7 @@ export {
   designInstructions,
   editingInstructions,
   REWRITE_PRESET_INSTRUCTIONS,
+  FIX_RULE_GUIDANCE,
   rewriteInstructions,
 } from "./prompts";
 export type { EditingPromptInput, RewritePromptInput } from "./prompts";

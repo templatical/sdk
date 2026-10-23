@@ -727,6 +727,11 @@ const es: typeof en = {
     agentUpdatedTemplate: "{who} actualizó la plantilla.",
   },
   ai: {
+    fix: {
+      button: "Corregir con IA",
+      fixing: "Corrigiendo…",
+      stillFlagged: "Sigue marcado después de la corrección",
+    },
     starters: {
       emptyWelcome: "Redactar un correo de bienvenida para nuevos clientes",
       emptyLaunch: "Crear un anuncio de lanzamiento de producto",

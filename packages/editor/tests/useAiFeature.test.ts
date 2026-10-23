@@ -905,6 +905,62 @@ describe("useAiFeature fix round 1", () => {
     });
   });
 
+  it.each(["chat", "fixFinding", "design"] as const)(
+    "marks %s stopped during its final server reload as unsuccessful",
+    async (feature) => {
+      const { editor, history, scope } = await openLocal({});
+      const reloaded = deferred<void>();
+      const reload = vi.fn(() => reloaded.promise);
+      const onError = vi.fn();
+      const complete = async (_request: unknown, on: AiTurnHandlers) => {
+        on.onApplied({ batchId: "server-final", revision: 2, operationCount: 1 });
+        return { messageId: null, text: "Applied on the server." };
+      };
+      const ai = scope.run(() =>
+        useAiFeature({
+          provider: { ...off, [feature]: complete } as AiProvider,
+          editor,
+          collaboration: null,
+          history: () => history,
+          reload,
+          mergeTags: () => null,
+          normalize: (ops) => [...ops],
+          commentsOpen: null,
+          onError,
+        }),
+      )!;
+      const pending =
+        feature === "chat"
+          ? ai.send("Change the template")
+          : feature === "design"
+            ? ai.design({
+                file: new Blob(["png"], { type: "image/png" }),
+                prompt: null,
+              })
+            : ai.fix({
+                ruleId: "a11y.text-all-caps",
+                message: "All caps.",
+                suggestion: "Use sentence case.",
+                reference: "https://docs.templatical.com/quality/",
+                blockId: "t1",
+              });
+      await settle();
+      expect(reload).toHaveBeenCalledTimes(1);
+      expect(ai.busy.value).toBe(true);
+      ai.stop();
+      reloaded.resolve();
+      const outcome = await pending;
+      expect(outcome).toMatchObject({ failed: true, operationCount: 1 });
+      expect(ai.busy.value).toBe(false);
+      expect(ai.messages.value.at(-1)).toMatchObject({
+        operationCount: 1,
+        status: "done",
+      });
+      expect(onError).not.toHaveBeenCalled();
+      scope.stop();
+    },
+  );
+
   it("discards a server reload whose fetch resolves after B loaded (R2)", async () => {
     const { ai, editor, fetched, onLoaded } = await openReloading();
     const turn = ai.send("Server turn");
@@ -1073,7 +1129,7 @@ describe("useAiFeature fix round 1", () => {
     const completedBeforeHistory = completed;
     history.resolve([]);
     const outcome = await turn;
-    expect(outcome).toMatchObject({ messageId: null, failed: false });
+    expect(outcome).toMatchObject({ messageId: null, failed: true });
     expect(completedBeforeHistory).toBe(true);
     expect(chat).not.toHaveBeenCalled();
     expect(ai.messages.value).toEqual([]);
@@ -1271,7 +1327,7 @@ describe("useAiFeature fix round 1", () => {
     expect(outcome).toMatchObject({
       messageId: "stopped-stored",
       operationCount: 1,
-      failed: false,
+      failed: true,
     });
     expect(ai.messages.value.at(-1)).toMatchObject({
       id: "stopped-stored",

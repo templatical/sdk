@@ -342,6 +342,10 @@ Returns the definition-level CSS registered for a custom block type, or `undefin
 const css = editor.getCustomBlockStylesheet("qrcode");
 ```
 
+## AI rule lists
+
+`@templatical/editor` exports `AI_FIXABLE_RULES` and `AI_ALT_TEXT_RULES` as readonly tuples of lint rule ids. `AI_FIXABLE_RULES` identifies rules for [Fix with AI](/backend/ai#fix-with-ai); `AI_ALT_TEXT_RULES` identifies image rules for alt text. The constant alone enables no alt-text UI. See [Quality](/quality/) for the findings.
+
 ## Core Composables
 
 For advanced use cases, you can use the composables from `@templatical/core` directly.

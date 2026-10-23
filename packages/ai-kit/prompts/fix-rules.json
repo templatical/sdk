@@ -1,0 +1,9 @@
+{
+  "a11y.link-vague-text": "Rewrite the link's text so it names where the link goes or what it does, using the link's href and the sentence around it. Keep the href, the surrounding text and every merge tag.",
+  "a11y.button-vague-label": "Rewrite the button's label so it names the action and where it leads, using its URL and the text near it. Keep the URL.",
+  "a11y.link-empty": "Give the empty link visible text that names its destination, taken from its href and the text around it. Keep the href.",
+  "a11y.text-all-caps": "Rewrite the all-caps text in sentence case, keeping its words, meaning, emphasis and merge tags.",
+  "a11y.missing-preheader": "Write a preheader of at most 100 characters from the email's opening content and set it with updateSettings on preheaderText. Complement the first line instead of repeating it.",
+  "deliverability.link-text-domain-mismatch": "The link's visible text looks like a web address that differs from where the link goes. Rewrite only the visible text into descriptive words for the destination. Never change the href, and never put a URL or domain in the text.",
+  "deliverability.low-text": "The email has images but too little text. Add a short paragraph of real body copy built only from facts already in the email, such as its headings, buttons and captions. Don't invent products, prices or dates, and don't pad the alt text or the preheader."
+}

@@ -173,3 +173,40 @@ describe("docs locales stay in lockstep with English", () => {
     },
   );
 });
+
+
+describe("AI lint-fix links in the German mirror", () => {
+  it.each([
+    ["api/editor.md", "## KI-Regellisten"],
+    ["backend/ai.md", "### Mit KI beheben"],
+    ["api/ai-kit.md", "### Lint-Fixes"],
+  ])("keeps every added link in %s in German", (page, heading) => {
+    const source = readFileSync(join(DOCS, "de", page), "utf8");
+    const section = source.split(`${heading}\n`)[1]?.split(/\n#{1,3} /)[0];
+    expect(section).toBeDefined();
+    const links = [...section!.matchAll(/\]\((\/[^)\s]+)\)/g)].map(
+      (match) => match[1],
+    );
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.startsWith("/de/"), link).toBe(true);
+      const [route, anchor] = link.split("#");
+      const file = join(
+        DOCS,
+        route.slice(1) + (route.endsWith("/") ? "index.md" : ".md"),
+      );
+      expect(existsSync(file), link).toBe(true);
+      if (anchor) {
+        const headings =
+          readFileSync(file, "utf8").match(/^#{1,6} .+$/gm) ?? [];
+        const anchors = headings.map((heading) =>
+          heading.replace(/^#+ /, "").toLowerCase().replace(/\s+/g, "-"),
+        );
+        expect(anchors, link).toContain(anchor);
+      }
+    }
+    expect(links).toContain("/de/quality/");
+    if (page === "api/editor.md")
+      expect(links).toContain("/de/backend/ai#mit-ki-beheben");
+  });
+});

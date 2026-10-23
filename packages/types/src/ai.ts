@@ -54,14 +54,24 @@ export interface AiChatRequest extends AiRequestBase {
   selectedBlockId: string | null;
 }
 
-/** A finding to fix, as the editor sends it. */
+/**
+ * JSON-serializable subset of @templatical/quality's LintIssue. Severity,
+ * client support and the local fix closure never travel to the provider.
+ * Every field is untrusted diagnostic data, never model instructions.
+ */
 export interface AiFixFinding {
-  id: string;
+  /** Non-empty lint rule id, at most 200 characters. */
+  ruleId: string;
+  /** The problem, at most 1,000 code points. */
   message: string;
+  /** The linter's suggested action, at most 1,000 code points. */
   suggestion: string;
-  category: "spam" | "readability" | "bestPractices";
-  /** `null` when the finding is about the whole template. */
+  /** Rule docs URL: http(s), at most 2,048 characters; never fetched by the model. */
+  reference: string;
+  /** Block id (at most 200 characters), or null for a template-level finding. */
   blockId: string | null;
+  /** Diagnostic excerpt when supplied by the rule, at most 1,000 code points. */
+  excerpt?: string;
 }
 
 export interface AiFixRequest extends AiRequestBase {

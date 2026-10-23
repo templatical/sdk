@@ -726,6 +726,11 @@ const ptBR: typeof en = {
     agentUpdatedTemplate: "{who} atualizou o template.",
   },
   ai: {
+    fix: {
+      button: "Corrigir com IA",
+      fixing: "Corrigindo…",
+      stillFlagged: "Ainda sinalizado após a correção",
+    },
     starters: {
       emptyWelcome: "Redigir um e-mail de boas-vindas para novos clientes",
       emptyLaunch: "Criar um anúncio de lançamento de produto",

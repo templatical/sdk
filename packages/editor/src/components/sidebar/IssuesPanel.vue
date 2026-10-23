@@ -8,18 +8,24 @@ import {
   ArrowRight,
   Wrench,
   Check,
+  Sparkles,
+  Square,
 } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
 import { useScrollToBlock } from "../../composables/useScrollToBlock";
 import {
   TEMPLATE_LINT_KEY,
+  AI_FEATURE_KEY,
   EDITOR_KEY,
   SIZE_CHECK_KEY,
   UI_LOCALE_KEY,
 } from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
+import { AI_FIXABLE_RULES, toAiFixFinding } from "../../utils/aiFixableRules";
+
 const { t, format } = useI18n();
+const ai = inject(AI_FEATURE_KEY, null);
 const lint = inject(TEMPLATE_LINT_KEY, null);
 const editor = inject(EDITOR_KEY, null);
 const sizeCheck = inject(SIZE_CHECK_KEY, null);
@@ -99,6 +105,86 @@ const infos = computed(() =>
 const totalCount = computed(
   () => errors.value.length + warnings.value.length + infos.value.length,
 );
+
+// Verify a successful turn against the next debounced lint result, never
+// against the stale findings still shown while the turn completes.
+const pendingVerify = new Set<string>();
+const stillFlagged = ref(new Set<string>());
+const runningPair = ref<string | null>(null);
+const pairOf = (issue: LintIssue): string =>
+  JSON.stringify([issue.ruleId, issue.blockId]);
+
+if (lint) {
+  watch(
+    lint.issues,
+    (issues) => {
+      const current = new Set(issues.map(pairOf));
+      for (const pair of stillFlagged.value) {
+        if (!current.has(pair)) stillFlagged.value.delete(pair);
+      }
+      for (const pair of pendingVerify) {
+        if (current.has(pair)) stillFlagged.value.add(pair);
+      }
+      pendingVerify.clear();
+    },
+    { flush: "sync" },
+  );
+}
+
+if (ai) {
+  watch(
+    ai.templateId,
+    () => {
+      pendingVerify.clear();
+      stillFlagged.value.clear();
+    },
+    { flush: "sync" },
+  );
+}
+
+// Rows retain their existing keys. Repeated hits have no stable occurrence
+// locator, so only the first row of each rule/block pair offers an AI fix.
+const firstRows = computed(() => {
+  const pairs = new Set<string>();
+  return new Set(
+    [...errors.value, ...warnings.value, ...infos.value].filter((issue) => {
+      const pair = pairOf(issue);
+      if (pairs.has(pair)) return false;
+      pairs.add(pair);
+      return true;
+    }),
+  );
+});
+function canFixWithAi(issue: LintIssue): boolean {
+  return (
+    !!ai &&
+    ai.isAvailable.value &&
+    ai.has("fixFinding") &&
+    !issue.fix &&
+    (AI_FIXABLE_RULES as readonly string[]).includes(issue.ruleId) &&
+    firstRows.value.has(issue)
+  );
+}
+async function fixWithAi(issue: LintIssue): Promise<void> {
+  if (
+    !canFixWithAi(issue) ||
+    !ai ||
+    ai.busy.value ||
+    runningPair.value !== null
+  )
+    return;
+  const pair = pairOf(issue);
+  const templateId = ai.templateId.value;
+  runningPair.value = pair;
+  stillFlagged.value.delete(pair);
+  try {
+    const outcome = await ai.fix(toAiFixFinding(issue));
+    if (!destroyed && ai.templateId.value === templateId && !outcome.failed)
+      pendingVerify.add(pair);
+  } finally {
+    runningPair.value = null;
+  }
+}
 
 function jumpTo(issue: LintIssue): void {
   if (!editor) return;
@@ -197,6 +283,24 @@ function applyFix(issue: LintIssue): void {
     </section>
 
     <div
+      v-if="runningPair !== null"
+      role="status"
+      data-testid="issue-ai-status"
+      class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+    >
+      <span>{{ t.ai.fix.fixing }}</span>
+      <button
+        type="button"
+        data-testid="issue-ai-stop"
+        class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)]"
+        @click="ai?.stop()"
+      >
+        <Square :size="10" :stroke-width="2" />
+        {{ t.ai.chat.stop }}
+      </button>
+    </div>
+
+    <div
       v-if="!lint || lint.unavailable.value"
       class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
     >
@@ -270,14 +374,14 @@ function applyFix(issue: LintIssue): void {
             >
               {{ issue.ruleId }}
             </p>
-            <a
-              :href="issue.reference"
-              target="_blank"
-              rel="noopener"
-              class="tpl:mb-2 tpl:inline-block tpl:text-xs tpl:text-[var(--tpl-primary)] tpl:underline tpl:underline-offset-2 tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)]"
-              >{{ t.issues.learnMore }}</a
-            >
-            <div class="tpl:flex tpl:gap-1.5">
+            <div class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-1.5">
+              <a
+                :href="issue.reference"
+                target="_blank"
+                rel="noopener"
+                class="tpl:inline-block tpl:text-xs tpl:text-[var(--tpl-primary)] tpl:underline tpl:underline-offset-2 tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)]"
+                >{{ t.issues.learnMore }}</a
+              >
               <button
                 v-if="issue.blockId"
                 type="button"
@@ -298,7 +402,25 @@ function applyFix(issue: LintIssue): void {
                 <Wrench :size="10" :stroke-width="2" />
                 {{ t.issues.fix }}
               </button>
+              <button
+                v-if="canFixWithAi(issue)"
+                type="button"
+                data-testid="issue-ai-fix"
+                :disabled="ai!.busy.value"
+                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
+                @click="fixWithAi(issue)"
+              >
+                <Sparkles :size="10" :stroke-width="2" />
+                {{ t.ai.fix.button }}
+              </button>
             </div>
+            <p
+              v-if="stillFlagged.has(pairOf(issue)) && firstRows.has(issue)"
+              role="status"
+              class="tpl:m-0 tpl:mt-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{ t.ai.fix.stillFlagged }}
+            </p>
           </li>
         </ul>
       </section>

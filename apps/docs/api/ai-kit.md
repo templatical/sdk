@@ -80,6 +80,24 @@ import {
 
 There is no HTML sanitizer in the kit. The editor sanitizes the rewrite preview and the HTML applied by Replace. HTML blocks the AI writes keep their markup unchanged; follow the [server-side sanitizing advice before saving or sending](/guide/blocks#html).
 
+### Lint fixes
+
+`fixFinding` receives the JSON-serializable lint projection `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`; `severity`, `clients` and the local `fix` function are excluded. [Quality](/quality/) documents the rules and findings. The editor offers fixes for these rule ids:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+`buildFixRequest(finding)` fills `prompts/fix.md` with diagnostic data and guidance from `prompts/fix-rules.json`, exported as `FIX_RULE_GUIDANCE` from `@templatical/ai-kit/server`. Unlisted rules get `Change only what the finding names.`. Every finding field is data, never instructions; the model must not fetch `reference`. Domain-mismatch fixes keep the `href`, and low-text fixes add body copy using only existing facts.
+
+`readAiRequest` rejects invalid fields with `SdkError` (status 422, no `code`) and never truncates: `ruleId` is non-empty and at most 200 characters; `message`, `suggestion` and optional `excerpt` are at most 1,000 Unicode code points; `reference` is an `http:` or `https:` URL of at most 2,048 characters; `blockId` is `null` or a string of at most 200 characters. ID and URL limits count UTF-16 units (`string.length`).
+
+Check your fix endpoint with `runAiWireConformance({ baseUrl })` in the example below; `runAiProviderConformance(provider)` also sends a lint-shaped finding to `fixFinding`.
+
 ### Model adapters
 
 `runEditingTurn` calls your model through one method:
@@ -121,7 +139,7 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 ## Files
 
-`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 
 ## The wire
 
@@ -145,4 +163,4 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, Undo, Redo a
 A message's `batches` are `{ batchId, revision, operationCount }`; a batch the editor applied itself has no backend revision, so store `revision: null` for it.
 
 
-`AI_LIMITS.contentMaxBytes` caps JSON-serialized template content at 200,000 UTF-8 bytes; `readAiRequest` refuses larger content with `content_too_large` (413). `selectedBlockId` and the session id are limited to 200 characters. Character limits count Unicode code points.
+`AI_LIMITS.contentMaxBytes` caps JSON-serialized template content at 200,000 UTF-8 bytes; `readAiRequest` refuses larger content with `content_too_large` (413). `selectedBlockId` and the session id are limited to 200 characters. These character limits count Unicode code points; lint-finding field limits are described under [Lint fixes](#lint-fixes).

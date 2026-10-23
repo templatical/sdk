@@ -726,6 +726,11 @@ export default {
     agentUpdatedTemplate: "{who} updated the template.",
   },
   ai: {
+    fix: {
+      button: "Fix with AI",
+      fixing: "Fixing…",
+      stillFlagged: "Still flagged after the fix",
+    },
     starters: {
       emptyWelcome: "Draft a welcome email for new customers",
       emptyLaunch: "Create a product launch announcement",

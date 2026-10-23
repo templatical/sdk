@@ -1696,3 +1696,5 @@ export {
   isCloudLocaleSupported,
   getBaseLocale,
 } from "./i18n";
+
+export { AI_FIXABLE_RULES, AI_ALT_TEXT_RULES } from "./utils/aiFixableRules";

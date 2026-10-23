@@ -23,6 +23,27 @@ afterEach(async () => {
 });
 
 describe("runAiWireConformance", () => {
+  it("sends the lint projection through the HTTP wire", async () => {
+    const findings: unknown[] = [];
+    const reference = createReferenceHandler();
+    server = await serve(async (request) => {
+      if (new URL(request.url).pathname.endsWith("/fix-finding"))
+        findings.push((await request.clone().json()).finding);
+      return reference(request);
+    });
+    const report = await runAiWireConformance({ baseUrl: server.baseUrl });
+    expect(report.ok).toBe(true);
+    expect(findings.length).toBeGreaterThan(0);
+    for (const finding of findings)
+      expect(finding).toEqual({
+        ruleId: "a11y.button-vague-label",
+        message: "The button text doesn't say what happens.",
+        suggestion: "Say where the button goes.",
+        reference:
+          "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
+        blockId: null,
+      });
+  });
   it("fails the MIME check when only rewrite uses the wrong content type", async () => {
     const reference = createReferenceHandler();
     server = await serve(async (request) => {

@@ -53,10 +53,10 @@ describe.each([
     request: {
       ...base,
       finding: {
-        id: "f",
+        ruleId: "a11y.text-all-caps",
         message: "m",
         suggestion: "s",
-        category: "spam",
+        reference: "https://docs.templatical.com/quality/",
         blockId: null,
       },
     },
@@ -282,7 +282,7 @@ describe("createHttpAiProvider: turns", () => {
 
   it("sends a fix with its finding", async () => {
     const seen = fakeFetch(() => streamResponse(sse({ type: "done", messageId: "m" })));
-    const finding = { id: "f", message: "m", suggestion: "s", category: "spam" as const, blockId: null };
+    const finding = { excerpt: "EXCERPT", ruleId: "a11y.text-all-caps", message: "m", suggestion: "s", reference: "https://docs.templatical.com/quality/", blockId: null };
     await (provider().fixFinding as Function)({ ...base, finding }, handlers(), new AbortController().signal);
     expect(seen[0].url).toBe("https://api.example.com/ai/templates/t-1/ai/fix-finding");
     expect(seen[0].body).toEqual({ finding, mergeTags: base.mergeTags, content: { blocks: [], settings: { width: 600 } }, revision: 4 });

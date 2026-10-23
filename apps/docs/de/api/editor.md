@@ -342,6 +342,10 @@ Gibt das auf Definitionsebene registrierte CSS eines Custom-Block-Typs zurück �
 const css = editor.getCustomBlockStylesheet("qrcode");
 ```
 
+## KI-Regellisten
+
+`@templatical/editor` exportiert `AI_FIXABLE_RULES` und `AI_ALT_TEXT_RULES` als schreibgeschützte Tupel von Lint-Regel-IDs. `AI_FIXABLE_RULES` benennt die Regeln für [Mit KI beheben](/de/backend/ai#mit-ki-beheben); `AI_ALT_TEXT_RULES` benennt die Bildregeln für Alt-Text. Die Konstante allein aktiviert keine Alt-Text-Oberfläche. Die [Qualitätsdokumentation](/de/quality/) beschreibt die Befunde.
+
 ## Core-Composables
 
 Für fortgeschrittene Anwendungsfälle können Sie die Composables aus `@templatical/core` direkt verwenden.

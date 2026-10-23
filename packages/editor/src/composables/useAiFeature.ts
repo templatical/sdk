@@ -878,13 +878,16 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             observed !== operationCount
           );
           outcome.operationCount = operationCount;
+          // Stop may arrive during the final reload, after the provider-call
+          // catch. Applied edits and recovery remain, but the turn did not finish.
+          if (interrupted || controller.signal.aborted) outcome.failed = true;
           return outcome;
         } finally {
           completed = true;
           scope.messages.value = saved.items;
         }
       },
-      () => ({ ...emptyOutcome(), failed: false }),
+      emptyOutcome,
     );
   }
 

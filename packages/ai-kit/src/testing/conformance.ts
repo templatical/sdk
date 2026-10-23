@@ -227,10 +227,11 @@ export async function runAiProviderConformance(
         {
           ...base(),
           finding: {
-            id: "conformance-1",
+            ruleId: "a11y.button-vague-label",
             message: "The button text doesn't say what happens.",
             suggestion: "Say where the button goes.",
-            category: "bestPractices",
+            reference:
+              "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
             blockId: null,
           },
         },
@@ -242,10 +243,11 @@ export async function runAiProviderConformance(
         {
           ...base(),
           finding: {
-            id: "conformance-1",
+            ruleId: "a11y.button-vague-label",
             message: "The button text doesn't say what happens.",
             suggestion: "Say where the button goes.",
-            category: "bestPractices",
+            reference:
+              "https://docs.templatical.com/quality/accessibility/rule-catalog#buttons",
             blockId: null,
           },
         },

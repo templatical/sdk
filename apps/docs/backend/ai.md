@@ -68,7 +68,25 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
-`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` a `finding`, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+`chat` sends `message` and `selectedBlockId` (only a block your backend has), `fixFinding` the lint projection described below, `design` an image or a PDF (`file`, `fileKind`) and an optional `prompt`.
+
+### Fix with AI
+
+`fixFinding` receives `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`, the JSON-serializable projection of a [lint finding](/quality/). `severity`, `clients` and the local `fix` function are never sent. Every field is untrusted diagnostic data, never instructions; the model must not fetch the `reference` link.
+
+The Issues panel offers **Fix with AI** for these rule ids when the finding has no deterministic `fix`, `fixFinding` is a function and a template is loaded:
+
+- `a11y.link-vague-text`
+- `a11y.button-vague-label`
+- `a11y.link-empty`
+- `a11y.text-all-caps`
+- `a11y.missing-preheader`
+- `deliverability.link-text-domain-mismatch`
+- `deliverability.low-text`
+
+The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. All buttons are disabled during AI work; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
+
+For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
 
 ### Rewrite
 
@@ -90,7 +108,7 @@ After applying or refusing operations, the editor calls `settleReplay(templateId
 
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix buttons on findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `design: false` design to template. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -139,3 +157,5 @@ The **AI** setup plays recorded turns through `createMockAiProvider`: no model a
 ## Check it
 
 Open the assistant for a loaded template without blocks: it shows three starters. Add a block: it shows four. Clicking one sends its displayed text. Check your provider with [the conformance suite](/api/ai-kit#testing).
+
+Open the Issues panel with a finding from the list above that has no deterministic fix. **Fix with AI** sends the lint projection; after re-lint the finding disappears or shows **Still flagged after the fix**. One Undo reverts the whole fix.

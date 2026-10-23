@@ -9,6 +9,7 @@ import {
   DESIGN_REQUEST,
   EDITING_RULES,
   FIX_REQUEST,
+  FIX_RULE_GUIDANCE,
   OPERATIONS_GUIDE,
   REWRITE_INSTRUCTIONS,
   REWRITE_PRESETS,
@@ -38,6 +39,8 @@ export const designInstructions = DESIGN_REQUEST;
 export const REWRITE_PRESET_INSTRUCTIONS: Readonly<
   Record<AiRewritePreset, string>
 > = REWRITE_PRESETS;
+
+export { FIX_RULE_GUIDANCE };
 
 function describeMergeTags(mergeTags: AiMergeTags | null): string {
   if (!mergeTags || mergeTags.tags.length === 0) {
@@ -91,6 +94,11 @@ export function buildChatRequest(message: string): string {
 
 export function buildFixRequest(finding: AiFixFinding): string {
   return fill(FIX_REQUEST, {
+    ruleId: finding.ruleId,
+    excerpt: finding.excerpt !== undefined ? `Excerpt: ${finding.excerpt}` : "",
+    guidance: Object.hasOwn(FIX_RULE_GUIDANCE, finding.ruleId)
+      ? (FIX_RULE_GUIDANCE as Readonly<Record<string, string>>)[finding.ruleId]
+      : "Change only what the finding names.",
     message: finding.message,
     suggestion: finding.suggestion,
     block: finding.blockId ?? "the whole template",
