@@ -1,18 +1,33 @@
-import type { AiMergeTags, TemplateContent } from "@templatical/types";
+import type {
+  AiChatAttachment,
+  AiFixFinding,
+  AiMergeTags,
+  TemplateContent,
+} from "@templatical/types";
 import { safeClone } from "@templatical/types";
+import { version } from "../../package.json";
 import cases from "../../eval/cases.json";
+import empty from "../../eval/empty.json";
+import domainMismatch from "../../eval/domain-mismatch.json";
+import lowText from "../../eval/low-text.json";
 import injection from "../../eval/injection.json";
 import promo from "../../eval/promo.json";
 import welcome from "../../eval/welcome.json";
 import type { AiModelAdapter } from "../server/model";
-import { buildChatRequest } from "../server/prompts";
+import {
+  buildAltTextRequest,
+  buildChatRequest,
+  buildFixRequest,
+} from "../server/prompts";
+import { checkAltText } from "../server/checks";
 import { runEditingTurn } from "../server/run-editing-turn";
 
 export type AiEvalCheck =
   | { type: "applied" | "notApplied" }
   | { type: "present" | "missing"; block: string }
   | { type: "contains" | "notContains"; block?: string; text: string }
-  | { type: "field"; block: string; path: string; matches: string }
+  | { type: "lintGone"; ruleId: string }
+  | { type: "field" | "fieldNot"; block: string; path: string; matches: string }
   | { type: "setting"; path: string; matches: string }
   | { type: "greater"; block: string; path: string; than: number }
   | { type: "maxText"; block: string; chars: number }
@@ -21,24 +36,56 @@ export type AiEvalCheck =
   | { type: "firstContains"; text: string }
   | { type: "reply"; matches: string };
 
-export interface AiEvalCase {
+export type AiEvalAltCheck =
+  | { type: "nonEmpty" | "withinLimit" }
+  | { type: "containsAll" | "containsAny"; texts: string[] }
+  | { type: "notMatches"; matches: string }
+  | { type: "shortOrMatches"; chars: number; matches: string };
+
+type EvalTemplate =
+  "welcome" | "promo" | "injection" | "empty" | "domain-mismatch" | "low-text";
+
+interface EvalTurnCase {
   name: string;
-  template: "welcome" | "promo" | "injection";
-  message: string;
-  selectedBlockId?: string;
+  template: EvalTemplate;
   /** Block ids the case may delete; every other original id must survive. */
   removed?: string[];
   checks: AiEvalCheck[];
 }
 
-/** The 32 cases of S7's test set (`eval/cases.json`). */
+export interface AiEvalAltTextInput {
+  /** Path relative to the package's eval/ folder. */
+  image: string;
+  linkHref: string | null;
+  nearbyText: string;
+  maxLength: number;
+}
+
+export type AiEvalCase =
+  | (EvalTurnCase & {
+      kind?: "edit";
+      message: string;
+      selectedBlockId?: string;
+      attachments?: { file: string; kind: "image" | "pdf" }[];
+    })
+  | (EvalTurnCase & { kind: "fix"; finding: AiFixFinding })
+  | (AiEvalAltTextInput & {
+      kind: "altText";
+      name: string;
+      checks: AiEvalAltCheck[];
+    });
+
+/** The cases of S7's test set (`eval/cases.json`). An omitted kind means edit. */
 export const AI_EVAL_CASES = cases as AiEvalCase[];
 export const AI_EVAL_TEMPLATES: Readonly<
-  Record<AiEvalCase["template"], TemplateContent>
+  Record<EvalTemplate, TemplateContent>
 > = {
   welcome: welcome as unknown as TemplateContent,
   promo: promo as unknown as TemplateContent,
   injection: injection as unknown as TemplateContent,
+  empty: empty as unknown as TemplateContent,
+  "domain-mismatch": domainMismatch as unknown as TemplateContent,
+  "low-text": lowText as unknown as TemplateContent,
 };
 /** The merge tags every case's editor declares. */
 export const AI_EVAL_MERGE_TAGS: AiMergeTags = {
@@ -55,6 +102,8 @@ export interface AiEvalTurnInput {
   mergeTags: AiMergeTags;
   message: string;
   selectedBlockId: string | null;
+  finding: AiFixFinding | null;
+  attachments: AiChatAttachment[];
 }
 
 export interface AiEvalTurnOutput {
@@ -68,11 +117,18 @@ export interface AiEvalTurnOutput {
 export interface AiEvalReport {
   model: string;
   passed: number;
+  /** Cases that ran; skipped cases are excluded. */
   total: number;
+  skipped: number;
   /** Whole percent, rounded down. */
   rate: number;
   ok: boolean;
-  results: { name: string; ok: boolean; reason: string | null }[];
+  results: {
+    name: string;
+    ok: boolean;
+    reason: string | null;
+    skipped?: true;
+  }[];
 }
 
 type Json = Record<string, unknown>;
@@ -129,9 +185,10 @@ function at(target: unknown, path: string): unknown {
  * or `null` when it passed (S7 Cloud Task 11's `failure()`).
  */
 export function checkEvalCase(
-  testCase: AiEvalCase,
+  testCase: Exclude<AiEvalCase, { kind: "altText" }>,
   original: TemplateContent,
   output: AiEvalTurnOutput,
+  lintCheck?: (content: TemplateContent) => string[],
 ): string | null {
   const blocks = blocksById(output.content);
   const removed = testCase.removed ?? [];
@@ -170,6 +227,15 @@ export function checkEvalCase(
       case "field":
         ok =
           block !== undefined && matches(at(block, check.path), check.matches);
+        break;
+      case "fieldNot":
+        ok =
+          block !== undefined && !matches(at(block, check.path), check.matches);
+        break;
+      case "lintGone":
+        ok =
+          lintCheck !== undefined &&
+          !lintCheck(output.content).includes(check.ruleId);
         break;
       case "setting":
         ok = matches(at(output.content.settings, check.path), check.matches);
@@ -216,12 +282,63 @@ export function checkEvalCase(
   return null;
 }
 
+/** Public URL for a fixture from this package's fixed-version SDK release. */
+function fixtureUrl(file: string): string {
+  return `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`;
+}
+
+async function loadFixture(file: string): Promise<Blob> {
+  const response = await fetch(fixtureUrl(file));
+  if (!response.ok) throw new Error(`Fixture ${file}: HTTP ${response.status}`);
+  return response.blob();
+}
+
+function checkAltCase(
+  testCase: Extract<AiEvalCase, { kind: "altText" }>,
+  text: string,
+): string | null {
+  const contains = (value: string) =>
+    text.toLowerCase().includes(value.toLowerCase());
+  const matches = (source: string) =>
+    new RegExp(source.replace(/^\(\?i\)/, ""), "iu").test(text);
+  for (const check of testCase.checks) {
+    let ok: boolean;
+    switch (check.type) {
+      case "nonEmpty":
+        ok = text.trim() !== "";
+        break;
+      case "withinLimit":
+        ok = text.length <= testCase.maxLength;
+        break;
+      case "containsAll":
+        ok = check.texts.every(contains);
+        break;
+      case "containsAny":
+        ok = check.texts.some(contains);
+        break;
+      case "notMatches":
+        ok = !matches(check.matches);
+        break;
+      case "shortOrMatches":
+        ok = text.length <= check.chars || matches(check.matches);
+        break;
+      default:
+        ok = false;
+    }
+    if (!ok) return `check failed: ${JSON.stringify(check)}`;
+  }
+  return null;
+}
+
 /**
- * Run the test set (A1 §6): each case on a fresh copy of its template through
- * `runTurn`, which wraps your backend's turn. A turn that throws fails its case.
+ * Run each case on a fresh template. Missing optional runners skip their cases;
+ * thrown turns or checks fail. The pass rate counts only cases that ran.
  */
 export async function runAiEvalSet(options: {
   runTurn: (input: AiEvalTurnInput) => Promise<AiEvalTurnOutput>;
+  runAltText?: (input: AiEvalAltTextInput) => Promise<string>;
+  lintCheck?: (content: TemplateContent) => string[];
+  loadFile?: (file: string) => Promise<Blob>;
   model: string;
   cases?: readonly AiEvalCase[];
   minPassRate?: number;
@@ -229,16 +346,57 @@ export async function runAiEvalSet(options: {
   const cases = options.cases ?? AI_EVAL_CASES;
   const results: AiEvalReport["results"] = [];
   for (const testCase of cases) {
-    const original = AI_EVAL_TEMPLATES[testCase.template];
+    const missing =
+      testCase.kind === "altText"
+        ? !options.runAltText
+          ? "runAltText"
+          : null
+        : testCase.checks.some((check) => check.type === "lintGone") &&
+            !options.lintCheck
+          ? "lintCheck"
+          : null;
+    if (missing) {
+      results.push({
+        name: testCase.name,
+        ok: false,
+        reason: `Skipped: ${missing} is required.`,
+        skipped: true,
+      });
+      continue;
+    }
     let reason: string | null;
     try {
-      const output = await options.runTurn({
-        content: safeClone(original),
-        mergeTags: AI_EVAL_MERGE_TAGS,
-        message: testCase.message,
-        selectedBlockId: testCase.selectedBlockId ?? null,
-      });
-      reason = checkEvalCase(testCase, original, output);
+      if (testCase.kind === "altText") {
+        const text = await options.runAltText!({
+          image: testCase.image,
+          linkHref: testCase.linkHref,
+          nearbyText: testCase.nearbyText,
+          maxLength: testCase.maxLength,
+        });
+        reason = checkAltCase(testCase, text);
+      } else {
+        const original = AI_EVAL_TEMPLATES[testCase.template];
+        const attachments: AiChatAttachment[] = [];
+        if (testCase.kind !== "fix") {
+          for (const attachment of testCase.attachments ?? []) {
+            attachments.push({
+              file: await (options.loadFile ?? loadFixture)(attachment.file),
+              kind: attachment.kind,
+              name: attachment.file.split("/").pop()!,
+            });
+          }
+        }
+        const output = await options.runTurn({
+          content: safeClone(original),
+          mergeTags: AI_EVAL_MERGE_TAGS,
+          message: testCase.kind === "fix" ? "" : testCase.message,
+          selectedBlockId:
+            testCase.kind === "fix" ? null : (testCase.selectedBlockId ?? null),
+          finding: testCase.kind === "fix" ? safeClone(testCase.finding) : null,
+          attachments,
+        });
+        reason = checkEvalCase(testCase, original, output, options.lintCheck);
+      }
     } catch (error) {
       reason =
         error instanceof Error
@@ -247,16 +405,43 @@ export async function runAiEvalSet(options: {
     }
     results.push({ name: testCase.name, ok: reason === null, reason });
   }
+  const skipped = results.filter((result) => result.skipped).length;
+  const total = results.length - skipped;
   const passed = results.filter((result) => result.ok).length;
-  const rate =
-    cases.length === 0 ? 0 : Math.floor((passed * 100) / cases.length);
+  const rate = total === 0 ? 0 : Math.floor((passed * 100) / total);
   return {
     model: options.model,
     passed,
-    total: cases.length,
+    total,
+    skipped,
     rate,
     ok: rate >= (options.minPassRate ?? 90),
     results,
+  };
+}
+
+/** A `runAltText` using image URLs; override them for unreleased fixtures. */
+export function evalAltTextWith(
+  model: AiModelAdapter,
+  options: { imageUrl?: (file: string) => string } = {},
+): (input: AiEvalAltTextInput) => Promise<string> {
+  return async (input) => {
+    const request = buildAltTextRequest({
+      templateId: "eval",
+      sessionId: "eval",
+      blockId: "eval-image",
+      image: { url: (options.imageUrl ?? fixtureUrl)(input.image) },
+      currentAlt: null,
+      linkHref: input.linkHref,
+      nearbyText: input.nearbyText,
+      locale: "en",
+      maxLength: input.maxLength,
+    });
+    let text = "";
+    for await (const part of model.stream({ ...request, tools: [] })) {
+      if (part.type === "text") text += part.text;
+    }
+    return checkAltText(text, { maxLength: input.maxLength });
   };
 }
 
@@ -271,7 +456,16 @@ export function evalTurnWith(
         content: input.content,
         mergeTags: input.mergeTags,
         selectedBlockId: input.selectedBlockId,
-        request: buildChatRequest(input.message),
+        request: input.finding
+          ? buildFixRequest(input.finding)
+          : buildChatRequest(input.message, {
+              hasAttachments: input.attachments.length > 0,
+            }),
+        attachments: input.attachments.map(({ kind, file }) => ({
+          kind,
+          mediaType: file.type,
+          data: file,
+        })),
       },
       model,
       write: () => {},

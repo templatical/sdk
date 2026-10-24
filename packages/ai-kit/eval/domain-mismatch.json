@@ -1,0 +1,25 @@
+{
+  "blocks": [
+    {
+      "id": "domain-link",
+      "type": "paragraph",
+      "styles": {
+        "padding": {
+          "top": 16,
+          "right": 24,
+          "bottom": 16,
+          "left": 24
+        }
+      },
+      "content": "<p><a href=\"https://acme.example/shop\">https://other.example</a></p>"
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}

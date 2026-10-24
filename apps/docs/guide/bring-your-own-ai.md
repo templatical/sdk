@@ -291,19 +291,42 @@ export const model: AiModelAdapter = {
 
 ## Check it
 
+For a Node.js 24 run, save one of the adapters above as `model.ts` and this example as `evaluate.ts`. Install `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` and your model provider's SDK. Start your backend, then run `node evaluate.ts`. The adapter must support image URLs and PNG and PDF attachments.
+
 ```ts
-import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai-kit/testing';
-import { model } from './model';
+import { readFile } from 'node:fs/promises';
+import { lintTemplate } from '@templatical/quality';
+import {
+  evalAltTextWith,
+  evalTurnWith,
+  runAiEvalSet,
+  runAiWireConformance,
+} from '@templatical/ai-kit/testing';
+import { model } from './model.ts';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, chatAttachments: false }, // adapters without Blob attachments
+  features: { conversation: false, chatAttachments: false },
 });
-const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
-console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
+const evalFolder = new URL('.', import.meta.resolve('@templatical/ai-kit/eval/cases.json'));
+const evals = await runAiEvalSet({
+  runTurn: evalTurnWith(model),
+  runAltText: evalAltTextWith(model),
+  lintCheck: (content) => lintTemplate(content).map((issue) => issue.ruleId),
+  loadFile: async (file) => new Blob(
+    [await readFile(new URL(file, evalFolder))],
+    { type: file.endsWith('.pdf') ? 'application/pdf' : 'image/png' },
+  ),
+  model: 'my-model',
+});
+console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
 ```
 
-The wire suite checks your routes as the editor uses them; the test set runs 32 editing requests on three templates (a prompt-injection case included) against your model and reports how many it gets right. Every eval run calls your model: it costs real tokens.
+The wire suite checks your routes as the editor uses them. The eval set checks editing, chat attachments, alt text and lint fixes against your model. `lintCheck` returns the `ruleId` values from `lintTemplate(content)`; the kit has no dependency on `@templatical/quality`. `loadFile` reads attachments from the installed package. Without `loadFile`, the runner fetches them from the public release URL.
+
+Without `runAltText`, alt-text cases are skipped. Without `lintCheck`, cases with a `lintGone` check are skipped. `skipped` counts these cases; `total` and `rate` count only cases that ran. The default `minPassRate` is 90; `rate` is a whole percent rounded down.
+
+Default image URLs use `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`, with `@templatical/ai-kit`'s own version. For an unreleased build, pass `evalAltTextWith(model, { imageUrl: (file) => new URL(file, 'https://preview.example.com/eval/').href })` with your public fixture URL. Every eval case that runs calls your model and costs tokens.
 
 ## Data and responsibility
 
@@ -311,6 +334,6 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 
 ## Other languages
 
-A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads the prompts, schemas and test set from the package's files (`prompts/*.md`, `schema/*.json`, `eval/*.json`), copied as files. Only `eval/` has `MANIFEST.sha256`. `runAiWireConformance`, run from Node, checks it.
+A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads prompts and schemas from the package's files (`prompts/*.md`, `schema/*.json`). Copy the entire `eval/` folder recursively, preserving relative paths and `MANIFEST.sha256`, to include the cases, templates, images, designs and HTML sources. Run `runAiWireConformance` from Node to check your backend's routes.
 
 Chat can translate an email in place as one undoable turn, on request, with no field-coverage or merge-tag check. The paragraph rewrite `translate` preset remains available. Whole-template translation by language version belongs to localization.

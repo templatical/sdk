@@ -291,19 +291,42 @@ export const model: AiModelAdapter = {
 
 ## Prüfen
 
+Für einen Lauf mit Node.js 24 speichern Sie einen der obigen Adapter als `model.ts` und dieses Beispiel als `evaluate.ts`. Installieren Sie `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` und das SDK Ihres Modellanbieters. Starten Sie Ihr Backend und führen Sie `node evaluate.ts` aus. Der Adapter muss Bild-URLs sowie PNG- und PDF-Anhänge unterstützen.
+
 ```ts
-import { runAiWireConformance, runAiEvalSet, evalTurnWith } from '@templatical/ai-kit/testing';
-import { model } from './model';
+import { readFile } from 'node:fs/promises';
+import { lintTemplate } from '@templatical/quality';
+import {
+  evalAltTextWith,
+  evalTurnWith,
+  runAiEvalSet,
+  runAiWireConformance,
+} from '@templatical/ai-kit/testing';
+import { model } from './model.ts';
 
 const wire = await runAiWireConformance({
   baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, chatAttachments: false }, // adapters without Blob attachments
+  features: { conversation: false, chatAttachments: false },
 });
-const evals = await runAiEvalSet({ runTurn: evalTurnWith(model), model: 'my-model' });
-console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%)`);
+const evalFolder = new URL('.', import.meta.resolve('@templatical/ai-kit/eval/cases.json'));
+const evals = await runAiEvalSet({
+  runTurn: evalTurnWith(model),
+  runAltText: evalAltTextWith(model),
+  lintCheck: (content) => lintTemplate(content).map((issue) => issue.ruleId),
+  loadFile: async (file) => new Blob(
+    [await readFile(new URL(file, evalFolder))],
+    { type: file.endsWith('.pdf') ? 'application/pdf' : 'image/png' },
+  ),
+  model: 'my-model',
+});
+console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
 ```
 
-Die Protokoll-Suite prüft Ihre Routen so, wie der Editor sie verwendet. Der Testsatz führt 32 Bearbeitungsanfragen auf drei Templates gegen Ihr Modell aus (einschließlich eines Prompt-Injection-Falls) und meldet, wie viele es richtig beantwortet. Jeder Eval-Lauf ruft Ihr Modell auf und kostet echte Tokens.
+Die Protokoll-Suite prüft Ihre Routen so, wie der Editor sie verwendet. Der Testsatz prüft Bearbeitungen, Chat-Anhänge, Alt-Text und Korrekturen von Lint-Befunden gegen Ihr Modell. `lintCheck` gibt die `ruleId`-Werte aus `lintTemplate(content)` zurück; das Kit hängt nicht von `@templatical/quality` ab. `loadFile` liest Anhänge aus dem installierten Paket. Ohne `loadFile` lädt der Runner sie über die öffentliche Release-URL.
+
+Ohne `runAltText` werden Alt-Text-Fälle übersprungen. Ohne `lintCheck` werden Fälle mit einer `lintGone`-Prüfung übersprungen. `skipped` zählt diese Fälle; `total` und `rate` berücksichtigen nur ausgeführte Fälle. Die Standard-Erfolgsgrenze `minPassRate` ist 90; `rate` ist eine abgerundete ganze Prozentzahl.
+
+Die Standard-Bild-URLs haben die Form `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}` und verwenden die Version von `@templatical/ai-kit`. Für einen unveröffentlichten Build übergeben Sie `evalAltTextWith(model, { imageUrl: (file) => new URL(file, 'https://preview.example.com/eval/').href })` mit Ihrer öffentlichen Fixture-URL. Jeder ausgeführte Eval-Fall ruft Ihr Modell auf und kostet Tokens.
 
 ## Daten und Verantwortung
 
@@ -311,6 +334,6 @@ Die KI läuft bei Ihrem Provider unter Ihren Vereinbarungen mit ihm. Templatical
 
 ## Andere Sprachen
 
-Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai-kit#das-protokoll) und liest Prompts, Schemas und Testsatz aus den Paketdateien (`prompts/*.md`, `schema/*.json`, `eval/*.json`), die Sie kopieren können. Nur `eval/` enthält `MANIFEST.sha256`. `runAiWireConformance` prüft es von Node aus.
+Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai-kit#das-protokoll) und liest Prompts und Schemas aus den Paketdateien (`prompts/*.md`, `schema/*.json`). Kopieren Sie den gesamten Ordner `eval/` rekursiv und behalten Sie die relativen Pfade und `MANIFEST.sha256` bei, damit Fälle, Templates, Bilder, Designs und HTML-Quellen enthalten sind. Führen Sie `runAiWireConformance` von Node aus, um die Routen Ihres Backends zu prüfen.
 
 Der Chat kann auf Anfrage eine E-Mail direkt im Template als einen rückgängig machbaren Durchlauf übersetzen, ohne Prüfung aller Felder oder Merge-Tags. Die Absatz-Vorgabe `translate` bleibt verfügbar. Die Übersetzung ganzer Sprachversionen gehört zur Lokalisierung.

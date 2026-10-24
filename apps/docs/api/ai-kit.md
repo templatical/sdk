@@ -162,7 +162,6 @@ The conformance suites send one 1×1 PNG when chat attachments are on; wire conf
 ```ts
 import {
   createMockAiProvider,
-  runAiEvalSet,
   runAiProviderConformance,
   runAiWireConformance,
 } from '@templatical/ai-kit/testing';
@@ -173,13 +172,116 @@ for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.
 
 - `runAiProviderConformance(provider)` drives a provider as the editor would and checks the contract; `runAiWireConformance({ baseUrl, headers, features, altTextImageUrl })` does the same over the wire, plus the wire's own rules, for a backend in any language.
 - `createMockAiProvider(script)` plays recorded streams, for your UI tests; `AI_RECORDINGS` is the playground's.
-- `runAiEvalSet({ runTurn, model })` runs the 32-case test set and reports a pass rate; `evalTurnWith(adapter)` builds `runTurn` from the kit's own loop.
+- `runAiEvalSet({ runTurn, runAltText?, lintCheck?, loadFile?, model, cases?, minPassRate? })` runs `AI_EVAL_CASES`. `cases` replaces the set; `minPassRate` defaults to 90.
+- `evalTurnWith(model, options?: { maxSteps?: number })` builds `runTurn`. A set `finding` uses `buildFixRequest(finding)`; otherwise it uses `buildChatRequest(message, { hasAttachments })` and the Blob attachments.
+- `evalAltTextWith(model, options?: { imageUrl?: (file: string) => string })` builds `runAltText: (input: AiEvalAltTextInput) => Promise<string>`. It uses `buildAltTextRequest`, `locale: "en"` and `checkAltText(text, { maxLength })`.
+
+An omitted `kind` means `edit`. File paths are relative to `eval/`. The exported types and their supporting types are:
+
+```ts
+import type { AiChatAttachment, AiFixFinding, AiMergeTags, TemplateContent } from "@templatical/types";
+
+export type AiEvalCheck =
+  | { type: "applied" | "notApplied" }
+  | { type: "present" | "missing"; block: string }
+  | { type: "contains" | "notContains"; block?: string; text: string }
+  | { type: "lintGone"; ruleId: string }
+  | { type: "field" | "fieldNot"; block: string; path: string; matches: string }
+  | { type: "setting"; path: string; matches: string }
+  | { type: "greater"; block: string; path: string; than: number }
+  | { type: "maxText"; block: string; chars: number }
+  | { type: "countType"; blockType: string; min: number }
+  | { type: "order"; first: string; then: string }
+  | { type: "firstContains"; text: string }
+  | { type: "reply"; matches: string };
+
+export type AiEvalAltCheck =
+  | { type: "nonEmpty" | "withinLimit" }
+  | { type: "containsAll" | "containsAny"; texts: string[] }
+  | { type: "notMatches"; matches: string }
+  | { type: "shortOrMatches"; chars: number; matches: string };
+
+type EvalTemplate =
+  "welcome" | "promo" | "injection" | "empty" | "domain-mismatch" | "low-text";
+
+interface EvalTurnCase {
+  name: string;
+  template: EvalTemplate;
+  /** Block ids the case may delete; every other original id must survive. */
+  removed?: string[];
+  checks: AiEvalCheck[];
+}
+
+export interface AiEvalAltTextInput {
+  /** Path relative to the package's eval/ folder. */
+  image: string;
+  linkHref: string | null;
+  nearbyText: string;
+  maxLength: number;
+}
+
+export type AiEvalCase =
+  | (EvalTurnCase & {
+      kind?: "edit";
+      message: string;
+      selectedBlockId?: string;
+      attachments?: { file: string; kind: "image" | "pdf" }[];
+    })
+  | (EvalTurnCase & { kind: "fix"; finding: AiFixFinding })
+  | (AiEvalAltTextInput & {
+      kind: "altText";
+      name: string;
+      checks: AiEvalAltCheck[];
+    });
+
+export interface AiEvalTurnInput {
+  content: TemplateContent;
+  mergeTags: AiMergeTags;
+  message: string;
+  selectedBlockId: string | null;
+  finding: AiFixFinding | null;
+  attachments: AiChatAttachment[];
+}
+
+export interface AiEvalTurnOutput {
+  /** The template after the turn. */
+  content: TemplateContent;
+  reply: string;
+  /** Whether the turn changed the template. */
+  applied: boolean;
+}
+
+export interface AiEvalReport {
+  model: string;
+  passed: number;
+  /** Cases that ran; skipped cases are excluded. */
+  total: number;
+  skipped: number;
+  /** Whole percent, rounded down. */
+  rate: number;
+  ok: boolean;
+  results: {
+    name: string;
+    ok: boolean;
+    reason: string | null;
+    skipped?: true;
+  }[];
+}
+```
+
+`lintCheck?: (content: TemplateContent) => string[]` returns rule IDs after the turn. The check `{ type: "lintGone"; ruleId: string }` requires the ID to be absent. `{ type: "fieldNot"; block: string; path: string; matches: string }` negates `field`; the block must exist. The domain case checks that the `href` stays unchanged and visible text contains no `www.` or `://`.
+
+Text comparisons in `AiEvalAltCheck` are case-insensitive. Lengths use `string.length`; `withinLimit` checks the case's `maxLength`.
+
+Without `runAltText`, alt-text cases are skipped; without `lintCheck`, cases with `lintGone` are skipped. `AiEvalReport.skipped` counts them, and their result has `skipped?: true`. `passed`, `total` and `rate` exclude them. `rate` is rounded down and is 0 when no case ran. A thrown error fails a case that ran.
+
+`loadFile?: (file: string) => Promise<Blob>` loads attachments. Its default fetches `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`. `evalAltTextWith` uses the same URL for images, reading `version` from the package at build time. For unreleased builds, set `imageUrl`; for local Node runs, `loadFile` reads the installed `eval/` folder. The [complete Node example](/guide/bring-your-own-ai#check-it) connects both runners to `@templatical/quality` and file loading.
 
 The conformance suites check a non-empty alt string within the request's `maxLength`, abort handling, and `altText: false`. The wire probe uses `altTextImageUrl`, default `https://docs.templatical.com/og-image.png`; set it to a public image your model provider can fetch.
 
 ## Files
 
-`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*.json` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
+`@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 
 ## The wire
 

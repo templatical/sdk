@@ -21,10 +21,13 @@ export {
   AI_EVAL_TEMPLATES,
   checkEvalCase,
   evalTurnWith,
+  evalAltTextWith,
   runAiEvalSet,
 } from "./eval-set";
 export type {
   AiEvalCase,
+  AiEvalAltCheck,
+  AiEvalAltTextInput,
   AiEvalCheck,
   AiEvalReport,
   AiEvalTurnInput,

@@ -7,15 +7,22 @@
 // `--check` exits 1 instead of writing when the committed manifest is stale.
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 
 const dir = join(import.meta.dirname, "../eval");
 const manifestPath = join(dir, "MANIFEST.sha256");
 
 export function buildManifest(folder = dir) {
   return (
-    readdirSync(folder)
-      .filter((file) => file.endsWith(".json"))
+    readdirSync(folder, { recursive: true, withFileTypes: true })
+      .filter(
+        (entry) => entry.isFile() && /\.(json|png|pdf|html)$/.test(entry.name),
+      )
+      .map((entry) =>
+        relative(folder, join(entry.parentPath, entry.name))
+          .split(sep)
+          .join("/"),
+      )
       .sort()
       .map((file) => {
         const hash = createHash("sha256")
@@ -39,8 +46,6 @@ if (process.argv[1] === import.meta.filename) {
     }
   } else {
     writeFileSync(manifestPath, manifest);
-    console.log(
-      `MANIFEST.sha256: ${manifest.trim().split("\n").length} files`,
-    );
+    console.log(`MANIFEST.sha256: ${manifest.trim().split("\n").length} files`);
   }
 }
