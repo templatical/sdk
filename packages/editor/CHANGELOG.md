@@ -1,5 +1,39 @@
 # @templatical/editor
 
+## 0.50.0
+
+### Minor Changes
+
+- 051113f: Add default-on compatibility lint for authored pass-through HTML and CSS, using a pinned caniemail snapshot, plus an explicit compiled-HTML Gmail size check. Agents and headless callers receive a concrete `suggestion` and `reference` on every issue, with affected clients and an excerpt when available. The editor shows suggestions and source links, and offers an on-demand Check size action when its render provider can compile without saving. `templatical validate --html` reports `htmlBytes` and a clipping warning.
+
+  Breaking changes: `LintIssue.suggestion` and `.reference` are required; existing `message` text is shortened to the problem, with the action in `suggestion`. Message maps and formatter results now contain `{ message, suggestion }` objects. Compatibility is on by default, so four category keys set to `false` no longer disable all linting; set the fifth `compatibility: false` too. Custom-block client-fact IDs move from `safety.*` to `compat.*`, and `CustomBlockIssueSeverity` now includes `info`.
+
+- 3af9072: Custom merge-tag syntaxes get autocomplete through `opener` and `closer`
+
+  `SyntaxPreset` takes two optional fields, `opener` and `closer`: the characters that open and close a data tag. With an `opener`, a custom syntax gets the same type-ahead as the built-in presets, in rich text and in every merge-tag field. Without one it has none, as before. `getSyntaxTriggerChar()` and `getSyntaxClosingChar()` return them ahead of the preset lookup.
+
+  ```ts
+  mergeTags: {
+    syntax: { value: /\{[^{}\s]+\}/g, logic: /(?!)/g, opener: "{", closer: "}" },
+    tags: [{ label: "First name", value: "{first_name}" }],
+  }
+  ```
+
+  The built-in presets declare theirs too: every `SYNTAX_PRESETS` entry has an `opener` and a `closer`. A syntax spread from a preset keeps them even with its own `value` regex, so `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` now opens autocomplete on `{{`. Set both to `undefined` to turn that off.
+
+  The opener and closer can be the same characters, as in `%FIRSTNAME%`: a field skips every tag the `value` regex matches before it looks for an opener, so the popup stays closed right after a finished tag. A whitespace-only `opener` or `closer` counts as unset, and the editor warns once about it, and about a `closer` on a custom syntax that has no `opener`.
+
+- 0ee10a2: `@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.
+
+  The packaging also declares quality as an optional peer so bundlers can resolve its optional import when the package is absent. The default install enables the Issues panel and lint badges.
+
+### Patch Changes
+
+- Updated dependencies [051113f]
+- Updated dependencies [2db2846]
+  - @templatical/quality@0.50.0
+  - @templatical/renderer@0.50.0
+
 ## 0.49.0
 
 ### Minor Changes

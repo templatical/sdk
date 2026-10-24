@@ -1,5 +1,13 @@
 # @templatical/import-stripo
 
+## 0.50.0
+
+### Patch Changes
+
+- Updated dependencies [3af9072]
+  - @templatical/types@0.50.0
+  - @templatical/import-html@0.50.0
+
 ## 0.49.0
 
 ### Patch Changes
