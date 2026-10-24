@@ -7,11 +7,11 @@ The SDK reference is **not bundled with this skill**. It is fetched, so it is
 always current — a packed copy would be frozen at install time, and these docs
 change faster than anyone reinstalls a skill.
 
-## The three fetches
+## Documentation retrieval
 
 1. **The index.** `https://docs.templatical.com/llms.txt` — every page, grouped,
    one line each with its title, URL and a one-sentence description. Read it and
-   pick the single page that answers the question.
+   start with the one page that answers the question.
 2. **The page.** Build its raw-markdown URL: append `.md`, or `index.md` when
    the URL ends in `/`. So `/getting-started/installation` becomes
    `https://docs.templatical.com/getting-started/installation.md`, and the
@@ -27,9 +27,7 @@ change faster than anyone reinstalls a skill.
    twins are always `/scenes/<id>.md` — there is no directory form. Skip this
    third fetch when the question is not about a live setup.
 
-Fetch one docs page, not several. If the index offers no page that fits, say so
-rather than fetching a near-match and answering from it. The playground index
-is extra, after that page, when you need the pasteable snippet.
+Start with one matching docs page, then follow its required setup and contract links until the requested job has enough evidence. For AI that may include `backend/ai`, `guide/bring-your-own-ai` and `api/ai-kit`; collaboration may require `api/operations`. Keep retrieval bounded by the job rather than fetching the whole corpus. If the index offers no page that fits, say so instead of answering from a near-match. Fetch the playground index after the contract when you need a pasteable setup.
 
 ## If you have no web-fetch tool
 

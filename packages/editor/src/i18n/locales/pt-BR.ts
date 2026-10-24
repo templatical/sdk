@@ -839,7 +839,7 @@ const ptBR: typeof en = {
     canvas: {
       importHint: "Já tem um design?",
       chatHint: "ou deixe a",
-      chatHintSuffix: "gerar um template completo para você em segundos",
+      chatHintSuffix: "criar um rascunho de template a partir da sua descrição",
     },
   },
   versionHistory: {

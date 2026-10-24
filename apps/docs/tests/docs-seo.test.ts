@@ -33,12 +33,26 @@ describe("per-page canonical URL", () => {
     ["index.md", "https://docs.templatical.com/"],
     ["guide/theming.md", "https://docs.templatical.com/guide/theming"],
     ["backend/index.md", "https://docs.templatical.com/backend/"],
+    ["backend/ai.md", "https://docs.templatical.com/backend/ai"],
+    ["api/ai-kit.md", "https://docs.templatical.com/api/ai-kit"],
+    ["guide/bring-your-own-ai.md", "https://docs.templatical.com/guide/bring-your-own-ai"],
+    ["backend/collaboration.md", "https://docs.templatical.com/backend/collaboration"],
+    ["api/operations.md", "https://docs.templatical.com/api/operations"],
+    ["de/backend/ai.md", "https://docs.templatical.com/de/backend/ai"],
+    ["de/api/ai-kit.md", "https://docs.templatical.com/de/api/ai-kit"],
+    ["de/guide/bring-your-own-ai.md", "https://docs.templatical.com/de/guide/bring-your-own-ai"],
+    ["de/backend/collaboration.md", "https://docs.templatical.com/de/backend/collaboration"],
+    ["de/api/operations.md", "https://docs.templatical.com/de/api/operations"],
     ["de/index.md", "https://docs.templatical.com/de/"],
     ["de/guide/theming.md", "https://docs.templatical.com/de/guide/theming"],
   ])("%s → %s", async (relativePath, expected) => {
     const head = await headFor(relativePath);
     expect(canonicalOf(head)).toEqual([expected]);
     expect(ogUrlOf(head)).toEqual([expected]);
+    expect(head).toContainEqual([
+      "link",
+      { rel: "alternate", type: "text/markdown", href: `/${relativePath}` },
+    ]);
   });
 
   it("emits none for a page without a markdown source (the 404)", async () => {

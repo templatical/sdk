@@ -774,9 +774,8 @@ const nl: typeof en = {
     },
     canvas: {
       importHint: "Hebt u al een ontwerp?",
-      chatHint: "of laat",
-      chatHintSuffix:
-        "in enkele seconden een volledig sjabloon voor u genereren",
+      chatHint: "of laat de",
+      chatHintSuffix: "een sjabloon op basis van uw beschrijving opstellen",
     },
   },
   versionHistory: {

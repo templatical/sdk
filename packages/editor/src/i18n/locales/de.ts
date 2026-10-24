@@ -848,8 +848,8 @@ const de: typeof en = {
     },
     canvas: {
       importHint: "Haben Sie bereits ein Design?",
-      chatHint: "oder lassen Sie",
-      chatHintSuffix: "in Sekunden eine komplette Vorlage für Sie erstellen",
+      chatHint: "oder lassen Sie die Funktion",
+      chatHintSuffix: "einen Entwurf aus Ihrer Beschreibung erstellen",
     },
   },
   versionHistory: {

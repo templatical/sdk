@@ -67,54 +67,16 @@ The backend combines `X-Session-Id` with the authenticated user to identify the 
 - **Shows who is here.** The header shows one avatar per person: a user's sessions in several tabs count once, and each guest counts on their own.
 - **Turns merge tags in arriving batches into tags.** A batch from another session — an agent's, another editor's, a server's — has the bare tokens in its titles and paragraphs converted as it arrives, the way [loaded content](/guide/merge-tags#tokens-in-loaded-content) is, and nothing is sent back for it. Arriving batches apply without their `expect`: your backend checked those against its own copy.
 - **Shows agents' edits.** A batch whose actor has `type: 'mcp'` shows a notice naming `actor.client` and `actor.name` ("Claude for Ada changed 3 blocks") and outlines the blocks it changed for 2 seconds. A re-sync whose `actor` has `type: 'mcp'` shows "Claude for Ada updated the template", with no outline. Batches and re-syncs from one agent within 2 seconds share a notice. Agents need no presence and take no locks.
-- **Shows the AI's edits.** A batch or re-sync whose actor has `type: 'ai'` shows "AI (for Ada) changed 3 blocks" (or "… updated the template") and outlines the blocks, like an agent's. The editor whose session the actor names, the one that asked, shows the outline only. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
+- **Shows the AI's edits.** A batch with `actor.type: 'ai'` shows "AI (for Ada) changed 3 blocks" and outlines the changed blocks. A re-sync shows a template-update notice without its own block outline. The requesting session sees only a batch's outline, with no notice. An [AI provider](/backend/ai)'s operations reach your backend as this user's batches with `origin: 'ai'`.
 - **Undoes with operations.** Undo and redo send the inverse of your own batches, each guarded by what it expects to find. An undo that someone else's edit has overtaken is refused and skipped with a notice, never applied over their work. Other people's edits never enter your undo history.
 - **Saves only renames.** Content reaches your backend through `submit`, so `templates.save` receives only a new name, after the editor's batches are confirmed. Autosave keeps working: it settles the batches and renames if needed.
 - **Tells the user** when a selection or an edit was refused, when an undo step was skipped, when a version can't be restored because others hold locks, and while the connection is down.
 
 ## The contract
 
-```ts
-import type {
-  CollaborationHandlers,
-  CollaborationProvider,
-} from '@templatical/types';
+<<< @/snippets/collaboration-contract.ts
 
-interface CollaborationProvider {
-  join(
-    templateId: string,
-    session: { sessionId: string },
-    handlers: CollaborationHandlers,
-  ): Promise<{
-    revision: number;
-    locks: BlockLock[];
-    members: CollaborationMember[];
-    leave(): void;
-  }>;
-  submit(templateId: string, batch: OperationBatch): Promise<{ revision: number }>;
-  operationsAfter(
-    templateId: string,
-    revision: number,
-  ): Promise<
-    | { revision: number; batches: RevisionedBatch[] }
-    | { revision: number; resync: true }
-  >;
-  acquireLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  renewLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  releaseLock?(templateId: string, blockId: string): Promise<void>;
-}
-
-interface CollaborationHandlers {
-  onBatch(batch: RevisionedBatch): void;
-  onResync(revision: number, actor?: CollaborationActor): void;
-  onLock(lock: BlockLock): void;
-  onUnlock(blockId: string, sessionId: string): void;
-  onMembers(members: CollaborationMember[]): void;
-  onConnectionChange(state: 'connected' | 'reconnecting' | 'offline'): void;
-}
-```
-
-The shapes: `OperationBatch` is `{ batchId, baseRevision, ops, origin? }`, where `origin` is `'ai'` on a batch an AI turn produced; `RevisionedBatch` is `{ revision, batchId, actor, ops, createdAt? }`, where `actor` is `{ type: 'user' | 'guest' | 'mcp' | 'api' | 'ai', id, name, sessionId, client? }` and `client`, sent for `mcp` only, is the agent's name, which the editor renders as text; `CollaborationMember` is `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` is `{ blockId, holder, expiresAt }`, where `holder` is `{ sessionId, type, id, name, color }`. All of them are exported from `@templatical/types`.
+The declarations give every field, optional value and nullability. `OperationBatch.ops` holds 1–100 operations in application order; `batchId` is an editor-generated UUID. `RevisionedBatch.createdAt` is optional; use ISO 8601 if your backend supplies a timestamp. `BlockLock.expiresAt` is ISO 8601. Because renewals are not broadcast, another session removes a lock on release or session departure, never by that time. `CollaborationActor.id` is `null` for `api`, `sessionId` is `null` for `api` and `mcp`, and `CollaborationMember.userId` is `null` for guests.
 
 ### `join`
 

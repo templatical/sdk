@@ -51,12 +51,16 @@ await editor.load("tpl_123");
 ## The contract
 
 ```ts
+import type { BlockLock, TemplateContent } from "@templatical/types";
+
 interface Template {
   id: string;
   name?: string;
   createdAt?: string;
   updatedAt?: string;
   content: TemplateContent;
+  revision?: number;
+  locks?: BlockLock[];
 }
 
 type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
@@ -74,10 +78,10 @@ interface TemplatesProvider {
 ```
 
 - **`id` comes from your store**, returned by `create()`. The editor never generates one — a database key, a slug, a document id, whatever your storage already uses.
-- **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. The editor sends `name` (when the template has one) and `content` together, in one round-trip.
+- **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. Without collaboration the editor sends `name` (when present) and `content` together. With `collaboration`, `submit` carries content operations and `save` receives only `{ name }`.
 - **`createdAt` / `updatedAt` are optional, ISO 8601, and display-only.** Both are absent from `TemplatePatch`, so the editor never writes them — what it shows is whatever `load` or `save` returned. See [The write time](#the-write-time).
-- **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename still travels as `save(id, { name, content })`. A store that ignores it returns a template with no name, and the header reverts to "Untitled". With no use for names at all, [hide the field](#hiding-the-name-field).
-- **Persistence side effects belong in `save()`'s body.** It runs on every write, so logging, cache invalidation or a webhook call has one home. See [Events](#events) for what the editor exposes once that write has settled.
+- **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename travels as `save(id, { name, content })` without collaboration, or `save(id, { name })` with it. A store that ignores it returns a template with no name, and the header reverts to "Untitled". With no use for names at all, [hide the field](#hiding-the-name-field).
+- **Persistence side effects belong in `save()`'s body.** Without collaboration it runs on each save. With `collaboration`, put content logging, cache invalidation and webhooks in `submit`; `save` handles only renames. See [Events](#events) for what the editor exposes once that write has settled.
 
 Every method may reject. The editor reports the failure through `onError`, shows it in the header, and leaves its state untouched — nothing is marked saved that wasn't.
 
@@ -112,11 +116,13 @@ A handler that throws is caught and reported to `onError` — it never fails the
 templates: {
   load: (id) => fetchTemplate(id),
   create: false,  // editor.create() rejects
-  save: false,    // read-only: loads and edits locally, persists nothing
+  save: false,    // read-only: loads and edits locally, no persistence without collaboration
 }
 ```
 
-**`save: false`** hides the save button and the status indicator, and makes the name read-only — there is nowhere for a change to go. `Cmd`/`Ctrl`+`S` and autosave become no-ops rather than errors. Loading a template and editing it locally still works.
+With [collaboration](/backend/collaboration#templates), `load` must return `revision` and may return unexpired `locks`. `save: false` does not prevent content operations through `submit`; it prevents saving renames.
+
+**`save: false`** hides the save button and the status indicator, and makes the name read-only — there is nowhere for a change to go. `Cmd`/`Ctrl`+`S` and autosave become no-ops rather than errors. Collaborative content batches continue independently through `submit`. Loading a template and editing it locally still works.
 
 **`create: false`** makes `editor.create()` reject. It hides nothing, because the editor has no create affordance of its own — creating is always your app calling `editor.create()`. You set the flag, so gate your own New-template control on the same value, or `try` / `catch` the call.
 
@@ -132,7 +138,7 @@ These flags live in the user's browser. They shape the UI; they do not protect y
 | left | the template name, click-to-edit, and the write time under it |
 | right | the save status, then the save button |
 
-The name commits on `Enter` or blur, cancels on `Escape`, and reverts an empty value — a cleared field is far likelier a slip than an intent. A rename is an ordinary unsaved change: it marks the editor dirty and persists on the next save, in the same patch as the content.
+The name commits on `Enter` or blur, cancels on `Escape`, and reverts an empty value — a cleared field is far likelier a slip than an intent. A rename is an ordinary unsaved change: it marks the editor dirty and persists on the next save, in the same patch as the content without collaboration, or as `{ name }` after batches are confirmed with collaboration.
 
 The status indicator has three states:
 
@@ -199,7 +205,7 @@ The same timer drives both, and [`onChange`](#persisting-without-a-provider) fir
 The debounce restarts on every change, so a burst of typing produces one save. It pauses while the user steps through undo/redo, and skips the save entirely when nothing is dirty.
 
 ::: warning `autoSave` needs somewhere to save
-`true` with a provider whose `save` is `false` logs a warning and saves nothing. Persist from `onChange` instead.
+Without collaboration, `true` with a provider whose `save` is `false` logs a warning and saves nothing. Persist from `onChange` instead.
 :::
 
 ## Cmd+S
@@ -251,7 +257,7 @@ editor.isDirty(); // boolean
 
 - **`create(input?)`** persists the current content as a new template. Pass `content` to replace the editor's content first, so `create({ content })` loads and stores in one step.
 - **`load(id)`** fetches a template and makes it the editor's content, discarding local edits.
-- **`save()`** persists the loaded template's name and content as one patch.
+- **`save()`** persists the loaded template's name and content as one patch without collaboration; with it, waits for content batches and saves only the name.
 
 All three are always present on the type, and reject with an explanatory error when no provider is configured or the provider withheld the relevant method. Guard with `try` / `catch` if you call them from a button of your own. The header hides its own save controls when `save` is withheld, but `create()` and `load()` have no editor UI at all — a control for either is yours to gate.
 

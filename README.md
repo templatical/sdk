@@ -61,7 +61,7 @@ You can also **preview it live**: ask to "show it live" and the skill opens your
 
 [Skill guide →](https://docs.templatical.com/guide/agent-skill)
 
-> For AI chat inside the editor, [bring your own AI backend](https://docs.templatical.com/backend/ai) on `init()`. Cloud supplies hosted storage and collaboration; its AI provider arrives in a later release.
+> For the AI assistant inside the editor, [bring your own AI backend](https://docs.templatical.com/backend/ai) on `init()`. Cloud supplies hosted storage; its AI provider arrives in a later release.
 
 ### Wiring the editor into your own app
 

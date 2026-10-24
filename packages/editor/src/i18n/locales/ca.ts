@@ -843,9 +843,9 @@ const ca: typeof en = {
     },
     canvas: {
       importHint: "Ja teniu un disseny?",
-      chatHint: "o deixeu que",
+      chatHint: "o deixeu que la funció",
       chatHintSuffix:
-        "generi una plantilla completa per a vosaltres en pocs segons",
+        "creï un esborrany de plantilla a partir de la vostra descripció",
     },
   },
   versionHistory: {

@@ -85,18 +85,30 @@ export const ai: Scene = {
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import "@templatical/editor/style.css";
 
+async function api(url, init = {}) {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init.headers },
+  });
+  if (!res.ok) {
+    const body = await res.json();
+    throw Object.assign(new Error(body.message), body, { statusCode: res.status });
+  }
+  return res.json();
+}
+
 const editor = await init({
   container: document.getElementById("editor"),
   // AI works on a loaded template
   templates: {
     // replace with your API
-    load: (id) => fetch(\`/api/templates/\${id}\`).then((r) => r.json()),
+    load: (id) => api(\`/api/templates/\${encodeURIComponent(id)}\`),
     create: false,
     save: (id, patch) =>
-      fetch(\`/api/templates/\${id}\`, {
+      api(\`/api/templates/\${encodeURIComponent(id)}\`, {
         method: "PATCH",
         body: JSON.stringify(patch),
-      }).then((r) => r.json()),
+      }),
   },
   // your backend speaks the wire: see "Bring your own AI backend"
   ai: createHttpAiProvider({

@@ -27,6 +27,28 @@ bun add @templatical/ai-kit
 
 MIT, ohne LLM-SDK und ohne reine Node-API: Web Streams und `fetch`, sodass derselbe Code in Node, Deno, Bun, Cloudflare Workers und Browsern läuft.
 
+## Anfrage-, Ergebnis- und Verlaufsfelder
+
+Die vollständigen Provider-Deklarationen aus `@templatical/types` enthalten Anfragen, Ergebnisse, Handler und Verlauf einschließlich `AiChatAttachment` und `AiAltTextRequest`. `conversation.list` liefert Nachrichten vom ältesten zum neuesten Eintrag; `createdAt` ist ISO 8601. `batches` ist für Benutzernachrichten leer; `revision` ist für editorseitige Batches `null`, für serverseitige Batches eine Zahl. Nur Benutzernachrichten haben optionale Anhang-Metadaten, keine Dateien.
+
+<<< @/snippets/ai-contract.ts
+
+### Anfragelimits
+
+| Feld | Grenze und Darstellung |
+| --- | --- |
+| `content` | Serialisiertes JSON mit höchstens 200.000 UTF-8-Bytes; kein Beleg für Schema-Validität |
+| `revision` | Nicht negative Ganzzahl oder `null` ohne Zusammenarbeit |
+| `message` | 1–4.000 Codepoints, nicht nur Leerraum |
+| `selectedBlockId`, `sessionId` | Höchstens 200 Codepoints; Auswahl kann `null` sein |
+| `mergeTags` | `null` oder `{ syntax, tags }`; höchstens 500 Tags; Syntax `liquid`, `handlebars`, `mailchimp`, `ampscript` oder `custom` |
+| Merge-Tag-Felder | `value` ≤ 200, `label` ≤ 100, optional `group` ≤ 100 und `description` ≤ 200 Codepoints; keine Samples oder Callbacks |
+| Rewrite | `html` 1–20.000 Codepoints; `instruction` ≤ 500; mindestens `preset` oder `instruction`; `language` bei `translate` erforderlich passend zu `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/` |
+| Fix-Befund | [Lint-Fixes](#lint-fixes) nennt alle Feldlimits und ausgeschlossenen Felder |
+| Alt-Text | [Alt-Text](#alt-text) nennt URL-, Kontext-, Locale- und Ausgabelimits |
+| Anhänge | [Chat-Anhänge](#chat-anhange) nennt MIME-Typen, Dateinamen- und Bytegrenzen |
+| Operationsbatch | 1–100 Operationen in Reihenfolge; die Batches eines Durchlaufs bilden einen Rückgängig-Schritt |
+
 ## Client
 
 ```ts
@@ -81,6 +103,8 @@ Das Kit enthält keine HTML-Bereinigung. Der Editor bereinigt die Vorschau einer
 
 ### Lint-Fixes
 
+`AI_FIXABLE_RULES` aus `@templatical/editor` enthält genau die unten aufgeführten Regeln. `AI_ALT_TEXT_RULES` enthält genau `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` und `a11y.img-linked-no-context`. Beide Aktionen benötigen `@templatical/quality`, aktiviertes Lint und ein geladenes Template. Die kanonischen Kategorien, Kataloge und Optionen stehen unter [Barrierefreiheit](/de/quality/accessibility/), [Accessibility-Regelkatalog](/de/quality/accessibility/rule-catalog), [Zustellbarkeit](/de/quality/deliverability/), [Zustellbarkeits-Regelkatalog](/de/quality/deliverability/rule-catalog) und [Optionen](/de/quality/options).
+
 `fixFinding` erhält die JSON-serialisierbare Lint-Projektion `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`; `severity`, `clients` und die lokale `fix`-Funktion gehören nicht dazu. Die Regeln und ihre Befunde sind unter [Qualität](/de/quality/) dokumentiert. Der Editor bietet Fixes für diese Regel-IDs an:
 
 - `a11y.link-vague-text`
@@ -119,20 +143,7 @@ export type AiModelAttachment =
 
 `runEditingTurn` ruft Ihr Modell über eine Methode auf:
 
-```ts
-interface AiModelAdapter {
-  stream(input: {
-    system: string;
-    messages: AiModelMessage[];
-    tools: AiToolDefinition[];
-    signal?: AbortSignal;
-  }): AsyncIterable<
-    | { type: 'text'; text: string }
-    | { type: 'tool-call'; id: string; name: string; input: string | Record<string, unknown> }
-    | { type: 'usage'; inputTokens: number; outputTokens: number }
-  >;
-}
-```
+<<< @/snippets/model-contract.ts
 
 [Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. Alle Beispiele unterstützen Chat, Fix, Umformulieren und Alt-Text sowie Bild-URLs für Alt-Text. Nur das Anthropic-Beispiel akzeptiert Bild- und PDF-Blobs im Chat. Die Client-Konfigurationen für OpenAI und Vercel setzen `chatAttachments: false` und schalten den gespeicherten Gesprächsverlauf aus.
 
@@ -159,18 +170,20 @@ Die Konformitätssuiten senden bei aktiven Chat-Anhängen ein 1×1-PNG; die Prot
 
 ## Testen
 
-```ts
-import {
-  createMockAiProvider,
-  runAiProviderConformance,
-  runAiWireConformance,
-} from '@templatical/ai-kit/testing';
+Beide Signaturen, alle Optionen und das gemeinsame Ergebnis:
 
-const report = await runAiWireConformance({ baseUrl: 'http://localhost:8787/ai' });
-for (const check of report.checks) console.log(check.ok ? 'ok ' : 'FAIL', check.name, check.detail);
-```
+<<< @/snippets/conformance-contract.ts
 
-- `runAiProviderConformance(provider)` steuert einen Provider wie der Editor und prüft den Vertrag; `runAiWireConformance({ baseUrl, headers, features, altTextImageUrl })` macht dasselbe über das Protokoll und prüft zusätzlich dessen Regeln — auch für Backends in anderen Sprachen.
+Die Provider-Suite leitet aktivierte Funktionen aus dem Provider ab. `headers` und `features` gehören nur zur Wire-Suite; dort sind ohne Flags alle Funktionen aktiv. `templateId` ist standardmäßig `"conformance"`; verwenden Sie stattdessen eine autorisierte Wegwerf-Vorlage. `content` ist standardmäßig das Welcome-Testtemplate. `mergeTags` verwendet standardmäßig `AI_EVAL_MERGE_TAGS`. `altTextImageUrl` ist standardmäßig `https://docs.templatical.com/og-image.png`. `timeoutMs` ist standardmäßig `5000` ms; `callTimeoutMs` begrenzt einen Aufruf zusätzlich und kann `timeoutMs` nicht überschreiten.
+
+Für Node.js 24 speichern Sie das folgende Beispiel als `check-ai-backend.ts`. Ihr authentifizierter `POST /api/templates` nimmt `{ name, content }` an und gibt `{ id }` zurück. Setzen Sie `AI_TEST_TOKEN`; `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die lokalen URLs. Führen Sie `node check-ai-backend.ts` aus. Das Beispiel erzeugt eine Wegwerf-Vorlage und deaktiviert Verlauf und Chat-Anhänge passend zum zustandslosen Server im [Backend-Leitfaden](/de/guide/bring-your-own-ai#der-server).
+
+<<< @/snippets/check-ai-backend.ts
+
+Die Alt-Text-Prüfung verwendet `blockId: "conformance-image"` und standardmäßig die öffentliche Bild-URL `https://docs.templatical.com/og-image.png`. Das Beispiel fügt dieses Bild in die Wegwerf-Vorlage ein, damit Ihr Backend die Blockzugehörigkeit prüfen kann. Halten Sie es während der Suite verfügbar; wenden Sie diese Testeinrichtung nicht auf produktive Vorlagen an.
+
+Beide Suiten rufen aktivierte Modellfunktionen auf und verbrauchen dabei Tokens. Turn- und Fix-Prüfungen können angewendete Batches persistieren. Mit Verlauf prüfen sie `list`, Undo/Redo und `settleReplay` und leeren ihn über `clear`, sofern verfügbar. Die Wire-Suite sendet außerdem ungültige Anfragen, darunter mehr als vier Anhänge bei aktiven Chat-Anhängen. Verwenden Sie kein produktives Template. Entfernen Sie die Testvorlage anschließend über Ihren Speicher. Jede fehlgeschlagene Prüfung wird mit Name und Detail ausgegeben; Fehler setzen den Exit-Code auf 1.
+
 - `createMockAiProvider(script)` spielt aufgezeichnete Streams für Ihre Oberflächentests ab; `AI_RECORDINGS` enthält die des Playgrounds.
 - `runAiEvalSet({ runTurn, runAltText?, lintCheck?, loadFile?, model, cases?, minPassRate? })` führt `AI_EVAL_CASES` aus. `cases` ersetzt den Testsatz; `minPassRate` ist standardmäßig 90.
 - `evalTurnWith(model, options?: { maxSteps?: number })` erstellt `runTurn`. Bei gesetztem `finding` verwendet es `buildFixRequest(finding)`, sonst `buildChatRequest(message, { hasAttachments })` und die Blob-Anhänge.
@@ -275,7 +288,7 @@ Textvergleiche in `AiEvalAltCheck` ignorieren Groß- und Kleinschreibung. Länge
 
 Ohne `runAltText` werden Alt-Text-Fälle übersprungen; ohne `lintCheck` werden Fälle mit `lintGone` übersprungen. `AiEvalReport.skipped` zählt sie, und ihr Ergebnis hat `skipped?: true`. `passed`, `total` und `rate` schließen sie aus. `rate` ist abgerundet und bei keinem ausgeführten Fall 0. Ein geworfener Fehler lässt einen ausgeführten Fall fehlschlagen.
 
-`loadFile?: (file: string) => Promise<Blob>` lädt Anhänge. Standardmäßig ruft es `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}` ab. `evalAltTextWith` verwendet dieselbe URL für Bilder und liest `version` beim Build aus dem Paket. Für unveröffentlichte Builds setzen Sie `imageUrl`; für lokale Node-Läufe liest `loadFile` das installierte `eval/`-Verzeichnis. Das [vollständige Node-Beispiel](/de/guide/bring-your-own-ai#prüfen) verbindet beide Runner mit `@templatical/quality` und Dateizugriff.
+`loadFile?: (file: string) => Promise<Blob>` lädt Anhänge. Standardmäßig ruft es `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}` ab. `evalAltTextWith` verwendet dieselbe URL für Bilder und liest `version` beim Build aus dem Paket. Für unveröffentlichte Builds setzen Sie `imageUrl`; für lokale Node-Läufe liest `loadFile` das installierte `eval/`-Verzeichnis. Das [vollständige Node-Beispiel](/de/guide/bring-your-own-ai#backend-konformitat-und-modellevaluierung) verbindet beide Runner mit `@templatical/quality` und Dateizugriff.
 
 Die Konformitätsprüfungen prüfen nicht leeren Alt-Text innerhalb des `maxLength` der Anfrage, Abbruchverhalten und `altText: false`. Die Protokollprüfung nutzt `altTextImageUrl`, Standard `https://docs.templatical.com/og-image.png`; setzen Sie eine öffentliche Bild-URL, die Ihr Modellanbieter abrufen kann.
 

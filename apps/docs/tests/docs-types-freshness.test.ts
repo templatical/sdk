@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -128,4 +129,35 @@ describe("block interface fields, optionality and types", () => {
       }
     },
   );
+});
+
+
+describe("public AI and collaboration declarations", () => {
+  it.each([
+    ["ai.ts", "ai-contract.ts"],
+    ["collaboration.ts", "collaboration-contract.ts"],
+  ])("%s declarations retain their exact public types", (source, snippet) => {
+    expect(existsSync(join(DOCS, "snippets", snippet)), snippet).toBe(true);
+    const docs = readFileSync(join(DOCS, "snippets", snippet), "utf8");
+    const declarations = (text: string) => {
+      const file = ts.createSourceFile("contract.ts", text, ts.ScriptTarget.Latest, true);
+      return new Map(file.statements.flatMap((node) =>
+        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
+          : [],
+      ));
+    };
+    const maintained = declarations(readTypes(source));
+    const documented = declarations(docs);
+    expect(documented.size).toBeGreaterThan(10);
+    expect([...documented.keys()]).toEqual([...maintained.keys()]);
+    for (const [name, declaration] of documented) {
+      expect(declaration, name).toBe(maintained.get(name));
+    }
+    for (const page of source === "ai.ts"
+      ? ["api/ai-kit.md", "de/api/ai-kit.md", "backend/ai.md", "de/backend/ai.md"]
+      : ["backend/collaboration.md", "de/backend/collaboration.md"]) {
+      expect(readDocs(page)).toContain(`<<< @/snippets/${snippet}`);
+    }
+  });
 });

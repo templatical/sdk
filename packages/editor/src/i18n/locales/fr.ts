@@ -773,9 +773,9 @@ const fr: typeof en = {
     },
     canvas: {
       importHint: "Vous avez déjà un design ?",
-      chatHint: "ou laissez",
+      chatHint: "ou laissez la fonction",
       chatHintSuffix:
-        "générer un modèle complet pour vous en quelques secondes",
+        "créer une ébauche de modèle à partir de votre description",
     },
   },
   versionHistory: {

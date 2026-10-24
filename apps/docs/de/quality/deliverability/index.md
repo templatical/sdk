@@ -14,7 +14,7 @@ Diese Regeln melden Inhaltsmuster, die Spamfilter und Richtlinien von Postfachan
 import { lintDeliverability } from "@templatical/quality";
 
 const issues = lintDeliverability(content);
-// LintIssue[] mit deliverability.*-Regel-IDs
+// LintIssue[] with deliverability.* rule IDs
 ```
 
 `lintTemplate(content, options?)` führt diese Regeln ebenfalls standardmäßig aus, nach Barrierefreiheit, Struktur und Links. `link-text-domain-mismatch`, `url-shortener` und `ip-address-url` haben standardmäßig `warning`; `low-text` hat `info`. Keine Regel hat einen Auto-Fix. Der [Regelkatalog](./rule-catalog) nennt Auslöser und Quellen.
@@ -60,9 +60,7 @@ npx @templatical/template-tools validate template.json --json
 Die gebaute CLI liefert Exit-Code `0`. Ihre JSON-Ausgabe enthält dieses Issue (aus dem Template oben):
 
 ```json
-{"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead."}
+{"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination.","suggestion":"Link to the destination instead.","reference":"https://docs.rspamd.com/modules/phishing/"}
 ```
-
-Für Client-Unterstützung von durchgereichtem HTML und CSS siehe den [Kompatibilitäts-Linter](../compatibility/).
 
 Für Client-Unterstützung von durchgereichtem HTML und CSS siehe den [Kompatibilitäts-Linter](../compatibility/).

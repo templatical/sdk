@@ -840,8 +840,9 @@ const es: typeof en = {
     },
     canvas: {
       importHint: "¿Ya tiene un diseño?",
-      chatHint: "o deja que",
-      chatHintSuffix: "genere una plantilla completa para ti en segundos",
+      chatHint: "o deja que el",
+      chatHintSuffix:
+        "cree un borrador de plantilla a partir de tu descripción",
     },
   },
   versionHistory: {

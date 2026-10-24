@@ -760,7 +760,7 @@ const translations: typeof en = {
     canvas: {
       importHint: "既存のデザインをお持ちですか？",
       chatHint: "または",
-      chatHintSuffix: "を使ってテンプレート全体を数秒で生成できます",
+      chatHintSuffix: "で説明からテンプレートの下書きを作成できます",
     },
   },
   versionHistory: {

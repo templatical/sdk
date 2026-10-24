@@ -835,8 +835,8 @@ export default {
     },
     canvas: {
       importHint: "Have an existing design?",
-      chatHint: "or let",
-      chatHintSuffix: "generate a complete template for you in seconds",
+      chatHint: "or let the",
+      chatHintSuffix: "draft a template from your description",
     },
   },
   versionHistory: {

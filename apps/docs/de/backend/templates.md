@@ -42,7 +42,7 @@ const editor = await init({
   },
 });
 
-// Das Öffnen einer Vorlage erfolgt imperativ — Ihre Anwendung entscheidet, welche.
+// Opening a template is imperative — your app decides which one.
 await editor.load("tpl_123");
 ```
 
@@ -51,12 +51,16 @@ await editor.load("tpl_123");
 ## Der Vertrag
 
 ```ts
+import type { BlockLock, TemplateContent } from "@templatical/types";
+
 interface Template {
   id: string;
   name?: string;
   createdAt?: string;
   updatedAt?: string;
   content: TemplateContent;
+  revision?: number;
+  locks?: BlockLock[];
 }
 
 type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
@@ -74,10 +78,10 @@ interface TemplatesProvider {
 ```
 
 - **Die `id` kommt aus Ihrem Speicher**, zurückgegeben von `create()`. Der Editor erzeugt nie selbst eine — ein Datenbankschlüssel, ein Slug, eine Dokument-ID, was auch immer Ihr Speicher bereits verwendet.
-- **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
+- **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Ohne Zusammenarbeit sendet der Editor `name` (sofern vorhanden) und `content` gemeinsam. Mit `collaboration` überträgt `submit` die Inhaltsoperationen; `save` erhält nur `{ name }`.
 - **`createdAt` / `updatedAt` sind optional, ISO 8601 und dienen nur der Anzeige.** Beide fehlen in `TemplatePatch`, der Editor schreibt sie also nie — angezeigt wird, was `load` oder `save` zurückgegeben hat. Siehe [Der Zeitstempel](#der-zeitstempel).
-- **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg — der Header zeigt stattdessen ein gedimmtes „Unbenannt". Das Feld bleibt bearbeitbar, solange `save` eine Funktion ist; eine Umbenennung wird also weiterhin als `save(id, { name, content })` gesendet. Ein Store, der sie ignoriert, gibt eine Vorlage ohne Namen zurück, und der Header zeigt wieder „Unbenannt". Wenn Sie Namen gar nicht nutzen, [blenden Sie das Feld aus](#das-namensfeld-ausblenden).
-- **Persistenzseitige Effekte gehören in den Rumpf von `save()`.** Er läuft bei jedem Schreibvorgang, sodass Logging, Cache-Invalidierung oder ein Webhook-Aufruf dort ihren festen Platz haben. Siehe [Events](#events) für das, was der Editor freigibt, sobald dieser Schreibvorgang abgeschlossen ist.
+- **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg — der Header zeigt stattdessen ein gedimmtes „Unbenannt". Das Feld bleibt bearbeitbar, solange `save` eine Funktion ist; eine Umbenennung wird ohne Zusammenarbeit als `save(id, { name, content })` gesendet; mit Zusammenarbeit nur als `save(id, { name })`. Ein Store, der sie ignoriert, gibt eine Vorlage ohne Namen zurück, und der Header zeigt wieder „Unbenannt". Wenn Sie Namen gar nicht nutzen, [blenden Sie das Feld aus](#das-namensfeld-ausblenden).
+- **Persistenzseitige Effekte gehören in den Rumpf von `save()`.** Ohne Zusammenarbeit läuft er bei jedem Speichern. Mit `collaboration` gehören Logging, Cache-Invalidierung und Webhooks für Inhaltsänderungen in `submit`; `save` behandelt nur Umbenennungen. Siehe [Events](#events) für das, was der Editor freigibt, sobald dieser Schreibvorgang abgeschlossen ist.
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
 
@@ -111,12 +115,14 @@ Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` 
 ```ts
 templates: {
   load: (id) => fetchTemplate(id),
-  create: false,  // editor.create() lehnt ab
-  save: false,    // nur lesend: lädt und bearbeitet lokal, speichert nichts
+  create: false,  // editor.create() rejects
+  save: false,    // read-only: loads and edits locally, no persistence without collaboration
 }
 ```
 
-**`save: false`** verbirgt die Speichern-Schaltfläche und die Statusanzeige und macht den Namen schreibgeschützt: Eine Änderung hätte nirgendwo hin. `Cmd`/`Strg`+`S` und Autosave laufen dann wirkungslos durch, statt einen Fehler zu erzeugen. Eine Vorlage zu laden und lokal zu bearbeiten funktioniert weiterhin.
+Mit [Zusammenarbeit](/de/backend/collaboration#templates) muss `load` die `revision` und kann noch gültige `locks` liefern. `save: false` verhindert keine Inhaltsoperationen über `submit`; es verhindert das Speichern von Umbenennungen.
+
+**`save: false`** verbirgt die Speichern-Schaltfläche und die Statusanzeige und macht den Namen schreibgeschützt: Eine Änderung hätte nirgendwo hin. `Cmd`/`Strg`+`S` und Autosave laufen dann wirkungslos durch, statt einen Fehler zu erzeugen. Inhaltsbatches der Zusammenarbeit laufen unabhängig davon weiter über `submit`. Eine Vorlage zu laden und lokal zu bearbeiten funktioniert weiterhin.
 
 **`create: false`** bewirkt, dass `editor.create()` ablehnt. Es verbirgt nichts, denn der Editor hat kein eigenes Bedienelement zum Anlegen — erzeugt wird immer über `editor.create()` aus Ihrer Anwendung heraus. Da Sie den Schalter selbst setzen, koppeln Sie ein eigenes Bedienelement für neue Vorlagen an denselben Wert oder fangen den Aufruf mit `try` / `catch` ab.
 
@@ -132,7 +138,7 @@ Diese Schalter leben im Browser des Nutzers. Sie prägen die Oberfläche; sie sc
 | links | der Vorlagenname, per Klick bearbeitbar, darunter der Zeitstempel |
 | rechts | der Speicherstatus, dann die Speichern-Schaltfläche |
 
-Der Name wird mit `Enter` oder beim Verlassen des Feldes übernommen, mit `Escape` verworfen; ein leerer Wert wird abgelehnt und der vorherige wiederhergestellt — ein geleertes Feld ist weit eher ein Versehen als eine Absicht. Eine Umbenennung ist eine gewöhnliche ungespeicherte Änderung: sie markiert den Editor als geändert und wird beim nächsten Speichern übertragen, im selben Patch wie der Inhalt.
+Der Name wird mit `Enter` oder beim Verlassen des Feldes übernommen, mit `Escape` verworfen; ein leerer Wert wird abgelehnt und der vorherige wiederhergestellt — ein geleertes Feld ist weit eher ein Versehen als eine Absicht. Eine Umbenennung ist eine gewöhnliche ungespeicherte Änderung: sie markiert den Editor als geändert und wird beim nächsten Speichern übertragen, ohne Zusammenarbeit im selben Patch wie der Inhalt; mit Zusammenarbeit nach Bestätigung der Batches als `{ name }`.
 
 Die Statusanzeige kennt drei Zustände:
 
@@ -186,7 +192,7 @@ await init({
     autoSave: true,
     /* … */
   },
-  changeDebounce: 5000, // Standardwert 2000
+  changeDebounce: 5000, // defaults to 2000
 });
 ```
 
@@ -199,7 +205,7 @@ Derselbe Timer treibt beides, und [`onChange`](#speichern-ohne-provider) löst u
 Die Verzögerung beginnt bei jeder Änderung neu, sodass aus einer Tippfolge ein einziges Speichern wird. Sie pausiert, während der Nutzer durch Undo/Redo navigiert, und überspringt das Speichern vollständig, wenn nichts geändert wurde.
 
 ::: warning `autoSave` braucht ein Ziel zum Speichern
-`true` mit einem Provider, dessen `save` `false` ist, protokolliert eine Warnung und speichert nichts. Speichern Sie in diesem Fall über `onChange`.
+`true` mit einem Provider, dessen `save` `false` ist, protokolliert eine Warnung und persistiert selbst nichts. Inhaltsbatches der Zusammenarbeit laufen unabhängig davon weiter. Speichern Sie in diesem Fall über `onChange`.
 :::
 
 ## Cmd+S
@@ -217,7 +223,7 @@ Zwei Mechanismen, denn keiner deckt den anderen ab:
 await init({
   container: "#editor",
   templates: {
-    unsavedChangesGuard: true, // der Standard
+    unsavedChangesGuard: true, // the default
     /* … */
   },
   onDirtyChange: (isDirty) => {
@@ -232,7 +238,7 @@ await init({
 
 ```ts
 router.beforeEach((to, from, next) => {
-  if (editor.isDirty() && !confirm("Ungespeicherte Änderungen verwerfen?"))
+  if (editor.isDirty() && !confirm("Discard unsaved changes?"))
     return next(false);
   next();
 });
@@ -243,7 +249,7 @@ router.beforeEach((to, from, next) => {
 ## Die Instanz-API
 
 ```ts
-const template = await editor.create({ name: "Willkommens-E-Mail" });
+const template = await editor.create({ name: "Welcome email" });
 await editor.load(template.id);
 await editor.save();
 editor.isDirty(); // boolean
@@ -251,7 +257,7 @@ editor.isDirty(); // boolean
 
 - **`create(input?)`** speichert den aktuellen Inhalt als neue Vorlage. Übergeben Sie `content`, um zuvor den Inhalt des Editors zu ersetzen — `create({ content })` lädt und speichert damit in einem Schritt.
 - **`load(id)`** holt eine Vorlage und macht sie zum Inhalt des Editors; lokale Änderungen werden verworfen.
-- **`save()`** speichert Name und Inhalt der geladenen Vorlage als einen Patch.
+- **`save()`** speichert ohne Zusammenarbeit Name und Inhalt als einen Patch; mit Zusammenarbeit wartet es auf die Inhaltsbatches und speichert nur den Namen.
 
 Alle drei sind stets im Typ vorhanden und werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein Provider konfiguriert ist oder der Provider die jeweilige Methode zurückhält. Sichern Sie sie mit `try` / `catch` ab, wenn Sie sie aus einer eigenen Schaltfläche aufrufen. Der Header blendet seine eigenen Speichern-Bedienelemente aus, wenn `save` zurückgehalten wird; `create()` und `load()` haben dagegen überhaupt keine Editor-Oberfläche — ein Bedienelement dafür koppeln Sie selbst.
 

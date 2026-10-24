@@ -289,7 +289,15 @@ export const model: AiModelAdapter = {
 
 (Die Tool-Aufrufe kommen mit der fertigen Nachricht vollständig an: Das Kit wendet sie nach dem Text an, wie bei einem Durchlauf.)
 
-## Prüfen
+## Backend-Konformität und Modellevaluierung
+
+Die [Testreferenz](/de/api/ai-kit#testen) dokumentiert beide Konformitätssignaturen und alle Optionen (`templateId`, `headers`, `timeoutMs`, `callTimeoutMs`, `features`). Mit einem authentifizierten `POST /api/templates`, der `{ name, content }` annimmt und `{ id }` liefert, prüft dieses Node.js-24-Beispiel eine neue Wegwerf-Vorlage. Speichern Sie es als `check-ai-backend.ts`, setzen Sie `AI_TEST_TOKEN` und führen Sie `node check-ai-backend.ts` aus. `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die URLs. Die Flags passen zum zustandslosen Server und zu einem Chat-Adapter ohne Dateianhänge.
+
+<<< @/snippets/check-ai-backend.ts
+
+Die Alt-Text-Prüfung verwendet `blockId: "conformance-image"` und standardmäßig die öffentliche Bild-URL `https://docs.templatical.com/og-image.png`. Das Beispiel fügt dieses Bild in die Wegwerf-Vorlage ein, damit Ihr Backend die Blockzugehörigkeit prüfen kann. Halten Sie es während der Suite verfügbar; wenden Sie diese Testeinrichtung nicht auf produktive Vorlagen an.
+
+Beide Konformitätssuiten können Tokens verbrauchen und Batches persistieren. Mit aktivem Verlauf werden Replay-Zustände verändert und der Verlauf über `clear` geleert, sofern verfügbar. Entfernen Sie die Testvorlage anschließend über Ihren Speicher. Fehler werden je Prüfung ausgegeben und führen zu einem Exit-Code ungleich null.
 
 Für einen Lauf mit Node.js 24 speichern Sie einen der obigen Adapter als `model.ts` und dieses Beispiel als `evaluate.ts`. Installieren Sie `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` und das SDK Ihres Modellanbieters. Starten Sie Ihr Backend und führen Sie `node evaluate.ts` aus. Der Adapter muss Bild-URLs sowie PNG- und PDF-Anhänge unterstützen.
 
@@ -300,14 +308,9 @@ import {
   evalAltTextWith,
   evalTurnWith,
   runAiEvalSet,
-  runAiWireConformance,
 } from '@templatical/ai-kit/testing';
 import { model } from './model.ts';
 
-const wire = await runAiWireConformance({
-  baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, chatAttachments: false },
-});
 const evalFolder = new URL('.', import.meta.resolve('@templatical/ai-kit/eval/cases.json'));
 const evals = await runAiEvalSet({
   runTurn: evalTurnWith(model),
@@ -319,7 +322,11 @@ const evals = await runAiEvalSet({
   ),
   model: 'my-model',
 });
-console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
+for (const result of evals.results) {
+  if (!result.ok && !result.skipped) console.error('FAIL', result.name, result.reason);
+}
+console.log(`${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
+if (!evals.ok) process.exitCode = 1;
 ```
 
 Die Protokoll-Suite prüft Ihre Routen so, wie der Editor sie verwendet. Der Testsatz prüft Bearbeitungen, Chat-Anhänge, Alt-Text und Korrekturen von Lint-Befunden gegen Ihr Modell. `lintCheck` gibt die `ruleId`-Werte aus `lintTemplate(content)` zurück; das Kit hängt nicht von `@templatical/quality` ab. `loadFile` liest Anhänge aus dem installierten Paket. Ohne `loadFile` lädt der Runner sie über die öffentliche Release-URL.
@@ -328,6 +335,18 @@ Ohne `runAltText` werden Alt-Text-Fälle übersprungen. Ohne `lintCheck` werden 
 
 Die Standard-Bild-URLs haben die Form `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}` und verwenden die Version von `@templatical/ai-kit`. Für einen unveröffentlichten Build übergeben Sie `evalAltTextWith(model, { imageUrl: (file) => new URL(file, 'https://preview.example.com/eval/').href })` mit Ihrer öffentlichen Fixture-URL. Jeder ausgeführte Eval-Fall ruft Ihr Modell auf und kostet Tokens.
 
+## Betreffzeilen
+
+Das SDK hat kein Betreff-Feld und kein Subject-Mitglied im AI-Provider. Der Host verwaltet den Betreff. Rufen Sie `editor.getContent()` auf und senden Sie den Inhalt an Ihr eigenes Backend; dieses fragt Ihr Modell nach Betreffzeilen. Der folgende Browser-Code benötigt einen Container `<div id="editor" style="height: 100vh"></div>` und Ihre Templates-API:
+
+<<< @/snippets/subject-lines-client.ts
+
+Verwenden Sie für `POST /api/subject-lines` diesen Fetch-API-Handler und speichern Sie einen der obigen Adapter daneben als `model.ts`. Die Antwort gehört zum Host, nicht zum Template-JSON oder AI-Verlauf:
+
+<<< @/snippets/subject-lines-server.ts
+
+Prüfen Sie, dass die Antwort `subjectLines` enthält und `editor.getContent()` unverändert bleibt. Der Host zeigt die Vorschläge in seinem Betreff-Feld an; jeder Aufruf verbraucht Modell-Tokens.
+
 ## Daten und Verantwortung
 
 Die KI läuft bei Ihrem Provider unter Ihren Vereinbarungen mit ihm. Templatical sendet nichts an andere Stellen: Der Editor spricht nur mit Ihrem Backend, und Ihr Backend entscheidet, was welches Modell erreicht. Template-Inhalt, Merge-Tag-Liste und die Prompts der Nutzenden gehen an das von Ihnen aufgerufene Modell. Informieren Sie Ihre Nutzenden darüber in Ihrer Datenschutzerklärung, und wählen Sie einen Provider und eine Region, die Ihre Vereinbarungen zur Datenverarbeitung abdecken.
@@ -335,5 +354,3 @@ Die KI läuft bei Ihrem Provider unter Ihren Vereinbarungen mit ihm. Templatical
 ## Andere Sprachen
 
 Ein Backend in PHP, Python, Go oder Ruby folgt [dem Protokoll](/de/api/ai-kit#das-protokoll) und liest Prompts und Schemas aus den Paketdateien (`prompts/*.md`, `schema/*.json`). Kopieren Sie den gesamten Ordner `eval/` rekursiv und behalten Sie die relativen Pfade und `MANIFEST.sha256` bei, damit Fälle, Templates, Bilder, Designs und HTML-Quellen enthalten sind. Führen Sie `runAiWireConformance` von Node aus, um die Routen Ihres Backends zu prüfen.
-
-Der Chat kann auf Anfrage eine E-Mail direkt im Template als einen rückgängig machbaren Durchlauf übersetzen, ohne Prüfung aller Felder oder Merge-Tags. Die Absatz-Vorgabe `translate` bleibt verfügbar. Die Übersetzung ganzer Sprachversionen gehört zur Lokalisierung.

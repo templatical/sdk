@@ -289,7 +289,15 @@ export const model: AiModelAdapter = {
 
 (The tool calls arrive with the final message, whole: the kit applies them after the text, as a turn would.)
 
-## Check it
+## Backend conformance and model evaluation
+
+The [testing reference](/api/ai-kit#testing) documents both conformance signatures and every option (`templateId`, `headers`, `timeoutMs`, `callTimeoutMs`, `features`). With an authenticated `POST /api/templates` that accepts `{ name, content }` and returns `{ id }`, this Node.js 24 example checks a new disposable template. Save it as `check-ai-backend.ts`, set `AI_TEST_TOKEN`, and run `node check-ai-backend.ts`. `AI_BASE_URL` and `AI_TEMPLATES_URL` override the URLs. Its flags match the stateless server and a chat adapter without file attachments.
+
+<<< @/snippets/check-ai-backend.ts
+
+The alt-text probe uses `blockId: "conformance-image"` and defaults to the public image URL `https://docs.templatical.com/og-image.png`. The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
+
+Both conformance suites can spend tokens and persist batches. With conversation enabled they change replay state and clear history through `clear` when available. Remove the test template through your store afterwards. Failures print per check and produce a non-zero exit.
 
 For a Node.js 24 run, save one of the adapters above as `model.ts` and this example as `evaluate.ts`. Install `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` and your model provider's SDK. Start your backend, then run `node evaluate.ts`. The adapter must support image URLs and PNG and PDF attachments.
 
@@ -300,14 +308,9 @@ import {
   evalAltTextWith,
   evalTurnWith,
   runAiEvalSet,
-  runAiWireConformance,
 } from '@templatical/ai-kit/testing';
 import { model } from './model.ts';
 
-const wire = await runAiWireConformance({
-  baseUrl: 'http://localhost:8787/ai',
-  features: { conversation: false, chatAttachments: false },
-});
 const evalFolder = new URL('.', import.meta.resolve('@templatical/ai-kit/eval/cases.json'));
 const evals = await runAiEvalSet({
   runTurn: evalTurnWith(model),
@@ -319,7 +322,11 @@ const evals = await runAiEvalSet({
   ),
   model: 'my-model',
 });
-console.log(wire.ok, `${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
+for (const result of evals.results) {
+  if (!result.ok && !result.skipped) console.error('FAIL', result.name, result.reason);
+}
+console.log(`${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
+if (!evals.ok) process.exitCode = 1;
 ```
 
 The wire suite checks your routes as the editor uses them. The eval set checks editing, chat attachments, alt text and lint fixes against your model. `lintCheck` returns the `ruleId` values from `lintTemplate(content)`; the kit has no dependency on `@templatical/quality`. `loadFile` reads attachments from the installed package. Without `loadFile`, the runner fetches them from the public release URL.
@@ -328,6 +335,18 @@ Without `runAltText`, alt-text cases are skipped. Without `lintCheck`, cases wit
 
 Default image URLs use `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`, with `@templatical/ai-kit`'s own version. For an unreleased build, pass `evalAltTextWith(model, { imageUrl: (file) => new URL(file, 'https://preview.example.com/eval/').href })` with your public fixture URL. Every eval case that runs calls your model and costs tokens.
 
+## Subject lines
+
+The SDK has no subject field and no subject member on the AI provider. The host owns the subject. Call `editor.getContent()` and post it to your own backend, which asks your model for subject lines. This browser code needs a `<div id="editor" style="height: 100vh"></div>` container and your templates API:
+
+<<< @/snippets/subject-lines-client.ts
+
+Route `POST /api/subject-lines` to this Fetch-API handler and save one of the adapters above beside it as `model.ts`. The response belongs to the host, outside template JSON and AI history:
+
+<<< @/snippets/subject-lines-server.ts
+
+Check that the response contains `subjectLines` and `editor.getContent()` stays unchanged. The host displays the suggestions in its own subject field; each call spends model tokens.
+
 ## Data and responsibility
 
 The AI runs on your provider, under your terms with it. Templatical sends nothing anywhere: the editor talks to your backend only, and your backend decides what reaches which model. The template content, the merge-tag list and the user's prompts go to the model you call; tell your users so in your privacy notice, and pick a provider and region your data-processing agreements cover.
@@ -335,5 +354,3 @@ The AI runs on your provider, under your terms with it. Templatical sends nothin
 ## Other languages
 
 A backend in PHP, Python, Go or Ruby follows [the wire](/api/ai-kit#the-wire) and reads prompts and schemas from the package's files (`prompts/*.md`, `schema/*.json`). Copy the entire `eval/` folder recursively, preserving relative paths and `MANIFEST.sha256`, to include the cases, templates, images, designs and HTML sources. Run `runAiWireConformance` from Node to check your backend's routes.
-
-Chat can translate an email in place as one undoable turn, on request, with no field-coverage or merge-tag check. The paragraph rewrite `translate` preset remains available. Whole-template translation by language version belongs to localization.

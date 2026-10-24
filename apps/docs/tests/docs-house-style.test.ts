@@ -371,3 +371,57 @@ describe("collaboration transport examples", () => {
     },
   );
 });
+
+
+describe("agent-first AI documentation", () => {
+  it("the AI-kit README loads a template and explains the entry-point gate", () => {
+    const src = readRepo("packages/ai-kit/README.md");
+    expect(src).toMatch(/const editor = await init\(/);
+    expect(src).toMatch(/await editor\.(?:load|create)\(/);
+    expect(src).toMatch(/(?:loaded template|load\(\).*create\(\))/i);
+  });
+
+  it("the AI-kit README offers all four package managers", () => {
+    const src = readRepo("packages/ai-kit/README.md");
+    for (const command of ["npm install", "pnpm add", "yarn add", "bun add"]) {
+      expect.soft(src).toContain(`${command} @templatical/ai-kit`);
+    }
+  });
+
+  it.each([
+    ["guide/bring-your-own-ai.md", "Backend conformance and model evaluation"],
+    ["de/guide/bring-your-own-ai.md", "Backend-Konformität und Modellevaluierung"],
+  ])("%s labels backend verification by its task", (page, heading) => {
+    expect(readDocs(page)).toContain(`## ${heading}`);
+  });
+
+  it.each(["backend/ai.md", "de/backend/ai.md"])(
+    "%s avoids a derived translation-language count", (page) => {
+      expect(readDocs(page)).not.toMatch(/\b16 (?:languages|(?:Ziel)?sprachen)\b/);
+    },
+  );
+
+  it("the editor README calls the BYO section Backend providers", () => {
+    expect(readRepo("packages/editor/README.md")).toContain("## Backend providers");
+  });
+});
+
+
+describe("collaborative persistence without templates.save", () => {
+  it.each([
+    ["backend/templates.md", "With collaboration, they still settle"],
+    ["de/backend/templates.md", "Mit Zusammenarbeit warten sie weiterhin"],
+  ])("%s does not claim a disabled save settles batches", (page, claim) => {
+    expect(readDocs(page)).not.toContain(claim);
+  });
+});
+
+describe("AI partial-failure replay guidance", () => {
+  it.each(["backend/ai.md", "de/backend/ai.md"])(
+    "%s qualifies Undo for server-applied batches", (page) => {
+      const errors = readDocs(page).split(page.startsWith("de/") ? "## Fehler\n" : "## Errors\n")[1]?.split("\n## ")[0];
+      expect(errors).toContain("onApplied");
+      expect(errors).toContain("conversation.undo");
+    },
+  );
+});

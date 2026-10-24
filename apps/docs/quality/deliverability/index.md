@@ -60,7 +60,7 @@ npx @templatical/template-tools validate template.json --json
 The built CLI returns exit code `0`. Its JSON output includes this issue (produced from the template above):
 
 ```json
-{"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination. Link to the destination instead."}
+{"blockId":"button_1","ruleId":"deliverability.url-shortener","severity":"warning","message":"This link goes through the URL shortener bit.ly. Spam filters treat shortener links with suspicion because they hide the destination.","suggestion":"Link to the destination instead.","reference":"https://docs.rspamd.com/modules/phishing/"}
 ```
 
 For pass-through HTML and CSS support, see the [compatibility linter](../compatibility/).

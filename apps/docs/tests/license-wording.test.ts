@@ -87,6 +87,7 @@ describe("licence wording in user-facing copy", () => {
   it("scans the docs, READMEs, contributing guide, skill and playground strings", () => {
     expect(COPY.length).toBeGreaterThan(100);
     expect(COPY).toContain("CONTRIBUTING.md");
+    expect(COPY).toContain("packages/ai-kit/README.md");
     expect(COPY).toContain("skills/templatical/SKILL.md");
     expect(COPY).toContain("skills/templatical/reference/failure-modes.md");
     expect(COPY).toContain("examples/README.md");

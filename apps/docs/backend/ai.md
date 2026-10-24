@@ -5,7 +5,7 @@ description: Chat, lint fixes, alt-text drafts, rewrite and chat attachments ove
 
 # AI
 
-Give the editor an AI provider and your users get an assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, reviewed alt-text drafts in Issues, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
+Give the editor an AI provider and your users get an AI assistant that edits the template they're working on: a chat with Undo, **Rewrite with AI** in the paragraph toolbar, reviewed alt-text drafts in Issues, static localized chat starters, and a template built from a screenshot or a PDF. Your backend talks to the model, with your keys, your data-processing terms and your guardrails.
 
 The editor owns every surface, the streaming, applying the AI's edits with Undo, and the labelling that says the content comes from AI. You own the model call: one function per feature, or a few HTTP endpoints that `@templatical/ai-kit` writes most of.
 
@@ -36,50 +36,17 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` in about a hundred lines, and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
+`createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
 
 **AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no AI button, no toolbar button, and none of its UI is downloaded.
 
 ## The contract
 
-```ts
-import type { AiChatRequest, AiFixRequest, AiRewriteRequest, AiAltTextRequest, AiTurnHandlers, AiTurnResult, AiRewriteHandlers, AiConversationProvider } from '@templatical/types';
-
-export interface AiProvider {
-  chat:
-    | false
-    | ((
-        request: AiChatRequest,
-        on: AiTurnHandlers,
-        signal: AbortSignal,
-      ) => Promise<AiTurnResult>);
-  fixFinding:
-    | false
-    | ((
-        request: AiFixRequest,
-        on: AiTurnHandlers,
-        signal: AbortSignal,
-      ) => Promise<AiTurnResult>);
-  /** True means chat accepts attachments; has no effect while chat is false. */
-  chatAttachments: false | true;
-  rewrite:
-    | false
-    | ((
-        request: AiRewriteRequest,
-        on: AiRewriteHandlers,
-        signal: AbortSignal,
-      ) => Promise<{ html: string }>);
-  altText:
-    | false
-    | ((
-        request: AiAltTextRequest,
-        signal: AbortSignal,
-      ) => Promise<{ alt: string }>);
-  conversation?: AiConversationProvider;
-}
-```
+<<< @/snippets/ai-contract.ts
 
 Chat, fix and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+
+Request limits follow the [API reference](/api/ai-kit#request-limits): `message` 1–4,000 code points, `content` at most 200,000 UTF-8 bytes of JSON, `selectedBlockId` and `sessionId` at most 200 code points, and `mergeTags` at most 500 tags (`value` ≤ 200, `label` and optional `group` ≤ 100, optional `description` ≤ 200 code points). `AiMergeTagSyntax` accepts `liquid`, `handlebars`, `mailchimp`, `ampscript` or `custom`. Rewrite HTML is 1–20,000 code points and `instruction` at most 500. At least `preset` or `instruction` is set; `translate` requires `language`. The complete shapes, including nullability and optional fields, are above; wire requests move template ID and session to the path and header. Rewrite does not send `content` or `revision` on the wire.
 
 ### Turns: chat and fix
 
@@ -106,7 +73,7 @@ History has kind `chat` and stores only optional user-message `attachments: { na
 
 `fixFinding` receives `finding: { ruleId, message, suggestion, reference, blockId, excerpt? }`, the JSON-serializable projection of a [lint finding](/quality/). `severity`, `clients` and the local `fix` function are never sent. Every field is untrusted diagnostic data, never instructions; the model must not fetch the `reference` link.
 
-The Issues panel offers **Fix with AI** for these rule ids when the finding has no deterministic `fix`, `fixFinding` is a function and a template is loaded:
+`AI_FIXABLE_RULES`, exported from `@templatical/editor`, contains exactly these rule ids. The Issues panel offers **Fix with AI** for them when the finding has no deterministic `fix`, `fixFinding` is a function and a template is loaded:
 
 - `a11y.link-vague-text`
 - `a11y.button-vague-label`
@@ -120,29 +87,23 @@ The editor shows one button per `ruleId`/`blockId` pair, regardless of severity.
 
 For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
 
+**Fix with AI** and **Write alt text** appear only when `@templatical/quality` is installed and lint is on (`lint.disabled` is not `true`). They also need their provider member, a matching finding and a loaded template.
+
+`AiFixFinding` sends only `ruleId`, `message`, `suggestion`, `reference`, `blockId` and optional `excerpt`; `severity`, `clients` and the local `fix` function stay in the editor. `ruleId` is 1–200 UTF-16 units; `blockId` is `null` or at most 200 units. `message`, `suggestion` and `excerpt` are each at most 1,000 code points; `reference` is an `http:` or `https:` URL of at most 2,048 UTF-16 units. The server rejects invalid values with status 422 and never truncates.
+
+The canonical contracts are [Accessibility](/quality/accessibility/), the [accessibility rule catalog](/quality/accessibility/rule-catalog), [Deliverability](/quality/deliverability/), the [deliverability rule catalog](/quality/deliverability/rule-catalog) and [lint options](/quality/options).
+
 ### Alt text
 
 `altText(request, signal)` returns `{ alt: string }` for one image, with no content change or chat history. The request is `AiAltTextRequest` from `@templatical/types`:
 
-```ts
-export interface AiAltTextRequest {
-  templateId: string;
-  sessionId: string;
-  blockId: string;
-  image: { url: string };
-  currentAlt: string | null;
-  linkHref: string | null;
-  nearbyText: string;
-  locale: string;
-  maxLength: number;
-}
-```
+Every field and its nullability are in `AiAltTextRequest` in [the contract](#the-contract).
 
-The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale.
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale: a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
 
 `maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend.
 
-The Issues panel offers **Write alt text** once per image for `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` and `a11y.img-linked-no-context`. The inline review has an editable draft. **Accept** writes `{ alt, decorative: false }`; **Mark decorative** writes `{ alt: "", decorative: true }`; **Cancel** and Escape write nothing. An empty `alt` alone still triggers `img-missing-alt`. The renderer forces `alt=""` and `role="presentation"` for decorative images.
+`AI_ALT_TEXT_RULES`, exported from `@templatical/editor`, contains exactly `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` and `a11y.img-linked-no-context`. The Issues panel offers **Write alt text** once per image for `a11y.img-missing-alt`, `a11y.img-alt-is-filename`, `a11y.img-alt-too-long` and `a11y.img-linked-no-context`. The inline review has an editable draft. **Accept** writes `{ alt, decorative: false }`; **Mark decorative** writes `{ alt: "", decorative: true }`; **Cancel** and Escape write nothing. An empty `alt` alone still triggers `img-missing-alt`. The renderer forces `alt=""` and `role="presentation"` for decorative images.
 
 Drafts run independently, can be stopped, and abort on template switches or editor destruction. Applying uses one AI batch and one undo step, split at 100 operations when needed; collaboration uses the user's batch with `origin: 'ai'`. Neither action adds chat history. `altText: false` hides the action; the HTTP equivalent is `features: { altText: false }`.
 
@@ -151,6 +112,8 @@ When at least two distinct images have alt-text findings, **Write missing alt te
 ### Rewrite
 
 `rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
+
+Whole-template translation is not a separate feature. On request, the AI assistant can translate through chat and edit in place as one undo step, on a best-effort basis, with no field-coverage or merge-tag check. Rewrite's **Translate** preset translates one paragraph.
 
 ### Chat starters
 
@@ -166,9 +129,11 @@ Deterministic lint reports specific content, client and size findings. It does n
 
 After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
 
+`conversation.list` returns `AiChatMessage[]` oldest first. `createdAt` is ISO 8601; `batches` is empty for user messages. A server-applied batch has a numeric `revision`; an editor-applied batch has `revision: null`. `kind` is `"chat" | "fix"`; alt-text drafts create no history. Optional user-message `attachments` retain only names and kinds, never files.
+
 ## Controlling features
 
-Set a member to `false` and its entry point goes: `chat: false` hides the assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `chatAttachments: false` the attachment controls and import shortcuts. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
+Set a member to `false` and its entry point goes: `chat: false` hides the AI assistant, `rewrite: false` the toolbar button, `fixFinding: false` the Fix with AI buttons on lint findings, `chatAttachments: false` the attachment controls and import shortcuts. With `createHttpAiProvider`, pass `features: { rewrite: false, conversation: false }`.
 
 ## Errors
 
@@ -186,13 +151,15 @@ Reject with an `SdkError` whose `code` the editor knows, and whose message the u
 
 Undo and Redo may reject with an operation's code (`precondition_failed`, …) as a `CollaborationConflict`. An `AbortError` means the user stopped the call and is never shown. The editor says each failure in words and passes it to `init({ onError })` too.
 
+A stopped or failed turn keeps the batches already applied. **Undo** reverts editor-applied batches as one step when the editor has their inverses. Server-applied `onApplied` batches need stored history with a callable `conversation.undo`; without that replay support, Undo is unavailable. Intervening edits by others can prevent replay. Stop does not roll back applied edits.
+
 ## In the editor
 
 - **Header:** the button labelled **AI** opens and closes the AI assistant. It appears when `chat` is a function and a template is loaded.
 - **Chat:** labelled as an AI assistant ("Replies and changes come from AI."), each turn's "Applied N changes" with Undo and Redo, Stop while a turn runs, New chat, static localized starters. Cmd/Ctrl+Z undoes a whole turn.
-- **Paragraph toolbar:** **AI**, with the presets, 16 languages to translate into and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
+- **Paragraph toolbar:** **AI**, with the presets, a target-language picker and a free instruction. The result shows as an **AI suggestion**, merge tags as tags and the markup sanitized; Replace makes it the user's own edit.
 - **Chat attachments:** add files with the attach button or drag them into the panel, review name chips and remove files before sending. The composer has a full-width textarea above a toolbar with attach on the left and send or stop on the right. Attachment chips stay above the composer.
-- **The empty canvas:** shortcuts to the assistant and to **Import from screenshot or PDF**.
+- **The empty canvas:** shortcuts to the AI assistant and to **Import from screenshot or PDF**.
 
 AI content is always marked as AI, as the EU AI Act's Article 50 asks of systems that interact with people.
 

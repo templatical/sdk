@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/@templatical/ai-kit?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/ai-kit)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)
 
-The editor's AI (a chat that edits the template with Undo, rewrite, static localized chat starters and chat attachments) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
+The editor's AI (the AI assistant with Undo and attachments, Rewrite, Fix with AI, Write alt text and static localized chat starters) runs on an `AiProvider` you pass to `init({ ai })`. This package is everything around that contract, with no LLM SDK and no Node-only API: it runs in Node, Deno, Bun, Workers and the browser.
 
 | Entry | What it is |
 |---|---|
@@ -19,7 +19,12 @@ The editor's AI (a chat that edits the template with Undo, rewrite, static local
 
 ```bash
 npm install @templatical/ai-kit
+pnpm add @templatical/ai-kit
+yarn add @templatical/ai-kit
+bun add @templatical/ai-kit
 ```
+
+Choose the command for your package manager.
 
 ## In the editor
 
@@ -45,6 +50,8 @@ const editor = await init({
 });
 await editor.load("tpl_123");
 ```
+
+AI needs a loaded template: the AI assistant and other entry points appear after `editor.load(id)` or `editor.create()` resolves. Omit `ai` to leave the feature out. Fix with AI and Write alt text also require `@templatical/quality` and lint on. The AI kit is MIT; the editor UI is source-available under FSL-1.1-MIT.
 
 ## On your server
 

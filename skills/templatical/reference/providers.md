@@ -1,12 +1,11 @@
 # Providers
 
 **Consulted by:** [integrate.md](integrate.md)
-**Detail:** [docs.md](docs.md) reaches one reference page per provider — fetch
-the one matching the key being configured
+**Detail:** [docs.md](docs.md) starts with the reference page matching the provider, then follows its required setup and contract links
 
 Optional config keys, each a plain object of methods: `templates`,
 `versionHistory`, `comments`, `savedBlocks`, `media`, `testEmail`, `render`,
-`collaboration`, `ai`. Every key stands alone — a feature is absent until its key
+`collaboration`, `ai`. Most keys stand alone; `collaboration` requires `templates`. A feature is absent until its key
 is passed, not merely disabled: no half-rendered panel, no dead button.
 
 **On the storage providers (`templates`, `versionHistory`, `comments`,
@@ -52,3 +51,5 @@ Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
 the `backend/` pages.
 
 Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. Text-only adapters set `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
+
+Fix with AI and Write alt text require `@templatical/quality` installed and lint on. With quality missing or lint off (`lint.disabled: true`), neither action appears. They also need a loaded template, their callable provider member and a matching finding. The AI assistant itself needs `chat` and a loaded template, independent of quality.

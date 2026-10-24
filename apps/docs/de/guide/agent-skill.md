@@ -76,7 +76,7 @@ npx skills add templatical/sdk
 Die mechanischen Schritte — validieren, rendern, importieren, Live-Vorschau — sind [`@templatical/template-tools`](/de/api/template-tools). Der Skill steuert diese CLI; dieselben Befehle laufen ohne Agenten aus einer Shell.
 
 ::: tip KI direkt im Editor
-Der [KI-Chat im Editor](/de/backend/ai) funktioniert mit jedem eigenen Provider an `init()`. Der Provider-Vertrag (`@templatical/types`) und das `@templatical/ai-kit`-Kit sind MIT-lizenziert; die Editor-Oberfläche bleibt source-available (FSL-1.1-MIT). Mit diesem Agent-Skill bringen Sie auch Ihren eigenen Coding-Agenten mit.
+Der [KI-Assistent im Editor](/de/backend/ai) funktioniert mit jedem eigenen Provider an `init()`. Der Provider-Vertrag (`@templatical/types`) und das `@templatical/ai-kit`-Kit sind MIT-lizenziert; die Editor-Oberfläche bleibt source-available (FSL-1.1-MIT). Mit diesem Agent-Skill bringen Sie auch Ihren eigenen Coding-Agenten mit.
 :::
 
 ## Beispiele
