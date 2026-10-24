@@ -30,29 +30,6 @@ export type {
   WebSocketConfig,
 } from "./websocket-client";
 
-// AI
-export { useAiChat } from "./ai-chat";
-export type { UseAiChatOptions, UseAiChatReturn } from "./ai-chat";
-
-export { useAiRewrite } from "./ai-rewrite";
-export type { UseAiRewriteOptions, UseAiRewriteReturn } from "./ai-rewrite";
-
-export { useAiConfig } from "./ai-config";
-export type { UseAiConfigReturn } from "./ai-config";
-
-export { useTemplateScoring } from "./template-scoring";
-export type {
-  UseTemplateScoringOptions,
-  UseTemplateScoringReturn,
-} from "./template-scoring";
-
-export { useDesignReference } from "./design-reference";
-export type {
-  DesignReferenceInput,
-  UseDesignReferenceOptions,
-  UseDesignReferenceReturn,
-} from "./design-reference";
-
 // Comments — Cloud's adapter for the shared `CommentsProvider` contract, realtime
 // included (its optional `subscribe` binds the presence channel). The reactive
 // state is shared by both tiers from `@templatical/core`; the transport is the

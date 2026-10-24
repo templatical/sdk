@@ -23,11 +23,13 @@ const isReconnecting = computed(
 );
 
 /**
- * Refusals warn; an agent's edit is information, so it takes Compositor Teal.
- * Amber stays for selection and intent.
+ * Refusals warn; an agent's or the AI's edit is information, so it takes
+ * Compositor Teal. Amber stays for selection and intent.
  */
 const tone = computed(() =>
-  notice.value?.kind === "agentEdited" ? "info" : "warning",
+  notice.value?.kind === "agentEdited" || notice.value?.kind === "aiEdited"
+    ? "info"
+    : "warning",
 );
 const TONE_STYLES = {
   warning: {
@@ -46,15 +48,21 @@ function nameOf(person: { name?: string; isGuest?: boolean }): string {
   return person.isGuest || !person.name ? t.collaboration.guest : person.name;
 }
 
-/** "{client} for {name} …": an updated template wins, then blocks with settings. */
+/**
+ * "{who} changed …", where `who` is "Claude for Ada" or "AI (for Ada)": an
+ * updated template wins, then blocks with settings.
+ */
 function agentMessage(
-  view: Extract<CollaborationNoticeView, { kind: "agentEdited" }>,
+  view: Extract<CollaborationNoticeView, { kind: "agentEdited" | "aiEdited" }>,
 ): string {
-  const values = {
-    client: view.client ?? t.collaboration.anAgent,
-    name: nameOf(view),
-    count: view.blocks,
-  };
+  const who =
+    view.kind === "aiEdited"
+      ? format(t.collaboration.aiFor, { name: nameOf(view) })
+      : format(t.collaboration.agentFor, {
+          client: view.client ?? t.collaboration.anAgent,
+          name: nameOf(view),
+        });
+  const values = { who, count: view.blocks };
   if (view.templateUpdated)
     return format(t.collaboration.agentUpdatedTemplate, values);
   if (view.settings && view.blocks > 1)
@@ -85,6 +93,7 @@ function message(view: CollaborationNoticeView): string {
         names: view.holders.map(nameOf).join(", "),
       });
     case "agentEdited":
+    case "aiEdited":
       return agentMessage(view);
   }
 }

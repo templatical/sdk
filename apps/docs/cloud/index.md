@@ -5,7 +5,7 @@ description: Premium hosted features for teams building email tooling at scale.
 
 # Templatical Cloud
 
-The self-hosted editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — AI content generation, real-time collaboration, media management, template scoring, and more.
+The self-hosted editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — hosted storage, comments, media management and rendering. Cloud AI ships later; [bring your own provider](/backend/ai) today.
 
 ## How It Works
 
@@ -28,11 +28,11 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 | Feature | Description |
 |---------|-------------|
-| [AI Assistant](/cloud/ai) | Generate email content from prompts, rewrite text, design-to-template conversion |
+| [AI (future)](/cloud/ai) | Cloud AI ships later; bring your own provider today |
 | [Collaboration](/cloud/collaboration) | Real-time co-editing with live cursors and block locking |
 | [Comments](/cloud/comments) | Inline review threads on specific blocks |
 | [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |
-| [Template Scoring](/cloud/template-scoring) | Automated quality checks for deliverability and accessibility |
+| [Template checks (future)](/cloud/template-scoring) | A stub pointing to deterministic lint categories |
 | [Rendering](/cloud/rendering) | `toMjml()` and `toHtml()` server-side, with a countdown GIF and video play button a browser cannot produce |
 | [Saved Blocks](/cloud/saved-blocks) | Reusable block groups — one library per project, shared across your team with no backend to implement |
 | [Templates](/cloud/templates) | Saving, loading, autosave and the unsaved-changes guard, with no storage to run |
@@ -55,7 +55,7 @@ They mix safely because Cloud never independently uses them. The rest are refuse
 <!-- prettier-ignore -->
 | Key | What `initCloud()` does with it |
 | --- | --- |
-| `templates` | **Storage stays Cloud's; configuration and events are yours.** The id anchors collaboration, comments, AI rewrite, scoring and the server-side export, so `initCloud()` keeps `load`/`create`/`save`. The key still reaches the editor for [its configuration and events](/cloud/templates#bringing-your-own) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` — with any storage methods named and ignored. |
+| `templates` | **Storage stays Cloud's; configuration and events are yours.** The id anchors comments and the server-side export, so `initCloud()` keeps `load`/`create`/`save`. The key still reaches the editor for [its configuration and events](/cloud/templates#bringing-your-own) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` — with any storage methods named and ignored. |
 | `comments` | **Storage stays Cloud's; configuration and events are yours.** A comment is keyed to a template id Cloud issued and its author is signed by the auth token, so `initCloud()` keeps its own `list`/`create`/`update`/`delete`/`setResolved`/`subscribe`. The key still reaches the editor for [its events](/cloud/comments#bringing-your-own) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved` — with any storage methods named and ignored. |
 | `versionHistory` | **Storage stays Cloud's; events are yours.** A version is keyed to a template id Cloud issued, and Cloud's own `templates` adapter records automatic versions as part of every save, so `initCloud()` keeps its own `list`/`get`/`create`/`restore`. The key still reaches the editor for [its events](/cloud/version-history#events) — `onCreated`, `onRestored` — with any storage methods named and ignored. There's no boolean or full-provider form here, unlike `savedBlocks`: the type is `VersionHistoryOptions` alone. |
 | `render` | **Cloud renders independently for delivery** — test email, scheduled sends and exports. A provider would change what you preview and export, never what Cloud sends. |
@@ -66,6 +66,6 @@ To own the whole set, use [`init()`](/backend/).
 
 ## Pricing
 
-Plans start at $99/month. All plans include the full editor, AI features, and collaboration.
+Plans start at $99/month. Hosted feature availability follows your Cloud plan; Cloud AI ships later.
 
 [Start Free Trial](https://templatical.com) &nbsp;·&nbsp; [Contact Sales](mailto:hi@templatical.com)

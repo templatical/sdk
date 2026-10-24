@@ -127,7 +127,10 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "AI",
-      items: [{ text: "Agent Skills", link: "/guide/agent-skill" }],
+      items: [
+        { text: "Agent Skills", link: "/guide/agent-skill" },
+        { text: "Bring Your Own AI Backend", link: "/guide/bring-your-own-ai" },
+      ],
     },
     {
       text: "Customization",
@@ -151,6 +154,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Media", link: "/backend/media" },
         { text: "Test Emails", link: "/backend/test-email" },
         { text: "Rendering & Export", link: "/backend/render" },
+        { text: "AI", link: "/backend/ai" },
       ],
     },
     {
@@ -161,6 +165,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Renderer", link: "/api/renderer-typescript" },
         { text: "Template Tools", link: "/api/template-tools" },
         { text: "Operations", link: "/api/operations" },
+        { text: "AI", link: "/api/ai-kit" },
         { text: "Events", link: "/api/events" },
       ],
     },
@@ -337,7 +342,10 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "KI",
-      items: [{ text: "Agent-Skills", link: "/de/guide/agent-skill" }],
+      items: [
+        { text: "Agent-Skills", link: "/de/guide/agent-skill" },
+        { text: "Eigenes KI-Backend", link: "/de/guide/bring-your-own-ai" },
+      ],
     },
     {
       text: "Anpassung",
@@ -361,6 +369,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Medien", link: "/de/backend/media" },
         { text: "Test-E-Mails", link: "/de/backend/test-email" },
         { text: "Rendering & Export", link: "/de/backend/render" },
+        { text: "KI", link: "/de/backend/ai" },
       ],
     },
     {
@@ -371,6 +380,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Renderer", link: "/de/api/renderer-typescript" },
         { text: "Template Tools", link: "/de/api/template-tools" },
         { text: "Operationen", link: "/de/api/operations" },
+        { text: "KI", link: "/de/api/ai-kit" },
         { text: "Ereignisse", link: "/de/api/events" },
       ],
     },

@@ -189,6 +189,7 @@ export {
   getColumnCount,
   OperationError,
 } from "./operations";
+export { invertOperations } from "./invert-operations";
 export { deepEqual } from "./deep-equal";
 
 // Collaboration (the bring-your-own realtime contract)
@@ -379,24 +380,49 @@ export type {
   ViewportSize,
 } from "./config";
 export { SdkError } from "./config";
+export { ThrottledError } from "./config";
 export type { SdkErrorCode } from "./config";
+
+// AI (the bring-your-own AI contract)
+export type {
+  AiAppliedBatch,
+  AiChatMessage,
+  AiChatRequest,
+  AiAltTextRequest,
+  AiConversationProvider,
+  AiChatAttachment,
+  AiErrorCode,
+  AiFeatureName,
+  AiFixFinding,
+  AiFixRequest,
+  AiLimitDetails,
+  AiMergeTag,
+  AiMergeTags,
+  AiMergeTagSyntax,
+  AiMessageBatch,
+  AiMessageKind,
+  AiOperationsResult,
+  AiProvider,
+  AiReplay,
+  AiReplayContext,
+  AiReplayOutcome,
+  AiRequestBase,
+  AiRewriteHandlers,
+  AiRewritePreset,
+  AiRewriteRequest,
+  AiTurnHandlers,
+  AiTurnResult,
+} from "./ai";
 
 // Cloud types (zero runtime cost — all type-only except re-exported ViewportSize/SyntaxPreset)
 export type {
-  AiChatMessage,
-  AiConfig,
-  AiGenerateOptions,
-  AiScoreOptions,
-  AiStreamEvent,
   ApiError,
   ApiResponse,
   AuthConfig,
   AuthRequestOptions,
-  CategoryScore,
   CommentResponse,
   CreateCommentData,
   DirectAuthConfig,
-  FindingSeverity,
   SdkAuthConfig,
   HealthCheckResult,
   MediaCategoryData,
@@ -405,10 +431,6 @@ export type {
   PlanFeatures,
   PlanLimits,
   ProxyAuthConfig,
-  RewriteData,
-  ScoringCategory,
-  ScoringFinding,
-  ScoringResult,
   StorageInfo,
   TemplateVersionResponse,
   TestEmailConfig,

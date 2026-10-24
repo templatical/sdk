@@ -18,7 +18,8 @@
       "@templatical/import-stripo",
       "@templatical/import-chamaileon",
       "@templatical/import-easy-email-pro",
-      "@templatical/template-tools"
+      "@templatical/template-tools",
+      "@templatical/ai-kit"
     ]
   ],
   "linked": [],

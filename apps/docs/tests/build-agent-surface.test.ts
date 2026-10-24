@@ -165,6 +165,16 @@ describe("groupOf", () => {
 });
 
 describe("collectPages", () => {
+  it.each([
+    "https://docs.templatical.com/backend/ai",
+    "https://docs.templatical.com/api/ai-kit",
+    "https://docs.templatical.com/guide/bring-your-own-ai",
+  ])("publishes the bring-your-own AI page %s in both agent outputs", (url) => {
+    const { index, full } = buildOutputs();
+    expect(indexEntryUrls(index)).toContain(url);
+    expect(full).toContain(`Source: ${url}\n`);
+  });
+
   it("finds every English page except the generated changelog", () => {
     const pages = collectPages(DOCS);
     const paths = pages.map((p) => p.path);
@@ -291,10 +301,11 @@ describe("the committed artifacts", () => {
     const { full } = buildOutputs();
     // The changelog is ~27% of the English tree and answers no "how do I"
     // question; public/changelog.json already serves it machine-readably.
-    // The cap leaves room for the compatibility guide and its 20-rule catalog
-    // while still sitting well below the corpus with the changelog.
+    // The cap leaves room for the AI pages and the compatibility guide with
+    // its 20-rule catalog while still sitting well below the corpus with the
+    // changelog.
     expect(full).not.toContain("Version Packages");
-    expect(full.length).toBeLessThan(775_000);
+    expect(full.length).toBeLessThan(850_000);
   });
 
   it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {

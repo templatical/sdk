@@ -109,7 +109,7 @@ export function createSharedCollaboration(options: {
       case "batch":
         return handler.onBatch(event.batch);
       case "resync":
-        return handler.onResync(event.revision);
+        return handler.onResync(event.revision, event.actor);
       case "lock":
         return handler.onLock(event.lock);
       case "unlock":

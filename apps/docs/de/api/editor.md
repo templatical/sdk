@@ -21,7 +21,7 @@ const editor = await init({
   container: "#editor",
   content: savedTemplate,
   onChange(content) {
-    // Automatisch speichern oder Zustand aktualisieren
+    // Auto-save or update state
   },
 });
 ```
@@ -52,6 +52,7 @@ unmount();
 | `onDirtyChange`      | `(isDirty: boolean) => void`                                      | Nein     | Wird aufgerufen, wenn der Zustand „ungespeicherte Änderungen" umschlägt. Funktioniert mit und ohne `templates`-Provider — damit sichern Sie einen clientseitigen Router ab, den `beforeunload` nicht abdecken kann. Siehe [Speichern & Laden](/de/backend/templates#ungespeicherte-anderungen)                                                                                                                                                                                                                                                                                             |
 | `templates`          | `TemplatesProvider`                                               | Nein     | Speicher-Backend für die Vorlage selbst — der Speicher-/Ladezyklus. Dasselbe Objekt trägt auch die Konfiguration `autoSave`, `unsavedChangesGuard` und `nameField` sowie die Events `onSaved` / `onCreated` / `onLoaded` — nichts davon bedeutet etwas ohne ein Ziel zum Speichern. Der Editor liefert Namensfeld, Speichern-Schaltfläche, Statusanzeige und Cmd+S; Sie liefern die Persistenz. Lassen Sie `templates` weg, ist die Funktion vollständig deaktiviert: kein Namensfeld, keine Speichern-Schaltfläche, keine Statusanzeige. Siehe [Speichern & Laden](/de/backend/templates) |
 | `render`             | `RenderProvider`                                                  | Nein     | Rendering-Backend für `toMjml()` / `toHtml()`. Jede Methode (`toMjml`, `toHtml`, `compileMjml`) ist unabhängig optional und wird separat aufgelöst. Weglassen: `toMjml()` rendert lokal, `toHtml()` lehnt ab — das SDK bündelt keinen MJML-Compiler. Siehe [Rendering & Export](/de/backend/render)                                                                                                                                                                                                                                                                                        |
+| `ai` | `AiProvider` | Nein | KI über Ihr eigenes Backend: KI-Assistent mit Rückgängig und Anhängen, **Aus Screenshot oder PDF importieren**, Umformulieren und statische, lokalisierte Einstiegsanfragen. `chat`, `fixFinding`, `rewrite` und `altText` sind Funktionen oder `false`. `chatAttachments` ist ein boolesches Flag, das nur wirkt, wenn `chat` eine Funktion ist; die Einstiegspunkte erscheinen erst nach `create()` oder `load()`. Weglassen deaktiviert die Funktion einschließlich ihrer UI-Chunks. Siehe [KI](/de/backend/ai). |
 | `versionHistory`     | `VersionHistoryProvider`                                          | Nein     | Speicher-Backend für den Versionsverlauf der Vorlage — die früheren Stände, die Nutzende durchsehen, in der Vorschau ansehen und wiederherstellen können. Der Editor liefert das Header-Steuerelement, das Vorschaubanner und den Wiederherstellungsablauf; Sie liefern den Speicher. Dasselbe Objekt trägt auch die Events `onCreated` und `onRestored`. Er zeichnet nie selbst eine Version auf: Das entscheidet Ihr `templates.save`. Weglassen, um die Funktion vollständig zu deaktivieren. Siehe [Versionsverlauf](/de/backend/version-history)                                      |
 | `comments`           | `CommentsProvider`                                                | Nein     | Speicher-Backend für Review-Kommentare — Threads, die an einem Block oder der Vorlage hängen. Dasselbe Objekt trägt auch die Events `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved`. Der Editor liefert die Seitenleiste, den Editor, Auflösen/Antworten und die Block-Marker; Sie liefern die Persistenz. **Erfordert `user`**: ohne Identität meldet sich die Funktion als nicht verfügbar, statt anonyme Kommentare zu schreiben. Ein optionales `subscribe` schiebt entfernte Änderungen herein. Siehe [Kommentare](/de/backend/comments)                       |
 | `collaboration`      | `CollaborationProvider`                                           | Nein     | Echtzeit-Zusammenarbeit über Ihr Backend: Jede Änderung geht als Batch von [Operationen](/de/api/operations) über `submit` hinaus, Batches anderer Sitzungen werden in Revisionsreihenfolge angewendet, die Auswahl eines Blocks nimmt seine Sperre, die Kopfzeile zeigt, wer sonst da ist, und Rückgängig schickt umgekehrte Operationen, die Ihr Backend ablehnen kann. **Benötigt `templates`**, dessen `load` die `revision` des Templates liefert; `templates.save` erhält dann nur noch Umbenennungen. Die drei Sperr-Methoden sind nur gemeinsam optional. Siehe [Zusammenarbeit](/de/backend/collaboration) |
@@ -106,7 +107,7 @@ const editor = await init({
     "title",
     "paragraph",
     "image",
-    "custom:qrcode", // ein benutzerdefinierter Block, zwischen integrierten Blöcken
+    "custom:qrcode", // a custom block, interleaved among built-ins
     "button",
   ],
 });
@@ -127,7 +128,7 @@ Standardmäßig zeigt ein HTML-Block in der Leinwand eine Platzhalterkarte an, a
 ```ts
 const editor = await init({
   container: "#editor",
-  htmlBlockPreview: true, // Kurzform für { enabled: true }
+  htmlBlockPreview: true, // shorthand for { enabled: true }
 });
 ```
 
@@ -223,8 +224,8 @@ Fügt einen Block dort ein, wo ein Klick auf ein Element der Block-Palette ihn p
 ```ts
 import type { Block } from "@templatical/types";
 
-// Eine Section aus Ihrer eigenen Bibliothek, zuvor als Editor-JSON gespeichert
-// (zum Beispiel ein Block aus `editor.getContent().blocks`).
+// A section from your own library, saved earlier as editor JSON
+// (for example, a block taken from `editor.getContent().blocks`).
 const footer: Block = librarySections.footer;
 
 footerButton.addEventListener("click", () => {
@@ -247,7 +248,7 @@ Wechselt das UI-Farbschema zur Laufzeit, ohne den Editor neu zu initialisieren.
 ```ts
 editor.setTheme("dark");
 editor.setTheme("light");
-editor.setTheme("auto"); // folgt der Systemeinstellung
+editor.setTheme("auto"); // follow system preference
 ```
 
 **Parameter:** `theme: 'light' | 'dark' | 'auto'`
@@ -258,8 +259,8 @@ Ersetzt die konfigurierten Merge-Tags zur Laufzeit. Canvas, Felder der Seitenlei
 
 ```ts
 editor.setMergeTags([
-  { label: 'Vorname', value: '{{first_name}}' },
-  { label: 'Tarif', value: '{{plan_name}}' },
+  { label: 'First Name', value: '{{first_name}}' },
+  { label: 'Plan', value: '{{plan_name}}' },
 ]);
 ```
 
@@ -276,7 +277,7 @@ Zerstört diese Editor-Instanz und keine andere. Hat ein späteres `init()` auf 
 Der Speicher-/Ladezyklus der Vorlage, über den `templates`-Provider.
 
 ```ts
-const template = await editor.create({ name: "Willkommens-E-Mail" });
+const template = await editor.create({ name: "Welcome email" });
 await editor.load(template.id);
 await editor.save();
 ```
@@ -293,7 +294,7 @@ Ob es Änderungen gibt, von denen der Editor weiß, dass sie nicht gespeichert s
 
 ```ts
 router.beforeEach((to, from, next) => {
-  if (editor.isDirty() && !confirm("Ungespeicherte Änderungen verwerfen?"))
+  if (editor.isDirty() && !confirm("Discard unsaved changes?"))
     return next(false);
   next();
 });
@@ -340,6 +341,10 @@ Gibt das auf Definitionsebene registrierte CSS eines Custom-Block-Typs zurück �
 ```ts
 const css = editor.getCustomBlockStylesheet("qrcode");
 ```
+
+## KI-Regellisten
+
+`@templatical/editor` exportiert `AI_FIXABLE_RULES` und `AI_ALT_TEXT_RULES` als schreibgeschützte Tupel von Lint-Regel-IDs. `AI_FIXABLE_RULES` benennt die Regeln für [Mit KI beheben](/de/backend/ai#mit-ki-beheben); `AI_ALT_TEXT_RULES` benennt die Bildregeln für Alt-Text. Die Konstante allein aktiviert keine Alt-Text-Oberfläche. Die [Qualitätsdokumentation](/de/quality/) beschreibt die Befunde.
 
 ## Core-Composables
 
@@ -397,7 +402,7 @@ collaboration.attach(editor);
 await editor.load("tpl_123");
 
 collaboration.undo();
-await collaboration.settle(); // erfüllt sich, sobald jeder Batch bestätigt ist
+await collaboration.settle(); // resolves once every batch is confirmed
 ```
 
 ### `useBlockActions(options)`
@@ -431,15 +436,15 @@ const autoSave = useAutoSave({
   content: editor.content,
   isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
-  debounce: 2000, // der Standardwert
-  enabled: true, // boolean oder () => boolean
+  debounce: 2000, // the default
+  enabled: true, // boolean or () => boolean
 });
 
-autoSave.flush(); // Sofort speichern
-autoSave.cancel(); // Ausstehenden entprellten Speichervorgang abbrechen
-autoSave.pause(); // Auto-Save pausieren
-autoSave.resume(); // Fortsetzen
-autoSave.destroy(); // Überwachung beenden und aufräumen
+autoSave.flush(); // Save immediately
+autoSave.cancel(); // Cancel pending debounced save
+autoSave.pause(); // Pause auto-save
+autoSave.resume(); // Resume
+autoSave.destroy(); // Stop watching and clean up
 ```
 
 ### `useConditionPreview()`
@@ -451,9 +456,9 @@ import { useConditionPreview } from "@templatical/core";
 
 const preview = useConditionPreview(editor);
 
-preview.isHidden(blockId); // Prüfen, ob ein Block in der Vorschau ausgeblendet ist
-preview.toggleBlock(blockId); // Sichtbarkeit eines Blocks umschalten
-preview.reset(); // Alle Blöcke auf sichtbar zurücksetzen
+preview.isHidden(blockId); // Check if a block is hidden in preview
+preview.toggleBlock(blockId); // Toggle a block's visibility
+preview.reset(); // Reset all blocks to visible
 preview.hasHiddenBlocks; // ComputedRef<boolean>
 ```
 
@@ -476,5 +481,5 @@ dataFetch.isFetching; // Ref<boolean>
 dataFetch.fetchError; // Ref<boolean>
 dataFetch.hasDataSource; // ComputedRef<boolean>
 dataFetch.needsFetch; // ComputedRef<boolean>
-await dataFetch.fetch(); // Abruf auslösen
+await dataFetch.fetch(); // Trigger the fetch
 ```

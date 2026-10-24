@@ -21,9 +21,9 @@ export interface UseCommentsFeatureOptions {
    */
   user?: EditorUser | null;
   /**
-   * The panel's open state. Cloud passes its own so comments stay mutually
-   * exclusive with the AI and scoring sidebars, which share the same 360px
-   * gutter; OSS gets a local ref.
+   * The panel's open state. Cloud passes its own; otherwise a local ref is
+   * used. The open-source AI feature reads this state to keep comments and
+   * AI panels mutually exclusive in their shared 360px gutter.
    */
   isOpen?: Ref<boolean>;
   onError?: (error: Error) => void;

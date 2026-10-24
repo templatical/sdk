@@ -80,6 +80,17 @@ export type CollaborationNoticeView =
       settings: boolean;
       /** The agent updated the whole template: a replace, a restore or a re-sync. */
       templateUpdated: boolean;
+    }
+  | {
+      id: number;
+      /** An AI changed the template for a user (`actor.type: "ai"`): Cloud, or a BYO backend honouring `origin: "ai"`. */
+      kind: "aiEdited";
+      /** The user who asked the AI. */
+      name: string;
+      blocks: number;
+      settings: boolean;
+      /** The AI built or replaced the whole template, or a re-sync came in. */
+      templateUpdated: boolean;
     };
 
 /** What one batch from an agent changed. */
@@ -155,12 +166,17 @@ export interface UseCollaborationFeatureReturn {
   dismissNotice: (id: number) => void;
   /** Say a whole-template replace was refused, naming who holds locks. */
   reportReplaceRefused: (holders: readonly BlockLockHolder[]) => void;
+  /**
+   * Outline blocks for AGENT_HIGHLIGHT_MS, with no notice: the editor that
+   * asked an AI shows its own turn's changes this way (D26).
+   */
+  outline: (blockIds: readonly string[]) => void;
   capability: NonNullable<EditorCapabilities["collaboration"]>;
 }
 
-/** One agent's run of batches and re-syncs, while they share a notice. */
+/** One agent's, or the AI's, run of batches and re-syncs while they share a notice. */
 interface AgentRun {
-  /** The user it acts for, and its own name. */
+  /** The actor type, the user it acts for and, for an agent, its own name. */
   key: string;
   noticeId: number;
   lastAt: number;
@@ -172,7 +188,8 @@ interface AgentRun {
 /**
  * Shared glue for collaboration: the controller from `@templatical/core`, the
  * history it replaces, the people the bar shows and the notices — an AI
- * agent's edits included, with the outline on the blocks it changed.
+ * agent's and an AI's edits included, with the outline on the blocks
+ * they changed.
  *
  * Built before `useEditor()`, because the editor reads others' locks from it;
  * `attach` wires it to the editor right after.
@@ -264,22 +281,30 @@ export function useCollaborationFeature(
   }
 
   /**
-   * An agent's batch or re-sync: a notice naming the agent and the user it
-   * acts for, and an outline on the blocks a batch changed. Batches and
-   * re-syncs from one agent within AGENT_EDIT_MERGE_MS of each other update
+   * An agent's or the AI's batch or re-sync: a notice naming who acted and
+   * for whom, and an outline on the blocks a batch changed. Batches and
+   * re-syncs from one of them within AGENT_EDIT_MERGE_MS of each other update
    * one notice while it is the one on screen, counting each block once — so
-   * the batch a re-sync's catch-up brings lands in the re-sync's notice.
+   * the batch a re-sync's catch-up brings lands in the re-sync's notice. The
+   * editor that asked the AI only outlines its batches (D26).
    */
   function noteAgent(
     actor: CollaborationActor,
     summary: AgentEditSummary,
   ): void {
-    if (actor.type !== "mcp") return;
+    if (actor.type !== "mcp" && actor.type !== "ai") return;
+    const isAi = actor.type === "ai";
+    // The editor that asked the AI outlines the change but shows no notice:
+    // its chat already says "Applied N changes" (D26).
+    if (isAi && actor.sessionId === core.sessionId) {
+      if (!summary.templateUpdated) highlight(summary.blockIds);
+      return;
+    }
     const client =
-      typeof actor.client === "string" && actor.client.trim() !== ""
+      !isAi && typeof actor.client === "string" && actor.client.trim() !== ""
         ? actor.client
         : null;
-    const key = `${actor.id ?? ""}\n${client ?? ""}`;
+    const key = `${actor.type}\n${actor.id ?? ""}\n${client ?? ""}`;
     const now = Date.now();
 
     let run = agentRun;
@@ -303,14 +328,14 @@ export function useCollaborationFeature(
     run.templateUpdated ||= summary.templateUpdated;
     run.lastAt = now;
 
-    const view = {
-      kind: "agentEdited" as const,
-      client,
-      name: actor.name,
+    const counts = {
       blocks: run.blockIds.size,
       settings: run.settings,
       templateUpdated: run.templateUpdated,
     };
+    const view: OmitEach<CollaborationNoticeView, "id"> = isAi
+      ? { kind: "aiEdited", name: actor.name, ...counts }
+      : { kind: "agentEdited", client, name: actor.name, ...counts };
     if (run === agentRun) {
       notices.value = [{ ...view, id: run.noticeId }];
       armDismiss(run.noticeId);
@@ -335,8 +360,9 @@ export function useCollaborationFeature(
         options.onRemoteChange?.(change);
       }
     },
-    // An agent's replace or restore, or a batch too large to broadcast, reaches
-    // live editors only as a re-sync: the template changed as a whole.
+    // An agent's replace or restore, an AI's built template, or a batch too
+    // large to broadcast reaches live editors only as a re-sync: the template
+    // changed as a whole.
     onRemoteResync: ({ actor }) => noteAgent(actor, RESYNC_SUMMARY),
     onNotice,
     onError: options.onError,
@@ -410,6 +436,7 @@ export function useCollaborationFeature(
           ).values(),
         ],
       }),
+    outline: highlight,
     capability: {
       lockOf: (blockId: string): BlockLock | null =>
         core.locks.value.get(blockId) ?? null,

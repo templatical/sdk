@@ -14,7 +14,7 @@ import { TEMPLATE_LINT_KEY, TEMPLATE_SETTINGS_FIELDS_KEY } from "../keys";
 import { ALL_TEMPLATE_SETTINGS_FIELDS } from "../utils/templateSettingsFields";
 import type { Block, TemplateSettings } from "@templatical/types";
 import { ListChecks, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
-import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
+import { computed, defineAsyncComponent, inject, watch } from "vue";
 
 const Toolbar = defineAsyncComponent(() => import("./Toolbar.vue"));
 const TemplateSettingsPanel = defineAsyncComponent(
@@ -39,8 +39,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-type Tab = "content" | "settings" | "issues";
-const activeTab = ref<Tab>("content");
+export type RightSidebarTab = "content" | "settings" | "issues";
+type Tab = RightSidebarTab;
+
+// `v-model:tab`: `Editor.vue` owns the tab. Without a parent binding it is local state.
+const activeTab = defineModel<Tab>("tab", { default: "content" });
 
 const lint = inject(TEMPLATE_LINT_KEY, null);
 // `@templatical/quality` is an optional peer imported at mount. The tab renders

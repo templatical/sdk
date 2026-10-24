@@ -75,8 +75,8 @@ npx skills add templatical/sdk
 
 The mechanical steps — validate, render, import, live preview — are [`@templatical/template-tools`](/api/template-tools). The skill drives that CLI; you can run the same commands from a shell with no agent.
 
-::: tip Prefer a hosted experience?
-An in-editor AI chat, tuned prompts, and a hosted MCP server are a hosted-tier path. This skill is the open, self-hosted path — bring your own agent, keep full control.
+::: tip AI inside the editor
+The in-editor [AI assistant](/backend/ai) works over any bring-your-own provider on `init()`. The provider contract (`@templatical/types`) and the `@templatical/ai-kit` kit are MIT; the editor UI remains source-available (FSL-1.1-MIT). This Agent Skill lets you bring your own coding agent too.
 :::
 
 ## Examples

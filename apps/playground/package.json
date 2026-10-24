@@ -13,6 +13,7 @@
     "@lezer/highlight": "^1.2.5",
     "@lezer/javascript": "^1.5.6",
     "@lucide/vue": "^1.61.0",
+    "@templatical/ai-kit": "workspace:*",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-chamaileon": "workspace:*",

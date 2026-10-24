@@ -22,6 +22,7 @@ import {
   Palette,
   Puzzle,
   Send,
+  Sparkles,
   Type,
   Users,
 } from "@lucide/vue";
@@ -47,6 +48,7 @@ export const SCENE_ICONS: Record<string, Component> = {
   "version-history": History,
   comments: MessageSquare,
   collaboration: Users,
+  ai: Sparkles,
   "saved-blocks": Bookmark,
   media: Image,
   "test-email": Send,

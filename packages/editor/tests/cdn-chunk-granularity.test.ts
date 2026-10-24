@@ -8,10 +8,8 @@ import { init as initLexer, parse } from "es-module-lexer";
  *
  * `bundle-topology.test.ts` deliberately skips `dist/cdn/`, so for a long time
  * nothing checked the CDN build's chunk graph at all — which is how the former
- * `features` manual chunk went unnoticed. That entry forced six
- * `defineAsyncComponent` cloud panels (AiChatSidebar, CommentsSidebar,
- * DesignReferenceSidebar, TemplateScoringPanel, TestEmailModal,
- * VersionHistoryMenu)
+ * `features` manual chunk went unnoticed. That entry forced the Cloud
+ * panels (CommentsSidebar, TestEmailModal, VersionHistoryMenu)
  * into one chunk that became statically reachable from the entry. Every Cloud
  * session downloaded all 66.5 KB gzip of it whether or not the user opened a
  * single panel: `defineAsyncComponent` was fully defeated, silently, for years.
@@ -168,7 +166,9 @@ describe("CDN chunk granularity", () => {
     // letting the real assertion pass with an empty set.
     expect(lazyComponents.has("TestEmailModal")).toBe(true);
     expect(lazyComponents.has("SaveBlockDialog")).toBe(true);
-    expect(lazyComponents.has("AiChatSidebar")).toBe(true);
+    expect(lazyComponents.has("CommentsSidebar")).toBe(true);
+    expect(lazyComponents.has("AiChatPanel")).toBe(true);
+    expect(lazyComponents.has("AiRewriteMenu")).toBe(true);
     expect(lazyComponents.has("Toolbar")).toBe(true);
     expect(lazyComponents.has("TemplateSettings")).toBe(true);
     expect(lazyComponents.size).toBeGreaterThanOrEqual(10);
@@ -194,15 +194,15 @@ describe("CDN chunk granularity", () => {
     expect(eagerlyShipped).toEqual([]);
   });
 
-  it("keeps each of the six formerly-merged cloud panels in its own chunk", () => {
-    // The specific regression: these six shared one `features` chunk, so opening
-    // any one of them fetched all six. Asserted as distinct chunks rather than by
+  it("keeps each formerly-merged panel in its own chunk", () => {
+    // The specific regression: these panels shared one `features` chunk, so opening
+    // any one of them fetched them all. Asserted as distinct chunks rather than by
     // size so it stays meaningful as the components grow.
     const panels = [
-      "AiChatSidebar",
+      "AiChatPanel",
+      "AiRewriteMenu",
+      "AiAltTextReview",
       "CommentsSidebar",
-      "DesignReferenceSidebar",
-      "TemplateScoringPanel",
       "TestEmailModal",
       // Was `SnapshotHistory`, a cloud-only component. Version history is a
       // shared, capability-gated feature now, and its header control lives in

@@ -126,6 +126,48 @@
       "prompt": "Scaffold Templatical in our React app. We use pnpm. Propose the install before editing.",
       "expected_output": "Proposes @templatical/editor and @templatical/quality as direct app dependencies, using pnpm add. Explains that quality enables the Issues panel and lint badges and lets the user decline it. Explains that quality installs by default as an optional dependency; leaving it out is supported, with the editor working and the Issues tab hidden. Does not add vue, tailwindcss or @templatical/core, and adds renderer or pusher-js only if their feature is requested. Names the files and mount point, then waits for approval before editing.",
       "files": []
+    },
+    {
+      "id": 22,
+      "prompt": "Our Templatical editor uses our own AI backend. Add screenshot and PDF import, and make chat accept image references without sending until the author is ready.",
+      "expected_output": "Routes through providers.md and the authoritative backend/ai, api/ai-kit and guide/bring-your-own-ai pages. Uses chat with the boolean flag chatAttachments: true; the flag has an effect only when chat is a function. Requires a loaded template, PNG/JPEG/WebP/GIF/PDF only, at most 4 files, each at most 5 MB and at most 10 MB together. Explains multipart generate, placeholder pictures, metadata-only history and author-initiated send after the import picker. Text-only adapters declare chatAttachments: false. Names runAiWireConformance as the self-check.",
+      "files": []
+    },
+    {
+      "id": 23,
+      "prompt": "Add AI to our Templatical editor with my own model provider and backend.",
+      "expected_output": "Follows providers.md and docs.md to /backend/ai, /guide/bring-your-own-ai and /api/ai-kit, following required setup and contract links. Checks the installed editor version. Adds @templatical/ai-kit for the requested HTTP provider integration, with explicit false | fn members, chatAttachments and the loaded-template gate; the AI assistant names chat and its header button. Explains auth, abort, applied batches and Undo, and runs runAiWireConformance on a disposable authenticated template. Must not recommend Cloud-only AI or install vue, tailwindcss or @templatical/core to mount the editor.",
+      "files": []
+    },
+    {
+      "id": 24,
+      "prompt": "Add live collaboration to Templatical over my own backend.",
+      "expected_output": "Follows providers.md and docs.md to /backend/collaboration and /api/operations, with /backend/templates for the prerequisite. Keeps templates.load with revision, operation-based submit, rename-only templates.save, joined session UUID plus authenticated identity, ordered idempotent batches, refusal statusCode and lock ownership. Verifies the setup in two tabs and follows the consumer version. Must not recommend Cloud-only collaboration or add vue, tailwindcss or @templatical/core as editor dependencies.",
+      "files": []
+    },
+    {
+      "id": 25,
+      "prompt": "I configured my own AI backend but the AI assistant panel doesn't appear. Diagnose it.",
+      "expected_output": "Follows diagnose.md, failure-modes.md and docs.md to /backend/ai. Checks installed version, ai presence, callable chat and whether editor.load(id) or editor.create() resolved, before rewriting the backend. Distinguishes the AI assistant from Rewrite, Fix with AI and Write alt text; the last two also require @templatical/quality and lint on. Must not recommend initCloud as current AI support, invent an enable flag or install vue, tailwindcss or @templatical/core to reveal the panel.",
+      "files": []
+    },
+    {
+      "id": 26,
+      "prompt": "Check that my authenticated AI backend works with the editor.",
+      "expected_output": "Follows docs.md to /api/ai-kit#testing and /guide/bring-your-own-ai#backend-conformance-and-model-evaluation. Distinguishes runAiProviderConformance(provider, options) from runAiWireConformance(options), uses a disposable templateId, auth headers, matching features and timeoutMs, prints per-check failures and exits non-zero. Explains token cost, persisted batches, history replays and clear. Model evals use edit, fix and altText with runAltText, lintCheck and loadFile as needed. Must not treat model evaluation as proof of HTTP auth or streaming, recommend Cloud-only testing, or add vue, tailwindcss or @templatical/core as editor dependencies.",
+      "files": []
+    },
+    {
+      "id": 27,
+      "prompt": "Write alt text for my images with AI in our Templatical editor.",
+      "expected_output": "Follows providers.md and docs.md to /backend/ai#alt-text, /api/ai-kit#alt-text and /guide/bring-your-own-ai. Requires @templatical/quality, lint on, a loaded template and callable altText. Explains image URL access is the backend responsibility, AiAltTextRequest maxLength uses string.length and the effective altMaxLength, review before Accept or Mark decorative, no write on Cancel, bulk review with at most 3 concurrent calls and one undo step. Must not suggest generic Fix with AI for an alt finding, write unreviewed drafts, recommend Cloud-only AI, or add vue, tailwindcss or @templatical/core as editor dependencies.",
+      "files": []
+    },
+    {
+      "id": 28,
+      "prompt": "Fix this Templatical lint finding and tell me what is still flagged.",
+      "expected_output": "Follows the finding suggestion and reference to the canonical /quality/ category, rule catalog and /quality/options; uses /backend/ai#fix-with-ai for eligible generic AI copy fixes. Distinguishes AI_FIXABLE_RULES from AI_ALT_TEXT_RULES with reviewed alt drafts, deterministic fix closures and manual structural repair. Preserves merge tags, link hrefs and unrelated work. Runs template-tools validate after the edit and reports remaining warning and info findings; valid: true is not proof of exit 0, and missing optional mjml uses the documented recovery. Must not claim all lint can be AI-fixed, suppress findings to pass, recommend Cloud-only AI or add unrelated dependencies.",
+      "files": []
     }
   ]
 }

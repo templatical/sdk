@@ -1,0 +1,12 @@
+{"blocks":[
+{"id":"banner-image","type":"image","styles":{"padding":{"top":0,"right":0,"bottom":0,"left":0}},"src":"https://placehold.co/600x240","alt":"Frühjahrs-Sale","width":"full","align":"center"},
+{"id":"sale-title","type":"title","styles":{"padding":{"top":24,"right":24,"bottom":8,"left":24}},"content":"<p>Frühjahrs-Sale: 30 % auf alles</p>","level":1,"textAlign":"center"},
+{"id":"sale-text","type":"paragraph","styles":{"padding":{"top":8,"right":24,"bottom":8,"left":24}},"content":"<p>Hallo {{first_name}}, nur bis Sonntag: Mit dem Code {{coupon_code}} sparen Sie 30 % auf Ihre Bestellung.</p>"},
+{"id":"products","type":"section","styles":{"padding":{"top":16,"right":16,"bottom":16,"left":16}},"columns":"3","children":[
+[{"id":"p1","type":"paragraph","styles":{"padding":{"top":8,"right":8,"bottom":8,"left":8}},"content":"<p>Sneaker<br>89 €</p>"}],
+[{"id":"p2","type":"paragraph","styles":{"padding":{"top":8,"right":8,"bottom":8,"left":8}},"content":"<p>Jacke<br>129 €</p>"}],
+[{"id":"p3","type":"paragraph","styles":{"padding":{"top":8,"right":8,"bottom":8,"left":8}},"content":"<p>Rucksack<br>59 €</p>"}]]},
+{"id":"cta-de","type":"button","styles":{"padding":{"top":16,"right":24,"bottom":16,"left":24}},"text":"Zum Shop","url":"https://example.com/shop","backgroundColor":"#dc2626","textColor":"#ffffff","borderRadius":4,"buttonPadding":{"top":12,"right":24,"bottom":12,"left":24},"fontSize":16,"align":"center"},
+{"id":"footer-de","type":"paragraph","styles":{"padding":{"top":8,"right":24,"bottom":24,"left":24}},"content":"<p>Acme GmbH, Hauptstraße 1, Berlin. <a href=\"{{unsubscribe_url}}\">Abmelden</a></p>"}
+],
+"settings":{"width":600,"backgroundColor":"#ffffff","textColor":"#1a1a1a","linkUnderline":true,"fontFamily":"Arial","locale":"de"}}

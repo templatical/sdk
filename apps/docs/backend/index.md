@@ -1,6 +1,6 @@
 ---
 title: Connect your backend
-description: Saving, version history, comments, saved blocks, media, test emails and rendering are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+description: Saving, version history, comments, collaboration, saved blocks, media, test emails, rendering and AI are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
 ---
 
 # Connect your backend
@@ -20,14 +20,16 @@ await init({
   templates: myTemplateStore, // save and load
   versionHistory: myVersionStore, // past states — browse, preview, restore
   comments: myCommentStore, // threaded review, anchored per block
+  collaboration: myCollaborationBackend, // live edits, presence and block locks
   savedBlocks: myBlockLibrary, // reusable groups of blocks
   media: myGallery, // images, folders, upload
   testEmail: mySender, // mail this template to a person
   render: myRenderer, // MJML and HTML output
+  ai: myAiBackend, // chat attachments, rewrite, screenshot/PDF import
 });
 ```
 
-Each key stands alone, and a feature is **absent until you pass its key**: no `versionHistory`, no history control — not a disabled button, not an empty panel, and none of that UI is downloaded either.
+Most keys stand alone; `collaboration` also requires `templates`. A feature is **absent until you pass its key**: no `versionHistory`, no history control — not a disabled button, not an empty panel, and none of that UI is downloaded either.
 
 `init({ container })` on its own is a working editor that persists nothing.
 
@@ -44,6 +46,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 | [Media](/backend/media) | Browse on image fields, drop-to-upload, crop, folders, search | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test emails](/backend/test-email) | header trigger, recipient control, shape validation, accurate preview, sending and error states | `send` |
 | [Rendering & export](/backend/render) | `toMjml()` and `toHtml()`, custom blocks pre-resolved, fonts resolved | any of `toMjml` · `toHtml` · `compileMjml` |
+| [AI](/backend/ai) | an AI assistant that edits the template with Undo and attachments, the **Import from screenshot or PDF** shortcut, rewrite in the paragraph toolbar, static localized chat starters, AI labels | callable members: `chat` · `fixFinding` · `rewrite` · `altText` (each `false \| fn`); boolean flag `chatAttachments`, effective only when `chat` is a function; optional `conversation` |
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
@@ -53,6 +56,8 @@ On `templates`, `versionHistory`, `comments`, `savedBlocks` and `media` every mu
 Providers run in the user's browser. These flags shape the UI; they do not protect your API. Who may open a template, who may delete a shared saved block, which address a test may reach — enforce all of it on your server as well.
 :::
 
+With `collaboration`, content is persisted through `submit`; `templates.save` receives only renames. Put content-write side effects in that operation path (see [Collaboration](/backend/collaboration#templates)).
+
 ## IDs
 
 Ids come back from your `create()`; the editor never invents one. A template id is whatever your storage already calls it — a database key, a slug, a document id.
@@ -61,7 +66,7 @@ That id is also the join key. Version history and comments are both scoped to a 
 
 ## Errors
 
-Every provider method may reject. The editor reports the error through `onError`, surfaces it where the user is looking — the save status, the dialog they are in — and **leaves its own state untouched**. Nothing is marked saved that wasn't, and a failed delete does not make an entry disappear from the list.
+Every provider method may reject. The editor reports the error through `onError`, surfaces it where the user is looking — the save status, the dialog they are in — and keeps its confirmed state. Already-applied AI batches remain after Stop or failure; Undo requires local inverses or stored history with `conversation.undo` (see [AI](/backend/ai#errors)). Nothing is marked saved that wasn't, and a failed delete does not make an entry disappear from the list.
 
 Several of those messages reach the UI verbatim, so write them for the person who will read them.
 

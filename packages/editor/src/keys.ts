@@ -24,15 +24,12 @@ import type {
   TemplateContent,
 } from "@templatical/types";
 import type { Translations, CloudTranslations } from "./i18n";
-import type {
-  AuthManager,
-  UseAiConfigReturn,
-  UseTemplateScoringReturn,
-} from "@templatical/core/cloud";
+import type { AuthManager } from "@templatical/core/cloud";
 import type { UseSavedBlocksReturn } from "@templatical/core";
 import type { BaseEditorReturn } from "./composables/useEditorCore";
 import type { ImageUrlResolver } from "./composables/useImageUrlResolver";
 import type { UseFontsReturn } from "./composables/useFonts";
+import type { UseAiFeatureReturn } from "./composables/useAiFeature";
 import type { UseBlockRegistryReturn } from "./composables/useBlockRegistry";
 import type { UseKeyboardReorderReturn } from "./composables/useKeyboardReorder";
 import type { EditorCapabilities } from "./types/editor-capabilities";
@@ -46,6 +43,13 @@ export const TRANSLATIONS_KEY: InjectionKey<Translations> =
   Symbol("translations");
 
 export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
+
+/**
+ * The AI feature, for chrome deep in the tree (the paragraph toolbar's
+ * rewrite menu). Provided by `Editor.vue` only while an `ai` provider is set.
+ */
+export const AI_FEATURE_KEY: InjectionKey<UseAiFeatureReturn> =
+  Symbol("aiFeature");
 
 export const HISTORY_KEY: InjectionKey<UseHistoryReturn> = Symbol("history");
 
@@ -399,16 +403,10 @@ export const SAVED_BLOCKS_KEY: InjectionKey<UseSavedBlocksReturn> =
 export const AUTH_MANAGER_KEY: InjectionKey<AuthManager> =
   Symbol("authManager");
 
-export const AI_CONFIG_KEY: InjectionKey<UseAiConfigReturn> =
-  Symbol("aiConfig");
-
 // Comments are deliberately not injected: the panel takes `useCommentsFeature`'s
 // return as a **prop** the way `TestEmailPanel` and `SavedBlocksPanels` do, and the
 // per-block indicators read the comments entry on `CAPABILITIES_KEY`. Nothing
 // injects the composable itself.
-
-export const SCORING_KEY: InjectionKey<UseTemplateScoringReturn> =
-  Symbol("scoring");
 
 export const CLOUD_TRANSLATIONS_KEY: InjectionKey<CloudTranslations> =
   Symbol("cloudTranslations");

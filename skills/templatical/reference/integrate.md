@@ -133,7 +133,7 @@ Only the framework glue differs. When a consumer's repository uses one of these 
 ## Cloud
 
 `initCloud()` is the same mount with Cloud's storage, comments, saved blocks,
-test email, rendering and AI wired in behind an auth endpoint the consumer
+test email and rendering wired in behind an auth endpoint the consumer
 hosts — swap the import, add `auth`, nothing else about the mount changes:
 
 ```ts
@@ -144,6 +144,8 @@ const editor = await initCloud({
   auth: { url: "/api/templatical/token" },
 });
 ```
+
+Cloud's AI ships later. For the AI assistant, Rewrite, Fix with AI and Write alt text today, bring your own AI provider through `init({ ai })`: [providers.md](providers.md) and [docs.md](docs.md) → `/backend/ai` and `/guide/bring-your-own-ai`.
 
 Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
 dashboard — this skill documents `initCloud()`'s shape and the provider
@@ -163,3 +165,5 @@ shadow boundary, so this works in both DOM modes with no JS.
 not switch the chrome. The `theme` object on `init()` is the alternative for
 runtime-computed values and wins because it is inline style. Do not turn
 shadow DOM off to make theming work.
+
+For AI assistant file attachments or screenshot/PDF import, consult [providers.md](providers.md) and fetch `backend/ai`, `api/ai-kit` and `guide/bring-your-own-ai` through [docs.md](docs.md). Check `chat` is a function, `chatAttachments` is true and a template is loaded. Text-only backends set `features: { chatAttachments: false }`; use `runAiWireConformance` to check multipart generate and upload limits. The author sends after the import picker; no automatic turn starts.

@@ -11,6 +11,8 @@ blob-report/
 .playwright-mcp
 CLAUDE.md
 DESIGN.md
+# The AI kit's design-to-template prompt, which DESIGN.md matches on case-insensitive checkouts.
+!/packages/ai-kit/prompts/design.md
 PRODUCT.md
 DESIGN.json
 design-notes

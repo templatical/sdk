@@ -17,7 +17,7 @@ import { join, relative, sep } from "node:path";
  *
  * The two share one alias list and one resolver on purpose. They were separate
  * ad-hoc scripts once and drifted: the dead-key sweep matched only `t.`/`cloudT.`
- * and so reported keys as unused that `AiChatSidebar` reads through
+ * and so reported keys as unused that a component reads through
  * `cloudTranslations`, while the dangling check — same blind spot — cheerfully
  * confirmed the deletion was safe. Two checks with one blind spot agree with each
  * other and are wrong together.
@@ -178,7 +178,7 @@ function analyse(locale: string, holders: readonly string[]): Analysis {
         used.add(path);
       } else if (objects.has(path)) {
         // An object reference makes everything beneath it reachable — this is
-        // what covers `t.blocks[type]`, `cloudT.scoring.severity[s]`, and a
+        // what covers `t.blocks[type]`, `t.social.platforms[p]`, and a
         // whole subtree handed to a helper (`formatRelativeTime(x, t.time)`).
         // Resolving those by hand is how `time.*` was nearly deleted as dead.
         for (const leaf of leaves) {
@@ -199,7 +199,8 @@ describe("i18n keys agree with the source that reads them", () => {
   it("discovered the source tree and both locales (sanity check)", () => {
     expect(sourceFiles().length).toBeGreaterThan(100);
     expect(OSS.leaves.size).toBeGreaterThan(300);
-    expect(CLOUD.leaves.size).toBeGreaterThan(30);
+    // Cloud has 11 keys after A1 PR 2 Task 1 removes AI strings; this only checks locale discovery.
+    expect(CLOUD.leaves.size).toBeGreaterThan(8);
   });
 
   it("OSS: every t.… reference resolves to a defined key", () => {

@@ -1,29 +1,24 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
-import { Sparkles } from "@lucide/vue";
-
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { CloudAttachment } from "../runtime";
 
-const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
-
 /**
- * The Cloud-only header controls, filled into `EditorHeader`'s `left-extras`
- * and `right-extras` slots.
+ * The Cloud-only header control, filled into `EditorHeader`'s `left-extras`
+ * slot. `Editor.vue` still mounts the `right` part, which renders nothing until
+ * Cloud's next right-hand control (S7 and S8 on the `cloud` branch).
  *
- * One component with a `part` prop rather than two: both regions share this
- * file's lazy chunk, so a Cloud session pays one round-trip for all of them and
- * an OSS session pays none.
+ * This control lives in a lazy chunk, so a Cloud session pays one round-trip
+ * for it and an OSS session pays none.
  *
  * There is no `center` part. The header's centre track must hold a constant
  * width, so only the anchored columns take conditional controls — see
  * `EditorHeader.vue`'s centre comment.
  *
- * The plan-usage readout and the AI button live here rather than in the shared
- * header because they render **cloud-chunk** strings; OSS translators never see
- * them. Comments and the collaborator bar are deliberately not here: both are
- * shared and provider-backed, so their controls and strings belong to the shared
- * header and the OSS chunk.
+ * The plan-usage readout lives here rather than in the shared header because
+ * it renders a **cloud-chunk** string; OSS translators never see it. Comments
+ * and the collaborator bar are deliberately not here: both are shared and
+ * provider-backed, so their controls and strings belong to the shared header
+ * and the OSS chunk.
  */
 defineProps<{
   part: "left" | "right";
@@ -50,55 +45,5 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
         })
       }}
     </span>
-  </template>
-
-  <!-- Right: AI — after the shared header's Comments button and before the
-       test-email button, so the shared header is a superset of the OSS one rather
-       than a rearrangement. -->
-  <template v-else-if="part === 'right'">
-    <div
-      v-if="
-        cloud.featureFlags.canUseAiGeneration.value &&
-        cloud.featureFlags.hasTemplateSaved.value
-      "
-      :ref="
-        (el) => (cloud.panelState.aiMenuRef.value = el as HTMLElement | null)
-      "
-      class="tpl:relative"
-    >
-      <button
-        type="button"
-        data-testid="ai-menu-trigger"
-        :aria-expanded="cloud.panelState.aiMenuOpen.value"
-        class="tpl-ai-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:whitespace-nowrap tpl:transition-all tpl:duration-200"
-        :class="
-          cloud.panelState.aiButtonActive.value
-            ? 'tpl-ai-btn--active'
-            : 'tpl-ai-btn--idle'
-        "
-        @click.stop="cloud.panelState.toggleAiMenu"
-      >
-        <Sparkles :size="16" :stroke-width="2" class="tpl-ai-btn-icon" />
-        {{ cloudT.aiChat.button }}
-      </button>
-      <Transition
-        enter-active-class="tpl:transition-all tpl:ease-out"
-        enter-from-class="tpl:scale-95 tpl:opacity-0"
-        enter-to-class="tpl:scale-100 tpl:opacity-100"
-        leave-active-class="tpl:transition-all tpl:duration-100 tpl:ease-in"
-        leave-from-class="tpl:scale-100 tpl:opacity-100"
-        leave-to-class="tpl:scale-95 tpl:opacity-0"
-      >
-        <div
-          v-if="cloud.panelState.aiMenuOpen.value"
-          class="tpl:absolute tpl:right-0 tpl:top-full tpl:z-50 tpl:mt-1 tpl:origin-top-right"
-        >
-          <AiFeatureMenu
-            :active-feature="cloud.panelState.activeAiFeature.value"
-            @select="cloud.panelState.handleAiFeatureSelect"
-          />
-        </div>
-      </Transition>
-    </div>
   </template>
 </template>

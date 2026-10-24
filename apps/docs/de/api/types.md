@@ -717,3 +717,9 @@ unsubscribe(); // Listener entfernen
 ## Operationen und Zusammenarbeit
 
 `Operation` und seine sechs Varianten, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.
+
+## KI
+
+`AiProvider`, `AiConversationProvider`, die KI-Anfragen, Handler, Ergebnisse, `AiChatMessage` und `AiMergeTags` bilden den MIT-Provider-Vertrag in `@templatical/types`. [KI](/de/backend/ai#der-vertrag) beschreibt den Vertrag; die [KI-API-Referenz](/de/api/ai-kit) beschreibt HTTP-Client, Server-Kit und Protokoll.
+
+`SdkError(message, statusCode?, code?, details?)` trägt KI-Fehlercodes und optionale `details`. `ThrottledError` erweitert ihn um `retryAfterMs`, Status 429 und den Code `rate_limited`. `invertOperations(content, ops)` liefert die abgesicherte Umkehrung eines Batches; es liegt in `@templatical/types` und wird von `@templatical/core` erneut exportiert.

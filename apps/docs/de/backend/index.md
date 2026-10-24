@@ -1,6 +1,6 @@
 ---
 title: Backend anbinden
-description: Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Medien, Test-E-Mails und Rendering sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
+description: Speichern, Versionsverlauf, Kommentare, Zusammenarbeit, gespeicherte Blöcke, Medien, Test-E-Mails, Rendering und KI sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
 ---
 
 # Backend anbinden
@@ -17,17 +17,19 @@ import { init } from '@templatical/editor';
 await init({
   container: '#editor',
 
-  templates: myTemplateStore, // speichern und laden
-  versionHistory: myVersionStore, // frühere Stände — ansehen, Vorschau, wiederherstellen
-  comments: myCommentStore, // Review in Threads, pro Block verankert
-  savedBlocks: myBlockLibrary, // wiederverwendbare Blockgruppen
-  media: myGallery, // Bilder, Ordner, Upload
-  testEmail: mySender, // diese Vorlage an eine Person mailen
-  render: myRenderer, // MJML- und HTML-Ausgabe
+  templates: myTemplateStore, // save and load
+  versionHistory: myVersionStore, // past states — browse, preview, restore
+  comments: myCommentStore, // threaded review, anchored per block
+  collaboration: myCollaborationBackend, // live edits, presence and block locks
+  savedBlocks: myBlockLibrary, // reusable groups of blocks
+  media: myGallery, // images, folders, upload
+  testEmail: mySender, // mail this template to a person
+  render: myRenderer, // MJML and HTML output
+  ai: myAiBackend, // chat attachments, rewrite, screenshot/PDF import
 });
 ```
 
-Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren Schlüssel nicht übergeben**: kein `versionHistory`, kein Verlaufs-Steuerelement — keine deaktivierte Schaltfläche, kein leeres Panel, und auch der zugehörige Code wird nicht geladen.
+Die meisten Schlüssel stehen für sich; `collaboration` benötigt zusätzlich `templates`. Jede Funktion **fehlt, solange Sie ihren Schlüssel nicht übergeben**: kein `versionHistory`, kein Verlaufs-Steuerelement — keine deaktivierte Schaltfläche, kein leeres Panel, und auch der zugehörige Code wird nicht geladen.
 
 `init({ container })` allein ist ein funktionierender Editor, der nichts persistiert.
 
@@ -44,6 +46,7 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 | [Medien](/de/backend/media) | Durchsuchen an Bildfeldern, Drop-Upload, Zuschnitt, Ordner, Suche | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test-E-Mails](/de/backend/test-email) | Auslöser im Header, Empfängersteuerung, Formatprüfung, exakte Vorschau, Versand- und Fehlerzustände | `send` |
 | [Rendering & Export](/de/backend/render) | `toMjml()` und `toHtml()`, vorab aufgelöste Custom Blocks, aufgelöste Schriften | eines von `toMjml` · `toHtml` · `compileMjml` |
+| [KI](/de/backend/ai) | ein KI-Assistent, der die Vorlage mit Rückgängig und Anhängen bearbeitet, die Verknüpfung **Aus Screenshot oder PDF importieren**, Umformulieren in der Absatz-Werkzeugleiste, statische, lokalisierte Einstiegsanfragen, KI-Kennzeichnung | aufrufbare Mitglieder: `chat` · `fixFinding` · `rewrite` · `altText` (jeweils `false \| fn`); boolesches Flag `chatAttachments`, nur wirksam, wenn `chat` eine Funktion ist; optional `conversation` |
 
 Der Editor behält, was kleinteilig und für alle gleich ist: Änderungsverfolgung, ein verzögertes Autosave, das während Undo pausiert, eine Vorschau, die Anzeigebedingungen respektiert, die Rückfrage, bevor ein Wiederherstellen ungespeicherte Arbeit verwirft. Ihnen bleibt, wohin die Daten gehen, wer sie lesen darf und wie Ihre API aussieht.
 
@@ -53,6 +56,8 @@ Bei `templates`, `versionHistory`, `comments`, `savedBlocks` und `media` ist jed
 Provider laufen im Browser der Nutzenden. Diese Flags formen die Oberfläche; Ihre API schützen sie nicht. Wer eine Vorlage öffnen darf, wer einen geteilten gespeicherten Block löschen darf, welche Adresse ein Test erreichen darf — setzen Sie all das zusätzlich auf Ihrem Server durch.
 :::
 
+Mit `collaboration` werden Inhaltsänderungen über `submit` persistiert; `templates.save` erhält nur Umbenennungen. Seiteneffekte für Inhaltsänderungen gehören dann in den Operations-Schreibpfad (siehe [Zusammenarbeit](/de/backend/collaboration#templates)).
+
 ## IDs
 
 IDs kommen aus Ihrem `create()` zurück; der Editor erfindet keine. Eine Vorlagen-ID ist, was auch immer Ihr Speicher bereits verwendet — ein Datenbankschlüssel, ein Slug, eine Dokument-ID.
@@ -61,7 +66,7 @@ Diese ID ist auch der Verbindungsschlüssel. Versionsverlauf und Kommentare sind
 
 ## Fehler
 
-Jede Provider-Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn dort, wohin die Nutzenden gerade schauen — Speicherstatus, geöffneter Dialog — und **lässt seinen eigenen Zustand unberührt**. Nichts wird als gespeichert markiert, was es nicht ist, und ein fehlgeschlagenes Löschen lässt keinen Eintrag aus der Liste verschwinden.
+Jede Provider-Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn dort, wohin die Nutzenden gerade schauen — Speicherstatus, geöffneter Dialog — und behält den bestätigten Zustand bei. Bereits angewendete KI-Batches bleiben bei Stop oder Fehler erhalten; Rückgängig erfordert lokale Inversen oder gespeicherten Verlauf mit `conversation.undo` (siehe [KI](/de/backend/ai#fehler)). Nichts wird als gespeichert markiert, was es nicht ist, und ein fehlgeschlagenes Löschen lässt keinen Eintrag aus der Liste verschwinden.
 
 Mehrere dieser Meldungen landen wortgleich in der Oberfläche — schreiben Sie sie für die Person, die sie lesen wird.
 

@@ -10,6 +10,7 @@ import {
   type ComputedRef,
   type DeepReadonly,
   type Ref,
+  type ShallowRef,
 } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { registerEditorInstance } from "../utils/activeEditorTracker";
@@ -35,6 +36,7 @@ import type {
   LogicTagsConfig,
   MergeTag,
   MergeTagsConfig,
+  SyntaxPreset,
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
@@ -192,6 +194,8 @@ const BLOCK_COMPONENT_MAP: Record<string, Component> = {
  * the same spirit as `ConditionPreviewEditor` and `HistoryInterceptorEditor`.
  */
 export interface BaseEditorReturn {
+  /** Committed create/load version, supplied by core. */
+  loadVersion?: Readonly<Ref<number>>;
   state: DeepReadonly<{
     content: TemplateContent;
     selectedBlockId: string | null;
@@ -345,6 +349,9 @@ export interface UseEditorCoreReturn {
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   /** Replace the configured merge tags at runtime. */
   setMergeTags: (next: MergeTag[]) => void;
+  /** The live merge tags (`setMergeTags` replaces them) and their syntax. */
+  mergeTags: ShallowRef<MergeTag[]>;
+  mergeTagSyntax: SyntaxPreset;
   destroy: () => void;
 }
 
@@ -872,6 +879,8 @@ export function useEditorCore(
     appliesConditionFilter,
     registerCustomBlocks,
     setMergeTags,
+    mergeTags,
+    mergeTagSyntax,
     destroy,
   };
 }

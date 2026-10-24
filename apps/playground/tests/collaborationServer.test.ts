@@ -102,6 +102,38 @@ describe("SharedCollaborationServer", () => {
     ]);
   });
 
+  it("names a batch an AI turn made, and its re-sync, with the ai actor (BY9)", () => {
+    server.submit("tpl", ADA, {
+      batchId: "b-ai",
+      baseRevision: 0,
+      ops: [{ op: "updateBlock", blockId: "t1", set: { content: "Hello" } }],
+      origin: "ai",
+    });
+    server.submit("tpl", ADA, {
+      batchId: "b-ai-2",
+      baseRevision: 1,
+      ops: [
+        {
+          op: "setContent",
+          content: { blocks: [], settings: { width: 600 } } as never,
+        },
+      ],
+      origin: "ai",
+    });
+
+    const aiActor = { type: "ai", id: "u-1", name: "Ada", sessionId: "s-ada" };
+    expect(events.map(({ event }) => event)).toEqual([
+      {
+        type: "batch",
+        batch: expect.objectContaining({ batchId: "b-ai", actor: aiActor }),
+      },
+      { type: "resync", revision: 2, actor: aiActor },
+    ]);
+    expect(server.operationsAfter("tpl", 0)).toMatchObject({
+      batches: [{ actor: aiActor }, { actor: aiActor }],
+    });
+  });
+
   it("answers a repeated batch id with its revision, applying it once", () => {
     const batch = {
       batchId: "b-1",
@@ -198,8 +230,16 @@ describe("SharedCollaborationServer", () => {
     });
 
     expect(events.map(({ event }) => event)).toEqual([
-      { type: "resync", revision: 1 },
-      { type: "resync", revision: 2 },
+      {
+        type: "resync",
+        revision: 1,
+        actor: { type: "user", id: "u-1", name: "Ada", sessionId: "s-ada" },
+      },
+      {
+        type: "resync",
+        revision: 2,
+        actor: { type: "user", id: "u-1", name: "Ada", sessionId: "s-ada" },
+      },
     ]);
   });
 

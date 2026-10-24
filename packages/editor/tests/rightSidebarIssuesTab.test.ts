@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { nextTick, ref } from "vue";
 import { createDefaultTemplateContent } from "@templatical/types";
 import RightSidebar from "../src/components/RightSidebar.vue";
-import { TEMPLATE_LINT_KEY } from "../src/keys";
+import { AI_FEATURE_KEY, TEMPLATE_LINT_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
 /**
@@ -34,12 +34,16 @@ function mountSidebar(lint: ReturnType<typeof lintState> | null) {
 
 describe("RightSidebar Issues tab", () => {
   it("renders the tab once the quality package has loaded", () => {
-    const wrapper = mountSidebar(lintState({ ready: true, unavailable: false }));
+    const wrapper = mountSidebar(
+      lintState({ ready: true, unavailable: false }),
+    );
     expect(wrapper.find("#tpl-tab-issues").exists()).toBe(true);
   });
 
   it("renders no tab when the quality package is not installed", () => {
-    const wrapper = mountSidebar(lintState({ ready: false, unavailable: true }));
+    const wrapper = mountSidebar(
+      lintState({ ready: false, unavailable: true }),
+    );
     expect(wrapper.find("#tpl-tab-issues").exists()).toBe(false);
     expect(wrapper.find("#tpl-tabpanel-issues").exists()).toBe(false);
   });
@@ -72,13 +76,63 @@ describe("RightSidebar Issues tab", () => {
     await nextTick();
     expect(wrapper.find("#tpl-tabpanel-issues").exists()).toBe(false);
     expect(wrapper.find("#tpl-tabpanel-content").exists()).toBe(true);
-    expect(
-      wrapper.find("#tpl-tab-content").attributes("aria-selected"),
-    ).toBe("true");
+    expect(wrapper.find("#tpl-tab-content").attributes("aria-selected")).toBe(
+      "true",
+    );
   });
 
   it("renders no tab when linting is turned off", () => {
     // useEditorCore provides no linter at all when every lint key is false.
     expect(mountSidebar(null).find("#tpl-tab-issues").exists()).toBe(false);
+  });
+
+  it.each(["disabled", "missing quality"])(
+    "hides the Issues panel and every AI lint entry with AI enabled and lint %s",
+    (reason) => {
+      const lint =
+        reason === "disabled"
+          ? null
+          : lintState({ ready: false, unavailable: true });
+      const wrapper = mountEditor(RightSidebar, {
+        props: {
+          selectedBlock: null,
+          settings: createDefaultTemplateContent().settings,
+          tab: "issues",
+        },
+        provides: {
+          [AI_FEATURE_KEY]: { isAvailable: ref(true), has: () => true },
+          ...(lint ? { [TEMPLATE_LINT_KEY]: lint } : {}),
+        },
+      });
+      expect(wrapper.find("#tpl-tab-issues").exists()).toBe(false);
+      expect(wrapper.find("#tpl-tabpanel-issues").exists()).toBe(false);
+      expect(wrapper.find('[data-testid="issue-ai-fix"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="issue-ai-alt-text"]').exists()).toBe(
+        false,
+      );
+      expect(
+        wrapper.find('[data-testid="issue-ai-alt-text-bulk"]').exists(),
+      ).toBe(false);
+      wrapper.unmount();
+    },
+  );
+
+  it("opens the tab its owner asks for (v-model:tab, D23)", async () => {
+    const wrapper = mountEditor(RightSidebar, {
+      props: {
+        selectedBlock: null,
+        settings: createDefaultTemplateContent().settings,
+        tab: "issues",
+      },
+      provides: {
+        [TEMPLATE_LINT_KEY]: lintState({ ready: true, unavailable: false }),
+      },
+    });
+    expect(wrapper.get("#tpl-tab-issues").attributes("aria-selected")).toBe(
+      "true",
+    );
+
+    await wrapper.get("#tpl-tab-content").trigger("click");
+    expect(wrapper.emitted("update:tab")).toEqual([["content"]]);
   });
 });

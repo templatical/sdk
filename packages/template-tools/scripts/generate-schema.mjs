@@ -3,8 +3,9 @@
 // every consumer that validates a Templatical template — this package's own
 // `validate`/`schema` CLI commands, and the templatical Agent Skill.
 //
-// This script writes FIVE files: this package's own schema.json,
-// skills/templatical/reference/schema.json, the per-type field lists inside
+// This script writes SIX files: this package's own schema.json,
+// skills/templatical/reference/schema.json,
+// packages/ai-kit/schema/template-content.schema.json, the per-type field lists inside
 // skills/templatical/reference/block-guide.md, and custom-block-schema.json
 // (this package's copy plus skills/templatical/reference/custom-block-schema.json). The skill
 // needs its schema copy committed in the repo because the agent reads it in
@@ -21,10 +22,10 @@
 // them — and `applyGuideRegions` skips any type whose BEGIN marker is absent.
 //
 // Re-run `pnpm --filter @templatical/template-tools run generate-schema` whenever
-// the block model changes. Neither committed copy should ever be hand-edited.
+// the block model changes. No committed copy should ever be hand-edited.
 //
 // `buildSchema()` is exported so the test suite can regenerate in-memory and
-// assert both committed copies are fresh and identical
+// assert all committed copies are fresh and identical
 // (tests/schema-freshness.test.ts, tests/schema-parity.test.ts) — that guard
 // makes a stale or diverged schema impossible to merge.
 import ts from "typescript";
@@ -45,6 +46,13 @@ export const SCHEMA_PATH = resolve(here, "../schema.json");
 export const SKILL_SCHEMA_PATH = resolve(
   repoRoot,
   "skills/templatical/reference/schema.json",
+);
+// @templatical/ai-kit ships the schema as a file for AI backends in any language
+// and builds its editing prompt from it (A1). A third copy of the one
+// artifact, written here so it can never be generated apart.
+export const AI_SCHEMA_PATH = resolve(
+  repoRoot,
+  "packages/ai-kit/schema/template-content.schema.json",
 );
 
 // The block guide's per-type field lists are generated into marker pairs in
@@ -297,7 +305,7 @@ export function serializeSchema(schema) {
 function main() {
   const schema = buildSchema();
   const serialized = serializeSchema(schema);
-  for (const path of [SCHEMA_PATH, SKILL_SCHEMA_PATH]) {
+  for (const path of [SCHEMA_PATH, SKILL_SCHEMA_PATH, AI_SCHEMA_PATH]) {
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, serialized, "utf8");
   }
@@ -313,6 +321,7 @@ function main() {
   ].length;
   console.log(`Wrote ${SCHEMA_PATH} (${defCount} definitions)`);
   console.log(`Wrote ${SKILL_SCHEMA_PATH} (${defCount} definitions)`);
+  console.log(`Wrote ${AI_SCHEMA_PATH} (${defCount} definitions)`);
   console.log(`Wrote ${SKILL_GUIDE_PATH} (${guideCount} generated field lists)`);
 
   const blockSerialized = serializeSchema(buildCustomBlockSchema());

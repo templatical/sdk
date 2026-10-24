@@ -22,6 +22,7 @@ import {
   computed,
   reactive,
   readonly,
+  ref,
   type DeepReadonly,
   type Ref,
 } from "@vue/reactivity";
@@ -45,7 +46,7 @@ export interface EditorState {
   isDirty: boolean;
   /** True for the duration of a `save()` call. */
   isSaving: boolean;
-  /** True for the duration of a `create()` or `load()` call. */
+  /** True while the latest `create()` or `load()` request is pending. */
   isLoading: boolean;
   uiTheme: UiTheme;
 }
@@ -74,6 +75,8 @@ export interface UseEditorOptions {
 
 export interface UseEditorReturn {
   state: DeepReadonly<EditorState>;
+  /** Increments when create/load commits, including a reload of the same id. */
+  loadVersion: Readonly<Ref<number>>;
   content: Ref<TemplateContent>;
   selectedBlock: Ref<Block | null>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
@@ -127,8 +130,8 @@ export interface UseEditorReturn {
     name?: string;
     content?: TemplateContent;
   }) => Promise<Template>;
-  /** Fetch a template and make it the editor's content. */
-  load: (templateId: string) => Promise<Template>;
+  /** Fetch a template; an optional guard can discard a stale response. */
+  load: (templateId: string, shouldApply?: () => boolean) => Promise<Template>;
   /**
    * Persist the loaded template's name + content as a patch.
    *
@@ -164,6 +167,8 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     isLoading: false,
     uiTheme: "auto",
   });
+  const loadVersion = ref(0);
+  let loadingRequest = 0;
 
   /**
    * Bumped by every content mutation. `save()` captures it before awaiting the
@@ -495,6 +500,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     }
 
     let created: Template;
+    const request = ++loadingRequest;
     state.isLoading = true;
     try {
       if (input?.content) {
@@ -513,40 +519,45 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       if (revision === revisionAtRequest) {
         state.isDirty = false;
       }
+      loadVersion.value++;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
-      state.isLoading = false;
+      if (loadingRequest === request) state.isLoading = false;
     }
-    // Below the `finally` on purpose: `isLoading` is cleared there, so a handler
-    // must not observe the editor still loading. Unreachable on failure — the
-    // catch rethrows.
+    // Release this request's loading flag before notifying the consumer. A
+    // newer request, if any, retains ownership. Unreachable on failure.
     notify(() => provider.onCreated?.(created));
     return created;
   }
 
-  async function load(templateId: string): Promise<Template> {
+  async function load(
+    templateId: string,
+    shouldApply?: () => boolean,
+  ): Promise<Template> {
     const provider = requireProvider("load()");
 
     let loaded: Template;
+    const request = ++loadingRequest;
     state.isLoading = true;
     try {
       loaded = await provider.load(templateId);
       assertNoSlotInContent(loaded.content);
       assertNoWrapperInContent(loaded.content);
+      if (shouldApply && !shouldApply()) return loaded;
       state.template = loaded;
       state.content = loaded.content;
       state.isDirty = false;
+      loadVersion.value++;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
-      state.isLoading = false;
+      if (loadingRequest === request) state.isLoading = false;
     }
-    // Below the `finally` on purpose: `isLoading` is cleared there, so a handler
-    // must not observe the editor still loading. Unreachable on failure — the
-    // catch rethrows.
+    // Release this request's loading flag before notifying the consumer. A
+    // newer request, if any, retains ownership. Unreachable on failure.
     notify(() => provider.onLoaded?.(loaded));
     return loaded;
   }
@@ -616,6 +627,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
 
   return {
     state: readonly(state),
+    loadVersion: readonly(loadVersion),
     content,
     selectedBlock,
     isBlockLocked,

@@ -511,4 +511,100 @@ describe("useCollaborationFeature — agents' edits", () => {
       ops: [editTitle],
     });
   });
+
+  const AI: CollaborationActor = {
+    type: "ai",
+    id: "u-1",
+    name: "Ada",
+    sessionId: "s-ada-2",
+  };
+
+  it("names an AI batch as the AI acting for its user, outlines its blocks, and leaves it out of undo", async () => {
+    const { feature, deliver } = await openWithAgent();
+
+    await deliver([editTitle, moveParagraph], AI);
+
+    expect(feature.notices.value).toEqual([
+      {
+        id: expect.any(Number),
+        kind: "aiEdited",
+        name: "Ada",
+        blocks: 2,
+        settings: false,
+        templateUpdated: false,
+      },
+    ]);
+    expect(feature.capability.agentHighlightOf("t1")).toEqual(
+      expect.any(Number),
+    );
+    expect(feature.history.canUndo.value).toBe(false);
+  });
+
+  it("applies an AI batch this very editor asked for and only outlines it (D26)", async () => {
+    const { feature, editor, deliver } = await openWithAgent();
+
+    await deliver([editTitle], { ...AI, sessionId: feature.core.sessionId });
+
+    expect(editor.content.value.blocks[0]).toMatchObject({ content: "A" });
+    expect(feature.notices.value).toEqual([]);
+    expect(feature.capability.agentHighlightOf("t1")).toEqual(
+      expect.any(Number),
+    );
+  });
+
+  it("shows no notice for the asker's own AI re-sync either (D26)", async () => {
+    const { feature, resync } = await openWithAgent();
+
+    await resync({ ...AI, sessionId: feature.core.sessionId });
+
+    expect(feature.notices.value).toEqual([]);
+  });
+
+  it("says the AI updated the template when its re-sync arrives", async () => {
+    const { feature, resync } = await openWithAgent();
+
+    await resync(AI);
+
+    expect(feature.notices.value).toEqual([
+      {
+        id: expect.any(Number),
+        kind: "aiEdited",
+        name: "Ada",
+        blocks: 0,
+        settings: false,
+        templateUpdated: true,
+      },
+    ]);
+  });
+
+  it("merges the AI's batches within 2 s, apart from an agent's for the same user", async () => {
+    const { feature, deliver } = await openWithAgent();
+
+    await deliver([editTitle], AI);
+    vi.advanceTimersByTime(AGENT_EDIT_MERGE_MS - 1);
+    await deliver([moveParagraph], AI);
+    const [merged] = feature.notices.value;
+    expect(merged).toMatchObject({ kind: "aiEdited", blocks: 2 });
+
+    await deliver([editTitle], CLAUDE);
+    expect(feature.notices.value).toHaveLength(1);
+    expect(feature.notices.value[0].id).not.toBe(merged.id);
+    expect(feature.notices.value[0]).toMatchObject({
+      kind: "agentEdited",
+      client: "Claude",
+    });
+  });
+
+  it("outlines blocks on request, with no notice (the asker's own AI turn)", async () => {
+    const { feature } = await openWithAgent();
+
+    feature.outline(["t1"]);
+
+    expect(feature.notices.value).toEqual([]);
+    expect(feature.capability.agentHighlightOf("t1")).toEqual(
+      expect.any(Number),
+    );
+    vi.advanceTimersByTime(AGENT_HIGHLIGHT_MS);
+    expect(feature.capability.agentHighlightOf("t1")).toBe(null);
+  });
 });

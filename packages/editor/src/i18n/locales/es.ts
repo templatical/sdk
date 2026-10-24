@@ -620,11 +620,6 @@ const es: typeof en = {
     noBlocks: "Aún no hay bloques",
     dragHint: "Comienza desde cero arrastrando bloques desde la barra lateral",
     dropHere: "Suelta aquí",
-    aiHintChat: "o deja que",
-    aiHintChatSuffix: "genere una plantilla completa para ti en segundos",
-    aiHintDesign:
-      "¿Tienes un diseño existente? Sube una captura de pantalla, imagen o PDF y",
-    aiHintDesignSuffix: "lo recreará instantáneamente",
   },
 
   // Sidebar
@@ -720,15 +715,139 @@ const es: typeof en = {
     reconnectingNotice: "Reconectando… Puedes seguir editando.",
     dismiss: "Descartar",
     anAgent: "Un agente",
-    agentChangedBlock: "{client} para {name} cambió un bloque.",
-    agentChangedBlocks: "{client} para {name} cambió {count} bloques.",
-    agentChangedSettings:
-      "{client} para {name} cambió la configuración de la plantilla.",
+    agentFor: "{client} para {name}",
+    aiFor: "IA (para {name})",
+    agentChangedBlock: "{who} cambió un bloque.",
+    agentChangedBlocks: "{who} cambió {count} bloques.",
+    agentChangedSettings: "{who} cambió la configuración de la plantilla.",
     agentChangedBlockAndSettings:
-      "{client} para {name} cambió un bloque y la configuración de la plantilla.",
+      "{who} cambió un bloque y la configuración de la plantilla.",
     agentChangedBlocksAndSettings:
-      "{client} para {name} cambió {count} bloques y la configuración de la plantilla.",
-    agentUpdatedTemplate: "{client} para {name} actualizó la plantilla.",
+      "{who} cambió {count} bloques y la configuración de la plantilla.",
+    agentUpdatedTemplate: "{who} actualizó la plantilla.",
+  },
+  ai: {
+    altText: {
+      stale: "La imagen ha cambiado. Vuelva a escribir el texto alternativo.",
+      bulk: "Escribir los textos alternativos que faltan ({count})",
+      review: "Revisar textos alternativos",
+      applyAccepted: "Aplicar seleccionados ({count})",
+      progress: "Escribiendo textos alternativos… {done} de {total}",
+      button: "Escribir texto alternativo",
+      drafting: "Escribiendo texto alternativo…",
+      title: "Texto alternativo",
+      accept: "Aceptar",
+      decorative: "Marcar como decorativa",
+      cancel: "Cancelar",
+      note: "Redactado por IA. Compruebe que describe la finalidad de la imagen.",
+      failed:
+        "No se pudo escribir el texto alternativo de esta imagen. Escríbalo manualmente.",
+    },
+    fix: {
+      button: "Corregir con IA",
+      fixing: "Corrigiendo…",
+      stillFlagged: "Sigue marcado después de la corrección",
+    },
+    starters: {
+      emptyWelcome: "Redactar un correo de bienvenida para nuevos clientes",
+      emptyLaunch: "Crear un anuncio de lanzamiento de producto",
+      emptyNewsletter: "Crear el diseño de un boletín mensual",
+      filledShorten: "Acortar el texto",
+      filledFriendlier: "Usar un tono más cercano",
+      filledDates: "Actualizar las fechas y la oferta",
+      filledCta: "Añadir una llamada a la acción clara",
+    },
+    rewrite: {
+      tooLarge:
+        "Este párrafo es demasiado largo para la IA. Selecciona un párrafo de hasta 20.000 caracteres.",
+      title: "Reescribir con IA",
+      close: "Cerrar",
+      suggestionLabel: "Sugerencia de IA",
+      presets: {
+        shorten: "Acortar",
+        expand: "Ampliar",
+        friendlier: "Más amable",
+        formal: "Más formal",
+        fixGrammar: "Corregir gramática",
+        translate: "Traducir",
+      },
+      language: "Idioma",
+      instructionLabel: "Tu instrucción",
+      instructionPlaceholder: "O indica cómo reescribirlo…",
+      run: "Reescribir",
+      rewriting: "Reescribiendo…",
+      stop: "Detener",
+      replaceAction: "Reemplazar",
+      discard: "Descartar",
+    },
+    errors: {
+      historyError: "No se pudo cargar la conversación. Inténtalo de nuevo.",
+      missingProvider:
+        "Este backend de IA necesita un proveedor de plantillas o de colaboración para mostrar sus cambios.",
+      featureUnavailable: "Esta función de IA no está disponible.",
+      limitReached: "Has agotado tu límite de IA por ahora.",
+      limitReachedUntil: "Has agotado tu límite de IA hasta el {date}.",
+      rateLimited:
+        "Demasiadas solicitudes de IA. Inténtalo de nuevo en un momento.",
+      turnRunning: "Ya hay una solicitud de IA en curso para esta plantilla.",
+      contentTooLarge: "Esta plantilla es demasiado grande para la IA.",
+      outputInvalid:
+        "La IA no pudo generar un resultado válido. Inténtalo de nuevo.",
+      providerError:
+        "La IA no está disponible ahora mismo. Inténtalo más tarde.",
+      templateChanged: "La plantilla cambió mientras la IA trabajaba.",
+      blockLocked: "Alguien está editando un bloque que la IA necesitaba.",
+      undoRefused:
+        "Alguien ha cambiado estos bloques desde entonces, por lo que no se puede deshacer.",
+      redoRefused:
+        "Alguien ha cambiado estos bloques desde entonces, por lo que no se puede rehacer.",
+      messageGone: "Este mensaje ya no está en la conversación.",
+      generic: "Algo salió mal. Inténtalo de nuevo.",
+    },
+    menu: {
+      button: "IA",
+      chat: "Asistente de IA",
+    },
+    chat: {
+      keptYourVersion:
+        "Ha editado mientras la IA trabajaba, por lo que este editor ha conservado su versión. Los cambios de la IA están guardados en el servidor; vuelva a cargar para verlos. Si guarda su versión, los sustituirá.",
+      reload: "Volver a cargar",
+      attach: "Adjuntar archivos",
+      dropHint: "Suelte imágenes o PDF para adjuntarlos",
+      removeAttachment: "Eliminar {name}",
+      attachTooMany: "Adjunte como máximo 4 archivos.",
+      attachTooLarge: "{name} supera los 5 MB.",
+      attachTotalTooLarge:
+        "Los archivos adjuntos pueden ocupar como máximo 10 MB en total.",
+      attachWrongType: "{name} no es una imagen ni un PDF.",
+      title: "Asistente de IA",
+      notice: "Las respuestas y los cambios provienen de una IA.",
+      close: "Cerrar",
+      newChat: "Nueva conversación",
+      inputPlaceholder: "Describe el cambio que quieres...",
+      send: "Enviar",
+      stop: "Detener",
+      placeholder: "Describe el correo que quieres o pide un cambio en este.",
+      loadingHistory: "Cargando la conversación...",
+      appliedChange: "Se aplicó 1 cambio",
+      appliedChanges: "Se aplicaron {count} cambios",
+      undone: "Deshecho",
+      undo: "Deshacer",
+      redo: "Rehacer",
+      disclaimer: "La IA puede cometer errores. Revisa los cambios.",
+    },
+    import: {
+      menu: "Importar desde una captura de pantalla o un PDF",
+      prompt: "Crear este correo a partir del diseño adjunto.",
+      placeholderNote:
+        "Las imágenes se importan como marcadores de posición. Sustitúyalas después de la importación.",
+    },
+    canvas: {
+      importHint: "¿Ya tiene un diseño?",
+      chatHint: "o deja que el",
+      chatHintSuffix:
+        "cree un borrador de plantilla a partir de tu descripción",
+    },
   },
   versionHistory: {
     tooltip: "Historial de versiones",

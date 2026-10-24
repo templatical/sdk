@@ -5,7 +5,7 @@ description: Premium-Hosted-Funktionen für Teams, die E-Mail-Tools in großem U
 
 # Templatical Cloud
 
-Der selbst gehostete Editor bietet alles, was Sie zum Erstellen und Rendern von E-Mail-Templates benötigen. **Templatical Cloud** ergänzt ihn um die Funktionen, die Teams brauchen, wenn sie E-Mail-Tools in großem Umfang ausliefern – KI-gestützte Inhaltserzeugung, Echtzeit-Zusammenarbeit, Medien-Management, Template-Bewertung und mehr.
+Der selbst gehostete Editor bietet alles, was Sie zum Erstellen und Rendern von E-Mail-Templates benötigen. **Templatical Cloud** ergänzt ihn um die Funktionen, die Teams brauchen, wenn sie E-Mail-Tools in großem Umfang ausliefern – gehosteten Speicher, Kommentare, Medien-Management und Rendering. Clouds KI erscheint später; verwenden Sie heute [einen eigenen Provider](/de/backend/ai).
 
 ## So funktioniert es
 
@@ -28,11 +28,11 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 
 | Funktion | Beschreibung |
 |---------|-------------|
-| [KI-Assistent](/de/cloud/ai) | E-Mail-Inhalte aus Prompts erzeugen, Texte umschreiben, Umwandlung von Design zu Template |
+| [KI (zukünftig)](/de/cloud/ai) | Clouds KI erscheint später; verwenden Sie heute einen eigenen Provider |
 | [Zusammenarbeit](/de/cloud/collaboration) | Echtzeit-Co-Editing mit Live-Cursorn und Block-Sperren |
 | [Kommentare](/de/cloud/comments) | Inline-Review-Threads an einzelnen Blöcken |
 | [Medienbibliothek](/de/cloud/media-library) | Bilder hochladen, organisieren und verwalten – mit Ordnern und Suche |
-| [Template-Bewertung](/de/cloud/template-scoring) | Automatische Qualitätsprüfungen für Zustellbarkeit und Barrierefreiheit |
+| [Template-Prüfungen (zukünftig)](/de/cloud/template-scoring) | Platzhalter mit Verweisen auf die deterministischen Lint-Kategorien |
 | [Rendering](/de/cloud/rendering) | `toMjml()` und `toHtml()` serverseitig — mit Countdown-GIF und Video-Play-Button, die ein Browser nicht erzeugen kann |
 | [Gespeicherte Blöcke](/de/cloud/saved-blocks) | Wiederverwendbare Blockgruppen — eine Bibliothek pro Projekt, im Team geteilt, ohne eigenes Backend |
 | [Templates](/de/cloud/templates) | Speichern, Laden, Autosave und der Schutz vor ungespeicherten Änderungen — ohne eigenen Speicher |
@@ -55,7 +55,7 @@ Diese lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt. Die
 <!-- prettier-ignore -->
 | Schlüssel | Was `initCloud()` damit macht |
 | --- | --- |
-| `templates` | **Speicher bleibt bei Cloud; Konfiguration und Events gehören Ihnen.** Die ID verankert Zusammenarbeit, Kommentare, KI-Umformulierung, Bewertung und den serverseitigen Export, weshalb `initCloud()` `load`/`create`/`save` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Konfiguration und Events](/de/cloud/templates#eigene-implementierung) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` —, wobei etwaige Speichermethoden benannt und ignoriert werden. |
+| `templates` | **Speicher bleibt bei Cloud; Konfiguration und Events gehören Ihnen.** Die ID verankert Kommentare und den serverseitigen Export, weshalb `initCloud()` `load`/`create`/`save` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Konfiguration und Events](/de/cloud/templates#eigene-implementierung) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` —, wobei etwaige Speichermethoden benannt und ignoriert werden. |
 | `comments` | **Speicher bleibt bei Cloud; Konfiguration und Events gehören Ihnen.** Ein Kommentar ist an eine von Cloud ausgestellte Vorlagen-ID gebunden, und seine Autorenschaft wird vom Auth-Token signiert, weshalb `initCloud()` sein eigenes `list`/`create`/`update`/`delete`/`setResolved`/`subscribe` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Events](/de/cloud/comments#eigene-implementierung) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved` —, wobei etwaige Speichermethoden benannt und ignoriert werden. |
 | `versionHistory` | **Speicher bleibt bei Cloud; Events gehören Ihnen.** Eine Version ist an eine von Cloud ausgestellte Vorlagen-ID gebunden, und der eigene `templates`-Adapter von Cloud zeichnet automatische Versionen als Teil jedes Speicherns auf, weshalb `initCloud()` sein eigenes `list`/`get`/`create`/`restore` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Events](/de/cloud/version-history#events) — `onCreated`, `onRestored` —, wobei etwaige Speichermethoden benannt und ignoriert werden. Anders als bei `savedBlocks` gibt es hier weder eine Boolean- noch eine vollständige Provider-Form: Der Typ ist ausschließlich `VersionHistoryOptions`. |
 | `render` | **Cloud rendert für den Versand eigenständig** — Test-E-Mail, geplante Sendungen und Exporte. Ein Provider würde ändern, was Sie in der Vorschau sehen und exportieren, nie das, was Cloud versendet. |
@@ -66,6 +66,6 @@ Wenn Ihnen der ganze Satz gehören soll, nutzen Sie [`init()`](/de/backend/).
 
 ## Preise
 
-Pläne starten bei 99 $/Monat. Alle Pläne enthalten den vollständigen Editor, KI-Funktionen und Zusammenarbeit.
+Pläne starten bei 99 $/Monat. Die Verfügbarkeit gehosteter Funktionen richtet sich nach Ihrem Cloud-Plan; Clouds KI erscheint später.
 
 [Kostenlose Testversion starten](https://templatical.com) &nbsp;·&nbsp; [Vertrieb kontaktieren](mailto:hi@templatical.com)

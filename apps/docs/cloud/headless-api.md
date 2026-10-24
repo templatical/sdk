@@ -187,7 +187,6 @@ All routes are scoped to a project and tenant:
 | `templates/{id}/ai/rewrite-text` | POST | AI text rewrite |
 | `templates/{id}/ai/score` | POST | Template quality scoring |
 | `templates/{id}/ai/fix-finding` | POST | AI fix scoring finding |
-| `templates/{id}/ai/generate-from-design` | POST | Design-to-template conversion |
 | `saved-modules` | GET | List saved blocks |
 | `saved-modules` | POST | Create saved block |
 | `saved-modules/{id}` | PUT | Update saved block |

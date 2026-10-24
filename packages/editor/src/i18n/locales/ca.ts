@@ -621,12 +621,6 @@ const ca: typeof en = {
     noBlocks: "Encara no hi ha blocs",
     dragHint: "Comenceu des de zero arrossegant blocs des de la barra lateral",
     dropHere: "Deixeu anar aquí",
-    aiHintChat: "o deixeu que",
-    aiHintChatSuffix:
-      "generi una plantilla completa per a vosaltres en pocs segons",
-    aiHintDesign:
-      "Teniu un disseny existent? Pugeu una captura de pantalla, una imatge o un PDF i",
-    aiHintDesignSuffix: "el recrearà a l'instant",
   },
 
   // Sidebar
@@ -722,15 +716,141 @@ const ca: typeof en = {
     reconnectingNotice: "S'està tornant a connectar… Podeu continuar editant.",
     dismiss: "Descarta",
     anAgent: "Un agent",
-    agentChangedBlock: "{client} per a {name} ha canviat un bloc.",
-    agentChangedBlocks: "{client} per a {name} ha canviat {count} blocs.",
-    agentChangedSettings:
-      "{client} per a {name} ha canviat la configuració de la plantilla.",
+    agentFor: "{client} per a {name}",
+    aiFor: "IA (per a {name})",
+    agentChangedBlock: "{who} ha canviat un bloc.",
+    agentChangedBlocks: "{who} ha canviat {count} blocs.",
+    agentChangedSettings: "{who} ha canviat la configuració de la plantilla.",
     agentChangedBlockAndSettings:
-      "{client} per a {name} ha canviat un bloc i la configuració de la plantilla.",
+      "{who} ha canviat un bloc i la configuració de la plantilla.",
     agentChangedBlocksAndSettings:
-      "{client} per a {name} ha canviat {count} blocs i la configuració de la plantilla.",
-    agentUpdatedTemplate: "{client} per a {name} ha actualitzat la plantilla.",
+      "{who} ha canviat {count} blocs i la configuració de la plantilla.",
+    agentUpdatedTemplate: "{who} ha actualitzat la plantilla.",
+  },
+  ai: {
+    altText: {
+      stale: "La imatge ha canviat. Torneu a escriure el text alternatiu.",
+      bulk: "Escriu els textos alternatius que falten ({count})",
+      review: "Revisa els textos alternatius",
+      applyAccepted: "Aplica els seleccionats ({count})",
+      progress: "S’estan escrivint els textos alternatius… {done} de {total}",
+      button: "Escriu el text alternatiu",
+      drafting: "S'està escrivint el text alternatiu…",
+      title: "Text alternatiu",
+      accept: "Accepta",
+      decorative: "Marca com a decorativa",
+      cancel: "Cancel·la",
+      note: "Redactat amb IA. Comproveu que descrigui la finalitat de la imatge.",
+      failed:
+        "No s'ha pogut escriure el text alternatiu d'aquesta imatge. Escriviu-lo manualment.",
+    },
+    fix: {
+      button: "Corregeix amb IA",
+      fixing: "S’està corregint…",
+      stillFlagged: "Encara marcat després de la correcció",
+    },
+    starters: {
+      emptyWelcome: "Redactar un correu de benvinguda per a nous clients",
+      emptyLaunch: "Crear un anunci de llançament de producte",
+      emptyNewsletter: "Crear el disseny d’un butlletí mensual",
+      filledShorten: "Escurçar el text",
+      filledFriendlier: "Fer servir un to més proper",
+      filledDates: "Actualitzar les dates i l’oferta",
+      filledCta: "Afegir una crida a l’acció clara",
+    },
+    rewrite: {
+      tooLarge:
+        "Aquest paràgraf és massa llarg per a la IA. Tria un paràgraf de com a màxim 20.000 caràcters.",
+      title: "Reescriure amb IA",
+      close: "Tancar",
+      suggestionLabel: "Suggeriment d'IA",
+      presets: {
+        shorten: "Escurçar",
+        expand: "Ampliar",
+        friendlier: "Més amable",
+        formal: "Més formal",
+        fixGrammar: "Corregir la gramàtica",
+        translate: "Traduir",
+      },
+      language: "Idioma",
+      instructionLabel: "La vostra instrucció",
+      instructionPlaceholder: "O indiqueu com voleu reescriure el text…",
+      run: "Reescriure",
+      rewriting: "Reescrivint…",
+      stop: "Aturar",
+      replaceAction: "Substituir",
+      discard: "Descartar",
+    },
+    errors: {
+      historyError: "No s'ha pogut carregar la conversa. Torna-ho a provar.",
+      missingProvider:
+        "Aquest backend d'IA necessita un proveïdor de plantilles o de col·laboració per mostrar els canvis.",
+      featureUnavailable: "Aquesta funció d'IA no està disponible.",
+      limitReached: "Heu esgotat el vostre límit d'IA de moment.",
+      limitReachedUntil: "Heu esgotat el vostre límit d'IA fins al {date}.",
+      rateLimited:
+        "Massa sol·licituds d'IA. Torneu-ho a provar d'aquí a un moment.",
+      turnRunning:
+        "Ja hi ha una sol·licitud d'IA en curs per a aquesta plantilla.",
+      contentTooLarge: "Aquesta plantilla és massa gran per a la IA.",
+      outputInvalid:
+        "La IA no ha pogut generar un resultat vàlid. Torneu-ho a provar.",
+      providerError:
+        "La IA no està disponible ara mateix. Torneu-ho a provar més tard.",
+      templateChanged: "La plantilla ha canviat mentre la IA treballava.",
+      blockLocked: "Algú està editant un bloc que la IA necessitava.",
+      undoRefused:
+        "Algú ha canviat aquests blocs des de llavors, de manera que no es pot desfer.",
+      redoRefused:
+        "Algú ha canviat aquests blocs des de llavors, de manera que no es pot refer.",
+      messageGone: "Aquest missatge ja no és a la conversa.",
+      generic: "S'ha produït un error. Torneu-ho a provar.",
+    },
+    menu: {
+      button: "IA",
+      chat: "Assistent d'IA",
+    },
+    chat: {
+      keptYourVersion:
+        "Heu editat mentre la IA treballava, així que aquest editor ha conservat la vostra versió. Els canvis de la IA s'han desat al servidor; torneu a carregar per veure'ls. Si deseu la vostra versió, els substituireu.",
+      reload: "Torna a carregar",
+      attach: "Adjuntar fitxers",
+      dropHint: "Deixeu anar imatges o PDF per adjuntar-los",
+      removeAttachment: "Eliminar {name}",
+      attachTooMany: "Adjunteu com a màxim 4 fitxers.",
+      attachTooLarge: "{name} supera els 5 MB.",
+      attachTotalTooLarge:
+        "Els fitxers adjunts poden ocupar com a màxim 10 MB en total.",
+      attachWrongType: "{name} no és una imatge ni un PDF.",
+      title: "Assistent d'IA",
+      notice: "Les respostes i els canvis provenen d'una IA.",
+      close: "Tanca",
+      newChat: "Conversa nova",
+      inputPlaceholder: "Descriviu el canvi que voleu...",
+      send: "Envia",
+      stop: "Atura",
+      placeholder:
+        "Descriviu el correu que voleu o demaneu un canvi en aquest.",
+      loadingHistory: "S'està carregant la conversa...",
+      appliedChange: "S'ha aplicat 1 canvi",
+      appliedChanges: "S'han aplicat {count} canvis",
+      undone: "Desfet",
+      undo: "Desfés",
+      redo: "Refés",
+      disclaimer: "La IA pot cometre errors. Reviseu els canvis.",
+    },
+    import: {
+      menu: "Importar des d’una captura de pantalla o un PDF",
+      prompt: "Crear aquest correu a partir del disseny adjunt.",
+      placeholderNote:
+        "Les imatges es mostren com a marcadors de posició. Substituïu-les després de la importació.",
+    },
+    canvas: {
+      importHint: "Ja teniu un disseny?",
+      chatHint: "o deixeu que la funció",
+      chatHintSuffix:
+        "creï un esborrany de plantilla a partir de la vostra descripció",
+    },
   },
   versionHistory: {
     tooltip: "Historial de versions",

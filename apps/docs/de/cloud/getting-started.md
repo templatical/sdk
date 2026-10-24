@@ -104,29 +104,25 @@ const editor = await initCloud({
     url: '/api/templatical/token',
   },
 
-  // Cloud-Funktionen (alle optional)
-  ai: {},                       // Alle KI-Funktionen aktivieren
-  collaboration: {             // Echtzeit-Zusammenarbeit aktivieren
-    enabled: true,
-  },
-  savedBlocks: true,           // Cloud-gestützt (Standard); false deaktiviert,
-                               // oder ein SavedBlocksProvider für Ihren eigenen Speicher
+  // Cloud features (all optional)
+  savedBlocks: true,           // Cloud-backed (default); false to disable,
+                               // or pass a SavedBlocksProvider to use your own store
 
   // Callbacks
-  onChange: (content) => { /* Template geändert */ },
-  onError: (error) => { /* Fehler behandeln */ },
+  onChange: (content) => { /* template changed */ },
+  onError: (error) => { /* handle errors */ },
   templates: {
     onSaved:   (template, { trigger }) => { /* trigger: manual | autosave | rename | restore | api */ },
-    onCreated: (template) => { /* create() aufgelöst — template.id ist neu */ },
-    onLoaded:  (template) => { /* load() aufgelöst */ },
+    onCreated: (template) => { /* create() resolved — template.id is new */ },
+    onLoaded:  (template) => { /* load() resolved */ },
   },
-  comments: {                  // weglassen für Clouds Standard; false schaltet vollständig ab
+  comments: {                  // omit for Cloud's default; false to disable entirely
     onCreated: (comment, { origin }) => { /* origin: local | remote */ },
   },
-  versionHistory: {            // weglassen für Clouds Standard; keine Boolean-Form zum Abschalten
-    onRestored: (template) => { /* restore() aufgelöst */ },
+  versionHistory: {            // omit for Cloud's default; no boolean to disable
+    onRestored: (template) => { /* restore() resolved */ },
   },
-  onUnmount: () => { /* der Editor wurde abgebaut */ },
+  onUnmount: () => { /* the editor has been torn down */ },
 });
 ```
 
@@ -138,10 +134,10 @@ Jede Cloud-gestützte Fähigkeit hat eine eigene Seite: [Templates](/de/cloud/te
 
 ```js
 const template = await editor.create();
-// template.id ist nun zum Speichern, Teilen etc. verfügbar
+// template.id is now available for saving, sharing, etc.
 
-// Optional vorbelegen:
-await editor.create({ name: 'Frühjahrskampagne', content });
+// Optionally seed it:
+await editor.create({ name: 'Spring campaign', content });
 ```
 
 `create()` nimmt dieselbe Eingabe `{ name?, content? }` entgegen wie in `init()`.
@@ -190,7 +186,7 @@ const result = await performHealthCheck({
   baseUrl: 'https://templatical.com',
 });
 
-console.log(result.overall);    // true, wenn alle Dienste erreichbar sind
+console.log(result.overall);    // true if all services are reachable
 console.log(result.api);        // { ok: true, latency: 42 }
 console.log(result.websocket);  // { ok: true }
 console.log(result.auth);       // { ok: true }
@@ -199,5 +195,5 @@ console.log(result.auth);       // { ok: true }
 ## Nächste Schritte
 
 - [Authentifizierung](/de/cloud/authentication) – Erweiterte Auth-Konfiguration
-- [KI-Assistent](/de/cloud/ai) – Inhalte mit KI erzeugen und umschreiben
+- [KI (zukünftig)](/de/cloud/ai) – Clouds KI erscheint später; verwenden Sie heute einen eigenen Provider
 - [Zusammenarbeit](/de/cloud/collaboration) – Echtzeit-Co-Editing einrichten

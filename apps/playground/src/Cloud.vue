@@ -936,7 +936,7 @@ onUnmounted(() => {
               class="shrink-0 text-primary"
               :size="14"
               aria-hidden="true"
-            />{{ t.cloud.features.aiWriting }}
+            />{{ t.cloud.features.aiAssistant }}
           </li>
           <li class="flex items-center gap-2">
             <Users

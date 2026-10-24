@@ -194,7 +194,10 @@ describe("design system conformance", () => {
       source.split("\n").forEach((line, i) => {
         for (const [, name] of line.matchAll(/var\(\s*(--tpl-[a-z0-9-]+)/g)) {
           if (declared.has(name) || name in RUNTIME_TOKENS) continue;
-          if (name.startsWith("--tpl-user-") && relPath === "styles/index.css") {
+          if (
+            name.startsWith("--tpl-user-") &&
+            relPath === "styles/index.css"
+          ) {
             continue;
           }
           hits.push(`${relPath}:${i + 1}  ${name}`);
@@ -220,7 +223,7 @@ describe("design system conformance", () => {
       const component = [
         '<div class="tpl:rounded-[var(--tpl-radius-md)] tpl:border-[var(--tpl-border)]">',
         ".tpl-x::after { border-radius: var(--tpl-radius-md); }",
-        '<span :style="{ color: \'var(--tpl-user-primary)\' }">',
+        "<span :style=\"{ color: 'var(--tpl-user-primary)' }\">",
       ].join("\n");
       expect(unresolvedReads("components/X.vue", component, DECLARED)).toEqual([
         "components/X.vue:1  --tpl-radius-md",
@@ -364,12 +367,13 @@ describe("design system conformance", () => {
      * and wells are meant to recede so the canvas leads.
      */
     const FLOATING = [
+      "components/ai/AiRewriteMenu.vue",
       "components/LogicTagPickerModal.vue",
       "components/MergeTagPickerModal.vue",
       "components/VersionHistoryMenu.vue",
+      "components/ai/AiHeaderMenu.vue",
       "components/MergeTagSuggestionList.vue",
       "components/ColorPicker.vue",
-      "cloud/components/AiFeatureMenu.vue",
       "cloud/components/CloudSaveGateModal.vue",
     ];
 

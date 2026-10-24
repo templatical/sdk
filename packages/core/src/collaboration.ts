@@ -19,6 +19,7 @@ import {
   applyOperations,
   applyOperationsInPlace,
   deepEqual,
+  invertOperations,
   OperationError,
   safeClone,
 } from "@templatical/types";
@@ -34,7 +35,6 @@ import {
   type Ref,
 } from "@vue/reactivity";
 import { diffContent } from "./diff-content";
-import { invertOperations } from "./invert-operations";
 
 /** Typing into one block is sent this long after the last keystroke. */
 export const COLLABORATION_TYPING_DEBOUNCE_MS = 300;
@@ -48,6 +48,8 @@ export const COLLABORATION_LOCK_RENEW_MS = 10_000;
 const RETRY_DELAYS_MS = [1000, 2000, 5000, 10_000, 30_000];
 /** The snapshot history's depth, kept for the operation history too. */
 const DEFAULT_MAX_UNDO = 50;
+/** OperationBatch allows 1–100 operations. */
+const MAX_BATCH_OPS = 100;
 
 const REFUSAL_CODES: ReadonlySet<string> = new Set<CollaborationConflictCode>([
   "block_exists",
@@ -99,6 +101,22 @@ export interface CollaborationRemoteResync {
   revision: number;
   actor: CollaborationActor;
 }
+
+/** How {@link UseCollaborationReturn.applyOperations} sends a batch. */
+export interface CollaborationApplyOptions {
+  /** Sent as the batch's `origin`: an AI turn produced it (BY9). */
+  origin: "ai";
+  /**
+   * The turn the batch belongs to. Batches of one turn share an undo step
+   * while that step is the newest one.
+   */
+  turn: string;
+}
+
+/** What {@link UseCollaborationReturn.applyOperations} answers. */
+export type CollaborationApplyResult =
+  | { applied: true; inverse: Operation[] }
+  | { applied: false; error: OperationError };
 
 export interface UseCollaborationOptions {
   provider: CollaborationProvider;
@@ -165,19 +183,33 @@ export interface UseCollaborationReturn {
   catchUp: () => Promise<void>;
   /** Whether the block exists in the content the backend confirmed. */
   hasConfirmedBlock: (blockId: string) => boolean;
+  /**
+   * Apply a batch this editor was handed (an AI turn's) as this session's
+   * own: checked against the view with this session's locks, put on the
+   * canvas, sent with its `origin`, and undone with the rest of its turn. A
+   * refusal changes nothing and sends nothing.
+   */
+  applyOperations: (
+    ops: Operation[],
+    options: CollaborationApplyOptions,
+  ) => CollaborationApplyResult;
   destroy: () => void;
 }
 
 interface HistoryEntry {
   ops: Operation[];
+  /** The AI turn whose batches this step undoes, if it is one. */
+  turn?: string;
 }
 
 interface PendingBatch {
   batchId: string;
   ops: Operation[];
-  origin: "edit" | "undo" | "redo";
+  origin: "edit" | "undo" | "redo" | "ai";
   /** The stack entry this batch pushed, taken back if the backend refuses it. */
   entry: HistoryEntry | null;
+  /** Chunks from the same enqueue call share refusal cleanup. */
+  group: { dropped: boolean };
   sent: boolean;
   /** Set once the backend confirms it. */
   revision: number | null;
@@ -498,14 +530,20 @@ export function useCollaboration(
     origin: PendingBatch["origin"],
     entry: HistoryEntry | null,
   ): void {
-    session.pending.push({
-      batchId: crypto.randomUUID(),
-      ops,
-      origin,
-      entry,
-      sent: false,
-      revision: null,
-    });
+    const group = { dropped: false };
+    let offset = 0;
+    do {
+      session.pending.push({
+        batchId: crypto.randomUUID(),
+        ops: ops.slice(offset, offset + MAX_BATCH_OPS),
+        origin,
+        entry,
+        group,
+        sent: false,
+        revision: null,
+      });
+      offset += MAX_BATCH_OPS;
+    } while (offset < ops.length);
     pump(session);
   }
 
@@ -529,6 +567,7 @@ export function useCollaboration(
         batchId: batch.batchId,
         baseRevision: session.revision,
         ops: batch.ops,
+        ...(batch.origin === "ai" ? { origin: "ai" as const } : {}),
       })
       .then(
         ({ revision: confirmedAt }) => {
@@ -588,18 +627,32 @@ export function useCollaboration(
     bumpHistory();
   }
 
+  function dropRefusedGroup(session: Session, batch: PendingBatch): boolean {
+    const firstRefusal = !batch.group.dropped;
+    batch.group.dropped = true;
+    // Confirmed chunks stay applied; sent chunks still await their outcome.
+    // A split step is not atomic at the backend.
+    session.pending = session.pending.filter(
+      (pending) => pending.group !== batch.group || pending.sent,
+    );
+    if (firstRefusal) takeBackEntry(session, batch);
+    settleWaiters(session);
+    return firstRefusal;
+  }
+
   function refuse(session: Session, batch: PendingBatch, error: unknown): void {
     dropPending(session, batch);
-    takeBackEntry(session, batch);
-    const code = refusalCode(error) ?? "invalid_operation";
-    if (batch.origin === "edit") {
-      const holder = refusalHolder(error);
-      notify(
-        { type: "editRefused", code, ...(holder ? { holder } : {}) },
-        session,
-      );
-    } else {
-      notify({ type: "undoSkipped", code }, session);
+    if (dropRefusedGroup(session, batch)) {
+      const code = refusalCode(error) ?? "invalid_operation";
+      if (batch.origin === "edit" || batch.origin === "ai") {
+        const holder = refusalHolder(error);
+        notify(
+          { type: "editRefused", code, ...(holder ? { holder } : {}) },
+          session,
+        );
+      } else {
+        notify({ type: "undoSkipped", code }, session);
+      }
     }
     rebuild(session);
     if (session === active) void catchUp();
@@ -650,6 +703,7 @@ export function useCollaboration(
   /** Apply whatever is next in revision order, own and remote alike. */
   function drain(session: Session): void {
     const applied: RevisionedBatch[] = [];
+    let confirmedDroppedChunk = false;
     for (;;) {
       const at = session.revision + 1;
       const remote = session.remote.get(at);
@@ -683,6 +737,7 @@ export function useCollaboration(
         applied.push(remote);
       } else {
         session.own.delete(at);
+        if (own!.group.dropped) confirmedDroppedChunk = true;
         dropPending(session, own!);
       }
     }
@@ -690,7 +745,7 @@ export function useCollaboration(
     if (session.remote.size > 0 || session.own.size > 0) armGapTimer(session);
     else clearGapTimer(session);
 
-    if (applied.length === 0) return;
+    if (applied.length === 0 && !confirmedDroppedChunk) return;
     rebuild(session);
     if (session !== active) return;
     for (const batch of applied) {
@@ -708,29 +763,30 @@ export function useCollaboration(
     // the replay below doesn't know about.
     if (session === active) flush();
     let view = session.confirmed;
-    const kept: PendingBatch[] = [];
-    for (const batch of session.pending) {
+    for (let index = 0; index < session.pending.length; index++) {
+      const batch = session.pending[index];
       try {
         view = applyOperations(view, batch.ops);
-        kept.push(batch);
       } catch (error) {
         if (batch.sent) {
           // The backend decides this one; it will almost certainly refuse it.
-          kept.push(batch);
           continue;
         }
-        takeBackEntry(session, batch);
-        const code =
-          error instanceof OperationError ? error.code : "invalid_operation";
-        notify(
-          batch.origin === "edit"
-            ? { type: "editRefused", code }
-            : { type: "undoSkipped", code },
-          session,
-        );
+        if (dropRefusedGroup(session, batch)) {
+          const code =
+            error instanceof OperationError ? error.code : "invalid_operation";
+          notify(
+            batch.origin === "edit" || batch.origin === "ai"
+              ? { type: "editRefused", code }
+              : { type: "undoSkipped", code },
+            session,
+          );
+        }
+        // Earlier pending chunks of that group may already be in this view.
+        view = session.confirmed;
+        index = -1;
       }
     }
-    session.pending = kept;
     session.view = view;
     settleWaiters(session);
     if (session === active) renderView(view);
@@ -1126,6 +1182,53 @@ export function useCollaboration(
     enqueue(session, entry.ops, direction, counter);
   }
 
+  function applyFromTurn(
+    ops: Operation[],
+    options: CollaborationApplyOptions,
+  ): CollaborationApplyResult {
+    const session = active;
+    if (!editor || !session || suspended) {
+      return {
+        applied: false,
+        error: new OperationError(
+          "invalid_operation",
+          0,
+          "No template is open for editing.",
+        ),
+      };
+    }
+    // Typing not sent yet becomes its own batch, and its own undo step, first.
+    flush();
+    let next: TemplateContent;
+    let inverse: Operation[];
+    try {
+      next = applyOperations(session.view, ops, lockContext());
+      inverse = invertOperations(session.view, ops);
+    } catch (error) {
+      if (error instanceof OperationError) return { applied: false, error };
+      throw error;
+    }
+    const top = session.undo.at(-1);
+    let entry: HistoryEntry;
+    if (top && top.turn === options.turn) {
+      // Undoing the turn undoes this batch first, then the earlier ones.
+      top.ops = [...inverse, ...top.ops];
+      entry = top;
+    } else {
+      entry = { ops: inverse, turn: options.turn };
+      pushCapped(session.undo, entry);
+    }
+    session.redo = [];
+    bumpHistory();
+    session.view = next;
+    renderView(next);
+    editor.markDirty();
+    // Like an edit, a batch the backend refuses takes its undo entry back.
+    // If it joined a turn, that turn's whole local undo entry goes.
+    enqueue(session, ops, options.origin, entry);
+    return { applied: true, inverse };
+  }
+
   // --- Public surface --------------------------------------------------------
 
   function attach(target: CollaborationEditor): void {
@@ -1211,6 +1314,7 @@ export function useCollaboration(
     catchUp,
     hasConfirmedBlock: (blockId) =>
       active ? containsBlock(active.confirmed.blocks, blockId) : false,
+    applyOperations: applyFromTurn,
     destroy,
   };
 }

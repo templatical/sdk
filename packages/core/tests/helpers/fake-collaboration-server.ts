@@ -41,6 +41,8 @@ export class FakeCollaborationServer {
   /** Thrown by the next `submit`, once. */
   failNextSubmit: Error | null = null;
   submits = 0;
+  /** Every batch `submit` received, in order, as sent. */
+  submitted: OperationBatch[] = [];
 
   constructor(content: TemplateContent, templateId = "tpl-1") {
     this.content = safeClone(content);
@@ -159,6 +161,7 @@ export class FakeCollaborationServer {
       },
       submit: async (_templateId, batch: OperationBatch) => {
         this.submits++;
+        this.submitted.push(safeClone(batch));
         if (this.failNextSubmit) {
           const error = this.failNextSubmit;
           this.failNextSubmit = null;
@@ -166,6 +169,19 @@ export class FakeCollaborationServer {
         }
         const known = this.batchIds.get(batch.batchId);
         if (known !== undefined) return { revision: known };
+        if (
+          !Array.isArray(batch.ops) ||
+          batch.ops.length === 0 ||
+          batch.ops.length > 100
+        ) {
+          throw new CollaborationConflict(
+            "A batch holds 1 to 100 operations.",
+            {
+              code: "invalid_operation",
+              status: 422,
+            },
+          );
+        }
         try {
           this.content = applyOperations(this.content, batch.ops, {
             locks: [...this.locks.values()].map((lock) => ({
@@ -191,7 +207,13 @@ export class FakeCollaborationServer {
         const entry: RevisionedBatch = {
           revision: this.revision,
           batchId: batch.batchId,
-          actor: { type: "user", id: name.toLowerCase(), name, sessionId },
+          // A backend honouring `origin` (BY9) names an AI turn's batch so.
+          actor: {
+            type: batch.origin === "ai" ? "ai" : "user",
+            id: name.toLowerCase(),
+            name,
+            sessionId,
+          },
           ops: batch.ops,
         };
         this.log.push(entry);

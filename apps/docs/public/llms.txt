@@ -34,6 +34,7 @@ Documentation for SDK version 0.49.0. Every page below is also available as raw 
 - [Editor accessibility](https://docs.templatical.com/guide/accessibility): Keyboard, focus, dialogs, shadow DOM, and host duties for the editor chrome. Not the email quality linter.
 - [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One free, open-source Agent Skill that writes, edits, imports and validates Templatical email templates from a prompt, previews them live in the real editor, and installs, scaffolds or diagnoses an @templatical/editor integration — no backend or API key.
 - [Block Types](https://docs.templatical.com/guide/blocks): Reference for every built-in block type in Templatical.
+- [Bring your own AI backend](https://docs.templatical.com/guide/bring-your-own-ai): Serve the editor's AI from your own backend and model with @templatical/ai-kit — a Fetch-API server, model adapters, and how to check it works.
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
 - [Display Conditions](https://docs.templatical.com/guide/display-conditions): Conditional block visibility using display conditions in Templatical email templates.
@@ -61,6 +62,7 @@ Documentation for SDK version 0.49.0. Every page below is also available as raw 
 
 ## API Reference
 
+- [@templatical/ai-kit](https://docs.templatical.com/api/ai-kit): The AI wire, an HTTP provider, a server kit with prompts and tools, and a conformance suite. MIT.
 - [Editor API](https://docs.templatical.com/api/editor): Complete reference for the init() function, TemplaticalEditorConfig, and TemplaticalEditor instance.
 - [Events](https://docs.templatical.com/api/events): Editor event callbacks — onChange, onDirtyChange, onError, and media/merge tag request handlers.
 - [Operations](https://docs.templatical.com/api/operations): The operation vocabulary the editor, the CLI, collaboration backends and Templatical Cloud share.
@@ -70,9 +72,10 @@ Documentation for SDK version 0.49.0. Every page below is also available as raw 
 
 ## Connect your backend
 
+- [AI](https://docs.templatical.com/backend/ai): Chat, lint fixes, alt-text drafts, rewrite and chat attachments over your own AI backend.
 - [Collaboration](https://docs.templatical.com/backend/collaboration): Live co-editing over your own backend — ordered operations, presence and block locks.
 - [Comments](https://docs.templatical.com/backend/comments): A threaded review conversation on a template — over your own storage, or Templatical Cloud's.
-- [Connect your backend](https://docs.templatical.com/backend/): Saving, version history, comments, saved blocks, media, test emails and rendering are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
+- [Connect your backend](https://docs.templatical.com/backend/): Saving, version history, comments, collaboration, saved blocks, media, test emails, rendering and AI are each one config key holding methods you implement — against your own stack, or Templatical Cloud's.
 - [Media](https://docs.templatical.com/backend/media): Back the editor's image picker with your own gallery, DAM or CMS — or use the bundled browser-local store.
 - [Rendering & Export](https://docs.templatical.com/backend/render): Turn a template into MJML or sending-ready HTML — locally, on your own backend, or with a single mjml2html endpoint.
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks): Let users save reusable groups of blocks and insert them into other templates, backed by your own storage.

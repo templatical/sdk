@@ -430,5 +430,31 @@ describe("editor bundle topology", () => {
     expect(settings.length).toBeGreaterThan(0);
     expect(toolbar.filter((name) => eager.has(name))).toEqual([]);
     expect(settings.filter((name) => eager.has(name))).toEqual([]);
+    for (const component of ["AiPanels", "AiChatPanel", "AiHeaderMenu"]) {
+      const chunks = names.filter((name) => name.startsWith(`${component}-`));
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks.filter((name) => eager.has(name))).toEqual([]);
+    }
+  });
+
+  it("ships the AI rewrite menu in a chunk of its own, outside the entry's static-import closure", () => {
+    const STATIC_IMPORT_RE =
+      /(?:^|[\s;])(?:import|export)[^;]*?from\s*["']\.\/([^"']+)["']/g;
+    const eager = new Set<string>();
+    const walk = (name: string) => {
+      if (eager.has(name)) return;
+      const abs = join(DIST, name);
+      if (!existsSync(abs)) return;
+      eager.add(name);
+      const text = readFileSync(abs, "utf8");
+      STATIC_IMPORT_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = STATIC_IMPORT_RE.exec(text))) walk(match[1]);
+    };
+    walk("templatical-editor.js");
+    const names = allFiles.map((file) => file.replace(DIST + "/", ""));
+    const menu = names.filter((name) => name.startsWith("AiRewriteMenu-"));
+    expect(menu).toHaveLength(1);
+    expect(menu.filter((name) => eager.has(name))).toEqual([]);
   });
 });

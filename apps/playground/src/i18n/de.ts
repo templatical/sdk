@@ -208,6 +208,12 @@ export default {
       seeIt:
         "Öffnen Sie diese Seite in einem zweiten Tab: Änderungen, Auswahl und Rückgängig wirken zwischen beiden.",
     },
+    ai: {
+      title: "KI",
+      seeIt:
+        "Öffnen Sie den KI-Assistenten und bitten Sie ihn, den Titel zu ändern, oder doppelklicken Sie einen Absatz und formulieren Sie ihn um.",
+      note: "KI-Assistent",
+    },
     "saved-blocks": {
       title: "Gespeicherte Blöcke",
       seeIt:
@@ -463,7 +469,7 @@ export default {
     features: {
       versionHistory: "Versionsverlauf",
       autoSave: "Automatisches Speichern",
-      aiWriting: "KI-Schreiben",
+      aiAssistant: "KI-Assistent",
       realtimeCollaboration: "Echtzeit-Zusammenarbeit",
       mediaLibrary: "Medienbibliothek",
       savedBlocks: "Gespeicherte Blöcke",

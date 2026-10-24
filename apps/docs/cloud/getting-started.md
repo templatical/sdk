@@ -105,10 +105,6 @@ const editor = await initCloud({
   },
 
   // Cloud features (all optional)
-  ai: {},                       // Enable all AI features
-  collaboration: {             // Enable real-time collaboration
-    enabled: true,
-  },
   savedBlocks: true,           // Cloud-backed (default); false to disable,
                                // or pass a SavedBlocksProvider to use your own store
 
@@ -199,5 +195,5 @@ console.log(result.auth);       // { ok: true }
 ## Next Steps
 
 - [Authentication](/cloud/authentication) — Advanced auth configuration
-- [AI Assistant](/cloud/ai) — Generate and rewrite content with AI
+- [AI (future)](/cloud/ai) — Cloud AI ships later; bring your own provider today
 - [Collaboration](/cloud/collaboration) — Set up real-time co-editing

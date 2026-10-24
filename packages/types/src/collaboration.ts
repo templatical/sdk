@@ -9,19 +9,29 @@ export interface OperationBatch {
   baseRevision: number;
   /** 1–100 operations, applied in order and all or nothing. */
   ops: Operation[];
+  /**
+   * `"ai"` when an AI turn produced the batch: the editor applied the
+   * operations an `AiProvider` handed it. A backend may broadcast the batch
+   * with `actor.type: "ai"` (the same user and session), and the other
+   * editors then name it "AI (for Ada)". Absent on every other batch.
+   */
+  origin?: "ai";
 }
 
 /** Who made a change. */
 export interface CollaborationActor {
-  type: "user" | "guest" | "mcp" | "api";
+  type: "user" | "guest" | "mcp" | "api" | "ai";
   /**
    * The user id, `guest:{sessionId}` for a guest, `null` for `api`. For `mcp`,
-   * the id of the user the agent acts for.
+   * the id of the user the agent acts for; for `ai`, of the user who asked.
    */
   id: string | null;
-  /** For `mcp`, the name of the user the agent acts for. */
+  /** For `mcp` and `ai`, the name of the user the agent or the AI acts for. */
   name: string;
-  /** `null` when no editor session made the change (`api`, `mcp`). */
+  /**
+   * `null` when no editor session made the change (`api`, `mcp`). For `ai`,
+   * the session that asked: that editor shows the outline and no notice.
+   */
   sessionId: string | null;
   /**
    * For `mcp` only: the agent's name (`Claude`, `Cursor`, …). The editor names

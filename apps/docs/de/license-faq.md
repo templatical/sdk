@@ -16,7 +16,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 
 ## Ist Templatical Open Source?
 
-Die MIT-Teile sind es. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools` und jeder Importer sind schon heute MIT-lizenziertes Open Source. Editor, Core und Media-Library sind Source-Available unter FSL-1.1-MIT: kostenlos für kommerzielles Einbetten ohne Lizenzschlüssel, und jede Version wird zwei Jahre nach ihrer Veröffentlichung zu MIT.
+Die MIT-Teile sind es. `@templatical/renderer`, `@templatical/types`, `@templatical/quality`, `@templatical/template-tools`, `@templatical/ai-kit` und jeder Importer sind schon heute MIT-lizenziertes Open Source. Editor, Core und Media-Library sind Source-Available unter FSL-1.1-MIT: kostenlos für kommerzielles Einbetten ohne Lizenzschlüssel, und jede Version wird zwei Jahre nach ihrer Veröffentlichung zu MIT.
 
 ## Was ist FSL-1.1-MIT?
 
@@ -48,8 +48,9 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 | `@templatical/import-chamaileon` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-easy-email-pro` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/template-tools` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/ai-kit` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
-Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer, die CLI `@templatical/template-tools`), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
+Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer, die CLI `@templatical/template-tools`, das Server-Kit `@templatical/ai-kit`), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
 ## Darf ich Templatical kommerziell nutzen?
 
@@ -141,9 +142,9 @@ Es gibt kein Header-Logo oder anderes erzwungenes Branding — der Footer ist di
 
 ## Muss ich den Cloud-Tarif nutzen?
 
-**Nein.** Der Cloud-Tarif ist optional. Das SDK funktioniert eigenständig — jede Funktion, die `init()` in `@templatical/editor` bietet, läuft ohne Backend.
+**Nein.** Der Cloud-Tarif ist optional. Das SDK kann eigenständig laufen; Funktionen, die auf Ihre Daten zugreifen, verwenden von Ihnen implementierte Provider.
 
-Cloud ist optionale gehostete Infrastruktur (KI-Umschreibung, Echtzeit-Zusammenarbeit, gemanagter Speicher). Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien und Echtzeit-Zusammenarbeit sind über Provider an `init()` verfügbar, die Sie selbst implementieren — Cloud ist ein Adapter, nicht die Funktion.
+Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`. Die gehostete Zusammenarbeit von Templatical Cloud ist in dieser SDK-Version nicht enthalten. Cloud stellt gehosteten Speicher bereit; sein KI-Provider ist in dieser SDK-Version nicht enthalten. Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien und [KI](/de/backend/ai) verwenden von Ihnen implementierte Provider an `init()`. Cloud ist ein Adapter, nicht die Funktion.
 
 ## Was, wenn ich eine Frage habe, die hier nicht beantwortet wird?
 

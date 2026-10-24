@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { lintTemplate } from "@templatical/quality";
+import { createStandInEditor } from "@templatical/ai-kit/testing";
+import { storageCanvas } from "../src/scenes/storage/canvas";
 import {
   SCENES,
   SCENE_GROUP_ORDER,
@@ -93,6 +96,7 @@ const BACKEND_IDS = [
   "version-history",
   "comments",
   "collaboration",
+  "ai",
   "saved-blocks",
   "media",
   "test-email",
@@ -179,6 +183,7 @@ describe("registry", () => {
     expect(getScene("version-history")?.docs).toBe("/backend/version-history");
     expect(getScene("comments")?.docs).toBe("/backend/comments");
     expect(getScene("collaboration")?.docs).toBe("/backend/collaboration");
+    expect(getScene("ai")?.docs).toBe("/backend/ai");
     expect(getScene("media")?.docs).toBe("/backend/media");
     expect(getScene("test-email")?.docs).toBe("/backend/test-email");
     expect(getScene("render")?.docs).toBe("/backend/render");
@@ -537,6 +542,120 @@ describe("scene titles", () => {
     expect(sceneTitle(getScene("import-unlayer")!, copies)).toBe("Unlayer");
     expect(sceneTitle(getScene("example-launchpad-launch")!, copies)).toBe(
       "Launchpad launch",
+    );
+  });
+});
+
+describe("AI scene", () => {
+  const scene = getScene("ai")!;
+  const context = (query = "") => ({ search: new URLSearchParams(query) });
+
+  it("offers the issues and disabled-alt-text variants with shareable queries", () => {
+    expect(scene.variants).toEqual(
+      expect.arrayContaining([
+        { name: "With issues", query: { issues: "1" } },
+        { name: "Without alt text", query: { issues: "1", noAltText: "1" } },
+      ]),
+    );
+  });
+
+  it("keeps the default storage canvas free of the added lint targets", () => {
+    const content = scene.content!(context());
+    const original = storageCanvas();
+    expect(content.settings).toEqual(original.settings);
+    // Factory ids are new on each call; compare the authored content instead.
+    const withoutIds = (value: unknown) =>
+      JSON.parse(
+        JSON.stringify(value, (key, item) => (key === "id" ? undefined : item)),
+      );
+    expect(withoutIds(content)).toEqual(withoutIds(original));
+  });
+
+  it("reports the real vague-link, domain-mismatch and missing-alt findings on exactly the scene targets", () => {
+    vi.stubGlobal(
+      "location",
+      new URL("https://playground.templatical.test/scenes/ai"),
+    );
+    try {
+      const content = scene.content!(context("issues=1"));
+      const issues = lintTemplate(content);
+      const targets = (ruleId: string) =>
+        issues
+          .filter((issue) => issue.ruleId === ruleId)
+          .map((issue) => issue.blockId);
+      expect(targets("a11y.link-vague-text")).toEqual(["ai-vague-link"]);
+      expect(targets("deliverability.link-text-domain-mismatch")).toEqual([
+        "ai-domain-link",
+      ]);
+      expect(targets("a11y.img-missing-alt")).toEqual([
+        "ai-image-1",
+        "ai-image-2",
+        "ai-image-3",
+      ]);
+      const images = content.blocks.filter((block) => block.type === "image");
+      expect(images).toHaveLength(3);
+      for (const image of images) {
+        const url = new URL(image.src);
+        expect(url.origin).toBe("https://playground.templatical.test");
+        expect(url.pathname).toMatch(/^\/examples\/.+\.png$/);
+        expect(
+          existsSync(join(import.meta.dirname, "../public", url.pathname)),
+        ).toBe(true);
+        expect(image.alt ?? "").toBe("");
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("disables only altText with noAltText=1", () => {
+    const provider = scene.config(context("noAltText=1")).ai!;
+    expect(provider.altText).toBe(false);
+    expect(provider.fixFinding).toBeTypeOf("function");
+    expect(provider.chat).toBeTypeOf("function");
+    expect(provider.rewrite).toBeTypeOf("function");
+    expect(scene.config(context()).ai!.altText).toBeTypeOf("function");
+  });
+
+  it("replaces the canvas with one setContent for an attached design and explains placeholders", async () => {
+    const provider = scene.config(context()).ai!;
+    if (!provider.chat) throw new Error("Chat must be enabled");
+    const content = storageCanvas();
+    const editor = createStandInEditor(content);
+    const result = await provider.chat(
+      {
+        templateId: "ai",
+        sessionId: "scene-test",
+        revision: null,
+        mergeTags: null,
+        content,
+        message: "Build this email from the attached design.",
+        selectedBlockId: null,
+        attachments: [
+          {
+            name: "design.png",
+            kind: "image",
+            file: new Blob(["png"], { type: "image/png" }),
+          },
+        ],
+      },
+      editor.handlers(),
+      new AbortController().signal,
+    );
+    expect(editor.applied).toHaveLength(1);
+    expect(editor.applied[0]).toHaveLength(1);
+    expect(editor.applied[0][0]).toEqual({
+      op: "setContent",
+      content: editor.content,
+    });
+    expect(editor.applied[0][0]).not.toHaveProperty("parent");
+    expect(editor.applied[0][0]).not.toHaveProperty("after");
+    expect(editor.content.blocks[0]).toMatchObject({
+      type: "title",
+      content: "<p>Built from your design</p>",
+    });
+    expect(result.text).toBe(
+      "Built the email from your design. Pictures are placeholders.",
     );
   });
 });

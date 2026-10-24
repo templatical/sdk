@@ -57,7 +57,7 @@ watch(editor.content, (next) => {
 
 ## Cloud subpath
 
-The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, AI chat/rewrite, comments, scoring, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`.
+The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, comments, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`.
 
 ## Documentation
 

@@ -28,7 +28,7 @@ interface TemplatesEditor {
     name?: string;
     content?: TemplateContent;
   }) => Promise<Template>;
-  load: (templateId: string) => Promise<Template>;
+  load: (templateId: string, shouldApply?: () => boolean) => Promise<Template>;
   save: (trigger?: TemplateSaveTrigger) => Promise<Template>;
   hasTemplate: () => boolean;
 }
@@ -89,7 +89,7 @@ export interface UseTemplatesFeatureReturn {
     content?: TemplateContent;
   }) => Promise<Template>;
   /** Fetch a template. Passed straight through; saving status is untouched. */
-  load: (templateId: string) => Promise<Template>;
+  load: (templateId: string, shouldApply?: () => boolean) => Promise<Template>;
   /**
    * Fire-and-forget save for the header button and Cmd+S: the outcome is already
    * reported through {@link status}, so nothing is left for a caller to handle.
@@ -238,7 +238,10 @@ export function useTemplatesFeature(
     }
   }
 
-  function load(templateId: string): Promise<Template> {
+  function load(
+    templateId: string,
+    shouldApply?: () => boolean,
+  ): Promise<Template> {
     // The badge describes one template, so it cannot outlive the switch to
     // another: a save that failed seconds ago would otherwise show "Save failed"
     // over freshly loaded content, and a green "Saved" still inside its decay
@@ -252,7 +255,9 @@ export function useTemplatesFeature(
     // Deliberately not wrapped beyond that: a failed *load* is not a failed
     // save, and flashing "Save failed" for it would be a lie. Core already
     // routes it to `onError` and rejects to the caller.
-    return editor.load(templateId);
+    return shouldApply
+      ? editor.load(templateId, shouldApply)
+      : editor.load(templateId);
   }
 
   /**

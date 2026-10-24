@@ -59,34 +59,6 @@ export interface CommentResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Scoring
-// ---------------------------------------------------------------------------
-
-export type FindingSeverity = "high" | "medium" | "low";
-
-export type ScoringCategory =
-  "spam" | "readability" | "accessibility" | "bestPractices";
-
-export interface ScoringFinding {
-  id: string;
-  severity: FindingSeverity;
-  message: string;
-  blockId: string | null;
-  category: ScoringCategory;
-  suggestion: string;
-}
-
-export interface CategoryScore {
-  score: number;
-  findings: ScoringFinding[];
-}
-
-export interface ScoringResult {
-  score: number;
-  categories: Record<ScoringCategory, CategoryScore>;
-}
-
-// ---------------------------------------------------------------------------
 // Health Check
 // ---------------------------------------------------------------------------
 
@@ -162,13 +134,6 @@ export type SdkAuthConfig = DirectAuthConfig | ProxyAuthConfig;
 // ---------------------------------------------------------------------------
 // SDK Configuration
 // ---------------------------------------------------------------------------
-
-export interface AiConfig {
-  chat?: boolean;
-  scoring?: boolean;
-  designToTemplate?: boolean;
-  rewrite?: boolean;
-}
 
 export interface WebSocketServerConfig {
   host: string;
@@ -274,13 +239,6 @@ export interface PlanConfig {
   };
 }
 
-export interface AiChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: number;
-}
-
 // ---------------------------------------------------------------------------
 // Cloud API Data Types
 // ---------------------------------------------------------------------------
@@ -295,26 +253,4 @@ export interface CreateCommentData {
 
 export interface UpdateCommentData {
   body: string;
-}
-
-export interface AiGenerateOptions {
-  conversationId?: string;
-}
-
-export interface AiStreamEvent {
-  type: "text" | "done" | "error";
-  text?: string;
-  content?: TemplateContent;
-  conversationId?: string;
-  error?: string;
-}
-
-export interface RewriteData {
-  text: string;
-  instruction: string;
-  blockId: string;
-}
-
-export interface AiScoreOptions {
-  fixFindingId?: string;
 }

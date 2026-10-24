@@ -67,53 +67,16 @@ Das Backend kombiniert `X-Session-Id` mit dem authentifizierten Nutzer, um den B
 - **Er zeigt, wer da ist.** Die Kopfzeile zeigt einen Avatar pro Person: Die Sitzungen eines Nutzers in mehreren Tabs zählen einmal, jeder Gast zählt für sich.
 - **Er macht aus Merge-Tags in ankommenden Batches Tags.** Ein Batch einer anderen Sitzung – eines Agenten, eines anderen Editors, eines Servers – bekommt die nackten Tokens in Titeln und Absätzen beim Ankommen umgewandelt, so wie [geladene Inhalte](/de/guide/merge-tags#tokens-in-geladenen-inhalten), und dafür wird nichts zurückgeschickt. Ankommende Batches werden ohne ihr `expect` angewendet: Das hat Ihr Backend schon gegen seine eigene Kopie geprüft.
 - **Er zeigt Änderungen von Agenten.** Ein Batch, dessen Actor `type: 'mcp'` hat, zeigt einen Hinweis mit `actor.client` und `actor.name` („Claude für Ada hat 3 Blöcke geändert“) und umrandet die geänderten Blöcke für 2 Sekunden. Ein Resync, dessen `actor` `type: 'mcp'` hat, zeigt „Claude für Ada hat die Vorlage aktualisiert“, ohne Rahmen. Batches und Resyncs eines Agenten innerhalb von 2 Sekunden teilen sich einen Hinweis. Agenten brauchen keine Präsenz und nehmen keine Sperren.
+- **Zeigt KI-Änderungen.** Ein Batch mit `actor.type: 'ai'` zeigt „AI (for Ada) changed 3 blocks“ und umrahmt die geänderten Blöcke. Ein Re-Sync zeigt einen Template-Aktualisierungshinweis ohne eigenen Block-Rahmen. Die anfragende Sitzung sieht beim Batch nur den Rahmen und keinen Hinweis. Die Operationen eines [KI-Providers](/de/backend/ai) erreichen Ihr Backend als Batches dieser Person mit `origin: 'ai'`.
 - **Er macht mit Operationen rückgängig.** Rückgängig und Wiederholen schicken die Umkehrung Ihrer eigenen Batches, jeweils abgesichert durch das, was sie vorzufinden erwarten. Ein Rückgängig-Schritt, den die Änderung eines anderen überholt hat, wird abgelehnt und mit einem Hinweis übersprungen, nie über deren Arbeit angewendet. Änderungen anderer landen nie in Ihrem Verlauf.
 - **Er speichert nur Umbenennungen.** Der Inhalt erreicht Ihr Backend über `submit`, deshalb erhält `templates.save` nur noch einen neuen Namen, nachdem die Batches des Editors bestätigt sind. Autosave funktioniert weiter: Es wartet die Batches ab und benennt bei Bedarf um.
 - **Er sagt es dem Nutzer**, wenn eine Auswahl oder eine Änderung abgelehnt wurde, wenn ein Rückgängig-Schritt übersprungen wurde, wenn eine Version nicht wiederhergestellt werden kann, weil andere Sperren halten, und solange die Verbindung weg ist.
 
 ## Der Vertrag
 
-```ts
-import type {
-  CollaborationHandlers,
-  CollaborationProvider,
-} from '@templatical/types';
+<<< @/snippets/collaboration-contract.ts
 
-interface CollaborationProvider {
-  join(
-    templateId: string,
-    session: { sessionId: string },
-    handlers: CollaborationHandlers,
-  ): Promise<{
-    revision: number;
-    locks: BlockLock[];
-    members: CollaborationMember[];
-    leave(): void;
-  }>;
-  submit(templateId: string, batch: OperationBatch): Promise<{ revision: number }>;
-  operationsAfter(
-    templateId: string,
-    revision: number,
-  ): Promise<
-    | { revision: number; batches: RevisionedBatch[] }
-    | { revision: number; resync: true }
-  >;
-  acquireLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  renewLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  releaseLock?(templateId: string, blockId: string): Promise<void>;
-}
-
-interface CollaborationHandlers {
-  onBatch(batch: RevisionedBatch): void;
-  onResync(revision: number, actor?: CollaborationActor): void;
-  onLock(lock: BlockLock): void;
-  onUnlock(blockId: string, sessionId: string): void;
-  onMembers(members: CollaborationMember[]): void;
-  onConnectionChange(state: 'connected' | 'reconnecting' | 'offline'): void;
-}
-```
-
-Die Formen: `OperationBatch` ist `{ batchId, baseRevision, ops }`; `RevisionedBatch` ist `{ revision, batchId, actor, ops, createdAt? }`, wobei `actor` `{ type: 'user' | 'guest' | 'mcp' | 'api', id, name, sessionId, client? }` ist und `client`, nur bei `mcp` gesendet, der Name des Agenten ist, den der Editor als Text anzeigt; `CollaborationMember` ist `{ sessionId, userId, name, type: 'user' | 'guest', avatarUrl?, color }`; `BlockLock` ist `{ blockId, holder, expiresAt }`, wobei `holder` `{ sessionId, type, id, name, color }` ist. Alle werden aus `@templatical/types` exportiert.
+Die Deklarationen geben alle Felder, optionale Werte und Nullbarkeit an. `OperationBatch.ops` enthält 1–100 Operationen in Anwendungsreihenfolge; `batchId` ist eine vom Editor erzeugte UUID. `RevisionedBatch.createdAt` ist optional; wenn Ihr Backend einen Zeitstempel liefert, verwenden Sie ISO 8601. `BlockLock.expiresAt` ist ISO 8601. Da Verlängerungen nicht gesendet werden, entfernt eine andere Sitzung eine Sperre erst bei Freigabe oder beim Verlassen der Sitzung, nicht anhand dieses Zeitstempels. `CollaborationActor.id` ist für `api` `null`, `sessionId` für `api` und `mcp` `null`; `CollaborationMember.userId` ist bei Gästen `null`.
 
 ### `join`
 
@@ -127,7 +90,7 @@ Wenden Sie die Operationen des Batches auf das Template an, der Reihe nach und a
 
 ### `operationsAfter`
 
-Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht mehr alle, antworten Sie `{ revision, resync: true }`, und der Editor lädt das Template über `templates.load` neu. Rufen Sie `onResync(revision, actor)` für eine Änderung auf, die Batches nicht beschreiben können, etwa ein `setContent`, eine wiederhergestellte Version oder einen Broadcast, der für Ihren Transport zu groß ist. `actor` ist, wer die Änderung gemacht hat, in der Form eines Batch-Actors; der Editor nutzt ihn nur für den Hinweis zu einem Agenten, und ohne ihn ändert sich sonst nichts.
+Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht mehr alle, antworten Sie `{ revision, resync: true }`, und der Editor lädt das Template über `templates.load` neu. Rufen Sie `onResync(revision, actor)` für eine Änderung auf, die Batches nicht beschreiben können, etwa ein `setContent`, eine wiederhergestellte Version oder einen Broadcast, der für Ihren Transport zu groß ist. `actor` ist, wer die Änderung gemacht hat, in der Form eines Batch-Actors; der Editor nutzt ihn nur für den Hinweis zu einem Agenten oder zur KI, und ohne ihn ändert sich sonst nichts.
 
 ### Sperren
 
@@ -154,12 +117,14 @@ Mit einem Collaboration-Provider muss `templates.load` neben dem Inhalt die `rev
 
 ### Einen Batch anwenden
 
+Trägt ein Batch `origin: 'ai'`, senden Sie ihn mit `actor.type: 'ai'` und derselben `id`, demselben `name` und derselben `sessionId` weiter; die Editoren kennzeichnen ihn als Änderung der KI. Der Host des Playgrounds macht das so.
+
 ```ts
 import { applyOperations, OperationError } from '@templatical/types';
 
 app.post('/api/templates/:id/operations', async (req, res) => {
   const { batchId, ops } = req.body;
-  const sessionId = req.get('X-Session-Id') ?? null; // wie auch immer Sie sie erkennen
+  const sessionId = req.get('X-Session-Id') ?? null; // however you identify it
   const template = await db.templates.lockForUpdate(req.params.id);
 
   const known = await db.batches.find(template.id, batchId);

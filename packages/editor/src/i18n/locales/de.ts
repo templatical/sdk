@@ -623,11 +623,6 @@ const de: typeof en = {
     dragHint:
       "Beginnen Sie von Grund auf, indem Sie Blöcke aus der Seitenleiste ziehen",
     dropHere: "Hier ablegen",
-    aiHintChat: "oder lassen Sie",
-    aiHintChatSuffix: "in Sekunden eine komplette Vorlage für Sie erstellen",
-    aiHintDesign:
-      "Haben Sie ein bestehendes Design? Laden Sie einen Screenshot, ein Bild oder PDF hoch und",
-    aiHintDesignSuffix: "erstellt es sofort nach",
   },
 
   // Seitenleiste
@@ -727,15 +722,139 @@ const de: typeof en = {
       "Verbindung wird wiederhergestellt… Sie können weiter bearbeiten.",
     dismiss: "Ausblenden",
     anAgent: "Ein Agent",
-    agentChangedBlock: "{client} für {name} hat einen Block geändert.",
-    agentChangedBlocks: "{client} für {name} hat {count} Blöcke geändert.",
-    agentChangedSettings:
-      "{client} für {name} hat die Vorlageneinstellungen geändert.",
+    agentFor: "{client} für {name}",
+    aiFor: "KI (für {name})",
+    agentChangedBlock: "{who} hat einen Block geändert.",
+    agentChangedBlocks: "{who} hat {count} Blöcke geändert.",
+    agentChangedSettings: "{who} hat die Vorlageneinstellungen geändert.",
     agentChangedBlockAndSettings:
-      "{client} für {name} hat einen Block und die Vorlageneinstellungen geändert.",
+      "{who} hat einen Block und die Vorlageneinstellungen geändert.",
     agentChangedBlocksAndSettings:
-      "{client} für {name} hat {count} Blöcke und die Vorlageneinstellungen geändert.",
-    agentUpdatedTemplate: "{client} für {name} hat die Vorlage aktualisiert.",
+      "{who} hat {count} Blöcke und die Vorlageneinstellungen geändert.",
+    agentUpdatedTemplate: "{who} hat die Vorlage aktualisiert.",
+  },
+  ai: {
+    altText: {
+      stale: "Das Bild hat sich geändert. Schreiben Sie den Alt-Text erneut.",
+      bulk: "Fehlende Alt-Texte schreiben ({count})",
+      review: "Alt-Texte prüfen",
+      applyAccepted: "Ausgewählte übernehmen ({count})",
+      progress: "Alt-Texte werden geschrieben… {done} von {total}",
+      button: "Alt-Text schreiben",
+      drafting: "Alt-Text wird geschrieben…",
+      title: "Alt-Text",
+      accept: "Übernehmen",
+      decorative: "Als dekorativ markieren",
+      cancel: "Abbrechen",
+      note: "Von KI entworfen. Prüfen Sie, ob er den Zweck des Bildes beschreibt.",
+      failed:
+        "Für dieses Bild konnte kein Alt-Text geschrieben werden. Bitte schreiben Sie ihn selbst.",
+    },
+    fix: {
+      button: "Mit KI beheben",
+      fixing: "Wird behoben…",
+      stillFlagged: "Nach der Korrektur weiterhin markiert",
+    },
+    starters: {
+      emptyWelcome: "Willkommens-E-Mail für neue Kunden entwerfen",
+      emptyLaunch: "Ankündigung für einen Produktstart erstellen",
+      emptyNewsletter: "Layout für einen monatlichen Newsletter aufbauen",
+      filledShorten: "Den Text kürzen",
+      filledFriendlier: "Den Ton freundlicher machen",
+      filledDates: "Daten und Angebot aktualisieren",
+      filledCta: "Einen klaren Call-to-Action ergänzen",
+    },
+    rewrite: {
+      tooLarge:
+        "Dieser Absatz ist zu lang für KI. Wählen Sie einen Absatz mit höchstens 20.000 Zeichen.",
+      title: "Mit KI umformulieren",
+      close: "Schließen",
+      suggestionLabel: "KI-Vorschlag",
+      presets: {
+        shorten: "Kürzen",
+        expand: "Erweitern",
+        friendlier: "Freundlicher",
+        formal: "Förmlicher",
+        fixGrammar: "Grammatik korrigieren",
+        translate: "Übersetzen",
+      },
+      language: "Sprache",
+      instructionLabel: "Ihre Anweisung",
+      instructionPlaceholder: "Oder sagen Sie, wie umformuliert werden soll…",
+      run: "Umformulieren",
+      rewriting: "Wird umformuliert…",
+      stop: "Stoppen",
+      replaceAction: "Ersetzen",
+      discard: "Verwerfen",
+    },
+    errors: {
+      historyError:
+        "Die Unterhaltung konnte nicht geladen werden. Versuchen Sie es erneut.",
+      missingProvider:
+        "Dieses KI-Backend benötigt einen Vorlagen- oder Kollaborationsanbieter, um seine Änderungen anzuzeigen.",
+      featureUnavailable: "Diese KI-Funktion ist nicht verfügbar.",
+      limitReached: "Ihr KI-Kontingent ist vorerst aufgebraucht.",
+      limitReachedUntil: "Ihr KI-Kontingent ist bis {date} aufgebraucht.",
+      rateLimited: "Zu viele KI-Anfragen. Versuchen Sie es gleich noch einmal.",
+      turnRunning: "Für diese Vorlage läuft bereits eine KI-Anfrage.",
+      contentTooLarge: "Diese Vorlage ist zu groß für die KI.",
+      outputInvalid:
+        "Die KI konnte kein gültiges Ergebnis liefern. Versuchen Sie es noch einmal.",
+      providerError:
+        "Die KI ist gerade nicht erreichbar. Versuchen Sie es später noch einmal.",
+      templateChanged:
+        "Die Vorlage hat sich geändert, während die KI gearbeitet hat.",
+      blockLocked: "Jemand bearbeitet einen Block, den die KI brauchte.",
+      undoRefused:
+        "Jemand hat diese Blöcke inzwischen geändert, deshalb lässt sich das nicht rückgängig machen.",
+      redoRefused:
+        "Jemand hat diese Blöcke inzwischen geändert, deshalb lässt sich das nicht wiederholen.",
+      messageGone: "Diese Nachricht ist nicht mehr im Verlauf.",
+      generic: "Etwas ist schiefgelaufen. Versuchen Sie es noch einmal.",
+    },
+    menu: {
+      button: "KI",
+      chat: "KI-Assistent",
+    },
+    chat: {
+      keptYourVersion:
+        "Sie haben bearbeitet, während die KI gearbeitet hat. Daher behält dieser Editor Ihre Version. Die Änderungen der KI sind auf dem Server gespeichert; laden Sie neu, um sie zu sehen. Wenn Sie Ihre Version speichern, werden sie ersetzt.",
+      reload: "Neu laden",
+      attach: "Dateien anhängen",
+      dropHint: "Bilder oder PDFs zum Anhängen hier ablegen",
+      removeAttachment: "{name} entfernen",
+      attachTooMany: "Hängen Sie höchstens 4 Dateien an.",
+      attachTooLarge: "{name} ist größer als 5 MB.",
+      attachTotalTooLarge: "Anhänge dürfen zusammen höchstens 10 MB groß sein.",
+      attachWrongType: "{name} ist weder ein Bild noch ein PDF.",
+      title: "KI-Assistent",
+      notice: "Antworten und Änderungen stammen von einer KI.",
+      close: "Schließen",
+      newChat: "Neuer Chat",
+      inputPlaceholder: "Beschreiben Sie die gewünschte Änderung...",
+      send: "Senden",
+      stop: "Stoppen",
+      placeholder:
+        "Beschreiben Sie die gewünschte E-Mail oder bitten Sie um eine Änderung an dieser.",
+      loadingHistory: "Verlauf wird geladen...",
+      appliedChange: "1 Änderung angewendet",
+      appliedChanges: "{count} Änderungen angewendet",
+      undone: "Rückgängig gemacht",
+      undo: "Rückgängig",
+      redo: "Wiederholen",
+      disclaimer: "Die KI kann Fehler machen. Prüfen Sie die Änderungen.",
+    },
+    import: {
+      menu: "Aus Screenshot oder PDF importieren",
+      prompt: "Diese E-Mail aus dem angehängten Design aufbauen",
+      placeholderNote:
+        "Bilder werden als Platzhalter übernommen. Ersetzen Sie sie nach dem Import.",
+    },
+    canvas: {
+      importHint: "Haben Sie bereits ein Design?",
+      chatHint: "oder lassen Sie die Funktion",
+      chatHintSuffix: "einen Entwurf aus Ihrer Beschreibung erstellen",
+    },
   },
   versionHistory: {
     tooltip: "Versionsverlauf",

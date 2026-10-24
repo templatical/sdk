@@ -14,8 +14,7 @@ unannounced is the failure this procedure exists to avoid.
    `tsconfig.json`. Whether `@templatical/editor` is already installed, and
    at what version. Install `@templatical/editor` and `@templatical/quality`
    as direct dependencies of the app.
-   Install other optional peers only when their feature was asked for — never
-   `vue`, `tailwindcss`, or `@templatical/core`.
+   Install other optional peers only when their feature was asked for. Also allow the packages an explicitly requested provider integration needs: the HTTP AI path needs `@templatical/ai-kit` for its client and server imports. Never add `vue`, `tailwindcss`, or `@templatical/core` to mount the editor.
 2. **Propose, then wait.** Name the packages to add, the files to create or
    edit, and the mount point. Propose quality for the Issues panel and lint badges
    and let the user decline it — then wait for a go-ahead. Don't edit an
@@ -29,3 +28,5 @@ unannounced is the failure this procedure exists to avoid.
    until something actually looks.
 5. **Report** what changed, what was left alone, and what's still needed — a
    provider, an optional peer, a Cloud auth endpoint.
+
+For AI assistant file attachments or screenshot/PDF import, consult [providers.md](providers.md) and fetch `backend/ai`, `api/ai-kit` and `guide/bring-your-own-ai` through [docs.md](docs.md). Check `chat` is a function, `chatAttachments` is true and a template is loaded. Text-only backends set `features: { chatAttachments: false }`; use `runAiWireConformance` to check multipart generate and upload limits. The author sends after the import picker; no automatic turn starts.

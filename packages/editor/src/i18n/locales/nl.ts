@@ -554,12 +554,6 @@ const nl: typeof en = {
     noBlocks: "Nog geen blokken",
     dragHint: "Begin vanaf nul door blokken vanuit de zijbalk te slepen",
     dropHere: "Hier neerzetten",
-    aiHintChat: "of laat",
-    aiHintChatSuffix:
-      "in enkele seconden een volledig sjabloon voor u genereren",
-    aiHintDesign:
-      "Heeft u al een ontwerp? Upload een schermafbeelding, afbeelding of PDF en",
-    aiHintDesignSuffix: "maakt het direct na",
   },
   savedBlocks: {
     title: "Opgeslagen blokken",
@@ -656,15 +650,138 @@ const nl: typeof en = {
     reconnectingNotice: "Opnieuw verbinden… Je kunt gewoon verder bewerken.",
     dismiss: "Verbergen",
     anAgent: "Een agent",
-    agentChangedBlock: "{client} voor {name} heeft een blok gewijzigd.",
-    agentChangedBlocks: "{client} voor {name} heeft {count} blokken gewijzigd.",
-    agentChangedSettings:
-      "{client} voor {name} heeft de template-instellingen gewijzigd.",
+    agentFor: "{client} voor {name}",
+    aiFor: "AI (voor {name})",
+    agentChangedBlock: "{who} heeft een blok gewijzigd.",
+    agentChangedBlocks: "{who} heeft {count} blokken gewijzigd.",
+    agentChangedSettings: "{who} heeft de template-instellingen gewijzigd.",
     agentChangedBlockAndSettings:
-      "{client} voor {name} heeft een blok en de template-instellingen gewijzigd.",
+      "{who} heeft een blok en de template-instellingen gewijzigd.",
     agentChangedBlocksAndSettings:
-      "{client} voor {name} heeft {count} blokken en de template-instellingen gewijzigd.",
-    agentUpdatedTemplate: "{client} voor {name} heeft de template bijgewerkt.",
+      "{who} heeft {count} blokken en de template-instellingen gewijzigd.",
+    agentUpdatedTemplate: "{who} heeft de template bijgewerkt.",
+  },
+  ai: {
+    altText: {
+      stale:
+        "De afbeelding is gewijzigd. Schrijf de alternatieve tekst opnieuw.",
+      bulk: "Ontbrekende alt-teksten schrijven ({count})",
+      review: "Alt-teksten controleren",
+      applyAccepted: "Selectie toepassen ({count})",
+      progress: "Alt-teksten schrijven… {done} van {total}",
+      button: "Alt-tekst schrijven",
+      drafting: "Alt-tekst wordt geschreven…",
+      title: "Alt-tekst",
+      accept: "Accepteren",
+      decorative: "Als decoratief markeren",
+      cancel: "Annuleren",
+      note: "Opgesteld door AI. Controleer of de tekst het doel van de afbeelding beschrijft.",
+      failed:
+        "De alt-tekst voor deze afbeelding kon niet worden geschreven. Schrijf de tekst zelf.",
+    },
+    fix: {
+      button: "Oplossen met AI",
+      fixing: "Bezig met oplossen…",
+      stillFlagged: "Nog steeds gemarkeerd na de correctie",
+    },
+    starters: {
+      emptyWelcome: "Een welkomstmail voor nieuwe klanten opstellen",
+      emptyLaunch: "Een productlancering aankondigen",
+      emptyNewsletter: "Een lay-out voor een maandelijkse nieuwsbrief maken",
+      filledShorten: "De tekst inkorten",
+      filledFriendlier: "De toon vriendelijker maken",
+      filledDates: "De datums en de aanbieding bijwerken",
+      filledCta: "Een duidelijke oproep tot actie toevoegen",
+    },
+    rewrite: {
+      tooLarge:
+        "Deze alinea is te lang voor AI. Kies een alinea met maximaal 20.000 tekens.",
+      title: "Herschrijven met AI",
+      close: "Sluiten",
+      suggestionLabel: "AI-suggestie",
+      presets: {
+        shorten: "Inkorten",
+        expand: "Uitbreiden",
+        friendlier: "Vriendelijker",
+        formal: "Formeler",
+        fixGrammar: "Grammatica corrigeren",
+        translate: "Vertalen",
+      },
+      language: "Taal",
+      instructionLabel: "Uw instructie",
+      instructionPlaceholder: "Of geef aan hoe u de tekst wilt herschrijven…",
+      run: "Herschrijven",
+      rewriting: "Bezig met herschrijven…",
+      stop: "Stoppen",
+      replaceAction: "Vervangen",
+      discard: "Verwerpen",
+    },
+    errors: {
+      historyError: "Het gesprek kon niet worden geladen. Probeer het opnieuw.",
+      missingProvider:
+        "Deze AI-backend heeft een sjabloon- of samenwerkingsprovider nodig om wijzigingen te tonen.",
+      featureUnavailable: "Deze AI-functie is niet beschikbaar.",
+      limitReached: "U heeft uw AI-tegoed voorlopig opgebruikt.",
+      limitReachedUntil: "U heeft uw AI-tegoed tot {date} opgebruikt.",
+      rateLimited: "Te veel AI-verzoeken. Probeer het zo opnieuw.",
+      turnRunning: "Er wordt al een AI-verzoek uitgevoerd voor dit sjabloon.",
+      contentTooLarge: "Dit sjabloon is te groot voor AI.",
+      outputInvalid:
+        "De AI kon geen geldig resultaat maken. Probeer het opnieuw.",
+      providerError:
+        "AI is momenteel niet beschikbaar. Probeer het later opnieuw.",
+      templateChanged: "Het sjabloon is gewijzigd terwijl de AI bezig was.",
+      blockLocked: "Iemand bewerkt een blok dat de AI nodig had.",
+      undoRefused:
+        "Iemand heeft deze blokken sindsdien gewijzigd, dus dit kan niet ongedaan worden gemaakt.",
+      redoRefused:
+        "Iemand heeft deze blokken sindsdien gewijzigd, dus dit kan niet opnieuw worden uitgevoerd.",
+      messageGone: "Dit bericht staat niet meer in het gesprek.",
+      generic: "Er is iets misgegaan. Probeer het opnieuw.",
+    },
+    menu: {
+      button: "AI",
+      chat: "AI-assistent",
+    },
+    chat: {
+      keptYourVersion:
+        "U hebt bewerkt terwijl de AI bezig was. Daarom heeft deze editor uw versie behouden. De wijzigingen van de AI zijn op de server opgeslagen; laad opnieuw om ze te zien. Als u uw versie opslaat, worden ze vervangen.",
+      reload: "Opnieuw laden",
+      attach: "Bestanden bijvoegen",
+      dropHint: "Sleep afbeeldingen of pdf’s hierheen om ze bij te voegen",
+      removeAttachment: "{name} verwijderen",
+      attachTooMany: "Voeg maximaal 4 bestanden bij.",
+      attachTooLarge: "{name} is groter dan 5 MB.",
+      attachTotalTooLarge: "Bijlagen mogen samen maximaal 10 MB groot zijn.",
+      attachWrongType: "{name} is geen afbeelding of pdf.",
+      title: "AI-assistent",
+      notice: "Antwoorden en wijzigingen komen van AI.",
+      close: "Sluiten",
+      newChat: "Nieuw gesprek",
+      inputPlaceholder: "Beschrijf de gewenste wijziging...",
+      send: "Verzenden",
+      stop: "Stoppen",
+      placeholder:
+        "Beschrijf de gewenste e-mail of vraag om een wijziging aan deze e-mail.",
+      loadingHistory: "Gesprek laden...",
+      appliedChange: "1 wijziging toegepast",
+      appliedChanges: "{count} wijzigingen toegepast",
+      undone: "Ongedaan gemaakt",
+      undo: "Ongedaan maken",
+      redo: "Opnieuw uitvoeren",
+      disclaimer: "AI kan fouten maken. Controleer de wijzigingen.",
+    },
+    import: {
+      menu: "Importeren vanuit een schermafbeelding of pdf",
+      prompt: "Deze e-mail opbouwen vanuit het bijgevoegde ontwerp.",
+      placeholderNote:
+        "Afbeeldingen worden als tijdelijke aanduidingen geïmporteerd. Vervang ze na de import.",
+    },
+    canvas: {
+      importHint: "Hebt u al een ontwerp?",
+      chatHint: "of laat de",
+      chatHintSuffix: "een sjabloon op basis van uw beschrijving opstellen",
+    },
   },
   versionHistory: {
     tooltip: "Versiegeschiedenis",

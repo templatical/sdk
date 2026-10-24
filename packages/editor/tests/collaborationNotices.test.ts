@@ -175,6 +175,42 @@ describe("CollaborationNotices", () => {
       },
       "An agent for Ada changed a block.",
     ],
+    [
+      "the AI's edit of several blocks",
+      {
+        id: 1,
+        kind: "aiEdited",
+        name: "Ada",
+        blocks: 3,
+        settings: false,
+        templateUpdated: false,
+      },
+      "AI (for Ada) changed 3 blocks.",
+    ],
+    [
+      "the AI's settings change",
+      {
+        id: 1,
+        kind: "aiEdited",
+        name: "Ada",
+        blocks: 0,
+        settings: true,
+        templateUpdated: false,
+      },
+      "AI (for Ada) changed the template settings.",
+    ],
+    [
+      "the AI's built template",
+      {
+        id: 1,
+        kind: "aiEdited",
+        name: "Ada",
+        blocks: 0,
+        settings: false,
+        templateUpdated: true,
+      },
+      "AI (for Ada) updated the template.",
+    ],
   ])("words %s", (_label, notice, text) => {
     expect(shown(notice)).toBe(text);
   });
@@ -210,6 +246,16 @@ describe("CollaborationNotices", () => {
         id: 1,
         kind: "agentEdited",
         client: "Claude",
+        name: "Ada",
+        blocks: 1,
+        settings: false,
+        templateUpdated: false,
+      }),
+    ).toBe("info");
+    expect(
+      tone({
+        id: 3,
+        kind: "aiEdited",
         name: "Ada",
         blocks: 1,
         settings: false,

@@ -51,6 +51,67 @@ describe("useCollaboration when things go wrong", () => {
     vi.useRealTimers();
   });
 
+  describe("an AI batch that cannot be applied", () => {
+    it("refuses a turn before a template is open without changing content or history", async () => {
+      const a = await openClient(server, "Ada", { load: false });
+
+      const result = a.collaboration.applyOperations(
+        [{ op: "deleteBlock", blockId: "d1" }],
+        { origin: "ai", turn: "turn-1" },
+      );
+
+      expect(result).toEqual({
+        applied: false,
+        error: new OperationError(
+          "invalid_operation",
+          0,
+          "No template is open for editing.",
+        ),
+      });
+      if (!result.applied) {
+        expect({
+          code: result.error.code,
+          opIndex: result.error.opIndex,
+          message: result.error.message,
+        }).toEqual({
+          code: "invalid_operation",
+          opIndex: 0,
+          message: "No template is open for editing.",
+        });
+      }
+      expect(a.editor.content.value).toEqual(BASE);
+      expect(a.collaboration.canUndo.value).toBe(false);
+      expect(server.revision).toBe(0);
+      a.scope.stop();
+    });
+
+    it("rethrows an unexpected operation access error without recording or sending the turn", async () => {
+      const a = await openClient(server, "Ada");
+      const failure = new Error("The operation's block id could not be read.");
+
+      expect(() =>
+        a.collaboration.applyOperations(
+          [
+            {
+              op: "deleteBlock",
+              get blockId(): string {
+                throw failure;
+              },
+            },
+          ],
+          { origin: "ai", turn: "turn-1" },
+        ),
+      ).toThrow(failure);
+
+      expect(a.editor.content.value).toEqual(BASE);
+      expect(a.collaboration.canUndo.value).toBe(false);
+      expect(server.revision).toBe(0);
+      expect(a.notices).toEqual([]);
+      expect(a.errors).toEqual([]);
+      a.scope.stop();
+    });
+  });
+
   describe("a submit that fails", () => {
     it.each([503, 408, 429])(
       "retries a %i under the same batch id, and rejects settle() meanwhile",

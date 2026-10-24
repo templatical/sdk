@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
-import type { TemplateContent } from "@templatical/types";
 import type { UseEditorReturn } from "@templatical/core";
 
 import type { UseEditorCoreReturn } from "../../composables/useEditorCore";
@@ -9,14 +7,6 @@ import type { CloudAttachment, CloudReady, CloudRuntime } from "../runtime";
 import CloudErrorOverlay from "./CloudErrorOverlay.vue";
 import CloudLoadingOverlay from "./CloudLoadingOverlay.vue";
 import CloudSaveGateModal from "./CloudSaveGateModal.vue";
-
-const AiChatSidebar = defineAsyncComponent(() => import("./AiChatSidebar.vue"));
-const DesignReferenceSidebar = defineAsyncComponent(
-  () => import("./DesignReferenceSidebar.vue"),
-);
-const TemplateScoringPanel = defineAsyncComponent(
-  () => import("./TemplateScoringPanel.vue"),
-);
 
 /**
  * Every piece of Cloud chrome that renders outside the header.
@@ -37,19 +27,13 @@ const TemplateScoringPanel = defineAsyncComponent(
  * `Editor.vue` over a `MediaProvider`. Cloud supplies that provider; it does
  * not mount a second modal.
  */
-const props = defineProps<{
+defineProps<{
   editor: UseEditorReturn;
   core: UseEditorCoreReturn;
   runtime: CloudRuntime;
   cloud: CloudAttachment;
   ready: CloudReady;
 }>();
-
-function applyContent(content: TemplateContent): void {
-  props.core.history.record();
-  props.editor.setContent(content);
-  props.core.conditionPreview.reset();
-}
 </script>
 
 <template>
@@ -89,23 +73,5 @@ function applyContent(content: TemplateContent): void {
     :issues="ready.saveGate.blockingIssues.value"
     @cancel="ready.saveGate.cancel"
     @confirm="ready.saveGate.confirmAndSave"
-  />
-
-  <AiChatSidebar
-    :visible="cloud.panelState.aiChatOpen.value"
-    :on-apply="applyContent"
-    @close="cloud.panelState.aiChatOpen.value = false"
-  />
-
-  <TemplateScoringPanel
-    :visible="cloud.panelState.scoringPanelOpen.value"
-    @close="cloud.panelState.scoringPanelOpen.value = false"
-  />
-
-  <DesignReferenceSidebar
-    :visible="cloud.panelState.designReferenceOpen.value"
-    :has-existing-blocks="editor.content.value.blocks.length > 0"
-    @close="cloud.panelState.designReferenceOpen.value = false"
-    @apply="applyContent"
   />
 </template>

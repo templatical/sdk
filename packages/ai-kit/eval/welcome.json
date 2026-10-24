@@ -1,0 +1,12 @@
+{"blocks":[
+{"id":"logo","type":"image","styles":{"padding":{"top":24,"right":24,"bottom":8,"left":24}},"src":"https://placehold.co/160x48","alt":"","width":160,"align":"center"},
+{"id":"headline","type":"title","styles":{"padding":{"top":16,"right":24,"bottom":8,"left":24}},"content":"<p>Welcome to Acme, {{first_name}}</p>","level":1,"textAlign":"center"},
+{"id":"intro","type":"paragraph","styles":{"padding":{"top":8,"right":24,"bottom":8,"left":24}},"content":"<p>Thanks for signing up. Here is everything you need to get started with your new account, from setting up your profile to inviting your team and creating your first project.</p>"},
+{"id":"cta","type":"button","styles":{"padding":{"top":16,"right":24,"bottom":16,"left":24}},"text":"Get started","url":"https://example.com/start","backgroundColor":"#2563eb","textColor":"#ffffff","borderRadius":6,"buttonPadding":{"top":12,"right":24,"bottom":12,"left":24},"fontSize":16,"align":"center"},
+{"id":"features","type":"section","styles":{"padding":{"top":16,"right":16,"bottom":16,"left":16}},"columns":"2","children":[
+[{"id":"feature-left","type":"paragraph","styles":{"padding":{"top":8,"right":8,"bottom":8,"left":8}},"content":"<p><strong>Projects</strong><br>Keep every campaign in one place.</p>"}],
+[{"id":"feature-right","type":"paragraph","styles":{"padding":{"top":8,"right":8,"bottom":8,"left":8}},"content":"<p><strong>Teams</strong><br>Invite colleagues and work together.</p>"}]]},
+{"id":"rule","type":"divider","styles":{"padding":{"top":8,"right":24,"bottom":8,"left":24}},"lineStyle":"solid","color":"#e5e7eb","thickness":1,"width":"full"},
+{"id":"footer","type":"paragraph","styles":{"padding":{"top":8,"right":24,"bottom":24,"left":24}},"content":"<p>Acme Inc., 1 Main Street, Berlin. <a href=\"{{unsubscribe_url}}\">Unsubscribe</a></p>"}
+],
+"settings":{"width":600,"backgroundColor":"#ffffff","textColor":"#1a1a1a","linkUnderline":true,"fontFamily":"Arial","locale":"en"}}

@@ -1,18 +1,13 @@
 import { computed, type ComputedRef } from "vue";
-import type {
-  UsePlanConfigReturn,
-  UseAiConfigReturn,
-} from "@templatical/core/cloud";
+import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 
 export interface UseCloudFeatureFlagsOptions {
   planConfigInstance: UsePlanConfigReturn;
-  aiConfig: UseAiConfigReturn;
   /** The loaded template's id, or `null` before one exists. */
   getTemplateId: () => string | null;
 }
 
 export interface UseCloudFeatureFlagsReturn {
-  canUseAiGeneration: ComputedRef<boolean>;
   canSendTestEmail: ComputedRef<boolean>;
   hasTemplateSaved: ComputedRef<boolean>;
   templateLimit: ComputedRef<number | null>;
@@ -23,23 +18,19 @@ export interface UseCloudFeatureFlagsReturn {
  * Every entitlement check Cloud makes, in one place.
  *
  * The containment rule this exists for: entitlement checks go through here,
- * never inline in a component and never across a package boundary. With five
- * plan features left there is little excuse to break it.
+ * never inline in a component and never across a package boundary.
  *
  * Save status is deliberately not here — it lives on `useTemplatesFeature`, which
  * the one shared header reads, and was never an entitlement. Footer branding is
- * likewise not gated: `config.branding !== false` decides it on any plan.
+ * likewise not gated: `config.branding !== false` decides it on any plan. AI is
+ * not here either: it is a provider (`init({ ai })`, A1), and Cloud's provider
+ * arrives with S7.
  */
 export function useCloudFeatureFlags(
   options: UseCloudFeatureFlagsOptions,
 ): UseCloudFeatureFlagsReturn {
-  const { planConfigInstance, aiConfig, getTemplateId } = options;
+  const { planConfigInstance, getTemplateId } = options;
 
-  const canUseAiGeneration = computed(
-    () =>
-      planConfigInstance.hasFeature("aiGeneration") &&
-      aiConfig.hasAnyMenuFeature.value,
-  );
   const canSendTestEmail = computed(() =>
     planConfigInstance.hasFeature("testEmail"),
   );
@@ -52,7 +43,6 @@ export function useCloudFeatureFlags(
   );
 
   return {
-    canUseAiGeneration,
     canSendTestEmail,
     hasTemplateSaved,
     templateLimit,

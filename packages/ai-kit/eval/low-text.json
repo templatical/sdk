@@ -1,0 +1,41 @@
+{
+  "blocks": [
+    {
+      "id": "mug-image",
+      "type": "image",
+      "styles": {
+        "padding": {
+          "top": 24,
+          "right": 24,
+          "bottom": 8,
+          "left": 24
+        }
+      },
+      "src": "https://example.com/clay-mug.png",
+      "alt": "Blue clay mug",
+      "width": "full",
+      "align": "center"
+    },
+    {
+      "id": "mug-facts",
+      "type": "paragraph",
+      "styles": {
+        "padding": {
+          "top": 16,
+          "right": 24,
+          "bottom": 16,
+          "left": 24
+        }
+      },
+      "content": "<p>The clay mug costs $24. It holds 350 ml. Available in blue. Hand wash only.</p>"
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1a1a1a",
+    "linkUnderline": true,
+    "fontFamily": "Arial",
+    "locale": "en"
+  }
+}

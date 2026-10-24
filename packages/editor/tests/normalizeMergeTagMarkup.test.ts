@@ -16,6 +16,7 @@ import {
 } from "@templatical/types";
 import {
   normalizeMergeTagsInHtml,
+  normalizeRemoteOperations,
   normalizeMergeTagMarkup,
 } from "../src/utils/normalizeMergeTagMarkup";
 
@@ -417,4 +418,14 @@ describe("normalizeMergeTagMarkup", () => {
 
     expect(twice).toBe(once);
   });
+});
+
+
+it("normalizes guarded deletion of an added merge-tag paragraph without changing the input", () => {
+  const content = { blocks: [], settings: {} } as never;
+  const block = { id: "p1", type: "paragraph", content: "<p>{{first_name}}</p>" } as const;
+  const ops = [{ op: "deleteBlock", blockId: "p1", expect: { block } }] as const;
+  const normalized = normalizeRemoteOperations(ops as never, content, { tags: [{ value: "{{first_name}}", label: "First name" }] });
+  expect((normalized[0] as unknown as { expect: { block: { content: string } } }).expect.block.content).toContain('data-merge-tag="{{first_name}}"');
+  expect(ops[0].expect.block.content).toBe("<p>{{first_name}}</p>");
 });

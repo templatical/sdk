@@ -209,6 +209,12 @@ export default {
       seeIt:
         "Open this page in a second tab: edits, selections and undo travel between them.",
     },
+    ai: {
+      title: "AI",
+      seeIt:
+        "Open the AI assistant and ask to change the title, or double-click a paragraph and rewrite it.",
+      note: "AI assistant",
+    },
     "saved-blocks": {
       title: "Saved blocks",
       seeIt:
@@ -454,7 +460,7 @@ export default {
     features: {
       versionHistory: "Version History",
       autoSave: "Auto Save",
-      aiWriting: "AI Writing",
+      aiAssistant: "AI assistant",
       realtimeCollaboration: "Real-time Collaboration",
       mediaLibrary: "Media Library",
       savedBlocks: "Saved Blocks",
