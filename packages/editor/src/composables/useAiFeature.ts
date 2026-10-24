@@ -717,7 +717,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           serverApplied: false,
           batchIds: new Set(),
         };
-        let outcome = emptyOutcome();
+        let outcome: AiTurnOutcome;
         let completed = false;
         let reconciling = false;
         const update = (changes: Partial<AiChatItem>) =>
