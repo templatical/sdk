@@ -48,7 +48,8 @@ export function rewriteLanguageOptions(
  */
 export function htmlToPlainText(html: string): string {
   if (!html) return "";
-  if (typeof DOMParser === "undefined") return html.replace(/<[^>]*>/g, "");
+  // Splitting on tags reads the text between them, as replace() would.
+  if (typeof DOMParser === "undefined") return html.split(/<[^>]*>/).join("");
   const parsed = new DOMParser().parseFromString(
     `<!doctype html><body>${html}</body>`,
     "text/html",

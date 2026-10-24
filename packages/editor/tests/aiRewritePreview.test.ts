@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   REWRITE_LANGUAGES,
   htmlToPlainText,
@@ -7,10 +7,23 @@ import {
 } from "../src/utils/aiRewritePreview";
 
 describe("htmlToPlainText", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("reads streamed markup as text, an unclosed element included (D22)", () => {
     expect(htmlToPlainText("<p>Hello <strong>there")).toBe("Hello there");
     expect(htmlToPlainText('<img src="x" onerror="alert(1)">Hi')).toBe("Hi");
     expect(htmlToPlainText("")).toBe("");
+  });
+
+  it("drops complete tags where no DOMParser exists", () => {
+    vi.stubGlobal("DOMParser", undefined);
+    expect(htmlToPlainText("<p>Hello <strong>there</strong></p>")).toBe(
+      "Hello there",
+    );
+    expect(htmlToPlainText('<img src="x" onerror="alert(1)">Hi')).toBe("Hi");
+    expect(htmlToPlainText("a <b>c")).toBe("a c");
   });
 });
 

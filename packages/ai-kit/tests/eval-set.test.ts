@@ -522,16 +522,15 @@ describe("multimodal and lint evals", () => {
           name: "attached",
           template: "welcome",
           message: "Build this email from the attached design.",
-          attachments: [{ file: "og-image.png", kind: "image" }],
+          attachments: [{ file: "designs/newsletter.png", kind: "image" }],
           checks: [{ type: "reply", matches: "^Seen\\.$" }],
         },
       ],
       loadFile: async (file) => {
         loaded.push(file);
-        return new Blob(
-          [readFileSync(resolve(evalDir, "../../../apps/docs/public", file))],
-          { type: "image/png" },
-        );
+        return new Blob([readFileSync(resolve(evalDir, file))], {
+          type: "image/png",
+        });
       },
     });
     expect(report).toMatchObject({
@@ -540,7 +539,7 @@ describe("multimodal and lint evals", () => {
       skipped: 0,
       rate: 100,
     });
-    expect(loaded).toEqual(["og-image.png"]);
+    expect(loaded).toEqual(["designs/newsletter.png"]);
     const message = model.calls[0].messages[0];
     expect(message.content).toContain(
       "Build this email from the attached design.",
@@ -553,12 +552,11 @@ describe("multimodal and lint evals", () => {
     const attachment = message.attachments![0];
     if (attachment.kind === "image-url")
       throw new Error("Expected Blob attachment");
-    const bytes = readFileSync(
-      resolve(evalDir, "../../../apps/docs/public/og-image.png"),
-    );
-    expect(new Uint8Array(await attachment.data.arrayBuffer())).toEqual(
-      new Uint8Array(bytes),
-    );
+    const bytes = readFileSync(resolve(evalDir, "designs/newsletter.png"));
+    // One native compare: a deep equality over every byte is slow under coverage.
+    expect(
+      Buffer.from(await attachment.data.arrayBuffer()).equals(bytes),
+    ).toBe(true);
   });
 
   it("uses released URLs for the default attachment loader and reports HTTP failures", async () => {
