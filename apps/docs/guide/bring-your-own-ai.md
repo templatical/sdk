@@ -16,7 +16,9 @@ import {
   aiEventStream,
   aiJsonResponse,
   buildAltTextRequest,
+  buildAltTextRepairRequest,
   checkAltText,
+  checkAltTextAnswer,
   buildChatRequest,
   buildFixRequest,
   buildRewritePrompt,
@@ -88,6 +90,14 @@ export async function handle(request: Request): Promise<Response> {
         let answer = '';
         for await (const part of model.stream({ ...built, tools: [], signal: stream.signal })) {
           if (part.type === 'text') answer += part.text;
+        }
+        const check = checkAltTextAnswer(answer, { maxLength: body.maxLength });
+        if (!check.ok) {
+          const repair = buildAltTextRepairRequest(built, answer, check.reason, body.maxLength);
+          answer = '';
+          for await (const part of model.stream({ ...repair, tools: [], signal: stream.signal })) {
+            if (part.type === 'text') answer += part.text;
+          }
         }
         stream.send({ type: 'done', alt: checkAltText(answer, { maxLength: body.maxLength }) });
       });

@@ -4,6 +4,7 @@ import { createHttpAiProvider } from "../src/client";
 import { createReferenceHandler } from "./helpers/reference-server";
 import { serve } from "./helpers/serve";
 import { fakeFetch, streamResponse } from "./helpers/fake-fetch";
+import { scriptedModel } from "./helpers/scripted-model";
 
 let server: Awaited<ReturnType<typeof serve>> | null = null;
 async function within<T>(pending: Promise<T>, ms = 1000): Promise<T | null> {
@@ -26,6 +27,48 @@ afterEach(async () => {
 });
 
 describe("runAiWireConformance", () => {
+  it("passes the alt-text probe after repairing a self-correcting model answer", async () => {
+    const answer =
+      "Explore the editor\nWait, I need to output only the final alt text…\nExplore the email editor";
+    const model = scriptedModel([
+      [{ type: "text", text: answer }],
+      [{ type: "text", text: "Explore the email editor" }],
+    ]);
+    const repair = createReferenceHandler(model);
+    const reference = createReferenceHandler();
+    let altRequests = 0;
+    server = await serve((request) =>
+      new URL(request.url).pathname.endsWith("/alt-text") && ++altRequests === 1
+        ? repair(request)
+        : reference(request),
+    );
+    const report = await runAiWireConformance({
+      baseUrl: server.baseUrl,
+      features: {
+        chat: false,
+        fixFinding: false,
+        rewrite: false,
+        conversation: false,
+        chatAttachments: false,
+      },
+    });
+    expect(report.checks.filter((check) => !check.ok)).toEqual([]);
+    expect(report.ok).toBe(true);
+    expect(
+      report.checks.find(
+        (check) => check.name === "altText: answers within maxLength",
+      ),
+    ).toMatchObject({ ok: true });
+    expect(model.calls).toHaveLength(2);
+    expect(model.calls[1].messages.slice(-2)).toEqual([
+      { role: "assistant", content: answer },
+      {
+        role: "user",
+        content:
+          "Your answer had several lines. Reply again with only the alt text: one line of plain text, at most 125 characters.",
+      },
+    ]);
+  });
   it("sends the lint projection through the HTTP wire", async () => {
     const findings: unknown[] = [];
     const reference = createReferenceHandler();
@@ -352,12 +395,14 @@ it("reports an unreadable response body without leaking the transport TypeError"
     {
       name: "rewrite: stops an in-flight call with an AbortError",
       ok: false,
-      detail: "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
+      detail:
+        "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
     },
     {
       name: "stops on abort with an AbortError",
       ok: false,
-      detail: "rewrite: stops an in-flight call with an AbortError: SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
+      detail:
+        "rewrite: stops an in-flight call with an AbortError: SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
     },
   ]);
   expect(
@@ -372,34 +417,44 @@ it("reports an unreadable response body without leaking the transport TypeError"
 });
 
 it("sends the configured alt image URL and skips altText when false", async () => {
-  const bodies: unknown[] = [];
+  // Bodies are keyed by template: a cancelled probe from the first run can
+  // still reach the server after that run reports, and must not count
+  // against the second.
+  const bodies: { template: string; body: unknown }[] = [];
   const reference = createReferenceHandler();
   server = await serve(async (request) => {
-    if (new URL(request.url).pathname.endsWith("/alt-text"))
-      bodies.push(await request.clone().json());
+    const path = new URL(request.url).pathname;
+    if (path.endsWith("/alt-text"))
+      bodies.push({
+        template: path.split("/templates/")[1]?.split("/")[0] ?? "",
+        body: await request.clone().json(),
+      });
     return reference(request);
   });
   const report = await runAiWireConformance({
     baseUrl: server.baseUrl,
+    templateId: "alt-on",
     altTextImageUrl: "https://example.com/public.png",
   });
   expect(report.ok).toBe(true);
-  expect(bodies).toContainEqual(
+  expect(
+    bodies.filter((entry) => entry.template === "alt-on").map((e) => e.body),
+  ).toContainEqual(
     expect.objectContaining({
       image: { url: "https://example.com/public.png" },
       maxLength: 125,
     }),
   );
-  bodies.length = 0;
   const off = await runAiWireConformance({
     baseUrl: server.baseUrl,
+    templateId: "alt-off",
     features: { altText: false },
   });
   expect(off.ok).toBe(true);
   expect(off.checks.find((c) => c.name === "altText: off")).toMatchObject({
     ok: true,
   });
-  expect(bodies).toEqual([]);
+  expect(bodies.filter((entry) => entry.template === "alt-off")).toEqual([]);
 });
 
 it("checks chat attachments and refuses five files before streaming", async () => {
@@ -428,22 +483,63 @@ it("maps chat files into model attachments and keeps metadata only in user histo
   const { editingInstructions } = await import("../src/server");
   const model = referenceModel();
   const inputs: Parameters<typeof model.stream>[0][] = [];
-  const handle = createReferenceHandler({ async *stream(input) { inputs.push(input); yield* model.stream(input); } });
+  const handle = createReferenceHandler({
+    async *stream(input) {
+      inputs.push(input);
+      yield* model.stream(input);
+    },
+  });
   const form = new FormData();
   form.set("message", "Change only the heading using this reference");
   form.set("content", JSON.stringify({ blocks: [], settings: { width: 600 } }));
-  form.append("attachment", new Blob(["png"], { type: "image/png" }), "shot.png");
-  form.append("attachment", new Blob(["pdf"], { type: "application/pdf" }), "plan.pdf");
-  const response = await handle(new Request("https://x.test/templates/metadata/ai/generate", { method: "POST", body: form }));
+  form.append(
+    "attachment",
+    new Blob(["png"], { type: "image/png" }),
+    "shot.png",
+  );
+  form.append(
+    "attachment",
+    new Blob(["pdf"], { type: "application/pdf" }),
+    "plan.pdf",
+  );
+  const response = await handle(
+    new Request("https://x.test/templates/metadata/ai/generate", {
+      method: "POST",
+      body: form,
+    }),
+  );
   expect(await response.text()).toContain('"type":"done"');
   expect(inputs[0].system).toBe(editingInstructions);
   const user = inputs[0].messages[0];
   if (user.role !== "user") throw new Error("Expected a user message");
-  expect(user.content).toContain("Attachments are designs or references from the author.");
-  expect(user.attachments).toEqual([{ kind: "image", mediaType: "image/png", data: expect.any(Blob) }, { kind: "pdf", mediaType: "application/pdf", data: expect.any(Blob) }]);
-  expect(await Promise.all((user.attachments ?? []).map(a => a.kind === "image-url" ? a.url : a.data.text()))).toEqual(["png", "pdf"]);
-  const history = await (await handle(new Request("https://x.test/templates/metadata/ai/conversation-messages"))).json();
-  expect(history.data[0]).toMatchObject({ role: "user", kind: "chat", text: "Change only the heading using this reference", attachments: [{ name: "shot.png", kind: "image" }, { name: "plan.pdf", kind: "pdf" }] });
+  expect(user.content).toContain(
+    "Attachments are designs or references from the author.",
+  );
+  expect(user.attachments).toEqual([
+    { kind: "image", mediaType: "image/png", data: expect.any(Blob) },
+    { kind: "pdf", mediaType: "application/pdf", data: expect.any(Blob) },
+  ]);
+  expect(
+    await Promise.all(
+      (user.attachments ?? []).map((a) =>
+        a.kind === "image-url" ? a.url : a.data.text(),
+      ),
+    ),
+  ).toEqual(["png", "pdf"]);
+  const history = await (
+    await handle(
+      new Request("https://x.test/templates/metadata/ai/conversation-messages"),
+    )
+  ).json();
+  expect(history.data[0]).toMatchObject({
+    role: "user",
+    kind: "chat",
+    text: "Change only the heading using this reference",
+    attachments: [
+      { name: "shot.png", kind: "image" },
+      { name: "plan.pdf", kind: "pdf" },
+    ],
+  });
   expect(history.data[1]).not.toHaveProperty("attachments");
 });
 
@@ -451,6 +547,12 @@ it("checks live cancellation over the streaming HTTP adapter", async () => {
   server = await serve(createReferenceHandler());
   const report = await runAiWireConformance({ baseUrl: server.baseUrl });
   for (const feature of ["chat", "fixFinding", "rewrite", "altText"]) {
-    expect(report.checks.find((check) => check.name === `${feature}: stops an in-flight call with an AbortError`)).toMatchObject({ ok: true });
+    expect(
+      report.checks.find(
+        (check) =>
+          check.name ===
+          `${feature}: stops an in-flight call with an AbortError`,
+      ),
+    ).toMatchObject({ ok: true });
   }
 });

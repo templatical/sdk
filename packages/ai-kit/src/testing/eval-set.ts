@@ -19,7 +19,11 @@ import {
   buildChatRequest,
   buildFixRequest,
 } from "../server/prompts";
-import { checkAltText } from "../server/checks";
+import {
+  buildAltTextRepairRequest,
+  checkAltText,
+  checkAltTextAnswer,
+} from "../server/checks";
 import { runEditingTurn } from "../server/run-editing-turn";
 
 export type AiEvalCheck =
@@ -440,6 +444,19 @@ export function evalAltTextWith(
     let text = "";
     for await (const part of model.stream({ ...request, tools: [] })) {
       if (part.type === "text") text += part.text;
+    }
+    const check = checkAltTextAnswer(text, { maxLength: input.maxLength });
+    if (!check.ok) {
+      const repair = buildAltTextRepairRequest(
+        request,
+        text,
+        check.reason,
+        input.maxLength,
+      );
+      text = "";
+      for await (const part of model.stream({ ...repair, tools: [] })) {
+        if (part.type === "text") text += part.text;
+      }
     }
     return checkAltText(text, { maxLength: input.maxLength });
   };

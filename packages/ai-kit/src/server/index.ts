@@ -59,4 +59,10 @@ export type {
 export { aiErrorEvent, aiErrorResponse, aiJsonResponse } from "./errors";
 export { readAiRequest } from "./read-request";
 export type { AiWireRequest } from "./read-request";
-export { buildRewriteRepairPrompt, checkRewrite, checkAltText } from "./checks";
+export {
+  buildAltTextRepairRequest,
+  buildRewriteRepairPrompt,
+  checkRewrite,
+  checkAltText,
+  checkAltTextAnswer,
+} from "./checks";

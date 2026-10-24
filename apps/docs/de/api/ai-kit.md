@@ -98,6 +98,7 @@ import {
 | `aiErrorResponse`, `aiJsonResponse` | Fehler vor dem Stream und JSON-Antworten, mit dem Header des Protokolls |
 | `readAiRequest` | Eine Anfrage des Protokolls, eingelesen und geprüft |
 | `checkRewrite`, `buildRewriteRepairPrompt` | Prüfungen der Ausgabe |
+| `checkAltTextAnswer`, `buildAltTextRepairRequest`, `checkAltText` | Alt-Text-Prüfung und eine Reparaturanfrage |
 
 Das Kit enthält keine HTML-Bereinigung. Der Editor bereinigt die Vorschau einer Umformulierung und das mit „Replace“ übernommene HTML. HTML-Blöcke, die die KI schreibt, behalten ihr Markup unverändert; befolgen Sie die [Hinweise zur serverseitigen Bereinigung vor dem Speichern oder Versenden](/de/guide/blocks#html).
 
@@ -125,7 +126,41 @@ Prüfen Sie Ihren Fix-Endpunkt mit `runAiWireConformance({ baseUrl })` aus dem f
 
 `buildAltTextRequest(request: AiAltTextRequest)` liefert `{ system: string; messages: AiModelMessage[] }` mit dem Bild als `image-url`-Anhang der Nutzernachricht. `prompts/alt-text.md` verlangt den Zweck des Bildes in dieser E-Mail, Ziel oder Aktion verlinkter Bilder, sichtbaren Bildtext, die Sprache des Templates, Klartext und das `maxLength` der Anfrage. Umgebender Text und vorhandener Alt-Text sind Daten, keine Anweisungen.
 
-`checkAltText(answer, { maxLength })` liefert die normalisierte Zeichenkette: äußere Leerzeichen entfernen, ein umschließendes Paar einfacher oder doppelter Anführungszeichen entfernen, ein führendes „Image of“ oder „Picture of“ unabhängig von Groß-/Kleinschreibung entfernen, dann erneut äußere Leerzeichen entfernen. Leerer Text, HTML (`<` gefolgt von einem Buchstaben) oder mehr als `maxLength` UTF-16-Einheiten werden mit `SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 502, "ai_output_invalid")` abgelehnt.
+`checkAltTextAnswer` prüft eine Antwort ohne Ausnahme und liefert `{ ok: true, alt }` oder `{ ok: false, reason }`. `checkAltText` ist die abschließende Prüfung und wirft bei einer ungültigen Antwort `SdkError(AI_ERROR_MESSAGES.ai_output_invalid, 502, "ai_output_invalid")`.
+
+```ts
+import type { AiModelMessage } from "@templatical/ai-kit/server";
+
+export declare function checkAltTextAnswer(
+  answer: string,
+  { maxLength }: { maxLength: number },
+): { ok: true; alt: string } | { ok: false; reason: string };
+
+export declare function buildAltTextRepairRequest(
+  built: { system: string; messages: AiModelMessage[] },
+  answer: string,
+  reason: string,
+  maxLength: number,
+): { system: string; messages: AiModelMessage[] };
+
+export declare function checkAltText(
+  answer: string,
+  { maxLength }: { maxLength: number },
+): string;
+```
+
+Die Normalisierung entfernt äußere Leerzeichen, ein umschließendes Paar einfacher oder doppelter Anführungszeichen und ein führendes „Image of“ oder „Picture of“ unabhängig von Groß-/Kleinschreibung, dann erneut äußere Leerzeichen. Nach dem Entfernen äußerer Leerzeichen sind Zeilenumbrüche unzulässig, auch wenn der Text kurz ist oder die Präfix-Normalisierung den Umbruch entfernen würde. Die Länge der normalisierten Zeichenkette zählt UTF-16-Einheiten (`alt.length`). Die Prüfung liefert den ersten zutreffenden Grund in dieser Reihenfolge:
+
+| Bedingung | `reason` (unverändert) |
+| --- | --- |
+| Nach der Normalisierung leer | `Your answer was empty.` |
+| Enthält einen Zeilenumbruch (CR, LF, U+2028 oder U+2029) | `Your answer had several lines.` |
+| Enthält HTML (`/<[a-z]/i`) | `Your answer contained HTML.` |
+| Länger als `maxLength` | `` `Your answer was ${alt.length} characters; the limit is ${maxLength}.` `` |
+
+`buildAltTextRepairRequest(built, answer, reason, maxLength)` übernimmt denselben System-Prompt und die ursprünglichen Nachrichten einschließlich des Bildanhangs. Danach folgen `{ role: "assistant", content: answer }` und eine Nutzernachricht mit dem Inhalt `` `${reason} Reply again with only the alt text: one line of plain text, at most ${maxLength} characters.` ``. Übergeben Sie `maxLength` aus der ursprünglichen Anfrage als vierten Parameter. Die Funktion verändert `built` nicht und ruft kein Modell auf.
+
+Der Server im Leitfaden und `evalAltTextWith` prüfen die erste Antwort mit `checkAltTextAnswer`. Bei Ablehnung senden sie genau eine Reparaturanfrage mit `buildAltTextRepairRequest` und prüfen danach mit `checkAltText`. Eine zweite ungültige Antwort löst `ai_output_invalid` aus; es gibt keinen dritten Modellaufruf. Prüfen Sie Ihren Endpunkt mit `runAiWireConformance({ baseUrl })` aus dem folgenden Beispiel.
 
 `readAiRequest` validiert die Route `altText` ohne Kürzung: `blockId` ist nicht leer und höchstens 200 Zeichen lang; `image.url` ist eine mit `new URL()` geparste `http:`- oder `https:`-URL mit höchstens 2.048 Zeichen; `currentAlt` und `linkHref` sind Zeichenketten mit höchstens 2.048 Zeichen oder `null`; `nearbyText` hat höchstens 2.000 Codepoints; `locale` hat höchstens 35 Zeichen und entspricht `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/`; `maxLength` ist eine Ganzzahl von 1 bis 1.000. Ungültige Felder lösen `SdkError(message, 422)` ohne Code aus. Alle Zeichenlimits außer `nearbyText` zählen UTF-16-Einheiten.
 
@@ -187,7 +222,7 @@ Beide Suiten rufen aktivierte Modellfunktionen auf und verbrauchen dabei Tokens.
 - `createMockAiProvider(script)` spielt aufgezeichnete Streams für Ihre Oberflächentests ab; `AI_RECORDINGS` enthält die des Playgrounds.
 - `runAiEvalSet({ runTurn, runAltText?, lintCheck?, loadFile?, model, cases?, minPassRate? })` führt `AI_EVAL_CASES` aus. `cases` ersetzt den Testsatz; `minPassRate` ist standardmäßig 90.
 - `evalTurnWith(model, options?: { maxSteps?: number })` erstellt `runTurn`. Bei gesetztem `finding` verwendet es `buildFixRequest(finding)`, sonst `buildChatRequest(message, { hasAttachments })` und die Blob-Anhänge.
-- `evalAltTextWith(model, options?: { imageUrl?: (file: string) => string })` erstellt `runAltText: (input: AiEvalAltTextInput) => Promise<string>`. Es verwendet `buildAltTextRequest`, `locale: "en"` und `checkAltText(text, { maxLength })`.
+- `evalAltTextWith(model, options?: { imageUrl?: (file: string) => string })` erstellt `runAltText: (input: AiEvalAltTextInput) => Promise<string>`. Es verwendet `buildAltTextRequest`, `locale: "en"` und `checkAltText(text, { maxLength })`. Eine ungültige erste Antwort erhält genau einen Reparaturversuch vor der abschließenden Prüfung mit `checkAltText`.
 
 Ein fehlendes `kind` bedeutet `edit`. Dateipfade sind relativ zu `eval/`. Die exportierten Typen und ihre Hilfstypen lauten:
 

@@ -1062,6 +1062,65 @@ describe("multimodal and lint evals", () => {
     ]);
   });
 
+  it("repairs a self-correcting alt-text answer in exactly two model calls", async () => {
+    const answer =
+      "First draft\nWait, I need to output only the final alt text…\nShop mugs";
+    const model = scriptedModel([
+      [{ type: "text", text: answer }],
+      [{ type: "text", text: '  "Image of Shop mugs"  ' }],
+    ]);
+    const report = await runAiEvalSet({
+      model: "scripted",
+      runTurn: unchanged,
+      runAltText: testing.evalAltTextWith(model),
+      cases: [
+        {
+          ...altCase([{ type: "containsAll", texts: ["Shop mugs"] }]),
+          maxLength: 60,
+        },
+      ],
+    });
+    expect(report).toMatchObject({ passed: 1, total: 1, ok: true });
+    expect(report.results).toEqual([
+      { name: "alt check", ok: true, reason: null },
+    ]);
+    expect(model.calls).toHaveLength(2);
+    expect(model.calls[1]).toEqual({
+      system: model.calls[0].system,
+      messages: [
+        ...model.calls[0].messages,
+        { role: "assistant", content: answer },
+        {
+          role: "user",
+          content:
+            "Your answer had several lines. Reply again with only the alt text: one line of plain text, at most 60 characters.",
+        },
+      ],
+      tools: [],
+    });
+  });
+
+  it("fails a second invalid alt-text answer without a third model call", async () => {
+    const model = scriptedModel([
+      [{ type: "text", text: "First draft\nCorrected draft" }],
+      [{ type: "text", text: "<b>Shop mugs</b>" }],
+      [{ type: "text", text: "Shop mugs" }],
+    ]);
+    await expect(
+      testing.evalAltTextWith(model)({
+        image: "images/product.png",
+        linkHref: null,
+        nearbyText: "",
+        maxLength: 60,
+      }),
+    ).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 502,
+      code: "ai_output_invalid",
+    });
+    expect(model.calls).toHaveLength(2);
+  });
+
   it("hashes nested binaries and HTML sources in sorted relative-path order", () => {
     const parent = resolve(import.meta.dirname, "../../../node_modules/.cache");
     mkdirSync(parent, { recursive: true });
