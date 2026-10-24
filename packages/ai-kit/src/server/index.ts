@@ -20,7 +20,7 @@ export {
   mergeTagTokensIn,
   unknownMergeTags,
 } from "./merge-tags";
-export { blockIds, contentRuleRefusal, walkBlocks } from "./content-rules";
+export { contentRuleRefusal, walkBlocks } from "./content-rules";
 export { describeOp, opRefusal } from "./refusal";
 export type { NamedLock } from "./refusal";
 export { applyOperationsTool } from "./tool";

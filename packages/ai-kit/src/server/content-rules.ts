@@ -17,15 +17,6 @@ export function walkBlocks(nodes: unknown): Record<string, unknown>[] {
   return blocks;
 }
 
-/** Every block id in the blocks, at any depth. */
-export function blockIds(blocks: unknown): Set<string> {
-  return new Set(
-    walkBlocks(blocks)
-      .map((block) => block.id)
-      .filter((id): id is string => typeof id === "string"),
-  );
-}
-
 /** `custom, slot or wrapper` */
 function list(types: readonly string[]): string {
   return types.length <= 1
