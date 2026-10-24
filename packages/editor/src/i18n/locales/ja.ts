@@ -648,6 +648,7 @@ const translations: typeof en = {
   },
   ai: {
     altText: {
+      stale: "画像が変更されました。代替テキストをもう一度作成してください。",
       bulk: "不足している代替テキストを作成 ({count})",
       review: "代替テキストを確認",
       applyAccepted: "選択した項目を適用 ({count})",
@@ -727,6 +728,9 @@ const translations: typeof en = {
       chat: "AIアシスタント",
     },
     chat: {
+      keptYourVersion:
+        "AIの処理中に編集したため、このエディターでは編集した内容を保持しています。AIの変更はサーバーに保存されています。再読み込みすると表示されます。現在の内容を保存すると、AIの変更は上書きされます。",
+      reload: "再読み込み",
       attach: "ファイルを添付",
       dropHint: "画像またはPDFをドロップして添付",
       removeAttachment: "{name}を削除",

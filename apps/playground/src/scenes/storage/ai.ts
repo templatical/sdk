@@ -113,7 +113,8 @@ const editor = await init({
   // your backend speaks the wire: see "Bring your own AI backend"
   ai: createHttpAiProvider({
     baseUrl: "/api/ai",
-    headers: async () => ({ Authorization: \`Bearer \${await getToken()}\` }),
+    // Your app's session cookie authenticates the request.
+    credentials: "include",
   }),
 });
 

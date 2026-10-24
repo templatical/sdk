@@ -663,6 +663,8 @@ const nl: typeof en = {
   },
   ai: {
     altText: {
+      stale:
+        "De afbeelding is gewijzigd. Schrijf de alternatieve tekst opnieuw.",
       bulk: "Ontbrekende alt-teksten schrijven ({count})",
       review: "Alt-teksten controleren",
       applyAccepted: "Selectie toepassen ({count})",
@@ -742,6 +744,9 @@ const nl: typeof en = {
       chat: "AI-assistent",
     },
     chat: {
+      keptYourVersion:
+        "U hebt bewerkt terwijl de AI bezig was. Daarom heeft deze editor uw versie behouden. De wijzigingen van de AI zijn op de server opgeslagen; laad opnieuw om ze te zien. Als u uw versie opslaat, worden ze vervangen.",
+      reload: "Opnieuw laden",
       attach: "Bestanden bijvoegen",
       dropHint: "Sleep afbeeldingen of pdf’s hierheen om ze bij te voegen",
       removeAttachment: "{name} verwijderen",

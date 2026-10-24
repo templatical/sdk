@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { inject, nextTick, onMounted, onUnmounted, ref } from "vue";
-import { AI_FEATURE_KEY, UI_LOCALE_KEY } from "../../keys";
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
+import { AI_FEATURE_KEY, EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import { aiErrorMessage } from "../../utils/aiErrors";
+import { aiImageSnapshot, sameAiImage } from "../../utils/aiImageContext";
+import { isSdkError } from "../../utils/isSdkError";
 
 const props = defineProps<{ blockId: string }>();
 const emit = defineEmits<{
@@ -10,6 +20,20 @@ const emit = defineEmits<{
   drafting: [controller: AbortController | null];
 }>();
 const ai = inject(AI_FEATURE_KEY, null);
+const editor = inject(EDITOR_KEY, null);
+const captured = editor
+  ? aiImageSnapshot(editor.content.value, props.blockId)
+  : null;
+const refused = ref(false);
+const stale = computed(
+  () =>
+    refused.value ||
+    (editor !== null &&
+      !sameAiImage(
+        aiImageSnapshot(editor.content.value, props.blockId),
+        captured,
+      )),
+);
 const locale = inject(UI_LOCALE_KEY, "en");
 const { t, format } = useI18n();
 const alt = ref("");
@@ -34,6 +58,7 @@ function close(): void {
   emit("drafting", null);
   emit("close");
 }
+if (ai) watch(ai.templateSession, close, { flush: "sync" });
 onMounted(async () => {
   emit("drafting", controller);
   try {
@@ -56,14 +81,25 @@ onUnmounted(() => {
   emit("drafting", null);
 });
 async function apply(decorative: boolean): Promise<void> {
-  if (!ai || applying.value || drafting.value || ai.busy.value) return;
+  if (!ai || applying.value || drafting.value || ai.busy.value || stale.value)
+    return;
   applying.value = true;
   try {
     await ai.applyAltTexts([
-      { blockId: props.blockId, alt: decorative ? "" : alt.value, decorative },
+      {
+        blockId: props.blockId,
+        alt: decorative ? "" : alt.value,
+        decorative,
+        ...(captured ? { expect: captured } : {}),
+      },
     ]);
     close();
   } catch (error) {
+    if (
+      isSdkError(error) &&
+      (error.code === "precondition_failed" || error.code === "block_missing")
+    )
+      refused.value = true;
     failed.value = true;
     detail.value = aiErrorMessage(error, t.ai.errors, format, locale);
   } finally {
@@ -92,7 +128,14 @@ async function apply(decorative: boolean): Promise<void> {
       {{ t.ai.altText.note }}
     </p>
     <p
-      v-if="failed"
+      v-if="stale"
+      role="alert"
+      class="tpl:m-0 tpl:text-xs tpl:text-[var(--tpl-danger)]"
+    >
+      {{ t.ai.altText.stale }}
+    </p>
+    <p
+      v-if="failed && !stale"
       role="alert"
       class="tpl:m-0 tpl:text-xs tpl:text-[var(--tpl-danger)]"
     >
@@ -101,7 +144,7 @@ async function apply(decorative: boolean): Promise<void> {
     <div class="tpl:flex tpl:flex-wrap tpl:gap-2">
       <button
         type="button"
-        :disabled="drafting || applying || ai?.busy.value"
+        :disabled="drafting || applying || ai?.busy.value || stale"
         class="tpl:rounded-md tpl:bg-[var(--tpl-primary)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:text-[var(--tpl-on-primary)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
         @click="apply(false)"
       >
@@ -109,7 +152,7 @@ async function apply(decorative: boolean): Promise<void> {
       </button>
       <button
         type="button"
-        :disabled="drafting || applying || ai?.busy.value"
+        :disabled="drafting || applying || ai?.busy.value || stale"
         class="tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:px-2 tpl:py-1 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:focus-visible:outline-2 tpl:focus-visible:outline-[var(--tpl-primary)] tpl:disabled:opacity-60"
         @click="apply(true)"
       >

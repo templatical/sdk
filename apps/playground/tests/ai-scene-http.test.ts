@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import { getScene } from "../src/scenes";
 
 // Execute the displayed JavaScript with only its host boundaries supplied.
 // The live scene uses local storage, so exercising it would miss this adapter.
-async function templatesFromSnippet(fetch: typeof globalThis.fetch) {
+async function editorFromSnippet(fetch: typeof globalThis.fetch) {
   const snippet = getScene("ai")!
     .snippet.replace(/^import .*;\n/gm, "")
     .replace(/await editor.load\("tpl_123"\);/, "");
@@ -12,7 +12,6 @@ async function templatesFromSnippet(fetch: typeof globalThis.fetch) {
     "fetch",
     "init",
     "document",
-    "getToken",
     "createHttpAiProvider",
     `return (async () => { ${snippet}\nreturn editor; })();`,
   );
@@ -21,10 +20,14 @@ async function templatesFromSnippet(fetch: typeof globalThis.fetch) {
       fetch,
       async (config: unknown) => config,
       { getElementById: () => ({}) },
-      async () => "test-token",
       createHttpAiProvider,
     )
-  ).templates;
+  );
+}
+
+afterEach(() => vi.unstubAllGlobals());
+async function templatesFromSnippet(fetch: typeof globalThis.fetch) {
+  return (await editorFromSnippet(fetch)).templates;
 }
 
 describe("displayed AI scene HTTP persistence", () => {
@@ -64,4 +67,13 @@ describe("displayed AI scene HTTP persistence", () => {
       });
     },
   );
+});
+
+it("authenticates the displayed AI request with the app session cookie without injected helpers", async () => {
+  const fetchRequest = vi.fn<typeof fetch>(async () => new Response('data: {"type":"done","messageId":null}\n\n', { headers: { "Content-Type": "text/event-stream", "Templatical-AI-Wire": "1" } }));
+  vi.stubGlobal("fetch", fetchRequest);
+  const config = await editorFromSnippet(fetchRequest);
+  await config.ai.chat({ templateId: "tpl_123", sessionId: "session", content: { blocks: [], settings: { width: 600 } }, revision: null, mergeTags: null, message: "Hi", selectedBlockId: null, attachments: [] }, { onText: () => {}, onApplied: () => {}, onOperations: async () => ({ applied: true, inverse: [] }) }, new AbortController().signal);
+  expect(fetchRequest).toHaveBeenCalledExactlyOnceWith("/api/ai/templates/tpl_123/ai/generate", expect.objectContaining({ credentials: "include" }));
+  expect(new Headers(fetchRequest.mock.calls[0][1]?.headers).has("Authorization")).toBe(false);
 });

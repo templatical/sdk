@@ -31,16 +31,17 @@ async function setup(
   provider: Partial<AiProvider>,
   content: TemplateContent = CONTENT,
   locale = "en",
+  load?: (id: string) => Promise<Template>,
 ) {
   const scope = effectScope();
   const { editor, feature } = scope.run(() => {
     const editor = useEditor({
       content: safeClone(content),
       templates: {
-        load: async (id: string): Promise<Template> => ({
+        load: load ?? (async (id: string): Promise<Template> => ({
           id,
           content: safeClone(content),
-        }),
+        })),
         create: false,
         save: false,
       },
@@ -54,7 +55,7 @@ async function setup(
       editor,
       collaboration: null,
       history: () => history,
-      reload: null,
+      reload: (id, guard) => editor.load(id, guard),
       mergeTags: () => null,
       normalize: (ops) => [...ops],
 
@@ -597,4 +598,76 @@ describe("chat attachment controls", () => {
     );
     expect(chat).not.toHaveBeenCalled();
   });
+});
+
+it.each(["tpl-2", "tpl-1"])("clears composer text, files and errors on committed load %s", async (id) => {
+  const { wrapper, feature, editor } = await setup({ chat: chattingForDraft(), chatAttachments: true });
+  await wrapper.get('[data-testid="ai-chat-input"]').setValue("A draft");
+  await pick(wrapper, [attachment("a.png"), attachment("bad.txt", 1, "text/plain")]);
+  feature.close();
+  feature.open("chat");
+  await nextTick();
+  expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe("A draft");
+  expect(wrapper.text()).toContain("a.png");
+  await editor.load(id);
+  await flushPromises();
+  expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe("");
+  expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(0);
+  expect(wrapper.text()).not.toContain("bad.txt");
+});
+function chattingForDraft(): AiProvider["chat"] {
+  return async () => ({ messageId: null, text: "Done" });
+}
+
+it("never restores A's failed prompt or attachments into B", async () => {
+  let reject!: (error: Error) => void;
+  const { wrapper, editor } = await setup({
+    chat: () => new Promise((_, fail) => { reject = fail; }), chatAttachments: true,
+  });
+  await wrapper.get("textarea").setValue("A prompt");
+  await pick(wrapper, [attachment("a.png")]);
+  await wrapper.get('[data-testid="ai-chat-send"]').trigger("click");
+  await flushPromises();
+  await editor.load("tpl-2");
+  await flushPromises();
+  await wrapper.get("textarea").setValue("B draft");
+  reject(new Error("A failed late"));
+  await flushPromises();
+  expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe("B draft");
+  expect(wrapper.findAll('[data-testid="ai-chat-attachment"]')).toHaveLength(0);
+});
+
+it.each([true, false])("guards deferred server reload against author edits: %s", async (edit) => {
+  let finish!: (template: Template) => void;
+  let loads = 0;
+  const server = safeClone(CONTENT);
+  (server.blocks[0] as { content: string }).content = "<p>Server</p>";
+  const { wrapper, feature, editor } = await setup({
+    chat: async (_r, on) => {
+      on.onApplied({ batchId: "server", revision: 2, operationCount: 1 });
+      return { messageId: null, text: "Done" };
+    },
+  }, CONTENT, "en", async (id) => {
+    loads++;
+    if (loads === 2) return new Promise((resolve) => { finish = resolve; });
+    return { id, content: loads > 1 ? server : CONTENT };
+  });
+  const turn = feature.send("Server turn");
+  await flushPromises();
+  expect(loads).toBe(2);
+  if (edit) editor.updateBlock("t1", { content: "<p>Author</p>" });
+  finish({ id: "tpl-1", content: server });
+  await turn;
+  await flushPromises();
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: edit ? "<p>Author</p>" : "<p>Server</p>" });
+  expect(wrapper.text().includes("You edited while the AI was working")).toBe(edit);
+  if (edit) {
+    expect(editor.state.isDirty).toBe(true);
+    const reload = wrapper.findAll("button").find((button) => button.text() === "Reload")!;
+    await reload.trigger("click");
+    await flushPromises();
+    expect(loads).toBe(3);
+    expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Server</p>" });
+    expect(wrapper.text()).not.toContain("You edited while the AI was working");
+  }
 });

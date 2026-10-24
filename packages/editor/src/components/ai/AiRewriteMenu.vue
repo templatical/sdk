@@ -115,7 +115,7 @@ async function run(preset: AiRewritePreset | null): Promise<void> {
   reset();
   const html = props.editor.getHTML();
   if (Array.from(html).length > 20_000) {
-    failure.value = new SdkError(t.ai.rewrite.tooLarge);
+    failure.value = new SdkError(t.ai.rewrite.tooLarge, 413);
     return;
   }
   const requestController = new AbortController();

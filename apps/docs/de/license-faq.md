@@ -142,9 +142,9 @@ Es gibt kein Header-Logo oder anderes erzwungenes Branding — der Footer ist di
 
 ## Muss ich den Cloud-Tarif nutzen?
 
-**Nein.** Der Cloud-Tarif ist optional. Das SDK funktioniert eigenständig — jede Funktion, die `init()` in `@templatical/editor` bietet, läuft ohne Backend.
+**Nein.** Der Cloud-Tarif ist optional. Das SDK kann eigenständig laufen; Funktionen, die auf Ihre Daten zugreifen, verwenden von Ihnen implementierte Provider.
 
-Cloud ist optionale gehostete Infrastruktur für Echtzeit-Zusammenarbeit und gemanagten Speicher; sein KI-Provider kommt in einer späteren Version. Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien, Echtzeit-Zusammenarbeit und [KI](/de/backend/ai) sind über Provider an `init()` verfügbar, die Sie selbst implementieren — Cloud ist ein Adapter, nicht die Funktion.
+Live-Zusammenarbeit läuft über Ihr eigenes Backend mit `init({ collaboration })`. Die gehostete Zusammenarbeit von Templatical Cloud ist in dieser SDK-Version nicht enthalten. Cloud stellt gehosteten Speicher bereit; sein KI-Provider ist in dieser SDK-Version nicht enthalten. Kommentare, gespeicherte Blöcke, Versionsverlauf, Test-E-Mail, Medien und [KI](/de/backend/ai) verwenden von Ihnen implementierte Provider an `init()`. Cloud ist ein Adapter, nicht die Funktion.
 
 ## Was, wenn ich eine Frage habe, die hier nicht beantwortet wird?
 

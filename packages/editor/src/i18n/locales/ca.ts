@@ -729,6 +729,7 @@ const ca: typeof en = {
   },
   ai: {
     altText: {
+      stale: "La imatge ha canviat. Torneu a escriure el text alternatiu.",
       bulk: "Escriu els textos alternatius que falten ({count})",
       review: "Revisa els textos alternatius",
       applyAccepted: "Aplica els seleccionats ({count})",
@@ -810,6 +811,9 @@ const ca: typeof en = {
       chat: "Assistent d'IA",
     },
     chat: {
+      keptYourVersion:
+        "Heu editat mentre la IA treballava, així que aquest editor ha conservat la vostra versió. Els canvis de la IA s'han desat al servidor; torneu a carregar per veure'ls. Si deseu la vostra versió, els substituireu.",
+      reload: "Torna a carregar",
       attach: "Adjuntar fitxers",
       dropHint: "Deixeu anar imatges o PDF per adjuntar-los",
       removeAttachment: "Eliminar {name}",

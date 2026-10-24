@@ -55,6 +55,8 @@ A turn streams its reply through `on.onText` and hands its edits over in one of 
 - **`on.onOperations(ops)`**: [operations](/api/operations) for the editor to apply. It applies them at once and answers `{ applied: true, inverse }`, or `{ applied: false, code, opIndex, message }` when they no longer fit the template (someone changed a block, another person holds it). A turn's batches are one undo step.
 - **`on.onApplied({ batchId, revision, operationCount })`**: your backend already applied the batch to its copy. With a [collaboration provider](/backend/collaboration) the editor follows the revision; with only a templates provider it reloads the template when the turn ends. With neither, it refuses the batch.
 
+Without collaboration, an author edit made after a turn starts prevents the automatic reload, including an edit made while the reload request is pending. The editor keeps your version and shows a notice with **Reload**. The AI's changes remain saved on the server. Choose **Reload** to load them; saving your version replaces them. The AI's own editor-applied batches do not count as author edits.
+
 `chat` sends `message`, `selectedBlockId` (only a block your backend has) and `attachments`, always an array. `fixFinding` sends the lint projection described below.
 
 ### Chat attachments
@@ -83,7 +85,7 @@ History has kind `chat` and stores only optional user-message `attachments: { na
 - `deliverability.link-text-domain-mismatch`
 - `deliverability.low-text`
 
-The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. Fix buttons are disabled during AI editing work; independent alt-text drafts do not block fixes; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Only the next 500 ms debounced lint update decides resolution: if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
+The editor shows one button per `ruleId`/`blockId` pair, regardless of severity. Fix buttons are disabled during AI editing work; independent alt-text drafts do not block fixes; the running fix shows **Fixing…** and **Stop**. The turn remains one undo step with history kind `fix`. Verification reuses a lint result that already covers the fix's final content; otherwise it waits for the next re-lint. After verification, if any hit for the pair remains, the row shows **Still flagged after the fix**. This makes no claim about individual occurrences within a block.
 
 For a domain mismatch, rewrite only the visible link text into descriptive words, never the `href`. For low text (`blockId: null`), add body copy from existing facts, without padding alt text or the preheader. `a11y.missing-preheader` sets `preheaderText` through `updateSettings`, using at most 100 characters from the opening content.
 

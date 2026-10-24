@@ -349,6 +349,16 @@ it("reports an unreadable response body without leaking the transport TypeError"
       detail:
         "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
     },
+    {
+      name: "rewrite: stops an in-flight call with an AbortError",
+      ok: false,
+      detail: "SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
+    },
+    {
+      name: "stops on abort with an AbortError",
+      ok: false,
+      detail: "rewrite: stops an in-flight call with an AbortError: SdkError ai_provider_error 502: AI is unavailable right now. Try again later.",
+    },
   ]);
   expect(
     report.checks.find(
@@ -357,7 +367,7 @@ it("reports an unreadable response body without leaking the transport TypeError"
   ).toEqual({
     name: "responses carry Templatical-AI-Wire: 1",
     ok: true,
-    detail: "1 response(s)",
+    detail: "2 response(s)",
   });
 });
 
@@ -435,4 +445,12 @@ it("maps chat files into model attachments and keeps metadata only in user histo
   const history = await (await handle(new Request("https://x.test/templates/metadata/ai/conversation-messages"))).json();
   expect(history.data[0]).toMatchObject({ role: "user", kind: "chat", text: "Change only the heading using this reference", attachments: [{ name: "shot.png", kind: "image" }, { name: "plan.pdf", kind: "pdf" }] });
   expect(history.data[1]).not.toHaveProperty("attachments");
+});
+
+it("checks live cancellation over the streaming HTTP adapter", async () => {
+  server = await serve(createReferenceHandler());
+  const report = await runAiWireConformance({ baseUrl: server.baseUrl });
+  for (const feature of ["chat", "fixFinding", "rewrite", "altText"]) {
+    expect(report.checks.find((check) => check.name === `${feature}: stops an in-flight call with an AbortError`)).toMatchObject({ ok: true });
+  }
 });

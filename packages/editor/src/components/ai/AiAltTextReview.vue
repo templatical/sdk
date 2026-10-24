@@ -4,7 +4,11 @@ import type { UseAiFeatureReturn } from "../../composables/useAiFeature";
 import { useI18n } from "../../composables/useI18n";
 import { EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { aiErrorMessage } from "../../utils/aiErrors";
-import { aiImageContext } from "../../utils/aiImageContext";
+import {
+  aiImageSnapshot,
+  sameAiImage,
+  type AiImageSnapshot,
+} from "../../utils/aiImageContext";
 import ToggleSwitch from "../ToggleSwitch.vue";
 
 const props = defineProps<{
@@ -18,18 +22,20 @@ const { t, format } = useI18n();
 interface Row {
   blockId: string;
   src: string;
+  snapshot: AiImageSnapshot | null;
   text: string;
   decorative: boolean;
   accepted: boolean;
-  state: "queued" | "pending" | "done" | "failed" | "stopped";
+  state: "queued" | "pending" | "done" | "failed" | "stopped" | "stale";
 }
 // Read the opening snapshot once. A re-lint must not reset an author's review.
 const rows = ref<Row[]>(
   props.blockIds.map((blockId) => ({
     blockId,
     src: editor
-      ? (aiImageContext(editor.content.value, blockId)?.url ?? "")
+      ? (aiImageSnapshot(editor.content.value, blockId)?.src ?? "")
       : "",
+    snapshot: editor ? aiImageSnapshot(editor.content.value, blockId) : null,
     text: "",
     decorative: false,
     accepted: false,
@@ -51,6 +57,7 @@ const done = computed(
       .length,
 );
 const canAccept = (row: Row): boolean =>
+  row.state !== "stale" &&
   row.state !== "queued" &&
   row.state !== "pending" &&
   (row.decorative || row.text.trim().length > 0);
@@ -122,6 +129,24 @@ async function draft(row: Row, controller: AbortController): Promise<void> {
 }
 if (editor) {
   watch(
+    editor.content,
+    () => {
+      for (const row of rows.value) {
+        if (
+          !sameAiImage(
+            aiImageSnapshot(editor.content.value, row.blockId),
+            row.snapshot,
+          )
+        ) {
+          row.state = "stale";
+          row.accepted = false;
+          pending.get(row.blockId)?.abort();
+        }
+      }
+    },
+    { deep: true, flush: "sync", immediate: true },
+  );
+  watch(
     () => rows.value.filter((row) => !editor.findBlockLocation(row.blockId)),
     (deleted) => {
       for (const row of deleted) {
@@ -167,6 +192,7 @@ async function apply(): Promise<void> {
           blockId: row.blockId,
           alt: row.decorative ? "" : row.text.trim(),
           decorative: row.decorative,
+          ...(row.snapshot ? { expect: row.snapshot } : {}),
         })),
     );
     close();
@@ -248,6 +274,13 @@ async function apply(): Promise<void> {
           :disabled="!canAccept(row)"
           class="tpl:text-xs tpl:text-[var(--tpl-text)]"
         />
+        <p
+          v-if="row.state === 'stale'"
+          role="alert"
+          class="tpl:m-0 tpl:text-xs tpl:text-[var(--tpl-danger)]"
+        >
+          {{ t.ai.altText.stale }}
+        </p>
         <p
           v-if="row.state === 'failed'"
           role="alert"

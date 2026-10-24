@@ -727,6 +727,7 @@ export default {
   },
   ai: {
     altText: {
+      stale: "The image changed. Write the alt text again.",
       bulk: "Write missing alt text ({count})",
       review: "Review alt text",
       applyAccepted: "Apply accepted ({count})",
@@ -803,6 +804,9 @@ export default {
       chat: "AI assistant",
     },
     chat: {
+      keptYourVersion:
+        "You edited while the AI was working, so this editor kept your version. The AI's changes are saved on the server; reload to see them. Saving your version replaces them.",
+      reload: "Reload",
       attach: "Attach files",
       dropHint: "Drop images or PDFs to attach them",
       removeAttachment: "Remove {name}",

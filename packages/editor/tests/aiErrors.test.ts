@@ -104,5 +104,18 @@ it("names missing messages only on replay and gives history its own error", () =
 
 
 it("explains a server-applied backend's missing editor provider", () => {
-  expect(message(new SdkError(AI_MISSING_PROVIDER_MESSAGE, undefined, "ai_provider_error"))).toBe("This AI backend needs a templates or collaboration provider to show its changes.");
+  expect(message(new SdkError(AI_MISSING_PROVIDER_MESSAGE, 502, "ai_provider_error"))).toBe("This AI backend needs a templates or collaboration provider to show its changes.");
+});
+
+class OtherPackageSdkError extends Error {
+  constructor(message: string, public statusCode: number, public code?: string, public details?: Record<string, unknown>) { super(message); }
+}
+
+it("recognizes SDK errors from a separate package constructor", () => {
+  expect(message(new OtherPackageSdkError("quota", 403, "limit_reached"))).toBe(en.ai.errors.limitReached);
+  expect(message(new OtherPackageSdkError("slow down", 429, "rate_limited"))).toBe(en.ai.errors.rateLimited);
+  expect(message(new Error("plain"))).toBe(en.ai.errors.generic);
+  for (const fields of [{ statusCode: "403", code: "limit_reached" }, { statusCode: 403, code: 42 }, { statusCode: 403, details: "invalid" }, { statusCode: 403, details: null }]) {
+    expect(message(Object.assign(new Error("invalid shape"), fields))).toBe(en.ai.errors.generic);
+  }
 });

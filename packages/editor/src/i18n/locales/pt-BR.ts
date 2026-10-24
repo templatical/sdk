@@ -727,6 +727,7 @@ const ptBR: typeof en = {
   },
   ai: {
     altText: {
+      stale: "A imagem mudou. Escreva o texto alternativo novamente.",
       bulk: "Escrever textos alternativos ausentes ({count})",
       review: "Revisar textos alternativos",
       applyAccepted: "Aplicar selecionados ({count})",
@@ -807,6 +808,9 @@ const ptBR: typeof en = {
       chat: "Assistente de IA",
     },
     chat: {
+      keptYourVersion:
+        "Você editou enquanto a IA trabalhava, então este editor manteve sua versão. As alterações da IA estão salvas no servidor; recarregue para vê-las. Salvar sua versão as substituirá.",
+      reload: "Recarregar",
       attach: "Anexar arquivos",
       dropHint: "Solte imagens ou PDFs para anexá-los",
       removeAttachment: "Remover {name}",

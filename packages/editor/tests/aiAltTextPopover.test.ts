@@ -322,3 +322,24 @@ describe("AiAltTextPopover in IssuesPanel", () => {
     ).toBeDefined();
   });
 });
+
+it.each(["src", "alt", "decorative"] as const)("refuses a single draft after captured image %s changes", async (field) => {
+  const { wrapper, editor } = await setup();
+  await open(wrapper);
+  const change = field === "src" ? { src: "https://example.com/replaced.png" } : field === "alt" ? { alt: "Author alt" } : { decorative: true };
+  editor.updateBlock("i", change);
+  const before = JSON.stringify(editor.content.value);
+  await nextTick();
+  await button(wrapper, "Accept").trigger("click");
+  await flushPromises();
+  expect(JSON.stringify(editor.content.value)).toBe(before);
+  expect(wrapper.text()).toContain("The image changed. Write the alt text again.");
+});
+
+it("closes the single popover on a same-id committed reload", async () => {
+  const { wrapper, editor } = await setup();
+  await open(wrapper);
+  await editor.load("t");
+  await flushPromises();
+  expect(wrapper.find("textarea").exists()).toBe(false);
+});

@@ -614,6 +614,49 @@ export async function runAiProviderConformance(
     );
     checks.push(check);
     abortChecks.push(check);
+
+    const live = new AbortController();
+    let cancel: ReturnType<typeof setTimeout> | undefined;
+    let liveOutcome: unknown = "resolved";
+    try {
+      await withConformanceDeadline(
+        `${feature}: live abort`,
+        timeoutMs,
+        (signal) => {
+          // Invoke with a live signal. The next task lets async setup (including
+          // HTTP headers/fetch) start before Stop, unlike the entry-only probe.
+          const pending = probe(signal);
+          cancel = setTimeout(() => live.abort(), 0);
+          return pending;
+        },
+        live,
+      );
+    } catch (error) {
+      liveOutcome = error;
+    } finally {
+      clearTimeout(cancel);
+    }
+    const liveCheck = await evaluateConformanceCheck(
+      `${feature}: stops an in-flight call with an AbortError`,
+      () => ({
+        ok:
+          (liveOutcome instanceof Error && liveOutcome.name === "AbortError") ||
+          (liveOutcome === "resolved" && !live.signal.aborted),
+        detail:
+          liveOutcome instanceof ConformanceTimeoutError
+            ? `still running after ${timeoutMs} ms`
+            : liveOutcome === "resolved"
+              ? live.signal.aborted
+                ? "resolved instead of rejecting"
+                : "completed before cancellation"
+              : liveOutcome instanceof Error &&
+                  liveOutcome.name === "AbortError"
+                ? "ok"
+                : describeError(liveOutcome),
+      }),
+    );
+    checks.push(liveCheck);
+    abortChecks.push(liveCheck);
   }
   if (abortChecks.length > 0) {
     await add("stops on abort with an AbortError", () => ({

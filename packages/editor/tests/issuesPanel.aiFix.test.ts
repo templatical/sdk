@@ -10,6 +10,7 @@ import {
   type AiProvider,
   type AiFixRequest,
   type AiTurnHandlers,
+  type Template,
 } from "@templatical/types";
 import type { LintIssue } from "@templatical/quality";
 import IssuesPanel from "../src/components/sidebar/IssuesPanel.vue";
@@ -49,6 +50,7 @@ async function setup(
     disabled?: boolean;
     unloaded?: boolean;
     liveLint?: boolean;
+    load?: (id: string) => Promise<Template>;
     reload?: UseAiFeatureOptions["reload"];
     run?: (
       request: AiFixRequest,
@@ -71,7 +73,7 @@ async function setup(
     const editor = useEditor({
       content,
       templates: {
-        load: async (id) => ({ id, content }),
+        load: options.load ?? (async (id) => ({ id, content })),
         create: false,
         save: false,
       },
@@ -467,4 +469,102 @@ describe("IssuesPanel Fix with AI", () => {
     expect(JSON.stringify(editor.content.value)).toBe(before);
     expect(history.canUndo.value).toBe(false);
   });
+});
+
+it.each(["streaming", "no-op"])("verifies remaining finding after %s fix using the covered lint result", async (mode) => {
+  let finish!: () => void;
+  const { wrapper, lint } = await setup([], {
+    liveLint: true,
+    run: async (_request, on) => {
+      if (mode === "streaming") {
+        await on.onOperations([{ op: "updateSettings", set: { backgroundColor: "#123456" } }]);
+        await new Promise<void>((resolve) => { finish = resolve; });
+      }
+      return { messageId: null, text: "Done" };
+    },
+  });
+  vi.useFakeTimers();
+  try {
+    await wrapper.get(fixed).trigger("click");
+    await flushPromises();
+    if (mode === "streaming") {
+      await vi.advanceTimersByTimeAsync(500);
+      expect(lint.issues.value.some((hit) => hit.ruleId === "a11y.text-all-caps")).toBe(true);
+      finish();
+      await flushPromises();
+    }
+    expect(wrapper.text()).toContain(flagged);
+  } finally { vi.useRealTimers(); }
+});
+
+
+it.each([true, false])("verifies a server-applied fix after its own reload (remaining hit: %s)", async (remains) => {
+  let loads = 0;
+  const reload = vi.fn((id: string, guard?: () => boolean) => editor.load(id, guard));
+  const { wrapper, editor, ai, lint } = await setup([], {
+    liveLint: true,
+    reload,
+    load: async (id) => {
+      const content = createDefaultTemplateContent();
+      content.settings.preheaderText = "A useful preview";
+      content.blocks = [createParagraphBlock({ id: "p1", content: ++loads === 1 || remains ? "<p>THIS IS A LONG ALL CAPS SENTENCE</p>" : "<p>Sentence case.</p>" })];
+      return { id, content };
+    },
+    run: async (_request, on) => {
+      on.onApplied({ batchId: "server-fix", revision: 2, operationCount: 1 });
+      return { messageId: null, text: "Fixed on server" };
+    },
+  });
+  const loadVersion = editor.loadVersion.value;
+  const fix = vi.spyOn(ai, "fix");
+  vi.useFakeTimers();
+  try {
+    await wrapper.get(fixed).trigger("click");
+    await flushPromises();
+    expect(await fix.mock.results[0].value).toMatchObject({ failed: false, operationCount: 1 });
+    expect(reload).toHaveBeenCalledExactlyOnceWith("tpl-1", expect.any(Function));
+    expect(editor.loadVersion.value).toBe(loadVersion + 1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(lint.issues.value.some((hit) => hit.ruleId === "a11y.text-all-caps")).toBe(remains);
+    expect(wrapper.text().includes(flagged)).toBe(remains);
+    if (!remains) {
+      expect(wrapper.findAll("li")).toHaveLength(0);
+      expect(wrapper.text()).toContain(en.issues.emptyState);
+    }
+  } finally { vi.useRealTimers(); }
+});
+
+it.each(["tpl-1", "tpl-2"])("rejects verification after an external committed load of %s", async (id) => {
+  let finish!: () => void;
+  const pending = new Promise<void>((resolve) => { finish = resolve; });
+  const { wrapper, editor, lint } = await setup([issue()], {
+    run: async (_r, on) => {
+      await on.onOperations([{ op: "updateSettings", set: { preheaderText: "AI edit" } }]);
+      await pending;
+      return { messageId: null, text: "Done" };
+    },
+  });
+  await wrapper.get(fixed).trigger("click");
+  await flushPromises();
+  await editor.load(id);
+  finish();
+  await flushPromises();
+  lint.issues.value = [issue()];
+  await nextTick();
+  expect(wrapper.text()).not.toContain(flagged);
+  expect(editor.state.template?.id).toBe(id);
+});
+
+
+it("clears completed fix verification when the author reloads the same template", async () => {
+  const { wrapper, editor, lint } = await setup();
+  await wrapper.get(fixed).trigger("click");
+  await flushPromises();
+  lint.issues.value = [issue()];
+  await nextTick();
+  expect(wrapper.text()).toContain(flagged);
+  await editor.load("tpl-1");
+  lint.issues.value = [issue()];
+  await nextTick();
+  expect(wrapper.text()).not.toContain(flagged);
 });

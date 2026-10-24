@@ -36,7 +36,11 @@ import {
   AI_MISSING_PROVIDER_MESSAGE,
   type AiErrorContext,
 } from "../utils/aiErrors";
-import { aiImageContext } from "../utils/aiImageContext";
+import {
+  aiImageContext,
+  aiImageSnapshot,
+  type AiImageSnapshot,
+} from "../utils/aiImageContext";
 import { DEFAULT_ALT_MAX_LENGTH } from "../utils/aiFixableRules";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 import {
@@ -95,6 +99,8 @@ export interface AiFeatureEditor {
     readonly template?: { readonly id: string } | null;
     readonly selectedBlockId: string | null;
     readonly isLoading?: boolean;
+    readonly isDirty?: boolean;
+    readonly isSaving?: boolean;
   };
   /** Committed create/load version from core; metadata edits leave it alone. */
   loadVersion?: Readonly<Ref<number>>;
@@ -135,6 +141,7 @@ interface TurnRecord {
 }
 
 interface Memory {
+  generation: number;
   items: AiChatItem[];
   records: Map<string, TurnRecord>;
   storedIds: Set<string>;
@@ -180,6 +187,10 @@ export interface UseAiFeatureReturn {
   has: (feature: AiFeatureName) => boolean;
   /** The loaded template's id: AI works on it, and panels reset when it changes. */
   templateId: ComputedRef<string | null>;
+  /** Changes on every committed load, including same-id reloads. */
+  templateSession: ComputedRef<number | string | null>;
+  /** Opaque identity; AI reconciliation keeps it, external committed loads replace it. */
+  sessionIdentity: ComputedRef<object | null>;
   isAvailable: ComputedRef<boolean>;
   hasConversation: boolean;
   canClear: boolean;
@@ -190,6 +201,8 @@ export interface UseAiFeatureReturn {
   /** Alias of busy, retained for existing panels. */
   isRunning: Ref<boolean>;
   failure: Ref<AiFailure | null>;
+  keptYourVersion: Ref<boolean>;
+  reloadTemplate: () => Promise<void>;
   failedPrompt: Ref<string | null>;
   failedAttachments: Ref<File[]>;
   importQueue: Ref<File[]>;
@@ -211,7 +224,12 @@ export interface UseAiFeatureReturn {
   ) => Promise<{ html: string }>;
   draftAltText: (blockId: string, signal?: AbortSignal) => Promise<string>;
   applyAltTexts: (
-    entries: Array<{ blockId: string; alt: string; decorative: boolean }>,
+    entries: Array<{
+      blockId: string;
+      alt: string;
+      decorative: boolean;
+      expect?: AiImageSnapshot;
+    }>,
   ) => Promise<void>;
   destroy: () => void;
 }
@@ -232,14 +250,18 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   const panel = ref<AiPanel | null>(null);
   const memory = new Map<string, Memory>();
   let destroyed = false;
+  let authorVersion = 0;
+  let applyingAi = false;
   type LaneKind =
     "turn" | "replay" | "clear" | "history" | "read" | "reconcile";
   interface Session {
     id: string;
     memory: Memory;
+    generation: number;
     messages: Ref<AiChatItem[]>;
     isLoadingHistory: Ref<boolean>;
     busy: Ref<boolean>;
+    keptYourVersion: Ref<boolean>;
     failure: Ref<AiFailure | null>;
     failedPrompt: Ref<string | null>;
     failedAttachments: Ref<File[]>;
@@ -260,6 +282,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     kind: LaneKind;
     scope: Session;
     controller: AbortController;
+    authorVersion: number;
     execute: () => Promise<void>;
   }
 
@@ -268,9 +291,11 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     return {
       id,
       memory: saved,
+      generation: ++saved.generation,
       messages: ref(saved.items),
       isLoadingHistory: ref(false),
       busy: ref(false),
+      keptYourVersion: ref(false),
       failure: ref(null),
       failedPrompt: ref(null),
       failedAttachments: shallowRef([]),
@@ -329,6 +354,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   const isLoadingHistory = sessionRef((scope) => scope.isLoadingHistory, false);
   const isRunning = sessionRef((scope) => scope.busy, false);
   const failure = sessionRef((scope) => scope.failure, null);
+  const keptYourVersion = sessionRef((scope) => scope.keptYourVersion, false);
   const failedPrompt = sessionRef((scope) => scope.failedPrompt, null);
   const failedAttachments = sessionRef((scope) => scope.failedAttachments, []);
   const importQueue = sessionRef((scope) => scope.importQueue, []);
@@ -352,7 +378,9 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
         kind,
         scope,
         controller: new AbortController(),
+        authorVersion: 0,
         execute: async () => {
+          job.authorVersion = authorVersion;
           let result: T;
           try {
             result = await (job.controller.signal.aborted || !isCurrent(scope)
@@ -410,17 +438,27 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   async function reloadCurrent(
     job: Job,
     recoverStopped = false,
+    expectedAuthorVersion = job.authorVersion,
   ): Promise<void> {
     const { scope } = job;
     const valid = () =>
       scope.active === job &&
       isCurrent(scope) &&
       (recoverStopped || !job.controller.signal.aborted);
-    if (!options.reload || !valid()) return;
+    const canKeepReload = () => {
+      if (!valid()) return false;
+      if (expectedAuthorVersion !== authorVersion) {
+        scope.keptYourVersion.value = true;
+        return false;
+      }
+      return true;
+    };
+    if (!options.reload || !canKeepReload()) return;
     try {
       await abortable(
         options.reload(scope.id, () => {
-          if (!valid()) return false;
+          if (!canKeepReload()) return false;
+          scope.keptYourVersion.value = false;
           scope.committingReload = true;
           return true;
         }),
@@ -435,6 +473,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     let found = memory.get(id);
     if (!found) {
       found = {
+        generation: 0,
         items: [],
         records: new Map(),
         storedIds: new Set(),
@@ -551,8 +590,13 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       options.history().record();
       scope.lastRecordedTurn = turn;
     }
-    applyOperationsInPlace(editor.content.value, safeClone(normalized));
-    editor.markDirty();
+    applyingAi = true;
+    try {
+      applyOperationsInPlace(editor.content.value, safeClone(normalized));
+      editor.markDirty();
+    } finally {
+      applyingAi = false;
+    }
     const selected = editor.state.selectedBlockId;
     if (selected && !hasBlock(editor.content.value.blocks, selected)) {
       editor.selectBlock(null);
@@ -705,7 +749,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
                 do {
                   observed = operationCount;
                   if (!collaboration && options.reload)
-                    await reloadCurrent(recovery, true);
+                    await reloadCurrent(recovery, true, job.authorVersion);
                   if (conversation) await readHistory(recovery, true, true);
                 } while (isCurrent(scope) && observed !== operationCount);
               } catch (error) {
@@ -742,7 +786,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             if (!collaboration && !options.reload) {
               refusal ??= new SdkError(
                 AI_MISSING_PROVIDER_MESSAGE,
-                undefined,
+                502,
                 "ai_provider_error",
               );
               throw refusal;
@@ -936,7 +980,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
             if (typeof remote !== "function") {
               throw new SdkError(
                 `This AI backend does not support ${direction}.`,
-                undefined,
+                403,
                 "feature_unavailable",
               );
             }
@@ -999,7 +1043,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               else
                 throw new SdkError(
                   AI_MISSING_PROVIDER_MESSAGE,
-                  undefined,
+                  502,
                   "ai_provider_error",
                 );
               return;
@@ -1129,6 +1173,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       const request = conversation.list(scope.id).then((list) => {
         if (
           destroyed ||
+          saved.generation !== scope.generation ||
           token !== scope.historyGeneration ||
           (!recoverStopped &&
             (!isCurrent(scope) || job.controller.signal.aborted))
@@ -1272,7 +1317,26 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     panel.value = null;
   }
 
-  const watchers: (() => void)[] = [];
+  const watchers: (() => void)[] = [
+    watch(
+      () => editor.state.isDirty,
+      (dirty, previous) => {
+        // Core clears dirty during save only when that successful request covers
+        // the current mutation revision. A failed or superseded save stays dirty.
+        if (previous === true && dirty === false && editor.state.isSaving)
+          keptYourVersion.value = false;
+      },
+      { flush: "sync" },
+    ),
+    watch(
+      editor.content,
+      () => {
+        if (!applyingAi && !currentSession.value?.committingReload)
+          authorVersion++;
+      },
+      { deep: true, flush: "sync" },
+    ),
+  ];
   if (options.commentsOpen) {
     watchers.push(
       watch(options.commentsOpen, (isOpen) => {
@@ -1361,15 +1425,30 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   }
 
   function applyAltTexts(
-    entries: Array<{ blockId: string; alt: string; decorative: boolean }>,
+    entries: Array<{
+      blockId: string;
+      alt: string;
+      decorative: boolean;
+      expect?: AiImageSnapshot;
+    }>,
   ): Promise<void> {
     const scope = scopeOf();
     if (!scope || entries.length === 0) return Promise.resolve();
-    const ops: Operation[] = entries.map(({ blockId, alt, decorative }) => ({
-      op: "updateBlock",
-      blockId,
-      set: { alt, decorative },
-    }));
+    const ops: Operation[] = entries.map(
+      ({ blockId, alt, decorative, expect }) => ({
+        op: "updateBlock",
+        blockId,
+        expect: {
+          ...(expect ??
+            aiImageSnapshot(editor.content.value, blockId) ?? {
+              src: null,
+              alt: null,
+              decorative: null,
+            }),
+        },
+        set: { alt, decorative },
+      }),
+    );
     return enqueue(
       "replay",
       scope,
@@ -1410,6 +1489,10 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     close,
     has,
     templateId,
+    sessionIdentity: computed(() => currentSession.value),
+    templateSession: computed(
+      () => editor.loadVersion?.value ?? templateId.value,
+    ),
     isAvailable,
     hasConversation: conversation !== null,
     canClear: conversation === null || typeof conversation.clear === "function",
@@ -1418,6 +1501,18 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     isRunning,
     busy: isRunning,
     failure,
+    keptYourVersion,
+    reloadTemplate: () => {
+      const scope = scopeOf();
+      return scope
+        ? enqueue(
+            "reconcile",
+            scope,
+            (job) => reloadCurrent(job),
+            () => {},
+          )
+        : Promise.resolve();
+    },
     failedPrompt,
     failedAttachments,
     importQueue,
@@ -1497,6 +1592,9 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               ),
               job.controller.signal,
             );
+          } catch (error) {
+            report(error);
+            throw error;
           } finally {
             signal.removeEventListener("abort", abort);
           }

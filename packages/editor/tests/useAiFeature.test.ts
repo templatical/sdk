@@ -626,6 +626,7 @@ describe("useAiFeature with collaboration", () => {
             op: "updateBlock",
             blockId: "i",
             set: { alt: "Shop", decorative: false },
+            expect: { src: "https://example.com/i.png", alt: "Old", decorative: true },
           },
         ],
       }),
@@ -2973,4 +2974,148 @@ describe("chat attachments and import queue", () => {
     editor.state.template = null;
     expect(ai.has("chatAttachments")).toBe(false);
   });
+});
+
+it("rejects obsolete recovery after A is reopened and has a newer turn", async () => {
+  const oldRecovery = deferred<AiChatMessage[]>();
+  let aReads = 0;
+  let aTurns = 0;
+  const { ai, editor } = await openLocal({
+    chat: async (request, on) => {
+      if (request.templateId === "tpl-1" && ++aTurns === 1) {
+        on.onApplied({ batchId: "old-batch", revision: 1, operationCount: 1 });
+        throw new Error("partial");
+      }
+      return { messageId: "a-new", text: "New session answer" };
+    },
+    conversation: {
+      list: async (id) => id === "tpl-1" && ++aReads === 2 ? oldRecovery.promise : [],
+      clear: false, undo: false, redo: false, settleReplay: async () => {},
+    },
+  }, { reload: async () => {} });
+  ai.open("chat");
+  await settle();
+  const first = ai.send("Old A turn");
+  await settle();
+  await editor.load("tpl-2");
+  await settle();
+  await editor.load("tpl-1");
+  await settle();
+  await ai.send("New A turn");
+  expect(ai.messages.value.map((row) => row.id)).toContain("a-new");
+  oldRecovery.resolve([messageWithBatch("obsolete", "old-batch")]);
+  await first;
+  await settle();
+  await ai.send("Publish memory again");
+  expect(ai.messages.value.filter((row) => row.text === "New session answer")).toHaveLength(2);
+  expect(ai.messages.value.map((row) => row.id)).not.toContain("obsolete");
+});
+
+it("reports a rewrite failure exactly once through onError", async () => {
+  const error = new Error("rewrite failed");
+  const { ai, onError } = await openLocal({ rewrite: async () => { throw error; } });
+  await expect(ai.rewrite({ html: "<p>Hi</p>", preset: "shorten" }, () => {}, new AbortController().signal)).rejects.toBe(error);
+  expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+});
+
+it("does not report a stopped rewrite through onError", async () => {
+  const { ai, onError } = await openLocal({ rewrite: async (_r, _on, signal) => waitForStop(signal) });
+  const stopped = ai.rewrite({ html: "<p>Hi</p>", preset: "shorten" }, () => {}, new AbortController().signal);
+  const result = expect(stopped).rejects.toMatchObject({ name: "AbortError" });
+  await settle();
+  ai.stop();
+  await result;
+  expect(onError).not.toHaveBeenCalled();
+});
+
+it("checks captured image fields when queued alt text operations reach the lane", async () => {
+  const pending = deferred<void>();
+  const { ai, editor, onError } = await openLocal({ chat: chatting(() => pending.promise) });
+  editor.setContent({ ...CONTENT, blocks: [{ id: "i", type: "image", src: "https://example.com/a.png", alt: "Old", decorative: false }] } as TemplateContent);
+  const turn = ai.send("Wait");
+  await settle();
+  const apply = ai.applyAltTexts([{ blockId: "i", alt: "Draft", decorative: false, expect: { src: "https://example.com/a.png", alt: "Old", decorative: false } }]);
+  const refused = expect(apply).rejects.toMatchObject({ code: "precondition_failed" });
+  editor.updateBlock("i", { src: "https://example.com/b.png" });
+  pending.resolve();
+  await turn;
+  await refused;
+  expect(editor.content.value.blocks[0]).toMatchObject({ src: "https://example.com/b.png", alt: "Old", decorative: false });
+  expect(onError).toHaveBeenCalledTimes(1);
+});
+
+it("keeps author edits made before a buffered server fact starts reconciliation", async () => {
+  let handlers!: AiTurnHandlers;
+  const { ai, editor, reload } = await openLocal({ chat: async (_r, on, signal) => {
+    handlers = on;
+    return waitForStop(signal);
+  } }, { reload: async () => {} });
+  const turn = ai.send("Server turn");
+  await settle();
+  ai.stop();
+  await turn;
+  editor.updateBlock("t1", { content: "<p>Keep this author edit</p>" });
+  handlers.onApplied({ batchId: "buffered", revision: 2, operationCount: 1 });
+  await settle();
+  expect(reload).not.toHaveBeenCalled();
+  expect(ai.keptYourVersion.value).toBe(true);
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Keep this author edit</p>" });
+});
+
+it("does not count the AI's own applied batches as author edits before reload", async () => {
+  const { ai, reload } = await openLocal({ chat: chatting(async (on) => {
+    await on.onOperations(greet);
+    on.onApplied({ batchId: "server", revision: 2, operationCount: 1 });
+  }) }, { reload: async () => {} });
+  await ai.send("Mixed turn");
+  expect(reload).toHaveBeenCalledTimes(1);
+  expect(ai.keptYourVersion.value).toBe(false);
+});
+
+
+it.each(["saved", "failed", "superseded"] as const)("clears the retained-version notice only for a covering successful save: %s", async (ending) => {
+  const turnFinished = deferred<void>();
+  const saved = deferred<Template>();
+  const scope = effectScope();
+  const { editor, ai } = scope.run(() => {
+    const editor = useEditor({
+      content: safeClone(CONTENT),
+      templates: {
+        load: async (id) => ({ id, content: safeClone(CONTENT) }),
+        create: false,
+        save: async () => saved.promise,
+      },
+    });
+    const history = useHistory({ content: editor.content, setContent: editor.setContent });
+    const ai = useAiFeature({
+      provider: { ...off, chat: chatting(async (on) => {
+        await turnFinished.promise;
+        on.onApplied({ batchId: "server", revision: 2, operationCount: 1 });
+      }) } as AiProvider,
+      editor, collaboration: null, history: () => history,
+      reload: (id, guard) => editor.load(id, guard),
+      mergeTags: () => null, normalize: (ops) => [...ops], commentsOpen: null,
+    });
+    return { editor, ai };
+  })!;
+  try {
+    await editor.load("tpl-1");
+    const turn = ai.send("Server turn");
+    await settle();
+    editor.updateBlock("t1", { content: "<p>Retained author version</p>" });
+    turnFinished.resolve();
+    await turn;
+    expect(ai.keptYourVersion.value).toBe(true);
+    const snapshot = safeClone(editor.content.value);
+    const saving = editor.save();
+    const result = saving.catch((error) => error);
+    expect(ai.keptYourVersion.value).toBe(true);
+    if (ending === "superseded") editor.updateBlock("t1", { content: "<p>Newer author version</p>" });
+    if (ending === "failed") saved.reject(new Error("Save failed"));
+    else saved.resolve({ id: "tpl-1", content: snapshot });
+    await result;
+    expect(editor.state.isDirty).toBe(ending !== "saved");
+    expect(ai.keptYourVersion.value).toBe(ending !== "saved");
+    expect(editor.content.value.blocks[0]).toMatchObject({ content: ending === "superseded" ? "<p>Newer author version</p>" : "<p>Retained author version</p>" });
+  } finally { ai.destroy(); scope.stop(); }
 });

@@ -778,3 +778,17 @@ it("probes a chat turn with a 1×1 PNG when attachments are enabled", async () =
     ),
   ).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
 });
+
+it.each(["chat", "fixFinding", "rewrite", "altText"] as const)("fails live cancellation for %s that only checks abort on entry", async (feature) => {
+  let calls = 0;
+  const broken = async (...args: unknown[]) => {
+    const signal = args.at(-1) as AbortSignal;
+    signal.throwIfAborted();
+    if (++calls > 1) return new Promise(() => {});
+    return { messageId: null, text: "Done", html: "<p>Done</p>", alt: "Image" };
+  };
+  const report = await runAiProviderConformance({ ...disabled, [feature]: broken }, { timeoutMs: 20 });
+  expect(report.checks.find((check) => check.name === `${feature}: stops on abort with an AbortError`)).toMatchObject({ ok: true });
+  expect(report.checks.find((check) => check.name === `${feature}: stops an in-flight call with an AbortError`)).toMatchObject({ ok: false, detail: "still running after 20 ms" });
+  expect(report.ok).toBe(false);
+});

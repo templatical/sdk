@@ -55,6 +55,8 @@ Ein Durchlauf streamt seine Antwort über `on.onText` und übergibt Änderungen 
 - **`on.onOperations(ops)`**: [Operationen](/de/api/operations), die der Editor anwenden soll. Er wendet sie sofort an und antwortet mit `{ applied: true, inverse }` oder mit `{ applied: false, code, opIndex, message }`, wenn sie nicht mehr zum Template passen (jemand hat einen Block geändert oder hält seine Sperre). Die Batches eines Durchlaufs bilden einen Rückgängig-Schritt.
 - **`on.onApplied({ batchId, revision, operationCount })`**: Ihr Backend hat den Batch bereits auf seine Kopie angewendet. Mit einem [Zusammenarbeits-Provider](/de/backend/collaboration) folgt der Editor der Revision; mit einem reinen Templates-Provider lädt er das Template am Ende des Durchlaufs neu. Ohne beide verweigert er den Batch.
 
+Ohne Zusammenarbeit verhindert eine eigene Bearbeitung nach Beginn eines Durchlaufs das automatische Neuladen, auch während eine Ladeanfrage läuft. Der Editor behält Ihre Version und zeigt einen Hinweis mit **Neu laden**. Die Änderungen der KI bleiben auf dem Server gespeichert. Wählen Sie **Neu laden**, um sie zu laden; wenn Sie Ihre Version speichern, ersetzen Sie die Änderungen der KI. Im Editor angewendete Batches der KI zählen nicht als eigene Bearbeitungen.
+
 `chat` sendet `message`, `selectedBlockId` (nur einen Block, den Ihr Backend kennt) und `attachments`, immer als Array. `fixFinding` sendet die unten beschriebene Lint-Projektion.
 
 ### Chat-Anhänge
@@ -83,7 +85,7 @@ Der Verlauf hat Typ `chat` und speichert nur optionale `attachments: { name: str
 - `deliverability.link-text-domain-mismatch`
 - `deliverability.low-text`
 
-Der Editor zeigt eine Schaltfläche pro `ruleId`/`blockId`-Paar, unabhängig vom Schweregrad. Die Fix-Schaltflächen sind während KI-Bearbeitungen deaktiviert; während unabhängiger Alt-Text-Entwürfe können Sie weiterhin Fixes starten; der laufende Fix zeigt **Wird behoben…** und **Stoppen**. Der Durchlauf bleibt ein Undo-Schritt mit Verlaufstyp `fix`. Erst die nächste, um 500 ms verzögerte Lint-Aktualisierung entscheidet über die Behebung: Bleibt ein Treffer für das Paar, erscheint **Nach der Korrektur weiterhin markiert**. Das ist keine Aussage über einzelne Vorkommen innerhalb eines Blocks.
+Der Editor zeigt eine Schaltfläche pro `ruleId`/`blockId`-Paar, unabhängig vom Schweregrad. Die Fix-Schaltflächen sind während KI-Bearbeitungen deaktiviert; während unabhängiger Alt-Text-Entwürfe können Sie weiterhin Fixes starten; der laufende Fix zeigt **Wird behoben…** und **Stoppen**. Der Durchlauf bleibt ein Undo-Schritt mit Verlaufstyp `fix`. Die Überprüfung verwendet ein Lint-Ergebnis, das den endgültigen Inhalt des Fixes bereits abdeckt; andernfalls wartet sie auf die nächste Lint-Prüfung. Bleibt ein Treffer für das Paar, erscheint **Nach der Korrektur weiterhin markiert**. Das ist keine Aussage über einzelne Vorkommen innerhalb eines Blocks.
 
 Bei Domain-Abweichungen wird nur der sichtbare Linktext in beschreibende Wörter umgeschrieben, nie das `href`. Bei zu wenig Text (`blockId: null`) wird Text im E-Mail-Inhalt aus vorhandenen Fakten ergänzt, nicht im Alt-Text oder Preheader. `a11y.missing-preheader` setzt über `updateSettings` einen `preheaderText` mit höchstens 100 Zeichen aus dem einleitenden Inhalt.
 

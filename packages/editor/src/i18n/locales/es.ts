@@ -728,6 +728,7 @@ const es: typeof en = {
   },
   ai: {
     altText: {
+      stale: "La imagen ha cambiado. Vuelva a escribir el texto alternativo.",
       bulk: "Escribir los textos alternativos que faltan ({count})",
       review: "Revisar textos alternativos",
       applyAccepted: "Aplicar seleccionados ({count})",
@@ -808,6 +809,9 @@ const es: typeof en = {
       chat: "Asistente de IA",
     },
     chat: {
+      keptYourVersion:
+        "Ha editado mientras la IA trabajaba, por lo que este editor ha conservado su versión. Los cambios de la IA están guardados en el servidor; vuelva a cargar para verlos. Si guarda su versión, los sustituirá.",
+      reload: "Volver a cargar",
       attach: "Adjuntar archivos",
       dropHint: "Suelte imágenes o PDF para adjuntarlos",
       removeAttachment: "Eliminar {name}",

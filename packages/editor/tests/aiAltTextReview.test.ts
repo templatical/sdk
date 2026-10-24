@@ -416,8 +416,8 @@ describe("bulk alt text review in IssuesPanel", () => {
     await button(wrapper, "Apply accepted (2)").trigger("click");
     await flushPromises();
     expect(apply).toHaveBeenCalledExactlyOnceWith([
-      { blockId: "i1", alt: "Shop spring arrivals", decorative: false },
-      { blockId: "i2", alt: "", decorative: true },
+      { blockId: "i1", alt: "Shop spring arrivals", decorative: false, expect: { src: "https://example.com/i1.png", alt: "", decorative: null } },
+      { blockId: "i2", alt: "", decorative: true, expect: { src: "https://example.com/i2.png", alt: "", decorative: null } },
     ]);
     expect(review(wrapper).exists()).toBe(false);
     issues.value = lintAccessibility(editor.content.value);
@@ -493,7 +493,7 @@ describe("bulk alt text review in IssuesPanel", () => {
     await button(wrapper, "Apply accepted (1)").trigger("click");
     await flushPromises();
     expect(apply).toHaveBeenCalledExactlyOnceWith([
-      { blockId: "i1", alt: "Remaining image", decorative: false },
+      { blockId: "i1", alt: "Remaining image", decorative: false, expect: { src: "https://example.com/i1.png", alt: "", decorative: null } },
     ]);
     expect(review(wrapper).exists()).toBe(false);
   });
@@ -506,10 +506,10 @@ describe("bulk alt text review in IssuesPanel", () => {
     await button(wrapper, "Apply accepted (5)").trigger("click");
     await flushPromises();
     expect(apply).toHaveBeenCalledExactlyOnceWith([
-      { blockId: "i1", alt: "Draft i1", decorative: false },
-      { blockId: "i3", alt: "Draft i3", decorative: false },
-      { blockId: "i4", alt: "Draft i4", decorative: false },
-      { blockId: "i5", alt: "Draft i5", decorative: false },
+      { blockId: "i1", alt: "Draft i1", decorative: false, expect: { src: "https://example.com/i1.png", alt: "", decorative: null } },
+      { blockId: "i3", alt: "Draft i3", decorative: false, expect: { src: "https://example.com/i3.png", alt: "", decorative: null } },
+      { blockId: "i4", alt: "Draft i4", decorative: false, expect: { src: "https://example.com/i4.png", alt: "", decorative: null } },
+      { blockId: "i5", alt: "Draft i5", decorative: false, expect: { src: "https://example.com/i5.png", alt: "", decorative: null } },
     ]);
     expect(review(wrapper).exists()).toBe(false);
   });
@@ -651,4 +651,29 @@ describe("bulk alt text review in IssuesPanel", () => {
       available.wrapper.find('[data-testid="issue-ai-alt-text-bulk"]').exists(),
     ).toBe(false);
   });
+});
+
+it.each(["src", "alt", "decorative"] as const)("excludes a bulk row after captured image %s changes", async (field) => {
+  const { wrapper, editor } = await setup(undefined, 2);
+  await open(wrapper, 2);
+  const change = field === "src" ? { src: "https://example.com/replaced.png" } : field === "alt" ? { alt: "Author alt" } : { decorative: true };
+  editor.updateBlock("i1", change);
+  await nextTick();
+  const before = JSON.stringify(editor.content.value.blocks[0]);
+  expect(rows(wrapper)[0].text()).toContain("The image changed. Write the alt text again.");
+  await button(wrapper, "Apply accepted (1)").trigger("click");
+  await flushPromises();
+  expect(JSON.stringify(editor.content.value.blocks[0])).toBe(before);
+  expect(editor.content.value.blocks[1]).toMatchObject({ children: [[{ id: "i2", alt: "Draft i2" }], []] });
+});
+
+it("does not request a queued draft for a changed image", async () => {
+  const pool = deferredProvider();
+  const { wrapper, editor } = await setup(pool.provider, 4);
+  await open(wrapper, 4);
+  editor.updateBlock("i4", { src: "https://example.com/new.png" });
+  pool.calls[0].resolve({ alt: "First" });
+  await flushPromises();
+  expect(pool.calls.map((call) => call.blockId)).toEqual(["i1", "i2", "i3"]);
+  expect(rows(wrapper)[3].text()).toContain("The image changed. Write the alt text again.");
 });

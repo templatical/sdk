@@ -662,6 +662,7 @@ const fr: typeof en = {
   },
   ai: {
     altText: {
+      stale: "L’image a changé. Rédigez à nouveau le texte alternatif.",
       bulk: "Rédiger les textes alternatifs manquants ({count})",
       review: "Vérifier les textes alternatifs",
       applyAccepted: "Appliquer la sélection ({count})",
@@ -740,6 +741,9 @@ const fr: typeof en = {
       chat: "Assistant IA",
     },
     chat: {
+      keptYourVersion:
+        "Vous avez modifié le contenu pendant que l’IA travaillait. Cet éditeur a donc conservé votre version. Les modifications de l’IA sont enregistrées sur le serveur ; rechargez pour les voir. Enregistrer votre version les remplacera.",
+      reload: "Recharger",
       attach: "Joindre des fichiers",
       dropHint: "Déposez des images ou des PDF pour les joindre",
       removeAttachment: "Supprimer {name}",

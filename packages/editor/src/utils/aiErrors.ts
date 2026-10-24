@@ -1,4 +1,4 @@
-import { SdkError } from "@templatical/types";
+import { isSdkError } from "./isSdkError";
 import type { Translations } from "../i18n";
 import { formatAbsoluteDateTime } from "./formatAbsoluteDateTime";
 
@@ -29,7 +29,7 @@ export function aiErrorMessage(
   context: AiErrorContext = "turn",
 ): string {
   if (context === "history") return strings.historyError;
-  if (!(error instanceof SdkError)) return strings.generic;
+  if (!isSdkError(error)) return strings.generic;
   switch (error.code) {
     case "feature_unavailable":
       return strings.featureUnavailable;

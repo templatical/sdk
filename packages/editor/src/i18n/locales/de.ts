@@ -735,6 +735,7 @@ const de: typeof en = {
   },
   ai: {
     altText: {
+      stale: "Das Bild hat sich geändert. Schreiben Sie den Alt-Text erneut.",
       bulk: "Fehlende Alt-Texte schreiben ({count})",
       review: "Alt-Texte prüfen",
       applyAccepted: "Ausgewählte übernehmen ({count})",
@@ -816,6 +817,9 @@ const de: typeof en = {
       chat: "KI-Assistent",
     },
     chat: {
+      keptYourVersion:
+        "Sie haben bearbeitet, während die KI gearbeitet hat. Daher behält dieser Editor Ihre Version. Die Änderungen der KI sind auf dem Server gespeichert; laden Sie neu, um sie zu sehen. Wenn Sie Ihre Version speichern, werden sie ersetzt.",
+      reload: "Neu laden",
       attach: "Dateien anhängen",
       dropHint: "Bilder oder PDFs zum Anhängen hier ablegen",
       removeAttachment: "{name} entfernen",

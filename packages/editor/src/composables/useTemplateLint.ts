@@ -45,6 +45,8 @@ export interface UseTemplateLintOptions {
 
 export interface UseTemplateLintReturn {
   issues: Ref<LintIssue[]>;
+  contentVersion: Readonly<Ref<number>>;
+  lintVersion: Readonly<Ref<number>>;
   /** True once the quality package has been successfully imported. */
   ready: Ref<boolean>;
   /** True if the dynamic import failed (e.g. package not installed). */
@@ -75,6 +77,15 @@ export function useTemplateLint(
   opts: UseTemplateLintOptions,
 ): UseTemplateLintReturn {
   const issues = ref<LintIssue[]>([]) as Ref<LintIssue[]>;
+  const contentVersion = ref(0);
+  const lintVersion = ref(-1);
+  const stopVersionWatch = watch(
+    opts.content,
+    () => {
+      contentVersion.value++;
+    },
+    { deep: true, flush: "sync" },
+  );
   const ready = ref(false);
   const unavailable = ref(false);
   const loaded = shallowRef<Loaded | null>(null);
@@ -120,7 +131,9 @@ export function useTemplateLint(
 
   function runLint(): void {
     if (!loaded.value) return;
-    issues.value = loaded.value.lintTemplate(opts.content.value, opts.options);
+    const result = loaded.value.lintTemplate(opts.content.value, opts.options);
+    lintVersion.value = contentVersion.value;
+    issues.value = result;
   }
 
   // Re-run when severity overrides change at runtime (rare, but useful for
@@ -146,8 +159,17 @@ export function useTemplateLint(
   function destroy(): void {
     destroyed = true;
     stopWatch?.();
+    stopVersionWatch();
     stopOptionsWatch();
   }
 
-  return { issues, ready, unavailable, applyFix, destroy };
+  return {
+    issues,
+    contentVersion,
+    lintVersion,
+    ready,
+    unavailable,
+    applyFix,
+    destroy,
+  };
 }

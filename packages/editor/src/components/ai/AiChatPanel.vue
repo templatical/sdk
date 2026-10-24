@@ -39,6 +39,16 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const attachments = ref<File[]>([]);
 const attachmentErrors = ref<string[]>([]);
 const dragDepth = ref(0);
+watch(
+  () => props.feature.templateSession.value,
+  () => {
+    promptInput.value = "";
+    attachments.value = [];
+    attachmentErrors.value = [];
+    dragDepth.value = 0;
+  },
+  { flush: "sync" },
+);
 const canAttach = computed(() => props.feature.has("chatAttachments"));
 function attach(files: File[]): void {
   const result = validateChatAttachments(attachments.value, files);
@@ -492,6 +502,21 @@ function onKeydown(event: KeyboardEvent): void {
               </p>
             </div>
           </template>
+          <div
+            v-if="feature.keptYourVersion.value"
+            role="status"
+            class="tpl:mb-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+          >
+            <p>{{ t.ai.chat.keptYourVersion }}</p>
+            <button
+              type="button"
+              :disabled="isBusy"
+              :class="secondaryBtnCompactClass"
+              @click="feature.reloadTemplate()"
+            >
+              {{ t.ai.chat.reload }}
+            </button>
+          </div>
           <div
             v-if="failureText"
             role="alert"

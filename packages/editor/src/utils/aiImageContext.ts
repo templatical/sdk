@@ -78,3 +78,37 @@ export function aiImageContext(
   }
   return find(content.blocks, content.blocks);
 }
+
+/** The exact image fields a reviewed draft is allowed to replace. */
+export interface AiImageSnapshot {
+  src: string;
+  alt: string | null;
+  decorative: boolean | null;
+}
+export function aiImageSnapshot(
+  content: TemplateContent,
+  blockId: string,
+): AiImageSnapshot | null {
+  const block = flatten(content.blocks).find(
+    (candidate) => candidate.id === blockId,
+  );
+  return block?.type === "image"
+    ? {
+        src: block.src,
+        alt: block.alt ?? null,
+        decorative: block.decorative ?? null,
+      }
+    : null;
+}
+export function sameAiImage(
+  current: AiImageSnapshot | null,
+  captured: AiImageSnapshot | null,
+): boolean {
+  return (
+    current !== null &&
+    captured !== null &&
+    current.src === captured.src &&
+    current.alt === captured.alt &&
+    current.decorative === captured.decorative
+  );
+}

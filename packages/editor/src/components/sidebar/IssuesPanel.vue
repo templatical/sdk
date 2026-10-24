@@ -192,29 +192,25 @@ const totalCount = computed(
   () => errors.value.length + warnings.value.length + infos.value.length,
 );
 
-// Verify a successful turn against the next debounced lint result, never
-// against the stale findings still shown while the turn completes.
+// Verify against a lint result covering the final content of a successful fix.
 const pendingVerify = new Set<string>();
 const stillFlagged = ref(new Set<string>());
 const runningPair = ref<string | null>(null);
 const pairOf = (issue: LintIssue): string =>
   JSON.stringify([issue.ruleId, issue.blockId]);
 
+function verify(issues: LintIssue[]): void {
+  const current = new Set(issues.map(pairOf));
+  for (const pair of stillFlagged.value) {
+    if (!current.has(pair)) stillFlagged.value.delete(pair);
+  }
+  for (const pair of pendingVerify) {
+    if (current.has(pair)) stillFlagged.value.add(pair);
+  }
+  pendingVerify.clear();
+}
 if (lint) {
-  watch(
-    lint.issues,
-    (issues) => {
-      const current = new Set(issues.map(pairOf));
-      for (const pair of stillFlagged.value) {
-        if (!current.has(pair)) stillFlagged.value.delete(pair);
-      }
-      for (const pair of pendingVerify) {
-        if (current.has(pair)) stillFlagged.value.add(pair);
-      }
-      pendingVerify.clear();
-    },
-    { flush: "sync" },
-  );
+  watch(lint.issues, verify, { flush: "sync" });
 }
 
 if (ai) {
@@ -227,11 +223,17 @@ if (ai) {
     { flush: "sync" },
   );
   watch(
-    ai.templateId,
+    ai.templateSession,
+    () => {
+      void closeAltText();
+    },
+    { flush: "sync" },
+  );
+  watch(
+    ai.sessionIdentity,
     () => {
       pendingVerify.clear();
       stillFlagged.value.clear();
-      void closeAltText();
     },
     { flush: "sync" },
   );
@@ -334,13 +336,23 @@ async function fixWithAi(issue: LintIssue): Promise<void> {
   )
     return;
   const pair = pairOf(issue);
-  const templateId = ai.templateId.value;
+  const sessionIdentity = ai.sessionIdentity.value;
   runningPair.value = pair;
   stillFlagged.value.delete(pair);
   try {
     const outcome = await ai.fix(toAiFixFinding(issue));
-    if (!destroyed && ai.templateId.value === templateId && !outcome.failed)
+    if (
+      !destroyed &&
+      ai.sessionIdentity.value === sessionIdentity &&
+      !outcome.failed
+    ) {
       pendingVerify.add(pair);
+      if (
+        lint?.contentVersion &&
+        lint.lintVersion.value === lint.contentVersion.value
+      )
+        verify(lint.issues.value);
+    }
   } finally {
     runningPair.value = null;
   }

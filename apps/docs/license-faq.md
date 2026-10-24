@@ -142,9 +142,9 @@ There is no header logo or other forced branding — the footer is the only attr
 
 ## Is using the Cloud tier required?
 
-**No.** The Cloud tier is optional. The SDK works standalone — every feature `init()` offers in `@templatical/editor` runs without any backend.
+**No.** The Cloud tier is optional. The SDK can run standalone; features that connect to your data use providers you implement.
 
-Cloud is optional hosted infrastructure for real-time collaboration and managed storage; its AI provider arrives in a later release. Comments, saved blocks, version history, test email, media, real-time collaboration and [AI](/backend/ai) are available on `init()` via providers you implement — Cloud is one adapter, not the feature.
+Live collaboration runs over your own backend with `init({ collaboration })`. Templatical Cloud's hosted collaboration isn't in this SDK release. Cloud supplies hosted storage; its AI provider isn't in this SDK release. Comments, saved blocks, version history, test email, media and [AI](/backend/ai) use providers you implement on `init()`. Cloud is one adapter, not the feature.
 
 ## What if I have a question this doesn't answer?
 

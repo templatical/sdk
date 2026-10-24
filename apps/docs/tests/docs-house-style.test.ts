@@ -425,3 +425,12 @@ describe("AI partial-failure replay guidance", () => {
     },
   );
 });
+
+
+it.each([
+  ["backend/ai.md", "Verification reuses a lint result that already covers the fix's final content; otherwise it waits for the next re-lint."],
+  ["de/backend/ai.md", "Die Überprüfung verwendet ein Lint-Ergebnis, das den endgültigen Inhalt des Fixes bereits abdeckt; andernfalls wartet sie auf die nächste Lint-Prüfung."],
+])("%s describes both covered-result and pending re-lint verification", (page, contract) => {
+  expect(readDocs(page)).toContain(contract);
+  expect(readDocs(page)).not.toMatch(/Only the next 500 ms|Erst die nächste, um 500 ms/);
+});
