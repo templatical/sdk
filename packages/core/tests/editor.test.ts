@@ -1014,3 +1014,67 @@ describe('refuses slot and wrapper in content', () => {
         expect(editor.state.template).toBeNull();
     });
 });
+
+describe('guarded template loads', () => {
+    it.each([false, true])(
+        'commits a loaded template only when shouldApply returns %s',
+        async (apply) => {
+            const previous = storedTemplate(
+                contentWithBlocks([
+                    createParagraphBlock({
+                        id: 'previous',
+                        content: '<p>Previous</p>',
+                    }),
+                ]),
+            );
+            const incoming = {
+                ...storedTemplate(
+                    contentWithBlocks([
+                        createParagraphBlock({
+                            id: 'incoming',
+                            content: '<p>Incoming</p>',
+                        }),
+                    ]),
+                ),
+                id: 'tpl_2',
+            };
+            let complete!: (template: Template) => void;
+            const onLoaded = vi.fn();
+            const editor = useEditor({
+                content: createDefaultTemplateContent(),
+                templates: {
+                    ...loadProvider(previous.content),
+                    load: vi
+                        .fn()
+                        .mockResolvedValueOnce(previous)
+                        .mockImplementationOnce(
+                            () =>
+                                new Promise<Template>((resolve) => {
+                                    complete = resolve;
+                                }),
+                        ),
+                    onLoaded,
+                },
+            });
+            await editor.load('tpl_1');
+            editor.markDirty();
+            const version = editor.loadVersion.value;
+            const shouldApply = vi.fn(() => apply);
+            const pending = editor.load('tpl_2', shouldApply);
+            expect(editor.state.isLoading).toBe(true);
+            complete(incoming);
+            expect(await pending).toEqual(incoming);
+            expect(shouldApply).toHaveBeenCalledExactlyOnceWith();
+            expect(editor.state.template).toEqual(apply ? incoming : previous);
+            expect(
+                editor.content.value.blocks.map((block) => block.id),
+            ).toEqual(apply ? ['incoming'] : ['previous']);
+            expect(editor.state.isDirty).toBe(!apply);
+            expect(editor.loadVersion.value).toBe(version + (apply ? 1 : 0));
+            expect(editor.state.isLoading).toBe(false);
+            expect(
+                onLoaded.mock.calls.map(([template]) => template.id),
+            ).toEqual(apply ? ['tpl_1', 'tpl_2'] : ['tpl_1']);
+        },
+    );
+});

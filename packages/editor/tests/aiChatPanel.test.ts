@@ -78,6 +78,62 @@ async function setup(
 }
 
 describe("AiChatPanel", () => {
+  it("shows the history error string when conversation loading rejects", async () => {
+    const { wrapper, feature } = await setup({
+      conversation: {
+        list: async () => {
+          throw new Error("Private storage failure");
+        },
+        clear: false,
+        undo: false,
+        redo: false,
+        settleReplay: async () => {},
+      },
+    });
+    expect(feature.failure.value?.context).toBe("history");
+    expect(wrapper.get('[data-testid="ai-chat-error"]').text()).toBe(
+      "Couldn't load the conversation. Try again.",
+    );
+    expect(wrapper.text()).not.toContain("Private storage failure");
+  });
+
+  it("shows a partially applied turn's localized failure on that message", async () => {
+    const { wrapper, editor, feature } = await setup({
+      chat: async (_request, on) => {
+        await on.onOperations([
+          {
+            op: "updateBlock",
+            blockId: "t1",
+            set: { content: "<p>Hello</p>" },
+          },
+        ]);
+        throw new SdkError("Private provider detail", 409, "ai_turn_running");
+      },
+    });
+    await wrapper
+      .get('[data-testid="ai-chat-input"]')
+      .setValue("Change the title");
+    await wrapper.get('[data-testid="ai-chat-send"]').trigger("click");
+    await flushPromises();
+    expect(editor.content.value.blocks[0]).toMatchObject({
+      content: "<p>Hello</p>",
+    });
+    expect(feature.messages.value.at(-1)).toMatchObject({
+      role: "assistant",
+      operationCount: 1,
+      failure: { context: "turn" },
+    });
+    expect(wrapper.get('[data-testid="ai-chat-item-error"]').text()).toBe(
+      "An AI request is already running on this template.",
+    );
+    expect(wrapper.get('[data-testid="ai-chat-applied"]').text()).toContain(
+      "Applied 1 change",
+    );
+    expect(wrapper.get('[data-testid="ai-chat-undo"]').text()).toBe("Undo");
+    expect(wrapper.find('[data-testid="ai-chat-error"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Private provider detail");
+  });
+
   it.each([
     { chatAttachments: true, busy: false },
     { chatAttachments: false, busy: false },

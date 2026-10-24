@@ -112,6 +112,30 @@ describe.each([
 );
 
 describe("createHttpAiProvider: turns", () => {
+  it("rejects a successful turn response without a body as a provider failure", async () => {
+    fakeFetch(
+      () =>
+        new Response(null, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Templatical-AI-Wire": "1",
+          },
+        }),
+    );
+    const on = handlers();
+    await expect(
+      (provider().chat as Function)(chat, on, new AbortController().signal),
+    ).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 502,
+      code: "ai_provider_error",
+      message: "AI is unavailable right now. Try again later.",
+    });
+    expect(on.onText).not.toHaveBeenCalled();
+    expect(on.onOperations).not.toHaveBeenCalled();
+    expect(on.onApplied).not.toHaveBeenCalled();
+  });
+
   it("posts the wire's body and headers, and plays the stream into the handlers", async () => {
     const seen = fakeFetch(() =>
       streamResponse(
@@ -381,6 +405,19 @@ describe("createHttpAiProvider: one-shot features", () => {
 });
 
 describe("createHttpAiProvider: history and features", () => {
+  it.each([undefined, null, {}, "messages", 7])(
+    "rejects history whose data is not an array: %j",
+    async (data) => {
+      fakeFetch(() => jsonResponse({ data }));
+      await expect(provider().conversation!.list("t-1")).rejects.toMatchObject({
+        name: "SdkError",
+        statusCode: 502,
+        code: "ai_provider_error",
+        message: "AI is unavailable right now. Try again later.",
+      });
+    },
+  );
+
   it.each(["list", "undo", "redo"] as const)(
     "rejects a null JSON history response for %s",
     async (method) => {

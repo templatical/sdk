@@ -7,6 +7,7 @@ import {
   createDefaultTemplateContent,
   createImageBlock,
   SdkError,
+  safeClone,
   type AiProvider,
 } from "@templatical/types";
 import { lintAccessibility } from "@templatical/quality";
@@ -110,6 +111,56 @@ async function open(wrapper: Awaited<ReturnType<typeof setup>>["wrapper"]) {
   return entry;
 }
 describe("AiAltTextPopover in IssuesPanel", () => {
+  it.each(["precondition_failed", "block_missing"] as const)(
+    "shows the stale state when Accept is refused with %s",
+    async (code) => {
+      const { wrapper, ai, editor } = await setup();
+      await open(wrapper);
+      const before = safeClone(editor.content.value);
+      const apply = vi
+        .spyOn(ai, "applyAltTexts")
+        .mockRejectedValueOnce(
+          new SdkError("The image cannot be changed.", 409, code),
+        );
+      await button(wrapper, "Accept").trigger("click");
+      await flushPromises();
+      expect(apply).toHaveBeenCalledTimes(1);
+      expect(wrapper.get('[role="alert"]').text()).toBe(
+        "The image changed. Write the alt text again.",
+      );
+      expect(button(wrapper, "Accept").element.disabled).toBe(true);
+      expect(wrapper.get("textarea").element.value).toBe("Shop new arrivals");
+      expect(editor.content.value).toEqual(before);
+    },
+  );
+
+  it("shows the failed detail and permits retry when Accept has another error", async () => {
+    const { wrapper, ai, editor } = await setup();
+    await open(wrapper);
+    const before = safeClone(editor.content.value);
+    vi.spyOn(ai, "applyAltTexts").mockRejectedValueOnce(
+      new SdkError(
+        "The review service is unavailable.",
+        503,
+        "review_unavailable",
+      ),
+    );
+    await button(wrapper, "Accept").trigger("click");
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      "Couldn't write alt text for this image. Write it yourself. The review service is unavailable.",
+    );
+    expect(button(wrapper, "Accept").element.disabled).toBe(false);
+    expect(editor.content.value).toEqual(before);
+    await button(wrapper, "Accept").trigger("click");
+    await flushPromises();
+    expect(editor.content.value.blocks[0]).toMatchObject({
+      alt: "Shop new arrivals",
+      decorative: false,
+    });
+    expect(wrapper.find("textarea").exists()).toBe(false);
+  });
+
   it("refuses input while a deferred draft is busy, then enables its result for editing", async () => {
     let finish!: (answer: { alt: string }) => void;
     const { wrapper } = await setup(

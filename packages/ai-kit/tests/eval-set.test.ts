@@ -488,6 +488,29 @@ const unchanged = async ({ content }: testing.AiEvalTurnInput) => ({
 // attachments, and checks that silently pass invalid output.
 describe("multimodal and lint evals", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("fails an alt-text case with an unknown runtime check type", async () => {
+    const report = await runAiEvalSet({
+      model: "scripted",
+      runTurn: unchanged,
+      runAltText: async () => "A valid alt text",
+      cases: [altCase([{ type: "unknown" } as unknown as AiEvalAltCheck])],
+    });
+    expect(report).toEqual({
+      model: "scripted",
+      passed: 0,
+      total: 1,
+      skipped: 0,
+      rate: 0,
+      ok: false,
+      results: [
+        {
+          name: "alt check",
+          ok: false,
+          reason: 'check failed: {"type":"unknown"}',
+        },
+      ],
+    });
+  });
 
   it("checks the manifest after the master generates the binary fixtures", () => {
     expect(readFileSync(resolve(evalDir, "MANIFEST.sha256"), "utf8")).toBe(

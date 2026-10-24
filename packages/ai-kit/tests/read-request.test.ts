@@ -16,6 +16,16 @@ function post(path: string, body: unknown, session = "s-1"): Request {
 }
 
 describe("readAiRequest", () => {
+  it("refuses a non-JSON body on a JSON route with 422", async () => {
+    const request = new Request(post("/templates/t-1/ai/rewrite-text", {}), {
+      body: "this is not JSON",
+    });
+    await expect(readAiRequest(request)).rejects.toMatchObject({
+      name: "SdkError",
+      statusCode: 422,
+      message: "Send a JSON body.",
+    });
+  });
   it("reads a chat turn", async () => {
     expect(
       await readAiRequest(

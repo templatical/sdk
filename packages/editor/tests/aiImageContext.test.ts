@@ -18,6 +18,25 @@ const content = (blocks: Block[]) =>
 const section = (children: Block[][]) =>
   ({ id: "s", type: "section", columns: "2", children }) as Block;
 describe("aiImageContext", () => {
+  it("reads an image inside a wrapper with its nearest text and link", () => {
+    const input = content([
+      {
+        id: "wrapper",
+        type: "wrapper",
+        children: [
+          text("before", "<h1>Autumn &amp; winter</h1>", "title"),
+          image,
+          text("after", "<b>Shop now</b>", "button"),
+        ],
+      } as Block,
+    ]);
+    expect(aiImageContext(input, "img")).toEqual({
+      url: "https://example.com/a.png",
+      currentAlt: "Old",
+      linkHref: "https://example.com/shop",
+      nearbyText: "Autumn & winter\nShop now",
+    });
+  });
   it("uses src, alt and linkUrl and the nearest text on each side in its column", () => {
     const input = content([
       section([

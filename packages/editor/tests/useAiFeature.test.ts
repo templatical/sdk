@@ -67,10 +67,13 @@ function chatting(
 async function openLocal(
   provider: Partial<AiProvider>,
   extra: Partial<UseAiFeatureOptions> = {},
+  load = true,
 ) {
   const scope = effectScope();
   const onError = vi.fn();
-  const reload = vi.fn(async () => {});
+  const reload = vi.fn<NonNullable<UseAiFeatureOptions["reload"]>>(
+    async () => {},
+  );
   const result = scope.run(() => {
     const editor = useEditor({
       content: safeClone(CONTENT),
@@ -104,11 +107,186 @@ async function openLocal(
     });
     return { editor, history, ai };
   })!;
-  await result.editor.load("tpl-1");
+  if (load) await result.editor.load("tpl-1");
   return { ...result, onError, reload, scope };
 }
 
 describe("useAiFeature without collaboration", () => {
+  it.each(["undo", "redo"] as const)(
+    "reloads a server-applied stored %s without collaboration",
+    async (direction) => {
+      const replay = vi.fn(async () => ({
+        applied: { batchId: "remote", revision: 8 },
+      }));
+      const settleReplay = vi.fn(async () => {});
+      const { ai, reload, editor, onError } = await openLocal(
+        {
+          conversation: {
+            list: async () => [
+              persistedMessage("persisted", direction === "redo"),
+            ],
+            clear: false,
+            undo: replay,
+            redo: replay,
+            settleReplay,
+          },
+        },
+        { reload: async () => {} },
+      );
+      editor.updateBlock("t1", { content: "<p>Awaiting server reload</p>" });
+      const version = editor.loadVersion.value;
+      reload.mockImplementation((id, guard) => editor.load(id, guard));
+      ai.open("chat");
+      await settle();
+      await (direction === "undo"
+        ? ai.undoMessage("persisted")
+        : ai.redoMessage("persisted"));
+      expect(replay).toHaveBeenCalledExactlyOnceWith("tpl-1", "persisted", {
+        sessionId: expect.any(String),
+      });
+      expect(reload).toHaveBeenCalledExactlyOnceWith(
+        "tpl-1",
+        expect.any(Function),
+      );
+      expect(ai.messages.value[0]).toMatchObject({
+        undone: direction === "undo",
+        failure: undefined,
+      });
+      expect(editor.content.value).toEqual(CONTENT);
+      expect(editor.state.isDirty).toBe(false);
+      expect(editor.loadVersion.value).toBe(version + 1);
+      expect(onError).not.toHaveBeenCalled();
+      expect(settleReplay).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["undo", "redo"] as const)(
+    "reports the missing provider after a server-applied stored %s without reload",
+    async (direction) => {
+      const { ai, onError, editor, reload } = await openLocal({
+        conversation: {
+          list: async () => [
+            persistedMessage("persisted", direction === "redo"),
+          ],
+          clear: false,
+          undo: async () => ({ applied: { batchId: "remote", revision: 8 } }),
+          redo: async () => ({ applied: { batchId: "remote", revision: 8 } }),
+          settleReplay: async () => {},
+        },
+      });
+      ai.open("chat");
+      await settle();
+      await (direction === "undo"
+        ? ai.undoMessage("persisted")
+        : ai.redoMessage("persisted"));
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(SdkError);
+      expect(onError.mock.calls[0][0]).toMatchObject({
+        code: "ai_provider_error",
+        statusCode: 502,
+        message: AI_MISSING_PROVIDER_MESSAGE,
+      });
+      expect(ai.messages.value[0]).toMatchObject({
+        undone: direction === "undo",
+        failure: { context: direction, error: onError.mock.calls[0][0] },
+      });
+      expect(reload).not.toHaveBeenCalled();
+      expect(editor.content.value).toEqual(CONTENT);
+    },
+  );
+
+  it.each(["undo", "redo"] as const)(
+    "ignores a local %s in the wrong undone state",
+    async (direction) => {
+      const { ai, editor, history, onError } = await openLocal({
+        chat: chatting(async (on) => {
+          await on.onOperations(greet);
+        }),
+      });
+      await ai.send("Greet");
+      const id = ai.messages.value.at(-1)!.id;
+      await ai.undoMessage(id);
+      if (direction === "redo") await ai.redoMessage(id);
+      const before = safeClone(editor.content.value);
+      const messages = safeClone(ai.messages.value);
+      const record = vi.spyOn(history, "record");
+      await (direction === "undo" ? ai.undoMessage(id) : ai.redoMessage(id));
+      expect(editor.content.value).toEqual(before);
+      expect(ai.messages.value).toEqual(messages);
+      expect(record).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["undo", "redo"] as const)(
+    "ignores a local %s with no operations",
+    async (direction) => {
+      const { ai, editor, history, onError } = await openLocal({
+        chat: chatting(() => {}),
+      });
+      await ai.send("Explain the template");
+      const item = ai.messages.value.at(-1)!;
+      // Public rows are mutable; put the empty record in the direction's eligible state.
+      item.undone = direction === "redo";
+      const before = safeClone(ai.messages.value);
+      const record = vi.spyOn(history, "record");
+      await (direction === "undo"
+        ? ai.undoMessage(item.id)
+        : ai.redoMessage(item.id));
+      expect(editor.content.value).toEqual(CONTENT);
+      expect(ai.messages.value).toEqual(before);
+      expect(record).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
+
+  it("reports a current history rejection once with history context", async () => {
+    const error = new Error("History unavailable");
+    const list = vi.fn().mockRejectedValue(error);
+    const { ai, onError } = await openLocal({
+      conversation: {
+        list,
+        clear: false,
+        undo: false,
+        redo: false,
+        settleReplay: async () => {},
+      },
+    });
+    ai.open("chat");
+    await settle();
+    expect(list).toHaveBeenCalledExactlyOnceWith("tpl-1");
+    expect(ai.failure.value).toEqual({ error, context: "history" });
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+    expect(ai.isLoadingHistory.value).toBe(false);
+    expect(ai.messages.value).toEqual([]);
+  });
+
+  it("ignores a history rejection after its session is replaced", async () => {
+    const stale = deferred<AiChatMessage[]>();
+    const { ai, editor, onError } = await openLocal({
+      conversation: {
+        list: vi
+          .fn()
+          .mockImplementationOnce(() => stale.promise)
+          .mockResolvedValue([persistedMessage("new-history")]),
+        clear: false,
+        undo: false,
+        redo: false,
+        settleReplay: async () => {},
+      },
+    });
+    ai.open("chat");
+    await settle();
+    await editor.load("tpl-2");
+    await settle();
+    stale.reject(new Error("Stale history unavailable"));
+    await settle();
+    expect(ai.failure.value).toBeNull();
+    expect(onError).not.toHaveBeenCalled();
+    expect(ai.messages.value.map((item) => item.id)).toEqual(["new-history"]);
+    expect(ai.isLoadingHistory.value).toBe(false);
+  });
+
   it("reports template emptiness when a block is added", async () => {
     const { ai, editor } = await openLocal({ chat: chatting(() => {}) });
     editor.setContent({ ...CONTENT, blocks: [] });
@@ -651,6 +829,27 @@ describe("useAiFeature with collaboration", () => {
       revision: 1,
       sessionId: collaboration.core.sessionId,
       selectedBlockId: "new",
+    });
+  });
+
+  it("catches up immediately for a server-applied revision while collaboration is disconnected", async () => {
+    const { ai, collaboration } = await openCollaborative(
+      {
+        chat: chatting((on) =>
+          on.onApplied({ batchId: "offline", revision: 5, operationCount: 1 }),
+        ),
+      },
+      false,
+    );
+    const catchUp = vi.spyOn(collaboration.core, "catchUp");
+    expect(collaboration.core.connection.value).not.toBe("connected");
+    await ai.send("Apply on the server");
+    expect(catchUp).toHaveBeenCalledExactlyOnceWith();
+    await vi.advanceTimersByTimeAsync(AI_BROADCAST_GRACE_MS);
+    expect(catchUp).toHaveBeenCalledTimes(1);
+    expect(ai.messages.value.at(-1)).toMatchObject({
+      operationCount: 1,
+      status: "done",
     });
   });
 
@@ -2720,6 +2919,49 @@ describe("useAiFeature alt text", () => {
     alt: "Old",
     decorative: true,
   } as const;
+  it("refuses an image deleted before drafting without calling the provider", async () => {
+    const altText = vi.fn(async () => ({ alt: "Shop arrivals" }));
+    const { ai, editor, onError } = await openLocal({ altText });
+    editor.addBlock(safeClone(image) as never);
+    editor.removeBlock("i");
+    const error = await ai.draftAltText("i").catch((error) => error);
+    expect(error).toBeInstanceOf(SdkError);
+    expect(error).toMatchObject({
+      code: "block_missing",
+      statusCode: 409,
+      message: "The image is no longer available.",
+    });
+    expect(altText).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+  });
+
+  it.each(["disabled", "no session"] as const)(
+    "refuses alt-text drafting with %s before calling a provider",
+    async (reason) => {
+      const altText = vi.fn(async () => ({ alt: "Shop arrivals" }));
+      const chat = chatting(() => {});
+      const { ai, editor, onError } = await openLocal(
+        {
+          chat,
+          altText: reason === "disabled" ? false : altText,
+        },
+        {},
+        reason !== "no session",
+      );
+      editor.addBlock(safeClone(image) as never);
+      const error = await ai.draftAltText("i").catch((error) => error);
+      expect(error).toBeInstanceOf(SdkError);
+      expect(error).toMatchObject({
+        code: "feature_unavailable",
+        statusCode: 403,
+        message: "This AI feature isn't available.",
+      });
+      expect(altText).not.toHaveBeenCalled();
+      expect(chat).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+    },
+  );
+
   it("sends the effective limit, image context and template locale without becoming busy", async () => {
     const requests: unknown[] = [];
     const { ai, editor } = await openLocal(

@@ -5,6 +5,44 @@ import { aiErrorResponse, aiEventStream, aiJsonResponse } from "../src/server";
 afterEach(() => vi.useRealTimers());
 
 describe("aiEventStream (D32)", () => {
+  it("passes an already-aborted signal and its reason to the producer immediately", async () => {
+    const external = new AbortController();
+    external.abort("Request already cancelled");
+    let observed: { aborted: boolean; reason: unknown } | null = null;
+    const response = aiEventStream(
+      async (stream) => {
+        observed = {
+          aborted: stream.signal.aborted,
+          reason: stream.signal.reason,
+        };
+      },
+      { signal: external.signal },
+    );
+    expect(observed).toEqual({
+      aborted: true,
+      reason: "Request already cancelled",
+    });
+    expect(await response.text()).toBe("");
+  });
+
+  it("ignores a producer write after the reader closes the body", async () => {
+    let stream!: Parameters<Parameters<typeof aiEventStream>[0]>[0];
+    let finish!: () => void;
+    const response = aiEventStream((controller) => {
+      stream = controller;
+      return new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+    });
+    const reader = response.body!.getReader();
+    await reader.cancel("Client left");
+    stream.send({ type: "text", text: "Late text" });
+    expect(await reader.read()).toEqual({ done: true, value: undefined });
+    expect(stream.signal.aborted).toBe(true);
+    expect(stream.signal.reason).toBe("Client left");
+    finish();
+  });
+
   it("writes each event as a data line, with the wire's headers", async () => {
     const response = aiEventStream(async (stream) => {
       stream.send({ type: "text", text: "Hi" });
