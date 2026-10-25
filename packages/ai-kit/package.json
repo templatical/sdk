@@ -32,6 +32,10 @@
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js"
     },
+    "./adapters/anthropic": {
+      "types": "./dist/adapters/anthropic.d.ts",
+      "import": "./dist/adapters/anthropic.js"
+    },
     "./prompts/*": "./prompts/*",
     "./schema/*": "./schema/*",
     "./eval/*": "./eval/*"

@@ -38,12 +38,13 @@ describe("@templatical/ai-kit's shape", () => {
     });
   });
 
-  it("exports the wire, the client, the server kit, the test kit and the assets", () => {
+  it("exports the wire, the client, the server kit, the test kit, the adapters and the assets", () => {
     expect(Object.keys(pkg.exports)).toEqual([
       ".",
       "./client",
       "./server",
       "./testing",
+      "./adapters/anthropic",
       "./prompts/*",
       "./schema/*",
       "./eval/*",

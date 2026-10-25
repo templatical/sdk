@@ -1,15 +1,17 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  // Four entries: the wire, the browser/server client, the server kit and the
-  // test kit. The array form keeps dist/index.js + dist/{client,server,testing}/
-  // index.js, matching package.json's exports. Shared code becomes a chunk.
-  entry: [
-    'src/index.ts',
-    'src/client/index.ts',
-    'src/server/index.ts',
-    'src/testing/index.ts',
-  ],
+  // The wire, the browser/server client, the server kit, the test kit and one
+  // entry per model adapter, so importing one adapter never loads another.
+  // Keys are the output paths, matching package.json's exports. Shared code
+  // becomes a chunk.
+  entry: {
+    index: 'src/index.ts',
+    'client/index': 'src/client/index.ts',
+    'server/index': 'src/server/index.ts',
+    'testing/index': 'src/testing/index.ts',
+    'adapters/anthropic': 'src/adapters/anthropic.ts',
+  },
   format: ['esm'],
   // Isomorphic by contract (A1 BY4): browsers, Node, Workers, Deno, Bun.
   platform: 'neutral',
