@@ -11638,6 +11638,10 @@ const mjml = await renderToMjml(content, {
 
 Check `validation.valid`, inspect `issues`, and confirm the MJML contains `Willkommen` rather than the cached `Welcome`. See [Custom block rendering](/api/renderer-typescript#custom-blocks) and the [CLI library API](/api/template-tools#library-use).
 
+## In the playground
+
+The [Languages setup](https://play.templatical.com/scenes/languages) opens one template with German text, a different hero image, a hidden block and a stale value. Switch to Deutsch, edit its text, then return to English to check that it is unchanged. Choose **Keep** to clear the stale marker, add French, or select Arabic to see right-to-left content.
+
 ---
 
 # Logic Tags

@@ -125,3 +125,7 @@ Für benutzerdefinierte Übersetzungen kann die CLI weder Definitionen übergebe
 <<< @/snippets/localize-custom-block.ts
 
 Prüfen Sie `validation.valid`, lesen Sie `issues` und bestätigen Sie, dass das MJML `Willkommen` statt des zwischengespeicherten `Welcome` enthält. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript) und die [CLI-Bibliotheks-API](/de/api/template-tools#nutzung-als-bibliothek).
+
+## Im Playground
+
+Das [Sprachen-Setup](https://play.templatical.com/scenes/languages) öffnet ein Template mit deutschem Text, einem anderen Hero-Bild, einem ausgeblendeten Block und einem veralteten Wert. Wechseln Sie zu Deutsch, bearbeiten Sie den Text und kehren Sie zu Englisch zurück, um zu prüfen, dass er unverändert bleibt. Wählen Sie **Keep**, um die Veraltet-Markierung zu entfernen, fügen Sie Französisch hinzu oder wählen Sie Arabisch für Inhalte von rechts nach links.

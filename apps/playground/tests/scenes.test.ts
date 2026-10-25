@@ -2,6 +2,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { lintTemplate } from "@templatical/quality";
+import {
+  createDefaultTemplateContent,
+  localeCoverage,
+  resolveLocale,
+} from "@templatical/types";
 import { createStandInEditor } from "@templatical/ai-kit/testing";
 import { storageCanvas } from "../src/scenes/storage/canvas";
 import {
@@ -76,6 +81,7 @@ const CONFIGURE_IDS = [
   "theming",
   "layout",
   "i18n",
+  "languages",
   "shadow-dom-off",
   "issues",
   "custom-blocks",
@@ -121,6 +127,7 @@ const AUTHOR_DOCS: Record<(typeof AUTHOR_IDS)[number], string> = {
   theming: "/guide/theming#themeoverrides-config",
   layout: "/guide/layout",
   i18n: "/guide/i18n#setting-the-locale",
+  languages: "/guide/localized-templates",
   "shadow-dom-off": "/guide/shadow-dom#opt-out-shadowdom-false",
 };
 
@@ -159,6 +166,7 @@ const IMPORT_CONVERT_FN: Record<(typeof IMPORT_IDS)[number], string> = {
 
 describe("registry", () => {
   it("registers minimum, then configure, personalization, backend, import, examples", () => {
+    expect(SCENES).toHaveLength(42);
     expect(SCENES.map((s) => s.id)).toEqual([
       "minimum",
       ...CONFIGURE_IDS,
@@ -270,6 +278,125 @@ describe("registry", () => {
       expect(existsSync(docsFileFor(docs)), docs).toBe(true);
     },
   );
+});
+
+describe("Languages scene", () => {
+  const context = (query = "") => ({ search: new URLSearchParams(query) });
+
+  it("offers German, French and Arabic language versions with template storage", () => {
+    const scene = getScene("languages");
+    expect(scene).toMatchObject({
+      title: "Languages",
+      job: "Language versions of one template",
+      initKey: "localization",
+      group: "configure",
+      docs: "/guide/localized-templates",
+    });
+    expect(scene!.config(context())).toMatchObject({
+      templates: { load: expect.any(Function), save: expect.any(Function) },
+      localization: { locales: ["de", "fr", "ar"] },
+    });
+    for (const copies of [en.scenes, de.scenes]) {
+      expect((copies as SceneCopies).languages).toMatchObject({
+        title: expect.stringMatching(/\S/),
+        seeIt: expect.stringMatching(/\S/),
+        note: expect.stringMatching(/\S/),
+      });
+    }
+  });
+
+  it("projects German text, a hero override and a hidden block, with Arabic direction", () => {
+    const scene = getScene("languages");
+    expect(scene?.content).toBeTypeOf("function");
+    const content = scene!.content!(context());
+    expect(content.settings).toMatchObject({
+      locale: "en",
+      locales: ["de", "ar"],
+      l10n: { ar: { set: { direction: "rtl" } } },
+    });
+    const german = resolveLocale(content, "de");
+    expect(german.blocks.find((b) => b.id === "languages-title")).toMatchObject(
+      {
+        content: "<p>Willkommen zur Herbstkollektion</p>",
+      },
+    );
+    expect(german.blocks.find((b) => b.id === "languages-hero")).toMatchObject({
+      src: "/examples/sable/buds.png",
+    });
+    expect(german.blocks.some((b) => b.id === "languages-us-only")).toBe(false);
+    expect(resolveLocale(content, "ar").settings.direction).toBe("rtl");
+    expect(localeCoverage(content, "de")).toEqual({
+      translated: ["languages-title/content", "languages-copy/content"],
+      missing: ["languages-hero/alt"],
+      stale: ["languages-stale/content"],
+    });
+    expect(
+      lintTemplate(content, { contentLocale: "de" })
+        .filter((issue) => issue.ruleId === "localization.stale")
+        .map((issue) => issue.blockId),
+    ).toEqual(["languages-stale"]);
+  });
+
+  it("opens its own shared template for the collaboration variant", async () => {
+    const scene = getScene("languages");
+    expect(scene?.variants ?? []).toContainEqual({
+      name: "As Ada, with collaboration",
+      query: { collaboration: "1", user: "Ada" },
+    });
+    expect(scene!.config(context("collaboration=1&user=Ada"))).toMatchObject({
+      user: { id: "user-ada", name: "Ada" },
+      localization: { locales: ["de", "fr", "ar"] },
+      collaboration: {
+        join: expect.any(Function),
+        acquireLock: expect.any(Function),
+      },
+    });
+    const editor = { load: vi.fn(), create: vi.fn() };
+    await scene!.open!(editor as never, context("collaboration=1&user=Ada"));
+    expect(editor.load).toHaveBeenCalledExactlyOnceWith("playground-languages");
+    await scene!.open!(editor as never, context());
+    expect(editor.create).toHaveBeenCalledExactlyOnceWith({
+      name: "Languages",
+    });
+  });
+
+  it("runs the displayed snippet with a complete in-memory templates provider", async () => {
+    const scene = getScene("languages");
+    expect(scene?.snippet).toBeTypeOf("string");
+    const run = new Function(
+      "init",
+      "createDefaultTemplateContent",
+      "document",
+      `return (async () => {
+      ${scene!.snippet.replace(/^import .*;\n/gm, "")}
+      return editor;
+    })();`,
+    );
+    const config = await run(
+      async (config: unknown) => ({
+        ...(config as object),
+        load: async () => {},
+      }),
+      createDefaultTemplateContent,
+      { getElementById: () => ({}) },
+    );
+    expect(config.localization).toEqual({ locales: ["de", "fr", "ar"] });
+    const template = await config.templates.load("languages");
+    expect(template).toMatchObject({
+      id: "languages",
+      content: { settings: { locale: "en" }, blocks: [] },
+    });
+    const patch = {
+      content: {
+        ...template.content,
+        settings: { ...template.content.settings, locales: ["de"] },
+      },
+    };
+    expect(await config.templates.save("languages", patch)).toMatchObject(
+      patch,
+    );
+    expect(await config.templates.load("languages")).toMatchObject(patch);
+  });
 });
 
 describe("sceneNeighbours", () => {
