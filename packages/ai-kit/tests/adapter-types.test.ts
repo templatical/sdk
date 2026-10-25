@@ -1,0 +1,74 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import ts from "typescript";
+import { expect, it } from "vitest";
+
+const PKG = resolve(import.meta.dirname, "..");
+const ROOT = resolve(PKG, "../..");
+const pkgDir = (name: string) => resolve(PKG, "node_modules", name);
+
+function diagnostics(files: string[]): string[] {
+  const program = ts.createProgram(files, {
+    noEmit: true,
+    strict: true,
+    skipLibCheck: true,
+    allowImportingTsExtensions: true,
+    types: ["node"],
+    typeRoots: [resolve(PKG, "node_modules/@types")],
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    module: ts.ModuleKind.Preserve,
+    target: ts.ScriptTarget.ES2022,
+    lib: ["lib.es2022.d.ts", "lib.dom.d.ts"],
+    paths: {
+      "@templatical/types": [resolve(ROOT, "packages/types/src/index.ts")],
+      "@templatical/quality": [
+        resolve(import.meta.dirname, "helpers/quality-api.d.ts"),
+      ],
+      "@templatical/ai-kit/adapters/*": [resolve(PKG, "src/adapters/*.ts")],
+      "@templatical/ai-kit/testing": [resolve(PKG, "src/testing/index.ts")],
+      "@anthropic-ai/sdk": [pkgDir("@anthropic-ai/sdk")],
+      "@anthropic-ai/sdk/*": [`${pkgDir("@anthropic-ai/sdk")}/*`],
+      "@anthropic-ai/bedrock-sdk": [pkgDir("@anthropic-ai/bedrock-sdk")],
+      openai: [pkgDir("openai")],
+      "openai/*": [`${pkgDir("openai")}/*`],
+      ai: [pkgDir("ai")],
+    },
+  });
+  return ts
+    .getPreEmitDiagnostics(program)
+    .map(
+      (diagnostic) =>
+        `${diagnostic.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`,
+    );
+}
+
+it("accepts the listed clients and models, and refuses params the adapter owns", () => {
+  expect(
+    diagnostics([resolve(import.meta.dirname, "adapter-types.fixture.ts")]),
+  ).toEqual([]);
+});
+
+it("compiles the docs' adapter and evaluation examples", () => {
+  const snippets = [
+    "model-anthropic.ts",
+    "model-openai.ts",
+    "model-vercel.ts",
+    "evaluate-model.ts",
+  ].map((name) => resolve(ROOT, "apps/docs/snippets", name));
+  expect(diagnostics(snippets)).toEqual([]);
+});
+
+it("keeps the quality declaration's lintTemplate signature in sync with source", () => {
+  const signature = (file: string) => {
+    const match = readFileSync(file, "utf8").match(
+      /export function lintTemplate\([\s\S]*?\): [^{;]+/,
+    );
+    if (!match) throw new Error(`Missing lintTemplate signature in ${file}`);
+    return match[0]
+      .replace("options: LintOptions = {}", "options?: LintOptions")
+      .replace(/\s/g, "");
+  };
+  expect(
+    signature(resolve(import.meta.dirname, "helpers/quality-api.d.ts")),
+  ).toBe(signature(resolve(ROOT, "packages/quality/src/lint-template.ts")));
+});
