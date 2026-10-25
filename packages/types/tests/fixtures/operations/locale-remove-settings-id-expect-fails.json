@@ -1,0 +1,87 @@
+{
+  "name": "locale-remove-settings-id-expect-fails",
+  "content": {
+    "blocks": [
+      {
+        "id": "settings",
+        "type": "title",
+        "content": "Hi",
+        "l10n": {
+          "de": {
+            "text": {
+              "content": {
+                "value": "Neu",
+                "source": "67eb44ba"
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "m1",
+              "type": "menu",
+              "items": [
+                {
+                  "id": "i1",
+                  "text": "Shop",
+                  "url": "https://example.com/shop"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff",
+      "locale": "en",
+      "preheaderText": "Hello there",
+      "locales": [
+        "de"
+      ],
+      "l10n": {
+        "de": {
+          "set": {
+            "direction": "ltr"
+          }
+        }
+      }
+    }
+  },
+  "ops": [
+    {
+      "op": "removeLocale",
+      "locale": "de",
+      "expect": {
+        "blocks": {
+          "settings": {
+            "text": {
+              "content": {
+                "value": "Hallo",
+                "source": "67eb44ba"
+              }
+            }
+          }
+        },
+        "settings": {
+          "set": {
+            "direction": "ltr"
+          }
+        }
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "precondition_failed",
+      "opIndex": 0
+    }
+  }
+}

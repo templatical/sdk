@@ -128,7 +128,7 @@ export function summarizeAgentEdit(
     } else if (op.op === "setContent") {
       templateUpdated = true;
     } else {
-      blockIds.add(op.blockId);
+      blockIds.add((op as { blockId: string }).blockId);
     }
   }
   return { blockIds: [...blockIds], settings, templateUpdated };

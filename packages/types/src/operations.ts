@@ -1,6 +1,17 @@
 import type { Block } from "./blocks";
 import { safeClone } from "./clone";
 import { deepEqual } from "./deep-equal";
+import {
+  defaultLocaleOf,
+  isLocaleTag,
+  isSafePath,
+  isTranslatablePath,
+  readPath,
+  SETTINGS_TRANSLATABLE_FIELDS,
+  type BlockLocaleLayer,
+  type LocalizedText,
+  type SettingsLocaleLayer,
+} from "./localization";
 import type { TemplateContent, TemplateSettings } from "./template";
 
 /** Where a block sits: `null` is the top level, otherwise a section column. */
@@ -44,7 +55,7 @@ export interface DeleteBlockOperation {
 
 /**
  * Replace top-level keys of a block (`set`, a `styles` object included) and
- * remove others (`unset`). `id`, `type` and `children` can't be touched, and
+ * remove others (`unset`). `id`, `type`, `children` and `l10n` can't be touched, and
  * a section's `columns` can't be unset. On a section, `set.columns` resizes
  * `children` to the layout's column count.
  */
@@ -75,6 +86,50 @@ export interface SetContentOperation {
   content: TemplateContent;
 }
 
+export interface AddLocaleOperation {
+  op: "addLocale";
+  locale: string;
+  /** Index in `settings.locales` to insert at; default the end. Undo uses it to restore order. */
+  position?: number;
+}
+
+export interface RemoveLocaleOperation {
+  op: "removeLocale";
+  locale: string;
+  /** Guard: the locale's block and settings layers must match exactly; absent means no layer. */
+  expect?: {
+    blocks: Record<string, BlockLocaleLayer>;
+    settings?: SettingsLocaleLayer;
+  };
+}
+
+export interface LocaleLayerExpect {
+  text?: Record<string, LocalizedText | null>;
+  /** `null` matches an absent override. */
+  set?: Record<string, unknown>;
+  hidden?: boolean;
+}
+
+export interface UpdateBlockLocaleOperation {
+  op: "updateBlockLocale";
+  blockId: string;
+  locale: string;
+  text?: Record<string, LocalizedText>;
+  set?: Record<string, unknown>;
+  unset?: string[];
+  hidden?: boolean;
+  expect?: LocaleLayerExpect;
+}
+
+export interface UpdateSettingsLocaleOperation {
+  op: "updateSettingsLocale";
+  locale: string;
+  text?: Record<string, LocalizedText>;
+  set?: Record<string, unknown>;
+  unset?: string[];
+  expect?: Omit<LocaleLayerExpect, "hidden">;
+}
+
 /**
  * One change to a template, in the vocabulary the editor, the CLI's `edit`
  * command, collaboration backends and Templatical Cloud share. Positions are
@@ -87,7 +142,11 @@ export type Operation =
   | DeleteBlockOperation
   | UpdateBlockOperation
   | UpdateSettingsOperation
-  | SetContentOperation;
+  | SetContentOperation
+  | AddLocaleOperation
+  | RemoveLocaleOperation
+  | UpdateBlockLocaleOperation
+  | UpdateSettingsLocaleOperation;
 
 /** Why {@link applyOperations} refused a batch. */
 export type OperationErrorCode =
@@ -129,6 +188,8 @@ export class OperationError extends Error {
 export interface OperationLock {
   blockId: string;
   sessionId: string;
+  /** Absent or `null` holds the default language and structure. */
+  locale?: string | null;
 }
 
 /**
@@ -156,6 +217,11 @@ export function getColumnCount(layout: unknown): number {
  * Apply a batch to a copy of `content` and return the copy. All or nothing:
  * the first operation that can't apply throws an {@link OperationError}, and
  * `content` is untouched.
+ *
+ * `addLocale` and `removeLocale` manage language versions. `updateBlockLocale`
+ * and `updateSettingsLocale` change their layers: unset, text, set, then hidden.
+ * Empty localization members are pruned. Only `updateBlockLocale` checks
+ * language locks; the membership and settings operations ignore locks.
  *
  * Each operation is checked in a fixed order, and the first failing check
  * decides the error (the cross-track contract's C1, which Templatical Cloud's
@@ -216,8 +282,21 @@ interface Location {
   parent: BlockParent;
 }
 
-const IMMUTABLE_KEYS: ReadonlySet<string> = new Set(["id", "type", "children"]);
-const NO_IMMUTABLE_KEYS: ReadonlySet<string> = new Set();
+const IMMUTABLE_KEYS: ReadonlySet<string> = new Set([
+  "id",
+  "type",
+  "children",
+  "l10n",
+]);
+const SETTINGS_IMMUTABLE_KEYS: ReadonlySet<string> = new Set([
+  "locales",
+  "l10n",
+]);
+const SETTINGS_LOCALE_IMMUTABLE_KEYS: ReadonlySet<string> = new Set([
+  "locale",
+  "locales",
+  "l10n",
+]);
 
 function fail(
   code: OperationErrorCode,
@@ -450,6 +529,28 @@ function assertUnlocked(
   }
 }
 
+function assertUnlockedLocale(
+  engine: EngineContext,
+  blockId: string,
+  locale: string,
+  index: number,
+): void {
+  const held = engine.locks.find(
+    (lock) =>
+      heldByOthers(engine, lock) &&
+      lock.blockId === blockId &&
+      ((lock.locale ?? null) === null || lock.locale === locale),
+  );
+  if (held) {
+    fail(
+      "lock_held",
+      index,
+      `Block "${blockId}" is being edited in another session.`,
+      blockId,
+    );
+  }
+}
+
 // --- 4. Preconditions --------------------------------------------------------
 
 /**
@@ -628,6 +729,14 @@ function applyOne(
       return updateSettings(content, op, index);
     case "setContent":
       return setContent(content, op, index, engine);
+    case "addLocale":
+      return addLocale(content, op, index);
+    case "removeLocale":
+      return removeLocale(content, op, index);
+    case "updateBlockLocale":
+      return updateBlockLocale(content, op, index, engine);
+    case "updateSettingsLocale":
+      return updateSettingsLocale(content, op, index);
     default:
       fail("invalid_operation", index, `Unknown operation "${op.op}".`);
   }
@@ -785,14 +894,334 @@ function updateSettings(
   op: Json,
   index: number,
 ): void {
-  const { set, unset } = readChanges(op, index, NO_IMMUTABLE_KEYS);
+  const { set, unset } = readChanges(op, index, SETTINGS_IMMUTABLE_KEYS);
   const expect = readExpect(op, index);
+  if (
+    content.settings?.locales?.length &&
+    (Object.hasOwn(set, "locale") || unset.includes("locale"))
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "The default locale can't change while language versions exist.",
+    );
+  }
   if (!isRecord(content.settings)) {
     content.settings = {} as TemplateSettings;
   }
   const settings = content.settings as unknown as Json;
   if (expect) assertExpected(settings, expect, index);
   change(settings, set, unset);
+}
+
+function readLocale(op: Json, index: number): string {
+  if (!isLocaleTag(op.locale)) {
+    fail("invalid_operation", index, "locale must be a language tag.");
+  }
+  return op.locale;
+}
+
+function requireLocale(
+  content: TemplateContent,
+  op: Json,
+  index: number,
+): string {
+  const locale = readLocale(op, index);
+  if (!content.settings.locales?.includes(locale)) {
+    fail(
+      "invalid_operation",
+      index,
+      `Locale "${locale}" isn't in settings.locales.`,
+    );
+  }
+  return locale;
+}
+
+function addLocale(content: TemplateContent, op: Json, index: number): void {
+  const locale = readLocale(op, index);
+  const locales = content.settings.locales ?? [];
+  const folded = locale.toLowerCase();
+  const position = op.position === undefined ? locales.length : op.position;
+  if (
+    defaultLocaleOf(content).toLowerCase() === folded ||
+    locales.some((tag) => tag.toLowerCase() === folded) ||
+    typeof position !== "number" ||
+    !Number.isInteger(position) ||
+    position < 0 ||
+    position > locales.length
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "The locale already exists or its insertion position is invalid.",
+    );
+  }
+  if (!content.settings.locales) content.settings.locales = [];
+  content.settings.locales.splice(position, 0, locale);
+}
+
+function blocksIn(blocks: readonly unknown[]): Json[] {
+  return blocks.flatMap((block) =>
+    isRecord(block)
+      ? [block, ...(isSection(block) ? columnsOf(block).flatMap(blocksIn) : [])]
+      : [],
+  );
+}
+
+function localeLayer(target: Json, locale: string): BlockLocaleLayer {
+  const l10n = target.l10n;
+  return isRecord(l10n) && isRecord(l10n[locale]) ? l10n[locale] : {};
+}
+
+function removeLocale(content: TemplateContent, op: Json, index: number): void {
+  const locale = requireLocale(content, op, index);
+  const expect = readExpect(op, index);
+  if (
+    expect &&
+    (!isRecord(expect.blocks) ||
+      (expect.settings !== undefined && !isRecord(expect.settings)))
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "expect needs a blocks object and an optional settings layer.",
+    );
+  }
+  const settings = content.settings as unknown as Json;
+  const blocks = blocksIn(topLevelOf(content));
+  const layers = Object.fromEntries(
+    blocks.flatMap((target) =>
+      isRecord(target.l10n) && Object.hasOwn(target.l10n, locale)
+        ? [[String(target.id), target.l10n[locale]]]
+        : [],
+    ),
+  );
+  if (
+    expect &&
+    (!deepEqual(layers, expect.blocks) ||
+      !deepEqual(
+        isRecord(settings.l10n) ? settings.l10n[locale] : undefined,
+        expect.settings,
+      ))
+  ) {
+    fail("precondition_failed", index, `Locale "${locale}" has changed since.`);
+  }
+  for (const target of [...blocks, settings]) {
+    if (!isRecord(target.l10n)) continue;
+    delete target.l10n[locale];
+    if (Object.keys(target.l10n).length === 0) delete target.l10n;
+  }
+  content.settings.locales!.splice(
+    content.settings.locales!.indexOf(locale),
+    1,
+  );
+  if (content.settings.locales!.length === 0) delete content.settings.locales;
+}
+
+interface LocaleChanges {
+  text: Record<string, LocalizedText>;
+  set: Json;
+  unset: string[];
+  hidden?: boolean;
+  expect: Json | null;
+}
+
+function readLocaleChanges(
+  op: Json,
+  index: number,
+  settings: boolean,
+): LocaleChanges {
+  const validText = (value: unknown): boolean =>
+    isRecord(value) &&
+    Object.values(value).every(
+      (entry) =>
+        isRecord(entry) &&
+        typeof entry.value === "string" &&
+        typeof entry.source === "string",
+    );
+  if (
+    (op.text !== undefined && !validText(op.text)) ||
+    (op.set !== undefined &&
+      (!isRecord(op.set) ||
+        Object.values(op.set).some((value) => value === undefined))) ||
+    (op.unset !== undefined &&
+      (!Array.isArray(op.unset) ||
+        !op.unset.every(
+          (path) => typeof path === "string" && path !== "" && isSafePath(path),
+        ))) ||
+    (op.hidden !== undefined && (settings || typeof op.hidden !== "boolean")) ||
+    !["text", "set", "unset", ...(settings ? [] : ["hidden"])].some(
+      (key) => op[key] !== undefined,
+    )
+  ) {
+    fail(
+      "invalid_operation",
+      index,
+      "A locale update needs text, set, unset or a block's boolean hidden.",
+    );
+  }
+  const expect = readExpect(op, index);
+  if (
+    expect &&
+    ((expect.text !== undefined && !isRecord(expect.text)) ||
+      (expect.set !== undefined && !isRecord(expect.set)) ||
+      (expect.hidden !== undefined &&
+        (settings || typeof expect.hidden !== "boolean")))
+  ) {
+    fail("invalid_operation", index, "The locale layer expect is malformed.");
+  }
+  return {
+    text: (op.text ?? {}) as Record<string, LocalizedText>,
+    set: (op.set ?? {}) as Json,
+    unset: (op.unset ?? []) as string[],
+    hidden: op.hidden as boolean | undefined,
+    expect,
+  };
+}
+
+function assertLocalePaths(
+  target: Json,
+  changes: LocaleChanges,
+  index: number,
+  settings: boolean,
+): void {
+  for (const path of Object.keys(changes.text)) {
+    if (
+      !isSafePath(path) ||
+      !(settings
+        ? SETTINGS_TRANSLATABLE_FIELDS.includes(path)
+        : isTranslatablePath(String(target.type), path)) ||
+      readPath(target, path) === undefined
+    ) {
+      fail(
+        "invalid_operation",
+        index,
+        `Text path "${path}" isn't translatable or doesn't resolve.`,
+      );
+    }
+  }
+  for (const path of Object.keys(changes.set)) {
+    const segments = path.split(".");
+    const immutable = settings
+      ? SETTINGS_LOCALE_IMMUTABLE_KEYS
+      : IMMUTABLE_KEYS;
+    const parent =
+      segments.length === 1
+        ? target
+        : readPath(target, segments.slice(0, -1).join("."));
+    if (
+      !isSafePath(path) ||
+      immutable.has(segments[0]) ||
+      (readPath(target, path) === undefined && !isRecord(parent))
+    ) {
+      fail(
+        "invalid_operation",
+        index,
+        `Override path "${path}" is immutable or doesn't resolve.`,
+      );
+    }
+  }
+}
+
+function assertLocaleExpected(
+  layer: BlockLocaleLayer,
+  expect: Json | null,
+  index: number,
+  blockId?: string,
+): void {
+  if (!expect) return;
+  for (const kind of ["text", "set"] as const) {
+    for (const [path, expected] of Object.entries(
+      (expect[kind] ?? {}) as Json,
+    )) {
+      if (!deepEqual(layer[kind]?.[path] ?? null, expected)) {
+        fail(
+          "precondition_failed",
+          index,
+          `Locale path "${path}" has changed since.`,
+          blockId,
+        );
+      }
+    }
+  }
+  if (
+    expect.hidden !== undefined &&
+    !deepEqual(layer.hidden === true, expect.hidden)
+  ) {
+    fail(
+      "precondition_failed",
+      index,
+      "The locale's hidden state has changed since.",
+      blockId,
+    );
+  }
+}
+
+function changeLocale(
+  target: Json,
+  locale: string,
+  changes: LocaleChanges,
+): void {
+  if (!isRecord(target.l10n)) target.l10n = {};
+  const l10n = target.l10n as Record<string, BlockLocaleLayer>;
+  if (!isRecord(l10n[locale])) l10n[locale] = {};
+  const layer = l10n[locale];
+  for (const path of changes.unset) {
+    if (layer.text) delete layer.text[path];
+    if (layer.set) delete layer.set[path];
+  }
+  for (const [path, value] of Object.entries(changes.text)) {
+    if (!layer.text) layer.text = {};
+    layer.text[path] = safeClone(value);
+    if (layer.set) delete layer.set[path];
+  }
+  for (const [path, value] of Object.entries(changes.set)) {
+    if (!layer.set) layer.set = {};
+    layer.set[path] = safeClone(value);
+    if (layer.text) delete layer.text[path];
+  }
+  if (changes.hidden === true) layer.hidden = true;
+  else if (changes.hidden === false) delete layer.hidden;
+  if (layer.text && Object.keys(layer.text).length === 0) delete layer.text;
+  if (layer.set && Object.keys(layer.set).length === 0) delete layer.set;
+  if (Object.keys(layer).length === 0) delete l10n[locale];
+  if (Object.keys(l10n).length === 0) delete target.l10n;
+}
+
+function updateBlockLocale(
+  content: TemplateContent,
+  op: Json,
+  index: number,
+  engine: EngineContext,
+): void {
+  const locale = requireLocale(content, op, index);
+  const blockId = readBlockId(op, index);
+  const changes = readLocaleChanges(op, index, false);
+  const location = locate(content, blockId);
+  if (!location)
+    fail("block_missing", index, `No block with id "${blockId}".`, blockId);
+  assertLocalePaths(location.block, changes, index, false);
+  assertUnlockedLocale(engine, blockId, locale, index);
+  assertLocaleExpected(
+    localeLayer(location.block, locale),
+    changes.expect,
+    index,
+    blockId,
+  );
+  changeLocale(location.block, locale, changes);
+}
+
+function updateSettingsLocale(
+  content: TemplateContent,
+  op: Json,
+  index: number,
+): void {
+  const locale = requireLocale(content, op, index);
+  const changes = readLocaleChanges(op, index, true);
+  const settings = content.settings as unknown as Json;
+  assertLocalePaths(settings, changes, index, true);
+  assertLocaleExpected(localeLayer(settings, locale), changes.expect, index);
+  changeLocale(settings, locale, changes);
 }
 
 function setContent(

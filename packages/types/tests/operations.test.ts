@@ -7,6 +7,7 @@ import {
   applyOperationsInPlace,
   getColumnCount,
   OperationError,
+  type Block,
   type Operation,
   type OperationLock,
   type TemplateContent,
@@ -21,7 +22,8 @@ interface Fixture {
   session?: string;
   ops: Operation[];
   result:
-    { content: TemplateContent } | { error: { code: string; opIndex: number } };
+    | { content: TemplateContent }
+    | { error: { code: string; opIndex: number; blockId?: string } };
 }
 
 const files = readdirSync(FIXTURES)
@@ -68,6 +70,10 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       "updateBlock",
       "updateSettings",
       "setContent",
+      "addLocale",
+      "removeLocale",
+      "updateBlockLocale",
+      "updateSettingsLocale",
     ]) {
       expect(ops.has(op as Operation["op"]), op).toBe(true);
     }
@@ -122,6 +128,9 @@ describe("operation fixtures (shared with Templatical Cloud's PHP engine)", () =
       expect({
         code: (thrown as OperationError).code,
         opIndex: (thrown as OperationError).opIndex,
+        ...("blockId" in fixture.result.error
+          ? { blockId: (thrown as OperationError).blockId }
+          : {}),
       }).toEqual(fixture.result.error);
     }
     // All or nothing, on success and failure alike: the input never changes.
@@ -263,5 +272,375 @@ describe("getColumnCount", () => {
     [1, 2],
   ])("%s has %i columns", (layout, count) => {
     expect(getColumnCount(layout)).toBe(count);
+  });
+});
+
+describe("locale operation validation and ordering", () => {
+  const base = (): TemplateContent =>
+    ({
+      blocks: [
+        { id: "t1", type: "title", content: "Hi", styles: { padding: 0 } },
+      ],
+      settings: {
+        width: 600,
+        locale: "en",
+        locales: ["de"],
+        preheaderText: "Hello",
+        direction: "ltr",
+      },
+    }) as unknown as TemplateContent;
+  const code = (op: unknown, content = base(), context = {}) => {
+    try {
+      applyOperations(content, [op as Operation], context);
+      return null;
+    } catch (error) {
+      return (error as OperationError).code;
+    }
+  };
+
+  it("rejects default and existing languages case-insensitively and invalid insertion positions", () => {
+    for (const locale of ["EN", "DE", "x-private", "i-klingon", "en US"]) {
+      expect(code({ op: "addLocale", locale })).toBe("invalid_operation");
+    }
+    for (const position of [-1, 2, 0.5, null]) {
+      expect(code({ op: "addLocale", locale: "fr", position })).toBe(
+        "invalid_operation",
+      );
+    }
+    const before = base();
+    delete before.settings.locales;
+    expect(
+      applyOperations(before, [{ op: "addLocale", locale: "de", position: 0 }])
+        .settings.locales,
+    ).toEqual(["de"]);
+  });
+
+  it("checks locale update shape before missing blocks and locks before expectations", () => {
+    const locks = [{ blockId: "t1", sessionId: "other", locale: "de" }];
+    expect(
+      code({
+        op: "updateBlockLocale",
+        blockId: "zz",
+        locale: "de",
+        hidden: "yes",
+      }),
+    ).toBe("invalid_operation");
+    expect(
+      code({
+        op: "updateBlockLocale",
+        blockId: "zz",
+        locale: "de",
+        hidden: true,
+      }),
+    ).toBe("block_missing");
+    expect(
+      code(
+        {
+          op: "updateBlockLocale",
+          blockId: "t1",
+          locale: "de",
+          hidden: true,
+          expect: { hidden: true },
+        },
+        base(),
+        { locks },
+      ),
+    ).toBe("lock_held");
+    expect(
+      code({
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        text: { content: { value: "Hallo" } },
+      }),
+    ).toBe("invalid_operation");
+  });
+
+  it("applies unset, text, set and hidden in order, pruning empty layers", () => {
+    const result = applyOperations(base(), [
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        unset: ["content"],
+        text: { content: { value: "Hallo", source: "67eb44ba" } },
+        set: { content: "Override" },
+        hidden: false,
+      },
+    ]);
+    expect(result.blocks[0].l10n).toEqual({
+      de: { set: { content: "Override" } },
+    });
+    expect(
+      applyOperations(result, [
+        {
+          op: "updateBlockLocale",
+          blockId: "t1",
+          locale: "de",
+          unset: ["content"],
+        },
+      ]),
+    ).toEqual(base());
+  });
+
+  it("allows an optional property only when its object parent resolves", () => {
+    expect(
+      applyOperations(base(), [
+        {
+          op: "updateBlockLocale",
+          blockId: "t1",
+          locale: "de",
+          set: { "styles.color": "red" },
+        },
+      ]).blocks[0].l10n,
+    ).toEqual({ de: { set: { "styles.color": "red" } } });
+    expect(
+      code({
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        set: { "missing.color": "red" },
+      }),
+    ).toBe("invalid_operation");
+    const before = base();
+    before.blocks = [
+      {
+        id: "m1",
+        type: "menu",
+        items: [{ id: "i.1", text: "Shop", url: "https://example.com" }],
+      } as Block,
+    ];
+    for (const change of [
+      { text: { "items.i.1.text": { value: "Laden", source: "28742cc9" } } },
+      { set: { "items.i.1.url": "https://example.com/de" } },
+      { set: { "items.missing": {} } },
+    ]) {
+      expect(
+        code(
+          { op: "updateBlockLocale", blockId: "m1", locale: "de", ...change },
+          before,
+        ),
+      ).toBe("invalid_operation");
+    }
+  });
+
+  it("ignores locks for language membership and settings but respects own-session block locks", () => {
+    const context = {
+      locks: [{ blockId: "t1", sessionId: "A", locale: null }],
+      session: "A",
+    };
+    expect(
+      applyOperations(
+        base(),
+        [
+          {
+            op: "updateBlockLocale",
+            blockId: "t1",
+            locale: "de",
+            hidden: true,
+          },
+        ],
+        context,
+      ).blocks[0].l10n,
+    ).toEqual({ de: { hidden: true } });
+    expect(
+      applyOperations(
+        base(),
+        [
+          { op: "removeLocale", locale: "de", expect: { blocks: {} } },
+          { op: "addLocale", locale: "fr" },
+          {
+            op: "updateSettingsLocale",
+            locale: "fr",
+            set: { direction: "rtl" },
+          },
+        ],
+        { ...context, session: "B" },
+      ).settings.l10n,
+    ).toEqual({ fr: { set: { direction: "rtl" } } });
+  });
+
+  it("guards and prunes settings layers, and prevents changing the fixed default", () => {
+    const before = applyOperations(base(), [
+      {
+        op: "updateSettingsLocale",
+        locale: "de",
+        set: { preheaderText: "Override" },
+      },
+    ]);
+    const translated = { value: "Hallo", source: "f55c314b" };
+    const after = applyOperations(before, [
+      {
+        op: "updateSettingsLocale",
+        locale: "de",
+        text: { preheaderText: translated },
+        expect: {
+          set: { preheaderText: "Override" },
+          text: { preheaderText: null },
+        },
+      },
+    ]);
+    expect(after.settings.l10n).toEqual({
+      de: { text: { preheaderText: translated } },
+    });
+    expect(
+      code(
+        {
+          op: "updateSettingsLocale",
+          locale: "de",
+          unset: ["preheaderText"],
+          expect: { text: { preheaderText: null } },
+        },
+        after,
+      ),
+    ).toBe("precondition_failed");
+    expect(
+      applyOperations(after, [
+        { op: "updateSettingsLocale", locale: "de", unset: ["preheaderText"] },
+      ]),
+    ).toEqual(base());
+    for (const op of [
+      { op: "updateSettings", unset: ["locale"] },
+      { op: "updateSettings", unset: ["l10n"] },
+      { op: "updateBlock", blockId: "t1", unset: ["l10n"] },
+    ])
+      expect(code(op)).toBe("invalid_operation");
+    const single = base();
+    delete single.settings.locales;
+    expect(
+      applyOperations(single, [{ op: "updateSettings", set: { locale: "fr" } }])
+        .settings.locale,
+    ).toBe("fr");
+  });
+
+  it("matches all removeLocale layers exactly and preserves other languages", () => {
+    const before = base();
+    before.settings.locales = ["de", "fr"];
+    before.blocks[0].l10n = { de: { hidden: true }, fr: { hidden: true } };
+    before.settings.l10n = {
+      de: { set: { direction: "rtl" } },
+      fr: { set: { direction: "ltr" } },
+    };
+    expect(
+      code(
+        {
+          op: "removeLocale",
+          locale: "de",
+          expect: { blocks: { t1: { hidden: true } } },
+        },
+        before,
+      ),
+    ).toBe("precondition_failed");
+    const result = applyOperations(before, [
+      {
+        op: "removeLocale",
+        locale: "de",
+        expect: {
+          blocks: { t1: { hidden: true } },
+          settings: { set: { direction: "rtl" } },
+        },
+      },
+    ]);
+    expect(result.settings.locales).toEqual(["fr"]);
+    expect(result.blocks[0].l10n).toEqual({ fr: { hidden: true } });
+    expect(result.settings.l10n).toEqual({ fr: { set: { direction: "ltr" } } });
+  });
+});
+
+describe("removeLocale guards for a block named settings", () => {
+  const before = {
+    blocks: [
+      {
+        id: "settings",
+        type: "title",
+        content: "Hi",
+        l10n: { de: { hidden: true } },
+      },
+    ],
+    settings: {
+      width: 600,
+      locale: "en",
+      locales: ["de"],
+      l10n: { de: { set: { direction: "rtl" } } },
+    },
+  } as unknown as TemplateContent;
+
+  it("compares block and settings layers independently before removing either", () => {
+    const remove = (expect: unknown) =>
+      applyOperations(before, [
+        { op: "removeLocale", locale: "de", expect } as Operation,
+      ]);
+    expect(() =>
+      remove({ blocks: { settings: { hidden: true } } }),
+    ).toThrowError(
+      expect.objectContaining({ code: "precondition_failed", opIndex: 0 }),
+    );
+    expect(() =>
+      remove({ blocks: {}, settings: { set: { direction: "rtl" } } }),
+    ).toThrowError(
+      expect.objectContaining({ code: "precondition_failed", opIndex: 0 }),
+    );
+    expect(
+      remove({
+        blocks: { settings: { hidden: true } },
+        settings: { set: { direction: "rtl" } },
+      }),
+    ).toEqual({
+      blocks: [{ id: "settings", type: "title", content: "Hi" }],
+      settings: { width: 600, locale: "en" },
+    });
+  });
+});
+
+describe("locale unset path safety", () => {
+  it("rejects an unsafe path before resolving a missing block", () => {
+    const before = {
+      blocks: [],
+      settings: { width: 600, locale: "en", locales: ["de"] },
+    } as unknown as TemplateContent;
+    expect(() =>
+      applyOperations(before, [
+        {
+          op: "updateBlockLocale",
+          blockId: "missing",
+          locale: "de",
+          unset: ["styles..color"],
+        },
+      ]),
+    ).toThrowError(
+      expect.objectContaining({ code: "invalid_operation", opIndex: 0 }),
+    );
+  });
+
+  it("still unsets safe orphan paths from block and settings layers", () => {
+    const before = {
+      blocks: [
+        {
+          id: "t1",
+          type: "title",
+          content: "Hi",
+          l10n: { de: { set: { "deleted.color": "red" } } },
+        },
+      ],
+      settings: {
+        width: 600,
+        locale: "en",
+        locales: ["de"],
+        l10n: { de: { set: { "deleted.color": "blue" } } },
+      },
+    } as unknown as TemplateContent;
+    const result = applyOperations(before, [
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        unset: ["deleted.color"],
+      },
+      { op: "updateSettingsLocale", locale: "de", unset: ["deleted.color"] },
+    ]);
+    expect(result).toEqual({
+      blocks: [{ id: "t1", type: "title", content: "Hi" }],
+      settings: { width: 600, locale: "en", locales: ["de"] },
+    });
   });
 });

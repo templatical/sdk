@@ -1,0 +1,104 @@
+{
+  "name": "locale-block-item-text",
+  "content": {
+    "blocks": [
+      {
+        "id": "t1",
+        "type": "title",
+        "content": "Hi"
+      },
+      {
+        "id": "s1",
+        "type": "section",
+        "columns": "1",
+        "children": [
+          [
+            {
+              "id": "m1",
+              "type": "menu",
+              "items": [
+                {
+                  "id": "i1",
+                  "text": "Shop",
+                  "url": "https://example.com/shop"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    "settings": {
+      "width": 600,
+      "backgroundColor": "#ffffff",
+      "locale": "en",
+      "preheaderText": "Hello there",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "m1",
+      "locale": "de",
+      "text": {
+        "items.i1.text": {
+          "value": "Laden",
+          "source": "28742cc9"
+        }
+      }
+    }
+  ],
+  "result": {
+    "content": {
+      "blocks": [
+        {
+          "id": "t1",
+          "type": "title",
+          "content": "Hi"
+        },
+        {
+          "id": "s1",
+          "type": "section",
+          "columns": "1",
+          "children": [
+            [
+              {
+                "id": "m1",
+                "type": "menu",
+                "items": [
+                  {
+                    "id": "i1",
+                    "text": "Shop",
+                    "url": "https://example.com/shop"
+                  }
+                ],
+                "l10n": {
+                  "de": {
+                    "text": {
+                      "items.i1.text": {
+                        "value": "Laden",
+                        "source": "28742cc9"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "settings": {
+        "width": 600,
+        "backgroundColor": "#ffffff",
+        "locale": "en",
+        "preheaderText": "Hello there",
+        "locales": [
+          "de"
+        ]
+      }
+    }
+  }
+}

@@ -172,16 +172,21 @@ export type { EditorUser } from "./user";
 // Operations (vocabulary v2) and the engine that applies them
 export type {
   AddBlockOperation,
+  AddLocaleOperation,
   BlockParent,
   DeleteBlockOperation,
+  LocaleLayerExpect,
   MoveBlockOperation,
   Operation,
   OperationContext,
   OperationErrorCode,
   OperationLock,
+  RemoveLocaleOperation,
   SetContentOperation,
   UpdateBlockOperation,
+  UpdateBlockLocaleOperation,
   UpdateSettingsOperation,
+  UpdateSettingsLocaleOperation,
 } from "./operations";
 export {
   applyOperations,

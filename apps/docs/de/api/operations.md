@@ -61,6 +61,59 @@ Ein Backend übergibt die Sperren, die es hält, und die handelnde Sitzung: `app
 - `setContent` wird mit `locked_by_others` abgelehnt, solange eine andere Sitzung eine Sperre hält.
 - Mit `session` gleich `null` (eine serverseitige Änderung) gehört jede Sperre jemand anderem.
 
+<!-- locale-operations:start -->
+## Locale-Operationen
+
+`addLocale`, `removeLocale`, `updateBlockLocale` und `updateSettingsLocale` verwalten Sprachversionen im gemeinsamen Baum des SDK. Cloud-Backends und gehostetes MCP unterstützen diese Operationen erst mit LOC3; aktualisieren Sie Renderer, Validator und Collaboration-Backend, bevor Sie lokalisierte Inhalte speichern.
+
+Der folgende Batch beginnt mit Absatz `b1` mit `<p>Original</p>`, Standardsprache `en`, Richtung `ltr` und ohne Sprachversionen. Er fügt Deutsch hinzu, schreibt einen deutschen Wert, blendet den Block auf Deutsch aus, überschreibt die Richtung und entfernt dann Deutsch samt seinen Ebenen. `source` ist `sourceHash("<p>Original</p>")`.
+
+```json
+{"op":"addLocale","locale":"de"}
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}
+{"op":"updateSettingsLocale","locale":"de","set":{"direction":"rtl"}}
+{"op":"removeLocale","locale":"de","expect":{"blocks":{"b1":{"text":{"content":{"value":"<p>Hallo</p>","source":"f898b751"}},"hidden":true}},"settings":{"set":{"direction":"rtl"}}}}
+```
+
+| Operation | Vertrag |
+|---|---|
+| `addLocale` | `locale: string`; `position?: number` fügt in `settings.locales` ein, standardmäßig am Ende. Die Position muss eine Ganzzahl von 0 bis zur aktuellen Länge sein. Standard (`settings.locale ?? "en"`) und vorhandene Versionen werden ohne Beachtung der Groß-/Kleinschreibung abgelehnt. |
+| `removeLocale` | `locale: string`; `expect?: { blocks: Record<string, BlockLocaleLayer>; settings?: SettingsLocaleLayer }` vergleicht alle Ebenen exakt. `blocks` enthält Ebenen nach Block-ID; eine fehlende ID bedeutet keine Ebene. Das separate Feld `settings` enthält die Einstellungsebene; fehlt es, gibt es keine. `expect: { blocks: {} }` verlangt keine Block- oder Einstellungsebenen, auch bei einem Block namens `"settings"`. Entfernt die Sprache und alle Block- und Einstellungsebenen, auch in Spalten. |
+| `updateBlockLocale` | `blockId: string`; `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `hidden?: boolean`; `expect?: LocaleLayerExpect`. Mindestens ein Änderungsfeld muss vorhanden sein. |
+| `updateSettingsLocale` | `locale: string`; `text?: Record<string, LocalizedText>`; `set?: Record<string, unknown>`; `unset?: string[]`; `expect?: Omit<LocaleLayerExpect, "hidden">`. Mindestens ein Änderungsfeld muss vorhanden sein. Kein Ausblendestatus und keine Sperren. |
+
+`locale` muss `isLocaleTag` erfüllen: `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/`. Tags außerhalb dieses Musters, darunter `x-acme` und `i-klingon`, werden abgelehnt. Jede Operation außer dem Hinzufügen verlangt den exakten Tag in `settings.locales`; ungültige Tags und unbekannte Versionen ergeben `invalid_operation`.
+
+`LocalizedText` ist `{ value: string; source: string }`. Textpfade müssen `TRANSLATABLE_FIELDS` des Blocktyps oder `SETTINGS_TRANSLATABLE_FIELDS` (`preheaderText`) für Einstellungen entsprechen und in der Basis auflösbar sein. Pfade verwenden Element-IDs, etwa `items.i1.text`; IDs mit `.` sind nicht adressierbar. Ein `set`-Pfad muss auflösbar sein oder einen vorhandenen Objekt-Elternpfad haben. Prototypsegmente (`__proto__`, `constructor`, `prototype`) und leere Segmente werden abgelehnt. Block-Overrides dürfen nicht mit `id`, `type`, `children` oder `l10n` beginnen; Einstellungs-Overrides nicht mit `locale`, `locales` oder `l10n`.
+
+Die Engine wendet zuerst `unset` an (auf beide Maps), dann `text`, dann `set`, dann `hidden`. Ein Pfad in einer Map wird aus der anderen gelöscht. `hidden: false` entfernt das Flag. Leere Maps, Ebenen und Lokalisierungscontainer werden weggelassen; das Entfernen der letzten Version lässt `settings.locales` weg.
+
+`set: { path: null }` speichert einen löschenden Override: Die Eigenschaft fehlt in der `resolveLocale`-Projektion dieser Sprache. `unset: [path]` entfernt den Override, sodass wieder der Wert der Standardsprache gilt. Ebenen speichern niemals `undefined`; undefinierte `text`- oder `set`-Einträge und Texteinträge ohne die Strings `value` und `source` werden mit `invalid_operation` abgelehnt. Jeder `unset`-Pfad muss nicht leer sein und `isSafePath` erfüllen, auch wenn der Basispfad nicht mehr existiert; sichere verwaiste Pfade bleiben entfernbar.
+
+### Overrides löschen
+
+Dieser separate Batch beginnt mit Deutsch bereits in `settings.locales`, Block `b1` mit `styles.backgroundColor: "#ffffff"` und Einstellungen mit `linkColor: "#1d4ed8"`. Die ersten beiden Operationen lassen diese Eigenschaften auf Deutsch fehlen. Die letzten beiden entfernen die löschenden Overrides und stellen die Standardwerte wieder her. Die Basiswerte bleiben unverändert.
+
+```json
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","set":{"styles.backgroundColor":null}}
+{"op":"updateSettingsLocale","locale":"de","set":{"linkColor":null}}
+{"op":"updateBlockLocale","blockId":"b1","locale":"de","unset":["styles.backgroundColor"]}
+{"op":"updateSettingsLocale","locale":"de","unset":["linkColor"]}
+```
+
+`LocaleLayerExpect` ist `{ text?: Record<string, LocalizedText | null>; set?: Record<string, unknown>; hidden?: boolean }`. Text- und Override-Prüfungen vergleichen den aktuellen Ebenenwert, fehlende Werte zählen als `null`. Eine Ausblendeprüfung vergleicht `layer.hidden === true`. Eine Abweichung ergibt `precondition_failed`. Block-Locale-Updates prüfen Form, benannten Block (`block_missing`), Pfade, Sperren, Vorbedingungen und dann die Änderung.
+
+Eine Sperre kann `locale?: string | null` tragen. Eine fehlende oder `null`-Locale sperrt Standard und Struktur. Ein Block-Locale-Update kollidiert mit der Sperre einer anderen Sitzung auf demselben Block und derselben Sprache oder auf der Struktur (`lock_held`, mit `blockId`). Verschiedene Sprachen können gleichzeitig bearbeitet werden. Strukturelle Block-Updates, Verschieben und Löschen kollidieren mit jeder Locale-Sperre auf den betroffenen Blöcken. Hinzufügen und Entfernen von Sprachen sowie Einstellungs-Locale-Updates ignorieren Sperren.
+
+Nur Locale-Operationen ändern bestehende Lokalisierungscontainer: `updateBlock` lehnt `l10n` in `set` oder `unset` ab; `updateSettings` lehnt `locales` und `l10n` ab und verbietet das Setzen oder Entfernen von `locale`, solange Versionen existieren (`invalid_operation`). `addBlock` darf `l10n` mitbringen, `setContent` ersetzt alles.
+
+`invertOperations` schützt das Rückgängigmachen. Die Umkehrung von `addLocale` verlangt leere Ebenen. Die Umkehrung von `removeLocale` stellt die alte Listenposition, dann Block- und Einstellungsebenen mit Prüfungen auf leere Pfade wieder her. Umkehrungen von Locale-Updates stellen beide Maps und den Ausblendestatus wieder her und erwarten die Werte der Vorwärtsoperation.
+
+### Prüfung
+
+Führen Sie `pnpm --filter @templatical/types exec vitest run tests/operations.test.ts tests/invert-operations.test.ts` für gemeinsame Fixtures und geschützte Umkehrungen aus. Führen Sie `template-tools validate` für das resultierende Template aus; die Engine-Annahme validiert das Schema nicht.
+<!-- locale-operations:end -->
+
 ## Fehler
 
 Ein abgelehnter Batch wirft einen `OperationError` mit `code` und `opIndex`, dem 0-basierten Index der abgelehnten Operation.

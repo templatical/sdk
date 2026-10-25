@@ -187,3 +187,209 @@ describe("invertOperations", () => {
     expect([anchor.code, anchor.opIndex]).toEqual(["anchor_missing", 1]);
   });
 });
+
+describe("locale operation inverses", () => {
+  const translated = { value: "Hallo", source: "67eb44ba" };
+  const base = content(
+    [
+      { id: "t1", type: "title", content: "Hi" } as Block,
+      section("s1", "1", [
+        [
+          {
+            id: "m1",
+            type: "menu",
+            items: [
+              { id: "i1", text: "Shop", url: "https://example.com/shop" },
+            ],
+          } as Block,
+        ],
+      ]),
+    ],
+    {
+      width: 600,
+      backgroundColor: "#ffffff",
+      locale: "en",
+      preheaderText: "Hello there",
+      direction: "ltr",
+      locales: ["de", "fr"],
+    },
+  );
+  const withLayers = (): TemplateContent => {
+    const before = structuredClone(base);
+    before.blocks[0].l10n = {
+      de: {
+        text: { content: translated },
+        set: { color: "red" },
+        hidden: true,
+      },
+    };
+    const nested = (before.blocks[1] as { children: Block[][] }).children[0][0];
+    nested.l10n = {
+      de: { text: { "items.i1.text": { value: "Laden", source: "28742cc9" } } },
+    };
+    before.settings.l10n = {
+      de: {
+        text: { preheaderText: { value: "Hallo", source: "e5f57c59" } },
+        set: { direction: "rtl" },
+      },
+    };
+    return before;
+  };
+
+  it("undoes addLocale only while the new language has no layers", () => {
+    const before = structuredClone(base);
+    before.settings.locales = ["de"];
+    const ops: Operation[] = [{ op: "addLocale", locale: "fr" }];
+    const inverse = invertOperations(before, ops);
+    expect(inverse).toEqual([
+      { op: "removeLocale", locale: "fr", expect: { blocks: {} } },
+    ]);
+    const after = applyOperations(before, ops);
+    expect(applyOperations(after, inverse)).toEqual(before);
+    const changed = applyOperations(after, [
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "fr",
+        text: { content: translated },
+      },
+    ]);
+    expect(refusal(() => applyOperations(changed, inverse))).toBe(
+      "precondition_failed",
+    );
+    const settingsChanged = applyOperations(after, [
+      { op: "updateSettingsLocale", locale: "fr", set: { width: 640 } },
+    ]);
+    expect(refusal(() => applyOperations(settingsChanged, inverse))).toBe(
+      "precondition_failed",
+    );
+  });
+
+  it("undoes removeLocale with layers in order and guards restored paths", () => {
+    const before = withLayers();
+    const ops: Operation[] = [{ op: "removeLocale", locale: "de" }];
+    const inverse = invertOperations(before, ops);
+    expect(inverse.map((op) => op.op)).toEqual([
+      "addLocale",
+      "updateBlockLocale",
+      "updateBlockLocale",
+      "updateSettingsLocale",
+    ]);
+    expect(inverse[0]).toEqual({ op: "addLocale", locale: "de", position: 0 });
+    const after = applyOperations(before, ops);
+    expect(applyOperations(after, inverse)).toEqual(before);
+    const changed = applyOperations(after, [
+      inverse[0],
+      { op: "updateBlockLocale", blockId: "t1", locale: "de", hidden: true },
+    ]);
+    expect(refusal(() => applyOperations(changed, inverse.slice(1)))).toBe(
+      "precondition_failed",
+    );
+    const settingsChanged = applyOperations(after, [
+      inverse[0],
+      { op: "updateSettingsLocale", locale: "de", set: { direction: "ltr" } },
+    ]);
+    expect(
+      refusal(() => applyOperations(settingsChanged, inverse.slice(1))),
+    ).toBe("precondition_failed");
+  });
+
+  it("undoes mixed block text, set, unset and hidden with guards on both kinds", () => {
+    const before = withLayers();
+    const ops: Operation[] = [
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        text: { content: { value: "Neu", source: "67eb44ba" } },
+        set: { align: "right" },
+        unset: ["color"],
+        hidden: false,
+      },
+    ];
+    const inverse = invertOperations(before, ops);
+    expect(inverse).toEqual([
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        unset: ["content", "align", "color"],
+        text: { content: translated },
+        set: { color: "red" },
+        hidden: true,
+        expect: {
+          text: {
+            content: { value: "Neu", source: "67eb44ba" },
+            align: null,
+            color: null,
+          },
+          set: { content: null, align: "right", color: null },
+          hidden: false,
+        },
+      },
+    ]);
+    const after = applyOperations(before, ops);
+    expect(applyOperations(after, inverse)).toEqual(before);
+    for (const edit of [
+      { set: { content: "Later" } },
+      { hidden: true },
+      { set: { color: "blue" } },
+    ]) {
+      const changed = applyOperations(after, [
+        { op: "updateBlockLocale", blockId: "t1", locale: "de", ...edit },
+      ]);
+      expect(refusal(() => applyOperations(changed, inverse))).toBe(
+        "precondition_failed",
+      );
+    }
+  });
+
+  it("undoes settings text, set and unset and refuses later settings changes", () => {
+    const before = withLayers();
+    const ops: Operation[] = [
+      {
+        op: "updateSettingsLocale",
+        locale: "de",
+        text: { preheaderText: { value: "Neu", source: "e5f57c59" } },
+        unset: ["direction"],
+        set: { width: 640 },
+      },
+    ];
+    const inverse = invertOperations(before, ops);
+    const after = applyOperations(before, ops);
+    expect(applyOperations(after, inverse)).toEqual(before);
+    const changed = applyOperations(after, [
+      { op: "updateSettingsLocale", locale: "de", set: { direction: "ltr" } },
+    ]);
+    expect(refusal(() => applyOperations(changed, inverse))).toBe(
+      "precondition_failed",
+    );
+  });
+
+  it("undoes addLocale followed by a text edit in reverse batch order", () => {
+    const before = structuredClone(base);
+    before.settings.locales = ["de"];
+    const ops: Operation[] = [
+      { op: "addLocale", locale: "fr" },
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "fr",
+        text: { content: translated },
+      },
+    ];
+    const inverse = invertOperations(before, ops);
+    expect(inverse.map((op) => op.op)).toEqual([
+      "updateBlockLocale",
+      "removeLocale",
+    ]);
+    const after = applyOperations(before, ops);
+    expect(applyOperations(after, inverse)).toEqual(before);
+    const changed = applyOperations(after, [
+      { op: "updateBlockLocale", blockId: "t1", locale: "fr", hidden: true },
+    ]);
+    expect(refusal(() => applyOperations(changed, inverse))).toBe(
+      "precondition_failed",
+    );
+  });
+});

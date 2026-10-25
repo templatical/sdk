@@ -1,10 +1,14 @@
 import type { Block } from "./blocks";
 import { safeClone } from "./clone";
+import type { BlockLocaleLayer, LocalizedText } from "./localization";
 import {
   applyOperationsInPlace,
   OperationError,
   type BlockParent,
   type Operation,
+  type LocaleLayerExpect,
+  type UpdateBlockLocaleOperation,
+  type UpdateSettingsLocaleOperation,
 } from "./operations";
 import type { TemplateContent } from "./template";
 
@@ -84,11 +88,76 @@ function restoreKeys(
   return { set: restore, unset: remove, expect };
 }
 
+function layerOf(
+  target: { l10n?: Record<string, BlockLocaleLayer> },
+  locale: string,
+): BlockLocaleLayer {
+  return target.l10n?.[locale] ?? {};
+}
+
+function restoreLocale(
+  previous: BlockLocaleLayer,
+  next: BlockLocaleLayer,
+  paths: string[],
+  hidden: boolean,
+): {
+  unset: string[];
+  text?: Record<string, LocalizedText>;
+  set?: Json;
+  hidden?: boolean;
+  expect: LocaleLayerExpect;
+} {
+  const text: Record<string, LocalizedText> = {};
+  const set: Json = {};
+  const expect: LocaleLayerExpect = {};
+  if (paths.length) {
+    expect.text = {};
+    expect.set = {};
+  }
+  for (const path of paths) {
+    if (previous.text?.[path] !== undefined)
+      text[path] = safeClone(previous.text[path]);
+    if (previous.set && Object.hasOwn(previous.set, path))
+      set[path] = safeClone(previous.set[path]);
+    expect.text![path] = safeClone(next.text?.[path] ?? null);
+    expect.set![path] = safeClone(next.set?.[path] ?? null);
+  }
+  if (hidden) expect.hidden = next.hidden === true;
+  return {
+    unset: paths,
+    ...(Object.keys(text).length ? { text } : {}),
+    ...(Object.keys(set).length ? { set } : {}),
+    ...(hidden ? { hidden: previous.hidden === true } : {}),
+    expect,
+  };
+}
+
+function restoreRemovedLayer(
+  layer: BlockLocaleLayer,
+): Omit<UpdateBlockLocaleOperation, "op" | "blockId" | "locale"> {
+  const paths = [
+    ...new Set([
+      ...Object.keys(layer.text ?? {}),
+      ...Object.keys(layer.set ?? {}),
+    ]),
+  ];
+  const restored = restoreLocale(layer, {}, paths, layer.hidden === true);
+  const { unset: _unset, ...changes } = restored;
+  return changes;
+}
+
+function blocksIn(blocks: Block[]): Block[] {
+  return blocks.flatMap((block) => [
+    block,
+    ...columnsOf(block).flatMap(blocksIn),
+  ]);
+}
+
 function invertOne(
   state: TemplateContent,
   op: Operation,
   index: number,
-): Operation {
+): Operation | Operation[] {
   switch (op.op) {
     case "addBlock":
       return {
@@ -140,6 +209,75 @@ function invertOne(
         expect,
       };
     }
+    case "addLocale":
+      return { op: "removeLocale", locale: op.locale, expect: { blocks: {} } };
+    case "removeLocale": {
+      const inverse: Operation[] = [
+        {
+          op: "addLocale",
+          locale: op.locale,
+          position: state.settings.locales?.indexOf(op.locale),
+        },
+      ];
+      for (const block of blocksIn(state.blocks)) {
+        const layer = block.l10n?.[op.locale];
+        if (layer)
+          inverse.push({
+            op: "updateBlockLocale",
+            blockId: block.id,
+            locale: op.locale,
+            ...restoreRemovedLayer(layer),
+          });
+      }
+      const layer = state.settings.l10n?.[op.locale];
+      if (layer) {
+        const { hidden: _hidden, ...changes } = restoreRemovedLayer(layer);
+        inverse.push({
+          op: "updateSettingsLocale",
+          locale: op.locale,
+          ...changes,
+        });
+      }
+      return inverse;
+    }
+    case "updateBlockLocale":
+    case "updateSettingsLocale": {
+      const next = safeClone(state);
+      applyOperationsInPlace(next, [op]);
+      const paths = [
+        ...new Set([
+          ...Object.keys(op.text ?? {}),
+          ...Object.keys(op.set ?? {}),
+          ...(op.unset ?? []),
+        ]),
+      ];
+      if (op.op === "updateBlockLocale") {
+        const previous = requirePosition(state, op.blockId, index).block;
+        const after = requirePosition(next, op.blockId, index).block;
+        return {
+          op: "updateBlockLocale",
+          blockId: op.blockId,
+          locale: op.locale,
+          ...restoreLocale(
+            layerOf(previous, op.locale),
+            layerOf(after, op.locale),
+            paths,
+            op.hidden !== undefined,
+          ),
+        };
+      }
+      const { hidden: _hidden, ...changes } = restoreLocale(
+        layerOf(state.settings, op.locale),
+        layerOf(next.settings, op.locale),
+        paths,
+        false,
+      );
+      return {
+        op: "updateSettingsLocale",
+        locale: op.locale,
+        ...changes,
+      } as UpdateSettingsLocaleOperation;
+    }
     case "setContent":
       return {
         op: "setContent",
@@ -171,8 +309,11 @@ export function invertOperations(
   const state = safeClone(before);
   const inverses: Operation[] = [];
   ops.forEach((op, index) => {
-    inverses.push(invertOne(state, op, index));
     try {
+      const inverse = invertOne(state, op, index);
+      inverses.push(
+        ...(Array.isArray(inverse) ? [...inverse].reverse() : [inverse]),
+      );
       applyOperationsInPlace(state, [op]);
     } catch (error) {
       if (!(error instanceof OperationError)) throw error;

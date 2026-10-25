@@ -353,3 +353,71 @@ describe("expect values a typed caller wouldn't send", () => {
     });
   });
 });
+
+describe.each([
+  ["updateBlockLocale", "content", "content"],
+  ["updateSettingsLocale", "direction", "preheaderText"],
+] as const)("%s values from TypeScript callers", (op, setPath, textPath) => {
+  const localized = {
+    blocks: [{ id: "t1", type: "title", content: "Hi" }],
+    settings: {
+      width: 600,
+      locale: "en",
+      locales: ["de"],
+      direction: "ltr",
+      preheaderText: "Hello",
+    },
+  } as unknown as TemplateContent;
+
+  it.each([
+    ["an undefined override", { set: { [setPath]: undefined } }],
+    [
+      "an undefined override next to a defined one",
+      { set: { width: 640, [setPath]: undefined } },
+    ],
+    ["an undefined text entry", { text: { [textPath]: undefined } }],
+    [
+      "a text entry missing value",
+      { text: { [textPath]: { source: "67eb44ba" } } },
+    ],
+    [
+      "a text entry missing source",
+      { text: { [textPath]: { value: "Hallo" } } },
+    ],
+    [
+      "an undefined text value",
+      { text: { [textPath]: { value: undefined, source: "67eb44ba" } } },
+    ],
+    [
+      "an undefined text source",
+      { text: { [textPath]: { value: "Hallo", source: undefined } } },
+    ],
+    [
+      "a non-string text value",
+      { text: { [textPath]: { value: 42, source: "67eb44ba" } } },
+    ],
+    [
+      "a non-string text source",
+      { text: { [textPath]: { value: "Hallo", source: 42 } } },
+    ],
+  ])("refuses %s with the original batch index", (_label, change) => {
+    const before = JSON.stringify(localized);
+    expect(
+      refusal(localized, [
+        { op: "updateSettings", set: { width: 640 } },
+        {
+          op,
+          locale: "de",
+          ...(op === "updateBlockLocale" ? { blockId: "t1" } : {}),
+          ...change,
+        },
+      ]),
+    ).toEqual({
+      code: "invalid_operation",
+      opIndex: 1,
+      message:
+        "A locale update needs text, set, unset or a block's boolean hidden.",
+    });
+    expect(JSON.stringify(localized)).toBe(before);
+  });
+});
