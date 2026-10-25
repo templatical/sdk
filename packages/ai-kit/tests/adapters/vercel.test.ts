@@ -3,6 +3,7 @@ import { ThrottledError } from "@templatical/types";
 import { createVercelAdapter } from "../../src/adapters/vercel";
 import type { AiModelMessage, AiModelPart } from "../../src/server";
 import { applyOperationsTool } from "../../src/server";
+import { MockLanguageModelV4 } from "ai/test";
 import { fakeLanguageModel } from "../helpers/fake-providers";
 
 async function collect(
@@ -434,5 +435,110 @@ describe("createVercelAdapter", () => {
     expect(
       seen.filter((part) => part.type === "tool-call" || part.type === "state"),
     ).toEqual([]);
+  });
+
+  it("batches consecutive tool results, rebuilds a text-less tool turn and skips an empty assistant turn", async () => {
+    const { model, calls } = fakeLanguageModel([{ parts: text("t1", "ok") }]);
+
+    await collect(
+      createVercelAdapter({ model }).stream({
+        system: "S",
+        messages: [
+          user("One"),
+          {
+            role: "assistant",
+            content: "",
+            toolCalls: [
+              { id: "tc_1", name: "apply_operations", input: { ops: "[]" } },
+              { id: "tc_2", name: "apply_operations", input: '{"ops":"[]"}' },
+            ],
+          },
+          {
+            role: "tool",
+            toolCallId: "tc_1",
+            name: "apply_operations",
+            content: "Applied.",
+          },
+          {
+            role: "tool",
+            toolCallId: "tc_2",
+            name: "apply_operations",
+            content: "Refused.",
+          },
+          { role: "assistant", content: "" },
+          user("Two"),
+        ],
+        tools: [applyOperationsTool],
+      }),
+    );
+
+    const prompt = calls[0].prompt as {
+      role: string;
+      content: { type: string; toolCallId?: string }[];
+    }[];
+    expect(prompt.map((message) => message.role)).toEqual([
+      "system",
+      "user",
+      "assistant",
+      "tool",
+      "user",
+    ]);
+    expect(
+      prompt[2].content.map((part) => [part.type, part.toolCallId]),
+    ).toEqual([
+      ["tool-call", "tc_1"],
+      ["tool-call", "tc_2"],
+    ]);
+    expect(prompt[3].content).toMatchObject([
+      {
+        type: "tool-result",
+        toolCallId: "tc_1",
+        output: { type: "text", value: "Applied." },
+      },
+      {
+        type: "tool-result",
+        toolCallId: "tc_2",
+        output: { type: "text", value: "Refused." },
+      },
+    ]);
+  });
+
+  it("rejects a stream the AI SDK aborts itself (params.timeout) instead of finishing it", async () => {
+    const model = new MockLanguageModelV4({
+      async doStream(options) {
+        return {
+          stream: new ReadableStream({
+            start(controller) {
+              controller.enqueue({ type: "stream-start", warnings: [] });
+              controller.enqueue({ type: "text-start", id: "t1" });
+              controller.enqueue({
+                type: "text-delta",
+                id: "t1",
+                delta: "First",
+              });
+              options.abortSignal?.addEventListener("abort", () =>
+                controller.error(options.abortSignal?.reason),
+              );
+            },
+          }),
+        };
+      },
+    });
+    const parts: AiModelPart[] = [];
+
+    const result = (async () => {
+      for await (const part of createVercelAdapter({
+        model,
+        params: { timeout: 50, maxRetries: 0 },
+      }).stream({
+        system: "S",
+        messages: [user("Hi")],
+        tools: [applyOperationsTool],
+      }))
+        parts.push(part);
+    })();
+
+    await expect(result).rejects.toBeInstanceOf(Error);
+    expect(parts).toEqual([{ type: "text", text: "First" }]);
   });
 });

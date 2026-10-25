@@ -168,7 +168,10 @@ export function createVercelAdapter(
             finishReason = part.finishReason;
             usage = part.totalUsage;
           } else if (part.type === "error") throw part.error;
-          else if (part.type === "abort") signal?.throwIfAborted();
+          // Our own signal is checked at the top of the loop, so this abort
+          // came from the SDK itself, e.g. `params.timeout`.
+          else if (part.type === "abort")
+            throw new Error(part.reason ?? "The AI SDK aborted the stream.");
         }
         signal?.throwIfAborted();
         if (finishReason === "content-filter") throw refused();

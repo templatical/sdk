@@ -69,6 +69,10 @@ describe("adapter helpers", () => {
     });
     const bare429 = Object.assign(new Error("rate"), { status: 429 });
     const other = Object.assign(new Error("boom"), { status: 500 });
+    const otherHeaders429 = Object.assign(new Error("rate"), {
+      statusCode: 429,
+      responseHeaders: { "x-request-id": "r1" },
+    });
 
     expect(providerError(sdk429)).toBeInstanceOf(ThrottledError);
     expect((providerError(sdk429) as ThrottledError).retryAfterMs).toBe(7000);
@@ -77,6 +81,9 @@ describe("adapter helpers", () => {
     expect((providerError(bare429) as ThrottledError).retryAfterMs).toBe(
       parseRetryAfter(null),
     );
+    expect(
+      (providerError(otherHeaders429) as ThrottledError).retryAfterMs,
+    ).toBe(parseRetryAfter(null));
     expect(providerError(other)).toBe(other);
     expect(providerError("text")).toBe("text");
   });
