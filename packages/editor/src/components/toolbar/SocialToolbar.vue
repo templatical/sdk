@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -72,27 +73,32 @@ function removeSocialIcon(iconId: string): void {
         class="tpl:flex tpl:flex-col tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:p-2"
       >
         <div class="tpl:flex tpl:items-center tpl:gap-2">
-          <select
-            data-testid="social-platform-select"
-            :class="inputClass"
-            class="tpl:flex-1"
-            :value="icon.platform"
-            @change="
-              updateSocialIcon(
-                icon.id,
-                'platform',
-                ($event.target as HTMLSelectElement).value as SocialPlatform,
-              )
+          <FieldRow
+            :path="
+              icon.id.includes('.') ? undefined : `icons.${icon.id}.platform`
             "
-          >
-            <option
-              v-for="platform in socialPlatformOptions"
-              :key="platform"
-              :value="platform"
+            ><select
+              data-testid="social-platform-select"
+              :class="inputClass"
+              class="tpl:flex-1"
+              :value="icon.platform"
+              @change="
+                updateSocialIcon(
+                  icon.id,
+                  'platform',
+                  ($event.target as HTMLSelectElement).value as SocialPlatform,
+                )
+              "
             >
-              {{ t.social.platforms[platform] }}
-            </option>
-          </select>
+              <option
+                v-for="platform in socialPlatformOptions"
+                :key="platform"
+                :value="platform"
+              >
+                {{ t.social.platforms[platform] }}
+              </option>
+            </select></FieldRow
+          >
           <button
             :class="removeItemBtnClass"
             :title="t.social.removeIcon"
@@ -101,12 +107,14 @@ function removeSocialIcon(iconId: string): void {
             <X :size="14" :stroke-width="2" />
           </button>
         </div>
-        <MergeTagInput
-          :model-value="icon.url"
-          type="url"
-          :placeholder="t.social.urlPlaceholder"
-          @update:model-value="updateSocialIcon(icon.id, 'url', $event)"
-        />
+        <FieldRow
+          :path="icon.id.includes('.') ? undefined : `icons.${icon.id}.url`"
+          ><MergeTagInput
+            :model-value="icon.url"
+            type="url"
+            :placeholder="t.social.urlPlaceholder"
+            @update:model-value="updateSocialIcon(icon.id, 'url', $event)"
+        /></FieldRow>
       </div>
       <button :class="addItemBtnClass" @click="addSocialIcon">
         <Plus :size="14" :stroke-width="2" />
@@ -114,7 +122,7 @@ function removeSocialIcon(iconId: string): void {
       </button>
     </div>
   </div>
-  <div class="tpl:mb-3.5">
+  <FieldRow class="tpl:mb-3.5" path="iconStyle">
     <label :class="labelClass">{{ t.social.style }}</label>
     <select
       :class="inputClass"
@@ -133,8 +141,8 @@ function removeSocialIcon(iconId: string): void {
       <option value="circle">{{ t.social.styleCircle }}</option>
       <option value="plain">{{ t.social.stylePlain }}</option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="iconTone">
     <label :class="labelClass">{{ t.social.color }}</label>
     <select
       data-testid="social-tone-select"
@@ -151,8 +159,8 @@ function removeSocialIcon(iconId: string): void {
       <option value="dark">{{ t.social.colorDark }}</option>
       <option value="light">{{ t.social.colorLight }}</option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="iconSize">
     <label :class="labelClass">{{ t.social.size }}</label>
     <SlidingPillSelect
       :options="[
@@ -163,8 +171,8 @@ function removeSocialIcon(iconId: string): void {
       :model-value="block.iconSize"
       @update:model-value="updateField('iconSize', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="spacing">
     <label :class="labelClass">{{ t.social.spacing }}</label>
     <div class="tpl:flex tpl:items-stretch">
       <input
@@ -182,8 +190,8 @@ function removeSocialIcon(iconId: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="align">
     <label :class="labelClass">{{ t.social.align }}</label>
     <SlidingPillSelect
       :options="[
@@ -194,5 +202,5 @@ function removeSocialIcon(iconId: string): void {
       :model-value="block.align"
       @update:model-value="updateField('align', $event)"
     />
-  </div>
+  </FieldRow>
 </template>

@@ -84,20 +84,22 @@ function removeMenuItem(itemId: string): void {
         class="tpl:flex tpl:flex-col tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:p-2"
       >
         <div class="tpl:flex tpl:items-center tpl:gap-2">
-          <input
-            type="text"
-            :class="inputClass"
-            class="tpl:flex-1"
-            :value="item.text"
-            :placeholder="t.menu.text"
-            @input="
-              updateMenuItem(
-                item.id,
-                'text',
-                ($event.target as HTMLInputElement).value,
-              )
-            "
-          />
+          <FieldRow
+            :path="item.id.includes('.') ? undefined : `items.${item.id}.text`"
+            ><input
+              type="text"
+              :class="inputClass"
+              class="tpl:flex-1"
+              :value="item.text"
+              :placeholder="t.menu.text"
+              @input="
+                updateMenuItem(
+                  item.id,
+                  'text',
+                  ($event.target as HTMLInputElement).value,
+                )
+              "
+          /></FieldRow>
           <button
             :class="removeItemBtnClass"
             :title="t.menu.removeItem"
@@ -106,32 +108,42 @@ function removeMenuItem(itemId: string): void {
             <X :size="14" :stroke-width="2" />
           </button>
         </div>
-        <MergeTagInput
-          :model-value="item.url"
-          type="url"
-          :placeholder="t.menu.urlPlaceholder"
-          @update:model-value="updateMenuItem(item.id, 'url', $event)"
-        />
+        <FieldRow
+          :path="item.id.includes('.') ? undefined : `items.${item.id}.url`"
+          ><MergeTagInput
+            :model-value="item.url"
+            type="url"
+            :placeholder="t.menu.urlPlaceholder"
+            @update:model-value="updateMenuItem(item.id, 'url', $event)"
+        /></FieldRow>
         <div
           class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-x-3 tpl:gap-y-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
-          <ToggleSwitch
+          <FieldRow
             v-for="toggle in ITEM_TOGGLES"
             :key="toggle.key"
-            :model-value="item[toggle.key]"
-            :label="toggle.label"
-            @update:model-value="updateMenuItem(item.id, toggle.key, $event)"
-          />
+            :path="
+              item.id.includes('.')
+                ? undefined
+                : `items.${item.id}.${toggle.key}`
+            "
+            ><ToggleSwitch
+              :model-value="item[toggle.key]"
+              :label="toggle.label"
+              @update:model-value="updateMenuItem(item.id, toggle.key, $event)"
+          /></FieldRow>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <label :class="labelClass" class="tpl:!mb-0">{{
             t.menu.color
           }}</label>
-          <ColorPicker
-            swatch-only
-            :model-value="item.color || block.linkColor || block.color || ''"
-            @update:model-value="updateMenuItem(item.id, 'color', $event)"
-          />
+          <FieldRow
+            :path="item.id.includes('.') ? undefined : `items.${item.id}.color`"
+            ><ColorPicker
+              swatch-only
+              :model-value="item.color || block.linkColor || block.color || ''"
+              @update:model-value="updateMenuItem(item.id, 'color', $event)"
+          /></FieldRow>
         </div>
       </div>
       <button :class="addItemBtnClass" @click="addMenuItem">
@@ -141,7 +153,7 @@ function removeMenuItem(itemId: string): void {
     </div>
   </FieldRow>
 
-  <FieldRow :label="t.menu.fontFamily">
+  <FieldRow path="fontFamily" :label="t.menu.fontFamily">
     <select
       :class="inputClass"
       :value="fontSelectValue(block.fontFamily)"
@@ -163,7 +175,7 @@ function removeMenuItem(itemId: string): void {
     </select>
   </FieldRow>
 
-  <FieldRow :label="t.menu.fontSize">
+  <FieldRow path="fontSize" :label="t.menu.fontSize">
     <NumberWithSuffix
       :model-value="block.fontSize"
       :min="8"
@@ -173,21 +185,21 @@ function removeMenuItem(itemId: string): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.color">
+  <FieldRow path="color" :label="t.menu.color">
     <ColorPicker
       :model-value="block.color ?? ''"
       @update:model-value="updateField('color', $event || undefined)"
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.linkColor">
+  <FieldRow path="linkColor" :label="t.menu.linkColor">
     <ColorPicker
       :model-value="block.linkColor || block.color || ''"
       @update:model-value="updateField('linkColor', $event || undefined)"
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.textAlign">
+  <FieldRow path="textAlign" :label="t.menu.textAlign">
     <SlidingPillSelect
       :options="ALIGN_OPTIONS"
       :model-value="block.textAlign"
@@ -195,7 +207,7 @@ function removeMenuItem(itemId: string): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.separator">
+  <FieldRow path="separator" :label="t.menu.separator">
     <input
       type="text"
       :class="inputClass"
@@ -206,14 +218,14 @@ function removeMenuItem(itemId: string): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.separatorColor">
+  <FieldRow path="separatorColor" :label="t.menu.separatorColor">
     <ColorPicker
       :model-value="block.separatorColor"
       @update:model-value="updateField('separatorColor', $event)"
     />
   </FieldRow>
 
-  <FieldRow :label="t.menu.spacing">
+  <FieldRow path="spacing" :label="t.menu.spacing">
     <NumberWithSuffix
       :model-value="block.spacing"
       :min="0"

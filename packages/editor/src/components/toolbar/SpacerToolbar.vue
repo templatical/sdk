@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
@@ -19,7 +20,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
+  <FieldRow class="tpl:mb-3.5" path="height">
     <label :class="labelClass">{{ t.spacer.height }}</label>
     <div class="tpl:flex tpl:items-stretch">
       <input
@@ -48,5 +49,5 @@ const { t } = useI18n();
         })
       "
     />
-  </div>
+  </FieldRow>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputGroupInputClass,
@@ -20,7 +21,11 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="tpl:mb-3.5" data-testid="paragraph-spacing">
+  <FieldRow
+    class="tpl:mb-3.5"
+    data-testid="paragraph-spacing"
+    path="paragraphSpacing"
+  >
     <label :class="labelClass">{{ t.paragraph.paragraphSpacing }}</label>
     <div class="tpl:flex tpl:items-stretch">
       <!-- Shows the built-in gap when the block sets none, so the field always
@@ -39,5 +44,5 @@ const { t } = useI18n();
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
+  </FieldRow>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LocaleMarkers from "../localization/LocaleMarkers.vue";
 import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import type { Block, ViewportSize } from "@templatical/types";
@@ -132,8 +133,17 @@ const isHiddenOnViewport = computed(() => {
 // In edit mode a viewport-hidden block stays rendered (dimmed + badge) so it
 // remains selectable. In preview mode it must actually disappear to match the
 // exported MJML, which drops it via `@media` + `tpl-hide-*` css-classes.
+const isLocaleHidden = computed(
+  () =>
+    !!(
+      editor?.activeLocale?.value &&
+      props.block.l10n?.[editor.activeLocale.value]?.hidden
+    ),
+);
 const isHiddenInPreview = computed(
-  () => props.previewMode === true && isHiddenOnViewport.value,
+  () =>
+    props.previewMode === true &&
+    (isHiddenOnViewport.value || isLocaleHidden.value),
 );
 
 const hiddenLabel = computed(() => {
@@ -284,6 +294,7 @@ function handleConditionToggle(): void {
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow"
     :class="{
       'tpl-block--selected': isSelected,
+      'tpl-block--locale-hidden': isLocaleHidden,
       'tpl-block--picked': picked,
       'tpl-block--idle': !isSelected && !picked,
       'tpl-block--lifted': isLifted,
@@ -294,6 +305,7 @@ function handleConditionToggle(): void {
     @click="handleClick"
   >
     <BlockIssueBadge :block-id="block.id" />
+    <LocaleMarkers v-if="!previewMode" :block="block" />
     <div
       v-if="lock"
       data-testid="block-lock"
@@ -441,6 +453,10 @@ function handleConditionToggle(): void {
 </template>
 
 <style scoped>
+.tpl-block--locale-hidden > .tpl-email-surface {
+  opacity: 0.35;
+}
+
 /* Idle — subtle dashed outline so block boundaries are always visible */
 .tpl-block--idle {
   outline: 1.5px dashed color-mix(in srgb, var(--tpl-primary) 30%, transparent);

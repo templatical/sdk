@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -25,7 +26,7 @@ function updateField(field: string, value: unknown): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
+  <FieldRow class="tpl:mb-3.5" path="lineStyle">
     <label :class="labelClass">{{ t.divider.style }}</label>
     <SlidingPillSelect
       :options="[
@@ -36,15 +37,15 @@ function updateField(field: string, value: unknown): void {
       :model-value="block.lineStyle"
       @update:model-value="updateField('lineStyle', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="color">
     <label :class="labelClass">{{ t.divider.color }}</label>
     <ColorPicker
       :model-value="block.color"
       @update:model-value="updateField('color', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="thickness">
     <label :class="labelClass">{{ t.divider.thickness }}</label>
     <div class="tpl:flex tpl:items-stretch">
       <input
@@ -62,5 +63,5 @@ function updateField(field: string, value: unknown): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
+  </FieldRow>
 </template>

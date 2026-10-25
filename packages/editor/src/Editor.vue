@@ -22,6 +22,7 @@ import { cloneBlock, defaultLocaleOf, safeClone } from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
+import StructureNotice from "./components/localization/StructureNotice.vue";
 import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
@@ -50,7 +51,7 @@ import {
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
-import { AI_FEATURE_KEY, SIZE_CHECK_KEY } from "./keys";
+import { AI_FEATURE_KEY, SIZE_CHECK_KEY, LOCALIZATION_KEY } from "./keys";
 
 import { RotateCcw } from "@lucide/vue";
 import { warningBtnCompactClass } from "./constants/styleConstants";
@@ -177,12 +178,13 @@ const templatesProvider =
     : normalizedTemplates;
 
 // --- Core editor state ---
-const structureNotice = ref(false);
+const structureNotice = ref(0);
+provide(LOCALIZATION_KEY, props.config.localization);
 const editor = useEditor({
   localization: props.config.localization ?? { locales: [] },
   onLocaleChange: props.config.onLocaleChange,
   onStructureChange: () => {
-    structureNotice.value = true;
+    structureNotice.value++;
   },
   content: props.config.content!,
   // Seeds a *new* template's body font when no `content` was supplied. Only the
@@ -691,6 +693,7 @@ defineExpose({
            markup covers "no providers at all" and a fully-wired Cloud session. -->
       <EditorHeader
         :editor="editor"
+        :localization="props.config.localization"
         :core="core"
         :templates="templates"
         :show-template-name="config.templates?.nameField !== false"
@@ -744,14 +747,10 @@ defineExpose({
           <div
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
           >
-            <div
-              v-if="structureNotice"
-              data-testid="locale-structure-notice"
-              role="status"
-              :class="warningBtnCompactClass"
-            >
-              {{ core.t.localization.structureNotice }}
-            </div>
+            <StructureNotice
+              :change="structureNotice"
+              :template-id="editor.state.template?.id"
+            />
             <!-- Sample / Label. Preview mode only: merge tags are never
                  substituted on the editing canvas, so the choice would have no
                  effect there. A configured `resolvePreview` supersedes samples

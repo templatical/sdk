@@ -249,15 +249,15 @@ describe("localization API", () => {
       expect(wrapper.text()).toContain(
         "Structure changes apply to every language",
       );
-      expect(
-        wrapper.findAll('[data-testid="locale-structure-notice"]'),
-      ).toHaveLength(1);
+      expect(wrapper.findAll('[data-testid="structure-notice"]')).toHaveLength(
+        1,
+      );
       expect(JSON.stringify(editor.content.value)).toContain("<p>Hello</p>");
       editor.addBlock(createTitleBlock());
       await nextTick();
-      expect(
-        wrapper.findAll('[data-testid="locale-structure-notice"]'),
-      ).toHaveLength(1);
+      expect(wrapper.findAll('[data-testid="structure-notice"]')).toHaveLength(
+        1,
+      );
     },
   );
 
@@ -550,21 +550,19 @@ describe("root drag routing", () => {
           "update:modelValue",
           [...editor.content.value.blocks].reverse(),
         );
-      canvas
-        .findComponent(VueDraggable)
-        .vm.$emit("update", {
-          oldIndex: 0,
-          newIndex: 1,
-          data: before.blocks[0],
-        });
+      canvas.findComponent(VueDraggable).vm.$emit("update", {
+        oldIndex: 0,
+        newIndex: 1,
+        data: before.blocks[0],
+      });
       await nextTick();
       expect(replace).not.toHaveBeenCalled();
       expect(editor.content.value.blocks.map((b: any) => b.id)).toEqual(
         enabled ? ["t2", "t1"] : ["t1", "t2"],
       );
-      expect(
-        wrapper.findAll('[data-testid="locale-structure-notice"]'),
-      ).toHaveLength(enabled ? 1 : 0);
+      expect(wrapper.findAll('[data-testid="structure-notice"]')).toHaveLength(
+        enabled ? 1 : 0,
+      );
       if (enabled) {
         history.undo();
         expect(editor.content.value).toEqual(before);
@@ -636,16 +634,16 @@ describe("root drag routing", () => {
           : editor.content.value.blocks[0].children[0][0];
         expect(moved).toEqual(title);
         expect(
-          wrapper.findAll('[data-testid="locale-structure-notice"]'),
+          wrapper.findAll('[data-testid="structure-notice"]'),
         ).toHaveLength(1);
         history.undo();
         expect(editor.content.value).toEqual(before);
         expect(history.canUndo.value).toBe(false);
       } else {
         expect(editor.content.value).toEqual(before);
-        expect(
-          wrapper.find('[data-testid="locale-structure-notice"]').exists(),
-        ).toBe(false);
+        expect(wrapper.find('[data-testid="structure-notice"]').exists()).toBe(
+          false,
+        );
         expect(history.canUndo.value).toBe(false);
         expect(history.canRedo.value).toBe(false);
       }
@@ -706,9 +704,9 @@ describe("root drag routing", () => {
       await nextTick();
       await settle();
       expect(editor.content.value).toEqual(before);
-      expect(
-        wrapper.find('[data-testid="locale-structure-notice"]').exists(),
-      ).toBe(false);
+      expect(wrapper.find('[data-testid="structure-notice"]').exists()).toBe(
+        false,
+      );
       expect(server.submitted).toHaveLength(0);
     },
   );

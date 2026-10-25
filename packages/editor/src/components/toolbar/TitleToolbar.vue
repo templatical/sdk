@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -24,7 +25,7 @@ function updateField(field: string, value: unknown): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
+  <FieldRow class="tpl:mb-3.5" path="level">
     <label :class="labelClass">{{ t.title.level }}</label>
     <select
       :class="inputClass"
@@ -38,8 +39,8 @@ function updateField(field: string, value: unknown): void {
       <option :value="3">{{ t.title.heading3 }}</option>
       <option :value="4">{{ t.title.heading4 }}</option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="fontFamily">
     <label :class="labelClass">{{ t.title.fontFamily }}</label>
     <select
       :class="inputClass"
@@ -60,15 +61,15 @@ function updateField(field: string, value: unknown): void {
         {{ font.label }}
       </option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="color">
     <label :class="labelClass">{{ t.title.color }}</label>
     <ColorPicker
       :model-value="block.color ?? ''"
       @update:model-value="updateField('color', $event || undefined)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="textAlign">
     <label :class="labelClass">{{ t.title.align }}</label>
     <SlidingPillSelect
       :options="[
@@ -79,5 +80,5 @@ function updateField(field: string, value: unknown): void {
       :model-value="block.textAlign"
       @update:model-value="updateField('textAlign', $event)"
     />
-  </div>
+  </FieldRow>
 </template>

@@ -150,7 +150,7 @@ const WRAPPER = (() => {
 describe("overlay height scope", () => {
   it("finds every TplModal panel (sanity check)", () => {
     // Guards against the scanner silently returning [] — a broken walker would
-    // otherwise make every case below pass. These seven are the current floor.
+    // otherwise make every case below pass. These known consumers are the current floor.
     const files = PANELS.map((panel) => panel.file).sort();
     expect(files).toEqual([
       "cloud/components/CloudSaveGateModal.vue",
@@ -160,6 +160,7 @@ describe("overlay height scope", () => {
       "components/SaveBlockDialog.vue",
       "components/SavedBlocksBrowserModal.vue",
       "components/TestEmailModal.vue",
+      "components/localization/LanguageMenu.vue",
     ]);
   });
 

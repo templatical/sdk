@@ -2,6 +2,26 @@ import type en from "./en";
 
 const fr: typeof en = {
   localization: {
+    languages: "Langues",
+    default: "Par défaut",
+    notEnabled: "Non activé",
+    addLanguage: "Ajouter une langue",
+    removeLanguage: "Supprimer {language}",
+    removeConfirmation: "Supprimer {language} et ses traductions ?",
+    cancel: "Annuler",
+    notTranslated: "Non traduit",
+    notTranslatedCount: "{count} non traduits",
+    outOfDate: "Obsolète",
+    outOfDateCount: "{count} obsolètes",
+    keep: "Conserver",
+    useDefault: "Utiliser la valeur par défaut",
+    differs: "Différent en {language}",
+    reset: "Réinitialiser",
+    hidden: "Masqué en {language}",
+    show: "Afficher",
+    hide: "Masquer en {language}",
+    translationsOutOfDate: "Traductions obsolètes : {count}",
+    dismiss: "Fermer",
     structureNotice:
       "Les changements de structure s’appliquent à toutes les langues",
     aiDefaultLanguage: "Le chat IA modifie la langue par défaut.",

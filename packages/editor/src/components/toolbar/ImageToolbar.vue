@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
@@ -213,7 +214,7 @@ function updateLockedHeight(raw: string): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
+  <FieldRow class="tpl:mb-3.5" path="src">
     <label :class="labelClass">{{ t.image.imageUrl }}</label>
     <div ref="dropZoneRef" class="tpl:relative">
       <MediaDropOverlay v-if="showOverlay" :uploading="isUploading" />
@@ -238,8 +239,12 @@ function updateLockedHeight(raw: string): void {
         {{ t.image.browseMedia }}
       </button>
     </div>
-  </div>
-  <div v-if="containsMergeTag(block.src, mergeTagSyntax)" class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow
+    v-if="containsMergeTag(block.src, mergeTagSyntax)"
+    class="tpl:mb-3.5"
+    path="placeholderUrl"
+  >
     <label :class="labelClass"
       >{{ t.image.placeholderUrl }}
       <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">
@@ -256,8 +261,8 @@ function updateLockedHeight(raw: string): void {
         updateField('placeholderUrl', ($event.target as HTMLInputElement).value)
       "
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="alt">
     <label :class="labelClass">{{ t.image.altText }}</label>
     <MergeTagInput
       :model-value="block.alt"
@@ -267,21 +272,23 @@ function updateLockedHeight(raw: string): void {
       :disabled="block.decorative === true"
       @update:model-value="updateField('alt', $event)"
     />
-    <ToggleSwitch
-      class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-      :model-value="block.decorative === true"
-      :label="t.image.decorative"
-      @update:model-value="updateField('decorative', $event)"
-    >
-      <span>
-        {{ t.image.decorative }}
-        <span class="tpl:block tpl:text-[var(--tpl-text-dim)]">
-          {{ t.image.decorativeHint }}
+    <FieldRow path="decorative"
+      ><ToggleSwitch
+        class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+        :model-value="block.decorative === true"
+        :label="t.image.decorative"
+        @update:model-value="updateField('decorative', $event)"
+      >
+        <span>
+          {{ t.image.decorative }}
+          <span class="tpl:block tpl:text-[var(--tpl-text-dim)]">
+            {{ t.image.decorativeHint }}
+          </span>
         </span>
-      </span>
-    </ToggleSwitch>
-  </div>
-  <div class="tpl:mb-3.5">
+      </ToggleSwitch></FieldRow
+    >
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="width">
     <label :class="labelClass">{{ t.image.width }}</label>
     <select
       :class="inputClass"
@@ -311,8 +318,8 @@ function updateLockedHeight(raw: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="height">
     <div
       v-if="aspectLockAvailable"
       class="tpl:mb-1.5 tpl:flex tpl:items-center tpl:justify-between"
@@ -376,21 +383,23 @@ function updateLockedHeight(raw: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
-  </div>
+  </FieldRow>
   <!-- No `max`: a circle needs a radius of at least half the rendered size,
        which the block cannot know at edit time. -->
-  <RadiusControl
-    :model-value="block.borderRadius"
-    :label="t.image.borderRadius"
-    testid-prefix="image"
-    @update:model-value="updateBorderRadius"
-  />
-  <BorderControl
-    :model-value="block.border"
-    testid-prefix="image"
-    @update:model-value="updateField('border', $event)"
-  />
-  <div class="tpl:mb-3.5">
+  <FieldRow path="borderRadius"
+    ><RadiusControl
+      :model-value="block.borderRadius"
+      :label="t.image.borderRadius"
+      testid-prefix="image"
+      @update:model-value="updateBorderRadius"
+  /></FieldRow>
+  <FieldRow path="border"
+    ><BorderControl
+      :model-value="block.border"
+      testid-prefix="image"
+      @update:model-value="updateField('border', $event)"
+  /></FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="align">
     <label :class="labelClass">{{ t.title.align }}</label>
     <SlidingPillSelect
       :options="[
@@ -401,8 +410,8 @@ function updateLockedHeight(raw: string): void {
       :model-value="block.align"
       @update:model-value="updateField('align', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
+  </FieldRow>
+  <FieldRow class="tpl:mb-3.5" path="linkUrl">
     <label :class="labelClass">{{ t.image.linkUrl }}</label>
     <MergeTagInput
       :model-value="block.linkUrl || ''"
@@ -410,12 +419,13 @@ function updateLockedHeight(raw: string): void {
       :placeholder="t.image.imageUrlPlaceholder"
       @update:model-value="updateField('linkUrl', $event)"
     />
-    <ToggleSwitch
-      v-if="block.linkUrl"
-      class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-      :model-value="block.linkOpenInNewTab ?? false"
-      :label="t.image.openInNewTab"
-      @update:model-value="updateField('linkOpenInNewTab', $event)"
-    />
-  </div>
+    <FieldRow v-if="block.linkUrl" path="linkOpenInNewTab">
+      <ToggleSwitch
+        class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+        :model-value="block.linkOpenInNewTab ?? false"
+        :label="t.image.openInNewTab"
+        @update:model-value="updateField('linkOpenInNewTab', $event)"
+      />
+    </FieldRow>
+  </FieldRow>
 </template>

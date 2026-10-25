@@ -25,6 +25,9 @@ import TemplateTimestamp from "./TemplateTimestamp.vue";
 import TemplateSaveStatus from "./TemplateSaveStatus.vue";
 
 // Lazy: an editor with no `versionHistory` provider never downloads the control.
+const LanguageMenu = defineAsyncComponent(
+  () => import("./localization/LanguageMenu.vue"),
+);
 const VersionHistoryMenu = defineAsyncComponent(
   () => import("./VersionHistoryMenu.vue"),
 );
@@ -55,23 +58,58 @@ const AiHeaderMenu = defineAsyncComponent(
  */
 defineProps<{
   editor: BaseEditorReturn;
+  localization?: { locales: string[] };
   core: UseEditorCoreReturn;
   /** Null when no `TemplatesProvider` is configured — no name, save or status. */
-  templates: UseTemplatesFeatureReturn | null;
+  templates: Pick<
+    UseTemplatesFeatureReturn,
+    | "isAvailable"
+    | "hasTemplate"
+    | "name"
+    | "timestamp"
+    | "canSave"
+    | "rename"
+    | "status"
+    | "errorMessage"
+    | "isSaving"
+    | "requestSave"
+  > | null;
   /**
    * Whether to render the inline name field, from `config.templates?.nameField`.
    * False hides it whether or not the provider can save — a consumer whose
    * store has no name column, or whose own chrome owns the name.
    */
   showTemplateName: boolean;
-  testEmail: UseTestEmailFeatureReturn | null;
-  versionHistory: UseVersionHistoryFeatureReturn | null;
+  testEmail: Pick<
+    UseTestEmailFeatureReturn,
+    "isAvailable" | "isSending" | "open"
+  > | null;
+  versionHistory: Pick<
+    UseVersionHistoryFeatureReturn,
+    | "isAvailable"
+    | "hasTemplate"
+    | "versions"
+    | "isLoading"
+    | "isRestoring"
+    | "previewingVersion"
+    | "refresh"
+    | "navigate"
+  > | null;
   /** Null when no `CommentsProvider` (or no `user`) is configured. */
-  comments: UseCommentsFeatureReturn | null;
+  comments: Pick<
+    UseCommentsFeatureReturn,
+    "isAvailable" | "hasTemplate" | "unresolvedCount" | "isOpen" | "toggle"
+  > | null;
   /** Null when no `CollaborationProvider` is configured. */
-  collaboration: UseCollaborationFeatureReturn | null;
+  collaboration: Pick<
+    UseCollaborationFeatureReturn,
+    "isLive" | "people" | "connection"
+  > | null;
   /** Null when no `AiProvider` is configured. */
-  ai: UseAiFeatureReturn | null;
+  ai: Pick<
+    UseAiFeatureReturn,
+    "panel" | "isAvailable" | "has" | "open" | "close"
+  > | null;
 }>();
 </script>
 
@@ -82,7 +120,7 @@ defineProps<{
        identical surface behind it and a backdrop blur has nothing to blur,
        which costs a compositing layer to render exactly `--tpl-bg`. -->
   <header
-    class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
+    class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
   >
     <!-- Left: the template's identity — the inline-editable name, and under it
          when the store dates its writes. Stacking the two needs 6px of bottom
@@ -121,6 +159,11 @@ defineProps<{
           :kind="templates.timestamp.value.kind"
         />
       </div>
+      <LanguageMenu
+        v-if="localization"
+        :editor="editor"
+        :locales="localization.locales"
+      />
       <!-- Version history — the third piece of "which template, and which
            version of it", after the name and the write time. It sits here and
            not in the right column because that column's content already

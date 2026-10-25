@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./toolbar/FieldRow.vue";
 import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
@@ -120,6 +121,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
         </div>
 
         <div v-if="shows('width')" data-testid="template-settings-width-preset">
+          <FieldRow path="width" settings />
           <label :class="labelClass">{{
             t.templateSettings.widthPreset
           }}</label>
@@ -152,6 +154,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
         </div>
 
         <div v-if="shows('width')" data-testid="template-settings-width-custom">
+          <FieldRow path="width" settings />
           <label :class="labelClass">{{
             t.templateSettings.customWidth
           }}</label>
@@ -194,6 +197,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('backgroundColor')"
           data-testid="template-settings-background"
         >
+          <FieldRow path="backgroundColor" settings />
           <label :class="labelClass">{{
             t.templateSettings.backgroundColor
           }}</label>
@@ -208,6 +212,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('textColor')"
           data-testid="template-settings-text-color"
         >
+          <FieldRow path="textColor" settings />
           <label :class="labelClass">{{ t.templateSettings.textColor }}</label>
           <ColorPicker
             :model-value="settings.textColor ?? ''"
@@ -220,6 +225,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('linkColor')"
           data-testid="template-settings-link-color"
         >
+          <FieldRow path="linkColor" settings />
           <label :class="labelClass">{{ t.templateSettings.linkColor }}</label>
           <ColorPicker
             :model-value="settings.linkColor ?? ''"
@@ -234,6 +240,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('linkUnderline')"
           data-testid="template-settings-link-underline"
         >
+          <FieldRow path="linkUnderline" settings />
           <ToggleSwitch
             class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             :model-value="settings.linkUnderline"
@@ -246,6 +253,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('fontFamily')"
           data-testid="template-settings-font-family"
         >
+          <FieldRow path="fontFamily" settings />
           <label :class="labelClass">{{ t.templateSettings.fontFamily }}</label>
           <select
             :class="inputClass"
@@ -314,6 +322,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('direction')"
           data-testid="template-settings-direction"
         >
+          <FieldRow path="direction" settings />
           <ToggleSwitch
             class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             :model-value="isRtl"
@@ -351,6 +360,7 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
           v-if="shows('preheaderText')"
           data-testid="template-settings-preheader"
         >
+          <FieldRow path="preheaderText" settings />
           <MergeTagTextarea
             :model-value="settings.preheaderText ?? ''"
             :placeholder="t.templateSettings.preheaderTextPlaceholder"

@@ -212,6 +212,12 @@ export interface BaseEditorReturn {
   content: Ref<TemplateContent>;
   /** Supplied by localized editors; null selects the default language. */
   activeLocale?: Ref<string | null>;
+  setActiveLocale?: (locale: string | null) => void;
+  addLocale?: (locale: string) => void;
+  removeLocale?: (locale: string) => void;
+  setBlockHidden?: (blockId: string, hidden: boolean) => void;
+  resetLocaleFields?: (blockId: string, paths?: string[]) => void;
+  keepTranslations?: (blockId: string, paths: string[]) => void;
   selectedBlock: Ref<Block | null>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;

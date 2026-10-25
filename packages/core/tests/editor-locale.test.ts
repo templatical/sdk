@@ -8,6 +8,7 @@ import {
   createMenuBlock,
   createTableBlock,
   createSectionBlock,
+  createCustomBlock,
   localizeBlock,
   safeClone,
   sourceHash,
@@ -51,6 +52,121 @@ function german() {
 }
 
 describe("editor language routing", () => {
+  it("removes a deleted ancestor override after resetting both leaves in reverse order", () => {
+    const { editor, history } = setup();
+    editor.updateBlock("im1", {
+      visibility: { desktop: false, mobile: false },
+    });
+    editor.addLocale("de");
+    editor.setActiveLocale("de");
+    editor.updateBlock("im1", { visibility: undefined });
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: null,
+    });
+    history.clear();
+
+    editor.resetLocaleFields("im1", [
+      "visibility.mobile",
+      "visibility.desktop",
+    ]);
+
+    expect(editor.content.value.blocks[1].l10n).toBeUndefined();
+    history.undo();
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: null,
+    });
+    expect(history.canUndo.value).toBe(false);
+    history.redo();
+    expect(editor.content.value.blocks[1].l10n).toBeUndefined();
+    editor.setActiveLocale(null);
+    editor.updateBlock("im1", {
+      visibility: { desktop: true, mobile: true },
+    });
+    editor.setActiveLocale("de");
+    expect(
+      localizeBlock(editor.content.value.blocks[1], "de", "en").visibility,
+    ).toEqual({
+      desktop: true,
+      mobile: true,
+    });
+  });
+
+  it("does not override a re-entered custom object with reordered nested keys", () => {
+    const { editor } = german();
+    const block = createCustomBlock({
+      type: "card",
+      name: "Card",
+      fields: [],
+      template: "<mj-text>Card</mj-text>",
+    });
+    block.id = "card";
+    block.fieldValues = {
+      card: { title: "Offer", links: [{ label: "Read", url: "/read" }] },
+    };
+    editor.addBlock(block);
+
+    editor.updateBlock("card", {
+      fieldValues: {
+        card: { links: [{ url: "/read", label: "Read" }], title: "Offer" },
+      },
+    });
+
+    expect(editor.content.value.blocks[2].l10n).toBeUndefined();
+    expect(editor.content.value.blocks[2]).toMatchObject({
+      fieldValues: {
+        card: { title: "Offer", links: [{ label: "Read", url: "/read" }] },
+      },
+    });
+  });
+
+  it("resets a leaf inside a deleted locale ancestor without restoring its sibling", () => {
+    const { editor, history } = setup();
+    editor.updateBlock("im1", {
+      visibility: { desktop: false, mobile: false },
+    });
+    editor.addLocale("de");
+    editor.setActiveLocale("de");
+    editor.updateBlock("im1", { visibility: undefined });
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: null,
+    });
+    history.clear();
+
+    editor.resetLocaleFields("im1", ["visibility.mobile"]);
+
+    const block = editor.content.value.blocks[1];
+    expect(block.l10n?.de.set).toEqual({ visibility: { mobile: false } });
+    expect(localizeBlock(block, "de", "en").visibility).toEqual({
+      mobile: false,
+    });
+    expect(block.visibility).toEqual({ desktop: false, mobile: false });
+    history.undo();
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: null,
+    });
+    expect(history.canUndo.value).toBe(false);
+  });
+
+  it("resets a nested locale field without removing its sibling override and supports undo", () => {
+    const { editor, history } = german();
+    editor.updateBlock("im1", {
+      visibility: { desktop: false, mobile: false },
+    });
+    history.clear();
+    editor.resetLocaleFields("im1", ["visibility.mobile"]);
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: { desktop: false },
+    });
+    history.undo();
+    expect(editor.content.value.blocks[1].l10n?.de.set).toEqual({
+      visibility: { desktop: false, mobile: false },
+    });
+    expect(history.canUndo.value).toBe(false);
+    history.redo();
+    editor.resetLocaleFields("im1", ["visibility.desktop"]);
+    expect(editor.content.value.blocks[1].l10n).toBeUndefined();
+  });
+
   it("adds a version and routes text and src without changing the base", () => {
     const { editor } = german();
     editor.updateBlock("t1", { content: "<p>Hallo</p>" });

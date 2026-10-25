@@ -32,6 +32,7 @@ import {
   deriveLayer,
   deriveSettingsLayer,
   reconcileStructure,
+  resetLocalizedFields,
 } from "./localized-edit";
 import {
   canEditStructure,
@@ -317,11 +318,21 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     const block = findBlockById(state.content.blocks, blockId);
     if (!block) return null;
     const previous = block.l10n?.[activeLocale.value];
+    const view = localizeBlock(
+      block,
+      activeLocale.value,
+      defaultLocaleOf(state.content),
+    );
+    const restoredAncestors =
+      method === "resetLocaleFields" && Array.isArray(value)
+        ? resetLocalizedFields(block, view, value)
+        : undefined;
     const layer = deriveLayer(
       block,
-      localizeBlock(block, activeLocale.value, defaultLocaleOf(state.content)),
+      view,
       previous ? safeClone(previous) : undefined,
       definitions,
+      restoredAncestors,
     );
     if (method === "setBlockHidden") {
       if (value) layer.hidden = true;
@@ -331,11 +342,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         delete layer.text;
         delete layer.set;
         delete layer.hidden;
-      } else
-        for (const path of value as string[]) {
-          if (layer.text) delete layer.text[path];
-          if (layer.set) delete layer.set[path];
-        }
+      }
     } else
       for (const path of value as string[]) {
         const text = layer.text?.[path];

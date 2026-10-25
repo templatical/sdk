@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FieldRow from "./FieldRow.vue";
 import { useI18n } from "../../composables/useI18n";
 import { inputClass, labelClass } from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
@@ -104,35 +105,42 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
       </option>
     </select>
   </div>
-  <div v-if="block.columns !== '1'" class="tpl:mb-3.5">
+  <FieldRow
+    v-if="block.columns !== '1'"
+    class="tpl:mb-3.5"
+    path="stackOnMobile"
+  >
     <ToggleSwitch
       class="tpl:text-xs tpl:text-[var(--tpl-text)]"
       :model-value="block.stackOnMobile !== false"
       :label="t.section.stackOnMobile"
       @update:model-value="handleStackOnMobileChange($event)"
     />
-  </div>
-  <RadiusControl
-    :model-value="block.borderRadius"
-    :label="t.section.borderRadius"
-    :max="50"
-    testid-prefix="section"
-    @update:model-value="handleBorderRadiusChange"
-  />
-  <BorderControl
-    v-if="!heroApplied"
-    :model-value="block.border"
-    testid-prefix="section"
-    @update:model-value="emit('update', { border: $event })"
-  />
+  </FieldRow>
+  <FieldRow path="borderRadius"
+    ><RadiusControl
+      :model-value="block.borderRadius"
+      :label="t.section.borderRadius"
+      :max="50"
+      testid-prefix="section"
+      @update:model-value="handleBorderRadiusChange"
+  /></FieldRow>
+  <FieldRow path="border"
+    ><BorderControl
+      v-if="!heroApplied"
+      :model-value="block.border"
+      testid-prefix="section"
+      @update:model-value="emit('update', { border: $event })"
+  /></FieldRow>
   <div v-if="showWrapperPanel" class="tpl:mb-3.5">
-    <ToggleSwitch
-      class="tpl:text-xs tpl:text-[var(--tpl-text)]"
-      :model-value="!!block.wrapper"
-      :label="t.section.wrapperEnable"
-      :disabled="disableTurnOn"
-      @update:model-value="setWrapperEnabled($event)"
-    />
+    <FieldRow path="wrapper"
+      ><ToggleSwitch
+        class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+        :model-value="!!block.wrapper"
+        :label="t.section.wrapperEnable"
+        :disabled="disableTurnOn"
+        @update:model-value="setWrapperEnabled($event)"
+    /></FieldRow>
     <p
       v-if="showNote"
       class="tpl:mt-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
@@ -145,31 +153,35 @@ function handleWrapperRadius(borderRadius: BorderRadiusValue): void {
     >
       <div>
         <label :class="labelClass">{{ t.blockSettings.color }}</label>
-        <ColorPicker
-          :model-value="block.wrapper.backgroundColor ?? ''"
-          allow-transparent
-          @update:model-value="updateWrapper({ backgroundColor: $event })"
-        />
+        <FieldRow path="wrapper.backgroundColor"
+          ><ColorPicker
+            :model-value="block.wrapper.backgroundColor ?? ''"
+            allow-transparent
+            @update:model-value="updateWrapper({ backgroundColor: $event })"
+        /></FieldRow>
       </div>
-      <BackgroundImageControl
-        :model-value="block.wrapper.backgroundImage"
-        testid-prefix="section-wrapper"
-        @update:model-value="updateWrapper({ backgroundImage: $event })"
-      />
-      <SpacingControl
-        :label="t.blockSettings.padding"
-        :model-value="
-          block.wrapper.padding ?? { top: 0, right: 0, bottom: 0, left: 0 }
-        "
-        @update:model-value="handleWrapperPadding"
-      />
-      <RadiusControl
-        :model-value="block.wrapper.borderRadius"
-        :label="t.section.borderRadius"
-        :max="50"
-        testid-prefix="section-wrapper"
-        @update:model-value="handleWrapperRadius"
-      />
+      <FieldRow path="wrapper.backgroundImage"
+        ><BackgroundImageControl
+          :model-value="block.wrapper.backgroundImage"
+          testid-prefix="section-wrapper"
+          @update:model-value="updateWrapper({ backgroundImage: $event })"
+      /></FieldRow>
+      <FieldRow path="wrapper.padding"
+        ><SpacingControl
+          :label="t.blockSettings.padding"
+          :model-value="
+            block.wrapper.padding ?? { top: 0, right: 0, bottom: 0, left: 0 }
+          "
+          @update:model-value="handleWrapperPadding"
+      /></FieldRow>
+      <FieldRow path="wrapper.borderRadius"
+        ><RadiusControl
+          :model-value="block.wrapper.borderRadius"
+          :label="t.section.borderRadius"
+          :max="50"
+          testid-prefix="section-wrapper"
+          @update:model-value="handleWrapperRadius"
+      /></FieldRow>
     </div>
   </div>
 </template>

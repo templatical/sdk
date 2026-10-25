@@ -64,7 +64,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 </script>
 
 <template>
-  <FieldRow :label="t.countdown.targetDate">
+  <FieldRow path="targetDate" :label="t.countdown.targetDate">
     <input
       type="datetime-local"
       :class="inputClass"
@@ -75,7 +75,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.countdown.timezone">
+  <FieldRow path="timezone" :label="t.countdown.timezone">
     <select
       :class="inputClass"
       :value="block.timezone"
@@ -89,18 +89,17 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 
   <FieldRow :label="t.countdown.display">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <ToggleSwitch
-        v-for="item in unitItems"
-        :key="item.unit"
-        class="tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-        :model-value="block[item.showKey]"
-        :label="t.countdown[item.translationKey]"
-        @update:model-value="updateField(item.showKey, $event)"
-      />
+      <FieldRow v-for="item in unitItems" :key="item.unit" :path="item.showKey"
+        ><ToggleSwitch
+          class="tpl:text-[12px] tpl:text-[var(--tpl-text)]"
+          :model-value="block[item.showKey]"
+          :label="t.countdown[item.translationKey]"
+          @update:model-value="updateField(item.showKey, $event)"
+      /></FieldRow>
     </div>
   </FieldRow>
 
-  <FieldRow :label="t.countdown.separator">
+  <FieldRow path="separator" :label="t.countdown.separator">
     <SlidingPillSelect
       :options="SEPARATORS"
       :model-value="block.separator"
@@ -108,7 +107,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.countdown.fontFamily">
+  <FieldRow path="fontFamily" :label="t.countdown.fontFamily">
     <select
       :class="inputClass"
       :value="fontSelectValue(block.fontFamily)"
@@ -131,7 +130,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
   </FieldRow>
 
   <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <FieldRow :label="t.countdown.digitFontSize">
+    <FieldRow path="digitFontSize" :label="t.countdown.digitFontSize">
       <NumberWithSuffix
         :model-value="block.digitFontSize"
         :min="12"
@@ -140,7 +139,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
         @update:model-value="updateField('digitFontSize', $event)"
       />
     </FieldRow>
-    <FieldRow :label="t.countdown.labelFontSize">
+    <FieldRow path="labelFontSize" :label="t.countdown.labelFontSize">
       <NumberWithSuffix
         :model-value="block.labelFontSize"
         :min="8"
@@ -152,13 +151,13 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
   </div>
 
   <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <FieldRow :label="t.countdown.digitColor">
+    <FieldRow path="digitColor" :label="t.countdown.digitColor">
       <ColorPicker
         :model-value="block.digitColor"
         @update:model-value="updateField('digitColor', $event)"
       />
     </FieldRow>
-    <FieldRow :label="t.countdown.labelColor">
+    <FieldRow path="labelColor" :label="t.countdown.labelColor">
       <ColorPicker
         :model-value="block.labelColor"
         @update:model-value="updateField('labelColor', $event)"
@@ -166,7 +165,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     </FieldRow>
   </div>
 
-  <FieldRow :label="t.countdown.background">
+  <FieldRow path="backgroundColor" :label="t.countdown.background">
     <ColorPicker
       :model-value="block.backgroundColor"
       @update:model-value="updateField('backgroundColor', $event)"
@@ -175,21 +174,23 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 
   <FieldRow :label="t.countdown.labels">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <input
-        v-for="item in unitItems"
-        :key="item.unit"
-        type="text"
-        :class="inputClass"
-        :value="block[item.labelKey]"
-        :placeholder="t.countdown[item.translationKey]"
-        @input="
-          updateField(item.labelKey, ($event.target as HTMLInputElement).value)
-        "
-      />
+      <FieldRow v-for="item in unitItems" :key="item.unit" :path="item.labelKey"
+        ><input
+          type="text"
+          :class="inputClass"
+          :value="block[item.labelKey]"
+          :placeholder="t.countdown[item.translationKey]"
+          @input="
+            updateField(
+              item.labelKey,
+              ($event.target as HTMLInputElement).value,
+            )
+          "
+      /></FieldRow>
     </div>
   </FieldRow>
 
-  <FieldRow :label="t.countdown.expiry">
+  <FieldRow path="expiredMessage" :label="t.countdown.expiry">
     <input
       type="text"
       :class="inputClass"
@@ -201,7 +202,7 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <FieldRow :label="t.countdown.expiredImageUrl">
+  <FieldRow path="expiredImageUrl" :label="t.countdown.expiredImageUrl">
     <input
       type="url"
       :class="inputClass"
@@ -216,10 +217,11 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <ToggleSwitch
-    class="tpl:mb-3.5 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-    :model-value="block.hideOnExpiry"
-    :label="t.countdown.hideOnExpiry"
-    @update:model-value="updateField('hideOnExpiry', $event)"
-  />
+  <FieldRow path="hideOnExpiry"
+    ><ToggleSwitch
+      class="tpl:mb-3.5 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
+      :model-value="block.hideOnExpiry"
+      :label="t.countdown.hideOnExpiry"
+      @update:model-value="updateField('hideOnExpiry', $event)"
+  /></FieldRow>
 </template>
