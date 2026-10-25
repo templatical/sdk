@@ -1,5 +1,7 @@
 # Install and mount
 
+For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the upgrade-first rule and `validate --locale` check.
+
 **Read first:** [failure-modes.md](failure-modes.md) — before editing any of
 their files
 **Then:** [scaffold.md](scaffold.md) for the procedure to follow when writing
@@ -145,7 +147,7 @@ const editor = await initCloud({
 });
 ```
 
-Cloud's AI ships later. For the AI assistant, Rewrite, Fix with AI and Write alt text today, bring your own AI provider through `init({ ai })`: [providers.md](providers.md) and [docs.md](docs.md) → `/backend/ai` and `/guide/bring-your-own-ai`.
+Cloud AI is not available. For the AI assistant, Rewrite, Fix with AI and Write alt text today, bring your own AI provider through `init({ ai })`: [providers.md](providers.md) and [docs.md](docs.md) → `/backend/ai` and `/guide/bring-your-own-ai`.
 
 Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
 dashboard — this skill documents `initCloud()`'s shape and the provider

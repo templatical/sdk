@@ -47,7 +47,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every accessibility rule with severity, rationale, and examples.
-- [Options](../options) — shared across all five linters.
+- [Options](../options) — shared across all linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 - [Contributing locales](../contributing-locales) — adding rule messages + vague-text dictionaries.

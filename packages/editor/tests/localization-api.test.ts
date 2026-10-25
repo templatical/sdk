@@ -10,6 +10,7 @@ import {
   createDefaultTemplateContent,
   createTitleBlock,
   createSectionBlock,
+  createCustomBlock,
   safeClone,
   sourceHash,
   type TemplateContent,
@@ -23,6 +24,7 @@ import {
 import Editor from "../src/Editor.vue";
 import Canvas from "../src/components/Canvas.vue";
 import TitleBlock from "../src/components/blocks/TitleBlock.vue";
+import CustomBlock from "../src/components/blocks/CustomBlock.vue";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
 import RightSidebar from "../src/components/RightSidebar.vue";
 import SectionBlock from "../src/components/blocks/SectionBlock.vue";
@@ -115,6 +117,63 @@ async function real(config: Partial<TemplaticalEditorConfig> = {}) {
 }
 
 describe("localization API", () => {
+  it("renders a translated custom definition on the German canvas and removes its layer on reset", async () => {
+    const definition: CustomBlockDefinition = {
+      type: "greeting",
+      name: "Greeting",
+      fields: [
+        { key: "headline", label: "Headline", type: "text", default: "Hello" },
+      ],
+      template: '<p data-greeting="definition">{{ headline }}</p>',
+      stylesheet: ".greeting { color: red; }",
+    };
+    const seed = content();
+    const block = createCustomBlock(definition);
+    block.id = "greeting";
+    block.renderedHtml = '<p data-greeting="cached">Hello</p>';
+    block.renderedStylesheet = definition.stylesheet;
+    block.l10n = {
+      de: {
+        text: {
+          "fieldValues.headline": {
+            value: "Hallo",
+            source: sourceHash("Hello"),
+          },
+        },
+      },
+    };
+    seed.blocks = [block];
+    const { editor, canvas } = await real({
+      content: seed,
+      customBlocks: [definition],
+    });
+
+    editor.setActiveLocale("de");
+    await vi.waitFor(() => {
+      expect(canvas.get('[data-greeting="definition"]').text()).toBe("Hallo");
+    });
+    expect(canvas.findComponent(CustomBlock).props("block")).not.toHaveProperty(
+      "renderedHtml",
+    );
+    expect(canvas.find('[data-greeting="cached"]').exists()).toBe(false);
+
+    editor.updateBlock("greeting", { fieldValues: { headline: "Guten Tag" } });
+    await vi.waitFor(() => {
+      expect(canvas.get('[data-greeting="definition"]').text()).toBe(
+        "Guten Tag",
+      );
+    });
+    editor.resetLocaleFields("greeting", ["fieldValues.headline"]);
+    await vi.waitFor(() => {
+      expect(canvas.get('[data-greeting="definition"]').text()).toBe("Hello");
+    });
+    expect(editor.content.value.blocks[0]).not.toHaveProperty("l10n");
+    expect(canvas.findComponent(CustomBlock).props("block")).toMatchObject({
+      renderedHtml: '<p data-greeting="cached">Hello</p>',
+      renderedStylesheet: ".greeting { color: red; }",
+    });
+  });
+
   it("starts at default, switches the canvas and notifies only a real change", async () => {
     const onLocaleChange = vi.fn();
     const { handle, container } = await open({ onLocaleChange });

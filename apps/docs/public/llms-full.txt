@@ -971,6 +971,8 @@ unmount();
 | `templateSettings`   | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over `Exclude<keyof TemplateSettings, "locales" \| "l10n">`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel)                                                                                                                                                                                                                                                                |
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `localization` | `{ locales: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). |
+| `onLocaleChange` | `(locale: string) => void` | No | Called when the active template language changes, including fallback to the default. Active language is view state and is not saved. |
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `smallScreenNotice`  | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself                                                                                                                                                                                                                                   |
@@ -1194,7 +1196,13 @@ router.beforeEach((to, from, next) => {
 
 `onDirtyChange` is the push-based counterpart.
 
-### `toMjml()`
+### `getLocale()` / `setLocale(locale)`
+
+`getLocale(): string` returns the active template language, initially the default. `setLocale(locale: string): void` selects the default or an existing version with localization enabled; an unknown version throws `SdkError` with code `unknown_locale`. A stored version missing from `localization.locales` remains selectable but read-only (**Not enabled**), with edits and structure changes refused. See [Editing in a language](/guide/localized-templates#editing-in-a-language).
+
+`toMjml(options?: { locale?: string }): Promise<string>` and `toHtml(options?: { locale?: string }): Promise<string>` render the selected version, for example `editor.toMjml({ locale: "de" })`. Omit `locale` to render the default, independently of the active view. An unknown version rejects with `unknown_locale`. Render providers receive the projected content, with localization fields removed.
+
+### `toMjml(options?)`
 
 Renders the current content to MJML markup. Returns a `Promise<string>` because resolving custom blocks may require asynchronous work (the editor's liquid renderer is loaded on demand).
 
@@ -1204,7 +1212,7 @@ const mjml = await editor.toMjml();
 
 Resolves `render.toMjml` first when a [`render` provider](/backend/render) supplies it, then the local `@templatical/renderer`. Rejects with a clear error when neither is available — the renderer is an optional peer dependency, so install it if you need local MJML export. See [Installation](/getting-started/installation).
 
-### `toHtml()`
+### `toHtml(options?)`
 
 Renders the current content to sending-ready HTML.
 
@@ -1686,7 +1694,7 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 <!-- locale-operations:start -->
 ## Locale operations
 
-`addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations until LOC3; upgrade the renderer, validator and collaboration backend before storing localized content.
+`addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
 
 The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `source` is `sourceHash("<p>Original</p>")`.
 
@@ -1854,6 +1862,7 @@ const mjml = await renderToMjml(templateContent);
 
 ```ts
 interface RenderOptions {
+  locale?: string;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
@@ -1866,6 +1875,7 @@ interface RenderOptions {
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `locale` | `settings.locale` | Selects the template version; an unknown version rejects with `unknown_locale`. |
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
@@ -1873,6 +1883,8 @@ interface RenderOptions {
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. If omitted, each type's `renderedStylesheet` is emitted instead (the copy the editor writes before a render provider or Cloud storage sees the content); when passed, it decides every type and the copies are ignored. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${dir}/${platform}.png`, where `dir` is the style, plus `-${tone}` for a `dark` or `light` `iconTone`. See [Social icons](#social-icons) below. |
+
+`locale?: string` selects a template language version; omission renders `settings.locale`, the default. Unknown versions reject with `SdkError` code `unknown_locale`. Projection removes hidden blocks, applies text and overrides, and sets MJML `lang` and `dir`. See [Localized templates](/guide/localized-templates#rendering-a-language).
 
 ### Custom blocks
 
@@ -2107,13 +2119,13 @@ Add `--json` for machine-readable result output on stdout when a command produce
 
 `--json` (see below) is a global flag — it works identically on every command above, not just some of them. Every command that touches a file also accepts `--cwd <dir>`, resolving relative paths against it instead of the process's own working directory.
 
-### `validate <file>`
+### `validate <file> [--locale <tag>]`
 
 ```bash
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 35 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). See [Localized templates](/guide/localized-templates#check-your-work).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -2123,13 +2135,15 @@ npx -y @templatical/template-tools schema --out block-schema.json
 
 Prints the same JSON Schema `validate` checks against — the block model as a plain JSON Schema document, useful for grounding an LLM prompt or generating types in another language. Without `--out`/`-o` it prints to stdout; with it, writes to that file instead (creating parent directories as needed) and prints nothing to stdout.
 
-### `render <file> [--format mjml|html] [--out <file> | -o <file>]`
+### `render <file> [--locale <tag>] [--format mjml|html] [--out <file> | -o <file>]`
 
 ```bash
 npx -y @templatical/template-tools render emails/welcome.json --format html -o welcome.html
 ```
 
 Defaults to `--format mjml`. `--format html` compiles that MJML further and needs the optional `mjml` package — see "Optional dependencies" below. The template is validated structurally before rendering starts, so an invalid template fails with the same error list `validate` would give you, not a renderer crash. Without `--out`/`-o`, the result prints to stdout.
+
+`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML.
 
 ### `edit <file> --op '<json>'` or `--ops <file>`
 
@@ -2199,7 +2213,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
-| `1` | Invalid structure or any `severity: "error"` lint issue (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
 | `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
@@ -2211,9 +2225,9 @@ It means the CLI did its job and hit an optional piece it can't do without — t
 
 When a command produces a result, `--json` emits a parseable result document on stdout. Usage and tool errors (2, 3) go to stderr without a result document. Diagnostics and progress notes also go to stderr; check the exit code before consuming stdout.
 
-`validate --json` emits `{ valid, errors, issues }` (plus `htmlBytes` with `--html`). `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
+`validate --json` emits `{ valid, errors, issues }` (plus `htmlBytes` with `--html`). `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure, link, deliverability, compatibility and localization finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info never change the exit code. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
+`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info are advisory except for `localization.merge-tags-differ`, which causes exit 1. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
 
 ## Using it in CI
 
@@ -2263,6 +2277,8 @@ This reports exactly what's resolvable from your current working directory right
 
 Install either kind of optional dependency in whatever project the CLI is invoked from — both are resolved starting from your current working directory (or `--cwd`, if you passed it).
 
+The CLI has no flag for custom-block definitions: both `validate` and `render` call validation without them, so custom `text` paths are refused. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Render with `renderCustomBlock` to produce localized custom HTML; a custom block with any localized text/property entry loses its default-language `renderedHtml` and is omitted without a resolver. `renderedStylesheet` stays; blocks without a layer for that locale retain cached HTML. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
+
 ## Library use
 
 Each entry point serves a different job.
@@ -2288,8 +2304,8 @@ import {
 ```
 
 - **`schema`** — the generated JSON Schema for `TemplateContent`, as a plain object. Same content the `schema` command prints and the published `schema.json` file (below) contains.
-- **`validateTemplate(data: unknown): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step and no other workspace package.
-- **`runQualityLint(data: unknown): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw.
+- **`validateTemplate(data: unknown, definitions?: readonly CustomBlockDefinition[]): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step. `definitions` defaults to `[]`; pass matching custom definitions to accept their translated `text` paths.
+- **`runQualityLint(data: unknown, options?: LintOptions): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw. `options` defaults to `{}`; `unknown_locale` is rethrown.
 - **`applyOperations(content, ops, context?)`**, **`OperationError`** and **`getColumnCount(layout)`** — the operation engine behind `edit`, re-exported from `@templatical/types`. `applyOperations` returns a new document and never changes `content`; a refused batch throws an `OperationError` carrying `code` and `opIndex`. See the [Operations reference](/api/operations).
 - **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — the checks `custom-block validate` runs, returning `{ valid, issues }`. It takes a JSON working file or the object a definition module exports, `dataSource` function included, so the same check can run in your own tests over the definitions you ship. Pass `compileMjml` in `options` to add the MJML compile check; without it that check is skipped.
 - **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — the structural check alone, synchronous. `checkCustomBlock` runs it first.
@@ -2417,6 +2433,134 @@ type BlockType =
   | 'menu' | 'table' | 'html' | 'countdown' | 'custom'
   | 'slot' | 'wrapper';
 ```
+
+## Localization {#localization}
+
+Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and `TemplateSettings.l10n`. The public declarations below are from `@templatical/types`; `definitions` defaults to `[]` for custom text-field discovery.
+
+```ts
+import type {
+  Block,
+  CustomBlockDefinition,
+  TemplateContent,
+} from "@templatical/types";
+
+export interface LocalizedText {
+  value: string;
+  /** `sourceHash(defaultValue)` when the value was written or kept. */
+  source: string;
+}
+
+/** One language's layer on a block. Members are omitted when empty. */
+export interface BlockLocaleLayer {
+  /** Translated text, by field path. */
+  text?: Record<string, LocalizedText>;
+  /** Any other property overridden for this language, by field path. */
+  set?: Record<string, unknown>;
+  /** The block is left out of this language. */
+  hidden?: true;
+}
+
+/** One language's layer on the template settings. */
+export interface SettingsLocaleLayer {
+  text?: Record<string, LocalizedText>;
+  set?: Record<string, unknown>;
+}
+
+export declare const TRANSLATABLE_FIELDS: Readonly<
+  Record<string, readonly string[]>
+>;
+export declare const SETTINGS_TRANSLATABLE_FIELDS: readonly string[];
+export declare function translatableFields(
+  block: Block,
+  definitions?: readonly CustomBlockDefinition[],
+): string[];
+export declare function readPath(target: unknown, path: string): unknown;
+export declare function sourceHash(value: string): string;
+export declare function localizeBlock(
+  block: Block,
+  locale: string,
+  defaultLocale: string,
+): Block;
+export declare function resolveLocale(
+  content: TemplateContent,
+  locale: string,
+): TemplateContent;
+export interface LocaleCoverage {
+  translated: string[];
+  missing: string[];
+  stale: string[];
+}
+export declare function localeCoverage(
+  content: TemplateContent,
+  locale: string,
+  definitions?: readonly CustomBlockDefinition[],
+): LocaleCoverage;
+export declare function defaultLocaleOf(content: TemplateContent): string;
+export declare function isLocaleTag(value: unknown): value is string;
+export declare function isSafePath(path: string): boolean;
+export declare function isTranslatablePath(
+  blockType: string,
+  path: string,
+): boolean;
+export declare function writePath(
+  target: Record<string, unknown>,
+  path: string,
+  value: unknown,
+): boolean;
+
+export interface AddLocaleOperation {
+  op: "addLocale";
+  locale: string;
+  /** Index in `settings.locales` to insert at; default the end. Undo uses it to restore order. */
+  position?: number;
+}
+
+export interface RemoveLocaleOperation {
+  op: "removeLocale";
+  locale: string;
+  /** Guard: the locale's block and settings layers must match exactly; absent means no layer. */
+  expect?: {
+    blocks: Record<string, BlockLocaleLayer>;
+    settings?: SettingsLocaleLayer;
+  };
+}
+
+export interface LocaleLayerExpect {
+  text?: Record<string, LocalizedText | null>;
+  /** `null` matches an absent override. */
+  set?: Record<string, unknown>;
+  hidden?: boolean;
+}
+
+export interface UpdateBlockLocaleOperation {
+  op: "updateBlockLocale";
+  blockId: string;
+  locale: string;
+  text?: Record<string, LocalizedText>;
+  set?: Record<string, unknown>;
+  unset?: string[];
+  hidden?: boolean;
+  expect?: LocaleLayerExpect;
+}
+
+export interface UpdateSettingsLocaleOperation {
+  op: "updateSettingsLocale";
+  locale: string;
+  text?: Record<string, LocalizedText>;
+  set?: Record<string, unknown>;
+  unset?: string[];
+  expect?: Omit<LocaleLayerExpect, "hidden">;
+}
+```
+
+`readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
+
+`sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale` projects a complete template, drops hidden blocks recursively, strips localization fields and throws `unknown_locale` for a version the template lacks. Both are pure.
+
+`localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed source hash goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
+
+The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
 
 ## Base Types
 
@@ -3043,7 +3187,7 @@ unsubscribe(); // Remove listener
 
 ## Operations and collaboration
 
-`Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
+`Operation`, including the locale operations, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
 
 ## AI
 
@@ -3761,6 +3905,10 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 `acquireLock` grants the lock or refuses with `lock_held` and the holder; `renewLock` extends it or refuses with `lock_lost`; `releaseLock` lets it go and never fails. Send `onLock` and `onUnlock` to the other sessions. The three methods are optional together: without them the editor takes no locks.
 
+`BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
+
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#upgrading).
+
 ### Refusals
 
 The editor reads `statusCode` for retry classification, plus `code` and `holder` or `holders` for refusals. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
@@ -3840,7 +3988,9 @@ A backend without a realtime channel can still collaborate in order: `join` answ
 
 ## Events
 
-`init({ onRemoteChange })` is called with `{ actor, ops }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+`init({ onRemoteChange })` is called with `{ actor, ops, locale }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+
+`locale: string | null` reports the first locale operation's language in a remote batch, otherwise `null`.
 
 ## In the playground
 
@@ -10668,6 +10818,8 @@ Two languages are in play, and they are not the same thing. `init({ locale })` s
 
 Writing direction is a third, independent setting. `settings.direction` (`"ltr"` or `"rtl"`) is the canvas `dir` and the rendered `<mjml dir>`. When unset, it follows the content language (`ar`, `he`, `fa`, `ur`, … → RTL). It does not follow `init({ locale })` or the host page. The "Right-to-left" toggle in Template Settings writes an explicit value; after that, locale no longer drives it.
 
+`localization: { locales: ["en", "de"] }` enables [language versions of one template](/guide/localized-templates), independently of the UI language. The author adds versions in **Languages**; `settings.locales` lists them and `l10n` stores their text, overrides and hidden blocks. Upgrade rendering, validation and collaboration before enabling it.
+
 ## Setting the locale {#setting-the-locale}
 
 Pass the `locale` option to `init()`:
@@ -11259,6 +11411,232 @@ A send path that re-renders from stored JSON without `layout` will drop the shel
 The **Layout** setup wraps the email in a card shell, which shows in preview and in the MJML export and never in the saved JSON.
 
 [Open in playground](https://play.templatical.com/scenes/layout)
+
+---
+
+# Localized templates
+
+Source: https://docs.templatical.com/guide/localized-templates
+
+Keep language versions of one email in one shared block tree with `settings.locales` and `l10n`; render a version with `resolveLocale` or check it with `--locale`.
+
+## Turn on language versions
+
+In a Vite app with `@templatical/editor` installed, use this HTML entry point. The blank template defaults to English. Under **Languages**, choose **Add language** and German; configuring the list alone writes no localization fields.
+
+```html
+<div id="editor" style="height: 100vh"></div>
+<script type="module">
+  import { init } from "@templatical/editor";
+  import "@templatical/editor/style.css";
+
+  const editor = await init({
+    container: "#editor",
+    localization: { locales: ["en", "de", "fr"] },
+  });
+  window.addEventListener("pagehide", () => editor.unmount(), { once: true });
+</script>
+```
+
+Upgrade the renderer, validator and collaboration backend before enabling this config; see [Upgrading](#upgrading). The UI language (`init({ locale })`) is independent of template language versions; see [Internationalization](/guide/i18n).
+
+## Data shape
+
+`settings.locale` is the fixed default language. `settings.locales?: string[]` lists the other versions, without duplicates or the default. Every key in `block.l10n` and `settings.l10n` must occur in that list.
+
+| Member | Contract |
+| --- | --- |
+| `block.l10n[locale].text` | `Record<string, LocalizedText>`; each value is `{ value: string; source: string }` |
+| `block.l10n[locale].set` | `Record<string, unknown>` for URLs, images, styling and other overrides; `null` means the property is absent in that language |
+| `block.l10n[locale].hidden` | `true` omits the block and its descendants from this language's render |
+| `settings.l10n[locale]` | `SettingsLocaleLayer`: optional `text` and `set`, without `hidden`; text covers `preheaderText`, overrides can set `direction`, fonts and colors |
+
+A field path joins property names with `.`. At an array, the next segment is the element's `id`, never its index: `items.nav-shop.text`, `rows.row-one.cells.cell-one.content`, `fieldValues.heading`, `styles.padding`. A field id is `<blockId>/<path>` or `settings/<path>`.
+
+`TRANSLATABLE_FIELDS` lists text patterns for each block type; `translatableFields(block, definitions)` expands element ids and custom `text` and `textarea` fields. `SETTINGS_TRANSLATABLE_FIELDS` lists settings text paths. A `text` path always names an existing text field. A `set` override may add an optional property absent from the default, but its parent must exist. It cannot change structural keys (`id`, `type`, `children`, `l10n`).
+
+A path occurs in at most one of `text` and `set`; writing either removes it from the other. Omit empty layers, `text`, `set`, `l10n` and `settings.locales` instead of storing `{}` or `[]`. See [Types](/api/types#localization) for exact declarations.
+
+## Editing in a language
+
+The **Languages** menu shows the default and each version with coverage. **Add language** offers configured languages the template lacks. **Remove {language}** asks for confirmation and removes that version's layers; removal is undoable.
+
+Text and property edits in a language view affect that language only. When a translatable field has a default value, an edit stores `text` with its `source` hash. If the default has no value, such as an absent preheader, the edit stores a `set` override without staleness tracking. An edit equal to the default leaves no override.
+
+**Differs in {language}** marks property overrides. The toolbar’s per-field **Reset** restores only that field from the default and keeps sibling overrides. The block marker’s **Reset** clears all of that block’s `set` overrides; it keeps its `text` translations. **Hide in {language}** leaves a ghost block on the canvas; **Show** restores it. The renderer omits hidden blocks.
+
+Add, move, delete, duplicate, paste and drag change the shared tree for every language. The editor shows **Structure changes apply to every language.** once per session per template. A version in `settings.locales` but absent from `localization.locales` remains selectable, read-only and marked **Not enabled**: both value edits and structure changes are refused.
+
+The active language is view state, never saved. Sessions start on the default. `editor.getLocale()` reads it; `editor.setLocale(tag)` selects the default or an existing version when localization is enabled. `onLocaleChange(tag)` reports selection changes, including fallback to the default after removal or loading another template. Unknown versions throw `SdkError` with code `unknown_locale`.
+
+## Missing values {#missing-values}
+
+A missing translation falls back to the default-language value. The block shows **Not translated**, coverage reports the field as missing, and `localization.untranslated` reports a warning. Empty defaults and hidden blocks do not count as missing. A deliberate empty translation is a value and does not trigger fallback.
+
+## Out-of-date values {#out-of-date-values}
+
+Each `LocalizedText.source` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
+
+**Keep** retains the translation and updates its source hash. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
+
+## Merge tags {#merge-tags}
+
+Keep the same merge tags, including repeated occurrences, in each translated text field. `localization.merge-tags-differ` compares tag multisets against the default; the editor uses the same merge-tag list in every language. The rule is a warning, but CLI validation treats a merge-tag mismatch as blocking and exits `1`, even when `valid: true`. Missing and stale translations alone remain advisory.
+
+## Rendering a language
+
+With `@templatical/types` and `@templatical/renderer` installed, this complete TypeScript example creates a version, writes text and direction, checks coverage and renders German MJML:
+
+```ts
+import {
+  applyOperations,
+  createDefaultTemplateContent,
+  createTitleBlock,
+  localeCoverage,
+  resolveLocale,
+  sourceHash,
+  type TemplateContent,
+} from "@templatical/types";
+import { renderToMjml } from "@templatical/renderer";
+
+const title = createTitleBlock({ content: "Welcome" });
+const original: TemplateContent = createDefaultTemplateContent("Arial", {
+  locale: "en",
+});
+original.blocks.push(title);
+const content = applyOperations(original, [
+  { op: "addLocale", locale: "de" },
+  {
+    op: "updateBlockLocale",
+    blockId: title.id,
+    locale: "de",
+    text: {
+      content: { value: "Willkommen", source: sourceHash(title.content) },
+    },
+  },
+  { op: "updateSettingsLocale", locale: "de", set: { direction: "ltr" } },
+]);
+const german = resolveLocale(content, "de");
+const coverage = localeCoverage(content, "de");
+const mjml = await renderToMjml(content, { locale: "de" });
+```
+
+`renderToMjml(content, { locale })` resolves that language before rendering. `editor.toMjml({ locale })` and `editor.toHtml({ locale })` accept the same optional selection. Omitting it renders the default, independently of the active editor view. Local MJML export needs the optional `@templatical/renderer` peer; HTML requires a `render.toHtml` or `render.compileMjml` provider. See [Rendering & Export](/backend/render).
+
+`resolveLocale(content, locale)` is pure: it applies text, overrides and settings, drops hidden blocks recursively, strips localization fields and sets the projected `settings.locale`. Missing values stay at the default. Unknown versions throw `unknown_locale`. The projected locale and direction determine MJML `lang` and `dir`. Save the original content, which retains all versions, rather than this projection.
+
+**Custom blocks:** any `text` or `set` entry in the requested locale’s layer removes the default-language `renderedHtml` from the projection. `renderedStylesheet` stays. Supply `renderCustomBlock` to render the localized fields; without it the block is omitted instead of showing the default-language pre-render. Blocks without a layer for that locale keep their cached HTML. The editor export path localizes before pre-rendering and produces translated custom HTML. See [Custom block rendering](/api/renderer-typescript#custom-blocks).
+
+## Operations and collaboration
+
+| Operation | Effect |
+| --- | --- |
+| `addLocale` | Adds a version to `settings.locales` |
+| `removeLocale` | Removes the version and every corresponding block/settings layer |
+| `updateBlockLocale` | Writes a block's `text`, `set`, `unset` paths and `hidden` for a locale |
+| `updateSettingsLocale` | Writes settings `text`, `set` and `unset` for a locale |
+
+Updates apply `unset`, then `text`, then `set`, then `hidden` (blocks only). `expect` guards the current layer: a mismatch is `precondition_failed`. Invalid paths, non-text `text` paths and invalid locale operations are `invalid_operation`. Only locale operations change localization fields; generic `updateBlock` and `updateSettings` refuse them. `addBlock` may carry `l10n`; `setContent` replaces everything. Use `applyOperations` and `invertOperations` from `@templatical/types`.
+
+`BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null` (also the absent default) for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a `fr` lock can coexist. Every other block operation conflicts with any other session's lock on X. Provider lock methods accept an optional locale. `onRemoteChange.locale` is the first locale operation's language in the batch, otherwise `null`. See [Collaboration](/backend/collaboration) for exact contracts.
+
+## Upgrading
+
+Upgrade the renderer, validator and collaboration backend **before** enabling `localization`. Older renderers ignore the fields and render the default. Older strict validators reject `l10n`; older collaboration backends reject the new operations as `invalid_operation`. A backend that ignores lock `locale` serializes per block.
+
+This is additive and opt-in: existing single-language templates need no migration and retain their load, edit, save and render behavior. Without `localization`, there is no language UI; existing layers survive default-language edits and saves. The editor writes localization fields only after configuration and an author adding a language.
+
+## Fully separate layouts
+
+For independent block trees or layouts in each language, keep separate templates and switch them with `editor.load(id)`. Language versions share one structure.
+
+## Limits
+
+- The default language cannot change once versions exist.
+- Direction can differ by language; automatic RTL mirroring is not implemented.
+- Repeatable custom-block text is override-only because its items have no ids; override the whole `fieldValues.<key>`.
+- A layout's own blocks (`init({ layout })`) are not localizable; content is localized before composition.
+- Menu items, table rows and cells with `.` in their ids cannot be localized. SDK-created ids never contain `.`.
+- Accepted tags have a 2–3 letter language plus optional 2–8 character alphanumeric subtags. Private-use (`x-…`) and grandfathered (`i-…`) tags are not accepted.
+- The Cloud editor does not support language versions yet: `initCloud()` ignores `localization` and logs a warning.
+- The SDK doesn't translate: you or your own pipeline write the values.
+- In a language view, AI chat edits the default language; its composer says **AI chat edits the default language.** **Fix with AI** and **Write alt text** are hidden in language views.
+
+- Comments and version history are per block and template, not per language.
+- The CLI has no custom-block definitions flag, so validation refuses custom `text` paths. Both `validate` and `render` validate without definitions. Use the library workflow below.
+- Localized custom blocks with any `text` or `set` entries need `renderCustomBlock`; without it they are omitted, including CLI rendering of custom `set` overrides. Their default-language cached HTML is discarded; stylesheets are retained.
+
+## Check your work
+
+For a saved `template.json` without custom `text` paths, run the CLI with the language selected:
+
+```bash
+npx -y @templatical/template-tools validate template.json --locale de --json
+npx -y @templatical/template-tools render template.json --locale de --format mjml --out template.de.mjml
+```
+
+`validate --locale de` checks structure and the projected content, including `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ`. Exit `0` means success, `1` means invalid structure, error-severity lint, a merge-tag mismatch or an unknown locale, `2` means misuse/tool failure (including a missing or empty `--locale` value), and `3` means a missing optional dependency. An unknown locale exits `1`, writes `unknown_locale` to stderr without a result document, including with `--json`. A missing or empty `--locale` value exits `2`. `valid: true` alone does not mean exit `0`. See [Template tools](/api/template-tools).
+
+For custom translations, the CLI cannot supply definitions and cannot render localized custom blocks with its own resolver. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, and supply `renderCustomBlock` for rendering. This complete TypeScript example requires `@templatical/types`, `@templatical/template-tools`, `@templatical/quality`, `@templatical/renderer` and `liquidjs`:
+
+```ts
+import {
+  createCustomBlock,
+  createDefaultTemplateContent,
+  sourceHash,
+  type CustomBlockDefinition,
+} from "@templatical/types";
+import { validateTemplate } from "@templatical/template-tools";
+import { lintTemplate } from "@templatical/quality";
+import { renderToMjml } from "@templatical/renderer";
+import { Liquid } from "liquidjs";
+
+const definitions: CustomBlockDefinition[] = [
+  {
+    type: "promo",
+    name: "Promo",
+    template: "<p>{{ headline }}</p>",
+    fields: [{ key: "headline", type: "text", label: "Headline" }],
+  },
+];
+const custom = createCustomBlock(definitions[0]);
+custom.fieldValues.headline = "Welcome";
+custom.renderedHtml = "<p>Welcome</p>";
+custom.l10n = {
+  de: {
+    text: {
+      "fieldValues.headline": {
+        value: "Willkommen",
+        source: sourceHash("Welcome"),
+      },
+    },
+  },
+};
+const content = createDefaultTemplateContent("Arial", { locale: "en" });
+content.settings.locales = ["de"];
+content.blocks = [custom];
+
+const validation = validateTemplate(content, definitions);
+if (!validation.valid) throw new Error(validation.errors.join("\n"));
+const issues = lintTemplate(content, {
+  customBlocks: definitions,
+  contentLocale: "de",
+});
+const engine = new Liquid();
+const mjml = await renderToMjml(content, {
+  locale: "de",
+  async renderCustomBlock(block) {
+    const definition = definitions.find(
+      (entry) => entry.type === block.customType,
+    );
+    if (!definition)
+      throw new Error(`Unknown custom block: ${block.customType}`);
+    return engine.parseAndRender(definition.template, block.fieldValues);
+  },
+});
+```
+
+Check `validation.valid`, inspect `issues`, and confirm the MJML contains `Willkommen` rather than the cached `Welcome`. See [Custom block rendering](/api/renderer-typescript#custom-blocks) and the [CLI library API](/api/template-tools#library-use).
 
 ---
 
@@ -15204,7 +15582,7 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every accessibility rule with severity, rationale, and examples.
-- [Options](../options) — shared across all five linters.
+- [Options](../options) — shared across all linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 - [Contributing locales](../contributing-locales) — adding rule messages + vague-text dictionaries.
@@ -15298,7 +15676,7 @@ const fragmentIssues = lintHtmlFragment('<div style="display:flex">Hi</div>', {
 });
 ```
 
-`lintTemplate` runs compatibility last, after accessibility, structure, links and deliverability. Set `compatibility: false` to disable the category, or set a rule to `"off"` in `compatibility.rules`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB). Every category must be `false` to prevent the editor's optional quality chunk from loading.
+`lintTemplate` runs compatibility after accessibility, structure, links and deliverability, then runs localization. Set `compatibility: false` to disable the category, or set a rule to `"off"` in `compatibility.rules`. `compatibility.thresholds.maxHtmlBytes` defaults to `92_160` bytes (90 KiB). Every category, including `localization`, must be `false` to prevent the editor's optional quality chunk from loading; use `localization: false` alongside the other category flags.
 
 `lintCompiledHtml(html, options?)` measures UTF-8 bytes and flags `compat.gmail-clipping` only when the compiled HTML exceeds that threshold. Google does not publish a clipping threshold; community tests in [email-bugs#41](https://github.com/hteumeuleu/email-bugs/issues/41) show Gmail clipping at **about 102 KB**, and sometimes earlier once a sending service adds its markup. The default margin allows for tracking links added by sending services. Quality never renders or compiles HTML itself:
 
@@ -15593,7 +15971,9 @@ Source: https://docs.templatical.com/quality/contributing-locales
 
 6. **Compatibility rule messages** (`src/compatibility/messages/{locale}.ts`) — `message` and `suggestion` for each `compat.*` rule, plus client grouping labels.
 
-Each set mirrors the editor's locale set. The structure, link, and deliverability linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
+7. **Localization rule messages** (`src/localization/messages/{locale}.ts`) — `message` and `suggestion` for each `localization.*` issue.
+
+Message datasets can cover different locales; an unbundled language falls back to English. Only accessibility uses vague-text dictionaries; the other linters translate their message text without a phrase dictionary.
 
 ## File layout
 
@@ -15627,6 +16007,11 @@ packages/quality/src/deliverability/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatDeliverabilityMessage(), getDeliverabilityMessages()
+
+packages/quality/src/localization/messages/
+  en.ts       ← source of truth
+  de.ts       ← annotated `typeof en`
+  index.ts    ← exports formatLocalizationMessage(), getLocalizationMessages()
 ```
 
 ## Adding a locale
@@ -15725,7 +16110,7 @@ const pt: typeof en = {
 export default pt;
 ```
 
-That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, and `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
+That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, `SUPPORTED_LINK_MESSAGE_LOCALES`, `SUPPORTED_DELIVERABILITY_MESSAGE_LOCALES`, `SUPPORTED_COMPATIBILITY_MESSAGE_LOCALES`, and `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit is needed. Update the corresponding locale and parity tests when adding a dataset.
 
 ## Phrase guidelines (vague-text dictionary)
 
@@ -15739,11 +16124,20 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 ## Match order
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), and `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All five fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), `formatLinkMessage(locale, ruleId, params?)` (links), `formatDeliverabilityMessage(locale, ruleId, params?)` (deliverability), `formatCompatibilityMessage(locale, ruleId, params?)` (compatibility) and `formatLocalizationMessage(locale, ruleId, params?)` (localization) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All fall back to English when the locale isn't bundled.
 
 ### 6. Compatibility rule messages
 
 Translate both fields of each `{ message, suggestion }` entry in `compatibility/messages/en.ts`. Preserve `{feature}`, `{unsupported}`, `{partial}`, `{size}`, `{max}`, and the feature placeholders. Keep family/platform labels and the `more` count localized. The formatter returns `{ message, suggestion }`; add the locale file to the existing glob layout.
+
+
+### 7. Localization rule messages
+
+Create `localization/messages/<lang>.ts` from `localization/messages/en.ts`. Use a base-language filename such as `pt.ts`: lookup lowercases the requested locale’s base language and falls back to English when that map is absent. Import the English map as a type with `import type en from "./en"`, annotate the locale map with `typeof en`, and export it as default, following `de.ts`.
+
+Translate both `message` and `suggestion` for `localization.untranslated`, `localization.stale`, and `localization.merge-tags-differ`. Preserve every `{field}` placeholder in both fields. `import.meta.glob` loads the file automatically; no registry edit is needed. `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` exposes the bundled locale keys; `getLocalizationMessages` and `formatLocalizationMessage` use the new map.
+
+Update `tests/localization/messages.test.ts`: include the added locale in the expected `SUPPORTED_LOCALIZATION_MESSAGE_LOCALES` list and extend rule-key and placeholder parity checks to the new map, comparing both `message` and `suggestion` with English. The current cases compare `en` and `de`. Then run `pnpm --filter @templatical/quality run typecheck` and `pnpm --filter @templatical/quality run test`. Call `formatLocalizationMessage` for the new locale and verify that both returned fields are translated and the `{field}` parameter is substituted.
 
 ---
 
@@ -15868,15 +16262,15 @@ Source: https://docs.templatical.com/quality/headless-usage
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
-`lintTemplate(content, options?)` runs every linter — accessibility, structure, links, deliverability, and compatibility — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
+`lintTemplate(content, options?)` runs every linter — accessibility, structure, links, deliverability, compatibility, and localization — and returns the merged `LintIssue[]`. Use it as the aggregate entry point to receive every registered category.
 
 ```ts
 import { lintTemplate } from "@templatical/quality";
 
-const issues = lintTemplate(content); // a11y, then structure, then link, then deliverability issues
+const issues = lintTemplate(content); // a11y, then structure, then link, then deliverability, compatibility and localization issues
 ```
 
-The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)`, `lintCompatibility(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false, deliverability: false, compatibility: false })` runs accessibility only.
+The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)`, `lintDeliverability(content, options?)`, `lintCompatibility(content, options?)`, `lintLocalization(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false, deliverability: false, compatibility: false, localization: false })` runs accessibility only.
 
 ## Validate before storing
 
@@ -15992,7 +16386,7 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`, `clients`, `excerpt`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility`, and `lintTemplate` fans out to all five.
+If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`, `clients`, `excerpt`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, and `lintLocalization`. `lintCompatibility` uses its separate scanner: `scanBlock` collects authored HTML/CSS and URL features, and `lintScan` applies compatibility rules to that scan. `lintTemplate` fans out to all categories.
 
 ---
 
@@ -16011,10 +16405,13 @@ Source: https://docs.templatical.com/quality/
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, relative URLs, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 | **[Deliverability](./deliverability/)** | Mismatched URL-shaped link text, shortener links, IP-address links, and image-led emails with little text | warning or info |
 | **[Compatibility](./compatibility/)** | Client-breaking pass-through HTML and CSS, plus compiled Gmail size | warning or info |
+| **[Localization](/guide/localized-templates)** | Missing translations, stale source hashes and differing merge tags | warning |
 
-All five linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`); set any of them to `false` to disable that linter entirely.
+All linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`, `localization.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`, `deliverability`, `compatibility`, `localization`); set any of them to `false` to disable that linter entirely.
 
-**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all five linters and returns the merged `LintIssue[]` (accessibility, then structure, then links, then deliverability, then compatibility). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all linters and returns the merged `LintIssue[]` (accessibility, then structure, then links, then deliverability, then compatibility, then localization). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+
+`contentLocale` selects the version to lint; `locale` selects messages. Dictionaries remain a union across languages. The three `localization.*` rules are listed in [Options](./options#localization), with their [fallback, staleness and merge-tag behavior](/guide/localized-templates).
 
 ## Architecture
 
@@ -16031,7 +16428,7 @@ All five linters return the same `LintIssue` shape and share the same options su
   <text x="100" y="76" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">from the editor or DB</text>
   <!-- Arrow -->
   <line x1="190" y1="50" x2="225" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
-  <!-- Step 2: Engines (five boxes stacked) -->
+  <!-- Step 2: Linter engines -->
   <rect x="230" y="2" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="16" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
   <text x="320" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* rules</text>
@@ -16048,6 +16445,8 @@ All five linters return the same `LintIssue` shape and share the same options su
   <rect x="230" y="146" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
   <text x="320" y="160" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintCompatibility()</text>
   <text x="320" y="172" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">compat.* rules</text>
+  <rect x="230" y="182" width="180" height="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="195" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLocalization()</text>
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
   <!-- Step 3: Output -->
   <rect x="450" y="10" width="180" height="80" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="10"/>
@@ -16199,7 +16598,7 @@ const issues = lintLinks(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "link."
 ```
 
-Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all five linters independently or merge results.
+Same signature as `lintAccessibility` and `lintStructure`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all linters independently or merge results.
 
 In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs every linter on every (debounced) content change. Link issues appear in the **Issues** sidebar tab alongside accessibility and structure issues.
 
@@ -16311,17 +16710,25 @@ Each link rule is destructive (strip href / change protocol) and the right answe
 
 Source: https://docs.templatical.com/quality/options
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility` all accept the same `LintOptions` shape. Every field is optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility`, and `lintLocalization` all accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
   disabled?: boolean;
   locale?: string;
+  contentLocale?: string;
+  customBlocks?: CustomBlockDefinition[];
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
   deliverability?: false | DeliverabilityLintOptions;
   compatibility?: false | CompatibilityLintOptions;
+  localization?: false | LocalizationLintOptions;
+}
+
+interface LocalizationLintOptions {
+  rules?: RuleOverrides;
 }
 
 interface AccessibilityLintOptions {
@@ -16379,7 +16786,7 @@ When `true`:
 Use this when a tenant has explicitly opted out, or to keep the default editor bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
 
 ::: tip Disabling every linter individually has the same effect
-The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
+The editor treats `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false, localization: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
 :::
 
 ## `locale`
@@ -16397,6 +16804,7 @@ lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
 lintDeliverability(content, { locale: "de" });
 lintCompatibility(content, { locale: "de" });
+lintLocalization(content, { contentLocale: "de", locale: "de" });
 
 // Editor — linter automatically follows the editor locale
 init({ locale: "de" });
@@ -16405,12 +16813,30 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` / `lintCompatibility(...)` directly) keep full control.
+Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` / `lintDeliverability(...)` / `lintCompatibility(...)` / `lintLocalization(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
 The dictionary is a union of every registered locale, so a German-locale email with an English `Click here` button still flags `a11y.link-vague-text` / `a11y.button-vague-label`, and a German `Jetzt kaufen` alt on an English-locale linked image still satisfies `a11y.img-linked-no-context`'s action-hint check. The `locale` option doesn't gate matching — it only drives message text.
 :::
+
+## `contentLocale`
+
+Selects the template language version linted by `lintTemplate`, defaulting to `content.settings.locale`. `locale` still selects message language. In the editor, `contentLocale` follows the active template language and `locale` follows the UI. Vague-text dictionaries remain a union across languages; `contentLocale` does not change them. An unknown content locale throws `SdkError` with code `unknown_locale`.
+
+`customBlocks?: CustomBlockDefinition[]` identifies custom `text` and `textarea` fields for localization checks (omitted: no custom text discovery). `mergeTagSyntax?: SyntaxPresetName | SyntaxPreset` selects merge-tag syntax for those checks; it defaults to Liquid.
+
+## `localization`
+
+Enabled by default for non-default versions. Set `localization: false` to suppress these checks, or use `localization.rules` with full rule ids to override severity (`"error"`, `"warning"`, `"info"`, `"off"`). `lintLocalization(content, options?)` and `LOCALIZATION_RULES` are exported for targeted checks; prefer `lintTemplate` to lint the projection and all categories.
+
+| Rule | Default | Meaning |
+| --- | --- | --- |
+| `localization.untranslated` | `warning` | A nonempty default text field has no translation |
+| `localization.stale` | `warning` | A translated field's source hash no longer matches the default |
+| `localization.merge-tags-differ` | `warning` | The translated text's merge-tag multiset differs from the default |
+
+Hidden blocks and their descendants are excluded. The default language produces no localization findings. See [Missing values](/guide/localized-templates#missing-values), [Out-of-date values](/guide/localized-templates#out-of-date-values) and [Merge tags](/guide/localized-templates#merge-tags). The CLI's `validate --locale` treats a merge-tag mismatch as blocking even at warning severity.
 
 ## `accessibility`
 
@@ -16596,7 +17022,7 @@ Enabled by default. Set `compatibility: false` to disable client compatibility c
 
 Source: https://docs.templatical.com/quality/severity-and-fixes
 
-Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, and `lintDeliverability`, and `lintCompatibility` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility`, and `lintLocalization` together.
 
 ## Severity model
 
@@ -16699,7 +17125,7 @@ const issues = lintStructure(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "structure."
 ```
 
-Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all five linters independently or merge results.
+Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run all linters independently or merge results.
 
 Structure-specific config lives under `LintOptions.structure`. Set `structure: false` to disable the linter entirely.
 
@@ -16709,12 +17135,12 @@ lintStructure(content, {
 });
 ```
 
-In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs all five linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
+In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs all linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
 
 ## Quick links
 
 - [Rule catalog](./rule-catalog) — every structure rule with severity, rationale, and an auto-fix note.
-- [Options](../options) — shared across all five linters.
+- [Options](../options) — shared across all linters.
 - [Severity & fixes](../severity-and-fixes) — how the severity model works and how auto-fix patches are applied.
 - [Headless usage](../headless-usage) — validating stored templates in CI.
 
@@ -16806,7 +17232,7 @@ You're not building a customer-facing product — you need a controlled tool for
 
 **Templatical fits because:**
 - Self-hostable in full. The SDK has no required cloud dependency.
-- Multilingual (English, German, Portuguese, Spanish, Catalan, French, Dutch, Japanese) out of the box, with a clean path to add more locales for international teams.
+- UI in 8 languages and language versions of a template: English, German, Portuguese, Spanish, Catalan, French, Dutch and Japanese UI, plus opt-in [template language versions](/guide/localized-templates).
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) inside your internal portal, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) in your job runners or send pipeline.

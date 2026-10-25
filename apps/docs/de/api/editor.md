@@ -79,6 +79,8 @@ unmount();
 | `templateSettings`   | `TemplateSettingsConfig`                                          | Nein     | Welche Template-Einstellungen das Einstellungs-Panel anbietet. `fields` ist eine Positivliste über `Exclude<keyof TemplateSettings, "locales" \| "l10n">` oder `false` für keine (dann entfällt der Tab). Ohne Angabe sind alle Einstellungen bearbeitbar. Siehe [Einstellungs-Panel einschränken](#einstellungs-panel-einschraenken)                                                                                                                                                                                                                                                                       |
 | `theme`              | `ThemeOverrides`                                                  | Nein     | Überschreibungen für Farb-Tokens. Unterstützt einen `dark`-Schlüssel für Dark-Mode-Überschreibungen. Siehe [Theming](/de/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | Nein     | UI-Farbschema. `'auto'` folgt den Systemeinstellungen. Standardwert ist `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `localization` | `{ locales: string[] }` | Nein | Aktiviert Template-Sprachversionen. Ohne Angabe keine Sprachen-UI; vorhandene Ebenen bleiben erhalten. Renderer, Validator und Kollaborationsbackend zuerst aktualisieren. `initCloud()` ignoriert dies und protokolliert eine Warnung. Siehe [Lokalisierte Templates](/de/guide/localized-templates). |
+| `onLocaleChange` | `(locale: string) => void` | Nein | Meldet Wechsel der aktiven Template-Sprache, einschließlich Rückkehr zum Standard. Die aktive Sprache ist ungespeicherter Ansichtsstatus. |
 | `locale`             | `string`                                                          | Nein     | Locale-Code (z. B. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Standardwert ist `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `branding`           | `boolean`                                                         | Nein     | Zeigt den "Powered by Templatical"-Footer. Standardwert `true`. Auf `false` setzen, um ihn auszublenden                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `smallScreenNotice`  | `boolean`                                                         | Nein     | Zeigt auf Viewports schmaler als ~768px einen Hinweis „Bitte größeren Bildschirm verwenden" anstelle des Editors. Standardwert `true`. Der Drag-and-Drop-Editor ist ein Desktop-Werkzeug und lässt sich auf einem Smartphone nicht sinnvoll darstellen. Auf `false` setzen, um den Editor bei jeder Breite zu rendern, wenn Sie kleine Bildschirme selbst behandeln                                                                                                                                                                                                                        |
@@ -302,7 +304,13 @@ router.beforeEach((to, from, next) => {
 
 `onDirtyChange` ist das gegenläufige Push-Pendant.
 
-### `toMjml()`
+### `getLocale()` / `setLocale(locale)`
+
+`getLocale(): string` liefert die aktive Template-Sprache, anfangs den Standard. `setLocale(locale: string): void` wählt bei aktivierter Lokalisierung den Standard oder eine vorhandene Version; eine unbekannte Version wirft `SdkError` mit Code `unknown_locale`. Eine gespeicherte Version außerhalb von `localization.locales` bleibt auswählbar, aber schreibgeschützt (**Nicht aktiviert**); Wert- und Strukturänderungen werden abgelehnt. Siehe [Bearbeitung in einer Sprache](/de/guide/localized-templates#bearbeitung-in-einer-sprache).
+
+`toMjml(options?: { locale?: string }): Promise<string>` und `toHtml(options?: { locale?: string }): Promise<string>` rendern die ausgewählte Version, etwa `editor.toMjml({ locale: "de" })`. Ohne `locale` gilt der Standard, unabhängig von der aktiven Ansicht. Unbekannte Versionen lehnen mit `unknown_locale` ab. Render-Provider erhalten den projizierten Inhalt ohne Lokalisierungsfelder.
+
+### `toMjml(options?)`
 
 Rendert den aktuellen Inhalt in MJML-Markup. Gibt ein `Promise<string>` zurück, da das Auflösen benutzerdefinierter Blöcke asynchrone Arbeit erfordern kann (der Liquid-Renderer des Editors wird bei Bedarf geladen).
 
@@ -312,7 +320,7 @@ const mjml = await editor.toMjml();
 
 Löst zuerst `render.toMjml` auf, wenn ein [`render`-Provider](/de/backend/render) es bereitstellt, danach den lokalen `@templatical/renderer`. Lehnt mit einem klaren Fehler ab, wenn keines von beiden verfügbar ist — der Renderer ist eine optionale Peer-Abhängigkeit, installieren Sie ihn also für lokalen MJML-Export. Siehe [Installation](/de/getting-started/installation).
 
-### `toHtml()`
+### `toHtml(options?)`
 
 Rendert den aktuellen Inhalt in versandfertiges HTML.
 

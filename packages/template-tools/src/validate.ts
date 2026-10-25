@@ -157,7 +157,7 @@ function validateLocalization(
   const checkedTag = (tag: string, where: string): string | undefined => {
     if (isLocaleTag(tag)) return tag.toLowerCase();
     errors.push(
-      `${where} must be a valid LOC1 locale tag (2–3 letter language, then 2–8 character subtags)`,
+      `${where} must be a valid locale tag (2–3 letter language, then 2–8 character subtags)`,
     );
     return undefined;
   };

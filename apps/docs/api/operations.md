@@ -64,7 +64,7 @@ A backend passes the locks it holds and the acting session: `applyOperations(con
 <!-- locale-operations:start -->
 ## Locale operations
 
-`addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations until LOC3; upgrade the renderer, validator and collaboration backend before storing localized content.
+`addLocale`, `removeLocale`, `updateBlockLocale` and `updateSettingsLocale` manage language versions in the SDK's shared tree. Cloud backends and hosted MCP do not support these operations; upgrade the renderer, validator and collaboration backend before storing localized content.
 
 The following batch starts with paragraph `b1` containing `<p>Original</p>`, default locale `en`, direction `ltr` and no language versions. It adds German, writes a German value, hides the block in German, overrides the direction, then removes German and its layers. `source` is `sourceHash("<p>Original</p>")`.
 

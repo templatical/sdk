@@ -51,6 +51,8 @@ npx skills update templatical
 - **Docs** — answer a question about the SDK from the reference
   documentation.
 
+Language versions of one template use the [Localize a template playbook](reference/localize.md): add a language, write text and overrides, validate and render per locale.
+
 ## Good to know
 
 ### Bring your own branding

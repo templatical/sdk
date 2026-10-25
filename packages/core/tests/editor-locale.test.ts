@@ -13,6 +13,8 @@ import {
   safeClone,
   sourceHash,
   type Block,
+  type CustomBlock,
+  type CustomBlockDefinition,
   type Template,
 } from "@templatical/types";
 import { useBlockActions } from "../src/block-actions";
@@ -269,6 +271,65 @@ describe("editor language routing", () => {
       },
     });
   });
+
+  it.each(["field reset", "typing the default"])(
+    "keeps custom render caches out of German edits and restores fallback after %s",
+    (reset) => {
+      const { editor } = german();
+      const definition: CustomBlockDefinition = {
+        type: "greeting",
+        name: "Greeting",
+        fields: [
+          {
+            key: "headline",
+            label: "Headline",
+            type: "text",
+            default: "Hello",
+          },
+        ],
+        template: "<p>{{ headline }}</p>",
+        stylesheet: ".greeting { color: red; }",
+      };
+      const block = createCustomBlock(definition);
+      block.id = "greeting";
+      block.renderedHtml = "<p>Hello</p>";
+      block.renderedStylesheet = definition.stylesheet;
+      editor.setCustomBlockDefinitions([definition]);
+      editor.addBlock(block);
+      const current = () => editor.content.value.blocks[2] as CustomBlock;
+
+      for (const headline of ["Hallo", "Guten Tag"]) {
+        editor.updateBlock("greeting", { fieldValues: { headline } });
+        expect.soft(current().l10n?.de).toEqual({
+          text: {
+            "fieldValues.headline": {
+              value: headline,
+              source: sourceHash("Hello"),
+            },
+          },
+        });
+        const projected = localizeBlock(current(), "de", "en") as CustomBlock;
+        expect.soft(projected).not.toHaveProperty("renderedHtml");
+        expect
+          .soft(projected.renderedStylesheet)
+          .toBe(".greeting { color: red; }");
+      }
+
+      if (reset === "field reset")
+        editor.resetLocaleFields("greeting", ["fieldValues.headline"]);
+      else
+        editor.updateBlock("greeting", { fieldValues: { headline: "Hello" } });
+
+      expect.soft(current()).not.toHaveProperty("l10n");
+      expect.soft(localizeBlock(current(), "de", "en")).toMatchObject({
+        fieldValues: { headline: "Hello" },
+        renderedHtml: "<p>Hello</p>",
+        renderedStylesheet: ".greeting { color: red; }",
+      });
+      expect(current().fieldValues).toEqual({ headline: "Hello" });
+      expect(current().renderedHtml).toBe("<p>Hello</p>");
+    },
+  );
 
   it("hides, keeps stale translations and resets specific fields or the whole layer", () => {
     const { editor } = german();

@@ -27,7 +27,7 @@ backend as an operation through `submit`, so `templates.save` receives only
 renames, and undo sends inverse operations the backend may refuse. The
 backend applies operations with `applyOperations` from `@templatical/types`
 and owns a lock by session id and user identity together. `onRemoteChange`
-reports another session's edits.
+reports another session's edits, including `locale: string | null` (the first locale operation's language, otherwise null). `BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` default to null for structure and the default language. `acquireLock`, `renewLock` and `releaseLock` accept `locale?: string | null` after `templateId, blockId`; forward it to the backend. Different language locks on one block may coexist; a null lock conflicts with all languages. Only `updateBlockLocale` uses a language lock; other block operations conflict with every other session's lock on that block.
 
 `ai` brings your own AI backend: one `false | fn` member per feature
 (`chat`, `fixFinding`, `rewrite`, `altText`), plus
@@ -47,7 +47,7 @@ button is the absent key, not a bug. `useSavedBlocks` / `useVersionHistory` /
 mounted**. They are not how you attach a provider to an editor that is
 already up.
 
-`localization: { locales: string[] }` enables template language versions in `init()`; `initCloud()` ignores it until LOC3.
+`localization: { locales: string[] }` enables template language versions in `init()`; `initCloud()` ignores it and logs a warning; the Cloud editor does not support language versions yet. Upgrade the renderer, validator and collaboration backend before enabling it; authors add versions in Languages, and stored versions outside this list stay read-only (Not enabled). See [localize.md](localize.md).
 `getLocale(): string` returns the active template language, initially the template default.
 `setLocale(locale: string): void` selects the default or an existing version; an unknown version throws `SdkError` with code `unknown_locale`.
 `onLocaleChange?: (locale: string) => void` receives the selected language after a change, including fallback to the default.

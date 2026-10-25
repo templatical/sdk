@@ -436,7 +436,7 @@ export async function bootstrapCloud(
   const { config, cloudTranslations } = options;
   if ((config as { localization?: unknown }).localization !== undefined) {
     logger.warn(
-      "initCloud ignores `localization` until Cloud supports language versions (LOC3).",
+      "initCloud ignores `localization`; the Cloud editor does not support language versions.",
     );
   }
 

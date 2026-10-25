@@ -94,6 +94,20 @@ type BlockType =
   | 'slot' | 'wrapper';
 ```
 
+## Localization {#localization}
+
+Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and `TemplateSettings.l10n`. The public declarations below are from `@templatical/types`; `definitions` defaults to `[]` for custom text-field discovery.
+
+<<< @/snippets/localization-contract.ts
+
+`readPath` resolves array elements by id and returns `undefined` for an unresolved path. `writePath` clones the value, treats `null` as property deletion and returns `false` when the parent cannot resolve. `isSafePath` rejects empty and prototype-key segments. `isLocaleTag` accepts a 2–3 letter language followed by optional 2–8 character alphanumeric subtags. `defaultLocaleOf` returns `settings.locale`, falling back to `en`.
+
+`sourceHash` is FNV-1a 32-bit over UTF-8 bytes, as eight lowercase hex digits: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projects one block without recursing or filtering hidden blocks. `resolveLocale` projects a complete template, drops hidden blocks recursively, strips localization fields and throws `unknown_locale` for a version the template lacks. Both are pure.
+
+`localeCoverage` returns field ids (`<blockId>/<path>` or `settings/<path>`) in document order, settings last. Missing nonempty defaults go in `missing`; text with a changed source hash goes in `stale`; current text goes in `translated`. Hidden blocks and their descendants are excluded. Pass custom definitions to discover `text` and `textarea` fields. Use coverage for a non-default version; it does not project or validate a locale for you.
+
+The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
+
 ## Base Types
 
 ### BaseBlock
@@ -719,7 +733,7 @@ unsubscribe(); // Remove listener
 
 ## Operations and collaboration
 
-`Operation` and its six members, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
+`Operation`, including the locale operations, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` and `getColumnCount` are described in the [Operations reference](/api/operations). The collaboration contract — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` and `CollaborationRemoteChange` — is on [Collaboration](/backend/collaboration). `Template` carries `revision` and `locks` for a collaborating store.
 
 ## AI
 

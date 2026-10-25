@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cloneBlock,
+  createCustomBlock,
   createTableBlock,
   isLocaleTag,
   localeCoverage,
@@ -219,6 +220,59 @@ describe("list elements whose ids contain dots", () => {
 });
 
 describe("localizeBlock and resolveLocale", () => {
+  it.each(["text", "set"] as const)(
+    "drops a custom block's default pre-render for a %s layer, preserving styles and fallback versions",
+    (kind) => {
+      const block = createCustomBlock({
+        type: "promo",
+        name: "Promo",
+        template: "",
+        fields: [],
+      });
+      block.fieldValues = { headline: "Welcome" };
+      block.renderedHtml = "<p>Welcome</p>";
+      block.renderedStylesheet = ".promo { color: red; }";
+      block.l10n = {
+        de:
+          kind === "text"
+            ? {
+                text: {
+                  "fieldValues.headline": {
+                    value: "Willkommen",
+                    source: sourceHash("Welcome"),
+                  },
+                },
+              }
+            : { set: { "fieldValues.headline": "Willkommen" } },
+      };
+      const content = base();
+      content.blocks = [block];
+      content.settings.locales = ["de", "fr"];
+      const before = JSON.stringify(content);
+      const view = localizeBlock(block, "de", "en");
+      expect(view).not.toHaveProperty("renderedHtml");
+      expect(view).toMatchObject({
+        fieldValues: { headline: "Willkommen" },
+        renderedStylesheet: block.renderedStylesheet,
+      });
+      expect(resolveLocale(content, "de").blocks[0]).not.toHaveProperty(
+        "renderedHtml",
+      );
+      expect(localizeBlock(block, "en", "en")).toHaveProperty(
+        "renderedHtml",
+        "<p>Welcome</p>",
+      );
+      expect(localizeBlock(block, "fr", "en")).toHaveProperty(
+        "renderedHtml",
+        "<p>Welcome</p>",
+      );
+      expect(
+        localizeBlock({ ...block, l10n: { de: { hidden: true } } }, "de", "en"),
+      ).toHaveProperty("renderedHtml", "<p>Welcome</p>");
+      expect(JSON.stringify(content)).toBe(before);
+    },
+  );
+
   it("applies text, set and settings, drops hidden blocks, and strips localization fields", () => {
     const projected = resolveLocale(base(), "de");
     expect((projected.blocks[0] as any).content).toBe(

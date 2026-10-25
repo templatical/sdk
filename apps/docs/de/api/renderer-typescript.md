@@ -52,6 +52,7 @@ const mjml = await renderToMjml(templateContent);
 
 ```ts
 interface RenderOptions {
+  locale?: string;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
@@ -64,6 +65,7 @@ interface RenderOptions {
 
 | Option | Default | Beschreibung |
 |--------|---------|-------------|
+| `locale` | `settings.locale` | Wählt die Template-Version; eine unbekannte Version lehnt mit `unknown_locale` ab. |
 | `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Stack, der an eine benutzerdefinierte Schriftart ohne eigenen `fallback` oder an eine einzelne, nicht eingebaute Schriftfamilie angehängt wird. Ein vollständiger Stack wird unverändert ausgegeben. |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
@@ -71,6 +73,8 @@ interface RenderOptions {
 | `blockRenderers` | `{}` | Typbezogene Renderer-Overrides, keyed nach `block.type`. Ein Countdown-GIF-Backend nutzt dies. Ein Override übernimmt die Prüfung auf „auf allen Viewports ausgeblendet“. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Wird einmal pro eindeutigem `customType` aufgerufen. Editor-Konsumenten übergeben das Registry-Stylesheet. Wenn weggelassen, wird stattdessen das `renderedStylesheet` jedes Typs ausgegeben (die Kopie, die der Editor schreibt, bevor ein Render-Provider oder der Cloud-Speicher den Inhalt sieht); wird es übergeben, entscheidet es für jeden Typ, und die Kopien werden ignoriert. |
 | `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${dir}/${platform}.png` aufgelöst, wobei `dir` der Stil ist, bei einem `iconTone` von `dark` oder `light` gefolgt von `-${tone}`. Siehe [Social-Media-Icons](#social-media-icons) unten. |
+
+`locale?: string` wählt eine Template-Sprachversion; ohne Angabe wird `settings.locale`, der Standard, gerendert. Unbekannte Versionen lehnen mit `SdkError`-Code `unknown_locale` ab. Die Projektion entfernt ausgeblendete Blöcke, wendet Text und Überschreibungen an und setzt MJML-`lang` und `dir`. Siehe [Lokalisierte Templates](/de/guide/localized-templates#eine-sprache-rendern).
 
 ### Benutzerdefinierte Blöcke
 

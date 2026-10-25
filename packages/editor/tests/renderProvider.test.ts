@@ -272,6 +272,34 @@ describe('buildRenderPayload', () => {
     };
   }
 
+  it("discards default custom HTML before pre-rendering the translated payload", async () => {
+    const custom = makeCustomBlock("banner");
+    custom.fieldValues = { headline: "Welcome" };
+    custom.renderedHtml = "<p>Welcome</p>";
+    custom.renderedStylesheet = ".tplc-banner-a { color: red; }";
+    custom.l10n = { de: { set: { "fieldValues.headline": "Willkommen" } } };
+    const content = makeContent([custom]);
+    content.settings.locales = ["de"];
+    const before = JSON.stringify(content);
+    let localizedInput: CustomBlock | undefined;
+    renderCustomBlock.mockImplementation(async (block: CustomBlock) => {
+      localizedInput = structuredClone(block);
+      return `<p>${block.fieldValues.headline}</p>`;
+    });
+    const payload = await buildRenderPayload(source(content), { locale: "de" });
+    expect(localizedInput).not.toHaveProperty("renderedHtml");
+    expect(localizedInput).toMatchObject({
+      fieldValues: { headline: "Willkommen" },
+    });
+    expect(payload.content.blocks[0]).toMatchObject({
+      renderedHtml: "<p>Willkommen</p>",
+      renderedStylesheet: custom.renderedStylesheet,
+    });
+    const { renderToMjml } = await import("@templatical/renderer");
+    expect(await renderToMjml(payload.content)).toContain("<p>Willkommen</p>");
+    expect(JSON.stringify(content)).toBe(before);
+  });
+
   it('pre-renders every top-level custom block into renderedHtml', async () => {
     const custom = makeCustomBlock('qrcode');
     const payload = await buildRenderPayload(source(makeContent([custom])));

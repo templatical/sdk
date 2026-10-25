@@ -39,13 +39,13 @@ Add `--json` for machine-readable result output on stdout when a command produce
 
 `--json` (see below) is a global flag — it works identically on every command above, not just some of them. Every command that touches a file also accepts `--cwd <dir>`, resolving relative paths against it instead of the process's own working directory.
 
-### `validate <file>`
+### `validate <file> [--locale <tag>]`
 
 ```bash
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Structural validation against the generated JSON Schema — discriminator-aware, so a bad button reports `blocks[2] (button) must have required property 'url'` rather than a raw `anyOf` failure. Once the structure passes, `@templatical/quality`'s full lint (accessibility, structure, links — 35 rules) runs on top. No command-specific flags.
+Structural validation against the generated JSON Schema, followed by `lintTemplate` over accessibility, structure, links, deliverability, compatibility and localization. `--locale de` selects the version to lint (the default is `settings.locale`); it does not select message language. `--html` also compiles the selected version to check HTML size and needs `mjml`. Missing/stale translations are warnings; `localization.merge-tags-differ` is a warning that still causes exit `1`, even with `valid: true`. An unknown locale exits `1`, writing `unknown_locale` to stderr without a result document (also with `--json`); an empty or missing `--locale` value is misuse (exit `2`). See [Localized templates](/guide/localized-templates#check-your-work).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -55,13 +55,15 @@ npx -y @templatical/template-tools schema --out block-schema.json
 
 Prints the same JSON Schema `validate` checks against — the block model as a plain JSON Schema document, useful for grounding an LLM prompt or generating types in another language. Without `--out`/`-o` it prints to stdout; with it, writes to that file instead (creating parent directories as needed) and prints nothing to stdout.
 
-### `render <file> [--format mjml|html] [--out <file> | -o <file>]`
+### `render <file> [--locale <tag>] [--format mjml|html] [--out <file> | -o <file>]`
 
 ```bash
 npx -y @templatical/template-tools render emails/welcome.json --format html -o welcome.html
 ```
 
 Defaults to `--format mjml`. `--format html` compiles that MJML further and needs the optional `mjml` package — see "Optional dependencies" below. The template is validated structurally before rendering starts, so an invalid template fails with the same error list `validate` would give you, not a renderer crash. Without `--out`/`-o`, the result prints to stdout.
+
+`--locale de` renders German; omit it to render the default. Unknown locales exit `1` with `unknown_locale` on stderr and no result document, including with `--json`. Missing/empty `--locale` values exit `2`. The renderer resolves text, overrides, hidden blocks and settings before emitting MJML.
 
 ### `edit <file> --op '<json>'` or `--ops <file>`
 
@@ -131,7 +133,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 | Code | Meaning |
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
-| `1` | Invalid structure or any `severity: "error"` lint issue (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
+| `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
 | `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
@@ -143,9 +145,9 @@ It means the CLI did its job and hit an optional piece it can't do without — t
 
 When a command produces a result, `--json` emits a parseable result document on stdout. Usage and tool errors (2, 3) go to stderr without a result document. Diagnostics and progress notes also go to stderr; check the exit code before consuming stdout.
 
-`validate --json` emits `{ valid, errors, issues }` (plus `htmlBytes` with `--html`). `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure and link finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
+`validate --json` emits `{ valid, errors, issues }` (plus `htmlBytes` with `--html`). `errors` is the structural error list, populated only when `valid` is `false`. `issues` is `@templatical/quality`'s complete report against the template — every accessibility, structure, link, deliverability, compatibility and localization finding, at whatever severity that rule defaults to (`error`, `warning`, or `info`) — regardless of whether that finding affected the exit code.
 
-`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info never change the exit code. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
+`valid: true` alone does not mean exit 0: `valid` reports structural validity, while any `severity: "error"` lint issue makes `validate` exit 1 with `valid: true` and an empty `errors` array. Warnings and info are advisory except for `localization.merge-tags-differ`, which causes exit 1. Act on the exit code as the command's result; `issues.length > 0` alone is not a failure condition.
 
 ## Using it in CI
 
@@ -195,6 +197,8 @@ This reports exactly what's resolvable from your current working directory right
 
 Install either kind of optional dependency in whatever project the CLI is invoked from — both are resolved starting from your current working directory (or `--cwd`, if you passed it).
 
+The CLI has no flag for custom-block definitions: both `validate` and `render` call validation without them, so custom `text` paths are refused. Use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Render with `renderCustomBlock` to produce localized custom HTML; a custom block with any localized text/property entry loses its default-language `renderedHtml` and is omitted without a resolver. `renderedStylesheet` stays; blocks without a layer for that locale retain cached HTML. See the [complete library example](/guide/localized-templates#check-your-work) and [Custom block rendering](/api/renderer-typescript#custom-blocks).
+
 ## Library use
 
 Each entry point serves a different job.
@@ -220,8 +224,8 @@ import {
 ```
 
 - **`schema`** — the generated JSON Schema for `TemplateContent`, as a plain object. Same content the `schema` command prints and the published `schema.json` file (below) contains.
-- **`validateTemplate(data: unknown): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step and no other workspace package.
-- **`runQualityLint(data: unknown): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw.
+- **`validateTemplate(data: unknown, definitions?: readonly CustomBlockDefinition[]): ValidationResult`** — the same discriminator-aware structural check `validate` runs. Synchronous; needs only `ajv` and the committed schema, no build step. `definitions` defaults to `[]`; pass matching custom definitions to accept their translated `text` paths.
+- **`runQualityLint(data: unknown, options?: LintOptions): QualityLintResult`** — `@templatical/quality`'s `lintTemplate` layered on top, assuming structurally-valid input. Wrapped in a try/catch, so a malformed template can't crash the caller: `{ issues, error? }`, where `error` is only set if the linter itself threw. `options` defaults to `{}`; `unknown_locale` is rethrown.
 - **`applyOperations(content, ops, context?)`**, **`OperationError`** and **`getColumnCount(layout)`** — the operation engine behind `edit`, re-exported from `@templatical/types`. `applyOperations` returns a new document and never changes `content`; a refused batch throws an `OperationError` carrying `code` and `opIndex`. See the [Operations reference](/api/operations).
 - **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — the checks `custom-block validate` runs, returning `{ valid, issues }`. It takes a JSON working file or the object a definition module exports, `dataSource` function included, so the same check can run in your own tests over the definitions you ship. Pass `compileMjml` in `options` to add the MJML compile check; without it that check is skipped.
 - **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — the structural check alone, synchronous. `checkCustomBlock` runs it first.

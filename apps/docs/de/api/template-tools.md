@@ -39,13 +39,13 @@ Mit `--json` erscheint ein maschinenlesbares Ergebnis auf stdout, wenn ein Befeh
 
 `--json` (siehe unten) ist ein globales Flag — es funktioniert bei jedem der obigen Befehle identisch, nicht nur bei einigen. Jeder Befehl, der eine Datei anfasst, akzeptiert außerdem `--cwd <dir>` und löst relative Pfade dagegen auf, statt gegen das eigene Arbeitsverzeichnis des Prozesses.
 
-### `validate <file>`
+### `validate <file> [--locale <tag>]`
 
 ```bash
 npx -y @templatical/template-tools validate emails/welcome.json
 ```
 
-Strukturelle Validierung gegen das generierte JSON-Schema — diskriminator-bewusst, sodass ein fehlerhafter Button `blocks[2] (button) must have required property 'url'` meldet statt eines rohen `anyOf`-Fehlers. Sobald die Struktur besteht, läuft darauf der vollständige Lint von `@templatical/quality` (Barrierefreiheit, Struktur, Links — 35 Regeln). Keine befehlsspezifischen Flags.
+Strukturelle Validierung gegen das generierte JSON-Schema, danach `lintTemplate` für Barrierefreiheit, Struktur, Links, Zustellbarkeit, Kompatibilität und Lokalisierung. `--locale de` wählt die geprüfte Version (Standard ist `settings.locale`), nicht die Meldungssprache. `--html` kompiliert die gewählte Version zur Prüfung der HTML-Größe und benötigt `mjml`. Fehlende/veraltete Übersetzungen sind Warnungen; `localization.merge-tags-differ` ist eine Warnung, die trotzdem Exit `1` auslöst, auch bei `valid: true`. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr und liefert kein Ergebnisdokument (auch mit `--json`); ein leerer oder fehlender `--locale`-Wert ist Fehlbedienung (Exit `2`). Siehe [Lokalisierte Templates](/de/guide/localized-templates#ergebnis-prufen).
 
 ### `schema [--out <file> | -o <file>]`
 
@@ -55,13 +55,15 @@ npx -y @templatical/template-tools schema --out block-schema.json
 
 Gibt dasselbe JSON-Schema aus, gegen das `validate` prüft — das Blockmodell als reines JSON-Schema-Dokument, nützlich, um einen LLM-Prompt zu grounden oder Typen in einer anderen Sprache zu generieren. Ohne `--out`/`-o` wird auf stdout ausgegeben; damit wird stattdessen in diese Datei geschrieben (übergeordnete Verzeichnisse werden bei Bedarf angelegt), und es erscheint nichts auf stdout.
 
-### `render <file> [--format mjml|html] [--out <file> | -o <file>]`
+### `render <file> [--locale <tag>] [--format mjml|html] [--out <file> | -o <file>]`
 
 ```bash
 npx -y @templatical/template-tools render emails/welcome.json --format html -o welcome.html
 ```
 
 Standardmäßig `--format mjml`. `--format html` kompiliert dieses MJML weiter und benötigt das optionale Paket `mjml` — siehe „Optionale Abhängigkeiten" unten. Das Template wird vor dem Rendern strukturell validiert, sodass ein ungültiges Template mit derselben Fehlerliste scheitert, die auch `validate` liefern würde, statt mit einem Renderer-Absturz. Ohne `--out`/`-o` erscheint das Ergebnis auf stdout.
+
+`--locale de` rendert Deutsch; ohne Angabe wird der Standard gerendert. Unbekannte Locales ergeben Exit `1` mit `unknown_locale` auf stderr und ohne Ergebnisdokument, auch mit `--json`. Fehlende/leere `--locale`-Werte ergeben Exit `2`. Der Renderer löst Text, Überschreibungen, ausgeblendete Blöcke und Einstellungen vor der MJML-Ausgabe auf.
 
 ### `edit <file> --op '<json>'` oder `--ops <file>`
 
@@ -131,7 +133,7 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 | Code | Bedeutung |
 |---|---|
 | `0` | Gültig, ohne Lint-Probleme mit Schweregrad `error` bei `validate`; Erfolg bei anderen Befehlen. |
-| `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
+| `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"`, oder `localization.merge-tags-differ` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
 | `2` | Fehlbedienung oder ein defektes Tool — falsche Flags, ein fehlendes Argument, unlesbare oder nicht parsbare Eingaben oder ein unerwarteter interner Fehler. |
 | `3` | Eine optionale Abhängigkeit fehlt. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
@@ -143,9 +145,9 @@ Er bedeutet, dass die CLI ihre Arbeit getan hat und dabei auf einen optionalen B
 
 Wenn ein Befehl ein Ergebnis erzeugt, gibt `--json` ein parsbares Ergebnisdokument auf stdout aus. Nutzungs- und Tool-Fehler (2, 3) gehen ohne Ergebnisdokument an stderr. Diagnosen und Fortschrittsmeldungen gehen ebenfalls an stderr; prüfen Sie den Exit-Code, bevor Sie stdout verarbeiten.
 
-`validate --json` liefert `{ valid, errors, issues }`. `errors` ist die Liste der Strukturfehler, nur gefüllt, wenn `valid` auf `false` steht. `issues` ist der vollständige Bericht von `@templatical/quality` zum Template — jedes Barrierefreiheits-, Struktur- und Link-Problem, mit dem Schweregrad, den die jeweilige Regel standardmäßig hat (`error`, `warning` oder `info`) — unabhängig davon, ob dieses Problem den Exit-Code beeinflusst hat.
+`validate --json` liefert `{ valid, errors, issues }`. `errors` ist die Liste der Strukturfehler, nur gefüllt, wenn `valid` auf `false` steht. `issues` ist der vollständige Bericht von `@templatical/quality` zum Template — jedes Barrierefreiheits-, Struktur-, Link-, Zustellbarkeits-, Kompatibilitäts- und Lokalisierungsproblem, mit dem Schweregrad, den die jeweilige Regel standardmäßig hat (`error`, `warning` oder `info`) — unabhängig davon, ob dieses Problem den Exit-Code beeinflusst hat.
 
-`valid: true` allein bedeutet nicht Exit-Code 0: `valid` beschreibt die strukturelle Gültigkeit, während jedes Lint-Problem mit `severity: "error"` bei `validate` zu Exit-Code 1 führt, mit `valid: true` und einem leeren `errors`-Array. Warnungen und Info-Meldungen ändern den Exit-Code nie. Verwenden Sie den Exit-Code als Ergebnis des Befehls; `issues.length > 0` allein ist kein Fehlerkriterium.
+`valid: true` allein bedeutet nicht Exit-Code 0: `valid` beschreibt die strukturelle Gültigkeit, während jedes Lint-Problem mit `severity: "error"` bei `validate` zu Exit-Code 1 führt, mit `valid: true` und einem leeren `errors`-Array. Warnungen und Info-Meldungen sind Hinweise, außer `localization.merge-tags-differ`: Diese Regel verursacht Exit-Code 1. Verwenden Sie den Exit-Code als Ergebnis des Befehls; `issues.length > 0` allein ist kein Fehlerkriterium.
 
 ## Einsatz in CI
 
@@ -195,6 +197,8 @@ Das meldet exakt, was gerade aus Ihrem aktuellen Arbeitsverzeichnis auflösbar i
 
 Installieren Sie jede Art optionaler Abhängigkeit in dem Projekt, aus dem heraus die CLI aufgerufen wird — beide werden ausgehend von Ihrem aktuellen Arbeitsverzeichnis aufgelöst (oder `--cwd`, falls angegeben).
 
+Die CLI hat kein Flag für Definitionen benutzerdefinierter Blöcke: `validate` und `render` validieren ohne Definitionen und lehnen deshalb benutzerdefinierte `text`-Pfade ab. Verwenden Sie `validateTemplate(content, definitions)`, dann `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`. Rendern Sie mit `renderCustomBlock`, um lokalisiertes benutzerdefiniertes HTML zu erzeugen; ein benutzerdefinierter Block mit lokalisierten Text-/Eigenschaftseinträgen verliert sein Standardsprach-`renderedHtml` und wird ohne Resolver ausgelassen. `renderedStylesheet` bleibt erhalten; Blöcke ohne Ebene für diese Sprache behalten zwischengespeichertes HTML. Siehe das [vollständige Bibliotheksbeispiel](/de/guide/localized-templates#ergebnis-prufen) und [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
+
 ## Nutzung als Bibliothek
 
 Jeder Einstiegspunkt dient einer anderen Aufgabe.
@@ -220,8 +224,8 @@ import {
 ```
 
 - **`schema`** — das generierte JSON-Schema für `TemplateContent`, als einfaches Objekt. Derselbe Inhalt, den der Befehl `schema` ausgibt und den die veröffentlichte Datei `schema.json` (unten) enthält.
-- **`validateTemplate(data: unknown): ValidationResult`** — dieselbe diskriminator-bewusste Strukturprüfung, die `validate` ausführt. Synchron; braucht nur `ajv` und das eingecheckte Schema, keinen Build-Schritt und kein weiteres Workspace-Paket.
-- **`runQualityLint(data: unknown): QualityLintResult`** — der `lintTemplate` von `@templatical/quality`, darübergelegt, unter der Annahme strukturell gültiger Eingabe. In try/catch eingehüllt, sodass ein fehlerhaftes Template den Aufrufer nicht abstürzen lassen kann: `{ issues, error? }`, wobei `error` nur gesetzt ist, wenn der Linter selbst einen Fehler geworfen hat.
+- **`validateTemplate(data: unknown, definitions?: readonly CustomBlockDefinition[]): ValidationResult`** — dieselbe diskriminator-bewusste Strukturprüfung, die `validate` ausführt. Synchron; braucht nur `ajv` und das eingecheckte Schema, keinen Build-Schritt. `definitions` ist standardmäßig `[]`; übergeben Sie passende benutzerdefinierte Definitionen, um deren übersetzte `text`-Pfade zu akzeptieren.
+- **`runQualityLint(data: unknown, options?: LintOptions): QualityLintResult`** — der `lintTemplate` von `@templatical/quality`, darübergelegt, unter der Annahme strukturell gültiger Eingabe. In try/catch eingehüllt, sodass ein fehlerhaftes Template den Aufrufer nicht abstürzen lassen kann: `{ issues, error? }`, wobei `error` nur gesetzt ist, wenn der Linter selbst einen Fehler geworfen hat. `options` ist standardmäßig `{}`; `unknown_locale` wird erneut geworfen.
 - **`applyOperations(content, ops, context?)`**, **`OperationError`** und **`getColumnCount(layout)`** — die Operations-Engine hinter `edit`, aus `@templatical/types` re-exportiert. `applyOperations` liefert ein neues Dokument und verändert `content` nie; ein abgelehnter Batch wirft einen `OperationError` mit `code` und `opIndex`. Siehe die [Operations-Referenz](/de/api/operations).
 - **`checkCustomBlock(data: unknown, options?: CheckCustomBlockOptions): Promise<CustomBlockCheckResult>`** — die Prüfungen, die `custom-block validate` ausführt, mit dem Ergebnis `{ valid, issues }`. Sie nimmt eine JSON-Arbeitsdatei oder das Objekt, das ein Definitionsmodul exportiert, inklusive der `dataSource`-Funktion, sodass dieselbe Prüfung in Ihren eigenen Tests über die ausgelieferten Definitionen laufen kann. Übergeben Sie `compileMjml` in `options`, um die MJML-Kompilierprüfung hinzuzufügen; ohne diese Option wird sie übersprungen.
 - **`validateCustomBlockDefinition(data: unknown): CustomBlockCheckResult`** — nur die Strukturprüfung, synchron. `checkCustomBlock` führt sie zuerst aus.

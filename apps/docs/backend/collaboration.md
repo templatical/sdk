@@ -96,6 +96,10 @@ Answer with every batch after `revision`, in order. When you no longer have them
 
 `acquireLock` grants the lock or refuses with `lock_held` and the holder; `renewLock` extends it or refuses with `lock_lost`; `releaseLock` lets it go and never fails. Send `onLock` and `onUnlock` to the other sessions. The three methods are optional together: without them the editor takes no locks.
 
+`BlockLock.locale?: string | null` distinguishes language locks; absence means `null`, the default language and structure. The signatures are `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` and `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Forward locale to the backend and through `onLock` / `onUnlock(blockId, sessionId, locale?)`.
+
+`updateBlockLocale` on (X, de) conflicts with another session's (X, de) or (X, null) lock; (X, fr) can coexist. Every other block operation conflicts with every other session's lock on X. Pass `locale` through to `OperationLock` when calling `applyOperations`; a backend ignoring it serializes per block. Upgrade the backend before enabling [language versions](/guide/localized-templates#upgrading).
+
 ### Refusals
 
 The editor reads `statusCode` for retry classification, plus `code` and `holder` or `holders` for refusals. `CollaborationConflict` from `@templatical/types` carries them, and any error with the same fields works.
@@ -175,7 +179,9 @@ A backend without a realtime channel can still collaborate in order: `join` answ
 
 ## Events
 
-`init({ onRemoteChange })` is called with `{ actor, ops }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+`init({ onRemoteChange })` is called with `{ actor, ops, locale }` after another session's batch is applied on the canvas. It isn't called for this editor's own edits, nor for a re-sync that reloads the template.
+
+`locale: string | null` reports the first locale operation's language in a remote batch, otherwise `null`.
 
 ## In the playground
 

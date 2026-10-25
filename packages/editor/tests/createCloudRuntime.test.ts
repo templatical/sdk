@@ -1616,12 +1616,12 @@ describe("bootstrapCloud — versionHistory events", () => {
   });
 });
 
-it("warns that initCloud ignores localization until LOC3", async () => {
+it("warns that the Cloud editor does not support language versions", async () => {
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   try {
     await bootstrap({ localization: { locales: ["de"] } });
     expect(warn.mock.calls.flat().join(" ")).toContain(
-      "initCloud ignores `localization` until Cloud supports language versions (LOC3).",
+      "initCloud ignores `localization`; the Cloud editor does not support language versions.",
     );
   } finally {
     warn.mockRestore();
@@ -1679,7 +1679,7 @@ it("integrated initCloud ignores localization and edits the default view", async
     instance = await initCloud(config);
     await nextTick();
     expect(warn.mock.calls.flat().join(" ")).toContain(
-      "initCloud ignores `localization` until Cloud supports language versions (LOC3).",
+      "initCloud ignores `localization`; the Cloud editor does not support language versions.",
     );
     expect(instance.getLocale()).toBe("en");
     expect(() => instance!.setLocale("de")).toThrow(

@@ -22,7 +22,14 @@ const isIdList = (value: unknown): value is Json[] =>
   Array.isArray(value) &&
   value.length > 0 &&
   value.every((item) => isRecord(item) && typeof item.id === "string");
-const SKIP = new Set(["id", "type", "children", "columns", "l10n"]);
+const SKIP = new Set([
+  "id",
+  "type",
+  "children",
+  "columns",
+  "l10n",
+  "renderedHtml",
+]);
 
 /** Restore requested fields in a projection, preserving sibling overrides. */
 export function resetLocalizedFields(

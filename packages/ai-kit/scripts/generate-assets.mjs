@@ -31,7 +31,7 @@ const read = (rel) => readFileSync(join(pkg, rel), "utf8");
 const prompt = (rel) => read(rel).replace(/\n$/, "");
 const json = (rel) => JSON.parse(read(rel));
 
-/** LOC1's locale operations are documented but aren't part of the AI contract. */
+/** The locale operations are documented but aren't part of the AI contract. */
 export function stripLocaleOperations(source) {
   return source.replace(
     /<!-- locale-operations:start -->[\s\S]*?<!-- locale-operations:end -->\n\n?/g,

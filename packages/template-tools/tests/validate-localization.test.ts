@@ -56,14 +56,14 @@ const invalid: [string, (content: any) => void, RegExp][] = [
     (c) => {
       c.settings.locales = ["x-acme"];
     },
-    /LOC1 locale tag/,
+    /must be a valid locale tag \(2–3 letter language, then 2–8 character subtags\)/,
   ],
   [
     "grandfathered tag",
     (c) => {
       c.settings.locales = ["i-klingon"];
     },
-    /LOC1 locale tag/,
+    /must be a valid locale tag \(2–3 letter language, then 2–8 character subtags\)/,
   ],
   ...(["text", "set"] as const).map(
     (kind): [string, (content: any) => void, RegExp] => [
@@ -118,14 +118,14 @@ const invalid: [string, (content: any) => void, RegExp][] = [
     (c) => {
       c.settings.locale = "en_US";
     },
-    /LOC1 locale tag/,
+    /must be a valid locale tag \(2–3 letter language, then 2–8 character subtags\)/,
   ],
   [
     "invalid added tag",
     (c) => {
       c.settings.locales = ["de_DE"];
     },
-    /LOC1 locale tag/,
+    /must be a valid locale tag \(2–3 letter language, then 2–8 character subtags\)/,
   ],
   [
     "duplicate locale",

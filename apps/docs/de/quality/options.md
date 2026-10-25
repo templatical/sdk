@@ -1,16 +1,24 @@
 # Optionen
 
-`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks` und `lintDeliverability` und `lintCompatibility` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, `lintLinks`, `lintDeliverability`, `lintCompatibility` und `lintLocalization` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
 
 ```ts
 interface LintOptions {
   disabled?: boolean;
   locale?: string;
+  contentLocale?: string;
+  customBlocks?: CustomBlockDefinition[];
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   accessibility?: false | AccessibilityLintOptions;
   structure?: false | StructureLintOptions;
   links?: false | LinksLintOptions;
   deliverability?: false | DeliverabilityLintOptions;
   compatibility?: false | CompatibilityLintOptions;
+  localization?: false | LocalizationLintOptions;
+}
+
+interface LocalizationLintOptions {
+  rules?: RuleOverrides;
 }
 
 interface AccessibilityLintOptions {
@@ -68,7 +76,7 @@ Bei `true`:
 Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-Editor-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
 
 ::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
-Der Editor behandelt `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
+Der Editor behandelt `{ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false, localization: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
 :::
 
 ## `locale`
@@ -86,6 +94,7 @@ lintStructure(content, { locale: "de" });
 lintLinks(content, { locale: "de" });
 lintDeliverability(content, { locale: "de" });
 lintCompatibility(content, { locale: "de" });
+lintLocalization(content, { contentLocale: "de", locale: "de" });
 
 // Editor — Linter folgt automatisch der Editor-Locale
 init({ locale: "de" });
@@ -100,6 +109,24 @@ Headless-Aufrufer (`lintTemplate(...)` oder `lintAccessibility(...)` / `lintStru
 ::: tip Vague-Text-Dictionaries sind sprachübergreifend
 Das Dictionary ist eine Vereinigung aller registrierten Locales — eine deutschsprachige E-Mail mit englischem `Click here`-Button schlägt `a11y.link-vague-text` / `a11y.button-vague-label` trotzdem aus, und ein deutsches `Jetzt kaufen`-Alt auf einem verlinkten Bild in englischer Locale erfüllt den Action-Hint-Check von `a11y.img-linked-no-context`. Die `locale`-Option gated das Matching nicht — sie steuert nur den Nachrichtentext.
 :::
+
+## `contentLocale`
+
+Wählt die von `lintTemplate` geprüfte Template-Sprachversion, standardmäßig `content.settings.locale`. `locale` wählt weiterhin die Meldungssprache. Im Editor folgt `contentLocale` der aktiven Template-Sprache und `locale` der UI. Wörterbücher für vage Texte bleiben eine Vereinigung aller Sprachen; `contentLocale` ändert sie nicht. Eine unbekannte Inhalts-Locale wirft `SdkError` mit Code `unknown_locale`.
+
+`customBlocks?: CustomBlockDefinition[]` erkennt benutzerdefinierte `text`- und `textarea`-Felder für Lokalisierungsprüfungen (ohne Angabe keine Erkennung). `mergeTagSyntax?: SyntaxPresetName | SyntaxPreset` wählt die Merge-Tag-Syntax dieser Prüfungen; Standard ist Liquid.
+
+## `localization`
+
+Für Nichtstandardversionen standardmäßig aktiv. `localization: false` unterdrückt diese Prüfungen; `localization.rules` überschreibt mit vollständigen Regel-IDs den Schweregrad (`"error"`, `"warning"`, `"info"`, `"off"`). `lintLocalization(content, options?)` und `LOCALIZATION_RULES` sind für gezielte Prüfungen exportiert; bevorzugen Sie `lintTemplate` für die Projektion und alle Kategorien.
+
+| Regel | Standard | Bedeutung |
+| --- | --- | --- |
+| `localization.untranslated` | `warning` | Ein nichtleeres Standardtextfeld hat keine Übersetzung |
+| `localization.stale` | `warning` | Der Quell-Hash eines übersetzten Felds stimmt nicht mehr mit dem Standard überein |
+| `localization.merge-tags-differ` | `warning` | Die Merge-Tag-Multimenge im übersetzten Text weicht vom Standard ab |
+
+Ausgeblendete Blöcke und ihre Nachfahren sind ausgeschlossen. Die Standardsprache erzeugt keine Lokalisierungsbefunde. Siehe [Fehlende Werte](/de/guide/localized-templates#missing-values), [Veraltete Werte](/de/guide/localized-templates#out-of-date-values) und [Merge-Tags](/de/guide/localized-templates#merge-tags). `validate --locale` der CLI behandelt abweichende Merge-Tags auch als Warnung blockierend.
 
 ## `accessibility`
 

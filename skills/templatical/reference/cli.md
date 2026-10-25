@@ -44,7 +44,7 @@ the output:**
 
 `deliverability.*` and `compat.*` issues are warning or info advice in the default CLI
 configuration. They never cause exit 1; structural errors and error-severity
-lint issues do.
+lint issues do. `localization.merge-tags-differ` is also blocking at warning severity: `validate --locale` exits 1 for a merge-tag mismatch even when `valid: true`. Missing and stale translations alone are advisory; see [localize.md](localize.md).
 
 When a prerequisite is absent, say so plainly with the fix and fall back to a
 mode that works — no Node, too old a version (`node -v`, then

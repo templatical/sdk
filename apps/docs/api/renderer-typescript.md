@@ -52,6 +52,7 @@ const mjml = await renderToMjml(templateContent);
 
 ```ts
 interface RenderOptions {
+  locale?: string;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
@@ -64,6 +65,7 @@ interface RenderOptions {
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `locale` | `settings.locale` | Selects the template version; an unknown version rejects with `unknown_locale`. |
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback stack added after a custom font without its own `fallback`, or after any single family that isn't a built-in. A full stack is emitted as written. |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
@@ -71,6 +73,8 @@ interface RenderOptions {
 | `blockRenderers` | `{}` | Per-type renderer overrides keyed by `block.type`. A countdown GIF backend uses this. An override owns the hidden-on-all-viewports check. |
 | `getCustomBlockStylesheet` | -- | `(customType) => string \| undefined \| null`. Called once per unique `customType`. Editor consumers pass the registry stylesheet. If omitted, each type's `renderedStylesheet` is emitted instead (the copy the editor writes before a render provider or Cloud storage sees the content); when passed, it decides every type and the copies are ignored. |
 | `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${dir}/${platform}.png`, where `dir` is the style, plus `-${tone}` for a `dark` or `light` `iconTone`. See [Social icons](#social-icons) below. |
+
+`locale?: string` selects a template language version; omission renders `settings.locale`, the default. Unknown versions reject with `SdkError` code `unknown_locale`. Projection removes hidden blocks, applies text and overrides, and sets MJML `lang` and `dir`. See [Localized templates](/guide/localized-templates#rendering-a-language).
 
 ### Custom blocks
 

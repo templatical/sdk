@@ -96,6 +96,10 @@ Antworten Sie mit jedem Batch nach `revision`, der Reihe nach. Haben Sie nicht m
 
 `acquireLock` gewährt die Sperre oder lehnt mit `lock_held` und der haltenden Person ab; `renewLock` verlängert sie oder lehnt mit `lock_lost` ab; `releaseLock` gibt sie frei und scheitert nie. Schicken Sie `onLock` und `onUnlock` an die anderen Sitzungen. Die drei Methoden sind nur gemeinsam optional: Ohne sie nimmt der Editor keine Sperren.
 
+`BlockLock.locale?: string | null` unterscheidet Sprachsperren; fehlend bedeutet `null`, Standardsprache und Struktur. Die Signaturen sind `acquireLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>`, `renewLock?(templateId: string, blockId: string, locale?: string | null): Promise<BlockLock>` und `releaseLock?(templateId: string, blockId: string, locale?: string | null): Promise<void>`. Leiten Sie die Locale an das Backend und über `onLock` / `onUnlock(blockId, sessionId, locale?)` weiter.
+
+`updateBlockLocale` an (X, de) kollidiert mit (X, de) oder (X, null) einer anderen Sitzung; (X, fr) kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Übergeben Sie `locale` in `OperationLock` an `applyOperations`; ein Backend ohne Locale-Auswertung serialisiert pro Block. Aktualisieren Sie das Backend vor dem Aktivieren von [Sprachversionen](/de/guide/localized-templates#upgrading).
+
 ### Ablehnungen
 
 Der Editor liest `statusCode` für die Entscheidung über Wiederholungen sowie `code` und `holder` oder `holders` für Ablehnungen. `CollaborationConflict` aus `@templatical/types` trägt sie, und jeder Fehler mit denselben Feldern funktioniert.
@@ -175,7 +179,9 @@ Ein Backend ohne Echtzeitkanal kann trotzdem geordnet zusammenarbeiten: `join` a
 
 ## Events
 
-`init({ onRemoteChange })` wird mit `{ actor, ops }` aufgerufen, nachdem der Batch einer anderen Sitzung auf dem Canvas angewendet wurde. Für die eigenen Änderungen dieses Editors wird es nicht aufgerufen, ebenso wenig für einen Resync, der das Template neu lädt.
+`init({ onRemoteChange })` wird mit `{ actor, ops, locale }` aufgerufen, nachdem der Batch einer anderen Sitzung auf dem Canvas angewendet wurde. Für die eigenen Änderungen dieses Editors wird es nicht aufgerufen, ebenso wenig für einen Resync, der das Template neu lädt.
+
+`locale: string | null` meldet die Sprache der ersten Locale-Operation eines fremden Batches, sonst `null`.
 
 ## Im Playground
 

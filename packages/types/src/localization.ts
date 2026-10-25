@@ -56,7 +56,7 @@ export const SETTINGS_TRANSLATABLE_FIELDS: readonly string[] = [
   "preheaderText",
 ];
 
-/** A language tag LOC1 accepts: a 2–3 letter language, then 2–8 character subtags. */
+/** A language tag Templatical accepts: a 2–3 letter language, then 2–8 character subtags. */
 export function isLocaleTag(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -165,7 +165,7 @@ export function translatableFields(
           .map((key) => `fieldValues.${key}`)
       : [];
   }
-  // Dots delimit path segments, so these imported element ids have no LOC1 path.
+  // Dots delimit path segments, so these imported element ids have no localization path.
   const localizableId = (item: { id: string }) => !item.id.includes(".");
   const target =
     block.type === "menu"
@@ -232,6 +232,14 @@ export function localizeBlock(
     writePath(view, path, value);
   for (const [path, text] of Object.entries(layer.text ?? {}))
     writePath(view, path, text.value);
+  // Cached HTML belongs to the default fields; a localized custom block
+  // needs its resolver to render those fields again. Its stylesheet is shared.
+  if (
+    block.type === "custom" &&
+    (Object.keys(layer.text ?? {}).length > 0 ||
+      Object.keys(layer.set ?? {}).length > 0)
+  )
+    delete view.renderedHtml;
   return view as unknown as Block;
 }
 

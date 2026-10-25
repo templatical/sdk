@@ -94,6 +94,20 @@ type BlockType =
   | 'slot' | 'wrapper';
 ```
 
+## Lokalisierung {#localization}
+
+Sprachversionen ergänzen optionale `BaseBlock.l10n`, `TemplateSettings.locales` und `TemplateSettings.l10n`. Die öffentlichen Deklarationen stammen aus `@templatical/types`; `definitions` ist standardmäßig `[]` zur Erkennung benutzerdefinierter Textfelder.
+
+<<< @/snippets/localization-contract.ts
+
+`readPath` löst Arrayelemente über ihre ID auf und liefert `undefined` für einen nicht auflösbaren Pfad. `writePath` klont den Wert, behandelt `null` als Löschen der Eigenschaft und liefert `false`, wenn das übergeordnete Objekt fehlt. `isSafePath` lehnt leere und Prototyp-Schlüsselsegmente ab. `isLocaleTag` akzeptiert eine Sprache aus 2–3 Buchstaben mit optionalen alphanumerischen Untertags aus 2–8 Zeichen. `defaultLocaleOf` liefert `settings.locale`, mit Fallback auf `en`.
+
+`sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern: `""` → `811c9dc5`, `"a"` → `e40c292c`, `"foobar"` → `bf9cf968`. `localizeBlock` projiziert einen Block ohne Rekursion oder Ausfiltern ausgeblendeter Blöcke. `resolveLocale` projiziert ein vollständiges Template, entfernt ausgeblendete Blöcke rekursiv, entfernt Lokalisierungsfelder und wirft `unknown_locale` für unbekannte Versionen. Beide sind rein.
+
+`localeCoverage` liefert Feld-IDs (`<blockId>/<path>` oder `settings/<path>`) in Dokumentreihenfolge, Einstellungen zuletzt. Fehlende nichtleere Standardwerte stehen in `missing`, Text mit geändertem Quell-Hash in `stale`, aktueller Text in `translated`. Ausgeblendete Blöcke und ihre Nachfahren sind ausgeschlossen. Benutzerdefinierte Definitionen erkennen `text`- und `textarea`-Felder. Verwenden Sie die Abdeckung für eine Nichtstandardversion; sie projiziert oder validiert keine Locale.
+
+Die vier Locale-Operationen erweitern `Operation`. `position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
+
 ## Basistypen
 
 ### BaseBlock
@@ -719,7 +733,7 @@ unsubscribe(); // Listener entfernen
 
 ## Operationen und Zusammenarbeit
 
-`Operation` und seine sechs Varianten, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.
+`Operation`, einschließlich der Locale-Operationen, `BlockParent`, `OperationErrorCode`, `OperationError`, `applyOperations`, `applyOperationsInPlace` und `getColumnCount` beschreibt die [Operations-Referenz](/de/api/operations). Der Collaboration-Vertrag — `CollaborationProvider`, `CollaborationHandlers`, `OperationBatch`, `RevisionedBatch`, `CollaborationActor`, `CollaborationMember`, `BlockLock`, `BlockLockHolder`, `CollaborationConflict` und `CollaborationRemoteChange` — steht unter [Zusammenarbeit](/de/backend/collaboration). `Template` trägt `revision` und `locks` für einen Speicher, der zusammenarbeitet.
 
 ## KI
 

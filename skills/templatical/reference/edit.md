@@ -37,9 +37,9 @@ Cloud share:
 The SDK also supports `addLocale`, `removeLocale`, `updateBlockLocale` and
 `updateSettingsLocale` for language versions. Their paths, guards and locks
 are documented in [Operations](https://docs.templatical.com/api/operations).
-The [Localized templates guide](https://docs.templatical.com/guide/localized-templates)
-is planned for the later LOC1 documentation task. Cloud's hosted MCP does not
-support locale operations until LOC3. Upgrade the renderer, validator and
+Follow [localize.md](localize.md) for adding versions, writing values and checking
+`validate --locale`; the [Localized templates guide](https://docs.templatical.com/guide/localized-templates)
+covers the editor workflow. Cloud's hosted MCP does not support locale operations. Upgrade the renderer, validator and
 collaboration backend before writing localized content. Check an SDK batch
 with the shared operation fixtures, then run `template-tools validate` on
 the resulting template.

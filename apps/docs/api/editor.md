@@ -79,6 +79,8 @@ unmount();
 | `templateSettings`   | `TemplateSettingsConfig`                                          | No       | Which template settings the Settings panel exposes. `fields` is an allowlist over `Exclude<keyof TemplateSettings, "locales" \| "l10n">`, or `false` for none (which removes the tab). Omit for every setting. See [Restricting the settings panel](#restricting-the-settings-panel)                                                                                                                                                                                                                                                                |
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `localization` | `{ locales: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). |
+| `onLocaleChange` | `(locale: string) => void` | No | Called when the active template language changes, including fallback to the default. Active language is view state and is not saved. |
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `smallScreenNotice`  | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself                                                                                                                                                                                                                                   |
@@ -302,7 +304,13 @@ router.beforeEach((to, from, next) => {
 
 `onDirtyChange` is the push-based counterpart.
 
-### `toMjml()`
+### `getLocale()` / `setLocale(locale)`
+
+`getLocale(): string` returns the active template language, initially the default. `setLocale(locale: string): void` selects the default or an existing version with localization enabled; an unknown version throws `SdkError` with code `unknown_locale`. A stored version missing from `localization.locales` remains selectable but read-only (**Not enabled**), with edits and structure changes refused. See [Editing in a language](/guide/localized-templates#editing-in-a-language).
+
+`toMjml(options?: { locale?: string }): Promise<string>` and `toHtml(options?: { locale?: string }): Promise<string>` render the selected version, for example `editor.toMjml({ locale: "de" })`. Omit `locale` to render the default, independently of the active view. An unknown version rejects with `unknown_locale`. Render providers receive the projected content, with localization fields removed.
+
+### `toMjml(options?)`
 
 Renders the current content to MJML markup. Returns a `Promise<string>` because resolving custom blocks may require asynchronous work (the editor's liquid renderer is loaded on demand).
 
@@ -312,7 +320,7 @@ const mjml = await editor.toMjml();
 
 Resolves `render.toMjml` first when a [`render` provider](/backend/render) supplies it, then the local `@templatical/renderer`. Rejects with a clear error when neither is available — the renderer is an optional peer dependency, so install it if you need local MJML export. See [Installation](/getting-started/installation).
 
-### `toHtml()`
+### `toHtml(options?)`
 
 Renders the current content to sending-ready HTML.
 
