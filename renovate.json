@@ -46,6 +46,11 @@
       "enabled": false
     },
     {
+      "description": "A peer range is the oldest version a consumer may bring, so peers widen instead of bump: an in-range release leaves the range alone, and a new major is added with || (^7 becomes ^7 || ^8.0.0). Bump would raise every peer floor to the newest release. packages/editor/tests/renovate-peer-ranges.test.ts keeps this the only rule that sets a range strategy for peers.",
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "widen"
+    },
+    {
       "description": "Major bumps land in their own PR with a breaking label",
       "matchUpdateTypes": ["major"],
       "groupName": null,
