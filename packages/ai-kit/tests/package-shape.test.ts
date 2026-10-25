@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const PKG = resolve(import.meta.dirname, "..");
@@ -67,12 +67,35 @@ describe("@templatical/ai-kit's shape", () => {
     expect(offending).toEqual([]);
   });
 
-  it("imports no LLM SDK and no FSL package", () => {
-    const offending = sourceFiles(join(PKG, "src")).filter((file) =>
-      /from "(@templatical\/(core|editor)|ai|openai|@anthropic-ai\/[^"]+|@ai-sdk\/[^"]+)"/.test(
-        readFileSync(file, "utf8"),
+  it("imports no FSL package, and LLM SDKs only in their adapters", () => {
+    const llm = /from "(ai|openai|@anthropic-ai\/[^"]+|@ai-sdk\/[^"]+)"/;
+    const files = sourceFiles(join(PKG, "src"));
+    expect(
+      files.filter((file) =>
+        /from "@templatical\/(core|editor)"/.test(readFileSync(file, "utf8")),
       ),
-    );
-    expect(offending).toEqual([]);
+    ).toEqual([]);
+    expect(
+      files.filter(
+        (file) =>
+          !file.includes(`${join("src", "adapters")}`) &&
+          llm.test(readFileSync(file, "utf8")),
+      ),
+    ).toEqual([]);
+    for (const name of ["anthropic", "openai"]) {
+      const path = join(PKG, "src/adapters", `${name}.ts`);
+      const source = existsSync(path) ? readFileSync(path, "utf8") : "";
+      const valueImports = source
+        .split("\n")
+        .filter((line) => llm.test(line) && !/^import type /.test(line));
+      expect(valueImports, name).toEqual([]);
+    }
+    const vercel = join(PKG, "src/adapters/vercel.ts");
+    const vercelSource = existsSync(vercel) ? readFileSync(vercel, "utf8") : "";
+    expect(
+      vercelSource
+        .split("\n")
+        .filter((line) => llm.test(line) && !/from "ai"/.test(line)),
+    ).toEqual([]);
   });
 });
