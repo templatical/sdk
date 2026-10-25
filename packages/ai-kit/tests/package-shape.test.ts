@@ -46,6 +46,7 @@ describe("@templatical/ai-kit's shape", () => {
       "./testing",
       "./adapters/anthropic",
       "./adapters/openai",
+      "./adapters/vercel",
       "./prompts/*",
       "./schema/*",
       "./eval/*",

@@ -1,3 +1,4 @@
+import { MockLanguageModelV4 } from "ai/test";
 import type { OpenAiAdapterClient } from "../../src/adapters/openai";
 import type { AnthropicAdapterClient } from "../../src/adapters/anthropic";
 
@@ -145,4 +146,62 @@ export function fakeOpenAi(steps: OpenAiStep[]) {
     },
   };
   return { client: client as unknown as OpenAiAdapterClient, requests };
+}
+
+export interface VercelStep {
+  /** `LanguageModelV4StreamPart`s the model streams, before its `finish`. */
+  parts?: Record<string, unknown>[];
+  finishReason?: string;
+  usage?: Record<string, unknown>;
+  error?: unknown;
+}
+
+/** A scripted AI SDK language model: one step per `doStream` call, recording each call's prompt. */
+export function fakeLanguageModel(steps: VercelStep[]) {
+  const calls: Record<string, any>[] = [];
+  const model = new MockLanguageModelV4({
+    provider: "fake",
+    modelId: "fake-model",
+    supportedUrls: {
+      "image/*": [/^https:\/\//],
+      "application/pdf": [/^https:\/\//],
+    },
+    async doStream(options) {
+      calls.push(options);
+      const step = steps[calls.length - 1] ?? {};
+      if (step.error) throw step.error;
+      const parts = [
+        { type: "stream-start", warnings: [] },
+        ...(step.parts ?? []),
+        {
+          type: "finish",
+          finishReason: {
+            unified: step.finishReason ?? "stop",
+            raw: step.finishReason ?? "stop",
+          },
+          usage: step.usage ?? {
+            inputTokens: {
+              total: 12,
+              noCache: 12,
+              cacheRead: undefined,
+              cacheWrite: undefined,
+            },
+            outputTokens: { total: 4, text: 4, reasoning: undefined },
+          },
+        },
+      ];
+      return {
+        stream: new ReadableStream({
+          start(controller) {
+            for (const part of parts) controller.enqueue(part);
+            controller.close();
+          },
+        }),
+      };
+    },
+    async doGenerate() {
+      throw new Error("not used");
+    },
+  });
+  return { model, calls };
 }

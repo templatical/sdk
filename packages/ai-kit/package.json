@@ -40,6 +40,10 @@
       "types": "./dist/adapters/openai.d.ts",
       "import": "./dist/adapters/openai.js"
     },
+    "./adapters/vercel": {
+      "types": "./dist/adapters/vercel.d.ts",
+      "import": "./dist/adapters/vercel.js"
+    },
     "./prompts/*": "./prompts/*",
     "./schema/*": "./schema/*",
     "./eval/*": "./eval/*"
