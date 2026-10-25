@@ -158,8 +158,12 @@ export interface UseCollaborationReturn {
   readonly sessionId: string;
   /** Everyone with the template open, this session included; empty without presence. */
   members: Readonly<Ref<readonly CollaborationMember[]>>;
-  /** Blocks other sessions hold, by block id. */
+  /** Blocks other sessions hold, keyed by `${blockId}\u0000${locale ?? ""}`. */
   locks: Readonly<Ref<ReadonlyMap<string, BlockLock>>>;
+  locksOf: (blockId: string) => BlockLock[];
+  /** The selected language for lock requests; `null` is the default view. */
+  lockLocale: Readonly<Ref<string | null>>;
+  setLockLocale: (locale: string | null) => void;
   /** `null` before a realtime join, and for a backend without realtime. */
   connection: Readonly<Ref<CollaborationConnectionState | null>>;
   /** The last revision this session confirmed. */
@@ -279,8 +283,17 @@ function isCoalescible(ops: readonly Operation[]): boolean {
   if (ops.length === 1 && ops[0].op === "updateSettings") return true;
   const first = ops[0];
   return (
-    first.op === "updateBlock" &&
-    ops.every((op) => op.op === "updateBlock" && op.blockId === first.blockId)
+    (first.op === "updateBlock" &&
+      ops.every(
+        (op) => op.op === "updateBlock" && op.blockId === first.blockId,
+      )) ||
+    (first.op === "updateBlockLocale" &&
+      ops.every(
+        (op) =>
+          op.op === "updateBlockLocale" &&
+          op.blockId === first.blockId &&
+          op.locale === first.locale,
+      ))
   );
 }
 
@@ -332,6 +345,10 @@ export function useCollaboration(
 
   const members = shallowRef<readonly CollaborationMember[]>([]);
   const locks = shallowRef<ReadonlyMap<string, BlockLock>>(new Map());
+  const provisionalLocks = new WeakSet<BlockLock>();
+  const liveLockVersions = new WeakMap<BlockLock, number>();
+  let liveLockVersion = 0;
+  const lockLocale = ref<string | null>(null);
   const connection = ref<CollaborationConnectionState | null>(null);
   const revision = ref(0);
   const historyVersion = ref(0);
@@ -348,8 +365,16 @@ export function useCollaboration(
   const stopWatching: (() => void)[] = [];
 
   // Locks: `wanted` follows the selection, `held` is what the backend granted.
-  let wanted: { templateId: string; blockId: string } | null = null;
-  let held: { templateId: string; blockId: string } | null = null;
+  let wanted: {
+    templateId: string;
+    blockId: string;
+    locale: string | null;
+  } | null = null;
+  let held: {
+    templateId: string;
+    blockId: string;
+    locale: string | null;
+  } | null = null;
   let lockQueue: Promise<void> = Promise.resolve();
   let renewTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -381,6 +406,7 @@ export function useCollaboration(
       locks: [...locks.value.values()].map((lock) => ({
         blockId: lock.blockId,
         sessionId: lock.holder.sessionId,
+        locale: lock.locale,
       })),
       session: sessionId,
     };
@@ -488,7 +514,14 @@ export function useCollaboration(
       const holder =
         error.blockId === undefined
           ? undefined
-          : locks.value.get(error.blockId)?.holder;
+          : locksOf(error.blockId).find((lock) => {
+              const op = proposed[error.opIndex];
+              return (
+                op.op !== "updateBlockLocale" ||
+                lock.locale == null ||
+                lock.locale === op.locale
+              );
+            })?.holder;
       notify({
         type: "editRefused",
         code: error.code,
@@ -750,7 +783,11 @@ export function useCollaboration(
     if (session !== active) return;
     for (const batch of applied) {
       try {
-        options.onRemoteChange?.({ actor: batch.actor, ops: batch.ops });
+        options.onRemoteChange?.({
+          actor: batch.actor,
+          ops: batch.ops,
+          locale: batch.ops.find((op) => "locale" in op)?.locale ?? null,
+        });
       } catch (error) {
         reportError(error);
       }
@@ -881,8 +918,8 @@ export function useCollaboration(
       onLock: (lock) => {
         if (live()) setLock(lock);
       },
-      onUnlock: (blockId, holderSession) => {
-        if (live()) removeLock(blockId, holderSession);
+      onUnlock: (blockId, holderSession, locale) => {
+        if (live()) removeLock(blockId, holderSession, locale);
       },
       onMembers: (next) => {
         if (live()) setMembers(next);
@@ -894,6 +931,7 @@ export function useCollaboration(
   }
 
   function join(session: Session, refresh: boolean): void {
+    const locksAtJoin = liveLockVersion;
     provider.join(session.templateId, { sessionId }, handlersFor(session)).then(
       (joined) => {
         if (session.retired || session !== active) {
@@ -901,7 +939,7 @@ export function useCollaboration(
           return;
         }
         session.leave = joined.leave;
-        replaceLocks(joined.locks, !refresh);
+        replaceLocks(joined.locks, !refresh, locksAtJoin);
         setMembers(joined.members);
         if (joined.members.length > 0) connection.value = "connected";
         if (joined.revision > session.revision) void catchUp();
@@ -982,16 +1020,49 @@ export function useCollaboration(
 
   // --- Locks -----------------------------------------------------------------
 
-  function setLock(lock: BlockLock): void {
+  function lockKey(blockId: string, locale?: string | null): string {
+    return `${blockId}\u0000${locale ?? ""}`;
+  }
+
+  function lockConflicts(
+    lock: BlockLock,
+    blockId: string,
+    locale?: string | null,
+  ): boolean {
+    return (
+      lock.blockId === blockId &&
+      (locale == null || lock.locale == null || lock.locale === locale)
+    );
+  }
+
+  function locksOf(blockId: string): BlockLock[] {
+    return [...locks.value.values()].filter((lock) => lock.blockId === blockId);
+  }
+
+  function setLockLocale(locale: string | null): void {
+    if (locale === lockLocale.value) return;
+    flush();
+    lockLocale.value = locale;
+    onSelection(editor?.state.selectedBlockId ?? null);
+  }
+
+  function setLock(lock: BlockLock, provisional = false): void {
     if (lock.holder.sessionId === sessionId) return;
+    if (provisional) provisionalLocks.add(lock);
+    else liveLockVersions.set(lock, ++liveLockVersion);
     const next = new Map(
       [...locks.value].filter(
         ([, existing]) => existing.holder.sessionId !== lock.holder.sessionId,
       ),
     );
-    next.set(lock.blockId, lock);
+    next.set(lockKey(lock.blockId, lock.locale), lock);
     locks.value = next;
-    if (editor?.state.selectedBlockId === lock.blockId) {
+    if (
+      editor?.state.selectedBlockId === lock.blockId &&
+      (lockLocale.value === null ||
+        lock.locale == null ||
+        lock.locale === lockLocale.value)
+    ) {
       editor.selectBlock(null);
       notify({
         type: "selectionRefused",
@@ -1001,19 +1072,51 @@ export function useCollaboration(
     }
   }
 
-  function removeLock(blockId: string, holderSession: string): void {
-    if (locks.value.get(blockId)?.holder.sessionId !== holderSession) return;
-    const next = new Map(locks.value);
-    next.delete(blockId);
-    locks.value = next;
+  function removeLock(
+    blockId: string,
+    holderSession: string,
+    locale?: string | null,
+  ): void {
+    const key = lockKey(blockId, locale);
+    const next = new Map(
+      [...locks.value].filter(
+        ([existingKey, lock]) =>
+          lock.holder.sessionId !== holderSession ||
+          (existingKey !== key &&
+            !(lock.blockId === blockId && provisionalLocks.has(lock))),
+      ),
+    );
+    if (next.size !== locks.value.size) locks.value = next;
   }
 
-  function replaceLocks(list: readonly BlockLock[], merge: boolean): void {
-    const next = merge ? new Map(locks.value) : new Map<string, BlockLock>();
+  function replaceLocks(
+    list: readonly BlockLock[],
+    merge: boolean,
+    locksAtJoin: number,
+  ): void {
+    const next = new Map(
+      [...locks.value].filter(
+        ([, lock]) =>
+          !provisionalLocks.has(lock) &&
+          (merge || (liveLockVersions.get(lock) ?? 0) > locksAtJoin),
+      ),
+    );
+    const live = [...next.values()];
     for (const lock of list) {
       if (lock.holder.sessionId === sessionId) continue;
-      if (merge && next.has(lock.blockId)) continue;
-      next.set(lock.blockId, lock);
+      if (
+        live.some(
+          (existing) =>
+            existing.holder.sessionId === lock.holder.sessionId ||
+            lockConflicts(existing, lock.blockId, lock.locale),
+        )
+      )
+        continue;
+      for (const [key, existing] of next) {
+        if (existing.holder.sessionId === lock.holder.sessionId)
+          next.delete(key);
+      }
+      next.set(lockKey(lock.blockId, lock.locale), lock);
     }
     locks.value = next;
   }
@@ -1043,27 +1146,41 @@ export function useCollaboration(
   function reconcileLock(): void {
     if (!locking) return;
     queueLock(async () => {
-      if (held && (wanted === null || held.templateId !== wanted.templateId)) {
+      if (
+        held &&
+        (wanted === null ||
+          held.templateId !== wanted.templateId ||
+          held.locale !== wanted.locale)
+      ) {
         // Acquiring another block on the same template releases this one on
         // the backend, so only release explicitly when nothing replaces it.
         const releasing = held;
         held = null;
         stopRenewing();
-        await provider.releaseLock!(releasing.templateId, releasing.blockId);
+        await provider.releaseLock!(
+          releasing.templateId,
+          releasing.blockId,
+          releasing.locale,
+        );
       }
       const target = wanted;
       if (
         !target ||
         (held?.templateId === target.templateId &&
-          held.blockId === target.blockId)
+          held.blockId === target.blockId &&
+          held.locale === target.locale)
       ) {
         return;
       }
       try {
-        await provider.acquireLock!(target.templateId, target.blockId);
+        const granted = await provider.acquireLock!(
+          target.templateId,
+          target.blockId,
+          target.locale,
+        );
         held = target;
         startRenewing();
-        forgetLock(target.blockId);
+        forgetLock(granted.blockId, granted.locale ?? null);
       } catch (error) {
         if (held?.templateId === target.templateId) {
           // Refused: the previous block is still this session's on the backend.
@@ -1073,6 +1190,7 @@ export function useCollaboration(
           await provider.releaseLock!(
             releasing.templateId,
             releasing.blockId,
+            releasing.locale,
           ).catch(() => {});
         }
         if (wanted !== target) return;
@@ -1081,11 +1199,13 @@ export function useCollaboration(
     });
   }
 
-  function forgetLock(blockId: string): void {
-    if (!locks.value.has(blockId)) return;
-    const next = new Map(locks.value);
-    next.delete(blockId);
-    locks.value = next;
+  function forgetLock(blockId: string, locale: string | null): void {
+    const next = new Map(
+      [...locks.value].filter(
+        ([, lock]) => !lockConflicts(lock, blockId, locale),
+      ),
+    );
+    if (next.size !== locks.value.size) locks.value = next;
   }
 
   function refuseSelection(blockId: string, error: unknown): void {
@@ -1094,8 +1214,8 @@ export function useCollaboration(
       wanted = null;
       const holder = refusalHolder(error);
       if (holder) {
-        // Records the holder, deselects and says who it is.
-        setLock({ blockId, holder, expiresAt: "" });
+        // A refusal names the holder, but does not tell us their lock's locale.
+        setLock({ blockId, holder, expiresAt: "" }, true);
       } else if (editor?.state.selectedBlockId === blockId) {
         editor.selectBlock(null);
       }
@@ -1115,7 +1235,11 @@ export function useCollaboration(
         const current = held;
         if (!current) return;
         try {
-          await provider.renewLock!(current.templateId, current.blockId);
+          await provider.renewLock!(
+            current.templateId,
+            current.blockId,
+            current.locale,
+          );
         } catch (error) {
           if (refusalCode(error) === "lock_lost") {
             held = null;
@@ -1139,7 +1263,9 @@ export function useCollaboration(
   function onSelection(blockId: string | null): void {
     flush();
     if (!active) return;
-    wanted = blockId ? { templateId: active.templateId, blockId } : null;
+    wanted = blockId
+      ? { templateId: active.templateId, blockId, locale: lockLocale.value }
+      : null;
     reconcileLock();
   }
 
@@ -1147,7 +1273,11 @@ export function useCollaboration(
   function onPageHide(): void {
     flush();
     if (held && locking) {
-      void provider.releaseLock!(held.templateId, held.blockId).catch(() => {});
+      void provider.releaseLock!(
+        held.templateId,
+        held.blockId,
+        held.locale,
+      ).catch(() => {});
       held = null;
       stopRenewing();
     }
@@ -1294,6 +1424,9 @@ export function useCollaboration(
     sessionId,
     members,
     locks,
+    locksOf,
+    lockLocale,
+    setLockLocale,
     connection,
     revision,
     canUndo,

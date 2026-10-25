@@ -187,6 +187,7 @@ export class FakeCollaborationServer {
             locks: [...this.locks.values()].map((lock) => ({
               blockId: lock.blockId,
               sessionId: lock.holder.sessionId,
+              locale: lock.locale,
             })),
             session: sessionId,
           });
@@ -225,8 +226,14 @@ export class FakeCollaborationServer {
         revision: this.revision,
         batches: safeClone(this.log.filter((batch) => batch.revision > after)),
       }),
-      acquireLock: async (_templateId, blockId) => {
-        const existing = this.locks.get(blockId);
+      acquireLock: async (_templateId, blockId, locale = null) => {
+        const key = locale === null ? blockId : `${blockId}\u0000${locale}`;
+        const existing = [...this.locks.values()].find(
+          (lock) =>
+            lock.blockId === blockId &&
+            lock.holder.sessionId !== sessionId &&
+            (locale === null || lock.locale == null || lock.locale === locale),
+        );
         if (existing && existing.holder.sessionId !== sessionId) {
           throw new CollaborationConflict("Held", {
             code: "lock_held",
@@ -234,32 +241,40 @@ export class FakeCollaborationServer {
           });
         }
         for (const [id, lock] of [...this.locks]) {
-          if (lock.holder.sessionId === sessionId && id !== blockId) {
+          if (lock.holder.sessionId === sessionId && id !== key) {
             this.locks.delete(id);
-            this.broadcast(sessionId, (h) => h.onUnlock(id, sessionId!));
+            this.broadcast(sessionId, (h) =>
+              h.onUnlock(lock.blockId, sessionId!, lock.locale),
+            );
           }
         }
         const lock: BlockLock = {
           blockId,
+          locale,
           holder: holder(),
           expiresAt: "2026-10-19T12:00:30.000Z",
         };
-        this.locks.set(blockId, lock);
+        this.locks.set(key, lock);
         this.broadcast(sessionId, (h) => h.onLock(lock));
         return lock;
       },
-      renewLock: async (_templateId, blockId) => {
-        const existing = this.locks.get(blockId);
+      renewLock: async (_templateId, blockId, locale = null) => {
+        const existing = this.locks.get(
+          locale === null ? blockId : `${blockId}\u0000${locale}`,
+        );
         if (!existing || existing.holder.sessionId !== sessionId) {
           throw new CollaborationConflict("Lost", { code: "lock_lost" });
         }
         return existing;
       },
-      releaseLock: async (_templateId, blockId) => {
-        const existing = this.locks.get(blockId);
+      releaseLock: async (_templateId, blockId, locale = null) => {
+        const key = locale === null ? blockId : `${blockId}\u0000${locale}`;
+        const existing = this.locks.get(key);
         if (existing?.holder.sessionId !== sessionId) return;
-        this.locks.delete(blockId);
-        this.broadcast(sessionId, (h) => h.onUnlock(blockId, sessionId!));
+        this.locks.delete(key);
+        this.broadcast(sessionId, (h) =>
+          h.onUnlock(blockId, sessionId!, locale),
+        );
       },
     };
   }

@@ -381,7 +381,9 @@ describe("useCollaboration when things go wrong", () => {
       await settle();
       server.deliverAll();
       await settle();
-      expect(a.collaboration.locks.value.get("t1")?.holder.name).toBe("Grace");
+      expect(a.collaboration.locks.value.get("t1\u0000")?.holder.name).toBe(
+        "Grace",
+      );
 
       a.editor.setContent(withDuplicateParagraph(safeClone(BASE)));
       await settle();

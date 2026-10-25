@@ -27,8 +27,8 @@ export interface EditorCapabilities {
    * `init({ collaboration })`, and always under `initCloud()`.
    */
   collaboration?: {
-    /** The lock another session holds on this block, or `null`. */
-    lockOf(blockId: string): BlockLock | null;
+    /** The lock blocking this language view; omitted uses the active view, `null` the default. */
+    lockOf(blockId: string, locale?: string | null): BlockLock | null;
     /**
      * While an AI agent's recent edit outlines this block, a number that
      * changes with each such edit, so the fade restarts; `null` otherwise.

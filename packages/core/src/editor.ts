@@ -1,5 +1,6 @@
 import type {
   Block,
+  BlockLock,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -60,6 +61,10 @@ export interface UseEditorOptions {
    * editor's own mutators leave it alone.
    */
   lockedBlocks?: Readonly<Ref<ReadonlyMap<string, unknown>>>;
+  /** The language view for property edits and selection; absent or `null` is default. */
+  lockLocale?: Readonly<Ref<string | null>>;
+  /** This editor's session; its own locks never block local edits. */
+  lockSessionId?: string;
   /**
    * Storage backend for the template's save/load lifecycle. Omit it and
    * `create()` / `load()` / `save()` reject — the editor keeps working as a
@@ -246,8 +251,28 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     return null;
   }
 
-  function isBlockLocked(blockId: string): boolean {
-    return options.lockedBlocks?.value.has(blockId) ?? false;
+  function isBlockLocked(blockId: string, structure = false): boolean {
+    const locale = options.lockLocale?.value ?? null;
+    for (const [key, value] of options.lockedBlocks?.value ?? []) {
+      const lock = value as Partial<BlockLock> | null;
+      if (lock?.blockId === undefined) {
+        if (key === blockId) return true;
+        continue;
+      }
+      if (
+        lock.blockId !== blockId ||
+        lock.holder?.sessionId === options.lockSessionId
+      )
+        continue;
+      if (
+        structure ||
+        locale === null ||
+        lock.locale == null ||
+        lock.locale === locale
+      )
+        return true;
+    }
+    return false;
   }
 
   function findBlockLocation(blockId: string): {
@@ -310,7 +335,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   }
 
   function updateBlock(blockId: string, updates: Partial<Block>): void {
-    if (isBlockLocked(blockId)) {
+    if (isBlockLocked(blockId, "children" in updates || "columns" in updates)) {
       return;
     }
     const block = findBlockById(state.content.blocks, blockId);
@@ -344,7 +369,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       return;
     }
     if (targetSectionId) {
-      if (isBlockLocked(targetSectionId)) {
+      if (isBlockLocked(targetSectionId, true)) {
         return;
       }
       const section = findBlockById(state.content.blocks, targetSectionId);
@@ -371,7 +396,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   }
 
   function removeBlock(blockId: string): void {
-    if (isBlockLocked(blockId)) {
+    if (isBlockLocked(blockId, true)) {
       return;
     }
     const parent = findBlockParent(state.content.blocks, blockId);
@@ -397,10 +422,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     targetSectionId?: string,
     columnIndex = 0,
   ): void {
-    if (isBlockLocked(blockId)) {
+    if (isBlockLocked(blockId, true)) {
       return;
     }
-    if (targetSectionId && isBlockLocked(targetSectionId)) {
+    if (targetSectionId && isBlockLocked(targetSectionId, true)) {
       return;
     }
 

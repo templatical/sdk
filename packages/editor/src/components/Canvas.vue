@@ -244,6 +244,7 @@ function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, blockComponentMap);
 }
 
+// An omitted locale checks the active language view.
 function isLockedByOther(blockId: string): boolean {
   return caps.collaboration?.lockOf(blockId) != null;
 }

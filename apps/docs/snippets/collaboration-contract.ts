@@ -69,6 +69,8 @@ export interface BlockLockHolder {
 
 export interface BlockLock {
   blockId: string;
+  /** The language held; absent or `null` holds the default language and structure. */
+  locale?: string | null;
   holder: BlockLockHolder;
   /**
    * ISO 8601. Renewals aren't broadcast, so another session's lock is dropped
@@ -94,7 +96,7 @@ export interface CollaborationHandlers {
    */
   onResync(revision: number, actor?: CollaborationActor): void;
   onLock(lock: BlockLock): void;
-  onUnlock(blockId: string, sessionId: string): void;
+  onUnlock(blockId: string, sessionId: string, locale?: string | null): void;
   /** Everyone with the template open, this session included. */
   onMembers(members: CollaborationMember[]): void;
   onConnectionChange(state: CollaborationConnectionState): void;
@@ -129,12 +131,38 @@ export interface CollaborationProvider {
     templateId: string,
     revision: number,
   ): Promise<OperationsAfterResult>;
-  acquireLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  renewLock?(templateId: string, blockId: string): Promise<BlockLock>;
-  releaseLock?(templateId: string, blockId: string): Promise<void>;
+  /**
+   * Acquire the block's lock in `locale`; absent or `null` means the default
+   * language and structure. A provider that ignores `locale` serializes per block.
+   */
+  acquireLock?(
+    templateId: string,
+    blockId: string,
+    locale?: string | null,
+  ): Promise<BlockLock>;
+  /**
+   * Renew the block's lock in `locale`; absent or `null` means the default
+   * language and structure. A provider that ignores `locale` serializes per block.
+   */
+  renewLock?(
+    templateId: string,
+    blockId: string,
+    locale?: string | null,
+  ): Promise<BlockLock>;
+  /**
+   * Release the block's lock in `locale`; absent or `null` means the default
+   * language and structure. A provider that ignores `locale` serializes per block.
+   */
+  releaseLock?(
+    templateId: string,
+    blockId: string,
+    locale?: string | null,
+  ): Promise<void>;
 }
 
 export interface CollaborationRemoteChange {
   actor: CollaborationActor;
+  /** The first locale operation's language in this batch, otherwise `null`. */
+  locale: string | null;
   ops: Operation[];
 }

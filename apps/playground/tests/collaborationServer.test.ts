@@ -335,4 +335,120 @@ describe("SharedCollaborationServer", () => {
       revision: 0,
     });
   });
+  it("holds German and French locks together and refuses a default lock beside either", () => {
+    const de = server.acquireLock("tpl", ADA, "t1", "de");
+    const fr = server.acquireLock("tpl", GRACE, "t1", "fr");
+    expect([de.locale, fr.locale]).toEqual(["de", "fr"]);
+    expect(server.load("tpl", SEED).locks).toEqual([de, fr]);
+    expect(
+      refusalOf(() => server.acquireLock("tpl", GUEST, "t1", null)).code,
+    ).toBe("lock_held");
+    expect(
+      refusalOf(() => server.acquireLock("tpl", GUEST, "t1", "de")).code,
+    ).toBe("lock_held");
+    server.releaseLock("tpl", ADA, "t1", "de");
+    expect(
+      refusalOf(() => server.acquireLock("tpl", GUEST, "t1", null)).code,
+    ).toBe("lock_held");
+    server.releaseLock("tpl", GRACE, "t1", "fr");
+    expect(server.acquireLock("tpl", GUEST, "t1").locale).toBe(null);
+    expect(
+      refusalOf(() => server.acquireLock("tpl", ADA, "t1", "de")).code,
+    ).toBe("lock_held");
+  });
+
+  it("passes lock locales to the engine and refuses structure while French is held", () => {
+    server.submit("tpl", ADA, {
+      batchId: "locales",
+      baseRevision: 0,
+      ops: [
+        { op: "addLocale", locale: "de" },
+        { op: "addLocale", locale: "fr" },
+      ],
+    });
+    server.acquireLock("tpl", GRACE, "t1", "fr");
+    expect(
+      server.submit("tpl", ADA, {
+        batchId: "de",
+        baseRevision: 1,
+        ops: [
+          {
+            op: "updateBlockLocale",
+            blockId: "t1",
+            locale: "de",
+            text: { content: { value: "Hallo", source: "12345678" } },
+          },
+        ],
+      }),
+    ).toEqual({ revision: 2 });
+    expect(
+      refusalOf(() =>
+        server.submit("tpl", ADA, {
+          batchId: "structure",
+          baseRevision: 2,
+          ops: [{ op: "deleteBlock", blockId: "t1" }],
+        }),
+      ).code,
+    ).toBe("lock_held");
+  });
+
+  it("broadcasts the precise locale on replacement, expiry and session departure", () => {
+    server.acquireLock("tpl", ADA, "t1", "de");
+    server.acquireLock("tpl", ADA, "t1", "fr");
+    expect(events.map(({ event }) => event)).toContainEqual({
+      type: "unlock",
+      blockId: "t1",
+      sessionId: ADA.sessionId,
+      locale: "de",
+    });
+    server.leave("tpl", ADA.sessionId);
+    expect(events.map(({ event }) => event)).toContainEqual({
+      type: "unlock",
+      blockId: "t1",
+      sessionId: ADA.sessionId,
+      locale: "fr",
+    });
+    server.acquireLock("tpl", GRACE, "t1", "de");
+    server.join("tpl", GUEST);
+    now += LOCK_TTL_MS;
+    server.heartbeat("tpl", GRACE.sessionId);
+    server.heartbeat("tpl", GUEST.sessionId);
+    server.sweep();
+    expect(events.map(({ event }) => event)).toContainEqual({
+      type: "unlock",
+      blockId: "t1",
+      sessionId: GRACE.sessionId,
+      locale: "de",
+    });
+  });
+  it("names the holder of the conflicting language when other languages coexist", () => {
+    server.submit("tpl", ADA, {
+      batchId: "locales",
+      baseRevision: 0,
+      ops: [
+        { op: "addLocale", locale: "de" },
+        { op: "addLocale", locale: "fr" },
+      ],
+    });
+    server.acquireLock("tpl", ADA, "t1", "de");
+    server.acquireLock("tpl", GRACE, "t1", "fr");
+    const refusal = refusalOf(() =>
+      server.submit("tpl", GUEST, {
+        batchId: "refused-fr",
+        baseRevision: 1,
+        ops: [
+          {
+            op: "updateBlockLocale",
+            blockId: "t1",
+            locale: "fr",
+            hidden: true,
+          },
+        ],
+      }),
+    );
+    expect(refusal).toMatchObject({
+      code: "lock_held",
+      holder: { sessionId: GRACE.sessionId, name: "Grace" },
+    });
+  });
 });

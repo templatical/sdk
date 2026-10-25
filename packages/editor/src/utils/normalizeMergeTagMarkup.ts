@@ -2,6 +2,7 @@ import type { Ref } from "vue";
 import type {
   Block,
   MergeTag,
+  LocalizedText,
   MergeTagsConfig,
   Operation,
   SectionBlock,
@@ -207,8 +208,30 @@ export function normalizeMergeTagsInHtml(
   return doc.body.innerHTML;
 }
 
+/** Normalize localized rich content without changing source hashes or caller-owned objects. */
+function normalizeLocaleText(
+  blockType: string | undefined,
+  text: Record<string, LocalizedText> | undefined,
+  mergeTags: MergeTag[],
+  syntax: SyntaxPreset,
+): Record<string, LocalizedText> | undefined {
+  if (
+    (blockType !== "title" &&
+      blockType !== "paragraph" &&
+      blockType !== "html") ||
+    typeof text?.content?.value !== "string"
+  )
+    return text;
+  const entry = text.content;
+  const value = normalizeMergeTagsInHtml(entry.value, mergeTags, syntax);
+  return value === entry.value
+    ? text
+    : { ...text, content: { ...entry, value } };
+}
+
 /**
- * The rich-text fields, and only those. Every other merge-tag-bearing field —
+ * Localized layers normalize only content on titles, paragraphs and HTML
+ * blocks. Among base fields, only title and paragraph rich text is normalized. Every other merge-tag-bearing field —
  * `ButtonBlock.text`/`url`, `ImageBlock.alt`, `HtmlBlock.content`, custom-block
  * `fieldValues`, `settings.preheaderText` — is a plain string rendered as text,
  * so a span written into one would be displayed literally on the canvas and
@@ -225,6 +248,24 @@ function normalizeBlock(
   mergeTags: MergeTag[],
   syntax: SyntaxPreset,
 ): Block {
+  const l10n = block.l10n;
+  if (l10n) {
+    let changed = false;
+    const next = Object.fromEntries(
+      Object.entries(l10n).map(([locale, layer]) => {
+        const text = normalizeLocaleText(
+          block.type,
+          layer.text,
+          mergeTags,
+          syntax,
+        );
+        if (text === layer.text) return [locale, layer];
+        changed = true;
+        return [locale, { ...layer, text }];
+      }),
+    );
+    if (changed) block = { ...block, l10n: next };
+  }
   if (block.type === "section") {
     if (!Array.isArray(block.children)) return block;
     let changed = false;
@@ -496,6 +537,14 @@ export function normalizeRemoteOperations(
       if (block === op.expect.block) return op;
       changed = true;
       return { ...op, expect: { ...op.expect, block } };
+    }
+    if (op.op === "updateBlockLocale") {
+      const type =
+        added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
+      const text = normalizeLocaleText(type, op.text, tags, syntax);
+      if (text === op.text) return op;
+      changed = true;
+      return { ...op, text };
     }
     if (op.op === "updateBlock") {
       const type =

@@ -76,7 +76,12 @@ export type ServerEvent =
   | { type: "batch"; batch: RevisionedBatch }
   | { type: "resync"; revision: number; actor: CollaborationActor }
   | { type: "lock"; lock: BlockLock }
-  | { type: "unlock"; blockId: string; sessionId: string }
+  | {
+      type: "unlock";
+      blockId: string;
+      sessionId: string;
+      locale: string | null;
+    }
   | { type: "members"; members: CollaborationMember[] };
 
 /** A refusal, as plain data, so it crosses a worker's message port. */
@@ -178,6 +183,10 @@ function refuse(refusal: Refusal): never {
   throw new RefusedError(refusal);
 }
 
+function lockKey(blockId: string, locale: string | null): string {
+  return `${blockId}\u0000${locale ?? ""}`;
+}
+
 interface HeldLock {
   lock: BlockLock;
   owner: string;
@@ -250,12 +259,13 @@ export class SharedCollaborationServer {
   leave(templateId: string, sessionId: string): void {
     const state = this.templates.get(templateId);
     if (!state || !state.members.delete(sessionId)) return;
-    for (const [blockId, held] of state.locks) {
+    for (const [key, held] of state.locks) {
       if (held.lock.holder.sessionId === sessionId) {
-        state.locks.delete(blockId);
+        state.locks.delete(key);
         this.broadcast(state, sessionId, {
           type: "unlock",
-          blockId,
+          blockId: held.lock.blockId,
+          locale: held.lock.locale ?? null,
           sessionId,
         });
       }
@@ -301,6 +311,7 @@ export class SharedCollaborationServer {
       content = applyOperations(state.content, batch.ops, {
         locks: locks.map((held) => ({
           blockId: held.lock.blockId,
+          locale: held.lock.locale,
           sessionId: held.owner,
         })),
         session: owner,
@@ -315,8 +326,15 @@ export class SharedCollaborationServer {
         opIndex: error.opIndex,
         ...(error.code === "lock_held"
           ? {
-              holder: others.find((held) => held.lock.blockId === error.blockId)
-                ?.lock.holder,
+              holder: others.find((held) => {
+                const op = batch.ops[error.opIndex];
+                return (
+                  held.lock.blockId === error.blockId &&
+                  (op.op !== "updateBlockLocale" ||
+                    held.lock.locale == null ||
+                    held.lock.locale === op.locale)
+                );
+              })?.lock.holder,
             }
           : {}),
         ...(error.code === "locked_by_others"
@@ -376,6 +394,7 @@ export class SharedCollaborationServer {
     templateId: string,
     who: SessionIdentity,
     blockId: string,
+    locale: string | null = null,
   ): BlockLock {
     const state = this.existing(templateId);
     this.sweepState(state);
@@ -387,8 +406,16 @@ export class SharedCollaborationServer {
       });
     }
     const owner = ownerOf(who);
-    const existing = state.locks.get(blockId);
-    if (existing && existing.owner !== owner) {
+    const key = lockKey(blockId, locale);
+    const existing = [...state.locks.values()].find(
+      (held) =>
+        held.lock.blockId === blockId &&
+        held.owner !== owner &&
+        (locale === null ||
+          held.lock.locale == null ||
+          held.lock.locale === locale),
+    );
+    if (existing) {
       refuse({
         status: 409,
         code: "lock_held",
@@ -398,18 +425,20 @@ export class SharedCollaborationServer {
     }
     // One lock per session: taking a block lets go of the one held before.
     for (const [heldId, held] of state.locks) {
-      if (held.owner === owner && heldId !== blockId) {
+      if (held.owner === owner && heldId !== key) {
         state.locks.delete(heldId);
         this.broadcast(state, who.sessionId, {
           type: "unlock",
-          blockId: heldId,
+          blockId: held.lock.blockId,
+          locale: held.lock.locale ?? null,
           sessionId: who.sessionId,
         });
       }
     }
-    const held = this.hold(blockId, who);
-    state.locks.set(blockId, held);
-    if (!existing) {
+    const alreadyHeld = state.locks.has(key);
+    const held = this.hold(blockId, who, locale);
+    state.locks.set(key, held);
+    if (!alreadyHeld) {
       this.broadcast(state, who.sessionId, { type: "lock", lock: held.lock });
     }
     return held.lock;
@@ -419,10 +448,12 @@ export class SharedCollaborationServer {
     templateId: string,
     who: SessionIdentity,
     blockId: string,
+    locale: string | null = null,
   ): BlockLock {
     const state = this.existing(templateId);
     this.sweepState(state);
-    const existing = state.locks.get(blockId);
+    const key = lockKey(blockId, locale);
+    const existing = state.locks.get(key);
     if (!existing || existing.owner !== ownerOf(who)) {
       refuse({
         status: 409,
@@ -431,28 +462,40 @@ export class SharedCollaborationServer {
       });
     }
     // Renewals aren't broadcast.
-    const held = this.hold(blockId, who);
-    state.locks.set(blockId, held);
+    const held = this.hold(blockId, who, locale);
+    state.locks.set(key, held);
     return held.lock;
   }
 
-  releaseLock(templateId: string, who: SessionIdentity, blockId: string): void {
+  releaseLock(
+    templateId: string,
+    who: SessionIdentity,
+    blockId: string,
+    locale: string | null = null,
+  ): void {
     const state = this.templates.get(templateId);
-    const existing = state?.locks.get(blockId);
+    const key = lockKey(blockId, locale);
+    const existing = state?.locks.get(key);
     if (!state || !existing || existing.owner !== ownerOf(who)) return;
-    state.locks.delete(blockId);
+    state.locks.delete(key);
     this.broadcast(state, who.sessionId, {
       type: "unlock",
       blockId,
+      locale,
       sessionId: who.sessionId,
     });
   }
 
-  private hold(blockId: string, who: SessionIdentity): HeldLock {
+  private hold(
+    blockId: string,
+    who: SessionIdentity,
+    locale: string | null,
+  ): HeldLock {
     const expiresAt = this.now() + LOCK_TTL_MS;
     return {
       lock: {
         blockId,
+        locale,
         holder: holderOf(who),
         expiresAt: new Date(expiresAt).toISOString(),
       },
@@ -502,12 +545,13 @@ export class SharedCollaborationServer {
     for (const [sessionId, entry] of state.members) {
       if (now - entry.seenAt > MEMBER_TTL_MS) this.leave(state.id, sessionId);
     }
-    for (const [blockId, held] of state.locks) {
+    for (const [key, held] of state.locks) {
       if (held.expiresAt <= now) {
-        state.locks.delete(blockId);
+        state.locks.delete(key);
         this.broadcast(state, null, {
           type: "unlock",
-          blockId,
+          blockId: held.lock.blockId,
+          locale: held.lock.locale ?? null,
           sessionId: held.lock.holder.sessionId,
         });
       }

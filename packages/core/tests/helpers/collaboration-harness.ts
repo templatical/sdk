@@ -113,6 +113,8 @@ export async function openClient(
       content: safeClone(BASE),
       templates: extra.templates ?? server.templatesProvider(),
       lockedBlocks: collaboration.locks,
+      lockLocale: collaboration.lockLocale,
+      lockSessionId: collaboration.sessionId,
     });
     collaboration.attach(editor);
     return { editor, collaboration };

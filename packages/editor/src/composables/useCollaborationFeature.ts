@@ -97,7 +97,7 @@ export type CollaborationNoticeView =
 export interface AgentEditSummary {
   /** The blocks its ops name: an added block's id, every other block op's `blockId`. */
   blockIds: string[];
-  /** It has an `updateSettings`. */
+  /** It changes default or localized settings, or adds or removes a language. */
   settings: boolean;
   /** It has a `setContent`, or it is a re-sync. */
   templateUpdated: boolean;
@@ -123,12 +123,17 @@ export function summarizeAgentEdit(
   for (const op of ops) {
     if (op.op === "addBlock") {
       if (typeof op.block?.id === "string") blockIds.add(op.block.id);
-    } else if (op.op === "updateSettings") {
+    } else if (
+      op.op === "updateSettings" ||
+      op.op === "addLocale" ||
+      op.op === "removeLocale" ||
+      op.op === "updateSettingsLocale"
+    ) {
       settings = true;
     } else if (op.op === "setContent") {
       templateUpdated = true;
     } else {
-      blockIds.add((op as { blockId: string }).blockId);
+      blockIds.add(op.blockId);
     }
   }
   return { blockIds: [...blockIds], settings, templateUpdated };
@@ -438,8 +443,17 @@ export function useCollaborationFeature(
       }),
     outline: highlight,
     capability: {
-      lockOf: (blockId: string): BlockLock | null =>
-        core.locks.value.get(blockId) ?? null,
+      lockOf: (
+        blockId: string,
+        locale = core.lockLocale.value,
+      ): BlockLock | null => {
+        const locks = core.locksOf(blockId);
+        return (
+          locks.find((lock) => lock.locale == null) ??
+          locks.find((lock) => locale === null || lock.locale === locale) ??
+          null
+        );
+      },
       agentHighlightOf: (blockId: string): number | null =>
         highlights.value.get(blockId) ?? null,
     },

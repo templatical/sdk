@@ -266,3 +266,131 @@ describe("diffContent", () => {
     }
   });
 });
+
+describe("diffContent localization", () => {
+  const settings = { width: 600, locale: "en", locales: ["de", "fr"] };
+  const translated = { value: "Hallo", source: "12345678" };
+
+  it("emits German text as exactly one locale operation", () => {
+    const before = content([leaf("t1")], settings);
+    const after = content(
+      [leaf("t1", { l10n: { de: { text: { content: translated } } } })],
+      settings,
+    );
+    expect(diff(before, after)).toEqual([
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        text: { content: translated },
+      },
+    ]);
+  });
+
+  it("adds a locale before its block operations, carrying a new block's layer", () => {
+    const before = content([leaf("t1")], { width: 600, locale: "en" });
+    const added = leaf("new", { l10n: { de: { hidden: true } } });
+    const after = content(
+      [leaf("t1", { l10n: { de: { text: { content: translated } } } }), added],
+      { width: 600, locale: "en", locales: ["de"] },
+    );
+    expect(diff(before, after)).toEqual([
+      { op: "addBlock", block: added, parent: null, after: "t1" },
+      { op: "addLocale", locale: "de" },
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        text: { content: translated },
+      },
+    ]);
+  });
+
+  it("removes a locale last without other operations for its removed layers or expect", () => {
+    const before = content(
+      [leaf("t1", { l10n: { de: { text: { content: translated } } } })],
+      { ...settings, l10n: { de: { set: { direction: "rtl" } } } },
+    );
+    const after = content([leaf("t1", { content: "Changed" })], {
+      width: 640,
+      locale: "en",
+      locales: ["fr"],
+    });
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlock", blockId: "t1", set: { content: "Changed" } },
+      { op: "updateSettings", set: { width: 640 } },
+      { op: "removeLocale", locale: "de" },
+    ]);
+  });
+
+  it("toggles hidden and omits the emptied layer", () => {
+    const before = content([leaf("t1")], settings);
+    const after = content(
+      [leaf("t1", { l10n: { de: { hidden: true } } })],
+      settings,
+    );
+    expect(diff(before, after)).toEqual([
+      { op: "updateBlockLocale", blockId: "t1", locale: "de", hidden: true },
+    ]);
+    expect(diff(after, before)).toEqual([
+      { op: "updateBlockLocale", blockId: "t1", locale: "de", hidden: false },
+    ]);
+  });
+
+  it("unsets removed set and text paths, and changes their kind", () => {
+    const before = content(
+      [
+        leaf("t1", {
+          color: "#000",
+          l10n: {
+            de: { set: { color: "#fff" }, text: { content: translated } },
+          },
+        }),
+      ],
+      settings,
+    );
+    const after = content(
+      [
+        leaf("t1", {
+          color: "#000",
+          l10n: { de: { set: { content: "Override" } } },
+        }),
+      ],
+      settings,
+    );
+    expect(diff(before, after)).toEqual([
+      {
+        op: "updateBlockLocale",
+        blockId: "t1",
+        locale: "de",
+        set: { content: "Override" },
+        unset: ["content", "color"],
+      },
+    ]);
+  });
+
+  it("diffs settings layers by locale with removed paths", () => {
+    const before = content([], {
+      ...settings,
+      preheaderText: "Hello",
+      l10n: { de: { set: { direction: "rtl" } } },
+    });
+    const after = content([], {
+      ...settings,
+      preheaderText: "Hello",
+      l10n: {
+        de: { text: { preheaderText: translated } },
+        fr: { set: { direction: "rtl" } },
+      },
+    });
+    expect(diff(before, after)).toEqual([
+      {
+        op: "updateSettingsLocale",
+        locale: "de",
+        text: { preheaderText: translated },
+        unset: ["direction"],
+      },
+      { op: "updateSettingsLocale", locale: "fr", set: { direction: "rtl" } },
+    ]);
+  });
+});

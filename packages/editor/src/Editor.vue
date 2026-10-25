@@ -190,6 +190,8 @@ const editor = useEditor({
   onError: props.config.onError,
   // Blocks other collaborators hold: they can't be selected here.
   lockedBlocks: collaboration?.locks,
+  lockLocale: collaboration?.core.lockLocale,
+  lockSessionId: collaboration?.core.sessionId,
 });
 
 collaboration?.attach(editor);

@@ -170,7 +170,7 @@ const blockCommentCount = computed(
 );
 
 // Another collaborator's lock: an outline in their colour and their name, on
-// any block, a section's children included.
+// any block, a section's children included, in the active language view.
 const lock = computed(() => caps.collaboration?.lockOf(props.block.id) ?? null);
 const lockHolderName = computed(() =>
   lock.value?.holder.type === "guest"
