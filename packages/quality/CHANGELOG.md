@@ -1,5 +1,25 @@
 # @templatical/quality
 
+## 0.50.0
+
+### Minor Changes
+
+- 051113f: Add default-on compatibility lint for authored pass-through HTML and CSS, using a pinned caniemail snapshot, plus an explicit compiled-HTML Gmail size check. Agents and headless callers receive a concrete `suggestion` and `reference` on every issue, with affected clients and an excerpt when available. The editor shows suggestions and source links, and offers an on-demand Check size action when its render provider can compile without saving. `templatical validate --html` reports `htmlBytes` and a clipping warning.
+
+  Breaking changes: `LintIssue.suggestion` and `.reference` are required; existing `message` text is shortened to the problem, with the action in `suggestion`. Message maps and formatter results now contain `{ message, suggestion }` objects. Compatibility is on by default, so four category keys set to `false` no longer disable all linting; set the fifth `compatibility: false` too. Custom-block client-fact IDs move from `safety.*` to `compat.*`, and `CustomBlockIssueSeverity` now includes `info`.
+
+- 2db2846: `lintTemplate` now runs the `deliverability` category by default. Agents can use `lintDeliverability`, `DELIVERABILITY_RULES`, localized messages, `DEFAULT_SHORTENER_HOSTS`, and `DEFAULT_DELIVERABILITY_THRESHOLDS` directly. The category flags `deliverability.link-text-domain-mismatch` (`warning`), `deliverability.url-shortener` (`warning`), `deliverability.ip-address-url` (`warning`), and `deliverability.low-text` (`info`). Each rule reports a JSON-detectable content cue; none auto-fixes or scores a template.
+
+  These rules flag content patterns that spam filters and mailbox-provider guidelines name. They don't predict inbox placement: sender reputation, authentication and recipient engagement decide that.
+
+  Configuration using `{ accessibility: false, structure: false, links: false }` no longer disables linting because deliverability still runs. Add `deliverability: false` or use `disabled: true`. Likewise, `{ structure: false, links: false }` now runs accessibility and deliverability; add `deliverability: false` to keep accessibility only.
+
+### Patch Changes
+
+- Updated dependencies [61518b7]
+- Updated dependencies [3af9072]
+  - @templatical/types@0.50.0
+
 ## 0.49.0
 
 ### Patch Changes

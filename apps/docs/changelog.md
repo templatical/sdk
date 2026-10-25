@@ -15,6 +15,91 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.50.0
+
+<time datetime="2026-10-25">2026-10-25</time>
+
+### Features
+
+**Add default-on compatibility lint for authored pass-through HTML and CSS, using a pinned caniemail snapshot, plus an explicit compiled-HTML Gmail size check. Agents and headless callers receive a concrete `suggestion` and `reference` on every issue, with affected clients and an excerpt when available. The editor shows suggestions and source links, and offers an on-demand Check size action when its render provider can compile without saving. `templatical validate --html` reports `htmlBytes` and a clipping warning.**
+
+`@templatical/editor` · `@templatical/quality` · `@templatical/template-tools`
+
+Breaking changes: `LintIssue.suggestion` and `.reference` are required; existing `message` text is shortened to the problem, with the action in `suggestion`. Message maps and formatter results now contain `{ message, suggestion }` objects. Compatibility is on by default, so four category keys set to `false` no longer disable all linting; set the fifth `compatibility: false` too. Custom-block client-fact IDs move from `safety.*` to `compat.*`, and `CustomBlockIssueSeverity` now includes `info`.
+
+**`@templatical/quality` is an optional dependency of the editor and installs by default. Leaving it out is supported: the editor works without it and hides the Issues tab.**
+
+`@templatical/editor`
+
+The packaging also declares quality as an optional peer so bundlers can resolve its optional import when the package is absent. The default install enables the Issues panel and lint badges.
+
+**`lintTemplate` now runs the `deliverability` category by default. Agents can use `lintDeliverability`, `DELIVERABILITY_RULES`, localized messages, `DEFAULT_SHORTENER_HOSTS`, and `DEFAULT_DELIVERABILITY_THRESHOLDS` directly. The category flags `deliverability.link-text-domain-mismatch` (`warning`), `deliverability.url-shortener` (`warning`), `deliverability.ip-address-url` (`warning`), and `deliverability.low-text` (`info`). Each rule reports a JSON-detectable content cue; none auto-fixes or scores a template.**
+
+`@templatical/quality`
+
+These rules flag content patterns that spam filters and mailbox-provider guidelines name. They don't predict inbox placement: sender reputation, authentication and recipient engagement decide that.
+
+Configuration using `{ accessibility: false, structure: false, links: false }` no longer disables linting because deliverability still runs. Add `deliverability: false` or use `disabled: true`. Likewise, `{ structure: false, links: false }` now runs accessibility and deliverability; add `deliverability: false` to keep accessibility only.
+
+**Custom merge-tag syntaxes get autocomplete through `opener` and `closer`**
+
+`@templatical/editor` · `@templatical/types`
+
+`SyntaxPreset` takes two optional fields, `opener` and `closer`: the characters that open and close a data tag. With an `opener`, a custom syntax gets the same type-ahead as the built-in presets, in rich text and in every merge-tag field. Without one it has none, as before. `getSyntaxTriggerChar()` and `getSyntaxClosingChar()` return them ahead of the preset lookup.
+
+```ts
+mergeTags: {
+  syntax: { value: /\{[^{}\s]+\}/g, logic: /(?!)/g, opener: "{", closer: "}" },
+  tags: [{ label: "First name", value: "{first_name}" }],
+}
+```
+
+The built-in presets declare theirs too: every `SYNTAX_PRESETS` entry has an `opener` and a `closer`. A syntax spread from a preset keeps them even with its own `value` regex, so `{ ...SYNTAX_PRESETS.liquid, value: /\[\[.+?\]\]/g }` now opens autocomplete on `{{`. Set both to `undefined` to turn that off.
+
+The opener and closer can be the same characters, as in `%FIRSTNAME%`: a field skips every tag the `value` regex matches before it looks for an opener, so the popup stays closed right after a finished tag. A whitespace-only `opener` or `closer` counts as unset, and the editor warns once about it, and about a `closer` on a custom syntax that has no `opener`.
+
+**`init({ ai })`: bring your own AI backend. Each feature is labelled as AI, in every editor locale:**
+
+`@templatical/editor`
+
+- **The AI assistant:** a chat that edits the template, one undo step per turn, starting from static, localized starters. With `chatAttachments: true` it takes PNG, JPEG, WebP or GIF images and PDFs: at most 4 per message, each at most 5 MB, 10 MB together. The header's AI button opens and closes it. On an empty template, "Import from screenshot or PDF" opens the file picker and prefills a request the author sends.
+- **Rewrite** in the paragraph toolbar.
+- **Fix with AI** on the lint findings in `AI_FIXABLE_RULES`, from the Issues panel.
+- **Write alt text** for one image, or for every image the alt rules in `AI_ALT_TEXT_RULES` flag, through a review list. Nothing is written before Apply.
+
+Fix with AI and Write alt text need `@templatical/quality` with lint on. With collaboration, the AI's edits travel as the user's batches marked `origin: 'ai'`, and other editors show "AI (for Ada) …".
+
+AI contract types are re-exported from `@templatical/editor`. **BYO contract:** editor-applied conversation Undo and Redo answers include `replayId`. The editor calls the required `conversation.settleReplay` with its application outcome, and a refusal leaves stored history unchanged.
+
+**AI as a bring-your-own contract (**BYO contract**):**
+
+`@templatical/types`
+
+- `AiProvider`, with the members `chat`, `fixFinding`, `rewrite` and `altText`, the `chatAttachments` flag and the optional `conversation`, plus their request, handler and result types. These include `AiChatAttachment`, `AiFixFinding` (a JSON subset of a lint finding) and `AiAltTextRequest`.
+- `AiChatMessage`, with attachment metadata on user messages; two-phase Undo and Redo settlement (`AiReplayOutcome` and the required `conversation.settleReplay`); and `AiMergeTags`.
+- `SdkError` gains `details` and the AI error codes, and `ThrottledError` is new.
+- **BYO contract:** `OperationBatch.origin` (`'ai'`) and the `ai` collaboration actor. A collaboration backend that switches on `actor.type` handles `ai`.
+- `invertOperations` moves here from `@templatical/core`, which re-exports it.
+
+Require AI merge-tag syntax even when no tags are declared.
+
+**New package `@templatical/ai-kit`, MIT and with no LLM SDK dependency: the editor's AI over your own backend.**
+
+`@templatical/ai-kit`
+
+- **Client:** `createHttpAiProvider`, an `AiProvider` over a documented REST and SSE wire. A chat message with attachments goes as multipart, with one `attachment` part per file.
+- **Server kit:** `readAiRequest`, the prompts, the `apply_operations` tool (`applyOperationsTool`), `runEditingTurn`, `aiEventStream` for any Fetch API server, error responses, and the output checks `checkRewrite` and `checkAltText`.
+- **Test kit:** `runAiProviderConformance` and `runAiWireConformance`; `createMockAiProvider` with recorded streams (`AI_RECORDINGS`); and an eval set of edit, fix and alt-text cases, run with `runAiEvalSet`, `evalTurnWith` and `evalAltTextWith`. The eval fixtures ship in `eval/`.
+
+**The collaboration controller applies an AI turn's operations as this session's batches, marked `origin: 'ai'`, one undo step per turn (`applyOperations`). `invertOperations` now comes from `@templatical/types`; core re-exports it.**
+
+`@templatical/core`
+
+- The collaboration controller sends a history step or an edit of more than 100 operations as consecutive batches of at most 100. It stays one undo step, and a refused chunk drops the rest of its step. This also fixes large local edits, which 0.49.0 sent as one oversized batch.
+- `useEditor().load(templateId, shouldApply?)` takes an optional guard: a stale response the guard rejects never replaces the loaded template. The editor's AI reload uses it. `useEditor()` also returns `loadVersion`, a counter of committed creates and loads, and `state.isLoading` belongs to the latest request.
+
+**BYO contract:** AI conversation Undo and Redo operations carry a `replayId`, and need the editor's application outcome settled before stored history changes.
+
 ## 0.49.0
 
 <time datetime="2026-10-21">2026-10-21</time>

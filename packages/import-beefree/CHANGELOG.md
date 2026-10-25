@@ -1,5 +1,13 @@
 # @templatical/import-beefree
 
+## 0.50.0
+
+### Patch Changes
+
+- Updated dependencies [61518b7]
+- Updated dependencies [3af9072]
+  - @templatical/types@0.50.0
+
 ## 0.49.0
 
 ### Patch Changes

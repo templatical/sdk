@@ -35,7 +35,7 @@ template first. A mid-session switch just points the bridge at that file.
 2. Start the bridge in the background (from the project root), pointing it at
    the session's template with `--file`:
    ```
-   npx -y @templatical/template-tools@0.49.0 live --file .templatical/<name>.json --json
+   npx -y @templatical/template-tools@0.50.0 live --file .templatical/<name>.json --json
    ```
    Read the URL and working-file path from the JSON line on stdout (`url`,
    `workingFile`) rather than pattern-matching prose — the bridge also opens
@@ -56,6 +56,6 @@ template first. A mid-session switch just points the bridge at that file.
 A custom block definition is previewed the same way, with `--custom-block`
 instead of `--file` (and `--host` to show it inside a template):
 
-    npx -y @templatical/template-tools@0.49.0 live --custom-block .templatical/custom-blocks/<type>.json [--host .templatical/<name>.json] --json
+    npx -y @templatical/template-tools@0.50.0 live --custom-block .templatical/custom-blocks/<type>.json [--host .templatical/<name>.json] --json
 
 That mode's loop is in [custom-block.md](custom-block.md).
