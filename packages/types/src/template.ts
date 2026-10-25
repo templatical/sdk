@@ -2,6 +2,7 @@ import type { Block } from "./blocks";
 import { DEFAULT_TEMPLATE_DEFAULTS } from "./defaults";
 import type { TemplateDefaults } from "./defaults";
 import type { ContentDirection } from "./direction";
+import type { SettingsLocaleLayer } from "./localization";
 
 export interface TemplateSettings {
   width: number;
@@ -40,6 +41,10 @@ export interface TemplateSettings {
    * screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`.
    */
   locale: string;
+  /** Other language versions; the default is `locale`. */
+  locales?: string[];
+  /** Per-language layers, keyed by BCP 47 tag; see `resolveLocale`. */
+  l10n?: Record<string, SettingsLocaleLayer>;
   /**
    * Writing direction of the delivered email: the canvas `dir` and the
    * rendered `<mjml dir>`. Independent of the editor chrome

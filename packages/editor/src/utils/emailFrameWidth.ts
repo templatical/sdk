@@ -29,7 +29,7 @@ export const DEFAULT_EMAIL_WIDTH = 600;
  * the content will actually be rendered at.
  */
 export function getEmailFrameWidth(
-  settings: TemplateSettings | undefined,
+  settings: Pick<TemplateSettings, "width"> | undefined,
   viewport: ViewportSize = "desktop",
 ): number {
   if (viewport === "mobile") return MOBILE_EMAIL_WIDTH;

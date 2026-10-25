@@ -9,7 +9,19 @@
 
 import Ajv, { type ValidateFunction, type ErrorObject } from "ajv";
 import { lintTemplate, type LintIssue } from "@templatical/quality";
-import type { TemplateContent } from "@templatical/types";
+import {
+  defaultLocaleOf,
+  isSafePath,
+  isLocaleTag,
+  readPath,
+  SETTINGS_TRANSLATABLE_FIELDS,
+  translatableFields,
+  type Block,
+  type BlockLocaleLayer,
+  type CustomBlockDefinition,
+  type SettingsLocaleLayer,
+  type TemplateContent,
+} from "@templatical/types";
 import rawSchema from "../schema.json";
 
 interface SchemaDefinition {
@@ -102,6 +114,141 @@ function formatAjvErrors(
   });
 }
 
+function pathNeedsDottedElementId(target: unknown, path: string): boolean {
+  const segments = path.split(".");
+  let current = target;
+  for (let i = 0; i < segments.length; i++) {
+    if (Array.isArray(current)) {
+      const remaining = segments.slice(i).join(".");
+      if (
+        current.some(
+          (item) =>
+            typeof item?.id === "string" &&
+            item.id.includes(".") &&
+            (remaining === item.id || remaining.startsWith(`${item.id}.`)),
+        )
+      )
+        return true;
+    }
+    current = readPath(current, segments[i]);
+  }
+  return false;
+}
+
+function validateLocalization(
+  content: TemplateContent,
+  flat: FlatBlock[],
+  definitions: readonly CustomBlockDefinition[],
+): string[] {
+  const { settings } = content;
+  if (
+    settings.locales === undefined &&
+    settings.l10n === undefined &&
+    !flat.some(({ block }) => block?.l10n !== undefined)
+  )
+    return [];
+
+  const errors: string[] = [];
+  const checkedTag = (tag: string, where: string): string | undefined => {
+    if (isLocaleTag(tag)) return tag.toLowerCase();
+    errors.push(
+      `${where} must be a valid LOC1 locale tag (2–3 letter language, then 2–8 character subtags)`,
+    );
+    return undefined;
+  };
+  const fallback = checkedTag(defaultLocaleOf(content), "settings.locale");
+  const locales = settings.locales ?? [];
+  if (settings.locales?.length === 0) {
+    errors.push("settings.locales must be omitted when empty");
+  }
+  const seen = new Set<string>();
+  locales.forEach((tag, i) => {
+    const normalized = checkedTag(tag, `settings.locales[${i}]`);
+    if (normalized === undefined) return;
+    if (normalized === fallback) {
+      errors.push(`settings.locales[${i}] must not contain the default locale`);
+    }
+    if (seen.has(normalized)) {
+      errors.push(`settings.locales[${i}] is a duplicate locale`);
+    }
+    seen.add(normalized);
+  });
+
+  const checkLayers = (
+    target: unknown,
+    layers: Record<string, BlockLocaleLayer | SettingsLocaleLayer> | undefined,
+    where: string,
+    textPaths: readonly string[],
+    immutable: readonly string[],
+  ) => {
+    if (layers === undefined) return;
+    if (Object.keys(layers).length === 0) {
+      errors.push(`${where}.l10n must be omitted when empty`);
+    }
+    for (const [locale, layer] of Object.entries(layers)) {
+      const prefix = `${where}.l10n[${JSON.stringify(locale)}]`;
+      checkedTag(locale, prefix);
+      if (!locales.includes(locale)) {
+        errors.push(`${prefix} must be declared in settings.locales`);
+      }
+      if (Object.keys(layer).length === 0) {
+        errors.push(`${prefix} must be omitted when empty`);
+      }
+      for (const kind of ["text", "set"] as const) {
+        const entries = layer[kind];
+        if (entries === undefined) continue;
+        if (Object.keys(entries).length === 0) {
+          errors.push(`${prefix}.${kind} must be omitted when empty`);
+        }
+        for (const path of Object.keys(entries)) {
+          const field = `${prefix}.${kind}[${JSON.stringify(path)}]`;
+          if (!isSafePath(path)) {
+            errors.push(`${field} is an unsafe path`);
+            continue;
+          }
+          if (readPath(target, path) === undefined) {
+            if (pathNeedsDottedElementId(target, path)) {
+              errors.push(
+                `${field}: element ids containing '.' can't be localized`,
+              );
+              continue;
+            }
+            errors.push(`${field} does not resolve in its base`);
+          }
+          if (immutable.includes(path.split(".")[0])) {
+            errors.push(`${field} cannot override ${path.split(".")[0]}`);
+          }
+          if (kind === "text" && !textPaths.includes(path)) {
+            errors.push(`${field} is not translatable`);
+          }
+          if (kind === "text" && layer.set && Object.hasOwn(layer.set, path)) {
+            errors.push(`${field} must not appear in both text and set`);
+          }
+        }
+      }
+    }
+  };
+
+  for (const { path, block } of flat) {
+    const typed = block as unknown as Block;
+    checkLayers(
+      typed,
+      typed.l10n,
+      path,
+      translatableFields(typed, definitions),
+      ["id", "type", "children", "l10n"],
+    );
+  }
+  checkLayers(
+    settings,
+    settings.l10n,
+    "settings",
+    SETTINGS_TRANSLATABLE_FIELDS,
+    ["locale", "locales", "l10n"],
+  );
+  return errors;
+}
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
@@ -109,9 +256,13 @@ export interface ValidationResult {
 
 /**
  * Structural validation. Synchronous, depends only on ajv + the committed
- * schema.json (no build of the workspace packages required).
+ * schema.json, followed by localization semantics. Custom text paths require
+ * the matching definitions; without them, custom blocks have no text paths.
  */
-export function validateTemplate(data: unknown): ValidationResult {
+export function validateTemplate(
+  data: unknown,
+  definitions: readonly CustomBlockDefinition[] = [],
+): ValidationResult {
   const errors: string[] = [];
 
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
@@ -145,6 +296,12 @@ export function validateTemplate(data: unknown): ValidationResult {
     if (!validate(block)) {
       errors.push(...formatAjvErrors(validate.errors, `${path} (${type})`));
     }
+  }
+
+  if (errors.length === 0) {
+    errors.push(
+      ...validateLocalization(data as TemplateContent, flat, definitions),
+    );
   }
 
   return { valid: errors.length === 0, errors };

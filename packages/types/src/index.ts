@@ -232,6 +232,29 @@ export {
 
 // Template
 export type { TemplateContent, TemplateSettings } from "./template";
+
+// Localization
+export type {
+  LocalizedText,
+  BlockLocaleLayer,
+  SettingsLocaleLayer,
+  LocaleCoverage,
+} from "./localization";
+export {
+  TRANSLATABLE_FIELDS,
+  SETTINGS_TRANSLATABLE_FIELDS,
+  isSafePath,
+  isLocaleTag,
+  readPath,
+  writePath,
+  translatableFields,
+  isTranslatablePath,
+  sourceHash,
+  localizeBlock,
+  defaultLocaleOf,
+  resolveLocale,
+  localeCoverage,
+} from "./localization";
 export { createDefaultTemplateContent } from "./template";
 export type { ContentDirection } from "./direction";
 export {

@@ -52,6 +52,8 @@ interface TemplateSettings {
   fontFamily: string;             // Standard-Schriftfamilie
   preheaderText?: string;         // E-Mail-Preheader-Text
   locale: string;                 // BCP-47-Inhaltssprache; <html lang> (Standard 'en')
+  locales?: string[];             // Weitere Sprachversionen; locale ist der Standard
+  l10n?: Record<string, SettingsLocaleLayer>; // Sprachebenen der Einstellungen
   direction?: ContentDirection;   // 'ltr' | 'rtl'; ungesetzt folgt der Inhaltssprache
 }
 
@@ -105,6 +107,7 @@ interface BaseBlock {
   styles: BlockStyles;
   visibility?: BlockVisibility;
   displayCondition?: DisplayCondition;
+  l10n?: Record<string, BlockLocaleLayer>;
 }
 ```
 
