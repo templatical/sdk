@@ -335,6 +335,41 @@ describe("createAnthropicAdapter", () => {
     ).rejects.toBe(broken);
   });
 
+  it("rejects an abort during finalMessage without yielding state or tool calls", async () => {
+    const controller = new AbortController();
+    const reason = new Error("Cancelled Anthropic turn");
+    const { client } = fakeAnthropic([
+      {
+        text: ["On it."],
+        content: [call],
+        stopReason: "tool_use",
+        onFinal: () => controller.abort(reason),
+      },
+    ]);
+    const parts: AiModelPart[] = [];
+    const result = (async () => {
+      for await (const part of createAnthropicAdapter({
+        client,
+        model: "m",
+      }).stream({
+        system: "S",
+        messages: [user("Hi")],
+        tools: [applyOperationsTool],
+        signal: controller.signal,
+      })) {
+        parts.push(part);
+      }
+    })();
+
+    await expect(result).rejects.toBe(reason);
+    expect(
+      parts.filter(
+        (part) => part.type === "tool-call" || part.type === "state",
+      ),
+    ).toEqual([]);
+    expect(parts).toEqual([{ type: "text", text: "On it." }]);
+  });
+
   it("passes the signal to the client", async () => {
     const { client, requests } = fakeAnthropic([{ text: ["ok"] }]);
     const controller = new AbortController();

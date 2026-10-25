@@ -1,3 +1,4 @@
+import type { OpenAiAdapterClient } from "../../src/adapters/openai";
 import type { AnthropicAdapterClient } from "../../src/adapters/anthropic";
 
 export interface AnthropicStep {
@@ -9,6 +10,7 @@ export interface AnthropicStep {
   usage?: Record<string, number | null>;
   /** Thrown while streaming. */
   error?: unknown;
+  onFinal?: () => void;
 }
 
 /** A scripted `messages.stream`: one step per call, recording each request body and signal. */
@@ -40,6 +42,7 @@ export function fakeAnthropic(steps: AnthropicStep[]) {
             }
           },
           async finalMessage() {
+            step.onFinal?.();
             return {
               id: "msg_1",
               type: "message",
@@ -72,4 +75,74 @@ export function fakeAnthropic(steps: AnthropicStep[]) {
     },
   };
   return { client: client as unknown as AnthropicAdapterClient, requests };
+}
+
+export interface OpenAiStep {
+  /** Chunks with one choice each; the choice index defaults to 0. */
+  deltas?: {
+    delta: Record<string, unknown>;
+    finish_reason?: string | null;
+    choiceIndex?: number;
+  }[];
+  usage?: Record<string, unknown> | null;
+  error?: unknown;
+}
+
+/** A scripted `chat.completions.create` with `stream: true`. */
+export function fakeOpenAi(steps: OpenAiStep[]) {
+  const requests: { body: Record<string, any>; signal?: AbortSignal | null }[] =
+    [];
+  const client = {
+    chat: {
+      completions: {
+        async create(
+          body: Record<string, any>,
+          options?: { signal?: AbortSignal | null },
+        ) {
+          requests.push({
+            body: JSON.parse(JSON.stringify(body)),
+            signal: options?.signal,
+          });
+          const step = steps[requests.length - 1] ?? {};
+          if (step.error) throw step.error;
+          return (async function* () {
+            for (const {
+              delta,
+              finish_reason,
+              choiceIndex = 0,
+            } of step.deltas ?? []) {
+              await Promise.resolve();
+              yield {
+                id: "c",
+                object: "chat.completion.chunk",
+                created: 0,
+                model: body.model,
+                choices: [
+                  {
+                    index: choiceIndex,
+                    delta,
+                    finish_reason: finish_reason ?? null,
+                  },
+                ],
+              };
+            }
+            if (step.usage !== null)
+              yield {
+                id: "c",
+                object: "chat.completion.chunk",
+                created: 0,
+                model: body.model,
+                choices: [],
+                usage: step.usage ?? {
+                  prompt_tokens: 12,
+                  completion_tokens: 4,
+                  total_tokens: 16,
+                },
+              };
+          })();
+        },
+      },
+    },
+  };
+  return { client: client as unknown as OpenAiAdapterClient, requests };
 }

@@ -173,6 +173,7 @@ export function createAnthropicAdapter(
             yield { type: "text", text: event.delta.text };
         }
         final = await stream.finalMessage();
+        signal?.throwIfAborted();
       } catch (error) {
         throw providerError(error);
       }

@@ -11,6 +11,7 @@ export default defineConfig({
     'server/index': 'src/server/index.ts',
     'testing/index': 'src/testing/index.ts',
     'adapters/anthropic': 'src/adapters/anthropic.ts',
+    'adapters/openai': 'src/adapters/openai.ts',
   },
   format: ['esm'],
   // Isomorphic by contract (A1 BY4): browsers, Node, Workers, Deno, Bun.

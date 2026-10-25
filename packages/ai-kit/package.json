@@ -36,6 +36,10 @@
       "types": "./dist/adapters/anthropic.d.ts",
       "import": "./dist/adapters/anthropic.js"
     },
+    "./adapters/openai": {
+      "types": "./dist/adapters/openai.d.ts",
+      "import": "./dist/adapters/openai.js"
+    },
     "./prompts/*": "./prompts/*",
     "./schema/*": "./schema/*",
     "./eval/*": "./eval/*"
