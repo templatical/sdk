@@ -24,9 +24,18 @@ describe("@templatical/ai-kit's shape", () => {
     );
   });
 
-  it("depends on @templatical/types and nothing else", () => {
+  it("depends on @templatical/types, with the provider SDKs as optional peers", () => {
     expect(pkg.dependencies).toEqual({ "@templatical/types": "workspace:*" });
-    expect(pkg.peerDependencies).toBe(undefined);
+    expect(pkg.peerDependencies).toEqual({
+      "@anthropic-ai/sdk": "^1",
+      ai: "^7",
+      openai: "^7",
+    });
+    expect(pkg.peerDependenciesMeta).toEqual({
+      "@anthropic-ai/sdk": { optional: true },
+      ai: { optional: true },
+      openai: { optional: true },
+    });
   });
 
   it("exports the wire, the client, the server kit, the test kit and the assets", () => {

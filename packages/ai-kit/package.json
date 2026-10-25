@@ -7,7 +7,11 @@
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
+    "@anthropic-ai/bedrock-sdk": "^1.0.0",
+    "@anthropic-ai/sdk": "^1.1.0",
     "@types/node": "^25.9.9",
+    "ai": "^7.0.148",
+    "openai": "^7.42.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },
@@ -51,6 +55,22 @@
   ],
   "license": "MIT",
   "module": "./dist/index.js",
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "^1",
+    "ai": "^7",
+    "openai": "^7"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
+  },
   "publishConfig": {
     "access": "public"
   },
