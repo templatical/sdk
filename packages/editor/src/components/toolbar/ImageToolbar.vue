@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import MediaDropOverlay from "../MediaDropOverlay.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import BorderControl from "./BorderControl.vue";
@@ -49,6 +50,7 @@ const emit = defineEmits<{
 const { t, format } = useI18n();
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const editor = inject(EDITOR_KEY, null);
+const localized = editor ? useLocalizedDisplay(editor) : null;
 const layout = inject(LAYOUT_KEY, undefined);
 
 const pulseSrc = ref(false);
@@ -180,7 +182,7 @@ const displaySrc = useResolvedImageSrc(() =>
 );
 const measuredSize = useNaturalImageSize(() => displaySrc.value);
 const room = computed(() =>
-  editor ? imageRoom(editor.content.value, props.block.id, layout) : null,
+  localized ? imageRoom(localized.content.value, props.block.id, layout) : null,
 );
 const aspectLock = useImageAspectLock({
   block: () => props.block,

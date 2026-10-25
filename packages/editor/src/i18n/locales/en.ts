@@ -1,4 +1,8 @@
 export default {
+  localization: {
+    structureNotice: "Structure changes apply to every language",
+    aiDefaultLanguage: "AI chat edits the default language.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Powered by",

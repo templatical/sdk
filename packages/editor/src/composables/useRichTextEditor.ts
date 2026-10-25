@@ -1,3 +1,4 @@
+import { useLocalizedDisplay } from "./useLocalizedDisplay";
 import type {
   Editor,
   EditorContent as EditorContentComponent,
@@ -107,10 +108,11 @@ export function useRichTextEditor(
   const editor = shallowRef<Editor | null>(null);
 
   // `content` is a ref on the real editor and absent on headless mounts.
+  const localized = emailEditor?.content
+    ? useLocalizedDisplay(emailEditor)
+    : null;
   const contentDirection = () =>
-    resolveContentDirection(
-      emailEditor?.content?.value?.settings ?? { locale: "en" },
-    );
+    resolveContentDirection(localized?.settings.value ?? { locale: "en" });
 
   watch(contentDirection, (dir) => {
     const el = editor.value?.view.dom;

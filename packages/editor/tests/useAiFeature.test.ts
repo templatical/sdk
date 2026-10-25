@@ -3394,3 +3394,92 @@ it("keeps the returning A session's messages and replay records after an old New
   await ai.send("Publish memory again");
   expect(ai.messages.value.map((row) => row.id)).toContain(answer.id);
 });
+
+describe('AI in language views', () => {
+  it('hides fixes and alt text in a non-default view while chat requests and edits the base', async () => {
+    let sent: TemplateContent | undefined;
+    const { ai, editor, scope } = await openLocal({
+      chat: async (request, on) => {
+        sent = request.content;
+        await on.onOperations(greet);
+        return { messageId: null, text: 'Done' };
+      },
+      fixFinding: async () => ({ messageId: null, text: '' }),
+      altText: async () => ({ alt: 'Image' }),
+    });
+    try {
+      editor.addLocale('de');
+      editor.setActiveLocale('de');
+      editor.updateBlock('t1', { content: '<p>Hallo</p>' });
+      await ai.send('Change the default');
+      expect(JSON.stringify(sent)).not.toContain('l10n');
+      expect(sent?.settings.locales).toBeUndefined();
+      expect(sent?.blocks[0]).toMatchObject({ content: '<p>Hi</p>' });
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hello</p>', l10n: { de: { text: { content: { value: '<p>Hallo</p>' } } } } });
+      expect(ai.has('fixFinding')).toBe(false);
+      expect(ai.has('altText')).toBe(false);
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
+  it('ignores a fix that finishes after the active language changes', async () => {
+    let finish!: () => void;
+    const ready = new Promise<void>((resolve) => { finish = resolve; });
+    let started!: () => void;
+    const entered = new Promise<void>((resolve) => { started = resolve; });
+    const { ai, editor, scope } = await openLocal({ fixFinding: async (_request, on) => {
+      started();
+      await ready;
+      await on.onOperations(greet);
+      return { messageId: null, text: 'Done' };
+    } });
+    try {
+      editor.addLocale('de');
+      const pending = ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any);
+      await entered;
+      editor.setActiveLocale('de');
+      finish();
+      await pending;
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>' });
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
+  it('abandons alt text and rewrite results when their starting language changes', async () => {
+    let finish!: () => void;
+    const ready = new Promise<void>((resolve) => { finish = resolve; });
+    let entered = 0;
+    const { ai, editor, scope } = await openLocal({
+      altText: async () => { entered++; await ready; return { alt: 'Draft' }; },
+      rewrite: async (_request, on) => { entered++; await ready; on.onText('Draft'); },
+    });
+    try {
+      editor.content.value.blocks.push({ id: 'image', type: 'image', src: 'https://example.com/a.png', alt: 'Old' } as any);
+      editor.addLocale('de');
+      const alt = ai.draftAltText('image').catch((error) => error);
+      const onText = vi.fn();
+      const rewrite = ai.rewrite({ text: 'Hi', instruction: 'shorten' } as any, onText, new AbortController().signal).catch((error) => error);
+      await vi.waitFor(() => expect(entered).toBe(2));
+      editor.setActiveLocale('de');
+      finish();
+      expect(await alt).toMatchObject({ name: 'AbortError' });
+      expect(await rewrite).toMatchObject({ name: 'AbortError' });
+      expect(onText).not.toHaveBeenCalled();
+    } finally { ai.destroy(); scope.stop(); }
+  });
+});
+
+
+it('abandons a completed rewrite response even when it emitted no text chunks', async () => {
+  let finish!: (value: { html: string }) => void;
+  const response = new Promise<{ html: string }>((resolve) => { finish = resolve; });
+  let entered!: () => void;
+  const ready = new Promise<void>((resolve) => { entered = resolve; });
+  const { ai, editor, scope } = await openLocal({ rewrite: async () => { entered(); return response; } });
+  try {
+    editor.addLocale('de');
+    const pending = ai.rewrite({ html: '<p>Hi</p>', preset: 'shorter', language: null, instruction: null }, () => {}, new AbortController().signal).catch((error) => error);
+    await ready;
+    editor.setActiveLocale('de');
+    finish({ html: '<p>Draft</p>' });
+    expect(await pending).toMatchObject({ name: 'AbortError' });
+  } finally { ai.destroy(); scope.stop(); }
+});

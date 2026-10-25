@@ -4,6 +4,9 @@ import {
   createDefaultTemplateContent,
   createParagraphBlock,
   createSectionBlock,
+  safeClone,
+  type Block,
+  type TemplateContent,
 } from "@templatical/types";
 import { useEditor } from "../src/editor";
 import { useHistory } from "../src/history";
@@ -230,4 +233,152 @@ describe("useHistoryInterceptor", () => {
     editor.updateSettings(settings);
     expect(originals.updateSettings).toHaveBeenCalledWith(settings);
   });
+});
+
+function unregisteredAdapter(seed: TemplateContent, locked: Set<string>) {
+  const content = ref(seed);
+  const activeLocale = ref<string | null>(null);
+  function findBlockLocation(id: string) {
+    const index = content.value.blocks.findIndex((block) => block.id === id);
+    if (index !== -1) return { index };
+    for (const section of content.value.blocks)
+      if (section.type === "section") {
+        for (const [columnIndex, column] of section.children.entries()) {
+          const index = column.findIndex((block) => block.id === id);
+          if (index !== -1)
+            return { index, targetSectionId: section.id, columnIndex };
+        }
+      }
+    return null;
+  }
+  const findBlock = (id: string) =>
+    content.value.blocks
+      .flatMap((block) =>
+        block.type === "section" ? [block, ...block.children.flat()] : [block],
+      )
+      .find((block) => block.id === id) ?? null;
+  const list = (sectionId?: string, columnIndex = 0) => {
+    const section = sectionId ? findBlock(sectionId) : null;
+    return section?.type === "section"
+      ? section.children[columnIndex]
+      : content.value.blocks;
+  };
+  return {
+    content,
+    activeLocale,
+    findBlock,
+    findBlockLocation,
+    canEdit: () => activeLocale.value !== "de",
+    setActiveLocale: (locale: string | null) => {
+      activeLocale.value = locale;
+    },
+    setContent: (value: TemplateContent) => {
+      content.value = value;
+    },
+    isBlockLocked: (id: string) => locked.has(id),
+    addBlock: (block: Block, sectionId?: string, columnIndex?: number) => {
+      list(sectionId, columnIndex).push(block);
+    },
+    removeBlock: (id: string) => {
+      const location = findBlockLocation(id);
+      if (location)
+        list(location.targetSectionId, location.columnIndex).splice(
+          location.index,
+          1,
+        );
+    },
+    moveBlock: () => {},
+    updateBlock: () => {},
+    updateSettings: () => {},
+  };
+}
+
+describe("ref-backed history adapters", () => {
+  it.each(["spread", "unregistered"])(
+    "inserts, removes and refuses locked edits through a %s adapter",
+    (kind) => {
+      const seed = createDefaultTemplateContent();
+      seed.settings.locales = ["de", "fr"];
+      seed.blocks = [
+        createParagraphBlock({ id: "base" }),
+        createSectionBlock({ id: "section", children: [[]] }),
+      ];
+      const locked = new Set<string>();
+      const peerLocks = ref(new Map<string, unknown>());
+      const adapter =
+        kind === "spread"
+          ? {
+              ...useEditor({
+                content: seed,
+                localization: { locales: ["fr"] },
+                lockedBlocks: peerLocks,
+              }),
+            }
+          : unregisteredAdapter(seed, locked);
+      const history = useHistory({
+        content: adapter.content,
+        setContent: adapter.setContent,
+      });
+      useHistoryInterceptor(adapter, history);
+      try {
+        const child = createParagraphBlock({
+          id: "inserted",
+          content: "<p>Inserted</p>",
+        });
+        const children = () =>
+          (
+            adapter.content.value.blocks[1] as Extract<
+              Block,
+              { type: "section" }
+            >
+          ).children[0];
+        expect(() => adapter.addBlock(child, "section", 0)).not.toThrow();
+        expect(children().map((block) => block.id)).toEqual(["inserted"]);
+        history.undo();
+        expect(children()).toEqual([]);
+        history.redo();
+        expect(children().map((block) => block.id)).toEqual(["inserted"]);
+        adapter.removeBlock("inserted");
+        expect(children()).toEqual([]);
+        history.undo();
+        expect(children().map((block) => block.id)).toEqual(["inserted"]);
+        expect(history.canUndo.value).toBe(true);
+        expect(history.canRedo.value).toBe(true);
+        for (const id of ["inserted", "section"]) {
+          locked.add(id);
+          peerLocks.value.set(id, {
+            blockId: id,
+            locale: "fr",
+            holder: { sessionId: "peer" },
+          });
+        }
+        const before = safeClone(adapter.content.value);
+        const record = vi.spyOn(history, "record");
+        adapter.removeBlock("inserted");
+        expect(() =>
+          adapter.addBlock(
+            createParagraphBlock({ id: "refused" }),
+            "section",
+            0,
+          ),
+        ).not.toThrow();
+        expect(adapter.content.value).toEqual(before);
+        expect(record).not.toHaveBeenCalled();
+        locked.clear();
+        peerLocks.value.clear();
+        adapter.setActiveLocale("de");
+        adapter.addBlock(createParagraphBlock({ id: "readonly" }));
+        expect(adapter.content.value).toEqual(before);
+        expect(record).not.toHaveBeenCalled();
+        expect(history.canUndo.value).toBe(true);
+        expect(history.canRedo.value).toBe(true);
+        history.redo();
+        expect(children()).toEqual([]);
+        history.undo();
+        expect(children().map((block) => block.id)).toEqual(["inserted"]);
+      } finally {
+        history.destroy();
+      }
+    },
+  );
 });

@@ -18,10 +18,11 @@ import type {
   TemplateContent,
   UiTheme,
 } from "@templatical/types";
-import { cloneBlock, safeClone } from "@templatical/types";
+import { cloneBlock, defaultLocaleOf, safeClone } from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
+import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useCollaborationFeature } from "./composables/useCollaborationFeature";
 import { useCommentsFeature } from "./composables/useCommentsFeature";
@@ -176,7 +177,13 @@ const templatesProvider =
     : normalizedTemplates;
 
 // --- Core editor state ---
+const structureNotice = ref(false);
 const editor = useEditor({
+  localization: props.config.localization ?? { locales: [] },
+  onLocaleChange: props.config.onLocaleChange,
+  onStructureChange: () => {
+    structureNotice.value = true;
+  },
   content: props.config.content!,
   // Seeds a *new* template's body font when no `content` was supplied. Only the
   // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
@@ -194,6 +201,15 @@ const editor = useEditor({
   lockSessionId: collaboration?.core.sessionId,
 });
 
+const localized = useLocalizedDisplay(editor);
+editor.setCustomBlockDefinitions(props.config.customBlocks ?? []);
+if (collaboration) {
+  watch(
+    editor.activeLocale,
+    (locale) => collaboration.core.setLockLocale(locale),
+    { flush: "sync" },
+  );
+}
 collaboration?.attach(editor);
 
 const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
@@ -611,6 +627,9 @@ const templateLifecycle = templates ?? editor;
 const scrollToBlock = useScrollToBlock(core.editorRoot);
 
 defineExpose({
+  getLocale: () =>
+    editor.activeLocale.value ?? defaultLocaleOf(editor.content.value),
+  setLocale: (locale: string) => editor.setActiveLocale(locale),
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
   insertBlock: (block: Block): string | null => {
@@ -725,6 +744,14 @@ defineExpose({
           <div
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
           >
+            <div
+              v-if="structureNotice"
+              data-testid="locale-structure-notice"
+              role="status"
+              :class="warningBtnCompactClass"
+            >
+              {{ core.t.localization.structureNotice }}
+            </div>
             <!-- Sample / Label. Preview mode only: merge tags are never
                  substituted on the editing canvas, so the choice would have no
                  effect there. A configured `resolvePreview` supersedes samples
@@ -809,8 +836,12 @@ defineExpose({
       <RightSidebar
         v-show="!editor.state.previewMode"
         v-model:tab="rightSidebarTab"
-        :selected-block="editor.selectedBlock.value"
-        :settings="editor.content.value.settings"
+        :selected-block="
+          editor.selectedBlock.value
+            ? localized.displayBlock(editor.selectedBlock.value)
+            : null
+        "
+        :settings="localized.settings.value"
         :shifted-left="rightPanelOpen"
         @update-block="
           (updates) =>

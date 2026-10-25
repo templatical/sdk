@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const es: typeof en = {
+  localization: {
+    structureNotice: "Los cambios de estructura se aplican a todos los idiomas",
+    aiDefaultLanguage: "El chat de IA edita el idioma predeterminado.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",

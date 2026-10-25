@@ -47,6 +47,11 @@ button is the absent key, not a bug. `useSavedBlocks` / `useVersionHistory` /
 mounted**. They are not how you attach a provider to an editor that is
 already up.
 
+`localization: { locales: string[] }` enables template language versions in `init()`; `initCloud()` ignores it until LOC3.
+`getLocale(): string` returns the active template language, initially the template default.
+`setLocale(locale: string): void` selects the default or an existing version; an unknown version throws `SdkError` with code `unknown_locale`.
+`onLocaleChange?: (locale: string) => void` receives the selected language after a change, including fallback to the default.
+
 Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
 the `backend/` pages.
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import { useI18n } from "../../composables/useI18n";
 import type { Block, ViewportSize } from "@templatical/types";
 import {
@@ -34,6 +35,7 @@ import { readableTextColor } from "../../utils/readableTextColor";
 
 const props = defineProps<{
   block: Block;
+  displayBlock?: Block;
   isSelected: boolean;
   viewport?: ViewportSize;
   previewMode?: boolean;
@@ -51,6 +53,8 @@ const props = defineProps<{
    */
   picked?: boolean;
 }>();
+
+const display = computed(() => props.displayBlock ?? props.block);
 
 const emit = defineEmits<{
   (e: "select"): void;
@@ -119,10 +123,10 @@ function handleDragKeydown(event: KeyboardEvent): void {
 }
 
 const isHiddenOnViewport = computed(() => {
-  if (!props.viewport || !props.block.visibility) {
+  if (!props.viewport || !display.value.visibility) {
     return false;
   }
-  return props.block.visibility[props.viewport] === false;
+  return display.value.visibility[props.viewport] === false;
 });
 
 // In edit mode a viewport-hidden block stays rendered (dimmed + badge) so it
@@ -143,7 +147,7 @@ const hiddenLabel = computed(() => {
   return labels[props.viewport] ?? props.viewport;
 });
 
-const hasDisplayCondition = computed(() => !!props.block.displayCondition);
+const hasDisplayCondition = computed(() => !!display.value.displayCondition);
 
 const blockActions = inject(BLOCK_ACTIONS_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
@@ -193,11 +197,11 @@ const agentHighlight = computed(
 // `src`; the resolved URL is display-only and never enters the content model.
 // A merge-tag URL is neither resolved nor painted (`null`), as on ImageBlock.
 const sectionBackgroundUrl = useResolvedBackgroundUrl(() =>
-  props.block.type === "section" ? props.block.backgroundImage : undefined,
+  display.value.type === "section" ? display.value.backgroundImage : undefined,
 );
 const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
-  props.block.type === "section"
-    ? props.block.wrapper?.backgroundImage
+  display.value.type === "section"
+    ? display.value.wrapper?.backgroundImage
     : undefined,
 );
 
@@ -214,14 +218,15 @@ const wrapperBackgroundUrl = useResolvedBackgroundUrl(() =>
 // moved the number and the canvas never changed, while a unit test on
 // `getBlockWrapperStyle` still passed.
 const editor = inject(EDITOR_KEY, null);
+const localized = editor ? useLocalizedDisplay(editor) : null;
 const layout = inject(LAYOUT_KEY, undefined);
 
 const contentStyle = computed(() =>
-  getBlockWrapperStyle(props.block, {
+  getBlockWrapperStyle(display.value, {
     backgroundImageUrl: sectionBackgroundUrl.value,
     heroBoxWidth: matchImageBoxWidth(
-      props.block,
-      editor?.content.value,
+      display.value,
+      localized?.content.value,
       layout,
     ),
   }),
@@ -231,7 +236,7 @@ const contentStyle = computed(() =>
 // a band with its own background + padding + radius framing the section's box.
 // `null` for non-wrapped blocks keeps the DOM unchanged (no extra element).
 const sectionWrapperStyle = computed(() =>
-  getSectionWrapperStyle(props.block, {
+  getSectionWrapperStyle(display.value, {
     backgroundImageUrl: wrapperBackgroundUrl.value,
   }),
 );

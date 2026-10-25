@@ -234,7 +234,7 @@ export interface BaseEditorReturn {
     targetSectionId?: string,
     columnIndex?: number,
   ) => void;
-  isBlockLocked: (blockId: string) => boolean;
+  isBlockLocked: (blockId: string, structure?: boolean) => boolean;
   markDirty: () => void;
   findBlockLocation: (blockId: string) => {
     targetSectionId?: string;

@@ -12,6 +12,7 @@ import type {
   WrapperBlock,
 } from "@templatical/types";
 import {
+  sourceHash,
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
@@ -209,12 +210,12 @@ export function normalizeMergeTagsInHtml(
 }
 
 /** Normalize localized rich content without changing source hashes or caller-owned objects. */
-function normalizeLocaleText(
+function normalizeLocaleText<T extends LocalizedText | null>(
   blockType: string | undefined,
-  text: Record<string, LocalizedText> | undefined,
+  text: Record<string, T> | undefined,
   mergeTags: MergeTag[],
   syntax: SyntaxPreset,
-): Record<string, LocalizedText> | undefined {
+): Record<string, T> | undefined {
   if (
     (blockType !== "title" &&
       blockType !== "paragraph" &&
@@ -299,7 +300,26 @@ function normalizeBlock(
   if (typeof block.content !== "string") return block;
 
   const content = normalizeMergeTagsInHtml(block.content, mergeTags, syntax);
-  return content === block.content ? block : { ...block, content };
+  if (content === block.content) return block;
+  const before = sourceHash(block.content);
+  const after = sourceHash(content);
+  const restamped =
+    block.l10n &&
+    Object.fromEntries(
+      Object.entries(block.l10n).map(([locale, layer]) => {
+        const entry = layer.text?.content;
+        return [
+          locale,
+          entry?.source === before
+            ? {
+                ...layer,
+                text: { ...layer.text, content: { ...entry, source: after } },
+              }
+            : layer,
+        ];
+      }),
+    );
+  return { ...block, content, ...(restamped ? { l10n: restamped } : {}) };
 }
 
 /**
@@ -542,9 +562,23 @@ export function normalizeRemoteOperations(
       const type =
         added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
       const text = normalizeLocaleText(type, op.text, tags, syntax);
-      if (text === op.text) return op;
+      const expectText = normalizeLocaleText(
+        type,
+        op.expect?.text,
+        tags,
+        syntax,
+      );
+      const expect =
+        op.expect && expectText !== op.expect.text
+          ? { ...op.expect, text: expectText }
+          : op.expect;
+      if (text === op.text && expect === op.expect) return op;
       changed = true;
-      return { ...op, text };
+      return {
+        ...op,
+        ...(text ? { text } : {}),
+        ...(expect ? { expect } : {}),
+      };
     }
     if (op.op === "updateBlock") {
       const type =

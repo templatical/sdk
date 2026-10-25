@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const de: typeof en = {
+  localization: {
+    structureNotice: "Strukturänderungen gelten für jede Sprache",
+    aiDefaultLanguage: "Der KI-Chat bearbeitet die Standardsprache.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",

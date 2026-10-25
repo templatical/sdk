@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const ptBR: typeof en = {
+  localization: {
+    structureNotice: "As alterações de estrutura se aplicam a todos os idiomas",
+    aiDefaultLanguage: "O chat de IA edita o idioma padrão.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Desenvolvido por",

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { updateBlockList } from "../../utils/updateBlockList";
+import { useLocalizedDisplay } from "../../composables/useLocalizedDisplay";
 import BlockWrapper from "./BlockWrapper.vue";
 import ButtonBlock from "./ButtonBlock.vue";
 import CustomBlock from "./CustomBlock.vue";
@@ -43,6 +45,13 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const editor = requireInject(EDITOR_KEY, "SectionBlock");
+const { displayBlock } = useLocalizedDisplay(editor);
+const baseBlock = computed(
+  () =>
+    editor.content.value.blocks.find(
+      (block) => block.id === props.block.id && block.type === "section",
+    ) as SectionBlockType | undefined,
+);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 const caps = inject(CAPABILITIES_KEY, {});
@@ -84,7 +93,12 @@ const columnWidths = computed(() => {
 
 const columns = computed(() => {
   const count = columnWidths.value.length;
-  const children = [...props.block.children];
+  const children = [
+    ...(editor.state.previewMode
+      ? props.block
+      : (baseBlock.value ?? props.block)
+    ).children,
+  ];
   while (children.length < count) {
     children.push([]);
   }
@@ -154,19 +168,7 @@ function holdsPlaceholderHeight(colIndex: number): boolean {
 }
 
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
-  // Strip non-Block fields (e.g., a DOM `.el` back-reference Sortable
-  // attaches to its list root expando) before the array lands in state.
-  // The block factories produce flat, JSON-clean shapes; rebuilding each
-  // entry as a plain object keeps the contract intact without a full
-  // deep clone and prevents `history.cloneContent` from later choking on
-  // a cyclic structure.
-  const safeBlocks = blocks.map((b) => JSON.parse(JSON.stringify(b)) as Block);
-  const newChildren = [...props.block.children];
-  while (newChildren.length <= colIndex) {
-    newChildren.push([]);
-  }
-  newChildren[colIndex] = safeBlocks;
-  editor.updateBlock(props.block.id, { children: newChildren });
+  updateBlockList(editor, blocks, props.block.id, colIndex);
 }
 
 function getBlockComponent(block: Block): Component | null {
@@ -239,6 +241,16 @@ function handleFetchData(
             'tpl:min-h-[60px]': holdsDropHeight(colIndex),
             'tpl:min-h-[34px]': holdsPlaceholderHeight(colIndex),
           }"
+          @update="
+            (event) =>
+              updateBlockList(
+                editor,
+                getColumnBlocks(colIndex),
+                props.block.id,
+                colIndex,
+                event,
+              )
+          "
           @start="dragSourceCol = colIndex"
           @end="dragSourceCol = null"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
@@ -250,6 +262,7 @@ function handleFetchData(
           >
             <BlockWrapper
               :block="childBlock"
+              :display-block="displayBlock(childBlock)"
               :is-selected="editor.state.selectedBlockId === childBlock.id"
               :viewport="viewport"
               :preview-mode="editor.state.previewMode"
@@ -258,7 +271,7 @@ function handleFetchData(
             >
               <component
                 :is="getBlockComponent(childBlock)"
-                :block="childBlock"
+                :block="displayBlock(childBlock)"
                 :viewport="viewport"
                 @fetch-data="handleFetchData(childBlock, $event)"
                 @update="

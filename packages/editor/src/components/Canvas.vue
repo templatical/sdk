@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { updateBlockList } from "../utils/updateBlockList";
+import { useLocalizedDisplay } from "../composables/useLocalizedDisplay";
 import { useI18n } from "../composables/useI18n";
 import type {
   Block,
@@ -87,6 +89,10 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const editor = requireInject(EDITOR_KEY, "Canvas");
+const { displayBlock, settings: displaySettings } = useLocalizedDisplay({
+  content: computed(() => props.content),
+  activeLocale: editor.activeLocale,
+});
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "Canvas");
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
@@ -142,18 +148,13 @@ const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
 
 const blocks = computed({
   get: () => props.content.blocks,
-  set: (value: Block[]) => {
-    editor.setContent({
-      ...props.content,
-      blocks: value,
-    });
-  },
+  set: (value: Block[]) => updateBlockList(editor, value),
 });
 
 // Shared with the preview canvas and the save dialog's scaled rows, so all
 // three lay out against the same width.
 const viewportWidth = computed(() =>
-  getEmailFrameWidth(props.content.settings, props.viewport),
+  getEmailFrameWidth(displaySettings.value, props.viewport),
 );
 
 // The "stage" represents the email body: the content column plus a gutter of
@@ -177,7 +178,7 @@ const stageWidth = computed(() => viewportWidth.value + EMAIL_GUTTER * 2);
 // Shared with every other surface that renders blocks (the saved-block
 // previews), so a block looks the same wherever it is drawn.
 const canvasStyle = computed(() =>
-  getDocumentStyle(props.content.settings, fontsManager.resolveFontFamily),
+  getDocumentStyle(displaySettings.value, fontsManager.resolveFontFamily),
 );
 // The email's own language, for the browser's spellchecker and hyphenation.
 // Without it the canvas inherits the HOST page's `lang`, so German copy is
@@ -187,14 +188,14 @@ const canvasStyle = computed(() =>
 // declared German. Undefined rather than `""`, which would explicitly declare
 // "unknown language" and suppress spellcheck outright.
 const contentLang = computed(
-  () => props.content.settings?.locale?.trim() || undefined,
+  () => displaySettings.value?.locale?.trim() || undefined,
 );
 // Always a real token: an empty `dir` inherits the host page and the email
 // stage would follow chrome instead of `settings.direction`. Flex `row` on
 // sections follows this inline axis, so column 0 lands on the start edge
 // with no extra reverse class (which would also ship in every LTR stylesheet).
 const contentDir = computed(() =>
-  resolveContentDirection(props.content.settings),
+  resolveContentDirection(displaySettings.value),
 );
 
 // Empty canvas: the whole dashed placeholder IS the Sortable drop zone.
@@ -320,7 +321,7 @@ function handleFetchData(
     <div
       class="tpl-canvas-bg tpl:absolute tpl:inset-0 tpl:rounded-lg tpl:pointer-events-none"
       :style="{
-        backgroundColor: content.settings.backgroundColor,
+        backgroundColor: displaySettings.backgroundColor,
         ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}),
         transition: 'filter 300ms ease',
       }"
@@ -410,6 +411,9 @@ function handleFetchData(
               ? 'tpl:border-[var(--tpl-primary)]'
               : '',
           ]"
+          @update="
+            (event) => updateBlockList(editor, blocks, undefined, 0, event)
+          "
           @dragenter="handleEmptyDragEnter"
           @dragleave="handleEmptyDragLeave"
           @drop="handleEmptyDrop"
@@ -495,6 +499,7 @@ function handleFetchData(
               <BlockWrapper
                 v-else
                 :block="block"
+                :display-block="displayBlock(block)"
                 :is-selected="
                   !previewMode &&
                   !isPicking &&
@@ -508,7 +513,7 @@ function handleFetchData(
               >
                 <component
                   :is="getBlockComponent(block)"
-                  :block="block"
+                  :block="displayBlock(block)"
                   :viewport="viewport"
                   @fetch-data="handleFetchData(block, $event)"
                   @update="

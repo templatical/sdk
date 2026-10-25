@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const nl: typeof en = {
+  localization: {
+    structureNotice: "Structuurwijzigingen gelden voor elke taal",
+    aiDefaultLanguage: "AI-chat bewerkt de standaardtaal.",
+  },
   footer: {
     poweredBy: "Mogelijk gemaakt door",
   },

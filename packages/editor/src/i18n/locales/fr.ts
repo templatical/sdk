@@ -1,6 +1,11 @@
 import type en from "./en";
 
 const fr: typeof en = {
+  localization: {
+    structureNotice:
+      "Les changements de structure s’appliquent à toutes les langues",
+    aiDefaultLanguage: "Le chat IA modifie la langue par défaut.",
+  },
   footer: {
     poweredBy: "Propulsé par",
   },

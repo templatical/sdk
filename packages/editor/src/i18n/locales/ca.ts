@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const ca: typeof en = {
+  localization: {
+    structureNotice: "Els canvis d’estructura s’apliquen a tots els idiomes",
+    aiDefaultLanguage: "El xat d’IA edita l’idioma predeterminat.",
+  },
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",

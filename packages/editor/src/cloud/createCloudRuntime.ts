@@ -434,6 +434,11 @@ export async function bootstrapCloud(
   options: BootstrapCloudOptions,
 ): Promise<CloudBootstrap> {
   const { config, cloudTranslations } = options;
+  if ((config as { localization?: unknown }).localization !== undefined) {
+    logger.warn(
+      "initCloud ignores `localization` until Cloud supports language versions (LOC3).",
+    );
+  }
 
   // --- Late-bound editor access ---------------------------------------------
   //

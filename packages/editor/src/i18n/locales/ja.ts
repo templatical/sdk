@@ -1,6 +1,10 @@
 import type en from "./en";
 
 const translations: typeof en = {
+  localization: {
+    structureNotice: "構造の変更はすべての言語に適用されます",
+    aiDefaultLanguage: "AIチャットはデフォルト言語を編集します。",
+  },
   footer: {
     poweredBy: "提供元:",
   },

@@ -218,7 +218,19 @@ function validateLocalization(
               );
               continue;
             }
-            errors.push(`${field} does not resolve in its base`);
+            const segments = path.split(".");
+            const parent =
+              segments.length === 1
+                ? target
+                : readPath(target, segments.slice(0, -1).join("."));
+            if (
+              kind === "text" ||
+              parent === null ||
+              typeof parent !== "object" ||
+              Array.isArray(parent)
+            ) {
+              errors.push(`${field} does not resolve in its base`);
+            }
           }
           if (immutable.includes(path.split(".")[0])) {
             errors.push(`${field} cannot override ${path.split(".")[0]}`);

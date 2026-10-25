@@ -34,6 +34,7 @@ import {
   type DeepReadonly,
   type Ref,
 } from "@vue/reactivity";
+import type { UseEditorReturn } from "./editor";
 import { diffContent } from "./diff-content";
 
 /** Typing into one block is sent this long after the last keystroke. */
@@ -1363,6 +1364,55 @@ export function useCollaboration(
 
   function attach(target: CollaborationEditor): void {
     editor = target;
+    // A snapshot cannot distinguish which sibling was dragged in an adjacent
+    // swap. Capture the explicit move before the queued snapshot diff can pick
+    // its neighbour and conflict with that neighbour's lock instead.
+    const structural = target as CollaborationEditor &
+      Partial<Pick<UseEditorReturn, "moveBlock" | "findBlockLocation">>;
+    if (structural.moveBlock && structural.findBlockLocation) {
+      const original = structural.moveBlock;
+      const move: UseEditorReturn["moveBlock"] = (...args) => {
+        const session = active;
+        const capturing =
+          session &&
+          !suspended &&
+          !writing &&
+          !target.state.isLoading &&
+          target.state.template?.id === session.templateId;
+        if (capturing) capture(true);
+        original(...args);
+        if (!capturing || deepEqual(session.view, target.content.value)) return;
+        const location = structural.findBlockLocation!(args[0]);
+        if (!location) return;
+        const parent = location.targetSectionId
+          ? {
+              sectionId: location.targetSectionId,
+              column: location.columnIndex ?? 0,
+            }
+          : null;
+        const section = parent
+          ? target.content.value.blocks.find(
+              (block) => block.id === parent.sectionId,
+            )
+          : undefined;
+        const list =
+          parent && section?.type === "section"
+            ? section.children[parent.column]
+            : target.content.value.blocks;
+        commit(session, [
+          {
+            op: "moveBlock",
+            blockId: args[0],
+            parent,
+            after: list[location.index - 1]?.id ?? null,
+          },
+        ]);
+      };
+      structural.moveBlock = move;
+      stopWatching.push(() => {
+        if (structural.moveBlock === move) structural.moveBlock = original;
+      });
+    }
     stopWatching.push(
       watch(
         () => target.state.template,

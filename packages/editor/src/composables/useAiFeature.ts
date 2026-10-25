@@ -25,6 +25,8 @@ import type {
   TemplateContent,
 } from "@templatical/types";
 import {
+  defaultLocaleOf,
+  resolveLocale,
   applyOperationsInPlace,
   CollaborationConflict,
   invertOperations,
@@ -105,6 +107,7 @@ export interface AiFeatureEditor {
   /** Committed create/load version from core; metadata edits leave it alone. */
   loadVersion?: Readonly<Ref<number>>;
   content: Ref<TemplateContent>;
+  activeLocale?: Ref<string | null>;
   selectBlock: (blockId: string | null) => void;
   markDirty: () => void;
 }
@@ -322,12 +325,29 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     () =>
       currentSession.value !== null && !destroyed && templateId.value !== null,
   );
+  let localeVersion = 0;
+  const stopLocaleWatch = editor.activeLocale
+    ? watch(
+        editor.activeLocale,
+        () => {
+          localeVersion++;
+        },
+        { flush: "sync" },
+      )
+    : () => {};
+  function checkLocale(version: number): void {
+    if (version !== localeVersion)
+      throw new DOMException("The language changed.", "AbortError");
+  }
   const has = (feature: AiFeatureName): boolean =>
-    feature === "chatAttachments"
-      ? isAvailable.value &&
-        provider.chatAttachments === true &&
-        typeof provider.chat === "function"
-      : typeof provider[feature] === "function";
+    (feature === "fixFinding" || feature === "altText") &&
+    editor.activeLocale?.value
+      ? false
+      : feature === "chatAttachments"
+        ? isAvailable.value &&
+          provider.chatAttachments === true &&
+          typeof provider.chat === "function"
+        : typeof provider[feature] === "function";
   const scopeOf = (): Session | null =>
     destroyed ? null : currentSession.value;
   const isCurrent = (scope: Session): boolean =>
@@ -533,7 +553,12 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
   }
 
   function requestBase(id: string): AiRequestBase {
-    const content = safeClone(toRaw(editor.content.value));
+    const raw = toRaw(editor.content.value);
+    const content = resolveLocale(raw, defaultLocaleOf(raw));
+    // Projection supplies an implicit English locale; older templates keep
+    // their original settings shape at the AI boundary (LD11).
+    if (raw.settings.locale === undefined)
+      delete (content.settings as Partial<TemplateContent["settings"]>).locale;
     if (
       new TextEncoder().encode(JSON.stringify(content)).length >
       AI_CONTENT_MAX_BYTES
@@ -691,6 +716,9 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     ) => Promise<AiTurnResult>,
     attachments: File[] = [],
   ): Promise<AiTurnOutcome> {
+    const startingLocale = localeVersion;
+    if (kind === "fix" && editor.activeLocale?.value)
+      return Promise.resolve(emptyOutcome());
     const scope = scopeOf();
     if (
       !scope ||
@@ -771,6 +799,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           },
           onOperations: async (ops) => {
             check(job);
+            if (kind === "fix") checkLocale(startingLocale);
             const result = applyOps(ops, turn, scope);
             if (result.applied) {
               record.inverse = [...result.inverse, ...record.inverse];
@@ -1372,6 +1401,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     blockId: string,
     signal?: AbortSignal,
   ): Promise<string> {
+    const startingLocale = localeVersion;
     const scope = scopeOf();
     const altText = provider.altText;
     const controller = new AbortController();
@@ -1415,6 +1445,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
         controller.signal,
       );
       controller.signal.throwIfAborted();
+      checkLocale(startingLocale);
       if (!isCurrent(scope))
         throw new DOMException("The template changed.", "AbortError");
       return answer.alt;
@@ -1435,8 +1466,10 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       expect?: AiImageSnapshot;
     }>,
   ): Promise<void> {
+    const startingLocale = localeVersion;
     const scope = scopeOf();
-    if (!scope || entries.length === 0) return Promise.resolve();
+    if (editor.activeLocale?.value || !scope || entries.length === 0)
+      return Promise.resolve();
     const ops: Operation[] = entries.map(
       ({ blockId, alt, decorative, expect }) => ({
         op: "updateBlock",
@@ -1458,6 +1491,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       async (job) => {
         try {
           check(job);
+          checkLocale(startingLocale);
           const turn = crypto.randomUUID();
           for (let start = 0; start < ops.length; start += 100) {
             check(job);
@@ -1569,6 +1603,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     undoMessage: (id) => replay(id, "undo"),
     redoMessage: (id) => replay(id, "redo"),
     rewrite: (input, onText, signal) => {
+      const startingLocale = localeVersion;
       const scope = scopeOf();
       const rewrite = provider.rewrite;
       if (!scope || typeof rewrite !== "function")
@@ -1582,12 +1617,13 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
           try {
             signal.throwIfAborted();
             check(job);
-            return await abortable(
+            const answer = await abortable(
               rewrite(
                 { ...requestBase(scope.id), ...input },
                 {
                   onText: (text) => {
                     check(job);
+                    checkLocale(startingLocale);
                     onText(text);
                   },
                 },
@@ -1595,6 +1631,8 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
               ),
               job.controller.signal,
             );
+            checkLocale(startingLocale);
+            return answer;
           } catch (error) {
             report(error);
             throw error;
@@ -1615,6 +1653,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       const scope = currentSession.value;
       if (scope) abandon(scope);
       currentSession.value = null;
+      stopLocaleWatch();
       for (const unwatch of watchers) unwatch();
       watchers.length = 0;
     },

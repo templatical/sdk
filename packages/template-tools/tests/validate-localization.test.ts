@@ -261,16 +261,16 @@ const invalid: [string, (content: any) => void, RegExp][] = [
     /unsafe path/,
   ],
   [
-    "missing block property",
+    "missing block parent",
     (c) => {
-      c.blocks[0].l10n.de = { set: { missing: "x" } };
+      c.blocks[0].l10n.de = { set: { "missing.leaf": "x" } };
     },
     /does not resolve/,
   ],
   [
-    "missing settings property",
+    "missing settings parent",
     (c) => {
-      c.settings.l10n.de = { set: { missing: "x" } };
+      c.settings.l10n.de = { set: { "missing.leaf": "x" } };
     },
     /does not resolve/,
   ],
@@ -336,6 +336,43 @@ afterEach(() => {
 });
 
 describe("localized template validation", () => {
+  it("accepts a German direction override without a base direction", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.settings.l10n = { de: { set: { direction: "rtl" } } };
+    expect(content.settings.direction).toBeUndefined();
+    expect(validateTemplate(content)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("rejects an unresolved set parent beside an optional direction override", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.settings.l10n = {
+      de: { set: { direction: "rtl", "missing.direction": "rtl" } },
+    };
+    expect(validateTemplate(content)).toEqual({
+      valid: false,
+      errors: [
+        'settings.l10n["de"].set["missing.direction"] does not resolve in its base',
+      ],
+    });
+  });
+
+  it("rejects an absent text leaf beside an optional direction override", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.settings.l10n = {
+      de: { set: { direction: "rtl" }, text: { preheaderText: translated } },
+    };
+    expect(content.settings.preheaderText).toBeUndefined();
+    expect(validateTemplate(content)).toEqual({
+      valid: false,
+      errors: [
+        'settings.l10n["de"].text["preheaderText"] does not resolve in its base',
+      ],
+    });
+  });
+
   it.each(["text", "set"] as const)(
     "accepts a resolving %s path beside a dotted sibling row id",
     (kind) => {
