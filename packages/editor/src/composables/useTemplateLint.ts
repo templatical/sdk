@@ -3,6 +3,9 @@ import { watchDebounced } from "@vueuse/core";
 import { logger } from "../utils/logger";
 import type {
   Block,
+  CustomBlockDefinition,
+  SyntaxPreset,
+  SyntaxPresetName,
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
@@ -18,7 +21,7 @@ export type { LintIssue, LintOptions } from "@templatical/quality";
 /**
  * Mirrors `isLintFullyDisabled` from `@templatical/quality`. Duplicated
  * here to avoid a static runtime import of the optional peer, which would
- * defeat the editor's lazy-load gate. All five category keys must be false;
+ * defeat the editor's lazy-load gate. All category keys must be false;
  * keep this check in sync with the quality package.
  */
 export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
@@ -29,13 +32,16 @@ export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
     options.structure === false &&
     options.links === false &&
     options.deliverability === false &&
-    options.compatibility === false
+    options.compatibility === false &&
+    options.localization === false
   );
 }
 
 export interface UseTemplateLintOptions {
   content: Ref<TemplateContent>;
   options: LintOptions;
+  customBlocks?: CustomBlockDefinition[];
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   updateSettings: (updates: Partial<TemplateSettings>) => void;
   removeBlock: (blockId: string) => void;
@@ -63,13 +69,13 @@ let warnedUnavailable = false;
 
 /**
  * Live template linting. Runs every linter in `@templatical/quality`
- * (accessibility + structure + links + deliverability + compatibility) on every content change,
+ * (accessibility + structure + links + deliverability + compatibility + localization) on every content change,
  * debounced 500ms. Lazy-imports the quality package on first call so the
  * OSS bundle pays nothing for the chunk until linting actually starts.
  *
  * When all linting is turned off — either `options.disabled === true` or
  * every per-tool key (`accessibility`, `structure`, `links`,
- * `deliverability`, `compatibility`) is set to
+ * `deliverability`, `compatibility`, `localization`) is set to
  * `false` — the dynamic import is skipped entirely and `issues` stays
  * empty. Saves the chunk download for consumers that turn the linter off.
  */
@@ -131,7 +137,15 @@ export function useTemplateLint(
 
   function runLint(): void {
     if (!loaded.value) return;
-    const result = loaded.value.lintTemplate(opts.content.value, opts.options);
+    const result = loaded.value.lintTemplate(opts.content.value, {
+      ...opts.options,
+      ...(opts.customBlocks !== undefined
+        ? { customBlocks: opts.customBlocks }
+        : {}),
+      ...(opts.mergeTagSyntax !== undefined
+        ? { mergeTagSyntax: opts.mergeTagSyntax }
+        : {}),
+    });
     lintVersion.value = contentVersion.value;
     issues.value = result;
   }

@@ -15,6 +15,7 @@ const VALUE_FLAGS = new Set([
   "values",
   "custom-block",
   "host",
+  "locale",
 ]);
 
 export interface ParsedArgs {
@@ -50,7 +51,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
     // A value flag at the end of argv has no value; record it as present so the
     // command reports a useful usage error rather than reading `undefined`.
     flags[bare] =
-      VALUE_FLAGS.has(bare) && i + 1 < argv.length ? argv[++i] : true;
+      VALUE_FLAGS.has(bare) &&
+      i + 1 < argv.length &&
+      !(bare === "locale" && argv[i + 1].startsWith("-"))
+        ? argv[++i]
+        : true;
   }
 
   return { command: positional.shift(), positional, json, flags };

@@ -7,6 +7,7 @@
 
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { SdkError } from "@templatical/types";
 import { parseArgs } from "./cli/args";
 import { note, setJsonMode } from "./cli/output";
 import {
@@ -25,9 +26,9 @@ import { runList, runLive } from "./cli/commands/live";
 
 const USAGE = `templatical <command> [options]
 
-  validate <file> [--html]              structural + quality lint; --html checks compiled size
+  validate <file> [--locale <tag>] [--html]  structural + quality lint; --html checks compiled size
   schema   [--out <file>]               print the block JSON Schema
-  render   <file> [--format mjml|html] [-o <file>]  render to MJML or HTML
+  render   <file> [--locale <tag>] [--format mjml|html] [-o <file>]  render to MJML or HTML
   edit     <file> --op '<json>' | --ops <file>  apply operations, write the result
   import   <file> [--format <fmt>] | --list-formats  convert a design to Templatical JSON
   live     [--file <f>] [--port <n>] [--cwd <d>] [--no-open]
@@ -41,6 +42,8 @@ const USAGE = `templatical <command> [options]
 
 Options:
   --json                                machine-readable output on stdout
+  --locale <tag>                        template language for validate/render (default: settings.locale)
+                                        validate exits 1 on merge-tag mismatches; missing/stale values warn
 `;
 
 export async function main(argv: string[]): Promise<number> {
@@ -111,6 +114,10 @@ if (isEntryPoint()) {
   main(process.argv.slice(2))
     .then((code) => process.exit(code))
     .catch((err: unknown) => {
+      if (err instanceof SdkError && err.code === "unknown_locale") {
+        note(`${err.code}: ${err.message}`);
+        process.exit(EXIT.invalid);
+      }
       if (err instanceof InvalidTemplateError) {
         note(err.message);
         for (const e of err.errors) note(`  - ${e}`);

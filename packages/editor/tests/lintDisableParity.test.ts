@@ -3,10 +3,11 @@ import type { LintOptions } from "@templatical/quality";
 import { isLintFullyDisabled as qualityIsLintFullyDisabled } from "@templatical/quality";
 import { isLintFullyDisabled as editorIsLintFullyDisabled } from "../src/composables/useTemplateLint";
 
-const keys = ["accessibility", "structure", "links", "deliverability", "compatibility"] as const;
+const keys = ["accessibility", "structure", "links", "deliverability", "compatibility", "localization"] as const;
 
 describe("editor lint disable parity", () => {
   it("matches quality for every absent/false key combination, with and without disabled", () => {
+    expect(editorIsLintFullyDisabled({ accessibility: false, structure: false, links: false, deliverability: false, compatibility: false })).toBe(false);
     for (let mask = 0; mask < 1 << keys.length; mask++) {
       for (const disabled of [undefined, true]) {
         const options: LintOptions = {};

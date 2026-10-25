@@ -1,6 +1,6 @@
 import { isParagraph } from "@templatical/types";
 import type { Block } from "@templatical/types";
-import type { Rule, RuleMeta } from "../../types";
+import type { LintPatchContext, Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
   id: "a11y.text-justified",
@@ -95,7 +95,7 @@ export const textJustified: Rule = {
       blockId: block.id,
       fix: {
         description: "Remove justified alignment",
-        apply: (ctx) => {
+        apply: (ctx: Omit<LintPatchContext, "removeBlock">) => {
           if (!isParagraph(block)) return;
           ctx.updateBlock(block.id, {
             content: unjustify(block.content ?? ""),

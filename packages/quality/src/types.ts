@@ -1,8 +1,11 @@
 import type {
   Block,
+  CustomBlockDefinition,
   SectionBlock,
   TemplateContent,
   TemplateSettings,
+  SyntaxPreset,
+  SyntaxPresetName,
 } from "@templatical/types";
 
 export type Severity = "error" | "warning" | "info" | "off";
@@ -34,10 +37,19 @@ export interface LintPatchContext {
   removeBlock: (blockId: string) => void;
 }
 
-export interface LintPatch {
+export type LintPatch = {
   description: string;
-  apply: (ctx: LintPatchContext) => void;
-}
+} & (
+  | {
+      /** Removal fixes change the shared tree and are omitted in language views. */
+      removesBlock: true;
+      apply: (ctx: LintPatchContext) => void;
+    }
+  | {
+      removesBlock?: false;
+      apply: (ctx: Omit<LintPatchContext, "removeBlock">) => void;
+    }
+);
 
 export interface LintThresholds {
   altMaxLength: number;
@@ -48,7 +60,7 @@ export interface LintThresholds {
 
 /**
  * Per-rule severity override. Set a rule to `'off'` to disable it.
- * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`)
+ * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`, `deliverability.*`, `compat.*`, `localization.*`)
  * so a value copied from `LintIssue.ruleId` pastes straight in.
  */
 export type RuleOverrides = Record<string, Severity>;
@@ -108,14 +120,24 @@ export interface CompatibilityLintOptions {
   thresholds?: Partial<CompatibilityThresholds>;
 }
 
+export interface LocalizationLintOptions {
+  rules?: RuleOverrides;
+}
+
 export interface LintOptions {
   /**
    * Fully disable linting. When true, the editor skips lazy-loading the
    * package, hides the sidebar tab, and suppresses inline badges.
    */
   disabled?: boolean;
-  /** Locale for vague-text dictionaries and message text. Falls back to `en`. */
+  /** Message language. Falls back to `en`. */
   locale?: string;
+  /** Template language to lint. Defaults to `content.settings.locale`. Dictionaries remain a union. */
+  contentLocale?: string;
+  /** Definitions used to identify custom blocks' translatable text. */
+  customBlocks?: CustomBlockDefinition[];
+  /** Merge-tag syntax for localization checks. Defaults to Liquid. */
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   /**
    * Accessibility linter config. Set to `false` to disable the whole
    * `lintAccessibility` linter without enumerating its rules.
@@ -138,6 +160,8 @@ export interface LintOptions {
   deliverability?: false | DeliverabilityLintOptions;
   /** Email-client compatibility checks over pass-through content. */
   compatibility?: false | CompatibilityLintOptions;
+  /** Missing, stale, and mismatched merge-tag checks for language versions. */
+  localization?: false | LocalizationLintOptions;
 }
 
 export interface ResolvedLinksOptions {
@@ -155,6 +179,9 @@ export interface ResolvedCompatibilityOptions {
 
 export interface ResolvedOptions {
   locale: string;
+  contentLocale?: string;
+  customBlocks?: CustomBlockDefinition[];
+  mergeTagSyntax?: SyntaxPresetName | SyntaxPreset;
   rules: RuleOverrides;
   thresholds: LintThresholds;
   links: ResolvedLinksOptions;

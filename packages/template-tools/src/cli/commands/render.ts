@@ -19,6 +19,10 @@ const FORMATS = new Set(["mjml", "html"]);
 export async function runRender(args: ParsedArgs): Promise<number> {
   const file = args.positional[0];
   if (!file) throw new UsageError("render needs a template file.");
+  const locale = flagValue(args, "locale");
+  if (args.flags.locale !== undefined && !locale?.trim()) {
+    throw new UsageError("--locale needs a language tag.");
+  }
 
   const format = flagValue(args, "format") ?? "mjml";
   if (!FORMATS.has(format)) {
@@ -40,7 +44,7 @@ export async function runRender(args: ParsedArgs): Promise<number> {
   }
 
   const content = data as TemplateContent;
-  const mjml = await renderToMjml(content);
+  const mjml = await renderToMjml(content, { locale });
 
   let output = mjml;
   if (format === "html") {

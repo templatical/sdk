@@ -345,7 +345,11 @@ export { EventEmitter } from "./events";
 
 // Utilities
 export { safeClone } from "./clone";
-export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
+export {
+  decodeHtmlEntities,
+  findOpenTagEnd,
+  getTagAttrValue,
+} from "./html-scan";
 export { fillEmptyParagraphs, isBlankRichText } from "./rich-text";
 export type { FontFamily } from "./fonts";
 export {
@@ -361,6 +365,10 @@ export {
 } from "./fonts";
 
 // Merge tags
+export {
+  convertMergeTagsToValues,
+  replaceMergeTagSpans,
+} from "./merge-tag-html";
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {
   containsMergeTag,

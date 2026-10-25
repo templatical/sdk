@@ -88,7 +88,7 @@ const NAMED_ENTITIES: Record<string, string> = {
  * and stops, never to `<`, so an escaped entity inside a consumer's tag value
  * survives as itself.
  */
-function decodeAttrEntities(value: string): string {
+export function decodeHtmlEntities(value: string): string {
   if (!value.includes("&")) return value;
   return value.replace(
     /&(#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g,
@@ -155,7 +155,7 @@ export function getTagAttrValue(attrs: string, name: string): string | null {
       const valueEnd = attrs.indexOf(quote, valueStart);
       if (valueEnd === -1) return null; // unterminated value — nothing readable follows
       if (attrName === target)
-        return decodeAttrEntities(attrs.substring(valueStart, valueEnd));
+        return decodeHtmlEntities(attrs.substring(valueStart, valueEnd));
       i = valueEnd + 1;
       continue;
     }
@@ -163,7 +163,7 @@ export function getTagAttrValue(attrs: string, name: string): string | null {
     const valueStart = i;
     while (i < attrs.length && !isWhitespace(attrs[i]) && attrs[i] !== ">") i++;
     if (attrName === target)
-      return decodeAttrEntities(attrs.substring(valueStart, i));
+      return decodeHtmlEntities(attrs.substring(valueStart, i));
   }
 
   return null;

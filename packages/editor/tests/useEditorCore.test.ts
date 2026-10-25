@@ -11,7 +11,7 @@ import {
   inject,
 } from 'vue';
 import { mount } from '@vue/test-utils';
-import { SYNTAX_PRESETS, type TemplateContent } from '@templatical/types';
+import { SYNTAX_PRESETS, createCustomBlock, createDefaultTemplateContent, createParagraphBlock, sourceHash, type TemplateContent, type CustomBlockDefinition } from '@templatical/types';
 
 // --- Mocks: stub the composable dependencies so we can assert call-shape ---
 
@@ -191,6 +191,31 @@ function mountCore(
 }
 
 describe('useEditorCore', () => {
+  it('relints the active language with custom text and the configured syntax', async () => {
+    const editor = makeEditor();
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ['de'];
+    const customBlocks: CustomBlockDefinition[] = [{ type: 'card', name: 'Card', fields: [{ key: 'label', label: 'Label', type: 'text', default: 'Hello' }], template: '{{ label }}' }];
+    content.blocks = [
+      { ...createCustomBlock(customBlocks[0]), id: 'card' },
+      createParagraphBlock({ id: 'copy', content: 'Hello *|FNAME|*', l10n: { de: { text: { content: { value: 'Hallo', source: sourceHash('Hello *|FNAME|*') } } } } }),
+    ];
+    editor.content.value = content;
+    editor.activeLocale = ref<string | null>(null);
+    const { wrapper, captured } = mountCore({ editor, config: { locale: 'en', customBlocks, mergeTags: { syntax: 'mailchimp', tags: [] } } });
+    try {
+      const lint = captured.core!.templateLint!;
+      await vi.waitFor(() => expect(lint.ready.value).toBe(true));
+      editor.activeLocale.value = 'de';
+      await nextTick();
+      expect(lint.issues.value.map((issue) => `${issue.ruleId}@${issue.blockId}`)).toContain('localization.untranslated@card');
+      expect(lint.issues.value.map((issue) => `${issue.ruleId}@${issue.blockId}`)).toContain('localization.merge-tags-differ@copy');
+      expect(lint.issues.value.find((issue) => issue.ruleId === 'localization.untranslated')?.message).toBe('The field fieldValues.label has no translation.');
+    } finally {
+      captured.core!.destroy();
+      wrapper.unmount();
+    }
+  });
   beforeEach(() => {
     vi.mocked(useHistory).mockClear();
     vi.mocked(useHistoryInterceptor).mockClear();

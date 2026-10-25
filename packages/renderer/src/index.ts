@@ -9,12 +9,14 @@ import type {
 } from "@templatical/types";
 import {
   applyLayout,
+  defaultLocaleOf,
   assertNoSlotInContent,
   assertNoWrapperInContent,
   isCustomBlock,
   isSection,
   isWrapper,
   resolveContentDirection,
+  resolveLocale,
 } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import type { BlockRendererMap } from "./render-context";
@@ -37,6 +39,8 @@ import { BUTTON_FULL_WIDTH_CSS_CLASS } from "./renderers/button";
 import { toPaddingString } from "./padding";
 
 export interface RenderOptions {
+  /** Template language to render. Defaults to `content.settings.locale`. */
+  locale?: string;
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;
@@ -146,11 +150,15 @@ export async function renderToMjml(
   content: TemplateContent,
   options?: RenderOptions,
 ): Promise<string> {
+  const localized = resolveLocale(
+    content,
+    options?.locale ?? defaultLocaleOf(content),
+  );
   const toRender = options?.layout
-    ? applyLayout(options.layout, content)
-    : (assertNoSlotInContent(content),
-      assertNoWrapperInContent(content),
-      content);
+    ? applyLayout(options.layout, localized)
+    : (assertNoSlotInContent(localized),
+      assertNoWrapperInContent(localized),
+      localized);
 
   const customFonts = options?.customFonts ?? [];
   const defaultFallbackFont =

@@ -10,6 +10,10 @@ import { requireMjml } from "../mjml";
 export async function runValidate(args: ParsedArgs): Promise<number> {
   const file = args.positional[0];
   if (!file) throw new UsageError("validate needs a template file.");
+  const locale = flagValue(args, "locale");
+  if (args.flags.locale !== undefined && !locale?.trim()) {
+    throw new UsageError("--locale needs a language tag.");
+  }
   const cwd = flagValue(args, "cwd") ?? process.cwd();
   const compile =
     args.flags.html === true
@@ -30,7 +34,7 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
   }
 
   // The linter assumes a structurally-valid template, so it runs only here.
-  const quality = runQualityLint(data);
+  const quality = runQualityLint(data, { contentLocale: locale });
   if (quality.error) {
     note(`Quality lint could not run: ${quality.error}`);
   }
@@ -38,7 +42,7 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
   const issues = [...quality.issues];
   let htmlBytes: number | undefined;
   if (compile) {
-    const mjml = await renderToMjml(data as TemplateContent);
+    const mjml = await renderToMjml(data as TemplateContent, { locale });
     const html = (await compile(mjml, { validationLevel: "soft" })).html;
     htmlBytes = new TextEncoder().encode(html).byteLength;
     issues.push(...lintCompiledHtml(html));
@@ -66,6 +70,10 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
   );
 
   // A severity-"error" issue is a real defect, not advice, so it fails the
-  // command — matching the script this replaces. Warnings and info do not.
+  // command — matching the script this replaces. Merge-tag mismatches also
+  // fail validation; other warnings and info remain advisory.
+  if (issues.some((i) => i.ruleId === "localization.merge-tags-differ")) {
+    return EXIT.invalid;
+  }
   return blocking.length > 0 ? EXIT.invalid : EXIT.ok;
 }

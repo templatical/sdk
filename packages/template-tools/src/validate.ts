@@ -8,7 +8,11 @@
 // exactly one schema in anyOf".
 
 import Ajv, { type ValidateFunction, type ErrorObject } from "ajv";
-import { lintTemplate, type LintIssue } from "@templatical/quality";
+import {
+  lintTemplate,
+  type LintIssue,
+  type LintOptions,
+} from "@templatical/quality";
 import {
   defaultLocaleOf,
   isSafePath,
@@ -16,6 +20,7 @@ import {
   readPath,
   SETTINGS_TRANSLATABLE_FIELDS,
   translatableFields,
+  SdkError,
   type Block,
   type BlockLocaleLayer,
   type CustomBlockDefinition,
@@ -320,10 +325,14 @@ export interface QualityLintResult {
  * first; the try/catch is a guard against a malformed template crashing the
  * linter rather than a substitute for that ordering.
  */
-export function runQualityLint(data: unknown): QualityLintResult {
+export function runQualityLint(
+  data: unknown,
+  options: LintOptions = {},
+): QualityLintResult {
   try {
-    return { issues: lintTemplate(data as TemplateContent) ?? [] };
+    return { issues: lintTemplate(data as TemplateContent, options) ?? [] };
   } catch (err) {
+    if (err instanceof SdkError && err.code === "unknown_locale") throw err;
     return { issues: [], error: (err as Error).message };
   }
 }

@@ -76,3 +76,11 @@
 HTML blocks, title and paragraph rich text, and table-cell content pass through MJML. Build layout with native sections and columns or presentation tables. In pass-through content, avoid `display:flex` (`compat.css-display-flex`), grid (`compat.css-display-grid`), absolute/fixed/sticky positioning (`compat.css-position`), CSS variables (`compat.css-variables`), `@import` (`compat.css-at-import`), external stylesheets (`compat.html-link`), and body `<style>` tags (`compat.html-style`). Prefer style attributes and table-safe widths (`compat.css-width`, `compat.css-max-width`) over `float` (`compat.css-float`). Give background images a readable fallback color (`compat.css-background-image`).
 
 Use hosted PNG/JPEG images instead of inline `<svg>` (`compat.html-svg`) or base64 image URLs (`compat.image-base64`). Link to a web form or media page rather than embedding `<form>` (`compat.html-form`), `<object>` (`compat.html-object`), `<video>` (`compat.html-video`), or `<audio>` (`compat.html-audio`). Do not embed `<script>` (`compat.html-script`) or `<iframe>` (`compat.html-iframe`). Check the [caniemail support tables](https://www.caniemail.com/) and the [compatibility catalog](https://docs.templatical.com/quality/compatibility/rule-catalog) for affected clients. Compiled HTML over 90 KiB triggers `compat.gmail-clipping`; shorten the message before send.
+
+## Language versions
+
+Check a template language with `validate <file> --locale <tag>` and render it with `render <file> --locale <tag>`. Both default to `settings.locale`; an unknown language prints `unknown_locale` and exits 1. A missing `--locale` value exits 2.
+
+- `localization.untranslated` warns per missing text field; rendering falls back to the default language, and this warning alone exits 0.
+- `localization.stale` warns per translation whose source hash no longer matches the default text; this warning alone exits 0.
+- `localization.merge-tags-differ` warns when a translation's merge-tag multiset differs from the default text; `validate` exits 1 even though the issue is a warning.

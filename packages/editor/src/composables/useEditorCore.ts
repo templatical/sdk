@@ -14,6 +14,7 @@ import {
 } from "vue";
 import { useEventListener } from "@vueuse/core";
 import { registerEditorInstance } from "../utils/activeEditorTracker";
+import { resolveLintOptions } from "../utils/resolveLintOptions";
 import {
   useHistory,
   useHistoryInterceptor,
@@ -209,6 +210,8 @@ export interface BaseEditorReturn {
     isSaving?: boolean;
   }>;
   content: Ref<TemplateContent>;
+  /** Supplied by localized editors; null selects the default language. */
+  activeLocale?: Ref<string | null>;
   selectedBlock: Ref<Block | null>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
@@ -844,7 +847,15 @@ export function useEditorCore(
     ? null
     : useTemplateLint({
         content: editor.content,
-        options: config.lint ?? {},
+        get options() {
+          return resolveLintOptions({
+            ...config,
+            content: editor.content.value,
+            contentLocale: editor.activeLocale?.value ?? undefined,
+          });
+        },
+        customBlocks: config.customBlocks,
+        mergeTagSyntax,
         updateBlock: editor.updateBlock,
         updateSettings: editor.updateSettings,
         removeBlock: editor.removeBlock,

@@ -1,6 +1,6 @@
 import { isParagraph, isTitle } from "@templatical/types";
 import type { Block } from "@templatical/types";
-import type { Rule, RuleMeta } from "../../types";
+import type { LintPatchContext, Rule, RuleMeta } from "../../types";
 import { extractAnchors } from "../../html-utils";
 
 export const meta: RuleMeta = {
@@ -36,7 +36,7 @@ export const linkTargetBlankNoRel: Rule = {
       blockId: block.id,
       fix: {
         description: 'Add rel="noopener"',
-        apply: (ctx) => {
+        apply: (ctx: Omit<LintPatchContext, "removeBlock">) => {
           if (!isParagraph(block) && !isTitle(block)) return;
           const updated = addNoopenerToTargetBlank(block.content ?? "");
           ctx.updateBlock(block.id, { content: updated } as Partial<Block>);
