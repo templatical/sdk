@@ -1,13 +1,22 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ts from "typescript";
-import { expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 
 const PKG = resolve(import.meta.dirname, "..");
 const ROOT = resolve(PKG, "../..");
 const pkgDir = (name: string) => resolve(PKG, "node_modules", name);
 
-function diagnostics(files: string[]): string[] {
+const FIXTURE = resolve(import.meta.dirname, "adapter-types.fixture.ts");
+const SNIPPETS = [
+  "adapter-options.ts",
+  "model-anthropic.ts",
+  "model-openai.ts",
+  "model-vercel.ts",
+  "evaluate-model.ts",
+].map((name) => resolve(ROOT, "apps/docs/snippets", name));
+
+function compile(files: string[]): { file: string; message: string }[] {
   const program = ts.createProgram(files, {
     noEmit: true,
     strict: true,
@@ -33,29 +42,36 @@ function diagnostics(files: string[]): string[] {
       ai: [pkgDir("ai")],
     },
   });
-  return ts
-    .getPreEmitDiagnostics(program)
-    .map(
-      (diagnostic) =>
-        `${diagnostic.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`,
-    );
+  return ts.getPreEmitDiagnostics(program).map((diagnostic) => ({
+    file: diagnostic.file?.fileName ?? "",
+    message: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+  }));
 }
+
+const format = ({ file, message }: { file: string; message: string }) =>
+  `${file}: ${message}`;
+
+let diagnostics: { file: string; message: string }[] = [];
+
+// One program for the fixture and the docs examples: parsing the three SDKs'
+// declarations is most of the work, so it happens once. It took 25 s on a CI
+// runner with coverage on, past the suite's 20 s test timeout.
+beforeAll(() => {
+  diagnostics = compile([FIXTURE, ...SNIPPETS]);
+}, 120_000);
 
 it("accepts the listed clients and models, and refuses params the adapter owns", () => {
   expect(
-    diagnostics([resolve(import.meta.dirname, "adapter-types.fixture.ts")]),
+    diagnostics
+      .filter(({ file }) => !SNIPPETS.includes(resolve(file)))
+      .map(format),
   ).toEqual([]);
 });
 
 it("compiles the docs' adapter and evaluation examples", () => {
-  const snippets = [
-    "adapter-options.ts",
-    "model-anthropic.ts",
-    "model-openai.ts",
-    "model-vercel.ts",
-    "evaluate-model.ts",
-  ].map((name) => resolve(ROOT, "apps/docs/snippets", name));
-  expect(diagnostics(snippets)).toEqual([]);
+  expect(
+    diagnostics.filter(({ file }) => resolve(file) !== FIXTURE).map(format),
+  ).toEqual([]);
 });
 
 it("keeps the quality declaration's lintTemplate signature in sync with source", () => {
