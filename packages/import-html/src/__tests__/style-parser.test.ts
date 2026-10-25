@@ -469,13 +469,14 @@ describe("readLegacyBackground", () => {
 });
 
 describe("readCssBackground on adversarial input", () => {
-  const digits = "0".repeat(100_000);
-  const spaces = " ".repeat(100_000);
-
-  it("reads runs of digits and spaces in linear time", () => {
-    const run = () =>
+  const run = (length: number) => {
+    const digits = "0".repeat(length);
+    const spaces = " ".repeat(length);
+    return (
+      // A layer is trimmed before its url() is read, so the spaces need a
+      // character after them to reach the reader.
       readCssBackground(
-        { "background-image": `url(${spaces}` },
+        { "background-image": `url(${spaces}x` },
         "Section",
         600,
       ) ??
@@ -487,10 +488,37 @@ describe("readCssBackground on adversarial input", () => {
         },
         "Section",
         600,
-      );
-    const started = performance.now();
-    run();
-    expect(performance.now() - started).toBeLessThan(1000);
+      )
+    );
+  };
+
+  // Compares how the cost grows rather than a time budget, which fails on a
+  // slow or busy runner: CI under coverage reads 100k characters about ten
+  // times slower than a laptop. Four times the input costs about four times
+  // as much when the reading is linear, and about sixteen when it is
+  // quadratic. The cost is this thread's CPU time, not wall time: on a busy
+  // machine the longer run is preempted more often, which pushed a
+  // wall-clock ratio of linear reading past 8 in a third of the trials.
+  it("reads runs of digits and spaces in linear time", () => {
+    expect(run(10_000)?.image).toEqual({
+      url: "u",
+      size: "auto",
+      position: { x: "left", y: "top" },
+      repeat: true,
+    });
+    const cost = (length: number): number => {
+      const started = process.threadCpuUsage();
+      run(length);
+      const { user, system } = process.threadCpuUsage(started);
+      return user + system;
+    };
+    let small = Infinity;
+    let large = Infinity;
+    for (let round = 0; round < 3; round++) {
+      small = Math.min(small, cost(10_000));
+      large = Math.min(large, cost(40_000));
+    }
+    expect(large / small).toBeLessThan(8);
   });
 });
 
