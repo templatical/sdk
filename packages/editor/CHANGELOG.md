@@ -1,5 +1,12 @@
 # @templatical/editor
 
+## 0.51.0
+
+### Patch Changes
+
+- @templatical/quality@0.51.0
+  - @templatical/renderer@0.51.0
+
 ## 0.50.0
 
 ### Minor Changes
