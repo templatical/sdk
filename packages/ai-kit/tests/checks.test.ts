@@ -182,3 +182,11 @@ describe("buildAltTextRepairRequest", () => {
     expect(built).toEqual(original);
   });
 });
+
+
+it("refuses an invented rewrite tag when no merge tags are declared", () => {
+  expect(checkRewrite("<p>{{x}}</p>", "<p>Hi</p>", { syntax: "liquid", tags: [] })).toEqual({
+    ok: false,
+    reason: "Your rewrite used merge tags that don't exist: {{x}}.",
+  });
+});

@@ -73,7 +73,7 @@ it("authenticates the displayed AI request with the app session cookie without i
   const fetchRequest = vi.fn<typeof fetch>(async () => new Response('data: {"type":"done","messageId":null}\n\n', { headers: { "Content-Type": "text/event-stream", "Templatical-AI-Wire": "1" } }));
   vi.stubGlobal("fetch", fetchRequest);
   const config = await editorFromSnippet(fetchRequest);
-  await config.ai.chat({ templateId: "tpl_123", sessionId: "session", content: { blocks: [], settings: { width: 600 } }, revision: null, mergeTags: null, message: "Hi", selectedBlockId: null, attachments: [] }, { onText: () => {}, onApplied: () => {}, onOperations: async () => ({ applied: true, inverse: [] }) }, new AbortController().signal);
+  await config.ai.chat({ templateId: "tpl_123", sessionId: "session", content: { blocks: [], settings: { width: 600 } }, revision: null, mergeTags: { syntax: "liquid", tags: [] }, message: "Hi", selectedBlockId: null, attachments: [] }, { onText: () => {}, onApplied: () => {}, onOperations: async () => ({ applied: true, inverse: [] }) }, new AbortController().signal);
   expect(fetchRequest).toHaveBeenCalledExactlyOnceWith("/api/ai/templates/tpl_123/ai/generate", expect.objectContaining({ credentials: "include" }));
   expect(new Headers(fetchRequest.mock.calls[0][1]?.headers).has("Authorization")).toBe(false);
 });

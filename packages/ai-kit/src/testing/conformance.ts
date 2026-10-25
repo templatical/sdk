@@ -8,7 +8,11 @@ import type {
   TemplateContent,
 } from "@templatical/types";
 import { safeClone } from "@templatical/types";
-import { AI_EVAL_MERGE_TAGS, AI_EVAL_TEMPLATES } from "./eval-set";
+import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
+  AI_EVAL_MERGE_TAGS,
+  AI_EVAL_TEMPLATES,
+} from "./eval-set";
 import { describeError, errorProblem, messageProblem } from "./checks";
 import { createStandInEditor } from "./stand-in-editor";
 
@@ -27,9 +31,9 @@ export interface AiConformanceOptions {
   /** The template the suite edits; the test set's welcome email by default. */
   content?: TemplateContent;
   templateId?: string;
-  /** Public image URL fetched by the model provider for the alt-text probe. */
+  /** Public probe image URL; defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
-  mergeTags?: AiMergeTags | null;
+  mergeTags?: AiMergeTags;
   /** How long a stopped call may take to reject (D35). */
   timeoutMs?: number;
   /** An optional shorter call limit; every call is also bounded by `timeoutMs`. */
@@ -134,9 +138,8 @@ export async function runAiProviderConformance(
   const templateId = options.templateId ?? "conformance";
   const editor = createStandInEditor(
     options.content ?? AI_EVAL_TEMPLATES.welcome,
+    options.mergeTags ?? AI_EVAL_MERGE_TAGS,
   );
-  const mergeTags =
-    options.mergeTags === undefined ? AI_EVAL_MERGE_TAGS : options.mergeTags;
   const errors: unknown[] = [];
   const probes: Partial<
     Record<AiFeatureName, (signal: AbortSignal) => Promise<unknown>>
@@ -146,7 +149,7 @@ export async function runAiProviderConformance(
     content: safeClone(editor.content),
     revision: null,
     sessionId: editor.sessionId,
-    mergeTags,
+    mergeTags: editor.mergeTags,
   });
 
   async function call<T>(
@@ -555,9 +558,7 @@ export async function runAiProviderConformance(
       sessionId: editor.sessionId,
       blockId: "conformance-image",
       image: {
-        url:
-          options.altTextImageUrl ??
-          "https://docs.templatical.com/og-image.png",
+        url: options.altTextImageUrl ?? AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
       },
       currentAlt: null,
       linkHref: null,

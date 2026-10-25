@@ -56,7 +56,7 @@ async function setup(
       collaboration: null,
       history: () => history,
       reload: (id, guard) => editor.load(id, guard),
-      mergeTags: () => null,
+      mergeTags: () => ({ syntax: "liquid", tags: [] }),
       normalize: (ops) => [...ops],
 
       commentsOpen: null,

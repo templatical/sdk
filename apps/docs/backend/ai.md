@@ -44,9 +44,9 @@ await editor.load('tpl_123');
 
 <<< @/snippets/ai-contract.ts
 
-Chat, fix and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix and rewrite receive the editor's `content` after pending edits are sent, its collaboration `revision` (or `null`), `templateId`, `sessionId` and required `mergeTags: { syntax, tags }`. With no declared tags, the editor sends its syntax (`liquid` by default) and `tags: []`. Missing or `null` context returns 422. Every call receives an `AbortSignal`; Stop aborts it.
 
-Request limits follow the [API reference](/api/ai-kit#request-limits): `message` 1–4,000 code points, `content` at most 200,000 UTF-8 bytes of JSON, `selectedBlockId` and `sessionId` at most 200 code points, and `mergeTags` at most 500 tags (`value` ≤ 200, `label` and optional `group` ≤ 100, optional `description` ≤ 200 code points). `AiMergeTagSyntax` accepts `liquid`, `handlebars`, `mailchimp`, `ampscript` or `custom`. Rewrite HTML is 1–20,000 code points and `instruction` at most 500. At least `preset` or `instruction` is set; `translate` requires `language`. The complete shapes, including nullability and optional fields, are above; wire requests move template ID and session to the path and header. Rewrite does not send `content` or `revision` on the wire.
+The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `custom` syntax is unchecked.
 
 ### Turns: chat and fix
 

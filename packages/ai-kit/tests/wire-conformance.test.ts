@@ -1,3 +1,5 @@
+import { version } from "../package.json";
+import * as testing from "../src/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStandInEditor, runAiWireConformance } from "../src/testing";
 import { createHttpAiProvider } from "../src/client";
@@ -248,7 +250,7 @@ it("settles reference-server replay only once, after editor acceptance", async (
       content,
       revision: null,
       sessionId: "s",
-      mergeTags: null,
+      mergeTags: { syntax: "liquid" as const, tags: [] },
       message: "Change background",
       selectedBlockId: null,
       attachments: [],
@@ -491,6 +493,7 @@ it("maps chat files into model attachments and keeps metadata only in user histo
   });
   const form = new FormData();
   form.set("message", "Change only the heading using this reference");
+  form.set("mergeTags", JSON.stringify({ syntax: "liquid", tags: [] }));
   form.set("content", JSON.stringify({ blocks: [], settings: { width: 600 } }));
   form.append(
     "attachment",
@@ -555,4 +558,23 @@ it("checks live cancellation over the streaming HTTP adapter", async () => {
       ),
     ).toMatchObject({ ok: true });
   }
+});
+
+
+it.each([undefined, "https://example.com/override.png"])("uses the versioned alt-text probe or override %s in wire conformance", async (altTextImageUrl) => {
+  const expectedDefault = `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/images/probe.png`;
+  const urls: string[] = [];
+  const reference = createReferenceHandler();
+  server = await serve(async (request) => {
+    if (new URL(request.url).pathname.endsWith("/alt-text")) {
+      const body = await request.clone().json() as { image: { url: string } };
+      urls.push(body.image.url);
+    }
+    return reference(request);
+  });
+  const report = await runAiWireConformance({ baseUrl: server.baseUrl, altTextImageUrl });
+  expect(report.ok).toBe(true);
+  expect(urls.length).toBeGreaterThan(0);
+  for (const url of urls) expect(url).toBe(altTextImageUrl ?? expectedDefault);
+  expect(testing).toHaveProperty("AI_CONFORMANCE_ALT_TEXT_IMAGE_URL", expectedDefault);
 });

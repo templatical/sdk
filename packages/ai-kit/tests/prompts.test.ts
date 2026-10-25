@@ -69,7 +69,7 @@ describe("the prompts (D29)", () => {
   it("says when the editor declares no merge tags, and leaves out an unknown revision", () => {
     const prompt = buildEditingPrompt({
       content,
-      mergeTags: null,
+      mergeTags: { syntax: "liquid" as const, tags: [] },
       selectedBlockId: null,
       request: "x",
     });

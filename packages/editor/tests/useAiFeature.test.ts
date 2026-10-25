@@ -322,7 +322,7 @@ describe("useAiFeature without collaboration", () => {
           collaboration: null,
           history: () => history,
           reload: null,
-          mergeTags: () => null,
+          mergeTags: () => ({ syntax: "liquid", tags: [] }),
           normalize: (ops) => [...ops],
 
           commentsOpen: null,
@@ -743,7 +743,7 @@ describe("useAiFeature with collaboration", () => {
         collaboration,
         history: () => collaboration.history,
         reload: null,
-        mergeTags: () => null,
+        mergeTags: () => ({ syntax: "liquid", tags: [] }),
         normalize: (ops) => [...ops],
 
         commentsOpen: null,
@@ -984,7 +984,7 @@ async function openReloading() {
       collaboration: null,
       history: () => history,
       reload: (id, shouldApply) => editor.load(id, shouldApply),
-      mergeTags: () => null,
+      mergeTags: () => ({ syntax: "liquid", tags: [] }),
       normalize: (ops) => [...ops],
 
       commentsOpen: null,
@@ -1137,7 +1137,7 @@ describe("useAiFeature fix round 1", () => {
         collaboration: null,
         history: () => history,
         reload: () => reloaded.promise,
-        mergeTags: () => null,
+        mergeTags: () => ({ syntax: "liquid", tags: [] }),
         normalize: (ops) => [...ops],
 
         commentsOpen: null,
@@ -1178,7 +1178,7 @@ describe("useAiFeature fix round 1", () => {
           collaboration: null,
           history: () => history,
           reload,
-          mergeTags: () => null,
+          mergeTags: () => ({ syntax: "liquid", tags: [] }),
           normalize: (ops) => [...ops],
           commentsOpen: null,
           onError,
@@ -1722,7 +1722,7 @@ async function openAiSession(
       collaboration: null,
       history: () => history,
       reload: (id, shouldApply) => editor.load(id, shouldApply),
-      mergeTags: () => null,
+      mergeTags: () => ({ syntax: "liquid", tags: [] }),
       normalize: (ops) => [...ops],
 
       commentsOpen: null,
@@ -3336,7 +3336,7 @@ it.each(["saved", "failed", "superseded"] as const)("clears the retained-version
       }) } as AiProvider,
       editor, collaboration: null, history: () => history,
       reload: (id, guard) => editor.load(id, guard),
-      mergeTags: () => null, normalize: (ops) => [...ops], commentsOpen: null,
+      mergeTags: () => ({ syntax: "liquid", tags: [] }), normalize: (ops) => [...ops], commentsOpen: null,
     });
     return { editor, ai };
   })!;
@@ -3360,4 +3360,37 @@ it.each(["saved", "failed", "superseded"] as const)("clears the retained-version
     expect(ai.keptYourVersion.value).toBe(ending !== "saved");
     expect(editor.content.value.blocks[0]).toMatchObject({ content: ending === "superseded" ? "<p>Newer author version</p>" : "<p>Retained author version</p>" });
   } finally { ai.destroy(); scope.stop(); }
+});
+
+
+it("keeps the returning A session's messages and replay records after an old New chat clears", async () => {
+  const cleared = deferred<void>();
+  const clear = vi.fn(() => cleared.promise);
+  const { ai, editor } = await openLocal({
+    chat: chatting(async (on) => { await on.onOperations(greet); }),
+    conversation: { list: async () => [], clear, undo: false, redo: false, settleReplay: async () => {} },
+  });
+  ai.open("chat");
+  await settle();
+  const oldClear = ai.newChat();
+  await settle();
+  expect(clear).toHaveBeenCalledExactlyOnceWith("tpl-1");
+  await editor.load("tpl-2");
+  await settle();
+  await editor.load("tpl-1");
+  await settle();
+  await ai.send("New A turn");
+  const messages = safeClone(ai.messages.value);
+  const answer = messages.find((row) => row.role === "assistant")!;
+  expect(answer.canUndo).toBe(true);
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Hello</p>" });
+  cleared.resolve();
+  await oldClear;
+  await settle();
+  expect(ai.messages.value).toEqual(messages);
+  await ai.undoMessage(answer.id);
+  expect(editor.content.value.blocks[0]).toMatchObject({ content: "<p>Hi</p>" });
+  expect(ai.messages.value.find((row) => row.id === answer.id)).toMatchObject({ undone: true });
+  await ai.send("Publish memory again");
+  expect(ai.messages.value.map((row) => row.id)).toContain(answer.id);
 });

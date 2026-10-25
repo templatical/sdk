@@ -113,7 +113,7 @@ async function setup(
       history: () => history,
       collaboration: null,
       reload: options.reload ?? null,
-      mergeTags: () => null,
+      mergeTags: () => ({ syntax: "liquid", tags: [] }),
       normalize: (ops) => [...ops],
       commentsOpen: null,
     });

@@ -44,9 +44,9 @@ await editor.load('tpl_123');
 
 <<< @/snippets/ai-contract.ts
 
-Anfragen für Chat, Fix und Umformulieren enthalten `templateId`, `content` (das Template im Editor, nachdem ausstehende Änderungen gesendet wurden), `revision` (die Zusammenarbeitsrevision oder `null`), `sessionId` und `mergeTags` (`{ syntax, tags }` oder `null`, wenn keine deklariert sind). Jeder Aufruf erhält ein `AbortSignal`: „Stop“ bricht ihn ab.
+Chat, Fix und Umformulieren erhalten den `content` des Editors nach dem Senden ausstehender Änderungen, die Zusammenarbeitsrevision `revision` (oder `null`), `templateId`, `sessionId` und das erforderliche `mergeTags: { syntax, tags }`. Ohne deklarierte Tags sendet der Editor seine Syntax (standardmäßig `liquid`) und `tags: []`. Fehlender oder `null` gesetzter Kontext ergibt 422. Jeder Aufruf erhält ein `AbortSignal`; Stop bricht ihn ab.
 
-Die Anfragelimits entsprechen der [API-Referenz](/de/api/ai-kit#anfragelimits): `message` 1–4.000 Codepoints, `content` höchstens 200.000 UTF-8-Bytes als JSON, `selectedBlockId` und `sessionId` höchstens 200 Codepoints, `mergeTags` höchstens 500 Tags (`value` ≤ 200, `label` und optional `group` ≤ 100, optional `description` ≤ 200 Codepoints). `AiMergeTagSyntax` erlaubt `liquid`, `handlebars`, `mailchimp`, `ampscript` oder `custom`. Rewrite-HTML hat 1–20.000 Codepoints, `instruction` höchstens 500. Mindestens `preset` oder `instruction` ist gesetzt; bei `translate` ist `language` erforderlich. Die vollständigen Formen, einschließlich `null` und optionalen Feldern, stehen oben; Wire-Anfragen transportieren Template-ID und Sitzung über Pfad und Header. Rewrite überträgt dabei keinen `content` und keine `revision`.
+Die Deklarationen oben und die [API-Anfragelimits](/de/api/ai-kit#anfragelimits) definieren jedes Feld. Auf dem Wire verwenden Template-ID und Sitzung Pfad und Header; Rewrite lässt `content` und `revision` weg. Das [Server-Kit](/de/api/ai-kit#server) prüft Merge-Tags auch bei leeren Listen; die Syntax `custom` bleibt ungeprüft.
 
 ### Durchläufe: Chat und Beheben
 

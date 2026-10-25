@@ -9,3 +9,5 @@ AI as a bring-your-own contract (**BYO contract**):
 - `SdkError` gains `details` and the AI error codes, and `ThrottledError` is new.
 - **BYO contract:** `OperationBatch.origin` (`'ai'`) and the `ai` collaboration actor. A collaboration backend that switches on `actor.type` handles `ai`.
 - `invertOperations` moves here from `@templatical/core`, which re-exports it.
+
+Require AI merge-tag syntax even when no tags are declared.

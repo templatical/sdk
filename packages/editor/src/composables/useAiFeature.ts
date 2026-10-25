@@ -119,7 +119,7 @@ export interface UseAiFeatureOptions {
   reload:
     | ((templateId: string, shouldApply?: () => boolean) => Promise<unknown>)
     | null;
-  mergeTags: () => AiMergeTags | null;
+  mergeTags: () => AiMergeTags;
   /** Bare merge tags to tags, as for remote batches (D8). */
   normalize: (
     ops: readonly Operation[],
@@ -1246,6 +1246,9 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
         try {
           if (conversation && typeof conversation.clear === "function")
             await conversation.clear(scope.id);
+          // A returning session owns a newer generation of this shared memory.
+          // Its turns and replay records must survive this abandoned clear.
+          if (scope.memory.generation !== scope.generation) return;
           // The backend cleared this template even if another session is current.
           memory.delete(scope.id);
           scope.memory.items = [];

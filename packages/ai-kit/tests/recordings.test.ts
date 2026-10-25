@@ -12,7 +12,7 @@ const base = {
   content: AI_EVAL_TEMPLATES.welcome,
   revision: null,
   sessionId: "s-1",
-  mergeTags: null,
+  mergeTags: { syntax: "liquid" as const, tags: [] },
 };
 
 describe("AI_RECORDINGS", () => {

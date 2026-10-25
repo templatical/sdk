@@ -22,7 +22,7 @@ import { applyOperationsTool } from "./tool";
 export interface EditingTurnRequest {
   content: TemplateContent;
   revision?: number | null;
-  mergeTags: AiMergeTags | null;
+  mergeTags: AiMergeTags;
   selectedBlockId: string | null;
   /** `buildChatRequest` or `buildFixRequest`. */
   request: string;

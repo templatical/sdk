@@ -41,13 +41,13 @@ export function mergeTagSyntaxName(syntax: SyntaxPreset): AiMergeTagSyntax {
  * The editor's merge tags as an AI request carries them, within the caps:
  * at most 500 in order; a value that is empty or over 200 code points is left
  * out (a cut value names another tag); label, group and description are cut;
- * an empty label falls back to the value; `sample` never travels. `null` when
- * no tag is declared.
+ * an empty label falls back to the value; `sample` never travels. The syntax
+ * travels even when no tag is declared (`tags: []`).
  */
 export function toAiMergeTags(
   tags: readonly MergeTag[],
   syntax: SyntaxPreset,
-): AiMergeTags | null {
+): AiMergeTags {
   const out: AiMergeTag[] = [];
   for (const tag of tags) {
     if (out.length === AI_MERGE_TAG_LIMITS.tags) break;
@@ -72,7 +72,5 @@ export function toAiMergeTags(
         : {}),
     });
   }
-  return out.length === 0
-    ? null
-    : { syntax: mergeTagSyntaxName(syntax), tags: out };
+  return { syntax: mergeTagSyntaxName(syntax), tags: out };
 }

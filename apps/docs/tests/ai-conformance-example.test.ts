@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { expect, it } from "vitest";
-import { AI_EVAL_TEMPLATES } from "../../../packages/ai-kit/src/testing/eval-set";
+import { AI_CONFORMANCE_ALT_TEXT_IMAGE_URL, AI_EVAL_TEMPLATES } from "../../../packages/ai-kit/src/testing/eval-set";
 
 it("seeds the authenticated disposable template with the alt-text probe's block", async () => {
   const source = readFileSync(
@@ -28,6 +28,7 @@ it("seeds the authenticated disposable template with the alt-text probe's block"
   let sent: { content: { blocks: { id: string; src?: string }[] } } | undefined;
   const report = { ok: true, checks: [] };
   const run = new Function(
+    "AI_CONFORMANCE_ALT_TEXT_IMAGE_URL",
     "AI_EVAL_TEMPLATES",
     "fetch",
     "process",
@@ -38,6 +39,7 @@ it("seeds the authenticated disposable template with the alt-text probe's block"
     `return (async () => { ${js} })();`,
   );
   await run(
+    AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
     AI_EVAL_TEMPLATES,
     async (_url: string, init: RequestInit) => {
       expect(new Headers(init.headers).get("Authorization")).toBe(
@@ -55,6 +57,6 @@ it("seeds the authenticated disposable template with the alt-text probe's block"
   expect(
     sent?.content.blocks.find((block) => block.id === "conformance-image"),
   ).toMatchObject({
-    src: "https://docs.templatical.com/og-image.png",
+    src: AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   });
 });

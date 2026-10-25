@@ -264,7 +264,7 @@ describe("Editor.vue with an AI provider", () => {
     await vi.waitFor(() => expect(api.getContent()).toEqual(updated));
     expect(api.isDirty()).toBe(false);
     expect(load.mock.calls).toEqual([["tpl-1"], ["tpl-1"]]);
-    expect(chat.mock.calls[0][0].mergeTags).toBeNull();
+    expect(chat.mock.calls[0][0].mergeTags).toEqual({ syntax: "liquid", tags: [] });
     expect(wrapper.get('[data-testid="ai-chat-applied"]').text()).toContain(
       "Applied 1 change",
     );

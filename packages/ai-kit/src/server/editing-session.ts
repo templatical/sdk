@@ -35,8 +35,8 @@ export const EDITING_SESSION_LIMITS: Readonly<EditingSessionLimits> = {
 
 export interface EditingSessionOptions {
   content: TemplateContent;
-  /** The editor's merge tags; `null` checks none. */
-  mergeTags: AiMergeTags | null;
+  /** The editor syntax and allowed tags; an empty list still checks tokens. */
+  mergeTags: AiMergeTags;
   limits?: Partial<EditingSessionLimits>;
   /** Locks other sessions hold, with their names, when your backend has locks. */
   locks?: readonly NamedLock[];
@@ -116,7 +116,7 @@ export function createEditingSession(
     }
 
     const mergeTags = options.mergeTags;
-    if (mergeTags !== null && mergeTags.syntax !== "custom") {
+    if (mergeTags.syntax !== "custom") {
       const allowed = [
         ...mergeTags.tags.map((tag) => tag.value),
         ...mergeTagTokensIn(content, mergeTags.syntax),

@@ -21,11 +21,11 @@ function stripFences(text: string): string {
 export function checkRewrite(
   html: string,
   inputHtml: string,
-  mergeTags: AiMergeTags | null,
+  mergeTags: AiMergeTags,
 ): { ok: true; html: string } | { ok: false; reason: string } {
   const clean = stripFences(html).trim();
   if (clean === "") return { ok: false, reason: "Your rewrite was empty." };
-  if (mergeTags !== null && mergeTags.syntax !== "custom") {
+  if (mergeTags.syntax !== "custom") {
     const allowed = [
       ...mergeTags.tags.map((tag) => tag.value),
       ...mergeTagTokens(flattenMergeTags(inputHtml), mergeTags.syntax),

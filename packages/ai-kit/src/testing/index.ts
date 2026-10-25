@@ -16,6 +16,7 @@ export type {
 } from "./mock-provider";
 export { AI_RECORDINGS } from "./recordings";
 export {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   AI_EVAL_CASES,
   AI_EVAL_MERGE_TAGS,
   AI_EVAL_TEMPLATES,

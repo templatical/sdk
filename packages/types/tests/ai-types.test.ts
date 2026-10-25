@@ -60,7 +60,7 @@ describe("the AI provider contract (BYO contract)", () => {
       "content: TemplateContent;",
       "revision: number | null;",
       "sessionId: string;",
-      "mergeTags: AiMergeTags | null;",
+      "mergeTags: AiMergeTags;",
     ]) {
       expect(body).toContain(field);
     }

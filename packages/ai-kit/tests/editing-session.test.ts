@@ -285,10 +285,22 @@ describe("createEditingSession (D30)", () => {
 
 it("refuses custom block retyping while allowing fieldValues edits", () => {
   const content = { blocks: [{ id: "c", type: "custom", customType: "allowed", fieldValues: { text: "Before" } }], settings: {} } as never;
-  const session = createEditingSession({ content, mergeTags: null });
+  const session = createEditingSession({ content, mergeTags: { syntax: "liquid" as const, tags: [] } });
   expect(session.apply([{ op: "updateBlock", blockId: "c", set: { customType: "other" } }])).toMatchObject({ ok: false, feedback: expect.stringContaining("customType") });
   expect(session.apply([{ op: "updateBlock", blockId: "c", set: { type: "paragraph" } }])).toMatchObject({ ok: false, feedback: expect.stringContaining("type") });
   expect(session.apply([{ op: "updateBlock", blockId: "c", unset: ["customType"] }])).toMatchObject({ ok: false });
   expect(session.apply([{ op: "updateBlock", blockId: "c", set: { fieldValues: { text: "After" } } }])).toMatchObject({ ok: true });
   expect(session.content.blocks[0]).toMatchObject({ customType: "allowed", fieldValues: { text: "After" } });
+});
+
+
+it("refuses an invented liquid tag when no merge tags are declared", () => {
+  const start = content();
+  const session = createEditingSession({ content: start, mergeTags: { syntax: "liquid", tags: [] } });
+  expect(session.apply([{ op: "updateBlock", blockId: "t1", set: { content: "<p>{{x}}</p>" } }])).toEqual({
+    ok: false,
+    feedback: "Refused: op 0 (updateBlock t1) was refused: it uses merge tags this editor doesn't declare: {{x}}",
+  });
+  expect(session.content).toEqual(start);
+  expect(session.batches).toHaveLength(0);
 });

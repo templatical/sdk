@@ -32,7 +32,7 @@ describe("readAiRequest", () => {
         post("/templates/t-1/ai/generate", {
           message: "Hi",
           selectedBlockId: null,
-          mergeTags: null,
+          mergeTags: { syntax: "liquid" as const, tags: [] },
           content,
           revision: null,
         }),
@@ -44,7 +44,7 @@ describe("readAiRequest", () => {
       body: {
         message: "Hi",
         selectedBlockId: null,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
         content,
         revision: null,
         attachments: [],
@@ -58,7 +58,7 @@ describe("readAiRequest", () => {
       {
         message: "",
         selectedBlockId: null,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
         content,
         revision: null,
       },
@@ -71,7 +71,7 @@ describe("readAiRequest", () => {
         preset: null,
         language: null,
         instruction: null,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
       },
       "Choose a preset or write an instruction.",
     ],
@@ -82,7 +82,7 @@ describe("readAiRequest", () => {
         preset: "translate",
         language: null,
         instruction: null,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
       },
       "Choose a language to translate into.",
     ],
@@ -204,7 +204,7 @@ describe("readAiRequest fix-finding field validation", () => {
     readAiRequest(
       post("/templates/t-1/ai/fix-finding", {
         content,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
         revision: null,
         finding,
       }),
@@ -362,7 +362,7 @@ describe("readAiRequest language field validation", () => {
             preset: "translate",
             language,
             instruction: null,
-            mergeTags: null,
+            mergeTags: { syntax: "liquid" as const, tags: [] },
           }),
         ),
       ).rejects.toMatchObject({
@@ -381,7 +381,7 @@ describe("readAiRequest language field validation", () => {
           preset: "translate",
           language: "pt-BR",
           instruction: null,
-          mergeTags: null,
+          mergeTags: { syntax: "liquid" as const, tags: [] },
         }),
       ),
     ).toMatchObject({ route: "rewriteText", body: { language: "pt-BR" } });
@@ -395,7 +395,7 @@ describe("readAiRequest language field validation", () => {
           preset: "translate",
           language: "en-Latn-US-variant1-variant2-variant3",
           instruction: null,
-          mergeTags: null,
+          mergeTags: { syntax: "liquid" as const, tags: [] },
         }),
       ),
     ).toMatchObject({
@@ -449,7 +449,7 @@ describe("final fix: request boundaries", () => {
       };
       await expect(
         readAiRequest(
-          post(`/templates/t/ai/${route}`, {
+          post(`/templates/t/ai/${route}`, { mergeTags: { syntax: "liquid", tags: [] },
             message: "Hi",
             selectedBlockId: null,
             content,
@@ -472,13 +472,13 @@ describe("final fix: request boundaries", () => {
     );
     expect(
       await readAiRequest(
-        post("/templates/t/ai/generate", { message: "Hi", content }),
+        post("/templates/t/ai/generate", { mergeTags: { syntax: "liquid", tags: [] },  message: "Hi", content }),
       ),
     ).toMatchObject({ route: "generate" });
     content.settings.padding += "x";
     await expect(
       readAiRequest(
-        post("/templates/t/ai/generate", { message: "Hi", content }),
+        post("/templates/t/ai/generate", { mergeTags: { syntax: "liquid", tags: [] },  message: "Hi", content }),
       ),
     ).rejects.toMatchObject({ statusCode: 413, code: "content_too_large" });
   });
@@ -529,7 +529,7 @@ describe("final fix: request boundaries", () => {
     ).toMatchObject({ route: "generate" });
     expect(
       await readAiRequest(
-        post("/templates/t/ai/fix-finding", {
+        post("/templates/t/ai/fix-finding", { mergeTags: { syntax: "liquid", tags: [] },
           content,
           finding: {
             ...lintFinding,
@@ -541,7 +541,7 @@ describe("final fix: request boundaries", () => {
     ).toMatchObject({ route: "fixFinding" });
     expect(
       await readAiRequest(
-        post("/templates/t/ai/rewrite-text", {
+        post("/templates/t/ai/rewrite-text", { mergeTags: { syntax: "liquid", tags: [] },
           html: emoji.repeat(20_000),
           instruction: emoji.repeat(500),
         }),
@@ -568,7 +568,7 @@ describe("readAiRequest validation messages", () => {
     "rejects %s content with the exact validation error",
     async (_label, content) => {
       await validation(
-        post("/templates/t/ai/generate", { message: "Hi", content }),
+        post("/templates/t/ai/generate", { mergeTags: { syntax: "liquid", tags: [] },  message: "Hi", content }),
         "content must be the template's content.",
       );
     },
@@ -578,7 +578,7 @@ describe("readAiRequest validation messages", () => {
     "rejects revision %j with the exact validation error",
     async (revision) => {
       await validation(
-        post("/templates/t/ai/generate", { message: "Hi", content, revision }),
+        post("/templates/t/ai/generate", { mergeTags: { syntax: "liquid", tags: [] },  message: "Hi", content, revision }),
         "revision must be a whole number or null.",
       );
     },
@@ -591,7 +591,7 @@ describe("readAiRequest validation messages", () => {
     "rejects %s with the exact validation error",
     async (_label, instruction) => {
       await validation(
-        post("/templates/t/ai/rewrite-text", {
+        post("/templates/t/ai/rewrite-text", { mergeTags: { syntax: "liquid", tags: [] },
           html: "<p>Hi</p>",
           preset: "shorten",
           instruction,
@@ -610,7 +610,7 @@ describe("readAiRequest validation messages", () => {
     "rejects %s rewrite HTML with the exact validation error",
     async (_label, html) => {
       await validation(
-        post("/templates/t/ai/rewrite-text", { html, preset: "shorten" }),
+        post("/templates/t/ai/rewrite-text", { mergeTags: { syntax: "liquid", tags: [] },  html, preset: "shorten" }),
         "html must be 1 to 20,000 characters.",
       );
     },
@@ -618,7 +618,7 @@ describe("readAiRequest validation messages", () => {
 
   it("rejects an unknown rewrite preset with the exact validation error", async () => {
     await validation(
-      post("/templates/t/ai/rewrite-text", {
+      post("/templates/t/ai/rewrite-text", { mergeTags: { syntax: "liquid", tags: [] },
         html: "<p>Hi</p>",
         preset: "poetic",
       }),
@@ -638,7 +638,7 @@ describe("readAiRequest alt text", () => {
     maxLength: 125,
   };
   const read = (patch = {}) =>
-    readAiRequest(post("/templates/t-1/ai/alt-text", { ...body, ...patch }));
+    readAiRequest(post("/templates/t-1/ai/alt-text", { mergeTags: { syntax: "liquid", tags: [] },  ...body, ...patch }));
   it("reads the exact body and session", async () => {
     expect(await read()).toEqual({
       route: "altText",
@@ -724,7 +724,7 @@ describe("generate multipart attachments", () => {
     const data = new FormData();
     data.set("message", "Use these references");
     data.set("content", JSON.stringify(content));
-    data.set("mergeTags", "null");
+    data.set("mergeTags", JSON.stringify({ syntax: "liquid", tags: [] }));
     data.set("revision", "4");
     for (const file of files)
       data.append(
@@ -756,7 +756,7 @@ describe("generate multipart attachments", () => {
         selectedBlockId: null,
         revision: 4,
         content,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid" as const, tags: [] },
         attachments: [
           {
             kind: type === "application/pdf" ? "pdf" : "image",
@@ -895,6 +895,36 @@ describe("generate multipart attachments", () => {
     await expect(read(data)).rejects.toMatchObject({
       statusCode: 413,
       code: "content_too_large",
+    });
+  });
+});
+
+
+describe("required merge-tag context", () => {
+  it.each(["generate", "rewrite-text", "fix-finding"])(
+    "refuses null and missing mergeTags on %s with 422",
+    async (route) => {
+      for (const mergeTags of [null, undefined]) {
+        await expect(readAiRequest(post(`/templates/t-1/ai/${route}`, {
+          message: "Hi", content, html: "<p>Hi</p>", preset: "shorten",
+          finding: lintFinding, mergeTags,
+        }))).rejects.toMatchObject({
+          statusCode: 422,
+          message: "mergeTags must be { syntax, tags } with at most 500 tags.",
+        });
+      }
+    },
+  );
+  it.each(["null", "missing"])("refuses %s mergeTags in multipart", async (value) => {
+    const body = new FormData();
+    body.set("message", "Hi");
+    body.set("content", JSON.stringify(content));
+    if (value === "null") body.set("mergeTags", "null");
+    await expect(readAiRequest(new Request("https://x.test/templates/t/ai/generate", {
+      method: "POST", body,
+    }))).rejects.toMatchObject({
+      statusCode: 422,
+      message: "mergeTags must be { syntax, tags } with at most 500 tags.",
     });
   });
 });

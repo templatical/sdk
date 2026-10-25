@@ -24,8 +24,8 @@ describe("toAiMergeTags", () => {
     });
   });
 
-  it("is null when no tag is declared, and custom for the consumer's own patterns", () => {
-    expect(toAiMergeTags([], SYNTAX_PRESETS.liquid)).toBe(null);
+  it("keeps syntax with no tags, and custom for the consumer's own patterns", () => {
+    expect(toAiMergeTags([], SYNTAX_PRESETS.liquid)).toEqual({ syntax: "liquid", tags: [] });
     expect(
       toAiMergeTags([{ value: "[[x]]", label: "" }], {
         value: /\[\[.+?\]\]/g,

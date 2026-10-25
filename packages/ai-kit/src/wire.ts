@@ -177,14 +177,14 @@ export interface AiGenerateBody {
   attachments: AiChatAttachment[];
   message: string;
   selectedBlockId: string | null;
-  mergeTags: AiMergeTags | null;
+  mergeTags: AiMergeTags;
   content: TemplateContent;
   revision: number | null;
 }
 
 export interface AiFixFindingBody {
   finding: AiFixFinding;
-  mergeTags: AiMergeTags | null;
+  mergeTags: AiMergeTags;
   content: TemplateContent;
   revision: number | null;
 }
@@ -194,7 +194,7 @@ export interface AiRewriteBody {
   preset: AiRewritePreset | null;
   language: string | null;
   instruction: string | null;
-  mergeTags: AiMergeTags | null;
+  mergeTags: AiMergeTags;
 }
 
 /** The multipart fields of generate; mergeTags and content are JSON strings. */

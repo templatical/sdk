@@ -305,7 +305,7 @@ The [testing reference](/api/ai-kit#testing) documents both conformance signatur
 
 <<< @/snippets/check-ai-backend.ts
 
-The alt-text probe uses `blockId: "conformance-image"` and defaults to the public image URL `https://docs.templatical.com/og-image.png`. The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
+The alt-text probe uses `blockId: "conformance-image"` and defaults to `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL`, a text-free image ([default and override](/api/ai-kit#testing)). The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
 
 Both conformance suites can spend tokens and persist batches. With conversation enabled they change replay state and clear history through `clear` when available. Remove the test template through your store afterwards. Failures print per check and produce a non-zero exit.
 

@@ -1,5 +1,6 @@
 import type {
   AiAppliedBatch,
+  AiMergeTags,
   AiOperationsResult,
   AiTurnHandlers,
   Operation,
@@ -15,6 +16,7 @@ import {
 /** The editor the suites drive: `onOperations` applies with the engine. */
 export interface StandInEditor {
   content: TemplateContent;
+  readonly mergeTags: AiMergeTags;
   readonly sessionId: string;
   readonly applied: Operation[][];
   readonly refused: { code: string; opIndex: number; message: string }[];
@@ -27,9 +29,13 @@ export interface StandInEditor {
   };
 }
 
-export function createStandInEditor(content: TemplateContent): StandInEditor {
+export function createStandInEditor(
+  content: TemplateContent,
+  mergeTags: AiMergeTags = { syntax: "liquid", tags: [] },
+): StandInEditor {
   const editor: StandInEditor = {
     content: safeClone(content),
+    mergeTags: safeClone(mergeTags),
     sessionId: crypto.randomUUID(),
     applied: [],
     refused: [],

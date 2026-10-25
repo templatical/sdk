@@ -84,3 +84,8 @@ describe("createStandInEditor", () => {
     expect(editor.content.settings.width).toBe(640);
   });
 });
+
+
+it("keeps the editor syntax with no declared tags", () => {
+  expect(createStandInEditor(AI_EVAL_TEMPLATES.welcome)).toMatchObject({ mergeTags: { syntax: "liquid", tags: [] } });
+});

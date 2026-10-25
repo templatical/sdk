@@ -30,8 +30,8 @@ export interface AiRequestBase {
   revision: number | null;
   /** The editor session (`X-Templatical-Session` on the wire). */
   sessionId: string;
-  /** `null` when the editor declares none. */
-  mergeTags: AiMergeTags | null;
+  /** The editor syntax and declared tags; `tags` is empty when none are declared. */
+  mergeTags: AiMergeTags;
 }
 
 export interface AiChatAttachment {

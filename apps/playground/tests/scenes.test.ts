@@ -627,7 +627,7 @@ describe("AI scene", () => {
         templateId: "ai",
         sessionId: "scene-test",
         revision: null,
-        mergeTags: null,
+        mergeTags: { syntax: "liquid", tags: [] },
         content,
         message: "Build this email from the attached design.",
         selectedBlockId: null,

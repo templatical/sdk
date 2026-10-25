@@ -12,6 +12,7 @@ const fixtures = [
   ["promo", "designs/promo.png", 720],
   ["one-page", "designs/one-page.pdf", 800],
   ["product", "images/product.png", 650],
+  ["probe", "images/probe.png", 400],
   ["banner", "images/banner.png", 400],
   ["divider", "images/divider.png", 190],
   ["chart", "images/chart.png", 600],

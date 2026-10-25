@@ -305,7 +305,7 @@ Die [Testreferenz](/de/api/ai-kit#testen) dokumentiert beide Konformitätssignat
 
 <<< @/snippets/check-ai-backend.ts
 
-Die Alt-Text-Prüfung verwendet `blockId: "conformance-image"` und standardmäßig die öffentliche Bild-URL `https://docs.templatical.com/og-image.png`. Das Beispiel fügt dieses Bild in die Wegwerf-Vorlage ein, damit Ihr Backend die Blockzugehörigkeit prüfen kann. Halten Sie es während der Suite verfügbar; wenden Sie diese Testeinrichtung nicht auf produktive Vorlagen an.
+Die Alt-Text-Prüfung verwendet `blockId: "conformance-image"` und standardmäßig `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL`, ein Bild ohne Text ([Standard und Überschreibung](/de/api/ai-kit#testen)). Das Beispiel fügt dieses Bild in die Wegwerf-Vorlage ein, damit Ihr Backend die Blockzugehörigkeit prüfen kann. Halten Sie es während der Suite verfügbar; wenden Sie diese Testeinrichtung nicht auf produktive Vorlagen an.
 
 Beide Konformitätssuiten können Tokens verbrauchen und Batches persistieren. Mit aktivem Verlauf werden Replay-Zustände verändert und der Verlauf über `clear` geleert, sofern verfügbar. Entfernen Sie die Testvorlage anschließend über Ihren Speicher. Fehler werden je Prüfung ausgegeben und führen zu einem Exit-Code ungleich null.
 

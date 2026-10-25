@@ -38,8 +38,8 @@ export const REWRITE_PRESET_INSTRUCTIONS: Readonly<
 
 export { FIX_RULE_GUIDANCE };
 
-function describeMergeTags(mergeTags: AiMergeTags | null): string {
-  if (!mergeTags || mergeTags.tags.length === 0) {
+function describeMergeTags(mergeTags: AiMergeTags): string {
+  if (mergeTags.tags.length === 0) {
     return "The editor declared no merge tags. Don't add any.";
   }
   return [
@@ -51,7 +51,7 @@ function describeMergeTags(mergeTags: AiMergeTags | null): string {
 export interface EditingPromptInput {
   content: TemplateContent;
   revision?: number | null;
-  mergeTags: AiMergeTags | null;
+  mergeTags: AiMergeTags;
   selectedBlockId: string | null;
   /** `buildChatRequest` or `buildFixRequest`. */
   request: string;

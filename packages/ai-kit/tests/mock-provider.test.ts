@@ -11,7 +11,7 @@ const base = {
   content,
   revision: null,
   sessionId: "s",
-  mergeTags: null,
+  mergeTags: { syntax: "liquid" as const, tags: [] },
 };
 const rename = [
   {

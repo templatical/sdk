@@ -13,6 +13,7 @@ import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type {
   Block,
+  MergeTagsConfig,
   Template,
   TemplateContent,
   UiTheme,
@@ -119,8 +120,18 @@ provide(SIZE_CHECK_KEY, {
 // to state itself — so the provider is wrapped here, on its way in. Wrapping
 // rather than normalizing after the load resolves is what keeps the load from
 // registering as an edit: core is handed content that is already correct.
+// These getters run when content arrives, after core exists. setMergeTags()
+// replaces core's list, so every incoming path must read that list at call time.
+const liveMergeTags: MergeTagsConfig = {
+  get tags() {
+    return core.mergeTags.value;
+  },
+  get syntax() {
+    return core.mergeTagSyntax;
+  },
+};
 const normalizedTemplates = props.config.templates
-  ? withNormalizedTemplateLoads(props.config.templates, props.config.mergeTags)
+  ? withNormalizedTemplateLoads(props.config.templates, liveMergeTags)
   : undefined;
 
 // --- Collaboration (opt-in: a collaboration provider and a templates provider) ---
@@ -142,7 +153,7 @@ const collaboration =
         user: props.config.user,
         // The same source the load normalizer reads, so a tag arriving in a
         // batch looks the way a loaded one does.
-        mergeTags: props.config.mergeTags,
+        mergeTags: liveMergeTags,
         onRemoteChange: props.config.onRemoteChange,
         onError: props.config.onError,
       })
@@ -332,7 +343,7 @@ const ai = props.config.ai
         effectiveAltMaxLength(resolveLintOptions(props.config)),
       mergeTags: () => toAiMergeTags(core.mergeTags.value, core.mergeTagSyntax),
       normalize: (ops, content) =>
-        normalizeRemoteOperations(ops, content, props.config.mergeTags),
+        normalizeRemoteOperations(ops, content, liveMergeTags),
       commentsOpen: comments?.isOpen ?? null,
       onError: props.config.onError,
     })
@@ -505,7 +516,7 @@ const versionHistory = props.config.versionHistory
       // chip. Wrapped at `setContent` rather than at the provider, because
       // version content also arrives off the hydrated list and out of the
       // `fetched` cache without touching `get()`.
-      editor: withNormalizedContentWrites(editor, props.config.mergeTags),
+      editor: withNormalizedContentWrites(editor, liveMergeTags),
       history: core.history,
       conditionPreview: core.conditionPreview,
       autoSave: core.autoSave,

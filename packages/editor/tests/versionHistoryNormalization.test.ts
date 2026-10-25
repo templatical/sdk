@@ -66,7 +66,7 @@ describe("Editor.vue wiring", () => {
 
   it("hands version history a normalizing editor, not the raw one", () => {
     expect(editorSource).toContain(
-      "editor: withNormalizedContentWrites(editor, props.config.mergeTags),",
+      "editor: withNormalizedContentWrites(editor, liveMergeTags),",
     );
   });
 });

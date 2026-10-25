@@ -67,8 +67,8 @@ export interface AiRequestBase {
   revision: number | null;
   /** The editor session (`X-Templatical-Session` on the wire). */
   sessionId: string;
-  /** `null` when the editor declares none. */
-  mergeTags: AiMergeTags | null;
+  /** The editor syntax and declared tags; `tags` is empty when none are declared. */
+  mergeTags: AiMergeTags;
 }
 
 export interface AiChatAttachment {
@@ -294,13 +294,15 @@ export type AiFeatureName = Exclude<keyof AiProvider, "conversation">;
 | `revision` | Non-negative integer, or `null` without collaboration |
 | `message` | 1–4,000 code points, not whitespace-only |
 | `selectedBlockId`, `sessionId` | At most 200 code points; selection may be `null` |
-| `mergeTags` | `null` or `{ syntax, tags }`; at most 500 tags; syntax `liquid`, `handlebars`, `mailchimp`, `ampscript` or `custom` |
+| `mergeTags` | Required `{ syntax, tags }`; `tags: []` when none are declared; at most 500 tags; syntax `liquid`, `handlebars`, `mailchimp`, `ampscript` or `custom` |
 | Merge-tag fields | `value` ≤ 200, `label` ≤ 100, optional `group` ≤ 100 and `description` ≤ 200 code points; no samples or callbacks |
 | Rewrite | `html` 1–20,000 code points; `instruction` ≤ 500; at least `preset` or `instruction`; `language` required for `translate` matching `/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/` |
 | Fix finding | [Lint fixes](#lint-fixes) gives every field limit and excluded field |
 | Alt text | [Alt text](#alt-text) gives URL, context, locale and output limits |
 | Attachments | [Chat attachments](#chat-attachments) gives MIME types, file-name and byte limits |
 | Operation batch | 1–100 operations in order; a turn's batches form one undo step |
+
+`mergeTags` always carries the editor's syntax (`liquid` by default), including an empty tag list. `readAiRequest` refuses missing or `null` context with status 422 and message `mergeTags must be { syntax, tags } with at most 500 tags.` The editing session and `checkRewrite` reject invented tags even when the declared list is empty; tags already in the input remain allowed. `custom` syntax is unchecked because its patterns are not sent to the backend.
 
 ## Client
 
@@ -529,9 +531,9 @@ export interface AiConformanceOptions {
   /** The template the suite edits; the test set's welcome email by default. */
   content?: TemplateContent;
   templateId?: string;
-  /** Public image URL fetched by the model provider for the alt-text probe. */
+  /** Public probe image URL; defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
-  mergeTags?: AiMergeTags | null;
+  mergeTags?: AiMergeTags;
   /** How long a stopped call may take to reject (D35). */
   timeoutMs?: number;
   /** An optional shorter call limit; every call is also bounded by `timeoutMs`. */
@@ -545,11 +547,13 @@ export interface AiWireConformanceOptions {
     | Record<string, string>
     | (() => Record<string, string> | Promise<Record<string, string>>);
   templateId?: string;
-  /** Defaults to https://docs.templatical.com/og-image.png. */
+  /** Defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
   timeoutMs?: number;
   callTimeoutMs?: number;
 }
+
+export declare const AI_CONFORMANCE_ALT_TEXT_IMAGE_URL: string;
 
 export declare function runAiProviderConformance(
   provider: AiProvider,
@@ -561,13 +565,16 @@ export declare function runAiWireConformance(
 ): Promise<AiConformanceReport>;
 ```
 
-The provider suite derives enabled features from the provider. `headers` and `features` belong only to the wire suite; all features are on there when flags are omitted. `templateId` defaults to `"conformance"`; use an authorized disposable template instead. `content` defaults to the welcome test template. `mergeTags` defaults to `AI_EVAL_MERGE_TAGS`. `altTextImageUrl` defaults to `https://docs.templatical.com/og-image.png`. `timeoutMs` defaults to `5000` ms; `callTimeoutMs` additionally bounds a call and cannot exceed `timeoutMs`.
+Provider conformance uses the provider's enabled members. Wire conformance owns `headers` and `features`; omitted flags enable all features. Defaults: `templateId: "conformance"`, `content: AI_EVAL_TEMPLATES.welcome`, `mergeTags: AI_EVAL_MERGE_TAGS`, `timeoutMs: 5000` ms. `callTimeoutMs` cannot exceed `timeoutMs`.
+
+`altTextImageUrl` defaults to `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL` from `@templatical/ai-kit/testing`: `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/images/probe.png` (`version` is the installed kit version). It shows a teal mug without text. Unreleased builds pass `altTextImageUrl` for a public image the model provider can fetch.
 
 For Node.js 24, save the following as `check-ai-backend.ts`. Your authenticated `POST /api/templates` accepts `{ name, content }` and returns `{ id }`. Set `AI_TEST_TOKEN`; `AI_BASE_URL` and `AI_TEMPLATES_URL` override the local URLs. Run `node check-ai-backend.ts`. It creates a disposable template and turns off history and chat attachments to match the stateless server in the [backend guide](/guide/bring-your-own-ai#the-server).
 
 ```ts
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   AI_EVAL_TEMPLATES,
   runAiProviderConformance,
   runAiWireConformance,
@@ -586,7 +593,7 @@ if (!logo) throw new Error("The welcome fixture must contain an image.");
 content.blocks.push({
   ...logo,
   id: "conformance-image",
-  src: "https://docs.templatical.com/og-image.png",
+  src: AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   alt: "",
 });
 const created = await fetch(templatesUrl, {
@@ -629,7 +636,7 @@ for (const [suite, report] of [
 }
 ```
 
-The alt-text probe uses `blockId: "conformance-image"` and defaults to the public image URL `https://docs.templatical.com/og-image.png`. The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
+The example adds the default probe image as `blockId: "conformance-image"` so the backend can authorize it. Keep this disposable template available during both suites.
 
 Both suites call enabled model features and spend tokens. Turn and fix checks can persist applied batches. With conversation enabled they check `list`, Undo/Redo and `settleReplay`, and clear history through `clear` when available. Wire conformance also sends invalid requests, including more than four attachments when chat attachments are enabled. Do not use a production template. Remove the test template through your store afterwards. Every failed check prints its name and detail; failure sets exit code 1.
 
@@ -739,7 +746,7 @@ Without `runAltText`, alt-text cases are skipped; without `lintCheck`, cases wit
 
 `loadFile?: (file: string) => Promise<Blob>` loads attachments. Its default fetches `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`. `evalAltTextWith` uses the same URL for images, reading `version` from the package at build time. For unreleased builds, set `imageUrl`; for local Node runs, `loadFile` reads the installed `eval/` folder. The [complete Node example](/guide/bring-your-own-ai#backend-conformance-and-model-evaluation) connects both runners to `@templatical/quality` and file loading.
 
-The conformance suites check a non-empty alt string within the request's `maxLength`, abort handling, and `altText: false`. The wire probe uses `altTextImageUrl`, default `https://docs.templatical.com/og-image.png`; set it to a public image your model provider can fetch.
+The [conformance suites](#testing) check non-empty alt text within `maxLength`, abort handling and `altText: false`.
 
 ## Files
 
@@ -2949,8 +2956,8 @@ export interface AiRequestBase {
   revision: number | null;
   /** The editor session (`X-Templatical-Session` on the wire). */
   sessionId: string;
-  /** `null` when the editor declares none. */
-  mergeTags: AiMergeTags | null;
+  /** The editor syntax and declared tags; `tags` is empty when none are declared. */
+  mergeTags: AiMergeTags;
 }
 
 export interface AiChatAttachment {
@@ -3168,9 +3175,9 @@ export interface AiProvider {
 export type AiFeatureName = Exclude<keyof AiProvider, "conversation">;
 ```
 
-Chat, fix and rewrite requests carry `templateId`, `content` (the template as the editor has it, after it sent its pending edits), `revision` (the collaboration revision, or `null`), `sessionId` and `mergeTags` (`{ syntax, tags }`, or `null` when none are declared). Every call gets an `AbortSignal`: the user's Stop aborts it.
+Chat, fix and rewrite receive the editor's `content` after pending edits are sent, its collaboration `revision` (or `null`), `templateId`, `sessionId` and required `mergeTags: { syntax, tags }`. With no declared tags, the editor sends its syntax (`liquid` by default) and `tags: []`. Missing or `null` context returns 422. Every call receives an `AbortSignal`; Stop aborts it.
 
-Request limits follow the [API reference](/api/ai-kit#request-limits): `message` 1–4,000 code points, `content` at most 200,000 UTF-8 bytes of JSON, `selectedBlockId` and `sessionId` at most 200 code points, and `mergeTags` at most 500 tags (`value` ≤ 200, `label` and optional `group` ≤ 100, optional `description` ≤ 200 code points). `AiMergeTagSyntax` accepts `liquid`, `handlebars`, `mailchimp`, `ampscript` or `custom`. Rewrite HTML is 1–20,000 code points and `instruction` at most 500. At least `preset` or `instruction` is set; `translate` requires `language`. The complete shapes, including nullability and optional fields, are above; wire requests move template ID and session to the path and header. Rewrite does not send `content` or `revision` on the wire.
+The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `custom` syntax is unchecked.
 
 ### Turns: chat and fix
 
@@ -9133,6 +9140,7 @@ The [testing reference](/api/ai-kit#testing) documents both conformance signatur
 ```ts
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   AI_EVAL_TEMPLATES,
   runAiProviderConformance,
   runAiWireConformance,
@@ -9151,7 +9159,7 @@ if (!logo) throw new Error("The welcome fixture must contain an image.");
 content.blocks.push({
   ...logo,
   id: "conformance-image",
-  src: "https://docs.templatical.com/og-image.png",
+  src: AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   alt: "",
 });
 const created = await fetch(templatesUrl, {
@@ -9194,7 +9202,7 @@ for (const [suite, report] of [
 }
 ```
 
-The alt-text probe uses `blockId: "conformance-image"` and defaults to the public image URL `https://docs.templatical.com/og-image.png`. The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
+The alt-text probe uses `blockId: "conformance-image"` and defaults to `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL`, a text-free image ([default and override](/api/ai-kit#testing)). The example adds that image to the disposable template so your backend can check block membership. Keep it available during the suite; do not apply this test setup to production templates.
 
 Both conformance suites can spend tokens and persist batches. With conversation enabled they change replay state and clear history through `clear` when available. Remove the test template through your store afterwards. Failures print per check and produce a non-zero exit.
 

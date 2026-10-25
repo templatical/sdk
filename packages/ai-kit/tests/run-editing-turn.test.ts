@@ -12,7 +12,7 @@ const content = () =>
 const request = (message: string) => ({
   content: content(),
   revision: 3,
-  mergeTags: null,
+  mergeTags: { syntax: "liquid" as const, tags: [] },
   selectedBlockId: null,
   request: buildChatRequest(message),
 });

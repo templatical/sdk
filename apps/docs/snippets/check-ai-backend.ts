@@ -1,5 +1,6 @@
 import { createHttpAiProvider } from "@templatical/ai-kit/client";
 import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   AI_EVAL_TEMPLATES,
   runAiProviderConformance,
   runAiWireConformance,
@@ -18,7 +19,7 @@ if (!logo) throw new Error("The welcome fixture must contain an image.");
 content.blocks.push({
   ...logo,
   id: "conformance-image",
-  src: "https://docs.templatical.com/og-image.png",
+  src: AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
   alt: "",
 });
 const created = await fetch(templatesUrl, {

@@ -87,8 +87,7 @@ function content(value: unknown): TemplateContent {
   return value as unknown as TemplateContent;
 }
 
-function mergeTags(value: unknown): AiMergeTags | null {
-  if (value === null || value === undefined) return null;
+function mergeTags(value: unknown): AiMergeTags {
   if (
     !isRecord(value) ||
     typeof value.syntax !== "string" ||

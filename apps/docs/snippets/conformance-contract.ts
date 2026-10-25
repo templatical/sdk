@@ -23,9 +23,9 @@ export interface AiConformanceOptions {
   /** The template the suite edits; the test set's welcome email by default. */
   content?: TemplateContent;
   templateId?: string;
-  /** Public image URL fetched by the model provider for the alt-text probe. */
+  /** Public probe image URL; defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
-  mergeTags?: AiMergeTags | null;
+  mergeTags?: AiMergeTags;
   /** How long a stopped call may take to reject (D35). */
   timeoutMs?: number;
   /** An optional shorter call limit; every call is also bounded by `timeoutMs`. */
@@ -39,11 +39,13 @@ export interface AiWireConformanceOptions {
     | Record<string, string>
     | (() => Record<string, string> | Promise<Record<string, string>>);
   templateId?: string;
-  /** Defaults to https://docs.templatical.com/og-image.png. */
+  /** Defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
   timeoutMs?: number;
   callTimeoutMs?: number;
 }
+
+export declare const AI_CONFORMANCE_ALT_TEXT_IMAGE_URL: string;
 
 export declare function runAiProviderConformance(
   provider: AiProvider,

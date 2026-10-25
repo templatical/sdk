@@ -291,6 +291,9 @@ function fixtureUrl(file: string): string {
   return `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/${file}`;
 }
 
+/** Text-free public probe image from this package's fixed-version SDK release. */
+export const AI_CONFORMANCE_ALT_TEXT_IMAGE_URL = fixtureUrl("images/probe.png");
+
 async function loadFixture(file: string): Promise<Blob> {
   const response = await fetch(fixtureUrl(file));
   if (!response.ok) throw new Error(`Fixture ${file}: HTTP ${response.status}`);

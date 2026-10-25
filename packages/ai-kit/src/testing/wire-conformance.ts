@@ -17,7 +17,10 @@ import {
   type AiConformanceCheck,
   type AiConformanceReport,
 } from "./conformance";
-import { AI_EVAL_TEMPLATES } from "./eval-set";
+import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
+  AI_EVAL_TEMPLATES,
+} from "./eval-set";
 
 export interface AiWireConformanceOptions {
   baseUrl: string;
@@ -26,7 +29,7 @@ export interface AiWireConformanceOptions {
     | Record<string, string>
     | (() => Record<string, string> | Promise<Record<string, string>>);
   templateId?: string;
-  /** Defaults to https://docs.templatical.com/og-image.png. */
+  /** Defaults to AI_CONFORMANCE_ALT_TEXT_IMAGE_URL. */
   altTextImageUrl?: string;
   timeoutMs?: number;
   callTimeoutMs?: number;
@@ -196,7 +199,7 @@ export async function runAiWireConformance(
       : await probe("generate", {
           message: "",
           selectedBlockId: null,
-          mergeTags: null,
+          mergeTags: { syntax: "liquid", tags: [] },
           content: AI_EVAL_TEMPLATES.welcome,
           revision: null,
         });
@@ -266,7 +269,8 @@ export async function runAiWireConformance(
     ),
     {
       templateId,
-      altTextImageUrl: options.altTextImageUrl,
+      altTextImageUrl:
+        options.altTextImageUrl ?? AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
       ...(options.timeoutMs !== undefined
         ? { timeoutMs: options.timeoutMs }
         : {}),

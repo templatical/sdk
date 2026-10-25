@@ -122,3 +122,23 @@ describe("Editor.vue normalizes content arriving from the templates provider", (
     ).toBe(false);
   });
 });
+
+
+it("normalizes a template load with tags added through setMergeTags", async () => {
+  const wrapper = await mountEditor({
+    load: async (id) => ({ id, content: content("<p>{{new_tag}}</p>") }),
+    create: false, save: false,
+  });
+  try {
+    const editor = wrapper.vm as unknown as {
+      setMergeTags(tags: { value: string; label: string }[]): void;
+      load(id: string): Promise<Template>;
+      getContent(): TemplateContent;
+      isDirty(): boolean;
+    };
+    editor.setMergeTags([{ value: "{{new_tag}}", label: "New tag label" }]);
+    await editor.load("tpl-1");
+    expect(firstParagraph(editor.getContent())).toBe('<p><span data-merge-tag="{{new_tag}}">New tag label</span></p>');
+    expect(editor.isDirty()).toBe(false);
+  } finally { wrapper.unmount(); }
+});

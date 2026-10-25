@@ -1,3 +1,5 @@
+import { version } from "../package.json";
+import * as testing from "../src/testing";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AiProvider } from "../src";
 import { createHttpAiProvider } from "../src/client";
@@ -791,4 +793,17 @@ it.each(["chat", "fixFinding", "rewrite", "altText"] as const)("fails live cance
   expect(report.checks.find((check) => check.name === `${feature}: stops on abort with an AbortError`)).toMatchObject({ ok: true });
   expect(report.checks.find((check) => check.name === `${feature}: stops an in-flight call with an AbortError`)).toMatchObject({ ok: false, detail: "still running after 20 ms" });
   expect(report.ok).toBe(false);
+});
+
+
+it.each([undefined, "https://example.com/override.png"])("uses the versioned alt-text probe or override %s in provider conformance", async (altTextImageUrl) => {
+  const expectedDefault = `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/images/probe.png`;
+  const provider = createMockAiProvider({ altText: [{ type: "done", alt: "A teal mug" }] });
+  if (!provider.altText) throw new Error("Expected alt text");
+  const altText = vi.fn(provider.altText);
+  const report = await runAiProviderConformance({ ...provider, altText }, { altTextImageUrl });
+  expect(report.ok).toBe(true);
+  expect(altText).toHaveBeenCalled();
+  for (const [request] of altText.mock.calls) expect(request.image.url).toBe(altTextImageUrl ?? expectedDefault);
+  expect(testing).toHaveProperty("AI_CONFORMANCE_ALT_TEXT_IMAGE_URL", expectedDefault);
 });
