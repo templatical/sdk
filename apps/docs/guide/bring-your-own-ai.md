@@ -154,7 +154,7 @@ The import shortcut uses this same chat route; the author sends the prefilled re
 
 | Adapter | Import | Install | Pass |
 | --- | --- | --- | --- |
-| Anthropic | `createAnthropicAdapter` from `@templatical/ai-kit/adapters/anthropic` | `@anthropic-ai/sdk` | `client`: `new Anthropic()` or `new AnthropicBedrock()` (`@anthropic-ai/bedrock-sdk`) |
+| Anthropic | `createAnthropicAdapter` from `@templatical/ai-kit/adapters/anthropic` | `@anthropic-ai/sdk` | `new Anthropic()` |
 | OpenAI | `createOpenAiAdapter` from `@templatical/ai-kit/adapters/openai` | `openai` | `client`: `new OpenAI()`, `new AzureOpenAI()`, or `new OpenAI({ baseURL })` for a server that implements Chat Completions |
 | Vercel AI SDK | `createVercelAdapter` from `@templatical/ai-kit/adapters/vercel` | `ai`, plus your provider package | `model`: an AI SDK model or a gateway model id |
 
@@ -166,14 +166,14 @@ The import shortcut uses this same chat route; the author sends the prefilled re
 | `model` | `string` (Anthropic, OpenAI) or an AI SDK `LanguageModel` (Vercel) | Required; no default model | All |
 | `maxTokens` | `number` | 16,000 for Anthropic; the API's own for OpenAI and Vercel | All |
 | `cache` | `boolean` | `true` | Anthropic |
-| `params` | The SDK's other request fields, without the ones the adapter sets | None | All |
+| `params` | The SDK's other request fields, excluding the adapter-owned fields in [the options types](/api/ai-kit#model-adapters) | None | All |
 
 All three adapters take chat, fix, rewrite and alt text. They accept image Blobs, PDF Blobs and image URLs, so `chatAttachments: true` works with each of them.
 
 ### What the adapters handle
 
 - **Thinking across steps.** The Anthropic and Vercel adapters return the model's thinking as `state`. `runEditingTurn` puts it on the step's assistant message, and the adapter sends it back unchanged on the next step. A loop of your own should keep `state` on its assistant messages too. Without it the turn still works, but the model works out its reasoning again.
-- **Prompt caching.** With `cache` on, the Anthropic adapter marks the end of the system prompt and turns on automatic caching. The kit's instructions and tool are then read from the cache across conversations, and a turn's later steps reread the template from it. `usage` reports `cacheReadInputTokens` and `cacheWriteInputTokens` next to `inputTokens`, which counts the uncached input only. OpenAI caches on its side, and the OpenAI adapter reports those reads.
+- **Prompt caching.** With `cache` on, the Anthropic adapter asks the API to cache the end of the system prompt and the conversation so far. Cache reads happen when a later request repeats the cached prefix within the cache's lifetime. `cacheReadInputTokens` and `cacheWriteInputTokens` in `usage` show what was read and written; `inputTokens` counts the uncached input only. OpenAI caches on its side, and the OpenAI adapter reports those reads.
 - **Errors:**
   - A provider's 429 rejects with `ThrottledError`, whose `retryAfterMs` comes from `retry-after`.
   - A refusal or content filter rejects with `ai_provider_error`.

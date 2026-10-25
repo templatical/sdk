@@ -136,7 +136,7 @@
     {
       "id": 23,
       "prompt": "Add AI to our Templatical editor with my own model provider and backend.",
-      "expected_output": "Follows providers.md and docs.md to /backend/ai, /guide/bring-your-own-ai and /api/ai-kit, following required setup and contract links. Checks the installed editor version. Adds @templatical/ai-kit for the requested HTTP provider integration, with explicit false | fn members, chatAttachments and the loaded-template gate; the AI assistant names chat and its header button. Explains auth, abort, applied batches and Undo, and runs runAiWireConformance on a disposable authenticated template. Must not recommend Cloud-only AI or install vue, tailwindcss or @templatical/core to mount the editor.",
+      "expected_output": "Follows providers.md and docs.md to /backend/ai, /guide/bring-your-own-ai and /api/ai-kit, following required setup and contract links. Checks the installed editor version. Adds @templatical/ai-kit for the requested HTTP provider integration, importing a first-party model adapter from @templatical/ai-kit/adapters/* instead of writing an AiModelAdapter. Checks model quality with runAiEvalSet from @templatical/ai-kit/testing, given evalTurnWith(model) and evalAltTextWith(model), and checks the backend wire separately with runAiWireConformance. Uses explicit false | fn members, chatAttachments and the loaded-template gate; the AI assistant names chat and its header button. Explains auth, abort, applied batches and Undo, and runs runAiWireConformance on a disposable authenticated template. Must not recommend Cloud-only AI or install vue, tailwindcss or @templatical/core to mount the editor.",
       "files": []
     },
     {

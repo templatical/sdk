@@ -133,6 +133,35 @@ describe("block interface fields, optionality and types", () => {
 
 
 describe("public AI and collaboration declarations", () => {
+  it("adapter-options.ts retains the adapters' exact option and client types", () => {
+    const declarations = (text: string) => {
+      const file = ts.createSourceFile("options.ts", text, ts.ScriptTarget.Latest, true);
+      return new Map(file.statements.flatMap((node) =>
+        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
+          : [],
+      ));
+    };
+    const documented = declarations(readDocs("snippets/adapter-options.ts"));
+    const sources = [
+      ["anthropic", ["StreamParams", "AnthropicAdapterClient", "AnthropicAdapterOptions"]],
+      ["openai", ["CreateParams", "OpenAiAdapterClient", "OpenAiAdapterOptions"]],
+      ["vercel", ["StreamTextParams", "VercelAdapterOptions"]],
+    ] as const;
+    expect([...documented.keys()]).toEqual(sources.flatMap(([, names]) => [...names]));
+    for (const [adapter, names] of sources) {
+      const maintained = declarations(readFileSync(
+        join(DOCS, `../../packages/ai-kit/src/adapters/${adapter}.ts`), "utf8",
+      ));
+      for (const name of names) {
+        expect(documented.get(name), name).toBe(maintained.get(name));
+      }
+    }
+    for (const page of ["api/ai-kit.md", "de/api/ai-kit.md"]) {
+      expect(readDocs(page)).toContain("<<< @/snippets/adapter-options.ts");
+    }
+  });
+
   it("model-contract.ts retains the kit's exact model contract", () => {
     const declarations = (text: string) => {
       const file = ts.createSourceFile("contract.ts", text, ts.ScriptTarget.Latest, true);

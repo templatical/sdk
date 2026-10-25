@@ -154,6 +154,7 @@ export function createVercelAdapter(
           abortSignal: signal,
         });
         for await (const part of result.stream) {
+          signal?.throwIfAborted();
           if (part.type === "text-delta")
             yield { type: "text", text: part.text };
           else if (part.type === "tool-input-start") toolInputStarted = true;

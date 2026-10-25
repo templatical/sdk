@@ -320,6 +320,36 @@ describe("createOpenAiAdapter", () => {
   });
 
   it.each([
+    ["absent", undefined],
+    [
+      "foreign",
+      { adapter: "anthropic", content: [{ type: "text", text: "Ignored" }] },
+    ],
+  ])("omits empty assistant messages with %s state", async (_label, state) => {
+    const { client, requests } = fakeOpenAi([{}]);
+    await collect(
+      createOpenAiAdapter({ client, model: "m" }).stream({
+        system: "S",
+        messages: [
+          user("One"),
+          { role: "assistant", content: "", state },
+          { role: "assistant", content: "", toolCalls: [], state },
+          { role: "assistant", content: "Kept" },
+          user("Two"),
+        ],
+        tools: [],
+      }),
+    );
+
+    expect(requests[0].body.messages).toEqual([
+      { role: "system", content: "S" },
+      { role: "user", content: [{ type: "text", text: "One" }] },
+      { role: "assistant", content: "Kept" },
+      { role: "user", content: [{ type: "text", text: "Two" }] },
+    ]);
+  });
+
+  it.each([
     [{ delta: { refusal: "I can't help with that." } }],
     [{ delta: {}, finish_reason: "content_filter" }],
   ])("throws the provider error for a refusal (%j)", async (chunk) => {

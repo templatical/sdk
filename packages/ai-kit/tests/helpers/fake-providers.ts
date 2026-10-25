@@ -11,6 +11,8 @@ export interface AnthropicStep {
   usage?: Record<string, number | null>;
   /** Thrown while streaming. */
   error?: unknown;
+  /** Whether the iterator checks cancellation before each delta. Default true. */
+  checkSignal?: boolean;
   onFinal?: () => void;
 }
 
@@ -33,7 +35,7 @@ export function fakeAnthropic(steps: AnthropicStep[]) {
           async *[Symbol.asyncIterator]() {
             if (step.error) throw step.error;
             for (const text of step.text ?? []) {
-              options?.signal?.throwIfAborted();
+              if (step.checkSignal !== false) options?.signal?.throwIfAborted();
               await Promise.resolve();
               yield {
                 type: "content_block_delta",

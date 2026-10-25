@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import AnthropicBedrock from "@anthropic-ai/bedrock-sdk";
 import OpenAI, { AzureOpenAI } from "openai";
 import type { LanguageModel } from "ai";
 import { createAnthropicAdapter } from "../src/adapters/anthropic";
@@ -12,10 +11,6 @@ declare const languageModel: LanguageModel;
 export const adapters: AiModelAdapter[] = [
   createAnthropicAdapter({
     client: new Anthropic({ apiKey: "k" }),
-    model: "m",
-  }),
-  createAnthropicAdapter({
-    client: new AnthropicBedrock({ awsRegion: "eu-central-1" }),
     model: "m",
   }),
   createOpenAiAdapter({ client: new OpenAI({ apiKey: "k" }), model: "m" }),
@@ -31,7 +26,10 @@ export const adapters: AiModelAdapter[] = [
     }),
     model: "m",
   }),
-  createVercelAdapter({ model: languageModel }),
+  createVercelAdapter({
+    model: languageModel,
+    params: { temperature: 0.5, maxRetries: 0 },
+  }),
   createVercelAdapter({ model: "anthropic/claude-opus-5-5" }),
   createAnthropicAdapter({
     client: new Anthropic({ apiKey: "k" }),
@@ -51,43 +49,149 @@ createAnthropicAdapter({
   // @ts-expect-error The adapter owns `model`.
   params: { model: "x" },
 });
+
+createAnthropicAdapter({
+  client: new Anthropic({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `system`.
+  params: { system: "x" },
+});
+
 createAnthropicAdapter({
   client: new Anthropic({ apiKey: "k" }),
   model: "m",
   // @ts-expect-error The adapter owns `messages`.
   params: { messages: [] },
 });
+
 createAnthropicAdapter({
   client: new Anthropic({ apiKey: "k" }),
   model: "m",
-  // @ts-expect-error The adapter owns `max_tokens` (use maxTokens).
+  // @ts-expect-error The adapter owns `tools`.
+  params: { tools: [] },
+});
+
+createAnthropicAdapter({
+  client: new Anthropic({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `max_tokens`.
   params: { max_tokens: 1 },
 });
+
+createAnthropicAdapter({
+  client: new Anthropic({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `stream`.
+  params: { stream: true },
+});
+
+createAnthropicAdapter({
+  client: new Anthropic({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `cache_control`.
+  params: { cache_control: { type: "ephemeral" } },
+});
+
 createOpenAiAdapter({
   client: new OpenAI({ apiKey: "k" }),
   model: "m",
-  // @ts-expect-error The adapter owns `stream`.
-  params: { stream: false },
+  // @ts-expect-error The adapter owns `model`.
+  params: { model: "x" },
 });
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `messages`.
+  params: { messages: [] },
+});
+
 createOpenAiAdapter({
   client: new OpenAI({ apiKey: "k" }),
   model: "m",
   // @ts-expect-error The adapter owns `tools`.
   params: { tools: [] },
 });
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `stream`.
+  params: { stream: true },
+});
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `stream_options`.
+  params: { stream_options: { include_usage: true } },
+});
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `max_completion_tokens`.
+  params: { max_completion_tokens: 1 },
+});
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `max_tokens`.
+  params: { max_tokens: 1 },
+});
+
+createOpenAiAdapter({
+  client: new OpenAI({ apiKey: "k" }),
+  model: "m",
+  // @ts-expect-error The adapter owns `n`.
+  params: { n: 2 },
+});
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `model`.
+  params: { model: languageModel },
+});
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `system`.
+  params: { system: "x" },
+});
+
 createVercelAdapter({
   model: languageModel,
   // @ts-expect-error The adapter owns `instructions`.
   params: { instructions: "x" },
 });
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `messages`.
+  params: { messages: [] },
+});
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `prompt`.
+  params: { prompt: "x" },
+});
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `tools`.
+  params: { tools: {} },
+});
+
 createVercelAdapter({
   model: languageModel,
   // @ts-expect-error The adapter owns `abortSignal`.
   params: { abortSignal: new AbortController().signal },
 });
-createOpenAiAdapter({
-  client: new OpenAI({ apiKey: "k" }),
-  model: "m",
-  // @ts-expect-error The adapter handles one completion.
-  params: { n: 2 },
+
+createVercelAdapter({
+  model: languageModel,
+  // @ts-expect-error The adapter owns `maxOutputTokens`.
+  params: { maxOutputTokens: 1 },
 });

@@ -154,7 +154,7 @@ Die Import-Verknüpfung nutzt dieselbe Chat-Route; nach der Dateiauswahl sendet 
 
 | Adapter | Import | Installation | Übergabe |
 | --- | --- | --- | --- |
-| Anthropic | `createAnthropicAdapter` aus `@templatical/ai-kit/adapters/anthropic` | `@anthropic-ai/sdk` | `client`: `new Anthropic()` oder `new AnthropicBedrock()` (`@anthropic-ai/bedrock-sdk`) |
+| Anthropic | `createAnthropicAdapter` aus `@templatical/ai-kit/adapters/anthropic` | `@anthropic-ai/sdk` | `new Anthropic()` |
 | OpenAI | `createOpenAiAdapter` aus `@templatical/ai-kit/adapters/openai` | `openai` | `client`: `new OpenAI()`, `new AzureOpenAI()` oder `new OpenAI({ baseURL })` für einen Server, der Chat Completions implementiert |
 | Vercel AI SDK | `createVercelAdapter` aus `@templatical/ai-kit/adapters/vercel` | `ai` und Ihr Provider-Paket | `model`: ein AI-SDK-Modell oder eine Gateway-Modell-ID |
 
@@ -166,14 +166,14 @@ Die Import-Verknüpfung nutzt dieselbe Chat-Route; nach der Dateiauswahl sendet 
 | `model` | `string` (Anthropic, OpenAI) oder ein AI-SDK-`LanguageModel` (Vercel) | Erforderlich; kein Standardmodell | Alle |
 | `maxTokens` | `number` | 16.000 für Anthropic; der API-eigene Standard für OpenAI und Vercel | Alle |
 | `cache` | `boolean` | `true` | Anthropic |
-| `params` | Weitere Request-Felder des SDKs ohne die vom Adapter gesetzten | Keine | Alle |
+| `params` | Weitere Request-Felder des SDKs ohne die adaptereigenen Felder in [den Optionstypen](/de/api/ai-kit#modell-adapter) | Keine | Alle |
 
 Alle drei Adapter unterstützen Chat, Fix, Umformulieren und Alt-Text. Sie akzeptieren Bild-Blobs, PDF-Blobs und Bild-URLs, sodass `chatAttachments: true` mit jedem funktioniert.
 
 ### Was die Adapter übernehmen
 
 - **Thinking über mehrere Schritte.** Die Anthropic- und Vercel-Adapter geben das Thinking des Modells als `state` zurück. `runEditingTurn` legt es auf der Assistant-Nachricht des Schritts ab, und der Adapter sendet es im nächsten Schritt unverändert zurück. Eine eigene Schleife sollte `state` ebenfalls auf ihren Assistant-Nachrichten behalten. Ohne diesen Zustand funktioniert der Durchlauf weiterhin, aber das Modell erarbeitet seine Überlegungen erneut.
-- **Prompt-Caching.** Bei aktiviertem `cache` markiert der Anthropic-Adapter das Ende des System-Prompts und schaltet automatisches Caching ein. Die Anweisungen und das Tool des Kits werden dann über Gespräche hinweg aus dem Cache gelesen; spätere Schritte eines Durchlaufs lesen das Template erneut daraus. `usage` meldet `cacheReadInputTokens` und `cacheWriteInputTokens` neben `inputTokens`, das nur die nicht gecachte Eingabe zählt. OpenAI verwaltet seinen Cache selbst; der OpenAI-Adapter meldet diese Lesezugriffe.
+- **Prompt-Caching.** Bei aktiviertem `cache` fordert der Anthropic-Adapter die API auf, das Ende des System-Prompts und den bisherigen Gesprächsverlauf zu cachen. Lesezugriffe erfolgen, wenn eine spätere Anfrage das gecachte Präfix innerhalb der Cache-Lebensdauer wiederholt. `cacheReadInputTokens` und `cacheWriteInputTokens` in `usage` zeigen, was gelesen und geschrieben wurde; `inputTokens` zählt nur die nicht gecachte Eingabe. OpenAI verwaltet seinen Cache selbst; der OpenAI-Adapter meldet diese Lesezugriffe.
 - **Fehler:**
   - Ein 429 des Providers führt zu `ThrottledError`; dessen `retryAfterMs` stammt aus `retry-after`.
   - Eine Ablehnung oder ein Inhaltsfilter führt zu `ai_provider_error`.

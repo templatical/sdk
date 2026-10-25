@@ -35,7 +35,7 @@ reports another session's edits.
 `settleReplay`) for stored history, whose Undo and Redo are settled in two
 phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai-kit/client`
 speaks the documented wire, and `@templatical/ai-kit/server` builds that
-backend on any Fetch-API runtime with your model and keys. Import the model from `@templatical/ai-kit/adapters/anthropic`, `/openai` or `/vercel` instead of writing an `AiModelAdapter`. AI needs a
+backend on any Fetch-API runtime with your model and keys. Import the model from `@templatical/ai-kit/adapters/anthropic`, `/openai` or `/vercel` instead of writing an `AiModelAdapter`. Check model quality with `runAiEvalSet` from `@templatical/ai-kit/testing`, given `evalTurnWith(model)` and `evalAltTextWith(model)`; check the backend's wire separately with `runAiWireConformance`. AI needs a
 loaded template (`templates` or `collaboration`); with `collaboration`, its
 edits travel as the user's batches marked `origin: 'ai'`. The contract and
 `@templatical/ai-kit` are MIT.

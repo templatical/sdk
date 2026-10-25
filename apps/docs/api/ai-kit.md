@@ -184,6 +184,8 @@ export type AiModelAttachment =
 
 `@templatical/ai-kit/adapters/anthropic`, `/adapters/openai` and `/adapters/vercel` implement it: `createAnthropicAdapter`, `createOpenAiAdapter` and `createVercelAdapter`, with `AnthropicAdapterOptions`, `OpenAiAdapterOptions` and `VercelAdapterOptions` ([options and limits](/guide/bring-your-own-ai#model-adapters)). A `state` part is the adapter's own record of a step, such as the model's thinking: `runEditingTurn` puts it on that step's assistant message, and the adapter replays its own. `usage` counts `inputTokens` at the full rate, with `cacheReadInputTokens` and `cacheWriteInputTokens` when the provider reports them; the three add up to the input.
 
+<<< @/snippets/adapter-options.ts
+
 ### Chat attachments
 
 `AiChatRequest.attachments` is always present: `[]` without files, otherwise `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` is a flag: `true` means the `chat` function accepts attachments; it has no effect when `chat` is `false`. The HTTP provider enables it by default when chat is on; `features: { chatAttachments: false }` disables it.

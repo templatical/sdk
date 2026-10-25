@@ -85,14 +85,17 @@ async function toPart(
     : { type: "image_url", image_url: { url } };
 }
 
-async function toMessage(message: AiModelMessage): Promise<MessageParam> {
+async function toMessage(
+  message: AiModelMessage,
+): Promise<MessageParam | null> {
   if (message.role === "tool")
     return {
       role: "tool",
       tool_call_id: message.toolCallId,
       content: message.content,
     };
-  if (message.role === "assistant")
+  if (message.role === "assistant") {
+    if (message.content.length === 0 && !message.toolCalls?.length) return null;
     return {
       role: "assistant",
       content: message.content.length > 0 ? message.content : null,
@@ -109,6 +112,7 @@ async function toMessage(message: AiModelMessage): Promise<MessageParam> {
           }
         : {}),
     };
+  }
   const files = await Promise.all((message.attachments ?? []).map(toPart));
   return {
     role: "user",
@@ -137,7 +141,9 @@ export function createOpenAiAdapter(
           : {}),
         messages: [
           { role: "system", content: system },
-          ...(await Promise.all(messages.map(toMessage))),
+          ...(await Promise.all(messages.map(toMessage))).filter(
+            (message) => message !== null,
+          ),
         ],
         ...(tools.length > 0 ? { tools: tools.map(toTool) } : {}),
       };

@@ -28,7 +28,6 @@ function diagnostics(files: string[]): string[] {
       "@templatical/ai-kit/testing": [resolve(PKG, "src/testing/index.ts")],
       "@anthropic-ai/sdk": [pkgDir("@anthropic-ai/sdk")],
       "@anthropic-ai/sdk/*": [`${pkgDir("@anthropic-ai/sdk")}/*`],
-      "@anthropic-ai/bedrock-sdk": [pkgDir("@anthropic-ai/bedrock-sdk")],
       openai: [pkgDir("openai")],
       "openai/*": [`${pkgDir("openai")}/*`],
       ai: [pkgDir("ai")],
@@ -50,6 +49,7 @@ it("accepts the listed clients and models, and refuses params the adapter owns",
 
 it("compiles the docs' adapter and evaluation examples", () => {
   const snippets = [
+    "adapter-options.ts",
     "model-anthropic.ts",
     "model-openai.ts",
     "model-vercel.ts",

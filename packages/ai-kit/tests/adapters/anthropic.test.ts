@@ -370,6 +370,32 @@ describe("createAnthropicAdapter", () => {
     expect(parts).toEqual([{ type: "text", text: "On it." }]);
   });
 
+  it("rejects an abort before yielding buffered text deltas", async () => {
+    const controller = new AbortController();
+    const reason = new Error("Cancelled Anthropic text");
+    const { client } = fakeAnthropic([
+      { text: ["First", "Too late", "Also too late"], checkSignal: false },
+    ]);
+    const parts: AiModelPart[] = [];
+    const result = (async () => {
+      for await (const part of createAnthropicAdapter({
+        client,
+        model: "m",
+      }).stream({
+        system: "S",
+        messages: [user("Hi")],
+        tools: [],
+        signal: controller.signal,
+      })) {
+        parts.push(part);
+        if (parts.length === 1) controller.abort(reason);
+      }
+    })();
+
+    await expect(result).rejects.toBe(reason);
+    expect(parts).toEqual([{ type: "text", text: "First" }]);
+  });
+
   it("passes the signal to the client", async () => {
     const { client, requests } = fakeAnthropic([{ text: ["ok"] }]);
     const controller = new AbortController();

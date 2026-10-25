@@ -19,7 +19,7 @@ import {
 
 type StreamParams = Anthropic.MessageStreamParams;
 
-/** The one method the adapter calls: `new Anthropic()` and `new AnthropicBedrock()` fit it. */
+/** The one method the adapter calls: `new Anthropic()` fits it. */
 export interface AnthropicAdapterClient {
   messages: {
     stream(
@@ -32,7 +32,7 @@ export interface AnthropicAdapterClient {
 }
 
 export interface AnthropicAdapterOptions {
-  /** A client you construct: `new Anthropic()`, `new AnthropicBedrock()`, or one with its own `baseURL`. */
+  /** A client you construct: `new Anthropic()`, or one with its own `baseURL`. */
   client: AnthropicAdapterClient;
   /** The model id. No default. */
   model: string;
@@ -166,6 +166,7 @@ export function createAnthropicAdapter(
       try {
         const stream = options.client.messages.stream(body, { signal });
         for await (const event of stream) {
+          signal?.throwIfAborted();
           if (
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"

@@ -354,6 +354,37 @@ describe("createVercelAdapter", () => {
     await expect(failure).rejects.toMatchObject({ retryAfterMs: 5000 });
   });
 
+  it("rejects an abort before yielding buffered text deltas", async () => {
+    const controller = new AbortController();
+    const reason = new Error("Cancelled Vercel text");
+    const { model } = fakeLanguageModel([
+      {
+        parts: [
+          { type: "text-start", id: "t1" },
+          { type: "text-delta", id: "t1", delta: "First" },
+          { type: "text-delta", id: "t1", delta: "Too late" },
+          { type: "text-delta", id: "t1", delta: "Also too late" },
+          { type: "text-end", id: "t1" },
+        ],
+      },
+    ]);
+    const parts: AiModelPart[] = [];
+    const result = (async () => {
+      for await (const part of createVercelAdapter({ model }).stream({
+        system: "S",
+        messages: [user("Hi")],
+        tools: [],
+        signal: controller.signal,
+      })) {
+        parts.push(part);
+        if (parts.length === 1) controller.abort(reason);
+      }
+    })();
+
+    await expect(result).rejects.toBe(reason);
+    expect(parts).toEqual([{ type: "text", text: "First" }]);
+  });
+
   it("rejects a normally finished stream aborted after a tool call without yielding calls or state", async () => {
     const controller = new AbortController();
     const reason = new Error("cancelled");
