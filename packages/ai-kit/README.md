@@ -57,6 +57,8 @@ AI needs a loaded template: the AI assistant and other entry points appear after
 
 See [Bring your own AI backend](https://docs.templatical.com/guide/bring-your-own-ai) for a complete Fetch-API server, model adapters for the Vercel AI SDK, OpenAI and Anthropic, and the wire for other languages.
 
+Model adapters: `@templatical/ai-kit/adapters/anthropic` (`createAnthropicAdapter({ client: new Anthropic(), model })`), `/adapters/openai` (`createOpenAiAdapter({ client: new OpenAI(), model })`) and `/adapters/vercel` (`createVercelAdapter({ model })`). Install the SDK of the one you import; they're optional peers.
+
 ## License
 
 MIT

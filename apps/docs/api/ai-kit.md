@@ -182,7 +182,7 @@ export type AiModelAttachment =
 
 <<< @/snippets/model-contract.ts
 
-[Bring your own AI backend](/guide/bring-your-own-ai#model-adapters) has adapters for the Vercel AI SDK, OpenAI and Anthropic. All examples take chat, fix, rewrite and alt text and accept image URLs for alt text. Only the Anthropic example accepts image and PDF Blobs in chat. The OpenAI and Vercel client configurations set `chatAttachments: false` and turn off stored conversation history.
+`@templatical/ai-kit/adapters/anthropic`, `/adapters/openai` and `/adapters/vercel` implement it: `createAnthropicAdapter`, `createOpenAiAdapter` and `createVercelAdapter`, with `AnthropicAdapterOptions`, `OpenAiAdapterOptions` and `VercelAdapterOptions` ([options and limits](/guide/bring-your-own-ai#model-adapters)). A `state` part is the adapter's own record of a step, such as the model's thinking: `runEditingTurn` puts it on that step's assistant message, and the adapter replays its own. `usage` counts `inputTokens` at the full rate, with `cacheReadInputTokens` and `cacheWriteInputTokens` when the provider reports them; the three add up to the input.
 
 ### Chat attachments
 
@@ -215,7 +215,7 @@ Provider conformance uses the provider's enabled members. Wire conformance owns 
 
 `altTextImageUrl` defaults to `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL` from `@templatical/ai-kit/testing`: `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/images/probe.png` (`version` is the installed kit version). It shows a teal mug without text. Unreleased builds pass `altTextImageUrl` for a public image the model provider can fetch.
 
-For Node.js 24, save the following as `check-ai-backend.ts`. Your authenticated `POST /api/templates` accepts `{ name, content }` and returns `{ id }`. Set `AI_TEST_TOKEN`; `AI_BASE_URL` and `AI_TEMPLATES_URL` override the local URLs. Run `node check-ai-backend.ts`. It creates a disposable template and turns off history and chat attachments to match the stateless server in the [backend guide](/guide/bring-your-own-ai#the-server).
+For Node.js 24, save the following as `check-ai-backend.ts`. Your authenticated `POST /api/templates` accepts `{ name, content }` and returns `{ id }`. Set `AI_TEST_TOKEN`; `AI_BASE_URL` and `AI_TEMPLATES_URL` override the local URLs. Run `node check-ai-backend.ts`. It creates a disposable template and turns off history and enables chat attachments to match the stateless server in the [backend guide](/guide/bring-your-own-ai#the-server).
 
 <<< @/snippets/check-ai-backend.ts
 
@@ -332,6 +332,8 @@ Without `runAltText`, alt-text cases are skipped; without `lintCheck`, cases wit
 The [conformance suites](#testing) check non-empty alt text within `maxLength`, abort handling and `altText: false`.
 
 ## Files
+
+`@templatical/ai-kit/adapters/anthropic`, `@templatical/ai-kit/adapters/openai` and `@templatical/ai-kit/adapters/vercel` are the first-party model adapter entry points.
 
 `@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` and `@templatical/ai-kit/eval/*` (with `MANIFEST.sha256`) are the prompts, schemas and test set as files, for a backend in another language. The editing system prompt is `editing.md`, then `"\n\n# Operations\n\n"` and `operations.md`, then `"\n\n# Template content schema\n\n"` and `template-content.schema.json`.
 

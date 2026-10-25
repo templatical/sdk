@@ -35,8 +35,8 @@ if (!created.ok)
 const template = (await created.json()) as { id: string };
 if (!template.id) throw new Error("The templates endpoint must return { id }.");
 
-// Match the guide's stateless server and a text-only chat adapter.
-const features = { conversation: false, chatAttachments: false } as const;
+// Match the guide's stateless server, whose adapters accept chat attachments.
+const features = { conversation: false, chatAttachments: true } as const;
 const timeoutMs = 60_000;
 const provider = createHttpAiProvider({ baseUrl, headers, features });
 const providerReport = await runAiProviderConformance(provider, {

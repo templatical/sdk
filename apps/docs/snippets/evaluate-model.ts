@@ -5,7 +5,7 @@ import {
   evalTurnWith,
   runAiEvalSet,
 } from "@templatical/ai-kit/testing";
-import { model } from "./model-anthropic.ts";
+import { model } from "./model.ts";
 
 const evalFolder = new URL(
   ".",

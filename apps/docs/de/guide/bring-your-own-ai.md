@@ -1,6 +1,6 @@
 ---
 title: Eigenes KI-Backend anbinden
-description: Stellen Sie die KI des Editors über Ihr eigenes Backend und Modell mit @templatical/ai-kit bereit — Fetch-API-Server, Modell-Adapter und Prüfung der Integration.
+description: Stellen Sie die KI des Editors über Ihr eigenes Backend und Modell mit @templatical/ai-kit bereit — ein Fetch-API-Server, eigene Modelladapter für Anthropic, OpenAI und das Vercel AI SDK und die Prüfung der Integration.
 ---
 
 # Eigenes KI-Backend anbinden
@@ -30,7 +30,7 @@ import {
   SdkError,
   type AiModelAdapter,
 } from '@templatical/ai-kit/server';
-import { model } from './model'; // one of the adapters below
+import { model } from './model'; // one of the model adapters below
 
 async function complete(system: string, prompt: string, signal: AbortSignal, onText?: (t: string) => void) {
   let text = '';
@@ -125,183 +125,77 @@ Schalten Sie im Editor passend dazu den gespeicherten Verlauf aus: `createHttpAi
 
 Die Generate-Route akzeptiert JSON ohne Anhänge und Multipart mit Anhängen. Setzen Sie im Framework ein Limit für den gesamten Request-Body über 10 MB zuzüglich 200.000 Byte Template-Inhalt und Multipart-Overhead; ohne Chat-Anhänge genügen etwa 300 kB. Das Kit prüft Inhalt und Dateigröße nach dem Einlesen; das Framework-Limit begrenzt das Puffern.
 
-## Modell-Adapter
-
-Jeder Adapter übersetzt die neutralen Nachrichten und Tools des Kits für ein SDK und zurück. Installieren Sie nur das SDK, das Sie verwenden.
-
-Alle drei Adapter unterstützen Chat, Fix, Umformulieren und Alt-Text sowie `image-url`-Anhänge für Alt-Text. Nur das Anthropic-Beispiel übergibt Bild- und PDF-Blobs im Chat. Die Chat-Beispiele für OpenAI und Vercel unterstützen nur Text; setzen Sie `chatAttachments: false` und schalten Sie den gespeicherten Gesprächsverlauf aus:
-
-| Adapter | Features | Anhänge |
-| --- | --- | --- |
-| OpenAI | Chat, Fix, Umformulieren, Alt-Text | Bild-URL |
-| Vercel AI SDK | Chat, Fix, Umformulieren, Alt-Text | Bild-URL |
-| Anthropic | Chat, Fix, Umformulieren, Alt-Text | Bild-URL, Bild-Blob, PDF-Blob |
-
 ```ts
 import { createHttpAiProvider } from '@templatical/ai-kit/client';
 
 const ai = createHttpAiProvider({
   baseUrl: '/api/ai',
-  features: { chatAttachments: false, conversation: false },
+  features: { conversation: false },
 });
 ```
 
-Für Chat-Anhänge verwenden Sie das [Anthropic-Beispiel](#anthropic), das Bild- und PDF-Blobs an das Modell weitergibt. Die Import-Verknüpfung nutzt dieselbe Chat-Route; nach der Dateiauswahl sendet die Person die vorausgefüllte Anfrage selbst.
+Die Import-Verknüpfung nutzt dieselbe Chat-Route; nach der Dateiauswahl sendet die Person die vorausgefüllte Anfrage selbst.
 
-### Vercel AI SDK
+## Modelladapter {#modell-adapter}
 
-```ts
-import { jsonSchema, streamText, tool } from 'ai';
-import type { AiModelAdapter } from '@templatical/ai-kit/server';
-import { myModel } from './provider'; // e.g. anthropic('…') or openai('…') from the AI SDK
-
-export const model: AiModelAdapter = {
-  async *stream({ system, messages, tools, signal }) {
-    const result = streamText({
-      model: myModel,
-      system,
-      abortSignal: signal,
-      tools: Object.fromEntries(tools.map((t) => [t.name, tool({ description: t.description, inputSchema: jsonSchema(t.inputSchema) })])),
-      messages: messages.map((m) =>
-        m.role === 'tool'
-          ? { role: 'tool', content: [{ type: 'tool-result', toolCallId: m.toolCallId, toolName: m.name, output: { type: 'text', value: m.content } }] }
-          : m.role === 'assistant'
-            ? { role: 'assistant', content: [{ type: 'text', text: m.content }, ...(m.toolCalls ?? []).map((c) => ({ type: 'tool-call' as const, toolCallId: c.id, toolName: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input }))] }
-            : { role: 'user', content: [{ type: 'text', text: m.content }, ...(m.attachments ?? []).map((a) => {
-                if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
-                return { type: 'image' as const, image: new URL(a.url) };
-              })] },
-      ),
-    });
-    for await (const part of result.fullStream) {
-      if (part.type === 'text-delta') yield { type: 'text', text: part.text };
-      else if (part.type === 'tool-call') yield { type: 'tool-call', id: part.toolCallId, name: part.toolName, input: part.input as Record<string, unknown> };
-      else if (part.type === 'finish') yield { type: 'usage', inputTokens: part.totalUsage.inputTokens ?? 0, outputTokens: part.totalUsage.outputTokens ?? 0 };
-      else if (part.type === 'error') throw part.error;
-    }
-  },
-};
-```
-
-### OpenAI
-
-```ts
-import OpenAI from 'openai';
-import type { AiModelAdapter } from '@templatical/ai-kit/server';
-
-const client = new OpenAI();
-
-export const model: AiModelAdapter = {
-  async *stream({ system, messages, tools, signal }) {
-    const stream = await client.chat.completions.create(
-      {
-        model: process.env.OPENAI_MODEL!,
-        stream: true,
-        stream_options: { include_usage: true },
-        tools: tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.inputSchema } })),
-        messages: [
-          { role: 'system', content: system },
-          ...messages.map((m) =>
-            m.role === 'tool'
-              ? { role: 'tool' as const, tool_call_id: m.toolCallId, content: m.content }
-              : m.role === 'assistant'
-                ? { role: 'assistant' as const, content: m.content, ...(m.toolCalls?.length ? { tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: 'function' as const, function: { name: c.name, arguments: typeof c.input === 'string' ? c.input : JSON.stringify(c.input) } })) } : {}) }
-                : { role: 'user' as const, content: [{ type: 'text' as const, text: m.content }, ...(m.attachments ?? []).map((a) => {
-                    if (a.kind !== 'image-url') throw new Error('This adapter supports image URLs only. Set chatAttachments: false.');
-                    return { type: 'image_url' as const, image_url: { url: a.url } };
-                  })] },
-          ),
-        ],
-      },
-      { signal },
-    );
-    const calls = new Map<number, { id: string; name: string; args: string }>();
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta;
-      if (delta?.content) yield { type: 'text', text: delta.content };
-      for (const call of delta?.tool_calls ?? []) {
-        const seen = calls.get(call.index) ?? { id: '', name: '', args: '' };
-        calls.set(call.index, { id: call.id ?? seen.id, name: call.function?.name ?? seen.name, args: seen.args + (call.function?.arguments ?? '') });
-      }
-      if (chunk.usage) yield { type: 'usage', inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens };
-    }
-    for (const call of calls.values()) yield { type: 'tool-call', id: call.id, name: call.name, input: call.args };
-  },
-};
-```
+`@templatical/ai-kit` enthält einen Adapter pro SDK. Jeder übersetzt die Nachrichten, Tools und Dateien des Kits für sein SDK und zurück. Installieren Sie das Kit und das SDK des Adapters, den Sie importieren. Die SDKs sind optionale Peers; weitere SDKs werden nicht installiert. Speichern Sie eines dieser Beispiele als `model.ts`:
 
 ### Anthropic
 
-```ts
-import Anthropic from '@anthropic-ai/sdk';
-import { AI_ERROR_MESSAGES } from '@templatical/ai-kit';
-import { SdkError, type AiModelAdapter, type AiModelMessage } from '@templatical/ai-kit/server';
+<<< @/snippets/model-anthropic.ts
 
-const client = new Anthropic();
+### OpenAI
 
-async function toAnthropic(messages: AiModelMessage[]): Promise<Anthropic.MessageParam[]> {
-  const out: Anthropic.MessageParam[] = [];
-  for (const m of messages) {
-    if (m.role === 'tool') {
-      const result: Anthropic.ToolResultBlockParam = { type: 'tool_result', tool_use_id: m.toolCallId, content: m.content };
-      const last = out.at(-1);
-      // All results of one turn go back in one user message.
-      if (last?.role === 'user' && Array.isArray(last.content) && last.content.every((b) => b.type === 'tool_result')) last.content.push(result);
-      else out.push({ role: 'user', content: [result] });
-    } else if (m.role === 'assistant') {
-      out.push({
-        role: 'assistant',
-        content: [
-          ...(m.content ? [{ type: 'text' as const, text: m.content }] : []),
-          ...(m.toolCalls ?? []).map((c) => ({ type: 'tool_use' as const, id: c.id, name: c.name, input: typeof c.input === 'string' ? JSON.parse(c.input) : c.input })),
-        ],
-      });
-    } else {
-      const files = await Promise.all(
-        (m.attachments ?? []).map(async (a) => {
-          if (a.kind === 'image-url') return { type: 'image', source: { type: 'url', url: a.url } } as const;
-          const data = Buffer.from(await a.data.arrayBuffer()).toString('base64');
-          return a.kind === 'pdf'
-            ? ({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } } as const)
-            : ({ type: 'image', source: { type: 'base64', media_type: a.mediaType as 'image/png', data } } as const);
-        }),
-      );
-      out.push({ role: 'user', content: [...files, { type: 'text', text: m.content }] });
-    }
-  }
-  return out;
-}
+<<< @/snippets/model-openai.ts
 
-export const model: AiModelAdapter = {
-  async *stream({ system, messages, tools, signal }) {
-    const stream = client.messages.stream(
-      {
-        model: 'claude-opus-5-5',
-        max_tokens: 16000,
-        system,
-        tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema as Anthropic.Tool.InputSchema })),
-        messages: await toAnthropic(messages),
-      },
-      { signal },
-    );
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') yield { type: 'text', text: event.delta.text };
-    }
-    const final = await stream.finalMessage();
-    if (final.stop_reason === 'refusal') throw new SdkError(AI_ERROR_MESSAGES.ai_provider_error, 502, 'ai_provider_error');
-    for (const block of final.content) {
-      if (block.type === 'tool_use') yield { type: 'tool-call', id: block.id, name: block.name, input: block.input as Record<string, unknown> };
-    }
-    yield { type: 'usage', inputTokens: final.usage.input_tokens, outputTokens: final.usage.output_tokens };
-  },
-};
-```
+### Vercel AI SDK
 
-(Die Tool-Aufrufe kommen mit der fertigen Nachricht vollständig an: Das Kit wendet sie nach dem Text an, wie bei einem Durchlauf.)
+<<< @/snippets/model-vercel.ts
+
+| Adapter | Import | Installation | Übergabe |
+| --- | --- | --- | --- |
+| Anthropic | `createAnthropicAdapter` aus `@templatical/ai-kit/adapters/anthropic` | `@anthropic-ai/sdk` | `client`: `new Anthropic()` oder `new AnthropicBedrock()` (`@anthropic-ai/bedrock-sdk`) |
+| OpenAI | `createOpenAiAdapter` aus `@templatical/ai-kit/adapters/openai` | `openai` | `client`: `new OpenAI()`, `new AzureOpenAI()` oder `new OpenAI({ baseURL })` für einen Server, der Chat Completions implementiert |
+| Vercel AI SDK | `createVercelAdapter` aus `@templatical/ai-kit/adapters/vercel` | `ai` und Ihr Provider-Paket | `model`: ein AI-SDK-Modell oder eine Gateway-Modell-ID |
+
+### Adapteroptionen
+
+| Option | Typ | Standard | Adapter |
+| --- | --- | --- | --- |
+| `client` | Ihr SDK-Client | Erforderlich | Anthropic, OpenAI |
+| `model` | `string` (Anthropic, OpenAI) oder ein AI-SDK-`LanguageModel` (Vercel) | Erforderlich; kein Standardmodell | Alle |
+| `maxTokens` | `number` | 16.000 für Anthropic; der API-eigene Standard für OpenAI und Vercel | Alle |
+| `cache` | `boolean` | `true` | Anthropic |
+| `params` | Weitere Request-Felder des SDKs ohne die vom Adapter gesetzten | Keine | Alle |
+
+Alle drei Adapter unterstützen Chat, Fix, Umformulieren und Alt-Text. Sie akzeptieren Bild-Blobs, PDF-Blobs und Bild-URLs, sodass `chatAttachments: true` mit jedem funktioniert.
+
+### Was die Adapter übernehmen
+
+- **Thinking über mehrere Schritte.** Die Anthropic- und Vercel-Adapter geben das Thinking des Modells als `state` zurück. `runEditingTurn` legt es auf der Assistant-Nachricht des Schritts ab, und der Adapter sendet es im nächsten Schritt unverändert zurück. Eine eigene Schleife sollte `state` ebenfalls auf ihren Assistant-Nachrichten behalten. Ohne diesen Zustand funktioniert der Durchlauf weiterhin, aber das Modell erarbeitet seine Überlegungen erneut.
+- **Prompt-Caching.** Bei aktiviertem `cache` markiert der Anthropic-Adapter das Ende des System-Prompts und schaltet automatisches Caching ein. Die Anweisungen und das Tool des Kits werden dann über Gespräche hinweg aus dem Cache gelesen; spätere Schritte eines Durchlaufs lesen das Template erneut daraus. `usage` meldet `cacheReadInputTokens` und `cacheWriteInputTokens` neben `inputTokens`, das nur die nicht gecachte Eingabe zählt. OpenAI verwaltet seinen Cache selbst; der OpenAI-Adapter meldet diese Lesezugriffe.
+- **Fehler:**
+  - Ein 429 des Providers führt zu `ThrottledError`; dessen `retryAfterMs` stammt aus `retry-after`.
+  - Eine Ablehnung oder ein Inhaltsfilter führt zu `ai_provider_error`.
+  - Eine am Tokenlimit abgeschnittene Ausgabe während eines Tool-Aufrufs führt zu `ai_output_invalid`.
+  - Jeder andere Provider-Fehler wird unverändert weitergegeben, damit Ihre Logs ihn behalten. Das Protokoll meldet ihn als `ai_provider_error`.
+
+### Grenzen der Adapter
+
+- Eine Anfrage, die das Kontextfenster des Modells überschreitet, meldet `ai_provider_error`, nicht `content_too_large`.
+- Der OpenAI-Adapter verwendet Chat Completions und überträgt daher kein Reasoning zwischen Schritten.
+- Vertex-AI- und Claude-on-AWS-Clients sind nicht durch die Typtests abgedeckt und werden hier deshalb nicht aufgeführt.
+- Beim Vercel-Adapter hängt die PDF-Unterstützung von Ihrem AI-SDK-Provider-Paket ab.
+
+### Eigener Adapter
+
+Jedes andere Modell lässt sich durch Implementieren von `AiModelAdapter` anbinden, dem [Modellvertrag](/de/api/ai-kit#modell-adapter): ein `stream()`, der Text, Tool-Aufrufe, optionalen Zustand und Verbrauchsdaten liefert und `signal` beachtet.
 
 ## Backend-Konformität und Modellevaluierung
 
-Die [Testreferenz](/de/api/ai-kit#testen) dokumentiert beide Konformitätssignaturen und alle Optionen (`templateId`, `headers`, `timeoutMs`, `callTimeoutMs`, `features`). Mit einem authentifizierten `POST /api/templates`, der `{ name, content }` annimmt und `{ id }` liefert, prüft dieses Node.js-24-Beispiel eine neue Wegwerf-Vorlage. Speichern Sie es als `check-ai-backend.ts`, setzen Sie `AI_TEST_TOKEN` und führen Sie `node check-ai-backend.ts` aus. `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die URLs. Die Flags passen zum zustandslosen Server und zu einem Chat-Adapter ohne Dateianhänge.
+Die [Testreferenz](/de/api/ai-kit#testen) dokumentiert beide Konformitätssignaturen und alle Optionen (`templateId`, `headers`, `timeoutMs`, `callTimeoutMs`, `features`). Mit einem authentifizierten `POST /api/templates`, der `{ name, content }` annimmt und `{ id }` liefert, prüft dieses Node.js-24-Beispiel eine neue Wegwerf-Vorlage. Speichern Sie es als `check-ai-backend.ts`, setzen Sie `AI_TEST_TOKEN` und führen Sie `node check-ai-backend.ts` aus. `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die URLs. Die Flags passen zum zustandslosen Server oben, mit Chat-Anhängen.
+
+Der Multipart-Chat muss bei einem PNG-Anhang nicht leeren Text liefern; bei fünf Anhängen muss das Backend eine JSON-Antwort mit Status 422 und `message` zurückgeben.
 
 <<< @/snippets/check-ai-backend.ts
 
@@ -309,35 +203,9 @@ Die Alt-Text-Prüfung verwendet `blockId: "conformance-image"` und standardmäß
 
 Beide Konformitätssuiten können Tokens verbrauchen und Batches persistieren. Mit aktivem Verlauf werden Replay-Zustände verändert und der Verlauf über `clear` geleert, sofern verfügbar. Entfernen Sie die Testvorlage anschließend über Ihren Speicher. Fehler werden je Prüfung ausgegeben und führen zu einem Exit-Code ungleich null.
 
-Für einen Lauf mit Node.js 24 speichern Sie einen der obigen Adapter als `model.ts` und dieses Beispiel als `evaluate.ts`. Installieren Sie `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` und das SDK Ihres Modellanbieters. Starten Sie Ihr Backend und führen Sie `node evaluate.ts` aus. Der Adapter muss Bild-URLs sowie PNG- und PDF-Anhänge unterstützen.
+Für einen Lauf mit Node.js 24 speichern Sie dieses Beispiel als `evaluate.ts` neben Ihrer `model.ts`. Installieren Sie `@templatical/ai-kit`, `@templatical/types`, `@templatical/quality` und Ihr SDK. Starten Sie Ihr Backend und führen Sie `node evaluate.ts` aus. Der Adapter muss Bild-URLs sowie PNG- und PDF-Anhänge akzeptieren; alle drei eigenen Adapter unterstützen dies.
 
-```ts
-import { readFile } from 'node:fs/promises';
-import { lintTemplate } from '@templatical/quality';
-import {
-  evalAltTextWith,
-  evalTurnWith,
-  runAiEvalSet,
-} from '@templatical/ai-kit/testing';
-import { model } from './model.ts';
-
-const evalFolder = new URL('.', import.meta.resolve('@templatical/ai-kit/eval/cases.json'));
-const evals = await runAiEvalSet({
-  runTurn: evalTurnWith(model),
-  runAltText: evalAltTextWith(model),
-  lintCheck: (content) => lintTemplate(content).map((issue) => issue.ruleId),
-  loadFile: async (file) => new Blob(
-    [await readFile(new URL(file, evalFolder))],
-    { type: file.endsWith('.pdf') ? 'application/pdf' : 'image/png' },
-  ),
-  model: 'my-model',
-});
-for (const result of evals.results) {
-  if (!result.ok && !result.skipped) console.error('FAIL', result.name, result.reason);
-}
-console.log(`${evals.passed}/${evals.total} (${evals.rate}%), skipped: ${evals.skipped}`);
-if (!evals.ok) process.exitCode = 1;
-```
+<<< @/snippets/evaluate-model.ts
 
 Die Protokoll-Suite prüft Ihre Routen so, wie der Editor sie verwendet. Der Testsatz prüft Bearbeitungen, Chat-Anhänge, Alt-Text und Korrekturen von Lint-Befunden gegen Ihr Modell. `lintCheck` gibt die `ruleId`-Werte aus `lintTemplate(content)` zurück; das Kit hängt nicht von `@templatical/quality` ab. `loadFile` liest Anhänge aus dem installierten Paket. Ohne `loadFile` lädt der Runner sie über die öffentliche Release-URL.
 

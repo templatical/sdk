@@ -35,7 +35,7 @@ reports another session's edits.
 `settleReplay`) for stored history, whose Undo and Redo are settled in two
 phases. `createHttpAiProvider({ baseUrl })` from `@templatical/ai-kit/client`
 speaks the documented wire, and `@templatical/ai-kit/server` builds that
-backend on any Fetch-API runtime with your model and keys. AI needs a
+backend on any Fetch-API runtime with your model and keys. Import the model from `@templatical/ai-kit/adapters/anthropic`, `/openai` or `/vercel` instead of writing an `AiModelAdapter`. AI needs a
 loaded template (`templates` or `collaboration`); with `collaboration`, its
 edits travel as the user's batches marked `origin: 'ai'`. The contract and
 `@templatical/ai-kit` are MIT.
@@ -50,6 +50,6 @@ already up.
 Full contracts and Cloud as one implementation of each: [docs.md](docs.md) →
 the `backend/` pages.
 
-Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. Text-only adapters set `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
+Chat attachments accept PNG, JPEG, WebP, GIF and PDF: at most 4 files, each at most 5 MB, at most 10 MB together. Import from screenshot or PDF opens chat after the file pick and waits for the author to send. History retains only `{ name, kind }`. The three first-party adapters accept these files; an adapter of your own that doesn't sets `features: { chatAttachments: false }`. Fetch `backend/ai` and `api/ai-kit` through [docs.md](docs.md), then check with `runAiWireConformance`.
 
 Fix with AI and Write alt text require `@templatical/quality` installed and lint on. With quality missing or lint off (`lint.disabled: true`), neither action appears. They also need a loaded template, their callable provider member and a matching finding. The AI assistant itself needs `chat` and a loaded template, independent of quality.

@@ -2,9 +2,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { expect, it } from "vitest";
-import { AI_CONFORMANCE_ALT_TEXT_IMAGE_URL, AI_EVAL_TEMPLATES } from "../../../packages/ai-kit/src/testing/eval-set";
+import { createHttpAiProvider } from "../../../packages/ai-kit/src/client";
+import type { AiWireConformanceOptions } from "../../../packages/ai-kit/src/testing/wire-conformance";
+import {
+  AI_CONFORMANCE_ALT_TEXT_IMAGE_URL,
+  AI_EVAL_TEMPLATES,
+} from "../../../packages/ai-kit/src/testing/eval-set";
 
-it("seeds the authenticated disposable template with the alt-text probe's block", async () => {
+it("seeds the authenticated template and enables attachment probes in both suites", async () => {
   const source = readFileSync(
     join(import.meta.dirname, "../snippets/check-ai-backend.ts"),
     "utf8",
@@ -49,9 +54,19 @@ it("seeds the authenticated disposable template with the alt-text probe's block"
       return Response.json({ id: "disposable-test-template" });
     },
     { env: { AI_TEST_TOKEN: "test-token" } },
-    () => ({}),
-    async () => report,
-    async () => report,
+    createHttpAiProvider,
+    async (provider: ReturnType<typeof createHttpAiProvider>) => {
+      expect(provider.chatAttachments).toBe(true);
+      expect(provider.conversation).toBeUndefined();
+      return report;
+    },
+    async (options: AiWireConformanceOptions) => {
+      expect(options.features).toEqual({
+        conversation: false,
+        chatAttachments: true,
+      });
+      return report;
+    },
     { log: () => {} },
   );
   expect(

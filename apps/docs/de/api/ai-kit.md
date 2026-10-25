@@ -182,7 +182,7 @@ export type AiModelAttachment =
 
 <<< @/snippets/model-contract.ts
 
-[Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai#modell-adapter) enthält Adapter für das Vercel AI SDK, OpenAI und Anthropic. Alle Beispiele unterstützen Chat, Fix, Umformulieren und Alt-Text sowie Bild-URLs für Alt-Text. Nur das Anthropic-Beispiel akzeptiert Bild- und PDF-Blobs im Chat. Die Client-Konfigurationen für OpenAI und Vercel setzen `chatAttachments: false` und schalten den gespeicherten Gesprächsverlauf aus.
+`@templatical/ai-kit/adapters/anthropic`, `/adapters/openai` und `/adapters/vercel` implementieren ihn: `createAnthropicAdapter`, `createOpenAiAdapter` und `createVercelAdapter` mit `AnthropicAdapterOptions`, `OpenAiAdapterOptions` und `VercelAdapterOptions` ([Optionen und Grenzen](/de/guide/bring-your-own-ai#modell-adapter)). Ein `state`-Teil ist die eigene Aufzeichnung eines Schritts durch den Adapter, etwa das Thinking des Modells: `runEditingTurn` legt ihn auf der Assistant-Nachricht dieses Schritts ab, und der Adapter gibt seinen eigenen Zustand erneut weiter. `usage` zählt mit `inputTokens` die zum vollen Satz berechneten Tokens; `cacheReadInputTokens` und `cacheWriteInputTokens` kommen hinzu, wenn der Provider sie meldet. Die drei Werte ergeben zusammen die Eingabe.
 
 ### Chat-Anhänge
 
@@ -215,7 +215,7 @@ Die Provider-Prüfung verwendet die aktivierten Provider-Funktionen. `headers` u
 
 `altTextImageUrl` verwendet standardmäßig `AI_CONFORMANCE_ALT_TEXT_IMAGE_URL` aus `@templatical/ai-kit/testing`: `https://raw.githubusercontent.com/templatical/sdk/v${version}/packages/ai-kit/eval/images/probe.png` (`version` ist die installierte Kit-Version). Das Bild zeigt eine petrolfarbene Tasse ohne Text. Übergeben Sie bei unveröffentlichten Builds mit `altTextImageUrl` ein öffentliches Bild, das Ihr Modellanbieter abrufen kann.
 
-Für Node.js 24 speichern Sie das folgende Beispiel als `check-ai-backend.ts`. Ihr authentifizierter `POST /api/templates` nimmt `{ name, content }` an und gibt `{ id }` zurück. Setzen Sie `AI_TEST_TOKEN`; `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die lokalen URLs. Führen Sie `node check-ai-backend.ts` aus. Das Beispiel erzeugt eine Wegwerf-Vorlage und deaktiviert Verlauf und Chat-Anhänge passend zum zustandslosen Server im [Backend-Leitfaden](/de/guide/bring-your-own-ai#der-server).
+Für Node.js 24 speichern Sie das folgende Beispiel als `check-ai-backend.ts`. Ihr authentifizierter `POST /api/templates` nimmt `{ name, content }` an und gibt `{ id }` zurück. Setzen Sie `AI_TEST_TOKEN`; `AI_BASE_URL` und `AI_TEMPLATES_URL` überschreiben die lokalen URLs. Führen Sie `node check-ai-backend.ts` aus. Das Beispiel erzeugt eine Wegwerf-Vorlage und deaktiviert den Verlauf und aktiviert Chat-Anhänge passend zum zustandslosen Server im [Backend-Leitfaden](/de/guide/bring-your-own-ai#der-server).
 
 <<< @/snippets/check-ai-backend.ts
 
@@ -332,6 +332,8 @@ Ohne `runAltText` werden Alt-Text-Fälle übersprungen; ohne `lintCheck` werden 
 Die [Konformitätsprüfungen](#testen) prüfen nicht leeren Alt-Text innerhalb von `maxLength`, Abbruchverhalten und `altText: false`.
 
 ## Dateien
+
+`@templatical/ai-kit/adapters/anthropic`, `@templatical/ai-kit/adapters/openai` und `@templatical/ai-kit/adapters/vercel` sind die Einstiegspunkte der eigenen Modelladapter.
 
 `@templatical/ai-kit/prompts/*.md`, `@templatical/ai-kit/prompts/*.json`, `@templatical/ai-kit/schema/*.json` und `@templatical/ai-kit/eval/*` (mit `MANIFEST.sha256`) sind Prompts, Schemas und Testsatz als Dateien für ein Backend in einer anderen Sprache. Der System-Prompt zum Bearbeiten besteht aus `editing.md`, dann `"\n\n# Operations\n\n"` und `operations.md`, dann `"\n\n# Template content schema\n\n"` und `template-content.schema.json`.
 

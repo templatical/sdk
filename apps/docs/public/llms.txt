@@ -34,7 +34,7 @@ Documentation for SDK version 0.50.0. Every page below is also available as raw 
 - [Editor accessibility](https://docs.templatical.com/guide/accessibility): Keyboard, focus, dialogs, shadow DOM, and host duties for the editor chrome. Not the email quality linter.
 - [AI Agent Skill](https://docs.templatical.com/guide/agent-skill): One free, open-source Agent Skill that writes, edits, imports and validates Templatical email templates from a prompt, previews them live in the real editor, and installs, scaffolds or diagnoses an @templatical/editor integration — no backend or API key.
 - [Block Types](https://docs.templatical.com/guide/blocks): Reference for every built-in block type in Templatical.
-- [Bring your own AI backend](https://docs.templatical.com/guide/bring-your-own-ai): Serve the editor's AI from your own backend and model with @templatical/ai-kit — a Fetch-API server, model adapters, and how to check it works.
+- [Bring your own AI backend](https://docs.templatical.com/guide/bring-your-own-ai): Serve the editor's AI from your own backend and model with @templatical/ai-kit — a Fetch-API server, first-party model adapters for Anthropic, OpenAI and the Vercel AI SDK, and how to check it works.
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](https://docs.templatical.com/guide/defaults): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
 - [Display Conditions](https://docs.templatical.com/guide/display-conditions): Conditional block visibility using display conditions in Templatical email templates.
