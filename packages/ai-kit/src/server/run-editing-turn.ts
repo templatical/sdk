@@ -71,6 +71,18 @@ function opsArgument(input: AiModelToolCall["input"]): unknown {
   }
 }
 
+/** Adds a step's usage; a cache field appears once some step reports it. */
+function addUsage(total: AiUsage, step: AiUsage): void {
+  total.inputTokens += step.inputTokens;
+  total.outputTokens += step.outputTokens;
+  if (step.cacheReadInputTokens !== undefined)
+    total.cacheReadInputTokens =
+      (total.cacheReadInputTokens ?? 0) + step.cacheReadInputTokens;
+  if (step.cacheWriteInputTokens !== undefined)
+    total.cacheWriteInputTokens =
+      (total.cacheWriteInputTokens ?? 0) + step.cacheWriteInputTokens;
+}
+
 /**
  * The reference editing loop (A1 §5): up to `maxSteps` model calls; text
  * streams as `text` events, each accepted `apply_operations` call as an
@@ -106,6 +118,7 @@ export async function runEditingTurn(
   for (let step = 0; step < maxSteps; step++) {
     signal?.throwIfAborted();
     let stepText = "";
+    let stepState: unknown;
     const calls: AiModelToolCall[] = [];
     for await (const part of model.stream({
       system: options.system ?? editingInstructions,
@@ -120,15 +133,17 @@ export async function runEditingTurn(
         await write({ type: "text", text: part.text });
       } else if (part.type === "tool-call") {
         calls.push({ id: part.id, name: part.name, input: part.input });
+      } else if (part.type === "state") {
+        stepState = part.state;
       } else {
-        usage.inputTokens += part.inputTokens;
-        usage.outputTokens += part.outputTokens;
+        addUsage(usage, part);
       }
     }
     messages.push({
       role: "assistant",
       content: stepText,
       ...(calls.length > 0 ? { toolCalls: calls } : {}),
+      ...(stepState !== undefined ? { state: stepState } : {}),
     });
     if (calls.length === 0) break;
     for (const call of calls) {

@@ -164,4 +164,50 @@ describe("runEditingTurn (D31)", () => {
       ]);
     },
   );
+
+  it("puts a step's state on its assistant message, so the next step replays it", async () => {
+    const state = { adapter: "anthropic", content: [{ type: "thinking", thinking: "", signature: "sig" }] };
+    const model = scriptedModel([
+      [
+        { type: "text", text: "On it. " },
+        { type: "state", state },
+        { type: "tool-call", id: "c1", name: "apply_operations", input: { ops: rename } },
+        { type: "usage", inputTokens: 100, outputTokens: 20 },
+      ],
+      [{ type: "text", text: "Done." }],
+    ]);
+
+    const result = await runEditingTurn({ request: request("Say hello"), model, write: () => {} });
+
+    expect(model.calls[1].messages.at(-2)).toEqual({
+      role: "assistant",
+      content: "On it. ",
+      toolCalls: [{ id: "c1", name: "apply_operations", input: { ops: rename } }],
+      state,
+    });
+    expect(result.messages.at(-1)).toEqual({ role: "assistant", content: "Done." });
+    expect(JSON.parse(JSON.stringify(result.messages))).toEqual(result.messages);
+  });
+
+  it("totals cache usage only when a step reported it", async () => {
+    const reported = scriptedModel([
+      [
+        { type: "tool-call", id: "c1", name: "apply_operations", input: { ops: rename } },
+        { type: "usage", inputTokens: 10, outputTokens: 2, cacheReadInputTokens: 900, cacheWriteInputTokens: 40 },
+      ],
+      [{ type: "usage", inputTokens: 5, outputTokens: 1, cacheReadInputTokens: 940 }],
+    ]);
+    const plain = scriptedModel([[{ type: "usage", inputTokens: 7, outputTokens: 3 }]]);
+
+    const withCache = await runEditingTurn({ request: request("Say hello"), model: reported, write: () => {} });
+    const withoutCache = await runEditingTurn({ request: request("Say hello"), model: plain, write: () => {} });
+
+    expect(withCache.usage).toEqual({
+      inputTokens: 15,
+      outputTokens: 3,
+      cacheReadInputTokens: 1840,
+      cacheWriteInputTokens: 40,
+    });
+    expect(withoutCache.usage).toEqual({ inputTokens: 7, outputTokens: 3 });
+  });
 });

@@ -133,6 +133,28 @@ describe("block interface fields, optionality and types", () => {
 
 
 describe("public AI and collaboration declarations", () => {
+  it("model-contract.ts retains the kit's exact model contract", () => {
+    const declarations = (text: string) => {
+      const file = ts.createSourceFile("contract.ts", text, ts.ScriptTarget.Latest, true);
+      return new Map(file.statements.flatMap((node) =>
+        ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+          ? [[node.name.text, stripComments(node.getText(file)).replace(/\s/g, "")]]
+          : [],
+      ));
+    };
+    const maintained = declarations(
+      readFileSync(join(DOCS, "../../packages/ai-kit/src/server/model.ts"), "utf8"),
+    );
+    const documented = declarations(readFileSync(join(DOCS, "snippets/model-contract.ts"), "utf8"));
+    expect([...documented.keys()]).toEqual([...maintained.keys()]);
+    for (const [name, declaration] of documented) {
+      expect(declaration, name).toBe(maintained.get(name));
+    }
+    for (const page of ["api/ai-kit.md", "de/api/ai-kit.md"]) {
+      expect(readDocs(page)).toContain("<<< @/snippets/model-contract.ts");
+    }
+  });
+
   it.each([
     ["ai.ts", "ai-contract.ts"],
     ["collaboration.ts", "collaboration-contract.ts"],

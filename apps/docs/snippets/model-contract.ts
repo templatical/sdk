@@ -14,23 +14,36 @@ export interface AiModelToolCall {
 
 export type AiModelMessage =
   | { role: "user"; content: string; attachments?: AiModelAttachment[] }
-  | { role: "assistant"; content: string; toolCalls?: AiModelToolCall[] }
+  | {
+      role: "assistant";
+      content: string;
+      toolCalls?: AiModelToolCall[];
+      /** What the adapter yielded as `state` for this step; it replays its own. */
+      state?: unknown;
+    }
   | { role: "tool"; toolCallId: string; name: string; content: string };
+
+export interface AiUsage {
+  /** Input tokens billed at the full rate: not read from or written to a cache. */
+  inputTokens: number;
+  outputTokens: number;
+  /** Input tokens read from the provider's prompt cache, when it reports them. */
+  cacheReadInputTokens?: number;
+  /** Input tokens written to the provider's prompt cache, when it reports them. */
+  cacheWriteInputTokens?: number;
+}
 
 export type AiModelPart =
   | { type: "text"; text: string }
   | ({ type: "tool-call" } & AiModelToolCall)
-  | { type: "usage"; inputTokens: number; outputTokens: number };
-
-export interface AiUsage {
-  inputTokens: number;
-  outputTokens: number;
-}
+  /** Opaque to the kit: the adapter's own record of the step (e.g. thinking), JSON-safe. */
+  | { type: "state"; state: unknown }
+  | ({ type: "usage" } & AiUsage);
 
 /**
  * Your model, behind one method: stream a reply to `messages` with `system` as
- * the system prompt and `tools` offered. About twenty lines for the Vercel AI
- * SDK, OpenAI or Anthropic (see the guide). Honour `signal`.
+ * the system prompt and `tools` offered. `@templatical/ai-kit/adapters/*`
+ * implements it for Anthropic, OpenAI and the Vercel AI SDK. Honour `signal`.
  */
 export interface AiModelAdapter {
   stream(input: {
