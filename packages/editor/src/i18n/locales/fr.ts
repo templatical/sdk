@@ -37,7 +37,8 @@ const fr: typeof en = {
     dismiss: "Fermer",
     structureNotice:
       "Les changements de structure s’appliquent à toutes les langues",
-    aiDefaultLanguage: "Le chat IA modifie la langue par défaut.",
+    aiActiveLanguage:
+      "Le chat IA modifie {language}. Les modifications de structure s’appliquent à toutes les langues.",
   },
   footer: {
     poweredBy: "Propulsé par",

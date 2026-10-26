@@ -362,6 +362,11 @@ const ai = props.config.ai
   ? useAiFeature({
       provider: props.config.ai,
       editor,
+      localization: props.config.localization ?? { locales: [] },
+      customBlockDefinitions: () => props.config.customBlocks ?? [],
+      onStructureChange: () => {
+        structureNotice.value++;
+      },
       collaboration,
       history: () => core.history,
       reload: templates

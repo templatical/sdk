@@ -35,7 +35,8 @@ const nl: typeof en = {
     translationsOutOfDate: "Verouderde vertalingen: {count}",
     dismiss: "Sluiten",
     structureNotice: "Structuurwijzigingen gelden voor elke taal",
-    aiDefaultLanguage: "AI-chat bewerkt de standaardtaal.",
+    aiActiveLanguage:
+      "De AI-chat bewerkt {language}. Structuurwijzigingen gelden voor alle talen.",
   },
   footer: {
     poweredBy: "Mogelijk gemaakt door",

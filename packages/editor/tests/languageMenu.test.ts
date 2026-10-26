@@ -163,7 +163,7 @@ describe("language menu", () => {
     expect(editor.state.previewMode).toBe(true);
   });
 
-  it("shows the existing AI composer note and hides AI fixes and alt text after switching", async () => {
+  it("shows the active-language AI composer note and keeps AI fixes and alt text after switching", async () => {
     const content = languageContent();
     content.blocks = [
       createButtonBlock({
@@ -211,16 +211,16 @@ describe("language menu", () => {
     });
     await chooseLanguage(wrapper, "de");
     for (const id of selectors)
-      expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false);
+      expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(true);
     await wrapper.get('[data-testid="ai-menu-trigger"]').trigger("click");
     await vi.dynamicImportSettled();
     await flushPromises();
-    expect(wrapper.get('[data-testid="ai-default-language"]').text()).toBe(
-      "AI chat edits the default language.",
+    expect(wrapper.get('[data-testid="ai-active-language"]').text()).toBe(
+      "AI chat edits Deutsch. Structure changes apply to every language.",
     );
     const feature = wrapper.getComponent(AiChatPanel).props("feature");
-    expect(feature.has("fixFinding")).toBe(false);
-    expect(feature.has("altText")).toBe(false);
+    expect(feature.has("fixFinding")).toBe(true);
+    expect(feature.has("altText")).toBe(true);
     await chooseLanguage(wrapper, "en");
     await vi.waitFor(() => {
       for (const id of selectors)

@@ -35,7 +35,8 @@ const de: typeof en = {
     translationsOutOfDate: "Veraltete Übersetzungen: {count}",
     dismiss: "Schließen",
     structureNotice: "Strukturänderungen gelten für jede Sprache",
-    aiDefaultLanguage: "Der KI-Chat bearbeitet die Standardsprache.",
+    aiActiveLanguage:
+      "Der KI-Chat bearbeitet {language}. Strukturänderungen gelten für alle Sprachen.",
   },
   // Footer (OSS only)
   footer: {

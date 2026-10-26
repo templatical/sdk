@@ -32,7 +32,8 @@ export default {
     translationsOutOfDate: "Translations out of date: {count}",
     dismiss: "Dismiss",
     structureNotice: "Structure changes apply to every language.",
-    aiDefaultLanguage: "AI chat edits the default language.",
+    aiActiveLanguage:
+      "AI chat edits {language}. Structure changes apply to every language.",
   },
   // Footer (OSS only)
   footer: {

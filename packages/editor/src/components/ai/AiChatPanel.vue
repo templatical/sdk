@@ -25,6 +25,7 @@ import { useI18n } from "../../composables/useI18n";
 import { secondaryBtnCompactClass } from "../../constants/styleConstants";
 import { EDITOR_KEY, UI_LOCALE_KEY } from "../../keys";
 import { validateChatAttachments } from "../../utils/aiAttachments";
+import { languageName } from "../../utils/languageName";
 import { aiErrorMessage } from "../../utils/aiErrors";
 
 const props = defineProps<{ feature: UseAiFeatureReturn }>();
@@ -321,6 +322,13 @@ function onKeydown(event: KeyboardEvent): void {
             :key="item.id"
             class="tpl:flex tpl:flex-col tpl:gap-2"
           >
+            <span
+              v-if="typeof item.locale === 'string'"
+              data-testid="ai-chat-language"
+              class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{ languageName(item.locale) }}
+            </span>
             <div
               v-if="item.role === 'user'"
               data-testid="ai-chat-prompt"
@@ -541,10 +549,14 @@ function onKeydown(event: KeyboardEvent): void {
           >
             <p
               v-if="editor?.activeLocale?.value"
-              data-testid="ai-default-language"
+              data-testid="ai-active-language"
               class="tpl:text-xs tpl:text-[var(--tpl-chrome-text-dim)]"
             >
-              {{ t.localization.aiDefaultLanguage }}
+              {{
+                format(t.localization.aiActiveLanguage, {
+                  language: languageName(editor.activeLocale.value),
+                })
+              }}
             </p>
             <textarea
               ref="composer"

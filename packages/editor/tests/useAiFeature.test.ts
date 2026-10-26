@@ -3509,30 +3509,28 @@ it("keeps the returning A session's messages and replay records after an old New
 });
 
 describe('AI in language views', () => {
-  it('ignores direct fix and bulk-alt requests in a non-default view without calling providers or changing history', async () => {
-    const fixFinding = vi.fn(async () => ({ messageId: null, text: 'Done' }));
+  it('applies direct fix and bulk-alt requests in a non-default view', async () => {
+    const fixFinding = vi.fn(async (_request, on) => { await on.onOperations(greet); return { messageId: null, text: 'Done' }; });
     const altText = vi.fn(async () => ({ alt: 'Draft' }));
     const { ai, editor, history, scope } = await openLocal({ fixFinding, altText });
     try {
       editor.addBlock(createImageBlock({ id: 'image', alt: 'Original', src: 'https://example.com/image.png' }));
       editor.addLocale('de');
       editor.setActiveLocale('de');
-      const before = safeClone(editor.content.value);
       const record = vi.spyOn(history, 'record');
-      expect(await ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any)).toEqual({
-        messageId: null, operationCount: 0, text: '', failed: true,
-      });
+      expect(await ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any)).toMatchObject({ operationCount: 1, text: 'Done', failed: false });
       await ai.applyAltTexts([{ blockId: 'image', alt: 'Draft', decorative: false }]);
-      expect(editor.content.value).toEqual(before);
-      expect(fixFinding).not.toHaveBeenCalled();
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>', l10n: { de: { text: { content: { value: '<p>Hello</p>' } } } } });
+      expect(editor.content.value.blocks[2]).toMatchObject({ alt: 'Original', l10n: { de: { text: { alt: { value: 'Draft' } } } } });
+      expect(fixFinding).toHaveBeenCalledTimes(1);
       expect(altText).not.toHaveBeenCalled();
-      expect(record).not.toHaveBeenCalled();
+      expect(record).toHaveBeenCalledTimes(2);
       expect(ai.busy.value).toBe(false);
-      expect(ai.messages.value).toEqual([]);
+      expect(ai.messages.value).toHaveLength(2);
     } finally { ai.destroy(); scope.stop(); }
   });
 
-  it('hides fixes and alt text in a non-default view while chat requests and edits the base', async () => {
+  it('enables fixes and alt text in a non-default view while chat requests and edits that language', async () => {
     let sent: TemplateContent | undefined;
     const { ai, editor, scope } = await openLocal({
       chat: async (request, on) => {
@@ -3547,13 +3545,13 @@ describe('AI in language views', () => {
       editor.addLocale('de');
       editor.setActiveLocale('de');
       editor.updateBlock('t1', { content: '<p>Hallo</p>' });
-      await ai.send('Change the default');
+      await ai.send('Change German');
       expect(JSON.stringify(sent)).not.toContain('l10n');
       expect(sent?.settings.locales).toBeUndefined();
-      expect(sent?.blocks[0]).toMatchObject({ content: '<p>Hi</p>' });
-      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hello</p>', l10n: { de: { text: { content: { value: '<p>Hallo</p>' } } } } });
-      expect(ai.has('fixFinding')).toBe(false);
-      expect(ai.has('altText')).toBe(false);
+      expect(sent?.blocks[0]).toMatchObject({ content: '<p>Hallo</p>' });
+      expect(editor.content.value.blocks[0]).toMatchObject({ content: '<p>Hi</p>', l10n: { de: { text: { content: { value: '<p>Hello</p>' } } } } });
+      expect(ai.has('fixFinding')).toBe(true);
+      expect(ai.has('altText')).toBe(true);
     } finally { ai.destroy(); scope.stop(); }
   });
 

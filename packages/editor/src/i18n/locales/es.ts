@@ -36,7 +36,8 @@ const es: typeof en = {
     translationsOutOfDate: "Traducciones desactualizadas: {count}",
     dismiss: "Cerrar",
     structureNotice: "Los cambios de estructura se aplican a todos los idiomas",
-    aiDefaultLanguage: "El chat de IA edita el idioma predeterminado.",
+    aiActiveLanguage:
+      "El chat de IA edita {language}. Los cambios de estructura se aplican a todos los idiomas.",
   },
   // Footer (OSS only)
   footer: {

@@ -35,7 +35,8 @@ const ca: typeof en = {
     translationsOutOfDate: "Traduccions desactualitzades: {count}",
     dismiss: "Tanca",
     structureNotice: "Els canvis d’estructura s’apliquen a tots els idiomes",
-    aiDefaultLanguage: "El xat d’IA edita l’idioma predeterminat.",
+    aiActiveLanguage:
+      "El xat d’IA edita {language}. Els canvis d’estructura s’apliquen a totes les llengües.",
   },
   // Footer (OSS only)
   footer: {

@@ -35,7 +35,8 @@ const ptBR: typeof en = {
     translationsOutOfDate: "Traduções desatualizadas: {count}",
     dismiss: "Fechar",
     structureNotice: "As alterações de estrutura se aplicam a todos os idiomas",
-    aiDefaultLanguage: "O chat de IA edita o idioma padrão.",
+    aiActiveLanguage:
+      "O chat de IA edita {language}. As alterações de estrutura se aplicam a todos os idiomas.",
   },
   // Footer (OSS only)
   footer: {

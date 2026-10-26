@@ -35,7 +35,8 @@ const translations: typeof en = {
     translationsOutOfDate: "更新が必要な翻訳: {count}",
     dismiss: "閉じる",
     structureNotice: "構造の変更はすべての言語に適用されます",
-    aiDefaultLanguage: "AIチャットはデフォルト言語を編集します。",
+    aiActiveLanguage:
+      "AIチャットは{language}を編集します。構造の変更はすべての言語に適用されます。",
   },
   footer: {
     poweredBy: "提供元:",
