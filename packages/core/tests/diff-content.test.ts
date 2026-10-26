@@ -394,3 +394,43 @@ describe("diffContent localization", () => {
     ]);
   });
 });
+
+it.each([
+  "default with versions",
+  "default gaining versions",
+  "default without versions",
+  "add",
+  "remove",
+  "layer",
+  "prune",
+])("round-trips locale transitions: %s", (kind) => {
+  const before = content([leaf("t1")], { locale: "en", width: 600 });
+  if (["default with versions", "remove", "layer", "prune"].includes(kind))
+    before.settings.locales = ["de"];
+  if (kind === "prune") {
+    before.settings.preheaderText = "Hello";
+    before.settings.l10n = {
+      de: { text: { preheaderText: { value: "Hallo", source: "f55c314b" } } },
+    };
+  }
+  const after = JSON.parse(JSON.stringify(before)) as TemplateContent;
+  if (kind.startsWith("default")) {
+    after.settings.locale = "fr";
+    delete after.settings.locales;
+    if (kind === "default gaining versions") after.settings.locales = ["en"];
+  }
+  if (kind === "add") after.settings.locales = ["de"];
+  if (kind === "remove") delete after.settings.locales;
+  if (kind === "layer")
+    after.blocks[0].l10n = {
+      de: { text: { content: { value: "Hallo", source: "12345678" } } },
+    };
+  if (kind === "prune") {
+    delete after.settings.preheaderText;
+    delete after.settings.l10n;
+  }
+  const ops = diffContent(before, after);
+  expect(applyOperations(before, ops)).toEqual(after);
+  if (kind === "default with versions" || kind === "default gaining versions")
+    expect(ops).toEqual([{ op: "setContent", content: after }]);
+});

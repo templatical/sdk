@@ -91,7 +91,9 @@ const { t } = useI18n();
 const editor = requireInject(EDITOR_KEY, "Canvas");
 const { displayBlock, settings: displaySettings } = useLocalizedDisplay({
   content: computed(() => props.content),
-  activeLocale: editor.activeLocale,
+  activeLocale: computed(() =>
+    props.previewMode ? null : (editor.activeLocale?.value ?? null),
+  ),
 });
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "Canvas");
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);

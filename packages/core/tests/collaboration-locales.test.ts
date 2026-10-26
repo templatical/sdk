@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "@vue/reactivity";
 import type { BlockLock } from "@templatical/types";
-import { CollaborationConflict, safeClone } from "@templatical/types";
+import {
+  CollaborationConflict,
+  safeClone,
+  createMenuBlock,
+  sourceHash,
+} from "@templatical/types";
 import { useEditor } from "../src/editor";
 import {
   COLLABORATION_LOCK_RENEW_MS,
@@ -36,6 +41,47 @@ describe("collaboration locale locks", () => {
     clients.push(client);
     return client;
   }
+
+  it("restores pruned translations through collaboration deletion and language-removal inverses", async () => {
+    const content = safeClone(BASE);
+    content.settings.locale = "en";
+    content.settings.locales = ["de", "fr"];
+    content.blocks = [
+      createMenuBlock({
+        id: "menu",
+        items: [{ id: "home", text: "Home", url: "/" }],
+        l10n: {
+          de: {
+            text: {
+              "items.home.text": { value: "Start", source: sourceHash("Home") },
+            },
+          },
+          fr: { hidden: true },
+        },
+      }),
+    ];
+    server = new FakeCollaborationServer(content);
+    const a = await open("Ada");
+    const before = safeClone(a.editor.content.value);
+    a.editor.updateBlock("menu", { items: [] });
+    await vi.advanceTimersByTimeAsync(COLLABORATION_TYPING_DEBOUNCE_MS);
+    await settle();
+    const after = safeClone(a.editor.content.value);
+    expect(after.blocks[0].l10n).toEqual({ fr: { hidden: true } });
+    expect(server.content).toEqual(after);
+    a.editor.removeLocale("de");
+    await settle();
+    a.collaboration.undo();
+    await settle();
+    expect(a.editor.content.value).toEqual(after);
+    expect(server.content).toEqual(after);
+    a.collaboration.undo();
+    await settle();
+    expect(a.editor.content.value).toEqual(before);
+    expect(server.content).toEqual(before);
+    expect(a.errors).toEqual([]);
+    expect(a.notices).toEqual([]);
+  });
 
   it("lets two sessions select the same block in different languages and re-requests on switch", async () => {
     const a = await open("Ada");

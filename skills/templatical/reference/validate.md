@@ -22,7 +22,7 @@ from prose.
 |---|---|---|
 | `0` | Valid, with no error-severity lint | Report warnings and info without treating them as failure |
 | `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` | Fix `errors[]` for structure or error-severity `issues[]` for lint; output can still say `valid: true` |
-| `2` | Misuse or a broken tool | A file the JSON parser cannot read arrives here too — check it parses before blaming the template |
+| `2` | Misuse or a broken tool, including an exception inside quality lint | A file the JSON parser cannot read arrives here too — check it parses before blaming the template |
 | `3` | A missing optional dependency | Not a validation result. Install what it names and re-run |
 
 `valid: true` alone does not mean exit 0. Act on the exit code as the command's result. Usage and tool errors (2, 3) go to stderr without a result document, even with `--json`.

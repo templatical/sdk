@@ -1,5 +1,6 @@
 import type { Block } from "./blocks";
 import { safeClone } from "./clone";
+import { deepEqual } from "./deep-equal";
 import { SdkError } from "./config";
 import type { CustomBlockDefinition } from "./custom-blocks";
 import type { TemplateContent, TemplateSettings } from "./template";
@@ -96,6 +97,64 @@ function step(current: unknown, segment: string): unknown {
 /** The value at a field path, or `undefined` when any segment doesn't resolve. */
 export function readPath(target: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>(step, target);
+}
+
+function pruneLayers<T extends { l10n?: Record<string, BlockLocaleLayer> }>(
+  target: T,
+): T {
+  const result = safeClone(target);
+  for (const [locale, layer] of Object.entries(result.l10n ?? {})) {
+    for (const kind of ["text", "set"] as const) {
+      for (const path of Object.keys(layer[kind] ?? {})) {
+        const parent = path.includes(".")
+          ? readPath(target, path.slice(0, path.lastIndexOf(".")))
+          : target;
+        if (
+          !isSafePath(path) ||
+          (kind === "text"
+            ? readPath(target, path) === undefined
+            : !isRecord(parent) && readPath(target, path) === undefined)
+        )
+          delete layer[kind]![path];
+      }
+      if (layer[kind] && !Object.keys(layer[kind]!).length) delete layer[kind];
+    }
+    if (!Object.keys(layer).length) delete result.l10n![locale];
+  }
+  if (result.l10n && !Object.keys(result.l10n).length) delete result.l10n;
+  return deepEqual(result, target) ? target : result;
+}
+
+/** Remove unresolved layer paths and empty localization members, recursively. Pure. */
+export function pruneLocaleOrphans(block: Block): Block {
+  const result = pruneLayers(block);
+  if (result.type !== "section") return result;
+  const children = result.children.map((column) =>
+    column.map(pruneLocaleOrphans),
+  );
+  return children.some((column, i) =>
+    column.some((child, j) => child !== result.children[i][j]),
+  )
+    ? { ...result, children }
+    : result;
+}
+
+/** Paths whose override would replace shared built-in list or section structure. */
+export function isStructuralLocalePath(block: Block, path: string): boolean {
+  return (
+    (block.type === "section" && path === "columns") ||
+    (block.type === "menu" && path === "items") ||
+    (block.type === "social" && path === "icons") ||
+    (block.type === "table" &&
+      (path === "rows" || /^rows\.[^.]+\.cells$/.test(path)))
+  );
+}
+
+/** Remove unresolved settings layer paths and empty localization members. Pure. */
+export function pruneSettingsLocaleOrphans(
+  settings: TemplateSettings,
+): TemplateSettings {
+  return pruneLayers(settings);
 }
 
 /** Write at a field path; returns false when the path's parent doesn't resolve. */
@@ -231,7 +290,7 @@ export function localizeBlock(
   for (const [path, value] of Object.entries(layer.set ?? {}))
     writePath(view, path, value);
   for (const [path, text] of Object.entries(layer.text ?? {}))
-    writePath(view, path, text.value);
+    if (readPath(block, path) !== undefined) writePath(view, path, text.value);
   // Cached HTML belongs to the default fields; a localized custom block
   // needs its resolver to render those fields again. Its stylesheet is shared.
   if (
@@ -297,7 +356,8 @@ export function resolveLocale(
     for (const [path, value] of Object.entries(layer.set ?? {}))
       writePath(settings, path, value);
     for (const [path, text] of Object.entries(layer.text ?? {}))
-      writePath(settings, path, text.value);
+      if (readPath(content.settings, path) !== undefined)
+        writePath(settings, path, text.value);
   }
   settings.locale = locale;
   return {

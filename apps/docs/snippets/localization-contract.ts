@@ -2,6 +2,7 @@ import type {
   Block,
   CustomBlockDefinition,
   TemplateContent,
+  TemplateSettings,
 } from "@templatical/types";
 
 export interface LocalizedText {
@@ -111,3 +112,7 @@ export interface UpdateSettingsLocaleOperation {
   unset?: string[];
   expect?: Omit<LocaleLayerExpect, "hidden">;
 }
+
+export declare function pruneLocaleOrphans(block: Block): Block;
+export declare function pruneSettingsLocaleOrphans(settings: TemplateSettings): TemplateSettings;
+export declare function isStructuralLocalePath(block: Block, path: string): boolean;

@@ -35,8 +35,9 @@ export async function runValidate(args: ParsedArgs): Promise<number> {
 
   // The linter assumes a structurally-valid template, so it runs only here.
   const quality = runQualityLint(data, { contentLocale: locale });
-  if (quality.error) {
+  if (quality.error !== undefined) {
     note(`Quality lint could not run: ${quality.error}`);
+    return EXIT.usage;
   }
 
   const issues = [...quality.issues];

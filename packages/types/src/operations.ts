@@ -6,7 +6,10 @@ import {
   isLocaleTag,
   isSafePath,
   isTranslatablePath,
+  isStructuralLocalePath,
   readPath,
+  pruneLocaleOrphans,
+  pruneSettingsLocaleOrphans,
   SETTINGS_TRANSLATABLE_FIELDS,
   type BlockLocaleLayer,
   type LocalizedText,
@@ -887,6 +890,17 @@ function updateBlock(
     resizeColumns(block, set.columns, index, blockId);
   }
   change(block, set, unset);
+  const pruned = pruneLocaleOrphans(block as unknown as Block);
+  if (!deepEqual(block.l10n, pruned.l10n)) {
+    if (pruned.l10n) block.l10n = pruned.l10n;
+    else delete block.l10n;
+  }
+  if (
+    section &&
+    pruned.type === "section" &&
+    !deepEqual(block.children, pruned.children)
+  )
+    block.children = pruned.children;
 }
 
 function updateSettings(
@@ -912,6 +926,11 @@ function updateSettings(
   const settings = content.settings as unknown as Json;
   if (expect) assertExpected(settings, expect, index);
   change(settings, set, unset);
+  const pruned = pruneSettingsLocaleOrphans(content.settings);
+  if (!deepEqual(settings.l10n, pruned.l10n)) {
+    if (pruned.l10n) settings.l10n = pruned.l10n;
+    else delete settings.l10n;
+  }
 }
 
 function readLocale(op: Json, index: number): string {
@@ -1112,6 +1131,7 @@ function assertLocalePaths(
     if (
       !isSafePath(path) ||
       immutable.has(segments[0]) ||
+      (!settings && isStructuralLocalePath(target as unknown as Block, path)) ||
       (readPath(target, path) === undefined && !isRecord(parent))
     ) {
       fail(

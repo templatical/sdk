@@ -592,7 +592,13 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
     turn: string,
     scope: Session,
   ): AiOperationsResult {
-    const normalized = options.normalize(ops, toRaw(editor.content.value));
+    let normalized: Operation[];
+    try {
+      normalized = options.normalize(ops, toRaw(editor.content.value));
+    } catch (error) {
+      if (error instanceof OperationError) return refusalOf(error);
+      throw error;
+    }
     const summary = summarizeAgentEdit(normalized);
     if (collaboration) {
       const result = collaboration.core.applyOperations(normalized, {

@@ -7,6 +7,7 @@ import {
   createMenuBlock,
   createCountdownBlock,
   safeClone,
+  OperationError,
   type Block,
   type Operation,
   createTitleBlock,
@@ -37,6 +38,15 @@ const TAGS: MergeTag[] = [
 
 function contentWith(blocks: TemplateContent["blocks"]): TemplateContent {
   return { ...createDefaultTemplateContent(), blocks };
+}
+
+function localizedContentWith(
+  blocks: TemplateContent["blocks"],
+): TemplateContent {
+  const content = contentWith(blocks);
+  content.settings.locales = ["de"];
+  content.settings.preheaderText = "Default preview";
+  return content;
 }
 
 // ---------------------------------------------------------------------------
@@ -469,14 +479,23 @@ describe("remote locale merge tags", () => {
     const ops = [op];
     const result = normalizeRemoteOperations(
       ops,
-      contentWith([createParagraphBlock({ id: "p1" })]),
+      localizedContentWith([createParagraphBlock({ id: "p1" })]),
       { tags: TAGS },
     );
     expect(result).toEqual([{ ...op, text: normalized }]);
     expect(op.text).toEqual(text);
     expect(
-      normalizeRemoteOperations(result, contentWith([]), { tags: TAGS }),
+      normalizeRemoteOperations(
+        result,
+        localizedContentWith([createParagraphBlock({ id: "p1" })]),
+        { tags: TAGS },
+      ),
     ).toBe(result);
+    expect(() =>
+      normalizeRemoteOperations(result, localizedContentWith([]), {
+        tags: TAGS,
+      }),
+    ).toThrow(OperationError);
   });
 
   it("normalizes nested locale text in addBlock and setContent", () => {
@@ -570,9 +589,13 @@ describe("localized rich-text boundaries (amendment 18)", () => {
       text: { preheaderText: { value, source } },
     });
     const original = safeClone(ops);
-    const result = normalizeRemoteOperations(ops, contentWith(blocks), {
-      tags: TAGS,
-    });
+    const result = normalizeRemoteOperations(
+      ops,
+      localizedContentWith(blocks),
+      {
+        tags: TAGS,
+      },
+    );
     expect(result).toEqual(original);
     expect(result).toBe(ops);
     expect(ops).toEqual(original);
@@ -616,16 +639,25 @@ describe("localized rich-text boundaries (amendment 18)", () => {
       })),
     ];
     const original = safeClone(ops);
-    const result = normalizeRemoteOperations(ops, contentWith(blocks), {
-      tags: TAGS,
-    });
-    expect(result[0]).toEqual(original[0]);
-    for (const index of [1, 2, 3, 5, 6, 7]) {
+    // The pre-add write is now refused instead of silently leaving simulation behind.
+    expect(() =>
+      normalizeRemoteOperations(ops, localizedContentWith(blocks), {
+        tags: TAGS,
+      }),
+    ).toThrow(OperationError);
+    const result = normalizeRemoteOperations(
+      ops.slice(1),
+      localizedContentWith(blocks),
+      {
+        tags: TAGS,
+      },
+    );
+    for (const index of [0, 1, 2, 4, 5, 6]) {
       expect(result[index]).toMatchObject({
         text: { content: { value: richNormalized, source } },
       });
     }
-    expect(result.slice(8)).toEqual(original.slice(8));
+    expect(result.slice(7)).toEqual(original.slice(8));
     expect(ops).toEqual(original);
   });
 

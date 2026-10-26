@@ -16,8 +16,10 @@ import {
 import {
   defaultLocaleOf,
   isSafePath,
+  isStructuralLocalePath,
   isLocaleTag,
   readPath,
+  resolveLocale,
   SETTINGS_TRANSLATABLE_FIELDS,
   translatableFields,
   SdkError,
@@ -235,6 +237,9 @@ function validateLocalization(
           if (immutable.includes(path.split(".")[0])) {
             errors.push(`${field} cannot override ${path.split(".")[0]}`);
           }
+          if (kind === "set" && isStructuralLocalePath(target as Block, path)) {
+            errors.push(`${field} cannot override structure`);
+          }
           if (kind === "text" && !textPaths.includes(path)) {
             errors.push(`${field} is not translatable`);
           }
@@ -321,6 +326,19 @@ export function validateTemplate(
     );
   }
 
+  if (errors.length === 0) {
+    const content = data as TemplateContent;
+    for (const locale of content.settings.locales ?? []) {
+      const projection = validateTemplate(
+        resolveLocale(content, locale),
+        definitions,
+      );
+      errors.push(
+        ...projection.errors.map((error) => `Locale "${locale}": ${error}`),
+      );
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
@@ -345,6 +363,12 @@ export function runQualityLint(
     return { issues: lintTemplate(data as TemplateContent, options) ?? [] };
   } catch (err) {
     if (err instanceof SdkError && err.code === "unknown_locale") throw err;
-    return { issues: [], error: (err as Error).message };
+    return {
+      issues: [],
+      error:
+        err instanceof Error
+          ? err.message || "Quality lint failed."
+          : String(err) || "Quality lint failed.",
+    };
   }
 }

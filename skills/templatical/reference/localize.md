@@ -24,12 +24,18 @@ For a standalone Node TypeScript example with `@templatical/types` and `@templat
 
 `unset` resets field paths; updates apply `unset`, then `text`, then `set`, then block `hidden`. Writing a path in `text` removes its `set` value and vice versa. `expect` uses the nested `LocaleLayerExpect` contract; mismatches are `precondition_failed`. Invalid operations/paths are `invalid_operation`. Generic `updateBlock`/`updateSettings` refuse localization fields; `addBlock` may carry layers and `setContent` replaces the whole document. `invertOperations` creates the guarded inverse.
 
+Default-field and list-element deletions prune text paths that no longer resolve and overrides whose parent no longer resolves, across every language. Empty localization members disappear. Undo restores the base before the pruned entries; language removal and undo restore identical content. Text projection never recreates an absent base field.
+
+`set` refuses section `columns` and whole built-in list paths (`items`, `rows`, `rows.<id>.cells`, `icons` on their corresponding built-in blocks) with `invalid_operation`. Write element leaf paths; custom `fieldValues.<key>` whole-field overrides remain allowed.
+
+`validateTemplate` validates every declared language’s resolved blocks and settings against the ordinary schemas, naming the locale on errors. Invalid override types and deletion of required properties fail validation. If lint itself throws, validate exits 2 with a diagnostic on stderr and no result document.
+
 ## Missing, stale and merge-tag checks
 
 | Rule | Action |
 | --- | --- |
 | `localization.untranslated` | Missing nonempty default text falls back to the default; **Not translated** marks it. Write a translation or accept the advisory warning. Hidden blocks and empty defaults are excluded. |
-| `localization.stale` | **Out of date** means the stored `source` differs from `sourceHash(defaultValue)`. **Keep** updates the hash while retaining text; **Use default** removes the field's value to restore fallback. Sibling overrides remain. |
+| `localization.stale` | **Out of date** means the stored `source` differs from `sourceHash(defaultValue)`. **Keep** updates the hash while retaining the existing text entry, including when the new default equals it; coverage counts it as translated. Hide and Show also preserve text entries; **Use default** removes the field's value to restore fallback. Sibling overrides remain. |
 | `localization.merge-tags-differ` | Preserve the default's merge-tag multiset, including repeated occurrences. This warning is blocking in CLI validation. |
 
 For an existing saved `template.json`, run:

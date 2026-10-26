@@ -8,6 +8,7 @@ import {
   createParagraphBlock,
   createSectionBlock,
   createTableBlock,
+  createSocialIconsBlock,
   type CustomBlockDefinition,
 } from "@templatical/types";
 import { validateTemplate } from "../src/validate";
@@ -542,3 +543,51 @@ describe("localized template validation", () => {
     );
   });
 });
+
+describe("structural locale overrides", () => {
+  it.each([
+    [
+      "columns",
+      () => createSectionBlock({ columns: "2", children: [[], []] }),
+      "1",
+    ],
+    ["items", () => createMenuBlock(), []],
+    ["rows", () => createTableBlock(), []],
+    [
+      "rows.row.cells",
+      () => createTableBlock({ rows: [{ id: "row", cells: [] }] }),
+      [],
+    ],
+    ["icons", () => createSocialIconsBlock(), []],
+  ] as const)("refuses the structural path %s", (path, make, value) => {
+    const content = localized();
+    const block = make();
+    block.l10n = { de: { set: { [path]: value } } };
+    content.blocks = [block];
+    const result = validateTemplate(content);
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toMatch(/cannot override structure/);
+  });
+});
+
+it.each([
+  ["required styles", "title", { styles: null }],
+  ["invalid style type", "title", { "styles.fontSize": "large" }],
+  ["required items", "menu", { items: null }],
+  ["required width", "settings", { width: null }],
+] as const)(
+  "validates each resolved language: %s",
+  async (_name, type, set) => {
+    const { createTitleBlock } = await import("@templatical/types");
+    const content = localized();
+    if (type === "settings") content.settings.l10n.de = { set };
+    else {
+      const block = type === "title" ? createTitleBlock() : createMenuBlock();
+      block.l10n = { de: { set } };
+      content.blocks = [block];
+    }
+    const result = validateTemplate(content);
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("de");
+  },
+);

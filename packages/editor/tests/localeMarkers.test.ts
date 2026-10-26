@@ -6,7 +6,7 @@ import { openLanguages, languageContent } from "./helpers/localization";
 
 const block = (id: string) => `[data-block-id="${id}"]`;
 describe("locale markers", () => {
-  it("ignores an orphan whole-element override and still marks an absent optional object property", async () => {
+  it("prunes an orphan whole-element override and still marks an absent optional object property", async () => {
     const content = languageContent();
     content.blocks = [
       createMenuBlock({
@@ -43,7 +43,7 @@ describe("locale markers", () => {
     });
     expect(
       editor.content.value.blocks[0].l10n?.de.set?.["items.gone"],
-    ).toBeDefined();
+    ).toBeUndefined();
     editor.setActiveLocale("de");
     await nextTick();
     expect(wrapper.find('[data-testid="locale-marker-differs"]').exists()).toBe(

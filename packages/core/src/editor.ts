@@ -20,6 +20,8 @@ import {
   isLocaleTag,
   localizeBlock,
   readPath,
+  pruneLocaleOrphans,
+  pruneSettingsLocaleOrphans,
   resolveLocale,
   safeClone,
   sourceHash,
@@ -327,13 +329,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       method === "resetLocaleFields" && Array.isArray(value)
         ? resetLocalizedFields(block, view, value)
         : undefined;
-    const layer = deriveLayer(
-      block,
-      view,
-      previous ? safeClone(previous) : undefined,
-      definitions,
-      restoredAncestors,
-    );
+    const layer =
+      method === "resetLocaleFields"
+        ? deriveLayer(block, view, previous, definitions, restoredAncestors)
+        : safeClone(previous ?? {});
     if (method === "setBlockHidden") {
       if (value) layer.hidden = true;
       else delete layer.hidden;
@@ -534,21 +533,34 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     }
   }
 
-  function updateBlock(blockId: string, updates: Partial<Block>): void {
-    if (!canEditLocale()) return;
+  function canUpdateBlock(blockId: string, updates: Partial<Block>): boolean {
+    if (!canEditLocale()) return false;
     const block = findBlockById(state.content.blocks, blockId);
-    if (!block) return;
+    if (!block) return false;
     if ("l10n" in updates)
       throw new SdkError(
         "l10n is immutable in updateBlock.",
         undefined,
         "invalid_operation",
       );
+    const next = { ...block, ...updates } as Block;
+    const structural = reconcileStructure(safeClone(block), next, (id) =>
+      findBlockById(state.content.blocks, id),
+    );
+    return !isBlockLocked(blockId, structural);
+  }
+
+  function updateBlock(blockId: string, updates: Partial<Block>): void {
+    if (!canUpdateBlock(blockId, updates)) return;
+    const block = findBlockById(state.content.blocks, blockId);
+    if (!block) return;
     const locale = activeLocale.value;
     if (!locale) {
       if (isBlockLocked(blockId, "children" in updates || "columns" in updates))
         return;
-      Object.assign(block, updates);
+      const pruned = pruneLocaleOrphans({ ...block, ...updates } as Block);
+      delete block.l10n;
+      Object.assign(block, pruned);
     } else {
       const view = localizeBlock(block, locale, defaultLocaleOf(state.content));
       const next = { ...view, ...updates } as Block;
@@ -558,7 +570,9 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       );
       if (isBlockLocked(blockId, structural)) return;
       if (structural) options.onStructureChange?.();
-      Object.assign(block, base);
+      const pruned = pruneLocaleOrphans(base);
+      delete block.l10n;
+      Object.assign(block, pruned);
       writeLayer(
         block,
         deriveLayer(block, next, block.l10n?.[locale], definitions),
@@ -567,8 +581,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     touch();
   }
 
-  function updateSettings(updates: Partial<TemplateSettings>): void {
-    if (!canEditLocale()) return;
+  function validateSettingsUpdate(updates: Partial<TemplateSettings>): void {
     if ("locales" in updates || "l10n" in updates)
       throw new SdkError(
         "locales and l10n are immutable in updateSettings.",
@@ -586,9 +599,17 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         "invalid_operation",
       );
     }
+  }
+
+  function updateSettings(updates: Partial<TemplateSettings>): void {
+    if (!canEditLocale()) return;
+    validateSettingsUpdate(updates);
     const locale = activeLocale.value;
     if (!locale)
-      state.content.settings = { ...state.content.settings, ...updates };
+      state.content.settings = pruneSettingsLocaleOrphans({
+        ...state.content.settings,
+        ...updates,
+      });
     else {
       const settings = state.content.settings;
       const view = resolveLocale(state.content, locale).settings;
@@ -933,6 +954,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     if (isStructuralMutation(method))
       return canEditStructure(structuralContext, method, args);
     if (!canEditLocale()) return false;
+    if (method === "updateBlock")
+      return canUpdateBlock(args[0] as string, args[1] as Partial<Block>);
+    if (method === "updateSettings")
+      validateSettingsUpdate(args[0] as Partial<TemplateSettings>);
     if (method === "addLocale" || method === "removeLocale")
       return localeListDraft(method, args[0] as string) !== null;
     if (

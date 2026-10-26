@@ -101,6 +101,43 @@ test.describe("language versions", () => {
     await expect(page.getByTestId("language-menu")).toContainText("3/4");
   });
 
+  test("keeps a translation after the default converges to it", async ({
+    page,
+    scenePage,
+    editorPage,
+  }) => {
+    await scenePage.goto("languages");
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await editorPage.doubleClickBlock("title");
+    // The outer .tpl-text-editable also exists while TipTap is loading.
+    // Wait for and focus its actual contenteditable before sending keys.
+    const editable = await editorPage.focusTextEditableAtEnd("title");
+    await expect(editable).toBeEditable();
+    await editable.press("ControlOrMeta+a");
+    await page.keyboard.type("Willkommen zur Herbstkollektion");
+    await expect(editable).toHaveText("Willkommen zur Herbstkollektion");
+    const title = page.locator('[data-block-id="languages-title"]');
+    await expect(title.getByTestId("locale-marker-stale")).toContainText(
+      "Translations out of date: 1",
+    );
+    await editorPage.deselectBlock();
+    await selectLanguage(page, "de");
+    await expect(title.getByTestId("locale-marker-stale")).toBeVisible();
+    await title.getByTestId("locale-keep").click();
+    await expect(title.getByTestId("locale-marker-stale")).toHaveCount(0);
+    await expect(title.getByTestId("locale-marker-untranslated")).toHaveCount(
+      0,
+    );
+    await expect(page.getByTestId("language-menu")).toContainText("2/4");
+    await selectLanguage(page, "en");
+    await selectLanguage(page, "de");
+    await expect(title.getByTestId("locale-marker-untranslated")).toHaveCount(
+      0,
+    );
+    await expect(title).toContainText("Willkommen zur Herbstkollektion");
+  });
+
   test("adds French from Add language", async ({
     page,
     scenePage,

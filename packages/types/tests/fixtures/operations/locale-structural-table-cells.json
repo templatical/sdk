@@ -1,0 +1,39 @@
+{
+  "name": "refuses locale structural override table-cells",
+  "content": {
+    "blocks": [
+      {
+        "id": "block",
+        "type": "table",
+        "rows": [
+          {
+            "id": "row",
+            "cells": []
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "locale": "en",
+      "locales": [
+        "de"
+      ]
+    }
+  },
+  "ops": [
+    {
+      "op": "updateBlockLocale",
+      "blockId": "block",
+      "locale": "de",
+      "set": {
+        "rows.row.cells": []
+      }
+    }
+  ],
+  "result": {
+    "error": {
+      "code": "invalid_operation",
+      "opIndex": 0
+    }
+  }
+}

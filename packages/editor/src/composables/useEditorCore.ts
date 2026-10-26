@@ -49,6 +49,7 @@ import type {
 } from "@templatical/types";
 import {
   applyLayout,
+  resolveLocale,
   deepMergeDefaults,
   getSyntaxTriggerChar,
   hasMergeTagSamples,
@@ -768,11 +769,16 @@ export function useEditorCore(
     resolvePreview: config.resolvePreview,
     getContent: () => {
       const raw = editor.content.value;
-      return config.layout && editor.state.previewMode
-        ? applyLayout(config.layout, raw)
-        : raw;
+      if (!editor.state.previewMode) return raw;
+      const localized = resolveLocale(
+        raw,
+        editor.activeLocale?.value ?? raw.settings.locale ?? "en",
+      );
+      return config.layout ? applyLayout(config.layout, localized) : localized;
     },
     isActive: () => editor.state.previewMode,
+    getLocale: () =>
+      editor.activeLocale?.value ?? editor.content.value.settings.locale,
   });
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);
   provide(RESOLVE_PREVIEW_KEY, config.resolvePreview);

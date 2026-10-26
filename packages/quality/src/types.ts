@@ -37,19 +37,12 @@ export interface LintPatchContext {
   removeBlock: (blockId: string) => void;
 }
 
-export type LintPatch = {
+export interface LintPatch {
   description: string;
-} & (
-  | {
-      /** Removal fixes change the shared tree and are omitted in language views. */
-      removesBlock: true;
-      apply: (ctx: LintPatchContext) => void;
-    }
-  | {
-      removesBlock?: false;
-      apply: (ctx: Omit<LintPatchContext, "removeBlock">) => void;
-    }
-);
+  /** Removal fixes change the shared tree and are omitted in language views. */
+  removesBlock?: boolean;
+  apply: (ctx: LintPatchContext) => void;
+}
 
 export interface LintThresholds {
   altMaxLength: number;

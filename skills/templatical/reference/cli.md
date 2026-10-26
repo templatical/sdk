@@ -53,3 +53,5 @@ or reachable port (a hosted, server-side sandbox) blocks only [live
 mode](live.md), and build mode is unaffected.
 
 `validate <file> --html --json` compiles the rendered email and adds exact UTF-8 `htmlBytes` plus a `compat.gmail-clipping` warning above 90 KiB. It requires `mjml`: missing peer means exit `3` and the existing install hint on stderr before any JSON output. Compatibility warning/info never changes a valid template to exit `1`.
+
+If quality lint itself throws during `validate`, the command exits 2 with a diagnostic on stderr and no result document, including with `--json`.

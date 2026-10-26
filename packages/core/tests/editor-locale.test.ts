@@ -10,6 +10,7 @@ import {
   createSectionBlock,
   createCustomBlock,
   localizeBlock,
+  localeCoverage,
   safeClone,
   sourceHash,
   type Block,
@@ -54,6 +55,29 @@ function german() {
 }
 
 describe("editor language routing", () => {
+  it.each(["keep", "hide", "show"])(
+    "preserves a translation equal to the new default during %s",
+    (action) => {
+      const { editor, history } = german();
+      editor.updateBlock("t1", { content: "<p>Hallo</p>" });
+      if (action === "show") editor.setBlockHidden("t1", true);
+      editor.setActiveLocale(null);
+      editor.updateBlock("t1", { content: "<p>Hallo</p>" });
+      editor.setActiveLocale("de");
+      if (action === "keep") editor.keepTranslations("t1", ["content"]);
+      else editor.setBlockHidden("t1", action === "hide");
+      expect(editor.content.value.blocks[0].l10n?.de.text?.content).toEqual({
+        value: "<p>Hallo</p>",
+        source: sourceHash(action === "keep" ? "<p>Hallo</p>" : "<p>Hello</p>"),
+      });
+      if (action === "keep")
+        expect(localeCoverage(editor.content.value, "de").translated).toContain(
+          "t1/content",
+        );
+      history.destroy();
+    },
+  );
+
   it("removes a deleted ancestor override after resetting both leaves in reverse order", () => {
     const { editor, history } = setup();
     editor.updateBlock("im1", {
@@ -836,6 +860,100 @@ describe("structural history eligibility", () => {
           expect.soft(editor.content.value.settings.width, label).toBe(600);
           history.destroy();
         }
+    },
+  );
+});
+
+describe("base edits prune locale orphans", () => {
+  it("deletes a translated menu item in the default view and restores it through undo", () => {
+    const { editor, history } = setup();
+    editor.addLocale("de");
+    editor.addBlock(
+      createMenuBlock({
+        id: "menu",
+        items: [{ id: "home", text: "Home", url: "/" }],
+        l10n: {
+          de: {
+            text: {
+              "items.home.text": { value: "Start", source: sourceHash("Home") },
+            },
+          },
+        },
+      }),
+    );
+    history.clear();
+    const before = safeClone(editor.content.value);
+    editor.updateBlock("menu", { items: [] });
+    const after = safeClone(editor.content.value);
+    expect(after.blocks[2].l10n).toBeUndefined();
+    expect(validateTemplate(after).valid).toBe(true);
+    expect(applyOperations(before, diffContent(before, after))).toEqual(after);
+    editor.removeLocale("de");
+    history.undo();
+    expect(editor.content.value).toEqual(after);
+    history.undo();
+    expect(editor.content.value).toEqual(before);
+    history.destroy();
+  });
+
+  it("prunes settings text when its default is removed", () => {
+    const { editor, history } = setup();
+    editor.updateSettings({ preheaderText: "Hello" });
+    editor.addLocale("de");
+    editor.setActiveLocale("de");
+    editor.updateSettings({ preheaderText: "Hallo" });
+    editor.setActiveLocale(null);
+    editor.updateSettings({ preheaderText: undefined });
+    expect(editor.content.value.settings.l10n).toBeUndefined();
+    history.destroy();
+  });
+});
+
+describe("update preflight preserves history", () => {
+  it.each(["settings", "block"])(
+    "keeps both stacks after a refused %s update",
+    (kind) => {
+      const locks = ref(new Map<string, unknown>());
+      const content = createDefaultTemplateContent();
+      content.settings.locale = "en";
+      content.settings.locales = ["de", "fr"];
+      content.blocks = [
+        createMenuBlock({
+          id: "menu",
+          items: [{ id: "home", text: "Home", url: "/" }],
+        }),
+      ];
+      const editor = useEditor({ content, lockedBlocks: locks });
+      const history = useHistory({
+        content: editor.content,
+        setContent: editor.setContent,
+      });
+      useHistoryInterceptor(editor, history);
+      editor.updateSettings({ width: 650 });
+      editor.updateSettings({ width: 700 });
+      history.undo();
+      editor.setActiveLocale("de");
+      const before = safeClone(editor.content.value);
+      if (kind === "settings")
+        expect(() => editor.updateSettings({ locale: "fr" })).toThrow();
+      else {
+        locks.value.set("menu", {
+          blockId: "menu",
+          locale: "fr",
+          holder: { sessionId: "peer" },
+        });
+        editor.updateBlock("menu", { items: [] });
+      }
+      expect(editor.content.value).toEqual(before);
+      expect(history.canUndo.value).toBe(true);
+      expect(history.canRedo.value).toBe(true);
+      history.redo();
+      expect(editor.content.value.settings.width).toBe(700);
+      history.undo();
+      history.undo();
+      expect(editor.content.value.settings.width).toBe(600);
+      expect(history.canUndo.value).toBe(false);
+      history.destroy();
     },
   );
 });

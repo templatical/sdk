@@ -4,6 +4,7 @@ import { effectScope, nextTick, ref, watch } from "vue";
 import { useEditor, useHistory } from "@templatical/core";
 import type {
   AiChatMessage,
+  AiOperationsResult,
   AiProvider,
   AiTurnHandlers,
   CollaborationProvider,
@@ -11,7 +12,7 @@ import type {
   Template,
   TemplateContent,
 } from "@templatical/types";
-import { safeClone, SdkError } from "@templatical/types";
+import { safeClone, SdkError, sourceHash } from "@templatical/types";
 import {
   AI_BROADCAST_GRACE_MS,
   AI_MISSING_PROVIDER_MESSAGE,
@@ -444,6 +445,47 @@ describe("useAiFeature without collaboration", () => {
     });
     expect(editor.content.value).toEqual(CONTENT);
   });
+
+  it.each([0, 1])(
+    "answers a real normalization refusal at batch index %s without rejecting chat",
+    async (opIndex) => {
+      let answer: Promise<AiOperationsResult> | undefined;
+      const ops: Operation[] = [
+        ...greet.slice(0, opIndex),
+        {
+          op: "updateBlockLocale",
+          blockId: "gone",
+          locale: "de",
+          text: {
+            content: { value: "Hallo", source: sourceHash("Hello") },
+          },
+        },
+      ];
+      const { ai, editor, history, onError } = await openLocal({
+        chat: chatting(async (on) => {
+          answer = on.onOperations(ops);
+          await answer;
+        }),
+      });
+      editor.addLocale("de");
+      const before = safeClone(editor.content.value);
+      const record = vi.spyOn(history, "record");
+
+      const outcome = await ai.send("Translate it");
+
+      await expect(answer).resolves.toMatchObject({
+        applied: false,
+        code: "block_missing",
+        opIndex,
+        message: 'No block with id "gone".',
+      });
+      expect(outcome.failed).toBe(false);
+      expect(outcome.operationCount).toBe(0);
+      expect(editor.content.value).toEqual(before);
+      expect(record).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    },
+  );
 
   it("outlines what a turn changed (D42)", async () => {
     const { ai } = await openLocal({
@@ -2511,6 +2553,61 @@ describe("useAiFeature fix round 4", () => {
 });
 
 describe("final fix: replay settlement", () => {
+  it.each(["undo", "redo"] as const)(
+    "settles a stored %s refused by the real normalizer as unapplied",
+    async (direction) => {
+      const operations: Operation[] = [
+        ...greet,
+        {
+          op: "updateBlockLocale",
+          blockId: "gone",
+          locale: "de",
+          text: {
+            content: { value: "Hallo", source: sourceHash("Hello") },
+          },
+        },
+      ];
+      const replay = vi.fn(async () => ({ operations, replayId: "refused" }));
+      const settleReplay = vi.fn(async () => {});
+      const { ai, editor, history, onError } = await openLocal({
+        conversation: {
+          list: async () => [persistedMessage("persisted", direction === "redo")],
+          clear: false,
+          undo: replay,
+          redo: replay,
+          settleReplay,
+        },
+      });
+      editor.addLocale("de");
+      const before = safeClone(editor.content.value);
+      const record = vi.spyOn(history, "record");
+      ai.open("chat");
+      await settle();
+
+      await (direction === "undo"
+        ? ai.undoMessage("persisted")
+        : ai.redoMessage("persisted"));
+
+      expect(settleReplay).toHaveBeenCalledExactlyOnceWith("tpl-1", "persisted", {
+        replayId: "refused",
+        direction,
+        applied: false,
+        sessionId: expect.any(String),
+      });
+      expect(editor.content.value).toEqual(before);
+      expect(record).not.toHaveBeenCalled();
+      expect(ai.busy.value).toBe(false);
+      expect(ai.messages.value.at(-1)).toMatchObject({
+        undone: direction === "redo",
+        failure: {
+          context: direction,
+          error: { code: "block_missing", opIndex: 1 },
+        },
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it.each([true, false])(
     "settles the actual application result %s inside the lane",
     async (accept) => {

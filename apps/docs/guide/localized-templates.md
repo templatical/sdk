@@ -30,6 +30,8 @@ A field path joins property names with `.`. At an array, the next segment is the
 
 `TRANSLATABLE_FIELDS` lists text patterns for each block type; `translatableFields(block, definitions)` expands element ids and custom `text` and `textarea` fields. `SETTINGS_TRANSLATABLE_FIELDS` lists settings text paths. A `text` path always names an existing text field. A `set` override may add an optional property absent from the default, but its parent must exist. It cannot change structural keys (`id`, `type`, `children`, `l10n`).
 
+`set` also refuses section `columns` and whole built-in list paths: menu `items`, table `rows` and `rows.<id>.cells`, and social `icons`. These structural overrides return `invalid_operation`; edit their element leaves instead. Custom `fieldValues.<key>` whole-field overrides remain allowed.
+
 A path occurs in at most one of `text` and `set`; writing either removes it from the other. Omit empty layers, `text`, `set`, `l10n` and `settings.locales` instead of storing `{}` or `[]`. See [Types](/api/types#localization) for exact declarations.
 
 ## Editing in a language
@@ -42,6 +44,8 @@ Text and property edits in a language view affect that language only. When a tra
 
 Add, move, delete, duplicate, paste and drag change the shared tree for every language. The editor shows **Structure changes apply to every language.** once per session per template. A version in `settings.locales` but absent from `localization.locales` remains selectable, read-only and marked **Not enabled**: both value edits and structure changes are refused.
 
+Deleting a base field or list element prunes every language’s text entries whose path no longer resolves and overrides whose parent no longer resolves. Removing the default preheader therefore removes its text translations. Empty localization members are omitted. Undo restores the base first and then the pruned entries; removing a language and undoing it restores the same content.
+
 The active language is view state, never saved. Sessions start on the default. `editor.getLocale()` reads it; `editor.setLocale(tag)` selects the default or an existing version when localization is enabled. `onLocaleChange(tag)` reports selection changes, including fallback to the default after removal or loading another template. Unknown versions throw `SdkError` with code `unknown_locale`.
 
 ## Missing values {#missing-values}
@@ -52,7 +56,7 @@ A missing translation falls back to the default-language value. The block shows 
 
 Each `LocalizedText.source` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
 
-**Keep** retains the translation and updates its source hash. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
+**Keep** retains the existing translation entry and updates its source hash, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
 
 ## Merge tags {#merge-tags}
 
@@ -67,6 +71,8 @@ With `@templatical/types` and `@templatical/renderer` installed, this complete T
 `renderToMjml(content, { locale })` resolves that language before rendering. `editor.toMjml({ locale })` and `editor.toHtml({ locale })` accept the same optional selection. Omitting it renders the default, independently of the active editor view. Local MJML export needs the optional `@templatical/renderer` peer; HTML requires a `render.toHtml` or `render.compileMjml` provider. See [Rendering & Export](/backend/render).
 
 `resolveLocale(content, locale)` is pure: it applies text, overrides and settings, drops hidden blocks recursively, strips localization fields and sets the projected `settings.locale`. Missing values stay at the default. Unknown versions throw `unknown_locale`. The projected locale and direction determine MJML `lang` and `dir`. Save the original content, which retains all versions, rather than this projection.
+
+Preview localizes the active language, composes the layout, then calls `resolvePreview`. The returned plain template renders directly. Changing language invalidates the cached result and discards responses for the previous language.
 
 **Custom blocks:** any `text` or `set` entry in the requested locale’s layer removes the default-language `renderedHtml` from the projection. `renderedStylesheet` stays. Supply `renderCustomBlock` to render the localized fields; without it the block is omitted instead of showing the default-language pre-render. Blocks without a layer for that locale keep their cached HTML. The editor export path localizes before pre-rendering and produces translated custom HTML. See [Custom block rendering](/api/renderer-typescript#custom-blocks).
 
@@ -117,6 +123,8 @@ For a saved `template.json` without custom `text` paths, run the CLI with the la
 npx -y @templatical/template-tools validate template.json --locale de --json
 npx -y @templatical/template-tools render template.json --locale de --format mjml --out template.de.mjml
 ```
+
+`validateTemplate` checks every declared language’s resolved blocks and settings against the ordinary schemas and names the locale in projection errors. Deleting required properties or supplying invalid override types fails validation, even when another language is selected for linting. A failure inside lint itself exits `2`, with a diagnostic on stderr and no result document.
 
 `validate --locale de` checks structure and the projected content, including `localization.untranslated`, `localization.stale` and `localization.merge-tags-differ`. Exit `0` means success, `1` means invalid structure, error-severity lint, a merge-tag mismatch or an unknown locale, `2` means misuse/tool failure (including a missing or empty `--locale` value), and `3` means a missing optional dependency. An unknown locale exits `1`, writes `unknown_locale` to stderr without a result document, including with `--json`. A missing or empty `--locale` value exits `2`. `valid: true` alone does not mean exit `0`. See [Template tools](/api/template-tools).
 

@@ -134,7 +134,7 @@ Lists every working template under `.templatical/` (or `--cwd`'s `.templatical/`
 |---|---|
 | `0` | Valid, with no error-severity lint for `validate`; success for other commands. |
 | `1` | Invalid structure or any `severity: "error"` lint issue, or `localization.merge-tags-differ` (output can still say `valid: true`). For `custom-block`, an `error`-severity issue in the definition, or a failed `fetch` request. |
-| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, or an unexpected internal error. |
+| `2` | Misuse or a broken tool — bad flags, a missing argument, unreadable or unparseable input, an exception inside quality lint, or an unexpected internal error. |
 | `3` | A missing optional dependency. The error message names the exact install command. |
 
 ::: tip Exit code 3 is not a failure

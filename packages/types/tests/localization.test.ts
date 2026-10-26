@@ -432,3 +432,34 @@ describe("cloneBlock", () => {
     expect(Object.keys(copy.l10n.de.text)).toEqual([`items.${newId}.text`]);
   });
 });
+
+it("does not resurrect absent optional text in projection or coverage", () => {
+  const content = base();
+  delete content.settings.preheaderText;
+  const custom = {
+    id: "custom",
+    type: "custom",
+    customType: "card",
+    fieldValues: {},
+    l10n: {
+      de: {
+        text: {
+          "fieldValues.headline": {
+            value: "Hallo",
+            source: sourceHash("Hello"),
+          },
+        },
+      },
+    },
+  } as any;
+  content.blocks = [custom];
+  const projection = resolveLocale(content, "de");
+  expect(projection.settings).not.toHaveProperty("preheaderText");
+  expect(projection.blocks[0]).toMatchObject({ fieldValues: {} });
+  expect(localeCoverage(content, "de")).toEqual({
+    translated: [],
+    missing: [],
+    stale: [],
+  });
+  expect(localizeBlock(custom, "de", "en")).toMatchObject({ fieldValues: {} });
+});

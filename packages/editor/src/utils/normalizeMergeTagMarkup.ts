@@ -13,9 +13,13 @@ import type {
 } from "@templatical/types";
 import {
   sourceHash,
+  readPath,
+  deepEqual,
+  applyOperations,
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
+  OperationError,
   resolveSyntax,
   safeClone,
 } from "@templatical/types";
@@ -541,9 +545,75 @@ export function normalizeRemoteOperations(
   const tags = mergeTags?.tags ?? [];
   const syntax = resolveSyntax(mergeTags?.syntax);
   const added = new Map<string, string>();
+  // Markup-only normalization also supports partial input and layout wrappers.
+  // Locale hashes require engine-valid, evolving simulation states.
+  const needsLocaleState = ops.some((op) => op.op === "updateBlockLocale");
+  let original = safeClone(content);
+  let normalizedState = safeClone(content);
+  const advance = (
+    state: TemplateContent,
+    op: Operation,
+    index: number,
+  ): TemplateContent => {
+    try {
+      if (!("expect" in op)) return applyOperations(state, [op]);
+      // The backend already checked guards against its raw representation.
+      const { expect: _expect, ...unguarded } = op;
+      return applyOperations(state, [unguarded as Operation]);
+    } catch (error) {
+      if (!(error instanceof OperationError)) throw error;
+      throw new OperationError(error.code, index, error.message, error.blockId);
+    }
+  };
+  const blockIn = (state: TemplateContent, id: string): Block | undefined => {
+    const find = (blocks: unknown): Block | undefined => {
+      if (!Array.isArray(blocks)) return undefined;
+      for (const block of blocks) {
+        if (!block || typeof block !== "object") continue;
+        if (block.id === id) return block;
+        const children = block.children;
+        const found = find(
+          block.type === "section" && Array.isArray(children)
+            ? children.flat()
+            : children,
+        );
+        if (found) return found;
+      }
+    };
+    return find(state?.blocks);
+  };
+  const restamp = <T extends LocalizedText | null>(
+    entries: Record<string, T> | undefined,
+    before: Block | undefined,
+    after: Block | undefined,
+    locale?: string,
+  ): Record<string, T> | undefined => {
+    if (!entries) return entries;
+    let result = entries;
+    for (const [path, entry] of Object.entries(entries)) {
+      if (!entry) continue;
+      const oldEntry = locale
+        ? before?.l10n?.[locale]?.text?.[path]
+        : undefined;
+      const newEntry = locale ? after?.l10n?.[locale]?.text?.[path] : undefined;
+      const oldBase = readPath(before, path);
+      const newBase = readPath(after, path);
+      const source =
+        oldEntry && newEntry && deepEqual(entry, oldEntry)
+          ? newEntry.source
+          : typeof oldBase === "string" &&
+              typeof newBase === "string" &&
+              entry.source === sourceHash(oldBase)
+            ? sourceHash(newBase)
+            : entry.source;
+      if (source !== entry.source)
+        result = { ...result, [path]: { ...entry, source } };
+    }
+    return result;
+  };
   let changed = false;
 
-  const next = ops.map((op): Operation => {
+  const normalizeOne = (op: Operation): Operation => {
     if (op.op === "addBlock") {
       if (!op.block || typeof op.block !== "object") return op;
       collectBlockTypes(op.block, added);
@@ -560,11 +630,18 @@ export function normalizeRemoteOperations(
     }
     if (op.op === "updateBlockLocale") {
       const type =
-        added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
-      const text = normalizeLocaleText(type, op.text, tags, syntax);
+        added.get(op.blockId) ?? blockTypeOf(original?.blocks, op.blockId);
+      const before = blockIn(original, op.blockId);
+      const after = blockIn(normalizedState, op.blockId);
+      const text = normalizeLocaleText(
+        type,
+        restamp(op.text, before, after),
+        tags,
+        syntax,
+      );
       const expectText = normalizeLocaleText(
         type,
-        op.expect?.text,
+        restamp(op.expect?.text, before, after, op.locale),
         tags,
         syntax,
       );
@@ -582,7 +659,7 @@ export function normalizeRemoteOperations(
     }
     if (op.op === "updateBlock") {
       const type =
-        added.get(op.blockId) ?? blockTypeOf(content?.blocks, op.blockId);
+        added.get(op.blockId) ?? blockTypeOf(original?.blocks, op.blockId);
       if (type !== "title" && type !== "paragraph") return op;
       const normalizeField = (fields: Record<string, unknown> | undefined) => {
         if (typeof fields?.content !== "string") return fields;
@@ -602,12 +679,29 @@ export function normalizeRemoteOperations(
       return { ...op, ...(set ? { set } : {}), ...(expect ? { expect } : {}) };
     }
     if (op.op === "setContent") {
+      added.clear();
       const normalized = normalizeMergeTagMarkup(op.content, tags, syntax);
       if (normalized === op.content) return op;
       changed = true;
       return { ...op, content: normalized };
     }
     return op;
+  };
+  const next = ops.map((op, index) => {
+    const normalized = normalizeOne(op);
+    if (needsLocaleState) {
+      // Fail before returning any batch if either state cannot advance. The
+      // collaboration caller reports the error and applies its existing fallback.
+      const nextOriginal = advance(original, op, index);
+      const nextNormalized = advance(normalizedState, normalized, index);
+      original = nextOriginal;
+      normalizedState = nextNormalized;
+    } else if (op.op === "setContent") {
+      // Keep type lookup current without imposing engine validation on the
+      // existing markup-only path. Added blocks are tracked in `added`.
+      original = op.content;
+    }
+    return normalized;
   });
 
   return changed ? next : (ops as Operation[]);

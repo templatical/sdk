@@ -134,7 +134,7 @@ Listet jedes Arbeits-Template unter `.templatical/` (oder dem `.templatical/` vo
 |---|---|
 | `0` | Gültig, ohne Lint-Probleme mit Schweregrad `error` bei `validate`; Erfolg bei anderen Befehlen. |
 | `1` | Ungültige Struktur oder mindestens ein Lint-Problem mit `severity: "error"`, oder `localization.merge-tags-differ` (die Ausgabe kann weiterhin `valid: true` enthalten). Bei `custom-block` ein Problem mit Schweregrad `error` in der Definition oder eine fehlgeschlagene `fetch`-Anfrage. |
-| `2` | Fehlbedienung oder ein defektes Tool — falsche Flags, ein fehlendes Argument, unlesbare oder nicht parsbare Eingaben oder ein unerwarteter interner Fehler. |
+| `2` | Fehlbedienung oder ein defektes Tool — falsche Flags, ein fehlendes Argument, unlesbare oder nicht parsbare Eingaben eine Ausnahme im Qualitäts-Linter oder ein unerwarteter interner Fehler. |
 | `3` | Eine optionale Abhängigkeit fehlt. Die Fehlermeldung nennt den genauen Installationsbefehl. |
 
 ::: tip Exit-Code 3 ist kein Fehlschlag

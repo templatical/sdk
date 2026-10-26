@@ -153,6 +153,57 @@ function blocksIn(blocks: Block[]): Block[] {
   ]);
 }
 
+/** Restore paths lost to base pruning only after the base keys exist again. */
+function restorePrunedLayers(
+  state: TemplateContent,
+  op: Operation,
+): Operation[] {
+  const next = safeClone(state);
+  applyOperationsInPlace(next, [op]);
+  const restores: Operation[] = [];
+  const collect = (
+    previous: { l10n?: Record<string, BlockLocaleLayer> },
+    after: { l10n?: Record<string, BlockLocaleLayer> },
+    blockId?: string,
+  ) => {
+    for (const [locale, layer] of Object.entries(previous.l10n ?? {})) {
+      const current = after.l10n?.[locale] ?? {};
+      const paths = [
+        ...new Set([
+          ...Object.keys(layer.text ?? {}).filter(
+            (path) => !Object.hasOwn(current.text ?? {}, path),
+          ),
+          ...Object.keys(layer.set ?? {}).filter(
+            (path) => !Object.hasOwn(current.set ?? {}, path),
+          ),
+        ]),
+      ];
+      if (!paths.length) continue;
+      const changes = restoreLocale(layer, current, paths, false);
+      restores.push(
+        blockId === undefined
+          ? ({
+              op: "updateSettingsLocale",
+              locale,
+              ...changes,
+            } as UpdateSettingsLocaleOperation)
+          : { op: "updateBlockLocale", blockId, locale, ...changes },
+      );
+    }
+  };
+  if (op.op === "updateSettings") collect(state.settings, next.settings);
+  else {
+    const after = new Map(
+      blocksIn(next.blocks).map((block) => [block.id, block]),
+    );
+    for (const block of blocksIn(state.blocks)) {
+      const current = after.get(block.id);
+      if (current) collect(block, current, block.id);
+    }
+  }
+  return restores;
+}
+
 function invertOne(
   state: TemplateContent,
   op: Operation,
@@ -188,13 +239,16 @@ function invertOne(
       const block = requirePosition(state, op.blockId, index)
         .block as unknown as Json;
       const { set, unset, expect } = restoreKeys(block, op.set, op.unset);
-      return {
-        op: "updateBlock",
-        blockId: op.blockId,
-        ...(Object.keys(set).length > 0 ? { set } : {}),
-        ...(unset.length > 0 ? { unset } : {}),
-        expect,
-      };
+      return [
+        {
+          op: "updateBlock",
+          blockId: op.blockId,
+          ...(Object.keys(set).length > 0 ? { set } : {}),
+          ...(unset.length > 0 ? { unset } : {}),
+          expect,
+        },
+        ...restorePrunedLayers(state, op),
+      ];
     }
     case "updateSettings": {
       const { set, unset, expect } = restoreKeys(
@@ -202,12 +256,15 @@ function invertOne(
         op.set as Json | undefined,
         op.unset,
       );
-      return {
-        op: "updateSettings",
-        ...(Object.keys(set).length > 0 ? { set } : {}),
-        ...(unset.length > 0 ? { unset } : {}),
-        expect,
-      };
+      return [
+        {
+          op: "updateSettings",
+          ...(Object.keys(set).length > 0 ? { set } : {}),
+          ...(unset.length > 0 ? { unset } : {}),
+          expect,
+        },
+        ...restorePrunedLayers(state, op),
+      ];
     }
     case "addLocale":
       return { op: "removeLocale", locale: op.locale, expect: { blocks: {} } };

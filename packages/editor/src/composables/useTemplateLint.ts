@@ -165,7 +165,11 @@ export function useTemplateLint(
     issue.fix.apply({
       updateBlock: opts.updateBlock,
       updateSettings: opts.updateSettings,
-      removeBlock: opts.removeBlock,
+      removeBlock: (blockId) => {
+        const defaultLocale = opts.content.value.settings.locale ?? "en";
+        if ((opts.options.contentLocale ?? defaultLocale) === defaultLocale)
+          opts.removeBlock(blockId);
+      },
     });
     // The content watcher will re-lint via the debounced watcher.
   }

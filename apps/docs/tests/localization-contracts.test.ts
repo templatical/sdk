@@ -59,6 +59,22 @@ describe("localized template documentation contracts", () => {
     },
   );
 
+  it.each([
+    ["apps/docs/api/template-tools.md", false],
+    ["apps/docs/de/api/template-tools.md", true],
+    ["skills/templatical/reference/validate.md", false],
+  ] as const)("%s documents lint tool failures", (file, german) => {
+    const source = plain(file);
+    expect(source).toMatch(
+      german ? /Ausnahme im Qualitäts-Linter/ : /exception inside quality lint/,
+    );
+    expect(source).toMatch(
+      german
+        ? /Tool-Fehler \(2, 3\)[^.]*ohne Ergebnisdokument/
+        : /tool errors \(2, 3\)[^.]*without a result document/i,
+    );
+  });
+
   it.each(["", "de/"])(
     "%sheadless usage keeps compatibility on its scanner path",
     (prefix) => {

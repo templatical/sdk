@@ -162,6 +162,11 @@ export function diffContent(
   before: TemplateContent,
   after: TemplateContent,
 ): Operation[] {
+  if (
+    before.settings.locale !== after.settings.locale &&
+    (before.settings.locales?.length || after.settings.locales?.length)
+  )
+    return [{ op: "setContent", content: safeClone(after) }];
   const was = indexBlocks(before.blocks);
   const now = indexBlocks(after.blocks);
   const ops: Operation[] = [];

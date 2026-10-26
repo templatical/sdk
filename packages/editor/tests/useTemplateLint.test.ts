@@ -377,3 +377,35 @@ describe("isLintFullyDisabled", () => {
     ).toBe(false);
   });
 });
+
+it("refuses removal through a legacy fix in a language view", async () => {
+  const useTemplateLint = await loadComposable();
+  const content = ref(createContent());
+  content.value.settings.locale = "en";
+  content.value.settings.locales = ["de"];
+  const lint = useTemplateLint({
+    content,
+    options: { disabled: true, contentLocale: "de" },
+    updateBlock: () => {},
+    updateSettings: () => {},
+    removeBlock: (id) => {
+      content.value.blocks = content.value.blocks.filter(
+        (block) => block.id !== id,
+      );
+    },
+  });
+  lint.applyFix({
+    blockId: "b1",
+    ruleId: "structure.empty-section",
+    severity: "warning",
+    message: "Empty",
+    suggestion: "Remove",
+    reference: "",
+    fix: {
+      description: "Legacy removal without metadata",
+      apply: (ctx) => ctx.removeBlock("b1"),
+    },
+  });
+  expect(content.value.blocks.map((block) => block.id)).toEqual(["b1"]);
+  lint.destroy();
+});

@@ -30,6 +30,8 @@ Ein Feldpfad verbindet Eigenschaftsnamen mit `.`. Bei Arrays ist das nächste Se
 
 `TRANSLATABLE_FIELDS` listet Textmuster pro Blocktyp; `translatableFields(block, definitions)` setzt Element-IDs und benutzerdefinierte `text`- und `textarea`-Felder ein. `SETTINGS_TRANSLATABLE_FIELDS` listet Einstellungstextpfade. Ein `text`-Pfad benennt immer ein vorhandenes Textfeld. Eine `set`-Überschreibung darf eine optionale Eigenschaft ergänzen, die im Standard fehlt, aber ihr übergeordnetes Objekt muss existieren. Strukturschlüssel (`id`, `type`, `children`, `l10n`) sind ausgeschlossen.
 
+`set` lehnt außerdem `columns` einer Sektion und vollständige integrierte Listenpfade ab: `items` bei Menüs, `rows` und `rows.<id>.cells` bei Tabellen sowie `icons` bei Social-Blöcken. Diese strukturellen Überschreibungen ergeben `invalid_operation`; bearbeiten Sie stattdessen die Eigenschaften einzelner Elemente. Vollständige benutzerdefinierte `fieldValues.<key>`-Überschreibungen bleiben erlaubt.
+
 Ein Pfad steht höchstens in `text` oder `set`; Schreiben in eines entfernt ihn aus dem anderen. Leere Ebenen, `text`, `set`, `l10n` und `settings.locales` werden weggelassen statt als `{}` oder `[]` gespeichert. Exakte Deklarationen stehen unter [Typen](/de/api/types#localization).
 
 ## Bearbeitung in einer Sprache
@@ -42,6 +44,8 @@ Text- und Eigenschaftsänderungen in einer Sprachansicht betreffen nur diese Spr
 
 Hinzufügen, Verschieben, Löschen, Duplizieren, Einfügen und Ziehen ändern den gemeinsamen Baum für alle Sprachen. Der Editor zeigt **Strukturänderungen gelten für jede Sprache** einmal pro Sitzung und Template. Eine Version in `settings.locales`, die in `localization.locales` fehlt, bleibt auswählbar, schreibgeschützt und als **Nicht aktiviert** markiert: Wert- und Strukturänderungen werden abgelehnt.
 
+Das Löschen eines Basisfelds oder Listenelements entfernt in allen Sprachen Texteinträge mit nicht mehr auflösbarem Pfad und Überschreibungen mit nicht mehr auflösbarem Elternobjekt. Das Entfernen des Standard-Preheaders entfernt daher seine Textübersetzungen. Leere Lokalisierungsfelder entfallen. Rückgängig stellt zuerst die Basis und dann die entfernten Einträge wieder her; das Entfernen einer Sprache und Rückgängig ergeben wieder denselben Inhalt.
+
 Die aktive Sprache ist Ansichtsstatus und wird nicht gespeichert. Sitzungen starten im Standard. `editor.getLocale()` liest sie; `editor.setLocale(tag)` wählt bei aktivierter Lokalisierung den Standard oder eine vorhandene Version. `onLocaleChange(tag)` meldet Wechsel, einschließlich Rückkehr zum Standard nach Entfernen oder Laden eines anderen Templates. Unbekannte Versionen werfen `SdkError` mit Code `unknown_locale`.
 
 ## Fehlende Werte {#missing-values}
@@ -52,7 +56,7 @@ Eine fehlende Übersetzung fällt auf den Standardsprachwert zurück. Der Block 
 
 Jedes `LocalizedText.source` speichert beim Schreiben `sourceHash(defaultValue)`. `sourceHash` ist FNV-1a 32-Bit über UTF-8-Bytes, als acht kleingeschriebene Hexadezimalziffern. Ein geänderter Standard-Hash markiert die Übersetzung **Veraltet** und erzeugt `localization.stale`.
 
-**Beibehalten** erhält die Übersetzung und aktualisiert ihren Quell-Hash. **Standard verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **Veraltete Übersetzungen: {count}** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
+**Beibehalten** erhält den vorhandenen Übersetzungseintrag und aktualisiert seinen Quell-Hash, auch wenn der geänderte Standard inzwischen der Übersetzung entspricht. Die Abdeckung zählt ihn als übersetzt. Ausblenden und Anzeigen erhalten ebenfalls die Texteinträge. **Standard verwenden** entfernt den Ebenenwert des Felds und stellt den Fallback wieder her. Beide Aktionen erhalten benachbarte Überschreibungen. Im Standard zeigt **Veraltete Übersetzungen: {count}** betroffene Blöcke. Eigenschaftsüberschreibungen in `set` haben keinen Quell-Hash.
 
 ## Merge-Tags {#merge-tags}
 
@@ -67,6 +71,8 @@ Mit installiertem `@templatical/types` und `@templatical/renderer` erstellt dies
 `renderToMjml(content, { locale })` löst die Sprache vor dem Rendern auf. `editor.toMjml({ locale })` und `editor.toHtml({ locale })` akzeptieren dieselbe optionale Auswahl. Ohne Auswahl wird der Standard gerendert, unabhängig von der aktiven Editoransicht. Lokaler MJML-Export benötigt den optionalen Peer `@templatical/renderer`; HTML benötigt einen Provider mit `render.toHtml` oder `render.compileMjml`. Siehe [Rendering & Export](/de/backend/render).
 
 `resolveLocale(content, locale)` ist rein: Es wendet Text, Überschreibungen und Einstellungen an, entfernt ausgeblendete Blöcke rekursiv, entfernt Lokalisierungsfelder und setzt das projizierte `settings.locale`. Fehlende Werte bleiben beim Standard. Unbekannte Versionen werfen `unknown_locale`. Projizierte Sprache und Richtung bestimmen MJML-`lang` und `dir`. Speichern Sie den Originalinhalt mit allen Versionen statt dieser Projektion.
+
+Die Vorschau lokalisiert die aktive Sprache, setzt das Layout zusammen und ruft dann `resolvePreview` auf. Das zurückgegebene einfache Template wird direkt gerendert. Ein Sprachwechsel verwirft den Cache und Antworten für die vorherige Sprache.
 
 **Benutzerdefinierte Blöcke:** Jeder `text`- oder `set`-Eintrag in der Ebene der angeforderten Sprache entfernt das Standardsprach-`renderedHtml` aus der Projektion. `renderedStylesheet` bleibt erhalten. Übergeben Sie `renderCustomBlock`, um die lokalisierten Felder zu rendern; ohne Callback wird der Block ausgelassen, statt den Standardsprach-Pre-Render anzuzeigen. Blöcke ohne Ebene für diese Sprache behalten ihr zwischengespeichertes HTML. Der Editor-Export lokalisiert vor dem Pre-Rendering und erzeugt übersetztes benutzerdefiniertes HTML. Siehe [Rendering benutzerdefinierter Blöcke](/de/api/renderer-typescript).
 
@@ -117,6 +123,8 @@ Für eine gespeicherte `template.json` ohne benutzerdefinierte `text`-Pfade wäh
 npx -y @templatical/template-tools validate template.json --locale de --json
 npx -y @templatical/template-tools render template.json --locale de --format mjml --out template.de.mjml
 ```
+
+`validateTemplate` prüft die aufgelösten Blöcke und Einstellungen jeder deklarierten Sprache gegen die normalen Schemas und nennt bei Projektionsfehlern die Locale. Gelöschte Pflichtfelder und ungültige Override-Typen scheitern auch dann, wenn eine andere Sprache für Lint gewählt ist. Ein Fehler im Linter selbst ergibt Exit `2`, mit Diagnose auf stderr und ohne Ergebnisdokument.
 
 `validate --locale de` prüft Struktur und projizierten Inhalt, einschließlich `localization.untranslated`, `localization.stale` und `localization.merge-tags-differ`. Exit `0` bedeutet Erfolg, `1` ungültige Struktur, Fehler-Lint, abweichende Merge-Tags oder eine unbekannte Locale, `2` Fehlbedienung/Toolfehler (einschließlich fehlendem oder leerem `--locale`-Wert) und `3` eine fehlende optionale Abhängigkeit. Eine unbekannte Locale ergibt Exit `1`, schreibt `unknown_locale` auf stderr ohne Ergebnisdokument, auch mit `--json`. Ein fehlender oder leerer `--locale`-Wert ergibt Exit `2`. `valid: true` allein bedeutet nicht Exit `0`. Siehe [Template-Tools](/de/api/template-tools).
 
