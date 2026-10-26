@@ -4,6 +4,7 @@ import { nextTick, ref } from "vue";
 import AiHeaderMenu from "../src/components/ai/AiHeaderMenu.vue";
 import EditorHeader from "../src/components/EditorHeader.vue";
 import { loadTranslations } from "../src/i18n";
+import { secondaryBtnCompactClass } from "../src/constants/styleConstants";
 import { TRANSLATIONS_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
@@ -44,21 +45,34 @@ describe("AiHeaderMenu", () => {
   it("reflects the panel state with aria-pressed and its active style", async () => {
     const { ai, wrapper } = await setup(["chat"]);
     const button = wrapper.get('[data-testid="ai-menu-trigger"]');
+    const el = button.element as HTMLButtonElement;
     expect(button.text()).toBe("AI");
     expect(button.attributes("aria-label")).toBe("AI assistant");
     expect(button.attributes("title")).toBe("AI assistant");
     expect(button.attributes("aria-expanded")).toBeUndefined();
     expect(button.attributes("aria-pressed")).toBe("false");
-    expect(button.classes()).toContain("tpl-ai-btn--idle");
+    expect(el.style.backgroundColor).toBe("");
 
     await button.trigger("click");
     expect(button.attributes("aria-pressed")).toBe("true");
-    expect(button.classes()).toContain("tpl-ai-btn--active");
+    expect(el.style.backgroundColor).toBe("var(--tpl-primary-light)");
+    expect(el.style.borderColor).toBe("var(--tpl-primary-light)");
 
     ai.close();
     await nextTick();
     expect(button.attributes("aria-pressed")).toBe("false");
-    expect(button.classes()).toContain("tpl-ai-btn--idle");
+    expect(el.style.backgroundColor).toBe("");
+  });
+
+  it("wears the header's compact secondary recipe with the amber on its icon only", async () => {
+    const { wrapper } = await setup(["chat"]);
+    const button = wrapper.get('[data-testid="ai-menu-trigger"]');
+    expect(button.classes().sort()).toEqual(
+      secondaryBtnCompactClass.split(" ").sort(),
+    );
+    expect(button.get("svg").classes()).toContain(
+      "tpl:text-[var(--tpl-primary-hover)]",
+    );
   });
 
   it.each([
@@ -131,5 +145,6 @@ describe("EditorHeader's AI button", () => {
     expect(comments.exists()).toBe(true);
     expect(ai.exists()).toBe(true);
     expect(comments.element.nextElementSibling).toBe(ai.element);
+    expect(ai.classes()).toEqual(comments.classes());
   });
 });

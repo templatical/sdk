@@ -1103,117 +1103,6 @@
     background-color: var(--tpl-primary-light) !important;
 }
 
-/* AI button — comet border animation */
-@property --tpl-comet-angle {
-    syntax: '<angle>';
-    initial-value: 0deg;
-    inherits: false;
-}
-
-@property --tpl-comet-start {
-    syntax: '<percentage>';
-    initial-value: 100%;
-    inherits: false;
-}
-
-@keyframes tpl-ai-comet {
-    /* invisible — start=100% collapses the gradient */
-    0% {
-        --tpl-comet-angle: 0deg;
-        --tpl-comet-start: 100%;
-    }
-    /* tiny head dot appears */
-    1% {
-        --tpl-comet-angle: 24deg;
-        --tpl-comet-start: 88%;
-    }
-    /* trace in — tail extends while head races ahead */
-    5% {
-        --tpl-comet-angle: 120deg;
-        --tpl-comet-start: 60%;
-    }
-    /* full comet rotating */
-    25% {
-        --tpl-comet-angle: 600deg;
-        --tpl-comet-start: 60%;
-    }
-    /* trace out — tail retracts as comet finishes 2nd orbit */
-    33% {
-        --tpl-comet-angle: 720deg;
-        --tpl-comet-start: 100%;
-    }
-    /* stays hidden until next cycle */
-    100% {
-        --tpl-comet-angle: 720deg;
-        --tpl-comet-start: 100%;
-    }
-}
-
-.tpl-ai-btn--idle {
-    position: relative;
-    background-color: var(--tpl-primary-light);
-    /* Not `--tpl-primary-hover`: on this fill it measures 3.12:1, under even the
-       3:1 UI floor. `--tpl-text` is 15.94:1 and leaves the surface untouched. */
-    color: var(--tpl-text);
-    box-shadow: none;
-    z-index: 0;
-}
-
-.tpl-ai-btn--idle::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    padding: 2px;
-    background: conic-gradient(
-        from var(--tpl-comet-angle),
-        transparent 0%,
-        transparent var(--tpl-comet-start),
-        color-mix(in srgb, var(--tpl-primary) 40%, transparent) 80%,
-        var(--tpl-primary) 90%,
-        var(--tpl-primary) 97%,
-        transparent 100%
-    );
-    mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    animation: tpl-ai-comet 20s linear 3s infinite;
-    z-index: -1;
-    pointer-events: none;
-}
-
-.tpl-ai-btn--idle:hover {
-    transform: translateY(-1px);
-    background-color: var(--tpl-primary);
-    color: var(--tpl-on-primary);
-    box-shadow:
-        0 0 0 3px color-mix(in srgb, var(--tpl-primary) 20%, transparent),
-        0 4px 16px color-mix(in srgb, var(--tpl-primary) 30%, transparent) !important;
-}
-
-.tpl-ai-btn--idle:hover::before {
-    animation: none;
-}
-
-.tpl-ai-btn--active {
-    background-color: var(--tpl-primary-light);
-    color: var(--tpl-primary-hover);
-    border: 1px solid var(--tpl-primary);
-}
-
-.tpl-ai-btn--active .tpl-ai-btn-icon {
-    fill: color-mix(in srgb, var(--tpl-primary) 25%, transparent);
-}
-
-.tpl-ai-btn--active:hover {
-    background-color: color-mix(
-        in srgb,
-        var(--tpl-primary-light) 80%,
-        var(--tpl-primary)
-    );
-}
-
 /* Merge tag delete button — CSS hover replaces inline JS handlers */
 .tpl-merge-tag-delete:hover {
     color: var(--tpl-danger) !important;
@@ -1224,8 +1113,7 @@
     .tpl-pulse,
     .tpl-shimmer,
     .tpl-fade-in,
-    .tpl-scale-in,
-    .tpl-ai-btn--idle::before {
+    .tpl-scale-in {
         animation: none;
     }
 
