@@ -30,8 +30,6 @@ describe("localization agent path", () => {
       "Not enabled",
       "read-only",
       "lock",
-      "The SDK doesn't translate",
-      "AI chat edits the default language.",
     ])
       expect(source).toContain(term);
   });

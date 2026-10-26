@@ -84,7 +84,7 @@ describe("localized template guide", () => {
     const outline = [...source.matchAll(/^(#{1,6}) /gm)].map(
       (match) => match[1].length,
     );
-    expect(outline).toEqual([1, ...Array<number>(13).fill(2)]);
+    expect(outline).toEqual([1, ...Array<number>(12).fill(2)]);
   });
 
   it.each(pages)("%s preserves the lint reference anchors", (page) => {

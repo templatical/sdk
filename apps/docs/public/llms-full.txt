@@ -11575,22 +11575,6 @@ A collaboration backend you built yourself must apply the four locale operations
 
 For independent block trees or layouts in each language, keep separate templates and switch them with `editor.load(id)`. Language versions share one structure.
 
-## Limits
-
-- The default language cannot change once versions exist.
-- Direction can differ by language; automatic RTL mirroring is not implemented.
-- Repeatable custom-block text is override-only because its items have no ids; override the whole `fieldValues.<key>`.
-- A layout's own blocks (`init({ layout })`) are not localizable; content is localized before composition.
-- Menu items, table rows and cells with `.` in their ids cannot be localized. SDK-created ids never contain `.`.
-- Accepted tags have a 2–3 letter language plus optional 2–8 character alphanumeric subtags. Private-use (`x-…`) and grandfathered (`i-…`) tags are not accepted.
-- The Cloud editor does not support language versions yet: `initCloud()` ignores `localization` and logs a warning.
-- The SDK doesn't translate: you or your own pipeline write the values.
-- In a language view, AI chat edits the default language; its composer says **AI chat edits the default language.** **Fix with AI** and **Write alt text** are hidden in language views.
-
-- Comments and version history are per block and template, not per language.
-- The CLI has no custom-block definitions flag, so validation refuses custom `text` paths. Both `validate` and `render` validate without definitions. Use the library workflow below.
-- Localized custom blocks with any `text` or `set` entries need `renderCustomBlock`; without it they are omitted, including CLI rendering of custom `set` overrides. Their default-language cached HTML is discarded; stylesheets are retained.
-
 ## Check your work
 
 For a saved `template.json` without custom `text` paths, run the CLI with the language selected:

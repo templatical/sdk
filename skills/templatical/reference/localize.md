@@ -55,9 +55,7 @@ Headless `lintTemplate(content, { contentLocale: "de", locale: "en" })` checks G
 
 Locks carry `locale?: string | null`, absent meaning null (default language and structure). Forward the optional locale through provider `acquireLock`, `renewLock`, `releaseLock` and `onUnlock`. A localized edit on (X, de) conflicts with another session's (X, de) or (X, null) lock, while (X, fr) can coexist. Other block operations conflict with every other session's lock on X. `onRemoteChange.locale` reports the first locale operation's language in the batch, otherwise null. A backend ignoring locale serializes per block; check the lock matrix against the contracts in `backend/collaboration` and the shared operation fixtures documented in `api/operations`.
 
-## Limits
-
-The default language cannot change. Direction can differ but automatic RTL mirroring is absent. Layout-owned blocks are not localizable. The SDK doesn't translate: you or your own pipeline write the values. In a language view the composer says **AI chat edits the default language.** Fix with AI and Write alt text are hidden in language views. Comments and version history are per block and template, not per language.
+## Custom blocks
 
 The CLI has no custom-block definitions flag. Both validate and render validate without definitions, so custom `text` paths are refused. For custom translations use `validateTemplate(content, definitions)`, then `lintTemplate(content, { customBlocks: definitions, contentLocale: "de" })`, then `renderToMjml` with `renderCustomBlock`. The guide's checking section has a complete library example; fetch it through [docs.md](docs.md) → `guide/localized-templates`, and follow `api/renderer-typescript` for custom rendering.
 

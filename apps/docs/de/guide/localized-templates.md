@@ -101,22 +101,6 @@ Ein selbst gebautes Kollaborationsbackend muss die vier Locale-Operationen und d
 
 Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Templates und wechseln mit `editor.load(id)`. Sprachversionen teilen eine Struktur.
 
-## Grenzen
-
-- Die Standardsprache lässt sich mit vorhandenen Versionen nicht ändern.
-- Die Richtung kann pro Sprache abweichen; automatisches RTL-Spiegeln ist nicht implementiert.
-- Wiederholbare Texte benutzerdefinierter Blöcke sind nur als Überschreibung möglich, da ihre Elemente keine IDs haben; überschreiben Sie das gesamte `fieldValues.<key>`.
-- Eigene Blöcke eines Layouts (`init({ layout })`) sind nicht lokalisierbar; der Inhalt wird vor dem Zusammensetzen lokalisiert.
-- Menüelemente, Tabellenzeilen und Zellen mit `.` in ihrer ID sind nicht lokalisierbar. Vom SDK erstellte IDs enthalten niemals `.`.
-- Akzeptierte Tags haben eine Sprache aus 2–3 Buchstaben und optionale alphanumerische Untertags aus 2–8 Zeichen. Private-Use- (`x-…`) und Grandfathered-Tags (`i-…`) werden nicht akzeptiert.
-- Der Cloud-Editor unterstützt noch keine Sprachversionen: `initCloud()` ignoriert `localization` und protokolliert eine Warnung.
-- Das SDK übersetzt nicht: Sie oder Ihre eigene Pipeline schreiben die Werte.
-- In einer Sprachansicht bearbeitet der KI-Chat die Standardsprache; sein Eingabefeld zeigt **Der KI-Chat bearbeitet die Standardsprache.** **Mit KI beheben** und **Alt-Text schreiben** sind in Sprachansichten ausgeblendet.
-
-- Kommentare und Versionshistorie gelten pro Block und Template, nicht pro Sprache.
-- Die CLI hat kein Flag für Definitionen benutzerdefinierter Blöcke; deshalb lehnt die Validierung benutzerdefinierte `text`-Pfade ab. Sowohl `validate` als auch `render` validieren ohne Definitionen. Verwenden Sie den Bibliotheksweg unten.
-- Lokalisierte benutzerdefinierte Blöcke mit `text`- oder `set`-Einträgen benötigen `renderCustomBlock`; ohne Callback werden sie ausgelassen, auch beim CLI-Rendering von benutzerdefinierten `set`-Überschreibungen. Ihr zwischengespeichertes Standardsprach-HTML wird verworfen; Stylesheets bleiben erhalten.
-
 ## Ergebnis prüfen
 
 Für eine gespeicherte `template.json` ohne benutzerdefinierte `text`-Pfade wählen Sie die Sprache in der CLI:
