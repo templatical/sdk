@@ -84,8 +84,38 @@ describe("localized template guide", () => {
     const outline = [...source.matchAll(/^(#{1,6}) /gm)].map(
       (match) => match[1].length,
     );
-    expect(outline).toEqual([1, ...Array<number>(13).fill(2)]);
+    expect(outline).toEqual([1, ...Array<number>(14).fill(2)]);
   });
+
+  it.each([...pages, "../../skills/templatical/reference/localize.md"])(
+    "%s has Limits covering defaults, fields, Translate, AI and other services",
+    (page) => {
+      const source = readFileSync(join(DOCS, page), "utf8");
+      const limits =
+        source.split(/^## (?:Limits|Grenzen)\n/m)[1]?.split(/^## /m)[0] ?? "";
+      const phrases = page.startsWith("de/")
+        ? [
+            "die erste Spalte rechts",
+            "wiederholbaren Elementen",
+            "Glossar",
+            "Text als Standardinhalt",
+            "nicht pro Sprache",
+          ]
+        : [
+            "the first column on the right",
+            "repeatable items",
+            "glossary",
+            "their text as default content",
+            "not per language",
+          ];
+      for (const phrase of phrases)
+        expect.soft(limits, phrase).toContain(phrase);
+      if (pages.includes(page))
+        expect(source).toMatch(
+          /^## (?:Limits|Grenzen)\n(?:(?!^## )[\s\S])*^## (?:Check your work|Ergebnis prüfen)\n/m,
+        );
+    },
+  );
 
   it.each(pages)("%s preserves the lint reference anchors", (page) => {
     const source = readFileSync(join(DOCS, page), "utf8");

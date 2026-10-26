@@ -2,6 +2,6 @@
 "@templatical/template-tools": minor
 ---
 
-Add --locale to validate and render, and accept localized templates in the schema. Validation blocks merge-tag mismatches even at warning severity; missing/stale translations remain advisory.
+Add `--locale` to `validate` and `render` for translated language versions, and accept `settings.locales` and `l10n` in the schema. Validation checks every language projection, blocks merge-tag mismatches even at warning severity, and reports missing or stale translations as advisory issues. Use `validateTemplate(content, definitions)` through the library for custom text translations.
 
-This is additive and opt-in: existing single-language templates need no migration and keep their behavior. Keep all @templatical packages on the same version: an older renderer renders the default language and an older validator rejects localization fields. A self-built collaboration backend must apply the new locale operations.
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.

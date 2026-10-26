@@ -119,6 +119,38 @@ A collaboration backend you built yourself must apply the four locale operations
 
 For independent block trees or layouts in each language, keep separate templates and switch them with `editor.load(id)`. Language versions share one structure.
 
+## Limits
+
+**Defaults and direction**
+
+- The default language can't change while language versions exist, in any view.
+- Direction can differ per language. Column order follows the language's direction automatically: right-to-left versions show the first column on the right. Explicit left and right text alignment and left/right padding aren't mirrored. Override them per language. Column structure is shared across languages and can't be overridden per language.
+
+**Fields and layouts**
+
+- Text in a custom block's repeatable items can't be translated per field: override the whole `fieldValues.<key>` instead.
+- A layout's own blocks (`init({ layout })`) aren't localizable. Content is localized before the layout wraps it.
+- Menu items, table rows and cells whose id contains `.` can't be localized. Ids the SDK creates never contain `.`.
+- Language tags are a 2–3 letter language plus subtags. Private-use (`x-…`) and grandfathered (`i-…`) tags aren't accepted.
+
+**Translate**
+
+- HTML blocks are left out of Translate. They can still be translated by hand.
+- There's no do-not-translate list or glossary. Only merge and logic tags are protected.
+- The strings round trip is JSON through `localeStrings`/`applyLocaleStrings`. There's no strings CLI command and no XLIFF or CSV support.
+
+**AI in a language view**
+
+- Blocks the AI adds enter the shared tree with their text as default content, as a paste does.
+- AI can't replace the whole template there. Switch to the default language for that.
+- With a custom merge-tag syntax, Rewrite's tag check covers chips and declared tags only.
+
+**Comments, history, CLI and Cloud**
+
+- Comments and version history are per block and per template, not per language.
+- The CLI has no custom-block definitions flag, so validating custom text translations and rendering localized custom blocks goes through the library (`validateTemplate(content, definitions)`, `renderCustomBlock`).
+- The Cloud editor doesn't support language versions or translation yet: `initCloud()` ignores `localization` and `translation` and logs a warning.
+
 ## Check your work
 
 For a saved `template.json` without custom `text` paths, run the CLI with the language selected:

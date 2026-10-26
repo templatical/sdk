@@ -119,6 +119,38 @@ Ein selbst gebautes Kollaborationsbackend muss die vier Locale-Operationen und d
 
 Für unabhängige Blockbäume oder Layouts pro Sprache speichern Sie separate Templates und wechseln mit `editor.load(id)`. Sprachversionen teilen eine Struktur.
 
+## Grenzen
+
+**Standardsprache und Schreibrichtung**
+
+- Die Standardsprache kann in keiner Ansicht geändert werden, solange Sprachversionen existieren.
+- Die Schreibrichtung kann je Sprache unterschiedlich sein. Die Spaltenreihenfolge folgt automatisch der Schreibrichtung der Sprache: Rechts-nach-links-Versionen zeigen die erste Spalte rechts. Explizite linke und rechte Textausrichtung sowie linke/rechte Innenabstände werden nicht gespiegelt. Überschreiben Sie diese je Sprache. Die Spaltenstruktur ist für alle Sprachen gemeinsam und kann nicht pro Sprache überschrieben werden.
+
+**Felder und Layouts**
+
+- Text in wiederholbaren Elementen eines benutzerdefinierten Blocks lässt sich nicht feldweise übersetzen: Überschreiben Sie stattdessen das gesamte `fieldValues.<key>`.
+- Die eigenen Blöcke eines Layouts (`init({ layout })`) sind nicht lokalisierbar. Der Inhalt wird lokalisiert, bevor das Layout ihn umschließt.
+- Menüeinträge, Tabellenzeilen und Zellen, deren ID `.` enthält, sind nicht lokalisierbar. Vom SDK erzeugte IDs enthalten nie `.`.
+- Sprach-Tags bestehen aus einem Sprachcode mit 2–3 Buchstaben und optionalen Subtags. Private-Use-Tags (`x-…`) und historische Tags (`i-…`) werden nicht akzeptiert.
+
+**Übersetzen**
+
+- HTML-Blöcke werden beim Übersetzen ausgelassen. Sie lassen sich weiterhin von Hand übersetzen.
+- Es gibt keine Nicht-übersetzen-Liste und kein Glossar. Nur Merge- und Logik-Tags werden geschützt.
+- Der Austausch von Zeichenketten erfolgt als JSON über `localeStrings`/`applyLocaleStrings`. Es gibt keinen CLI-Befehl dafür und keine XLIFF- oder CSV-Unterstützung.
+
+**KI in einer Sprachansicht**
+
+- Von der KI hinzugefügte Blöcke gelangen mit ihrem Text als Standardinhalt in den gemeinsamen Baum, wie beim Einfügen.
+- Die KI kann dort nicht das gesamte Template ersetzen. Wechseln Sie dafür zur Standardsprache.
+- Bei benutzerdefinierter Merge-Tag-Syntax prüft Rewrite nur Chips und deklarierte Tags.
+
+**Kommentare, Verlauf, CLI und Cloud**
+
+- Kommentare und Versionsverlauf gelten pro Block bzw. pro Template, nicht pro Sprache.
+- Die CLI hat kein Flag für benutzerdefinierte Blockdefinitionen. Benutzerdefinierte Textübersetzungen werden daher über die Bibliothek validiert und lokalisierte benutzerdefinierte Blöcke darüber gerendert (`validateTemplate(content, definitions)`, `renderCustomBlock`).
+- Der Cloud-Editor unterstützt noch keine Sprachversionen oder Übersetzung: `initCloud()` ignoriert `localization` und `translation` und protokolliert eine Warnung.
+
 ## Ergebnis prüfen
 
 Für eine gespeicherte `template.json` ohne benutzerdefinierte `text`-Pfade wählen Sie die Sprache in der CLI:

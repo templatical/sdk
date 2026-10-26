@@ -48,7 +48,7 @@ describe("localization agent path", () => {
       "localization.merge-tags-differ",
     ])
       expect.soft(source, term).toContain(term);
-    expect(source).not.toMatch(/^## Limits/m);
+    expect(source).toMatch(/^## Limits/m);
   });
 
   it("has a translation eval requiring backend conformance and locale validation", () => {

@@ -104,7 +104,7 @@ describe("translation documentation", () => {
         "https://developers.deepl.com/docs/xml-and-html-handling/xml",
       ])
         expect.soft(page).toContain(term);
-      expect(page).not.toMatch(/^## (Limits|Grenzen)/m);
+      expect(page).toMatch(/^## (Limits|Grenzen)/m);
     },
   );
 

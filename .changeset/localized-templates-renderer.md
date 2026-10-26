@@ -2,6 +2,6 @@
 "@templatical/renderer": minor
 ---
 
-Add the optional locale render option to project text, overrides, hidden blocks and settings before producing MJML.
+Add `renderToMjml(content, { locale })` to render a language version's translated text, property overrides, hidden blocks and settings before composing a layout and producing MJML. The projected language and direction set MJML `lang` and `dir`; localized custom blocks use `renderCustomBlock` instead of cached default-language HTML.
 
-This is additive and opt-in: existing single-language templates need no migration and keep their behavior. Keep all @templatical packages on the same version: an older renderer renders the default language and an older validator rejects localization fields. A self-built collaboration backend must apply the new locale operations.
+Additive and opt-in: existing templates need no migration. Keep every `@templatical/*` package on the same version.
