@@ -421,3 +421,31 @@ describe.each([
     expect(JSON.stringify(localized)).toBe(before);
   });
 });
+
+describe("locale operations naming a prototype key", () => {
+  it.each(["__proto__", "constructor", "prototype"])(
+    "refuses %s as a locale and leaves Object.prototype alone",
+    (locale) => {
+      const content = {
+        blocks: [{ id: "t1", type: "title", content: "Hi" }],
+        settings: { width: 600, locale: "en", locales: [locale] },
+      } as unknown as TemplateContent;
+      expect(
+        refusal(content, [
+          { op: "updateBlockLocale", blockId: "t1", locale, hidden: true },
+        ]),
+      ).toEqual({
+        code: "invalid_operation",
+        opIndex: 0,
+        message: "locale must be a language tag.",
+      });
+      expect(
+        refusal(content, [
+          { op: "updateSettingsLocale", locale, set: { direction: "rtl" } },
+        ]).code,
+      ).toBe("invalid_operation");
+      expect(({} as Record<string, unknown>).hidden).toBeUndefined();
+      expect(({} as Record<string, unknown>).set).toBeUndefined();
+    },
+  );
+});

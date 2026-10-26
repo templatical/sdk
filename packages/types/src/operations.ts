@@ -934,10 +934,18 @@ function updateSettings(
 }
 
 function readLocale(op: Json, index: number): string {
-  if (!isLocaleTag(op.locale)) {
+  const locale = op.locale;
+  // A language tag can't be a prototype key; the explicit check keeps one out
+  // of every layer map whatever isLocaleTag accepts.
+  if (
+    !isLocaleTag(locale) ||
+    locale === "__proto__" ||
+    locale === "constructor" ||
+    locale === "prototype"
+  ) {
     fail("invalid_operation", index, "locale must be a language tag.");
   }
-  return op.locale;
+  return locale;
 }
 
 function requireLocale(
