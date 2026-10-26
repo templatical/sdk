@@ -25,11 +25,12 @@ import TemplateTimestamp from "./TemplateTimestamp.vue";
 import TemplateSaveStatus from "./TemplateSaveStatus.vue";
 
 // Lazy: an editor with no `versionHistory` provider never downloads the control.
-const LanguageMenu = defineAsyncComponent(
-  () => import("./localization/LanguageMenu.vue"),
-);
 const VersionHistoryMenu = defineAsyncComponent(
   () => import("./VersionHistoryMenu.vue"),
+);
+// Lazy: an editor without `localization` never downloads the language menu.
+const LanguageMenu = defineAsyncComponent(
+  () => import("./localization/LanguageMenu.vue"),
 );
 // Lazy: an editor with no collaboration provider never downloads it.
 const CollaboratorBar = defineAsyncComponent(
