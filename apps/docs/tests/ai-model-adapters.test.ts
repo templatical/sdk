@@ -110,11 +110,16 @@ describe("first-party model adapter documentation", () => {
     expect(source).not.toContain("Text-only adapters set");
   });
 
-  it("changeset releases the adapters and additive state and cache contract", () => {
-    const path = ".changeset/ai-kit-model-adapters.md";
-    expect(existsSync(resolve(root, path))).toBe(true);
-    const source = read(path);
-    expect(source).toContain('"@templatical/ai-kit": minor');
+  it("release notes cover the adapters and additive state and cache contract", () => {
+    // The changeset is consumed by the release, so after Version Packages the
+    // same notes live in ai-kit's 0.51.0 changelog section.
+    const changeset = ".changeset/ai-kit-model-adapters.md";
+    const source = existsSync(resolve(root, changeset))
+      ? read(changeset)
+      : (read("packages/ai-kit/CHANGELOG.md")
+          .split(/^## /m)
+          .find((section) => section.startsWith("0.51.0")) ?? "");
+    expect(source).toMatch(/"@templatical\/ai-kit": minor|### Minor Changes/);
     for (const factory of factories) expect(source).toContain(`\`${factory}\``);
     expect(source).toContain('AiModelPart` gains `{ type: "state", state }');
     expect(source).toContain(
