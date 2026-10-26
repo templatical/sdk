@@ -8,7 +8,7 @@ import {
   type Block,
   type CustomBlockDefinition,
 } from "@templatical/types";
-import { deriveLayer } from "../src/localized-edit";
+import { deriveLayer, resetLocalizedFields } from "../src/localized-edit";
 
 describe("deriveLayer", () => {
   const base = createTitleBlock({ id: "t1", content: "Hello" });
@@ -165,4 +165,33 @@ it("uses set rather than text when a translatable base value is absent", () => {
       undefined,
     ),
   ).toEqual({ set: { alt: "Beschreibung" } });
+});
+
+it("resets id-addressed list elements, removes orphan elements and preserves sibling edits", () => {
+  const base = createMenuBlock({
+    items: [
+      { id: "home", text: "Home", url: "/" },
+      { id: "about", text: "About", url: "/about" },
+    ],
+  });
+  const view = {
+    ...base,
+    items: [
+      { id: "home", text: "Start", url: "/de" },
+      { id: "orphan", text: "Deleted", url: "/old" },
+      { id: "about", text: "Über uns", url: "/de/about" },
+    ],
+  };
+  const restored = resetLocalizedFields(base, view, [
+    "items.home",
+    "items.orphan",
+    "items.missing",
+  ]);
+  expect(view.items).toEqual([
+    base.items[0],
+    { id: "about", text: "Über uns", url: "/de/about" },
+  ]);
+  expect(restored.size).toBe(0);
+  view.items[0].text = "Further edit";
+  expect(base.items[0].text).toBe("Home");
 });

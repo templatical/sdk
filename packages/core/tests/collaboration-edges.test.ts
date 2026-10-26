@@ -107,6 +107,22 @@ describe("useCollaboration at the edges", () => {
   });
 
   describe("others' locks", () => {
+    it("keeps the latest block for a holder repeated in the join snapshot", async () => {
+      const provider = server.provider("Ada");
+      const join = provider.join.bind(provider);
+      vi.spyOn(provider, "join").mockImplementationOnce(async (...args) => ({
+        ...(await join(...args)),
+        locks: [lock("t1", GRACE), lock("p1", GRACE), lock("d1", LINUS)],
+      }));
+      const a = await openClient(server, "Ada", { provider });
+      expect(a.collaboration.locksOf("t1")).toEqual([]);
+      expect(a.collaboration.locksOf("p1")).toEqual([lock("p1", GRACE)]);
+      expect(a.collaboration.locksOf("d1")).toEqual([lock("d1", LINUS)]);
+      expect(a.editor.isBlockLocked("t1")).toBe(false);
+      expect(a.editor.isBlockLocked("p1")).toBe(true);
+      a.scope.stop();
+    });
+
     it("ignores its own lock when the backend sends it back", async () => {
       const a = await openClient(server, "Ada");
 

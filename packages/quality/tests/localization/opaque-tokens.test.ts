@@ -34,6 +34,15 @@ function mismatches(
 }
 
 describe("opaque localization tokens", () => {
+  it("counts span tokens once with broad, overlapping consumer regexes", () => {
+    const syntax: SyntaxPreset = { value: /\S+/g, logic: /\S+/g };
+    const base = '<span data-merge-tag="[[name]]">First name</span>';
+    expect(mismatches(base, "[[name]]", syntax)).toEqual([]);
+    expect(mismatches(base, "[[other]]", syntax)).toMatchObject([
+      { blockId: "copy" },
+    ]);
+  });
+
   it("detects a missing unsubscribe token in an href", () => {
     expect(
       mismatches(

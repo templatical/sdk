@@ -294,6 +294,44 @@ function unregisteredAdapter(seed: TemplateContent, locked: Set<string>) {
 }
 
 describe("ref-backed history adapters", () => {
+  it("preserves redo when a legacy layer-action adapter targets a locked block", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locales = ["de"];
+    content.blocks = [createParagraphBlock({ id: "copy" })];
+    const locks = ref(new Map<string, unknown>());
+    const editor = useEditor({ content, lockedBlocks: locks });
+    editor.setActiveLocale("de");
+    // This adapter wraps the action rather than inheriting core's preflight.
+    const adapter = {
+      ...editor,
+      setBlockHidden: (id: string, hidden: boolean) =>
+        editor.setBlockHidden(id, hidden),
+    };
+    const history = useHistory({
+      content: editor.content,
+      setContent: editor.setContent,
+    });
+    useHistoryInterceptor(adapter, history);
+    adapter.updateSettings({ width: 650 });
+    adapter.updateSettings({ width: 700 });
+    history.undo();
+    locks.value.set("copy", {
+      blockId: "copy",
+      locale: "de",
+      holder: { sessionId: "peer" },
+    });
+    const before = safeClone(editor.content.value);
+    const record = vi.spyOn(history, "record");
+    adapter.setBlockHidden("copy", true);
+    expect(editor.content.value).toEqual(before);
+    expect(record).not.toHaveBeenCalled();
+    expect(history.canUndo.value).toBe(true);
+    expect(history.canRedo.value).toBe(true);
+    history.redo();
+    expect(editor.content.value.settings.l10n?.de.set?.width).toBe(700);
+    history.destroy();
+  });
+
   it.each(["spread", "unregistered"])(
     "inserts, removes and refuses locked edits through a %s adapter",
     (kind) => {

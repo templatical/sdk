@@ -55,6 +55,103 @@ function german() {
 }
 
 describe("editor language routing", () => {
+  it("refuses a children payload against a lock in another locale even when its ids stay unchanged", () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        id: "section",
+        children: [[createTitleBlock({ id: "copy", content: "Original" })]],
+      }),
+    ];
+    const editor = useEditor({
+      content,
+      lockLocale: ref("de"),
+      lockedBlocks: ref(
+        new Map([
+          [
+            "section",
+            { blockId: "section", locale: "fr", holder: { sessionId: "peer" } },
+          ],
+        ]),
+      ),
+    });
+    const before = safeClone(editor.content.value);
+    editor.updateBlock("section", {
+      children: [[createTitleBlock({ id: "copy", content: "Refused" })]],
+    });
+    expect(editor.content.value).toEqual(before);
+    expect(editor.state.isDirty).toBe(false);
+  });
+
+  it("refuses selecting an absent version and adding an invalid or disabled locale without changing state", () => {
+    const { editor, history, onLocaleChange } = setup(["de"]);
+    const before = safeClone(editor.content.value);
+    expect(() => editor.setActiveLocale("fr")).toThrow(
+      'This template has no "fr" version.',
+    );
+    for (const locale of ["fr", "not_a_locale"]) {
+      expect(() => editor.addLocale(locale)).toThrow(
+        `Locale "${locale}" is not enabled.`,
+      );
+    }
+    expect(editor.content.value).toEqual(before);
+    expect(editor.activeLocale.value).toBeNull();
+    expect(onLocaleChange).not.toHaveBeenCalled();
+    expect(editor.state.isDirty).toBe(false);
+    expect(history.canUndo.value).toBe(false);
+    history.destroy();
+  });
+
+  it("rejects direct localization-map writes while preserving undo and redo", () => {
+    const { editor, history } = setup();
+    editor.updateSettings({ width: 650 });
+    editor.updateSettings({ width: 700 });
+    history.undo();
+    const before = safeClone(editor.content.value);
+    expect(() =>
+      editor.updateBlock("t1", { l10n: { de: { hidden: true } } }),
+    ).toThrow("l10n is immutable");
+    expect(() =>
+      editor.updateSettings({ l10n: { de: { set: { width: 700 } } } }),
+    ).toThrow("locales and l10n are immutable");
+    expect(() => editor.updateSettings({ locales: ["de"] })).toThrow(
+      "locales and l10n are immutable",
+    );
+    expect(editor.content.value).toEqual(before);
+    expect(history.canUndo.value).toBe(true);
+    expect(history.canRedo.value).toBe(true);
+    history.redo();
+    expect(editor.content.value.settings.width).toBe(700);
+    history.destroy();
+  });
+
+  it.each([false, true])(
+    "resets the last settings override and preserves other language layers (%s)",
+    (other) => {
+      const { editor, history } = german();
+      editor.updateSettings({ width: 700 });
+      if (other) {
+        editor.addLocale("fr");
+        editor.setActiveLocale("fr");
+        editor.updateSettings({ width: 800 });
+        editor.setActiveLocale("de");
+      }
+      history.clear();
+      editor.updateSettings({ width: 600 });
+      expect(editor.content.value.settings.width).toBe(600);
+      expect(editor.content.value.settings.l10n).toEqual(
+        other ? { fr: { set: { width: 800 } } } : undefined,
+      );
+      history.undo();
+      expect(editor.content.value.settings.l10n?.de).toEqual({
+        set: { width: 700 },
+      });
+      history.redo();
+      expect(editor.content.value.settings.l10n?.de).toBeUndefined();
+      history.destroy();
+    },
+  );
+
   it.each(["keep", "hide", "show"])(
     "preserves a translation equal to the new default during %s",
     (action) => {

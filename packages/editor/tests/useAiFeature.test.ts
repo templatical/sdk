@@ -12,7 +12,7 @@ import type {
   Template,
   TemplateContent,
 } from "@templatical/types";
-import { safeClone, SdkError, sourceHash } from "@templatical/types";
+import { createImageBlock, safeClone, SdkError, sourceHash } from "@templatical/types";
 import {
   AI_BROADCAST_GRACE_MS,
   AI_MISSING_PROVIDER_MESSAGE,
@@ -113,6 +113,21 @@ async function openLocal(
 }
 
 describe("useAiFeature without collaboration", () => {
+  it("reports unexpected normalization errors as failed turns without applying edits", async () => {
+    const error = new Error("Normalizer unavailable");
+    const { ai, editor, history, onError } = await openLocal({
+      chat: chatting(async (on) => { await on.onOperations(greet); }),
+    }, { normalize: () => { throw error; } });
+    const record = vi.spyOn(history, "record");
+    const outcome = await ai.send("Greet");
+    expect(outcome.failed).toBe(true);
+    expect(outcome.operationCount).toBe(0);
+    expect(editor.content.value).toEqual(CONTENT);
+    expect(record).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
+    expect(ai.failure.value).toEqual({ error, context: "turn" });
+  });
+
   it.each(["undo", "redo"] as const)(
     "reloads a server-applied stored %s without collaboration",
     async (direction) => {
@@ -3493,6 +3508,29 @@ it("keeps the returning A session's messages and replay records after an old New
 });
 
 describe('AI in language views', () => {
+  it('ignores direct fix and bulk-alt requests in a non-default view without calling providers or changing history', async () => {
+    const fixFinding = vi.fn(async () => ({ messageId: null, text: 'Done' }));
+    const altText = vi.fn(async () => ({ alt: 'Draft' }));
+    const { ai, editor, history, scope } = await openLocal({ fixFinding, altText });
+    try {
+      editor.addBlock(createImageBlock({ id: 'image', alt: 'Original', src: 'https://example.com/image.png' }));
+      editor.addLocale('de');
+      editor.setActiveLocale('de');
+      const before = safeClone(editor.content.value);
+      const record = vi.spyOn(history, 'record');
+      expect(await ai.fix({ ruleId: 'a11y.vague-link-text', message: 'Fix', blockId: 't1' } as any)).toEqual({
+        messageId: null, operationCount: 0, text: '', failed: true,
+      });
+      await ai.applyAltTexts([{ blockId: 'image', alt: 'Draft', decorative: false }]);
+      expect(editor.content.value).toEqual(before);
+      expect(fixFinding).not.toHaveBeenCalled();
+      expect(altText).not.toHaveBeenCalled();
+      expect(record).not.toHaveBeenCalled();
+      expect(ai.busy.value).toBe(false);
+      expect(ai.messages.value).toEqual([]);
+    } finally { ai.destroy(); scope.stop(); }
+  });
+
   it('hides fixes and alt text in a non-default view while chat requests and edits the base', async () => {
     let sent: TemplateContent | undefined;
     const { ai, editor, scope } = await openLocal({
