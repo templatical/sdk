@@ -41,8 +41,8 @@ Default-field and list-element deletions prune text paths that no longer resolve
 For an existing saved `template.json`, run:
 
 ```bash
-npx -y @templatical/template-tools@0.51.0 validate template.json --locale de --json
-npx -y @templatical/template-tools@0.51.0 render template.json --locale de --format mjml --out template.de.mjml
+npx -y @templatical/template-tools@0.51.1 validate template.json --locale de --json
+npx -y @templatical/template-tools@0.51.1 render template.json --locale de --format mjml --out template.de.mjml
 ```
 
 Missing/stale warnings alone allow exit 0; merge-tag mismatches cause exit 1 even with `valid: true`. An unknown locale exits 1 with `unknown_locale` on stderr and no result document, including with `--json`. A missing or empty `--locale` value exits 2. `--format html` needs the optional `mjml` dependency (exit 3 if absent). Read every issue, not just `valid`.

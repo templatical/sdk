@@ -1,7 +1,7 @@
 {
   "name": "@templatical/ai-kit",
   "description": "Bring your own AI backend to the Templatical email editor: the wire, an HTTP provider, a server kit with prompts and tools, and a conformance suite",
-  "version": "0.51.0",
+  "version": "0.51.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
@@ -9,8 +9,8 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
     "@types/node": "^25.9.9",
-    "ai": "^7.0.148",
-    "openai": "^7.42.0",
+    "ai": "^7.0.150",
+    "openai": "^7.43.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   },

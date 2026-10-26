@@ -18,8 +18,32 @@
     "@templatical/template-tools",
     "@templatical/types"
   ],
-  "latest": "0.51.0",
+  "latest": "0.51.1",
   "versions": [
+    {
+      "version": "0.51.1",
+      "date": "2026-10-26",
+      "changes": [
+        {
+          "hash": "3c09a59",
+          "level": "patch",
+          "title": "The AI button renders with the rest of the header",
+          "body": "With an `ai` provider and a loaded template, the header's AI button was a lazily loaded chunk that the editor fetched only after the header rendered, so the button appeared one network round trip after the other header controls. It is now part of the main bundle, which every editor downloads with or without `ai`. The AI panels and menus still load on demand, so an editor without `ai` downloads none of their code. With the button's restyle in this release, which drops its own CSS, the npm build's initial bundle is 269 bytes gzip smaller than in 0.51.0 (measured from `bundle-stats.json`).",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "3c09a59",
+          "level": "patch",
+          "title": "The AI header button matches the other header buttons",
+          "body": "It now uses the header's compact secondary style, the same as Comments and the test-email button: a 12px medium-weight label on a neutral surface with a border, muted until hover. The Sparkles icon carries the AI signal in `--tpl-primary-hover`, and the open state takes the Comments button's `--tpl-primary-light` fill. The amber fill, the semibold label, the lift-and-glow hover and the animated \"comet\" border are gone, so Save is the header's only amber surface.\n\nThe `tpl-ai-btn`, `tpl-ai-btn--idle`, `tpl-ai-btn--active` and `tpl-ai-btn-icon` classes and the `--tpl-comet-angle` and `--tpl-comet-start` properties no longer exist, so custom CSS that targeted them no longer applies.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.51.0",
       "date": "2026-10-25",
