@@ -58,6 +58,24 @@ Each `LocalizedText.source` stores `sourceHash(defaultValue)` when written. `sou
 
 **Keep** retains the existing translation entry and updates its source hash, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
 
+## Translating {#translating}
+
+Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate from {language}** sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after confirmation naming the language. Both menu actions show counts and are disabled at zero. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
+
+Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides, hidden blocks and list elements with dotted ids. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
+
+The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
+
+A status line reports progress and offers **Cancel**; the editor stays editable. Successful fields returned before Cancel or failure apply together as one undo step. With collaboration this is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped. A run that changes nothing records nothing; a second simultaneous run rejects with `translation_running`. The dismissible result notice reports translated fields, old text kept because tags changed, omitted fields, blocks skipped because they are being edited and the provider's error message.
+
+For a translation service or a JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
+
+<<< @/snippets/translate-strings.ts
+
+For DeepL, group fields by format, send `tag_handling=html` for `html` and `tag_handling=xml` for `text`, then map results back to field ids. DeepL documents [HTML handling](https://developers.deepl.com/docs/xml-and-html-handling/html) and [XML handling](https://developers.deepl.com/docs/xml-and-html-handling/xml) (checked 2026-10-26). Its XML examples retain placeholder ids and empty elements; HTML handling preserves markup with lenient parsing. These settings do not replace the editor's exact placeholder check. Check your backend with `runTranslationConformance`; the [translation contract](/backend/translation#check-it) gives the runnable check.
+
+After the run, save and run `npx -y @templatical/template-tools validate template.json --locale de --json`. Inspect issues for no `localization.untranslated` or `localization.stale`, and keep `localization.merge-tags-differ` clear. The first two are advisory, so exit 0 alone does not prove a complete translation. Manually translate excluded fields when they need a value.
+
 ## Merge tags {#merge-tags}
 
 Keep the same merge tags, including repeated occurrences, in each translated text field. `localization.merge-tags-differ` compares tag multisets against the default; the editor uses the same merge-tag list in every language. The rule is a warning, but CLI validation treats a merge-tag mismatch as blocking and exits `1`, even when `valid: true`. Missing and stale translations alone remain advisory.

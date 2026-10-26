@@ -2,6 +2,8 @@
 
 For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
 
+For `translation`, Translate availability, provider errors or tag masking, follow [localize.md](localize.md) and fetch `backend/translation` through [docs.md](docs.md). Check `translation`, `localization` and an enabled non-default language view before changing the backend. Verify mask placeholders and run `runTranslationConformance` for backend conformance; then validate the saved language with `validate --locale de`.
+
 **Read first:** [failure-modes.md](failure-modes.md) — before editing any of
 their files
 **Then:** [scaffold.md](scaffold.md) for the procedure to follow when writing

@@ -156,6 +156,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Test Emails", link: "/backend/test-email" },
         { text: "Rendering & Export", link: "/backend/render" },
         { text: "AI", link: "/backend/ai" },
+        { text: "Translation", link: "/backend/translation" },
       ],
     },
     {
@@ -372,6 +373,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Test-E-Mails", link: "/de/backend/test-email" },
         { text: "Rendering & Export", link: "/de/backend/render" },
         { text: "KI", link: "/de/backend/ai" },
+        { text: "Übersetzung", link: "/de/backend/translation" },
       ],
     },
     {

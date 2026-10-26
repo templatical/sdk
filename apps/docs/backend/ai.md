@@ -46,7 +46,7 @@ await editor.load('tpl_123');
 
 Chat, fix and rewrite receive the editor's `content` after pending edits are sent, its collaboration `revision` (or `null`), `templateId`, `sessionId` and required `mergeTags: { syntax, tags }`. With no declared tags, the editor sends its syntax (`liquid` by default) and `tags: []`. Missing or `null` context returns 422. Every call receives an `AbortSignal`; Stop aborts it.
 
-The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `custom` syntax is unchecked.
+The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `checkRewrite` checks chips and declared tag values literally for `custom` syntax.
 
 ### Turns: chat and fix
 
@@ -101,7 +101,7 @@ The canonical contracts are [Accessibility](/quality/accessibility/), the [acces
 
 Every field and its nullability are in `AiAltTextRequest` in [the contract](#the-contract).
 
-The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale: a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the active template language (the default in the default view): a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
 
 `maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend. The server in the [backend guide](/guide/bring-your-own-ai#the-server) and `evalAltTextWith` make one repair retry for empty, multiline, HTML or over-long alt text. If the second answer is invalid, the final `checkAltText` raises `ai_output_invalid` (502).
 
@@ -115,7 +115,7 @@ When at least two distinct images have alt-text findings, **Write missing alt te
 
 `rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
 
-Whole-template translation is not a separate feature. On request, the AI assistant can translate through chat and edit in place as one undo step, on a best-effort basis, with no field-coverage or merge-tag check. Rewrite's **Translate** preset translates one paragraph.
+Field translation uses the independent [translation provider](/backend/translation), with gaps-only selection and exact placeholder checks. Rewrite’s **Translate** preset targets its chosen `language`, including from a language view. `checkRewrite` requires the exact merge and logic tag multiset; for `custom` syntax it checks chips and declared tag values literally.
 
 ### Chat starters
 
@@ -132,6 +132,12 @@ Deterministic lint reports specific content, client and size findings. It does n
 After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
 
 `conversation.list` returns `AiChatMessage[]` oldest first. `createdAt` is ISO 8601; `batches` is empty for user messages. A server-applied batch has a numeric `revision`; an editor-applied batch has `revision: null`. `kind` is `"chat" | "fix"`; alt-text drafts create no history. Optional user-message `attachments` retain only names and kinds, never files.
+
+## AI in language views
+
+Chat, Fix with AI and Rewrite carry `locale: string | null`: the active language, or `null` in the default view. Chat and Fix receive its `resolveLocale` projection. Alt text always carries a concrete language, including in the default view, and uses the projected image context. `AiChatMessage.locale?: string | null` labels language-view history; older history can omit it. Older backends may ignore the additive field while still receiving projected content.
+
+The editor maps returned operations with core's `mapLocalizedOperations`: changed translatable text becomes locale `text` with the default hash, other properties become `set`, and structure changes affect the shared tree. Added blocks enter the shared tree with their text as default values, like paste. Whole-template `setContent` replacement is refused in a language view; switch to the default view for it. The default language itself can't change while language versions exist, in any view. Empty AI batches change nothing and record no history. Fix with AI lints the active `contentLocale`; Rewrite and reviewed alt text use the normal localized edit path. Fix with AI and Write alt text are available in language views under their usual provider, loaded-template and lint gates.
 
 ## Controlling features
 

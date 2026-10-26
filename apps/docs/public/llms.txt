@@ -82,6 +82,7 @@ Documentation for SDK version 0.51.1. Every page below is also available as raw 
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks): Let users save reusable groups of blocks and insert them into other templates, backed by your own storage.
 - [Saving & Loading Templates](https://docs.templatical.com/backend/templates): Wire the editor's save/load lifecycle to your own storage — name, save button, autosave and unsaved-changes guard included.
 - [Test Emails](https://docs.templatical.com/backend/test-email): Let users mail themselves the template they're editing, sent through your own infrastructure.
+- [Translation](https://docs.templatical.com/backend/translation): Connect init({ translation }) to a TranslationProvider for masked field translation, or serve POST /templates/{template}/translate with the AI kit and check it with runTranslationConformance.
 - [Version History](https://docs.templatical.com/backend/version-history): Browse, preview and restore a template's past versions — over your own storage, or Templatical Cloud's.
 
 ## Quality

@@ -110,6 +110,20 @@ Language versions add optional `BaseBlock.l10n`, `TemplateSettings.locales` and 
 
 The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
 
+## Translation {#translation}
+
+`TranslationProvider` is the independent `init({ translation })` contract. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` and `LocaleString`, plus the pure helpers and call bounds, are exported from `@templatical/types`:
+
+<<< @/snippets/translation-contract.ts
+
+`TRANSLATION_MAX_FIELDS = 50` and `TRANSLATION_MAX_CHARS = 20_000` cap each call. `TRANSLATABLE_HTML_FIELDS` is `{ title: ["content"], paragraph: ["content"] }`; every other eligible field is `text`. HTML blocks remain manually translatable and are excluded from `localeStrings`.
+
+`maskTags(text, syntax, format)` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+
+`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides, hidden blocks and dotted-id list elements. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
+
+`applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
+
 ## Base Types
 
 ### BaseBlock

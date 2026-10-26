@@ -3,7 +3,7 @@
 Keep language versions in one shared block tree with `settings.locales` and `l10n`. For independent layouts, keep separate templates and switch with `editor.load(id)`.
 
 **Read first:** [cli.md](cli.md) for the pinned invocation and exit codes; [version-awareness.md](version-awareness.md) for the installed SDK version.
-**Consult:** [providers.md](providers.md) for editor config and collaboration; [docs.md](docs.md) → `guide/localized-templates` and `api/types` for exact declarations.
+**Consult:** [providers.md](providers.md) for editor config and collaboration; [docs.md](docs.md) → `guide/localized-templates`, `backend/translation` and `api/types` for exact declarations.
 
 ## Configuration and compatibility
 
@@ -29,6 +29,22 @@ Default-field and list-element deletions prune text paths that no longer resolve
 `set` refuses section `columns` and whole built-in list paths (`items`, `rows`, `rows.<id>.cells`, `icons` on their corresponding built-in blocks) with `invalid_operation`. Write element leaf paths; custom `fieldValues.<key>` whole-field overrides remain allowed.
 
 `validateTemplate` validates every declared language’s resolved blocks and settings against the ordinary schemas, naming the locale on errors. Invalid override types and deletion of required properties fail validation. If lint itself throws, validate exits 2 with a diagnostic on stderr and no result document.
+
+## Translate a language
+
+1. Check the installed SDK version, then fetch `backend/translation` and `guide/localized-templates` through [docs.md](docs.md). Pass a `TranslationProvider` as `init({ translation })`, alongside `localization`. Translate appears only in an enabled non-default language view; no loaded template or `AiProvider` is required. `initCloud()` ignores `translation` with a warning.
+2. Select the version and use **Translate from {language}**. The default is gaps only (missing and stale); current translations and manual edits survive. **Translate everything again…** overwrites all eligible fields after confirmation naming the language. Block markers offer **Translate** and **Re-translate**. Zero-field actions are disabled.
+3. Preserve the editor's mask: `<x id="n"/>` in text, `__xn__` in HTML attribute values, one shared id sequence per field. Every id must return exactly once; original tags are restored byte for byte. `tags_changed` keeps the previous value. Existing translations use the source's ids; changed tags exclude the field. HTML passes Rewrite's `sanitizeRichTextHtml` before tags are restored.
+4. Read the dismissible result notice: translated fields, old text retained, omitted fields, blocks skipped because they are locked and provider errors. Cancel keeps valid fields already returned. A run is one undo step, an ordinary edit under collaboration, and skips other sessions' locks in the captured target language or structurally. No change records no history; a second run rejects with editor-local `translation_running`.
+5. Save and run the pinned CLI below: `validate --locale de`. Require no `localization.untranslated` or `localization.stale` after translating eligible fields, and no `localization.merge-tags-differ`. Inspect issues even on exit 0: missing/stale warnings are advisory. Manually translate excluded fields if needed.
+
+Translate sends only eligible fields: no HTML blocks, empty defaults, `set` overrides, hidden blocks or dotted-id list elements. Title and paragraph `content` use `html`; every other field uses `text`. Each sequential call has at most 50 fields and 20,000 UTF-16 units of masked text. On `content_too_large`, the editor halves the batch down to one field. Errors are recognized by their string `code` across bundles: `rate_limited`, `limit_reached`, `content_too_large`, `translation_failed`; an abort is `AbortError`.
+
+For a backend, use `createHttpTranslationProvider({ url, headers?, fetch? })` from `@templatical/ai-kit/client`, `readTranslationRequest` and `translateFields` from `/server`, or implement the plain provider for DeepL/TMS. Fetch `backend/translation` for the wire, limits, exact signatures and runnable server example. Run `runTranslationConformance` from `@templatical/ai-kit/testing`; the `createMockTranslationProvider` is deterministic. DeepL uses `tag_handling=html` for HTML fields and `tag_handling=xml` for text; the editor's exact check still decides whether a result can apply.
+
+For JSON exchange use `localeStrings(content, locale, { syntax, only: "gaps" })`, serialize its strings and tokens, translate each `text`, then call `applyLocaleStrings` with the original tokens and extraction-time `sourceHash`. It returns locale operations plus `tags_changed`, `unknown_field` or `not_translatable` rejections. Apply the operations with `applyOperations`. `maskTags(text, syntax, format)` and `unmaskTags(text, tokens)` are also public. Pure helpers do not sanitize external HTML; preserve placeholders while sanitizing before applying. Fetch the guide's CI-run strings snippet; there is no strings export/import CLI command yet.
+
+AI chat, Fix, Rewrite and alt text use the active language. Chat/Fix receive its projection and map returned operations to locale text/overrides; structure changes and added blocks remain shared, and added text becomes default content. Whole-template replacement and changing the default language are refused in language views. Empty batches do nothing. Chat/Fix/Rewrite carry `locale: string | null` (null for the default view), alt text always carries a concrete language, and optional `AiChatMessage.locale` labels history. Rewrite's Translate preset uses its chosen target; `checkRewrite` requires the exact merge/logic tag multiset, including chips and declared tag values with `custom` syntax. Fetch `backend/ai` for the AI gates and review flow.
 
 ## Missing, stale and merge-tag checks
 

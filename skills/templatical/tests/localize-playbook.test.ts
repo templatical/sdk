@@ -6,6 +6,67 @@ const ROOT = join(import.meta.dirname, "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
 describe("localization agent path", () => {
+  it("describes only the rendered result notice fields", () => {
+    const source = read("reference/localize.md");
+    const notice = source.match(
+      /Read the dismissible result notice:[^\n]*/,
+    )?.[0];
+    expect(notice).toBeDefined();
+    expect(notice).not.toContain("cancellation");
+  });
+
+  it.each(["integrate", "scaffold", "diagnose", "providers"])(
+    "%s routes Translate setup and failures to its contract and conformance",
+    (name) => {
+      const source = read(`reference/${name}.md`);
+      for (const term of [
+        "translation",
+        "Translate",
+        "localize.md",
+        "backend/translation",
+        "mask",
+        "runTranslationConformance",
+      ])
+        expect.soft(source, term).toContain(term);
+    },
+  );
+
+  it("teaches translation with gaps, exact tokens and validation", () => {
+    const source = read("reference/localize.md");
+    for (const term of [
+      "TranslationProvider",
+      "gaps",
+      "maskTags",
+      "applyLocaleStrings",
+      "__xn__",
+      "tags_changed",
+      "translation_running",
+      "backend/translation",
+      "runTranslationConformance",
+      "localization.untranslated",
+      "localization.stale",
+      "localization.merge-tags-differ",
+    ])
+      expect.soft(source, term).toContain(term);
+    expect(source).not.toMatch(/^## Limits/m);
+  });
+
+  it("has a translation eval requiring backend conformance and locale validation", () => {
+    const data = JSON.parse(read("evals/evals.json"));
+    const entry = data.evals.find((entry: { prompt: string }) =>
+      entry.prompt.includes("translation provider"),
+    );
+    expect(entry).toBeDefined();
+    for (const term of [
+      "TranslationProvider",
+      "mask",
+      "gaps",
+      "validate --locale de",
+      "backend/translation",
+      "runTranslationConformance",
+    ])
+      expect(entry.expected_output).toContain(term);
+  });
   it.each([
     "SKILL.md",
     ...["integrate", "scaffold", "diagnose", "edit"].map(

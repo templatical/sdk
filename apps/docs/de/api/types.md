@@ -110,6 +110,20 @@ Sprachversionen ergänzen optionale `BaseBlock.l10n`, `TemplateSettings.locales`
 
 Die vier Locale-Operationen erweitern `Operation`. `position` ist standardmäßig das Ende; Entfernen kann mit `expect` die gesamte Ebene prüfen. Updates wenden `unset`, `text`, `set`, dann Block-`hidden` an und verwenden die verschachtelte Form `LocaleLayerExpect`. Siehe [Lokalisierte Templates](/de/guide/localized-templates) für Bearbeitung, Feldpfade, Fallback und die Upgrade-Regel.
 
+## Übersetzung {#translation}
+
+`TranslationProvider` ist der unabhängige Vertrag für `init({ translation })`. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` und `LocaleString` sowie reine Helfer und Aufrufgrenzen werden aus `@templatical/types` exportiert:
+
+<<< @/snippets/translation-contract.ts
+
+`TRANSLATION_MAX_FIELDS = 50` und `TRANSLATION_MAX_CHARS = 20_000` begrenzen jeden Aufruf. `TRANSLATABLE_HTML_FIELDS` ist `{ title: ["content"], paragraph: ["content"] }`; jedes andere geeignete Feld ist `text`. HTML-Blöcke bleiben von Hand übersetzbar und werden von `localeStrings` ausgelassen.
+
+`maskTags(text, syntax, format)` maskiert ganze Chips nur in HTML und rohe Value-/Logik-Tags in beiden Formaten. Text-Tokens sind `<x id="n"/>`, Attribut-Tokens `__xn__`; beide teilen IDs ab 1 pro Feld in Quellreihenfolge. `unmaskTags(text, tokens)` stellt ursprüngliche Bytes nur bei exakter ID-Multimenge wieder her, andernfalls folgt `null`.
+
+`localeStrings` verlangt explizit `only: "gaps" | "all"`; der Editor verwendet standardmäßig Lücken. Leere Standardwerte, überdeckende `set`-Überschreibungen, ausgeblendete Blöcke und Listenelemente mit Punkten in IDs werden ausgelassen. `blockId` beschränkt die Auswahl auf diesen Block. Vorhandene Übersetzungen werden mit Quell-IDs maskiert; geänderte Tags schließen das Feld aus. `sourceHash` stammt vom unmaskierten Standardwert zum Extraktionszeitpunkt.
+
+`applyLocaleStrings` liefert Operationen, ohne sie anzuwenden: eine `updateBlockLocale` pro Block und höchstens eine `updateSettingsLocale`. Jede Übersetzung erhält den übergebenen Extraktionshash, keinen beim Anwenden neu berechneten Hash. Überlappende `set`-Überschreibungen werden mit dem flachsten Pfad zuerst projiziert; tiefere Pfade haben Vorrang. Ablehnungsgründe sind `tags_changed`, `unknown_field` und `not_translatable`. Die Helfer bereinigen HTML nicht. Siehe [JSON-Rundlauf](/de/guide/localized-templates#translating) und [Provider-Vertrag](/de/backend/translation).
+
 ## Basistypen
 
 ### BaseBlock

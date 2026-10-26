@@ -306,7 +306,7 @@ export type AiFeatureName = Exclude<keyof AiProvider, "conversation">;
 | Attachments | [Chat attachments](#chat-attachments) gives MIME types, file-name and byte limits |
 | Operation batch | 1–100 operations in order; a turn's batches form one undo step |
 
-`mergeTags` always carries the editor's syntax (`liquid` by default), including an empty tag list. `readAiRequest` refuses missing or `null` context with status 422 and message `mergeTags must be { syntax, tags } with at most 500 tags.` The editing session and `checkRewrite` reject invented tags even when the declared list is empty; tags already in the input remain allowed. `custom` syntax is unchecked because its patterns are not sent to the backend.
+`mergeTags` always carries the editor's syntax (`liquid` by default), including an empty tag list. `readAiRequest` refuses missing or `null` context with status 422 and message `mergeTags must be { syntax, tags } with at most 500 tags.` The editing session and `checkRewrite` reject invented tags even when the declared list is empty; tags already in the input remain allowed. `checkRewrite` checks chips and declared tag values literally for `custom`; custom regex patterns are not sent to the backend.
 
 ## Client
 
@@ -601,7 +601,7 @@ export interface VercelAdapterOptions {
 
 `AiChatRequest.attachments` is always present: `[]` without files, otherwise `{ file: Blob, kind: "image" | "pdf", name: string }[]`. `AiProvider.chatAttachments: false | true` is a flag: `true` means the `chat` function accepts attachments; it has no effect when `chat` is `false`. The HTTP provider enables it by default when chat is on; `features: { chatAttachments: false }` disables it.
 
-Without attachments the HTTP client keeps the JSON body unchanged. With attachments, `AI_GENERATE_FIELDS` names `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`.
+Without attachments the HTTP client sends JSON including `locale`. With attachments, `AI_GENERATE_FIELDS` names `locale`, `message`, `selectedBlockId`, `mergeTags`, `content`, `revision`, and repeated `attachment` file parts. `message` and `selectedBlockId` are text; `locale`, `mergeTags` and `content` are JSON strings; `revision` is a number as text. Absent `selectedBlockId` and `revision` become `null`. Multipart with no file parts is valid. JSON bodies always parse to `attachments: []`. Multipart `locale` is a JSON string such as `"de"`, or `null` for the default view. Omitted `locale` is accepted as `null` for older clients.
 
 `readAiRequest` accepts MIME types `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `application/pdf`. It refuses, never truncates, with status 422 and no code, in this order:
 
@@ -865,6 +865,14 @@ Without `runAltText`, alt-text cases are skipped; without `lintCheck`, cases wit
 
 The [conformance suites](#testing) check non-empty alt text within `maxLength`, abort handling and `altText: false`.
 
+## Translation {#translation}
+
+The independent translation contract does not need `AiProvider`. Import `createHttpTranslationProvider({ url, headers?, fetch? })` from `@templatical/ai-kit/client`; it returns `TranslationProvider`. Import `translateFields({ request, model, signal? })` and `readTranslationRequest(request)` from `@templatical/ai-kit/server`. The server validates call bounds, collects model text with no tools, repairs once and returns passing fields or `translation_failed` when none pass. It does not sanitize HTML.
+
+`createMockTranslationProvider({ translations?, delayMs? })` and `runTranslationConformance(provider, options?: { locale?: string })` are exported from `@templatical/ai-kit/testing`. Records are keyed by target locale then field id; absent records get a target-language prefix. Conformance checks exact placeholders, allowed HTML tag names, partial results, `content_too_large` and aborts. See [Translation](/backend/translation) for exact types, the CI-run server handler and the runnable conformance check.
+
+AI requests also carry the active `locale` (`null` in the default view); alt text always uses a concrete language. `content` is the projection in chat/Fix, and history's `AiChatMessage.locale` is optional for older entries. Rewrite's Translate preset uses its chosen target language. `checkRewrite` requires the exact merge and logic tag multiset, including chips and declared tag values for `custom`. See [language-aware AI](/backend/ai#ai-in-language-views).
+
 ## Files
 
 `@templatical/ai-kit/adapters/anthropic`, `@templatical/ai-kit/adapters/openai` and `@templatical/ai-kit/adapters/vercel` are the first-party model adapter entry points.
@@ -877,9 +885,10 @@ Every request and response carries `Templatical-AI-Wire: 1`; turns, alt text, Un
 
 | Route | Request | Response |
 | --- | --- | --- |
-| `POST /templates/{t}/ai/generate` | JSON `{ message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
-| `POST /templates/{t}/ai/fix-finding` | JSON `{ finding, mergeTags, content, revision }` | SSE |
-| `POST /templates/{t}/ai/rewrite-text` | JSON `{ html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
+| `POST /templates/{template}/translate` | JSON `TranslationRequest` | JSON `TranslationResult`; `Templatical-AI-Wire: 1` |
+| `POST /templates/{t}/ai/generate` | JSON `{ locale, message, selectedBlockId, mergeTags, content, revision }`, or multipart with repeated `attachment` parts | SSE |
+| `POST /templates/{t}/ai/fix-finding` | JSON `{ locale, finding, mergeTags, content, revision }` | SSE |
+| `POST /templates/{t}/ai/rewrite-text` | JSON `{ locale, html, preset, language, instruction, mergeTags }` | SSE: `text`*, `done { html }` |
 | `POST /templates/{t}/ai/alt-text` | JSON `{ blockId, image: { url }, currentAlt, linkHref, nearbyText, locale, maxLength }` | SSE: `done { alt }` |
 | `GET /templates/{t}/ai/conversation-messages` | — | JSON `{ data: AiChatMessage[] }` |
 | `POST /templates/{t}/ai/messages/{m}/undo`, `…/redo` | — | JSON `{ data: { operations, replayId } }` or `{ data: { batchId, revision } }` |
@@ -976,6 +985,7 @@ unmount();
 | `theme`              | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `uiTheme`            | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `localization` | `{ locales: string[] }` | No | Enables template language versions. Omitted: no language UI; existing layers survive. Upgrade renderer, validator and collaboration backend first. `initCloud()` ignores it and logs a warning. See [Localized templates](/guide/localized-templates). |
+| `translation` | `TranslationProvider` | No | Translates eligible fields in an enabled non-default language view; requires `localization`. Omitted: no Translate UI. Independent of `ai`; `initCloud()` ignores it with a warning. See [Translation](/backend/translation). |
 | `onLocaleChange` | `(locale: string) => void` | No | Called when the active template language changes, including fallback to the default. Active language is view state and is not saved. |
 | `locale`             | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`, `'ja'`). Defaults to `'en'`                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `branding`           | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -2575,6 +2585,115 @@ export declare function isStructuralLocalePath(block: Block, path: string): bool
 
 The four locale operations join `Operation`. `position` defaults to the end; removal can guard the complete layer with `expect`. Updates apply `unset`, `text`, `set`, then block `hidden`, and use the nested `LocaleLayerExpect` shape. See [Localized templates](/guide/localized-templates) for editing, field paths, fallback and the upgrade-first rule.
 
+## Translation {#translation}
+
+`TranslationProvider` is the independent `init({ translation })` contract. `TranslationRequest`, `TranslationField`, `TranslationResult`, `TranslationErrorCode` and `LocaleString`, plus the pure helpers and call bounds, are exported from `@templatical/types`:
+
+```ts
+import type {
+  CustomBlockDefinition,
+  Operation,
+  SyntaxPreset,
+  TemplateContent,
+} from "@templatical/types";
+
+export type TranslationErrorCode =
+  "rate_limited" | "limit_reached" | "content_too_large" | "translation_failed";
+
+export interface TranslationField {
+  /** A block field id, or `settings/<path>`. */
+  id: string;
+  /** Merge and logic tags masked as numbered placeholders. */
+  text: string;
+  format: "html" | "text";
+}
+
+export interface TranslationRequest {
+  templateId: string | null;
+  sourceLocale: string;
+  targetLocale: string;
+  /** At most 50 fields and 20,000 characters of text per call. */
+  fields: TranslationField[];
+}
+
+export interface TranslationResult {
+  fields: { id: string; text: string }[];
+}
+
+/** A translation backend. Reject with an SdkError or, when aborted, an AbortError. */
+export interface TranslationProvider {
+  translate(
+    request: TranslationRequest,
+    signal: AbortSignal,
+  ): Promise<TranslationResult>;
+}
+
+export const TRANSLATION_MAX_FIELDS = 50;
+export const TRANSLATION_MAX_CHARS = 20_000;
+
+export interface LocaleString {
+  id: string;
+  format: "html" | "text";
+  /** The masked default value. */
+  source: string;
+  /** The hash of the unmasked default at extraction time. */
+  sourceHash: string;
+  /** The stored translation masked with the source's token ids. */
+  text?: string;
+}
+
+export declare const TRANSLATABLE_HTML_FIELDS: Readonly<
+  Record<string, readonly string[]>
+>;
+
+export declare function maskTags(
+  text: string,
+  syntax: SyntaxPreset,
+  format: "html" | "text",
+): { text: string; tokens: string[] };
+
+export declare function unmaskTags(
+  text: string,
+  tokens: string[],
+): string | null;
+
+export declare function localeStrings(
+  content: TemplateContent,
+  locale: string,
+  options: {
+    definitions?: readonly CustomBlockDefinition[];
+    syntax: SyntaxPreset;
+    only: "gaps" | "all";
+    blockId?: string;
+  },
+): { strings: LocaleString[]; tokens: Record<string, string[]> };
+
+export declare function applyLocaleStrings(
+  content: TemplateContent,
+  locale: string,
+  values: { id: string; text: string; sourceHash: string }[],
+  options: {
+    definitions?: readonly CustomBlockDefinition[];
+    syntax: SyntaxPreset;
+    tokens: Record<string, string[]>;
+  },
+): {
+  operations: Operation[];
+  rejected: {
+    id: string;
+    reason: "tags_changed" | "unknown_field" | "not_translatable";
+  }[];
+};
+```
+
+`TRANSLATION_MAX_FIELDS = 50` and `TRANSLATION_MAX_CHARS = 20_000` cap each call. `TRANSLATABLE_HTML_FIELDS` is `{ title: ["content"], paragraph: ["content"] }`; every other eligible field is `text`. HTML blocks remain manually translatable and are excluded from `localeStrings`.
+
+`maskTags(text, syntax, format)` masks chips whole only in HTML and raw value/logic tags in either format. Text tokens are `<x id="n"/>`; attribute tokens are `__xn__`, sharing source-order ids from 1 per field. `unmaskTags(text, tokens)` restores original bytes only for the exact id multiset, otherwise `null`.
+
+`localeStrings` requires `only: "gaps" | "all"` explicitly; the editor defaults to gaps. It skips empty defaults, covering `set` overrides, hidden blocks and dotted-id list elements. `blockId` limits selection to that block. Existing translations are masked with source ids; changed tags skip the field. It returns extraction-time `sourceHash` values from unmasked defaults.
+
+`applyLocaleStrings` returns operations without applying them: one `updateBlockLocale` per block and at most one `updateSettingsLocale`. It stamps each translation with the supplied extraction hash, never a hash recomputed at apply time. Overlapping `set` overrides project shallowest path first, so deeper paths take precedence. Rejections are `tags_changed`, `unknown_field` or `not_translatable`. These helpers do not sanitize HTML. See [the JSON round trip](/guide/localized-templates#translating) and [the provider contract](/backend/translation).
+
 ## Base Types
 
 ### BaseBlock
@@ -3509,7 +3628,7 @@ export type AiFeatureName = Exclude<keyof AiProvider, "conversation">;
 
 Chat, fix and rewrite receive the editor's `content` after pending edits are sent, its collaboration `revision` (or `null`), `templateId`, `sessionId` and required `mergeTags: { syntax, tags }`. With no declared tags, the editor sends its syntax (`liquid` by default) and `tags: []`. Missing or `null` context returns 422. Every call receives an `AbortSignal`; Stop aborts it.
 
-The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `custom` syntax is unchecked.
+The declarations above and [API request limits](/api/ai-kit#request-limits) define each field. On the wire, template ID and session use the path and header; rewrite omits `content` and `revision`. The [server kit](/api/ai-kit#server) checks merge tags, including empty lists; `checkRewrite` checks chips and declared tag values literally for `custom` syntax.
 
 ### Turns: chat and fix
 
@@ -3564,7 +3683,7 @@ The canonical contracts are [Accessibility](/quality/accessibility/), the [acces
 
 Every field and its nullability are in `AiAltTextRequest` in [the contract](#the-contract).
 
-The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the template's locale: a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
+The image goes to the model by URL. The model provider fetches it, so your backend must authorize the template and block and resolve private or signed media. `currentAlt` is `null` when empty or decorative; `linkHref` comes from `linkUrl`. `nearbyText` contains the nearest plain text before and after the image in its column, falling back to its section, capped at 2,000 code points. `locale` is the active template language (the default in the default view): a BCP 47 tag of at most 35 UTF-16 units. `image.url` must use `http:` or `https:` and is at most 2,048 UTF-16 units; `currentAlt` and `linkHref` are each `null` or at most 2,048 units. `blockId` is 1–200 units.
 
 `maxLength` is the effective accessibility lint `altMaxLength` threshold: an integer from 1 to 1,000, default 125 when absent, invalid or lint is disabled. It counts UTF-16 units (`string.length`). Use the request's value with `checkAltText` on your backend. The server in the [backend guide](/guide/bring-your-own-ai#the-server) and `evalAltTextWith` make one repair retry for empty, multiline, HTML or over-long alt text. If the second answer is invalid, the final `checkAltText` raises `ai_output_invalid` (502).
 
@@ -3578,7 +3697,7 @@ When at least two distinct images have alt-text findings, **Write missing alt te
 
 `rewrite` gets a paragraph's `html` and a `preset` (`shorten`, `expand`, `friendlier`, `formal`, `fixGrammar`, `translate` with a `language`), an `instruction`, or both; it streams the text for a live preview and answers the final HTML.
 
-Whole-template translation is not a separate feature. On request, the AI assistant can translate through chat and edit in place as one undo step, on a best-effort basis, with no field-coverage or merge-tag check. Rewrite's **Translate** preset translates one paragraph.
+Field translation uses the independent [translation provider](/backend/translation), with gaps-only selection and exact placeholder checks. Rewrite’s **Translate** preset targets its chosen `language`, including from a language view. `checkRewrite` requires the exact merge and logic tag multiset; for `custom` syntax it checks chips and declared tag values literally.
 
 ### Chat starters
 
@@ -3595,6 +3714,12 @@ Deterministic lint reports specific content, client and size findings. It does n
 After applying or refusing operations, the editor calls `settleReplay(templateId, messageId, { replayId, direction, applied, sessionId })`. Change `undone` only on `applied: true`; with `applied: false`, or no settlement, keep the message's state. Settle each `replayId` once; later settlements are no-ops. A server-applied `{ applied }` answer is never settled. A settlement failure reaches `onError`, and the local row keeps the direction actually applied to the template.
 
 `conversation.list` returns `AiChatMessage[]` oldest first. `createdAt` is ISO 8601; `batches` is empty for user messages. A server-applied batch has a numeric `revision`; an editor-applied batch has `revision: null`. `kind` is `"chat" | "fix"`; alt-text drafts create no history. Optional user-message `attachments` retain only names and kinds, never files.
+
+## AI in language views
+
+Chat, Fix with AI and Rewrite carry `locale: string | null`: the active language, or `null` in the default view. Chat and Fix receive its `resolveLocale` projection. Alt text always carries a concrete language, including in the default view, and uses the projected image context. `AiChatMessage.locale?: string | null` labels language-view history; older history can omit it. Older backends may ignore the additive field while still receiving projected content.
+
+The editor maps returned operations with core's `mapLocalizedOperations`: changed translatable text becomes locale `text` with the default hash, other properties become `set`, and structure changes affect the shared tree. Added blocks enter the shared tree with their text as default values, like paste. Whole-template `setContent` replacement is refused in a language view; switch to the default view for it. The default language itself can't change while language versions exist, in any view. Empty AI batches change nothing and record no history. Fix with AI lints the active `contentLocale`; Rewrite and reviewed alt text use the normal localized edit path. Fix with AI and Write alt text are available in language views under their usual provider, loaded-template and lint gates.
 
 ## Controlling features
 
@@ -5768,6 +5893,216 @@ The preview rides the dialog's own lazily-loaded chunk, so a consumer who never 
 The **Test email** setup adds the header's Test button, with a recipient picker and a simulated send.
 
 [Open in playground](https://play.templatical.com/scenes/test-email)
+
+---
+
+# Translation
+
+Source: https://docs.templatical.com/backend/translation
+
+Connect `init({ translation })` to a `TranslationProvider` to translate eligible fields from the template's default language into an enabled language version.
+
+## Editor setup
+
+In a Vite app with `@templatical/editor` and `@templatical/ai-kit` installed, mount the editor in an existing `#editor` container with a definite height:
+
+```ts
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import { createHttpTranslationProvider } from "@templatical/ai-kit/client";
+
+const editor = await init({
+  container: "#editor",
+  localization: { locales: ["en", "de"] },
+  translation: createHttpTranslationProvider({ url: "/api" }),
+});
+```
+
+Under **Languages**, add German and select it. Translate appears only with `translation`, configured `localization` and an enabled non-default language view. It needs no `AiProvider` or loaded template; `templateId` is `null` without one. Omit `translation` and there is no Translate UI. `initCloud()` ignores `translation` with a warning. See [Localized templates](/guide/localized-templates#translating) for the actions and JSON strings round trip.
+
+## Provider contract
+
+`TranslationProvider.translate(request, signal)` returns a `TranslationResult`. The complete declarations, including the pure strings helpers, are:
+
+```ts
+import type {
+  CustomBlockDefinition,
+  Operation,
+  SyntaxPreset,
+  TemplateContent,
+} from "@templatical/types";
+
+export type TranslationErrorCode =
+  "rate_limited" | "limit_reached" | "content_too_large" | "translation_failed";
+
+export interface TranslationField {
+  /** A block field id, or `settings/<path>`. */
+  id: string;
+  /** Merge and logic tags masked as numbered placeholders. */
+  text: string;
+  format: "html" | "text";
+}
+
+export interface TranslationRequest {
+  templateId: string | null;
+  sourceLocale: string;
+  targetLocale: string;
+  /** At most 50 fields and 20,000 characters of text per call. */
+  fields: TranslationField[];
+}
+
+export interface TranslationResult {
+  fields: { id: string; text: string }[];
+}
+
+/** A translation backend. Reject with an SdkError or, when aborted, an AbortError. */
+export interface TranslationProvider {
+  translate(
+    request: TranslationRequest,
+    signal: AbortSignal,
+  ): Promise<TranslationResult>;
+}
+
+export const TRANSLATION_MAX_FIELDS = 50;
+export const TRANSLATION_MAX_CHARS = 20_000;
+
+export interface LocaleString {
+  id: string;
+  format: "html" | "text";
+  /** The masked default value. */
+  source: string;
+  /** The hash of the unmasked default at extraction time. */
+  sourceHash: string;
+  /** The stored translation masked with the source's token ids. */
+  text?: string;
+}
+
+export declare const TRANSLATABLE_HTML_FIELDS: Readonly<
+  Record<string, readonly string[]>
+>;
+
+export declare function maskTags(
+  text: string,
+  syntax: SyntaxPreset,
+  format: "html" | "text",
+): { text: string; tokens: string[] };
+
+export declare function unmaskTags(
+  text: string,
+  tokens: string[],
+): string | null;
+
+export declare function localeStrings(
+  content: TemplateContent,
+  locale: string,
+  options: {
+    definitions?: readonly CustomBlockDefinition[];
+    syntax: SyntaxPreset;
+    only: "gaps" | "all";
+    blockId?: string;
+  },
+): { strings: LocaleString[]; tokens: Record<string, string[]> };
+
+export declare function applyLocaleStrings(
+  content: TemplateContent,
+  locale: string,
+  values: { id: string; text: string; sourceHash: string }[],
+  options: {
+    definitions?: readonly CustomBlockDefinition[];
+    syntax: SyntaxPreset;
+    tokens: Record<string, string[]>;
+  },
+): {
+  operations: Operation[];
+  rejected: {
+    id: string;
+    reason: "tags_changed" | "unknown_field" | "not_translatable";
+  }[];
+};
+```
+
+`TranslationRequest.fields` contains 1–50 fields, with at most 20,000 UTF-16 units (`text.length`) together. IDs are `<blockId>/<path>` or `settings/<path>`. `sourceLocale` is the default; `targetLocale` is the selected version. `templateId` is the loaded template's id or `null`. The kit validates unique nonempty ids and locale tags. A result may be partial; omitted fields keep their previous value, and the editor ignores unknown ids.
+
+Only title and paragraph `content` use `format: "html"`; every other eligible field uses `"text"`. HTML blocks are excluded from Translate and remain editable by hand. Empty defaults, `set` overrides, hidden blocks and list elements with dotted ids are excluded too.
+
+The editor masks whole merge/logic chips in HTML, and raw tags matched by the active syntax in either format. Text content uses `<x id="n"/>`; HTML attribute values use `__xn__`, sharing ids from 1 in source order per field. Return each id exactly once, in either accepted form; `<x id="n"></x>` is also accepted. Placeholders may move for word order. Missing, duplicate or extra ids keep the old value and report `tags_changed`. Existing translations are masked with source token ids; a changed tag makes the field ineligible. Returned HTML goes through Rewrite's `sanitizeRichTextHtml` allow-list with tokens protected, then original tags are restored byte for byte. The pure helpers do not sanitize HTML; headless callers own that step.
+
+Calls run sequentially. On `content_too_large` the editor halves the batch and retries down to one field; a single field over the cap cannot be sent. Successful fields received before Cancel or a provider failure apply together as one undo step. A run that changes nothing records nothing. With collaboration it is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped and reported.
+
+| `code` | Wire status | Meaning |
+| --- | --- | --- |
+| `rate_limited` | 429 | Too many requests |
+| `limit_reached` | 403 | The provider's allowance is exhausted |
+| `content_too_large` | 413 | Retry with fewer fields |
+| `translation_failed` | 502 | No valid translation result |
+
+Reject with a readable message and one of these string `code` values, for example `new SdkError("Translation is unavailable.", 502, "translation_failed")` from `@templatical/types`. The editor recognizes codes across bundles, including an integrator's own `SdkError`; it does not require the same class instance. Reject an abort with `AbortError`. The editor-local `translation_running` rejects a second run while one is active; it is not a `TranslationErrorCode` or a wire route error. Malformed requests to the kit return 422 `{ message }` without a code.
+
+## HTTP wire
+
+`createHttpTranslationProvider({ url, headers?, fetch? })` uses a base `url`, an optional `headers: () => Record<string, string> | Promise<Record<string, string>>`, and optional `fetch: typeof fetch`. Keep service credentials on your backend; use `headers` for your application's authentication.
+
+The route name is `translate`: `POST /templates/{template}/translate`, relative to `url`. Use `_` for `{template}` when `templateId` is `null`. The JSON body is the full `TranslationRequest`, and 200 returns `TranslationResult` as JSON. Requests and responses carry `Templatical-AI-Wire: 1`; this route uses no SSE and needs no session header. Errors use `{ message, code, ...details }` with the status above. Cross-origin servers allow `Templatical-AI-Wire`, `Content-Type` and their auth header, and expose `Templatical-AI-Wire`.
+
+## Server implementation
+
+This Fetch-API handler requires `@templatical/ai-kit`. Authenticate and authorize the path template and the body's `templateId` before calling it; authorize requests without a template too. Pass an `AiModelAdapter`, such as a first-party adapter from [the AI kit](/api/ai-kit), with your server's model credentials:
+
+```ts
+import {
+  aiErrorResponse,
+  aiJsonResponse,
+  readTranslationRequest,
+  translateFields,
+  type AiModelAdapter,
+} from "@templatical/ai-kit/server";
+
+// Mount at POST /templates/{template}/translate after authentication and authorization.
+export async function handleTranslation(
+  request: Request,
+  model: AiModelAdapter,
+): Promise<Response> {
+  try {
+    const body = await readTranslationRequest(request);
+    const result = await translateFields({
+      request: body,
+      model,
+      signal: request.signal,
+    });
+    return aiJsonResponse(result);
+  } catch (error) {
+    if (
+      request.signal.aborted ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
+    return aiErrorResponse(error);
+  }
+}
+```
+
+`readTranslationRequest(request)` validates the JSON body and call bounds; `readAiRequest` also recognizes the `translate` route. `translateFields({ request, model, signal? })` collects text from `model.stream` with `tools: []`. It checks each requested id exactly once and its placeholder multiset, makes one repair attempt for failed fields, and returns the fields that pass in request order. A cut-off, refusal or malformed JSON is repaired once; if no field passes, it rejects with `translation_failed`. `AbortError` propagates unchanged. The kit does not sanitize returned HTML.
+
+## Mock and conformance
+
+`createMockTranslationProvider({ translations?, delayMs? })` from `@templatical/ai-kit/testing` accepts `translations?: Record<string, Record<string, string>>` keyed by target locale then field id, and `delayMs?: number`. Omitted records get a `[<targetLocale>] ` prefix, inserted into the first visible text segment for HTML, with placeholders intact. It honours aborts.
+
+## Check it
+
+In Node.js with `@templatical/ai-kit` installed, run this against the mock, then substitute your authenticated HTTP provider:
+
+```ts
+import { createMockTranslationProvider, runTranslationConformance } from "@templatical/ai-kit/testing";
+
+const checks = await runTranslationConformance(createMockTranslationProvider(), { locale: "de" });
+for (const check of checks) {
+  if (!check.ok) throw new Error(`${check.name}: ${check.detail ?? "failed"}`);
+}
+```
+
+`runTranslationConformance(provider, options?: { locale?: string })` returns `Promise<{ name: string; ok: boolean; detail?: string }[]>`; the target defaults to `de`. It checks placeholders, HTML tag names (`p`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `br`, `span`), partial results, a 51-field request (reject with `content_too_large` or translate in full), and `AbortError`. Each call has a 5,000 ms deadline. The Node check is a tag-name check, not the editor's DOM sanitizer. Real providers may spend tokens or allowance.
+
+After translating, save the template and run `npx -y @templatical/template-tools validate template.json --locale de --json`. Inspect issues: there should be no `localization.untranslated`, `localization.stale` or `localization.merge-tags-differ` for the fields you translated. Missing/stale warnings alone do not cause a nonzero exit. See [the validation contract](/guide/localized-templates).
 
 ---
 
@@ -11501,6 +11836,70 @@ A missing translation falls back to the default-language value. The block shows 
 Each `LocalizedText.source` stores `sourceHash(defaultValue)` when written. `sourceHash` is FNV-1a 32-bit over UTF-8 bytes, formatted as eight lowercase hexadecimal digits. A changed default hash marks the translation **Out of date** and produces `localization.stale`.
 
 **Keep** retains the existing translation entry and updates its source hash, even when the changed default now equals the translation. Coverage counts the kept entry as translated. Hide and Show preserve text entries too. **Use default** removes the field's layer value, restoring fallback. Neither action changes sibling overrides. In the default view, **Translations out of date: {count}** identifies affected blocks. Property overrides in `set` have no source hash.
+
+## Translating {#translating}
+
+Pass `init({ translation })` a [TranslationProvider](/backend/translation), alongside `localization`. In an enabled non-default view, **Translate from {language}** sends missing and out-of-date fields (gaps) only. Current translations and manual edits survive. **Translate everything again…** selects all eligible fields after confirmation naming the language. Both menu actions show counts and are disabled at zero. Block markers offer **Translate** for missing text and **Re-translate** for stale text. Without the provider there is no Translate UI.
+
+Translate excludes HTML blocks (edit them by hand), empty defaults, `set` overrides, hidden blocks and list elements with dotted ids. Title and paragraph `content` are `html`; every other field is `text`. It sends sequential calls of at most 50 fields and 20,000 UTF-16 units of masked text. A `content_too_large` response halves the batch down to one field.
+
+The editor masks whole merge/logic chips in HTML and raw tags matched by the active syntax in both formats. Text uses `<x id="n"/>`; HTML attribute values use `__xn__`. Both share ids from 1 per field in source order. Returned fields must contain exactly those ids, each once; placeholders may move. A failed check keeps the old value. Returned HTML is sanitized with Rewrite's `sanitizeRichTextHtml`, protecting tokens before restoring original tags byte for byte. Existing translations use the source's token ids; changed tags make a field ineligible.
+
+A status line reports progress and offers **Cancel**; the editor stays editable. Successful fields returned before Cancel or failure apply together as one undo step. With collaboration this is an ordinary edit; blocks locked by another session in the captured target language or structurally are skipped. A run that changes nothing records nothing; a second simultaneous run rejects with `translation_running`. The dismissible result notice reports translated fields, old text kept because tags changed, omitted fields, blocks skipped because they are being edited and the provider's error message.
+
+For a translation service or a JSON file workflow, use `localeStrings` → JSON → `applyLocaleStrings` from `@templatical/types`. This complete TypeScript example extracts gaps, simulates a translator's JSON edit and applies locale operations. Keep ids, tokens and each extraction-time `sourceHash` unchanged; a default edited during translation makes the result stale. The pure helpers do not sanitize returned HTML; sanitize it while preserving placeholders before applying external translations.
+
+```ts
+import {
+  applyLocaleStrings,
+  applyOperations,
+  createDefaultTemplateContent,
+  createTitleBlock,
+  localeStrings,
+  resolveLocale,
+  SYNTAX_PRESETS,
+} from "@templatical/types";
+
+const original = createDefaultTemplateContent("Arial", { locale: "en" });
+original.blocks.push(
+  createTitleBlock({ id: "greeting", content: "<p>Hello {{first_name}}</p>" }),
+);
+const base = applyOperations(original, [{ op: "addLocale", locale: "de" }]);
+const syntax = SYNTAX_PRESETS.liquid;
+const extracted = localeStrings(base, "de", { syntax, only: "gaps" });
+const json = JSON.stringify({
+  sourceLocale: "en",
+  targetLocale: "de",
+  strings: extracted.strings.map((field) => ({
+    ...field,
+    text: field.text ?? "",
+  })),
+  tokens: extracted.tokens,
+});
+
+// Send this JSON to a translator. Keep ids, source hashes and tokens unchanged.
+const file: {
+  sourceLocale: string;
+  targetLocale: string;
+  strings: { id: string; text: string; sourceHash: string }[];
+  tokens: Record<string, string[]>;
+} = JSON.parse(json);
+file.strings[0].text = '<p>Hallo <x id="1"/></p>';
+const { operations, rejected } = applyLocaleStrings(
+  base,
+  file.targetLocale,
+  file.strings,
+  { syntax, tokens: file.tokens },
+);
+if (rejected.length) throw new Error(JSON.stringify(rejected));
+const content = applyOperations(base, operations);
+const german = resolveLocale(content, "de");
+console.log(JSON.stringify(content));
+```
+
+For DeepL, group fields by format, send `tag_handling=html` for `html` and `tag_handling=xml` for `text`, then map results back to field ids. DeepL documents [HTML handling](https://developers.deepl.com/docs/xml-and-html-handling/html) and [XML handling](https://developers.deepl.com/docs/xml-and-html-handling/xml) (checked 2026-10-26). Its XML examples retain placeholder ids and empty elements; HTML handling preserves markup with lenient parsing. These settings do not replace the editor's exact placeholder check. Check your backend with `runTranslationConformance`; the [translation contract](/backend/translation#check-it) gives the runnable check.
+
+After the run, save and run `npx -y @templatical/template-tools validate template.json --locale de --json`. Inspect issues for no `localization.untranslated` or `localization.stale`, and keep `localization.merge-tags-differ` clear. The first two are advisory, so exit 0 alone does not prove a complete translation. Manually translate excluded fields when they need a value.
 
 ## Merge tags {#merge-tags}
 
