@@ -42,6 +42,7 @@ describe("readAiRequest", () => {
       template: "t-1",
       sessionId: "s-1",
       body: {
+        locale: null,
         message: "Hi",
         selectedBlockId: null,
         mergeTags: { syntax: "liquid" as const, tags: [] },

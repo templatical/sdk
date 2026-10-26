@@ -20,6 +20,7 @@ import type { NamedLock } from "./refusal";
 import { applyOperationsTool } from "./tool";
 
 export interface EditingTurnRequest {
+  locale?: string | null;
   content: TemplateContent;
   revision?: number | null;
   mergeTags: AiMergeTags;

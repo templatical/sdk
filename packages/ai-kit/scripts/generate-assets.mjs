@@ -53,6 +53,7 @@ function constants() {
     ["CHAT_ATTACHMENTS", prompt("prompts/chat-attachments.md")],
     ["ALT_TEXT_INSTRUCTIONS", prompt("prompts/alt-text.md")],
     ["REWRITE_INSTRUCTIONS", prompt("prompts/rewrite.md")],
+    ["TRANSLATE_INSTRUCTIONS", prompt("prompts/translate.md")],
   ];
 }
 

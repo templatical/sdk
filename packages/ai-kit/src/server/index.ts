@@ -66,3 +66,5 @@ export {
   checkAltText,
   checkAltTextAnswer,
 } from "./checks";
+export { translateFields } from "./translate";
+export { readTranslationRequest } from "./read-request";

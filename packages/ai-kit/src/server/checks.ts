@@ -1,21 +1,22 @@
-import { SdkError } from "@templatical/types";
+import {
+  maskTags,
+  replaceMergeTagSpans,
+  SYNTAX_PRESETS,
+  SdkError,
+} from "@templatical/types";
 import { AI_ERROR_MESSAGES } from "../wire";
 import type { AiMergeTags } from "@templatical/types";
 import type { AiModelMessage } from "./model";
-import {
-  flattenMergeTags,
-  mergeTagTokens,
-  unknownMergeTags,
-} from "./merge-tags";
+import { unknownMergeTags } from "./merge-tags";
 
 function stripFences(text: string): string {
   return text.replace(/^\s*```[a-z]*\s*|\s*```\s*$/gi, "");
 }
 
 /**
- * A rewrite's output, checked: code fences dropped, not empty, no merge tag
- * that is neither declared nor in the input. On `ok: false`, ask once more
- * with `buildRewriteRepairPrompt`; if that fails too, reject with
+ * A rewrite's output, checked: code fences dropped, not empty, and the input's
+ * exact merge-tag multiset (values, logic tags and chips). On `ok: false`, ask
+ * once more with `buildRewriteRepairPrompt`; if that fails too, reject with
  * `ai_output_invalid`. No sanitizer: the editor sanitizes what it shows.
  */
 export function checkRewrite(
@@ -25,23 +26,60 @@ export function checkRewrite(
 ): { ok: true; html: string } | { ok: false; reason: string } {
   const clean = stripFences(html).trim();
   if (clean === "") return { ok: false, reason: "Your rewrite was empty." };
-  if (mergeTags.syntax !== "custom") {
-    const allowed = [
-      ...mergeTags.tags.map((tag) => tag.value),
-      ...mergeTagTokens(flattenMergeTags(inputHtml), mergeTags.syntax),
-    ];
-    const unknown = unknownMergeTags(
-      mergeTags.syntax,
-      mergeTagTokens(clean, mergeTags.syntax),
-      allowed,
+  const customValues = mergeTags.tags.map((tag) => tag.value);
+  if (mergeTags.syntax === "custom")
+    replaceMergeTagSpans(inputHtml, (value) => {
+      customValues.push(value);
+      return "";
+    });
+  const tokens = (text: string): string[] => {
+    if (mergeTags.syntax !== "custom")
+      return maskTags(text, SYNTAX_PRESETS[mergeTags.syntax], "html")
+        .tokens.map((token) => replaceMergeTagSpans(token, (value) => value))
+        .sort();
+    const chips: string[] = [];
+    const segments = replaceMergeTagSpans(text, (value) => {
+      chips.push(value);
+      return "\0";
+    }).split("\0");
+    const values = [...new Set(customValues.filter(Boolean))].sort(
+      (a, b) => b.length - a.length,
     );
-    if (unknown.length > 0) {
-      return {
-        ok: false,
-        reason: `Your rewrite used merge tags that don't exist: ${unknown.join(", ")}.`,
-      };
-    }
-  }
+    const pattern = values
+      .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|");
+    return [
+      ...chips,
+      ...(pattern
+        ? [
+            ...segments.flatMap((segment) => [
+              ...segment.matchAll(new RegExp(pattern, "g")),
+            ]),
+          ].map((match) => match[0])
+        : []),
+    ].sort();
+  };
+  const before = tokens(inputHtml);
+  const after = tokens(clean);
+  const unknown = unknownMergeTags(mergeTags.syntax, after, [
+    ...before,
+    ...mergeTags.tags.map((tag) => tag.value),
+  ]);
+  if (unknown.length > 0)
+    return {
+      ok: false,
+      reason: `Your rewrite used merge tags that don't exist: ${unknown.join(", ")}.`,
+    };
+
+  if (
+    before.length !== after.length ||
+    before.some((token, i) => token !== after[i])
+  )
+    return {
+      ok: false,
+      reason:
+        "Your rewrite changed the merge tags. Keep every input merge and logic tag exactly once per occurrence.",
+    };
   return { ok: true, html: clean };
 }
 
