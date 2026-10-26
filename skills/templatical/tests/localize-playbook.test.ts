@@ -15,10 +15,11 @@ describe("localization agent path", () => {
     expect(read(path)).toContain("localize.md");
   });
 
-  it("provides the upgrade, authoring, validation and rendering contract", () => {
+  it("provides the compatibility, authoring, validation and rendering contract", () => {
     const source = read("reference/localize.md");
     for (const term of [
-      "Upgrade",
+      "need no migration",
+      "one version",
       "addLocale",
       "updateBlockLocale",
       "updateSettingsLocale",
@@ -42,7 +43,8 @@ describe("localization agent path", () => {
     );
     expect(entry).toBeDefined();
     for (const term of [
-      "upgrade",
+      "no migration",
+      "one version",
       "validate --locale",
       "read-only",
       "locale",

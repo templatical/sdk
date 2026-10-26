@@ -13,7 +13,7 @@ In a Vite app with `@templatical/editor` installed, use this HTML entry point. T
 
 <<< @/snippets/localized-editor.html
 
-Upgrade the renderer, validator and collaboration backend before enabling this config; see [Upgrading](#upgrading). The UI language (`init({ locale })`) is independent of template language versions; see [Internationalization](/guide/i18n).
+Existing templates need no migration; see [Compatibility](#compatibility). The UI language (`init({ locale })`) is independent of template language versions; see [Internationalization](/guide/i18n).
 
 ## Data shape
 
@@ -89,11 +89,13 @@ Updates apply `unset`, then `text`, then `set`, then `hidden` (blocks only). `ex
 
 `BlockLock.locale?: string | null` and `OperationLock.locale?: string | null` use `null` (also the absent default) for the default language and structure. A localized edit to (block X, `de`) conflicts with another session's lock on (X, `de`) or (X, `null`); a `fr` lock can coexist. Every other block operation conflicts with any other session's lock on X. Provider lock methods accept an optional locale. `onRemoteChange.locale` is the first locale operation's language in the batch, otherwise `null`. See [Collaboration](/backend/collaboration) for exact contracts.
 
-## Upgrading
+## Compatibility
 
-Upgrade the renderer, validator and collaboration backend **before** enabling `localization`. Older renderers ignore the fields and render the default. Older strict validators reject `l10n`; older collaboration backends reject the new operations as `invalid_operation`. A backend that ignores lock `locale` serializes per block.
+Existing single-language templates need no migration: they load, edit, save and render as before. Without `localization` there is no language UI, and existing layers survive default-language edits and saves. The editor writes localization fields only after an author adds a language.
 
-This is additive and opt-in: existing single-language templates need no migration and retain their load, edit, save and render behavior. Without `localization`, there is no language UI; existing layers survive default-language edits and saves. The editor writes localization fields only after configuration and an author adding a language.
+All `@templatical/*` packages release together under one version number. Keep them on the same version: a renderer or validator from before language versions doesn't know `l10n`, so an older renderer renders the default language and an older validator rejects the template.
+
+A collaboration backend you built yourself must apply the four locale operations and the lock `locale`; see [Collaboration](/backend/collaboration). Until it does, it rejects them as `invalid_operation`, and a backend that ignores the lock `locale` serializes edits per block.
 
 ## Fully separate layouts
 

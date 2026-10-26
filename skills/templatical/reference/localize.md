@@ -5,9 +5,9 @@ Keep language versions in one shared block tree with `settings.locales` and `l10
 **Read first:** [cli.md](cli.md) for the pinned invocation and exit codes; [version-awareness.md](version-awareness.md) for the installed SDK version.
 **Consult:** [providers.md](providers.md) for editor config and collaboration; [docs.md](docs.md) → `guide/localized-templates` and `api/types` for exact declarations.
 
-## Upgrade and configuration
+## Configuration and compatibility
 
-Upgrade the renderer, validator and collaboration backend before enabling `init({ localization: { locales: ["en", "de", "fr"] } })`. Older renderers render the default, strict validators reject `l10n`, and old backends reject locale operations. This is additive and opt-in: single-language templates need no migration; configuration alone writes no localization fields. The Cloud editor does not support language versions yet: `initCloud()` ignores the key and logs a warning.
+`init({ localization: { locales: ["en", "de", "fr"] } })` turns on language versions. Existing templates need no migration, and configuration alone writes no localization fields. Keep every `@templatical/*` package on one version: an older renderer renders the default language and an older validator rejects `l10n`. A self-built collaboration backend must apply the locale operations and lock `locale` ([providers.md](providers.md)); until it does, it rejects them as `invalid_operation`. The Cloud editor does not support language versions yet: `initCloud()` ignores the key and logs a warning.
 
 `settings.locale` is the fixed default. `settings.locales` contains other versions without duplicates or the default. A stored version absent from `localization.locales` is selectable but read-only, marked **Not enabled**; value edits and structure changes are refused. `getLocale()`, `setLocale(tag)` and `onLocaleChange(tag)` control view state, which starts at the default and is not saved. An unknown version throws `unknown_locale`.
 

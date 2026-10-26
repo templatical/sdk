@@ -13,7 +13,7 @@ Dieser HTML-Einstiegspunkt läuft in einer Vite-App mit installiertem `@templati
 
 <<< @/snippets/localized-editor.html
 
-Aktualisieren Sie Renderer, Validator und Kollaborationsbackend vor dem Aktivieren; siehe [Upgrade](#upgrading). Die UI-Sprache (`init({ locale })`) ist unabhängig von Template-Sprachversionen; siehe [Internationalisierung](/de/guide/i18n).
+Bestehende Templates brauchen keine Migration; siehe [Kompatibilität](#compatibility). Die UI-Sprache (`init({ locale })`) ist unabhängig von Template-Sprachversionen; siehe [Internationalisierung](/de/guide/i18n).
 
 ## Datenstruktur
 
@@ -89,11 +89,13 @@ Updates wenden zuerst `unset`, dann `text`, dann `set`, dann `hidden` an (nur Bl
 
 `BlockLock.locale?: string | null` und `OperationLock.locale?: string | null` verwenden `null` (auch bei fehlender Angabe) für Standardsprache und Struktur. Eine lokalisierte Bearbeitung an (Block X, `de`) kollidiert mit einer Sperre einer anderen Sitzung auf (X, `de`) oder (X, `null`); eine `fr`-Sperre kann parallel bestehen. Jede andere Blockoperation kollidiert mit jeder Sperre einer anderen Sitzung auf X. Provider-Sperrmethoden akzeptieren eine optionale Locale. `onRemoteChange.locale` ist die Sprache der ersten Locale-Operation im Batch, sonst `null`. Exakte Verträge stehen unter [Zusammenarbeit](/de/backend/collaboration).
 
-## Upgrade {#upgrading}
+## Kompatibilität {#compatibility}
 
-Aktualisieren Sie Renderer, Validator und Kollaborationsbackend **vor** dem Aktivieren von `localization`. Ältere Renderer ignorieren die Felder und rendern den Standard. Ältere strikte Validatoren lehnen `l10n` ab; ältere Kollaborationsbackends lehnen die neuen Operationen als `invalid_operation` ab. Ein Backend, das Sperr-`locale` ignoriert, serialisiert pro Block.
+Bestehende einsprachige Templates brauchen keine Migration: Sie laden, bearbeiten, speichern und rendern wie bisher. Ohne `localization` gibt es keine Sprachen-UI, und vorhandene Ebenen bleiben bei Bearbeitungen und Speichern in der Standardsprache erhalten. Der Editor schreibt Lokalisierungsfelder erst, wenn ein Autor eine Sprache hinzufügt.
 
-Die Erweiterung ist additiv und optional: Einsprachige Templates benötigen keine Migration und behalten ihr Lade-, Bearbeitungs-, Speicher- und Renderverhalten. Ohne `localization` gibt es keine Sprachen-UI; vorhandene Ebenen bleiben bei Standardsprachbearbeitungen und Speichern erhalten. Der Editor schreibt Lokalisierungsfelder erst nach Konfiguration und Hinzufügen einer Sprache durch den Autor.
+Alle `@templatical/*`-Pakete erscheinen gemeinsam unter einer Versionsnummer. Halten Sie sie auf derselben Version: Ein Renderer oder Validator aus der Zeit vor den Sprachversionen kennt `l10n` nicht; ein älterer Renderer rendert die Standardsprache, ein älterer Validator lehnt das Template ab.
+
+Ein selbst gebautes Kollaborationsbackend muss die vier Locale-Operationen und die Sperr-`locale` umsetzen; siehe [Zusammenarbeit](/de/backend/collaboration). Bis dahin lehnt es sie als `invalid_operation` ab, und ein Backend, das die Sperr-`locale` ignoriert, serialisiert Bearbeitungen pro Block.
 
 ## Vollständig getrennte Layouts
 

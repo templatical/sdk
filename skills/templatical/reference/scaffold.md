@@ -1,6 +1,6 @@
 # Scaffolding a new integration
 
-For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the upgrade-first rule and `validate --locale` check.
+For template language versions, `localization`, disabled versions, locale locks or missing/stale translations, follow [localize.md](localize.md). It owns the compatibility rule (no template migration, one version for every `@templatical/*` package) and the `validate --locale` check.
 
 **Read first:** [failure-modes.md](failure-modes.md)
 **Follows:** [integrate.md](integrate.md), which decides what the mount should

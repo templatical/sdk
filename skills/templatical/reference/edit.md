@@ -39,8 +39,8 @@ The SDK also supports `addLocale`, `removeLocale`, `updateBlockLocale` and
 are documented in [Operations](https://docs.templatical.com/api/operations).
 Follow [localize.md](localize.md) for adding versions, writing values and checking
 `validate --locale`; the [Localized templates guide](https://docs.templatical.com/guide/localized-templates)
-covers the editor workflow. Cloud's hosted MCP does not support locale operations. Upgrade the renderer, validator and
-collaboration backend before writing localized content. Check an SDK batch
+covers the editor workflow. Cloud's hosted MCP does not support locale operations. Keep every `@templatical/*` package that reads the
+template on one version before writing localized content. Check an SDK batch
 with the shared operation fixtures, then run `template-tools validate` on
 the resulting template.
 
