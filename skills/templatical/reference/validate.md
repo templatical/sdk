@@ -10,7 +10,7 @@ Run it before writing any template to disk, and whenever the user asks whether
 one is correct.
 
 ```
-npx -y @templatical/template-tools@0.51.0 validate <file> --json
+npx -y @templatical/template-tools@0.51.1 validate <file> --json
 ```
 
 ## Reading the result
@@ -38,4 +38,4 @@ while `valid` remains `true` and `errors[]` stays empty.
 `deliverability.*` issues are warning or info advice in this CLI and never
 cause exit 1.
 
-For compiled size, run `npx -y @templatical/template-tools@0.51.0 validate <file> --html --json`. Read `htmlBytes` and any `compat.gmail-clipping` warning. This flag needs the optional `mjml` peer; if it is missing, exit `3` with an install hint and no JSON. `compat.*` issues are warning/info for template validation and never cause exit `1` by themselves. Each lint issue supplies `suggestion` and `reference`; use them when repairing the template.
+For compiled size, run `npx -y @templatical/template-tools@0.51.1 validate <file> --html --json`. Read `htmlBytes` and any `compat.gmail-clipping` warning. This flag needs the optional `mjml` peer; if it is missing, exit `3` with an install hint and no JSON. `compat.*` issues are warning/info for template validation and never cause exit `1` by themselves. Each lint issue supplies `suggestion` and `reference`; use them when repairing the template.
