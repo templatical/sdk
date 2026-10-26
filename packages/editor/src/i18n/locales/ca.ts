@@ -2,6 +2,18 @@ import type en from "./en";
 
 const ca: typeof en = {
   localization: {
+    translateFrom: "Tradueix de {language}",
+    translateAllAgain: "Torna a traduir-ho tot…",
+    translationConfirmation:
+      "Vols substituir totes les traduccions en {language}, incloses les edicions manuals?",
+    translate: "Tradueix",
+    retranslate: "Torna a traduir",
+    translating: "S’estan traduint {done} de {total}…",
+    translatedFields: "S’han traduït {count} camps",
+    translationTagsChanged:
+      "{count} conserven el text anterior: etiquetes canviades",
+    translationSkippedLocked: "{count} omesos: s’estan editant en {language}",
+    translationMissing: "{count} no retornats",
     languages: "Idiomes",
     default: "Predeterminat",
     notEnabled: "No activat",

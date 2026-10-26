@@ -2,6 +2,18 @@ import type en from "./en";
 
 const ptBR: typeof en = {
   localization: {
+    translateFrom: "Traduzir de {language}",
+    translateAllAgain: "Traduzir tudo novamente…",
+    translationConfirmation:
+      "Substituir todas as traduções em {language}, incluindo edições manuais?",
+    translate: "Traduzir",
+    retranslate: "Traduzir novamente",
+    translating: "Traduzindo {done} de {total}…",
+    translatedFields: "{count} campos traduzidos",
+    translationTagsChanged:
+      "{count} mantiveram o texto anterior: tags alteradas",
+    translationSkippedLocked: "{count} ignorados: sendo editados em {language}",
+    translationMissing: "{count} não retornados",
     languages: "Idiomas",
     default: "Padrão",
     notEnabled: "Não habilitado",

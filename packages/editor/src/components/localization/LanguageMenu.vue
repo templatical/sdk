@@ -5,7 +5,10 @@ import { ChevronDown } from "@lucide/vue";
 import { defaultLocaleOf, localeCoverage } from "@templatical/types";
 import type { BaseEditorReturn } from "../../composables/useEditorCore";
 import { useI18n } from "../../composables/useI18n";
-import { CUSTOM_BLOCK_DEFINITIONS_KEY } from "../../keys";
+import {
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  TRANSLATION_FEATURE_KEY,
+} from "../../keys";
 import { languageName } from "../../utils/languageName";
 import {
   dangerBtnClass,
@@ -16,6 +19,8 @@ import TplModal from "../TplModal.vue";
 
 const props = defineProps<{ editor: BaseEditorReturn; locales: string[] }>();
 const { t, format } = useI18n();
+const translation = inject(TRANSLATION_FEATURE_KEY, null);
+const confirmingTranslation = ref<string | null>(null);
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const root = ref<HTMLElement | null>(null);
 const trigger = ref<HTMLButtonElement | null>(null);
@@ -78,6 +83,38 @@ function navigate(event: KeyboardEvent) {
 }
 function add(locale: string) {
   props.editor.addLocale?.(locale);
+  close();
+}
+const confirmationText = computed(() =>
+  confirmingTranslation.value
+    ? format(t.localization.translationConfirmation, {
+        language: languageName(confirmingTranslation.value),
+      })
+    : format(t.localization.removeConfirmation, {
+        language: languageName(removing.value ?? source.value),
+      }),
+);
+function closeConfirmation() {
+  confirmingTranslation.value = null;
+  removing.value = null;
+}
+function confirm() {
+  if (confirmingTranslation.value) translateAll();
+  else remove();
+}
+function translateGaps() {
+  void translation?.translate({ only: "gaps" });
+  close();
+}
+function translateAll() {
+  const locale = confirmingTranslation.value;
+  confirmingTranslation.value = null;
+  if (
+    locale === active.value &&
+    translation?.isAvailable.value &&
+    !translation.running.value
+  )
+    void translation.translate({ only: "all" });
   close();
 }
 function remove() {
@@ -179,6 +216,44 @@ onClickOutside(root, () => {
           }}
         </button>
       </div>
+      <template v-if="translation?.isAvailable.value && editable">
+        <button
+          type="button"
+          role="menuitem"
+          data-testid="translate-language"
+          :class="secondaryBtnClass"
+          class="tpl:mb-1 tpl:w-full tpl:justify-between"
+          :disabled="
+            !!translation.running.value || translation.counts.value.gaps === 0
+          "
+          @click="translateGaps"
+        >
+          <span>{{
+            format(t.localization.translateFrom, {
+              language: languageName(source),
+            })
+          }}</span>
+          <span class="tpl:tabular-nums">{{
+            translation.counts.value.gaps
+          }}</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          data-testid="translate-all-again"
+          :class="secondaryBtnClass"
+          class="tpl:mb-1 tpl:w-full tpl:justify-between"
+          :disabled="
+            !!translation.running.value || translation.counts.value.all === 0
+          "
+          @click="confirmingTranslation = active"
+        >
+          <span>{{ t.localization.translateAllAgain }}</span>
+          <span class="tpl:tabular-nums">{{
+            translation.counts.value.all
+          }}</span>
+        </button>
+      </template>
       <template v-if="available.length && editable">
         <p
           class="tpl:my-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
@@ -199,43 +274,54 @@ onClickOutside(root, () => {
         </button>
       </template>
     </div>
-    <TplModal :visible="removing !== null" @close="removing = null">
+    <TplModal
+      :visible="removing !== null || confirmingTranslation !== null"
+      @close="closeConfirmation"
+    >
       <section
         role="dialog"
         aria-modal="true"
-        :aria-label="
-          format(t.localization.removeConfirmation, {
-            language: languageName(removing ?? source),
-          })
-        "
+        :aria-label="confirmationText"
         class="tpl:w-80 tpl:max-w-full tpl:max-h-[90%] tpl:overflow-y-auto tpl:box-border tpl:rounded-[var(--tpl-radius)] tpl:bg-[var(--tpl-bg)] tpl:p-5 tpl:shadow-[var(--tpl-shadow-lg)]"
       >
         <p class="tpl:mb-4 tpl:text-sm tpl:text-[var(--tpl-text)]">
-          {{
-            format(t.localization.removeConfirmation, {
-              language: languageName(removing ?? source),
-            })
-          }}
+          {{ confirmationText }}
         </p>
         <div class="tpl:flex tpl:justify-end tpl:gap-2">
           <button
             type="button"
-            data-testid="language-remove-cancel"
+            :data-testid="
+              confirmingTranslation
+                ? 'translation-confirm-cancel'
+                : 'language-remove-cancel'
+            "
             :class="secondaryBtnClass"
-            @click="removing = null"
+            @click="closeConfirmation"
           >
             {{ t.localization.cancel }}
           </button>
           <button
             type="button"
-            data-testid="language-remove-confirm"
+            :data-testid="
+              confirmingTranslation
+                ? 'translation-confirm'
+                : 'language-remove-confirm'
+            "
             :class="dangerBtnClass"
-            @click="remove"
+            :disabled="
+              confirmingTranslation !== null &&
+              (!!translation?.running.value ||
+                !translation?.isAvailable.value ||
+                confirmingTranslation !== active)
+            "
+            @click="confirm"
           >
             {{
-              format(t.localization.removeLanguage, {
-                language: languageName(removing ?? source),
-              })
+              confirmingTranslation
+                ? t.localization.translateAllAgain
+                : format(t.localization.removeLanguage, {
+                    language: languageName(removing ?? source),
+                  })
             }}
           </button>
         </div>

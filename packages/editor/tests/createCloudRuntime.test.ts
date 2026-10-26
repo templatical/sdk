@@ -1716,3 +1716,18 @@ it("integrated initCloud ignores localization and edits the default view", async
     warn.mockRestore();
   }
 });
+
+it("warns and ignores a translation provider in initCloud", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const translate = vi.fn();
+  try {
+    const { providers } = await bootstrap({ translation: { translate } });
+    expect(warn.mock.calls.flat().join(" ")).toContain(
+      "initCloud ignores `translation`; the Cloud editor does not support translation.",
+    );
+    expect(providers).not.toHaveProperty("translation");
+    expect(translate).not.toHaveBeenCalled();
+  } finally {
+    warn.mockRestore();
+  }
+});

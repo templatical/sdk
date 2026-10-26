@@ -1,19 +1,29 @@
 <script setup lang="ts">
 import { computed, inject } from "vue";
-import { readPath, localeCoverage, type Block } from "@templatical/types";
 import {
+  readPath,
+  localeCoverage,
+  localeStrings,
+  SYNTAX_PRESETS,
+  type Block,
+} from "@templatical/types";
+import {
+  TRANSLATION_FEATURE_KEY,
   EDITOR_KEY,
   LOCALIZATION_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  MERGE_TAG_SYNTAX_KEY,
 } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import { languageName } from "../../utils/languageName";
 import { secondaryBtnCompactClass } from "../../constants/styleConstants";
 
 const props = defineProps<{ block: Block }>();
+const translation = inject(TRANSLATION_FEATURE_KEY, null);
 const editor = inject(EDITOR_KEY, null);
 const config = inject(LOCALIZATION_KEY, undefined);
 const definitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
+const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const { t, format } = useI18n();
 const locale = computed(() => editor?.activeLocale?.value);
 const language = computed(() => languageName(locale.value ?? ""));
@@ -30,6 +40,16 @@ function fields(locale: string) {
       .map((id) => id.slice(prefix.value.length)),
   };
 }
+const eligibleGaps = computed(() =>
+  editor && locale.value
+    ? localeStrings(editor.content.value, locale.value, {
+        syntax,
+        definitions,
+        blockId: props.block.id,
+        only: "gaps",
+      }).strings.length > 0
+    : false,
+);
 const missing = computed(
   () => locale.value && fields(locale.value).missing.length > 0,
 );
@@ -68,8 +88,30 @@ const editable = computed(
       <span v-if="missing" data-testid="locale-marker-untranslated">{{
         t.localization.notTranslated
       }}</span>
+      <button
+        v-if="
+          missing && eligibleGaps && editable && translation?.isAvailable.value
+        "
+        type="button"
+        data-testid="locale-translate"
+        :class="secondaryBtnCompactClass"
+        :disabled="!!translation.running.value"
+        @click="translation.translate({ only: 'gaps', blockId: block.id })"
+      >
+        {{ t.localization.translate }}
+      </button>
       <span v-if="stale.length" data-testid="locale-marker-stale">
         {{ t.localization.outOfDate }}
+        <button
+          v-if="eligibleGaps && editable && translation?.isAvailable.value"
+          type="button"
+          data-testid="locale-retranslate"
+          :class="secondaryBtnCompactClass"
+          :disabled="!!translation.running.value"
+          @click="translation.translate({ only: 'gaps', blockId: block.id })"
+        >
+          {{ t.localization.retranslate }}
+        </button>
         <button
           v-if="editable"
           type="button"

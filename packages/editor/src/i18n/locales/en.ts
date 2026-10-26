@@ -1,5 +1,16 @@
 export default {
   localization: {
+    translateFrom: "Translate from {language}",
+    translateAllAgain: "Translate everything again…",
+    translationConfirmation:
+      "Replace every {language} translation, including manual edits?",
+    translate: "Translate",
+    retranslate: "Re-translate",
+    translating: "Translating {done} of {total}…",
+    translatedFields: "Translated {count} fields",
+    translationTagsChanged: "{count} kept their old text: tags changed",
+    translationSkippedLocked: "{count} skipped: being edited in {language}",
+    translationMissing: "{count} not returned",
     languages: "Languages",
     default: "Default",
     notEnabled: "Not enabled",

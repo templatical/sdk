@@ -2,6 +2,18 @@ import type en from "./en";
 
 const nl: typeof en = {
   localization: {
+    translateFrom: "Vertalen vanuit {language}",
+    translateAllAgain: "Alles opnieuw vertalen…",
+    translationConfirmation:
+      "Elke vertaling in {language} vervangen, inclusief handmatige wijzigingen?",
+    translate: "Vertalen",
+    retranslate: "Opnieuw vertalen",
+    translating: "{done} van {total} vertalen…",
+    translatedFields: "{count} velden vertaald",
+    translationTagsChanged: "{count} behielden hun oude tekst: tags gewijzigd",
+    translationSkippedLocked:
+      "{count} overgeslagen: worden bewerkt in {language}",
+    translationMissing: "{count} niet teruggestuurd",
     languages: "Talen",
     default: "Standaard",
     notEnabled: "Niet ingeschakeld",

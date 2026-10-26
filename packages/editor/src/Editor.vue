@@ -22,6 +22,8 @@ import { cloneBlock, defaultLocaleOf, safeClone } from "@templatical/types";
 // Type-only, so no cloud module is statically reachable from the OSS entry —
 // see `cloud/runtime.ts` for why the seam is shaped this way.
 import type { CloudRuntime } from "./cloud/runtime";
+import TranslationStatus from "./components/localization/TranslationStatus.vue";
+import { useTranslationFeature } from "./composables/useTranslationFeature";
 import StructureNotice from "./components/localization/StructureNotice.vue";
 import { useLocalizedDisplay } from "./composables/useLocalizedDisplay";
 import { useEditorCore } from "./composables/useEditorCore";
@@ -51,7 +53,12 @@ import {
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
-import { AI_FEATURE_KEY, SIZE_CHECK_KEY, LOCALIZATION_KEY } from "./keys";
+import {
+  AI_FEATURE_KEY,
+  SIZE_CHECK_KEY,
+  LOCALIZATION_KEY,
+  TRANSLATION_FEATURE_KEY,
+} from "./keys";
 
 import { RotateCcw } from "@lucide/vue";
 import { warningBtnCompactClass } from "./constants/styleConstants";
@@ -370,6 +377,29 @@ const ai = props.config.ai
     })
   : null;
 if (ai) provide(AI_FEATURE_KEY, ai);
+
+const translation = props.config.translation
+  ? useTranslationFeature({
+      provider: props.config.translation,
+      editor,
+      localization: props.config.localization,
+      collaboration,
+      history: () => core.history,
+      definitions: () => props.config.customBlocks ?? [],
+      syntax: () => core.mergeTagSyntax,
+    })
+  : null;
+if (translation) provide(TRANSLATION_FEATURE_KEY, translation);
+const translationLocale = ref(editor.activeLocale.value ?? "");
+if (translation)
+  watch(
+    translation.running,
+    (progress, previous) => {
+      if (progress && !previous)
+        translationLocale.value = editor.activeLocale.value ?? "";
+    },
+    { flush: "sync" },
+  );
 
 // Lazy: an editor without a collaboration provider never downloads it.
 const CollaborationNotices = defineAsyncComponent(
@@ -748,6 +778,11 @@ defineExpose({
           <div
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
           >
+            <TranslationStatus
+              v-if="translation"
+              :feature="translation"
+              :locale="translationLocale"
+            />
             <StructureNotice
               :change="structureNotice"
               :template-id="editor.state.template?.id"

@@ -2,6 +2,19 @@ import type en from "./en";
 
 const es: typeof en = {
   localization: {
+    translateFrom: "Traducir de {language}",
+    translateAllAgain: "Volver a traducir todo…",
+    translationConfirmation:
+      "¿Reemplazar todas las traducciones en {language}, incluidas las ediciones manuales?",
+    translate: "Traducir",
+    retranslate: "Volver a traducir",
+    translating: "Traduciendo {done} de {total}…",
+    translatedFields: "{count} campos traducidos",
+    translationTagsChanged:
+      "{count} conservaron su texto anterior: etiquetas modificadas",
+    translationSkippedLocked:
+      "{count} omitidos: se están editando en {language}",
+    translationMissing: "{count} no devueltos",
     languages: "Idiomas",
     default: "Predeterminado",
     notEnabled: "No habilitado",

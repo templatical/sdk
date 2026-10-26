@@ -24,6 +24,7 @@ import type {
   RenderProvider,
   SavedBlocksProvider,
   TestEmailProvider,
+  TranslationProvider,
   Template,
   TemplateContent,
   TemplateDefaults,
@@ -98,6 +99,8 @@ import editorStylesInline, { ownedStyleRoots } from "virtual:editor-css";
 export interface TemplaticalEditorConfig {
   /** Enabled template languages. Versions are added by the author. */
   localization?: { locales: string[] };
+  /** Translation backend for enabled language versions. */
+  translation?: TranslationProvider;
   onLocaleChange?: (locale: string) => void;
   /**
    * Where to mount the editor — a CSS selector or an `HTMLElement`.
@@ -1174,6 +1177,15 @@ export async function init(
   // config, which may be frozen. A key reassigned on that object after this call
   // does not reach the editor.
   const prepared = { ...config };
+  if (
+    prepared.translation !== undefined &&
+    (prepared.translation === null ||
+      typeof prepared.translation !== "object" ||
+      typeof prepared.translation.translate !== "function")
+  )
+    throw new SdkError(
+      "translation must be an object with a translate function.",
+    );
   for (const locale of prepared.localization?.locales ?? []) {
     if (!isLocaleTag(locale))
       throw new SdkError(`Invalid localization locale "${locale}".`);

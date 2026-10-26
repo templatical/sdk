@@ -54,6 +54,10 @@ export const EDITOR_KEY: InjectionKey<BaseEditorReturn> = Symbol("editor");
 export const AI_FEATURE_KEY: InjectionKey<UseAiFeatureReturn> =
   Symbol("aiFeature");
 
+export const TRANSLATION_FEATURE_KEY: InjectionKey<
+  import("./composables/useTranslationFeature").UseTranslationFeatureReturn
+> = Symbol("translationFeature");
+
 export const HISTORY_KEY: InjectionKey<UseHistoryReturn> = Symbol("history");
 
 export const BLOCK_ACTIONS_KEY: InjectionKey<UseBlockActionsReturn> =

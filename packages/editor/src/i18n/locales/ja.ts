@@ -2,6 +2,18 @@ import type en from "./en";
 
 const translations: typeof en = {
   localization: {
+    translateFrom: "{language}から翻訳",
+    translateAllAgain: "すべて再翻訳…",
+    translationConfirmation:
+      "手動の編集を含むすべての{language}の翻訳を置き換えますか？",
+    translate: "翻訳",
+    retranslate: "再翻訳",
+    translating: "{total}件中{done}件を翻訳中…",
+    translatedFields: "{count}件のフィールドを翻訳しました",
+    translationTagsChanged:
+      "{count}件は元のテキストを保持：タグが変更されました",
+    translationSkippedLocked: "{count}件をスキップ：{language}で編集中",
+    translationMissing: "{count}件が返されませんでした",
     languages: "言語",
     default: "デフォルト",
     notEnabled: "未有効化",

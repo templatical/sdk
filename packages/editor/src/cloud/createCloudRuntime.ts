@@ -440,6 +440,12 @@ export async function bootstrapCloud(
     );
   }
 
+  if ((config as { translation?: unknown }).translation !== undefined) {
+    logger.warn(
+      "initCloud ignores `translation`; the Cloud editor does not support translation.",
+    );
+  }
+
   // --- Late-bound editor access ---------------------------------------------
   //
   // The providers below are built before there is an editor to read. Each
