@@ -167,6 +167,7 @@ describe("CDN chunk granularity", () => {
     expect(lazyComponents.has("TestEmailModal")).toBe(true);
     expect(lazyComponents.has("SaveBlockDialog")).toBe(true);
     expect(lazyComponents.has("CommentsSidebar")).toBe(true);
+    expect(lazyComponents.has("AiPanels")).toBe(true);
     expect(lazyComponents.has("AiChatPanel")).toBe(true);
     expect(lazyComponents.has("AiRewriteMenu")).toBe(true);
     expect(lazyComponents.has("Toolbar")).toBe(true);
@@ -190,6 +191,31 @@ describe("CDN chunk granularity", () => {
       if (chunk && eager.has(chunk)) {
         eagerlyShipped.push(`${name} -> ${chunk}`);
       }
+    }
+    expect(eagerlyShipped).toEqual([]);
+  });
+
+  it("ships the AI header button eagerly and keeps every AI panel lazy", () => {
+    // The button rendered one chunk fetch after the rest of the header while
+    // it was lazy (OI-245), so it is the one AI component every editor pays
+    // for. Everything it opens stays out of the closure: an editor without
+    // `ai` downloads no AI panel code.
+    const button = owner.get("AiHeaderMenu");
+    expect(button, "AiHeaderMenu must resolve to a chunk").toBeDefined();
+    expect(eager.has(button!)).toBe(true);
+
+    const panels = [
+      "AiPanels",
+      "AiChatPanel",
+      "AiRewriteMenu",
+      "AiAltTextPopover",
+      "AiAltTextReview",
+    ];
+    const eagerlyShipped: string[] = [];
+    for (const name of panels) {
+      const chunk = owner.get(name);
+      expect(typeof chunk, `${name} must resolve to a chunk`).toBe("string");
+      if (chunk && eager.has(chunk)) eagerlyShipped.push(`${name} -> ${chunk}`);
     }
     expect(eagerlyShipped).toEqual([]);
   });

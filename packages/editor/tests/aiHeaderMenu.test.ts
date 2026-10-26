@@ -2,19 +2,25 @@
 import { describe, expect, it, vi } from "vitest";
 import { nextTick, ref } from "vue";
 import AiHeaderMenu from "../src/components/ai/AiHeaderMenu.vue";
+import EditorHeader from "../src/components/EditorHeader.vue";
 import { loadTranslations } from "../src/i18n";
+import { secondaryBtnCompactClass } from "../src/constants/styleConstants";
 import { TRANSLATIONS_KEY } from "../src/keys";
 import { mountEditor } from "./helpers/mount";
 
-async function setup(features: string[], available = true) {
+function aiFeature(features: string[], available = true) {
   const panel = ref<"chat" | null>(null);
-  const ai = {
+  return {
     panel,
     isAvailable: ref(available),
     has: (name: string) => features.includes(name),
     open: vi.fn((value: "chat") => (panel.value = value)),
     close: vi.fn(() => (panel.value = null)),
   };
+}
+
+async function setup(features: string[], available = true) {
+  const ai = aiFeature(features, available);
   const wrapper = mountEditor(AiHeaderMenu, {
     props: { feature: ai },
     provides: { [TRANSLATIONS_KEY]: await loadTranslations("en") },
@@ -39,21 +45,34 @@ describe("AiHeaderMenu", () => {
   it("reflects the panel state with aria-pressed and its active style", async () => {
     const { ai, wrapper } = await setup(["chat"]);
     const button = wrapper.get('[data-testid="ai-menu-trigger"]');
+    const el = button.element as HTMLButtonElement;
     expect(button.text()).toBe("AI");
     expect(button.attributes("aria-label")).toBe("AI assistant");
     expect(button.attributes("title")).toBe("AI assistant");
     expect(button.attributes("aria-expanded")).toBeUndefined();
     expect(button.attributes("aria-pressed")).toBe("false");
-    expect(button.classes()).toContain("tpl-ai-btn--idle");
+    expect(el.style.backgroundColor).toBe("");
 
     await button.trigger("click");
     expect(button.attributes("aria-pressed")).toBe("true");
-    expect(button.classes()).toContain("tpl-ai-btn--active");
+    expect(el.style.backgroundColor).toBe("var(--tpl-primary-light)");
+    expect(el.style.borderColor).toBe("var(--tpl-primary-light)");
 
     ai.close();
     await nextTick();
     expect(button.attributes("aria-pressed")).toBe("false");
-    expect(button.classes()).toContain("tpl-ai-btn--idle");
+    expect(el.style.backgroundColor).toBe("");
+  });
+
+  it("wears the header's compact secondary recipe with the amber on its icon only", async () => {
+    const { wrapper } = await setup(["chat"]);
+    const button = wrapper.get('[data-testid="ai-menu-trigger"]');
+    expect(button.classes().sort()).toEqual(
+      secondaryBtnCompactClass.split(" ").sort(),
+    );
+    expect(button.get("svg").classes()).toContain(
+      "tpl:text-[var(--tpl-primary-hover)]",
+    );
   });
 
   it.each([
@@ -81,5 +100,51 @@ describe("AiHeaderMenu", () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(false);
     expect(wrapper.find('[role="menuitem"]').exists()).toBe(false);
     expect(wrapper.find('input[type="file"]').exists()).toBe(false);
+  });
+});
+
+describe("EditorHeader's AI button", () => {
+  it("renders in the same pass as the other header controls", async () => {
+    // A template is loaded: comments and AI are both available. A lazily
+    // loaded button renders a placeholder first and pops in one chunk fetch
+    // later (OI-245), so nothing may be awaited between mount and the reads.
+    const t = await loadTranslations("en");
+    const wrapper = mountEditor(EditorHeader, {
+      props: {
+        editor: {
+          state: {
+            viewport: "desktop",
+            darkMode: false,
+            previewMode: false,
+            isDirty: false,
+          },
+          setViewport: vi.fn(),
+          setDarkMode: vi.fn(),
+          setPreviewMode: vi.fn(),
+        },
+        core: { t },
+        templates: null,
+        showTemplateName: false,
+        testEmail: null,
+        versionHistory: null,
+        comments: {
+          isAvailable: ref(true),
+          hasTemplate: ref(true),
+          unresolvedCount: ref(0),
+          isOpen: ref(false),
+          toggle: vi.fn(),
+        },
+        collaboration: null,
+        ai: aiFeature(["chat"]),
+      } as never,
+      provides: { [TRANSLATIONS_KEY]: t },
+    });
+
+    const comments = wrapper.find('[data-testid="comments-trigger"]');
+    const ai = wrapper.find('[data-testid="ai-menu-trigger"]');
+    expect(comments.exists()).toBe(true);
+    expect(ai.exists()).toBe(true);
+    expect(comments.element.nextElementSibling).toBe(ai.element);
+    expect(ai.classes()).toEqual(comments.classes());
   });
 });
