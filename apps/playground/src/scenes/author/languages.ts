@@ -1,15 +1,80 @@
 import {
+  AI_RECORDINGS,
+  createMockAiProvider,
+  createMockTranslationProvider,
+} from "@templatical/ai-kit/testing";
+import {
   createDefaultTemplateContent,
   createImageBlock,
   createParagraphBlock,
   createTitleBlock,
   sourceHash,
+  type TranslationProvider,
 } from "@templatical/types";
 import { createSharedCollaboration } from "../../host/collaboration/client";
 import { templatesProviderFor } from "../../host/providers";
-import type { Scene } from "../types";
+import type { Scene, SceneContext } from "../types";
 
-function languagesCanvas() {
+const TRANSLATIONS = {
+  de: {
+    "languages-title/content": "<p>Willkommen zur Herbstkollektion</p>",
+    "languages-hero/alt": "Ein tragbarer Lautsprecher",
+    "languages-copy/content": "<p>Entdecken Sie unsere neue Kollektion.</p>",
+    "languages-stale/content": "<p>Das Angebot endet am Freitag.</p>",
+    "languages-us-only/content": "<p>Kostenloser Versand in den USA.</p>",
+    "languages-tagged/content": '<p>Hallo <x id="1"/>.</p>',
+  },
+  fr: {
+    "languages-title/content": "<p>Bienvenue dans la collection d’automne</p>",
+    "languages-hero/alt": "Une enceinte portable",
+    "languages-copy/content": "<p>Découvrez notre nouvelle collection.</p>",
+    "languages-stale/content": "<p>L’offre se termine vendredi.</p>",
+    "languages-us-only/content": "<p>Livraison gratuite aux États-Unis.</p>",
+    "languages-tagged/content": '<p>Bonjour <x id="1"/>.</p>',
+  },
+};
+const GERMAN_REWRITE =
+  "<p>Entdecken Sie die Highlights unserer Herbstkollektion.</p>";
+
+function translationFor(ctx: SceneContext): TranslationProvider {
+  const mock = createMockTranslationProvider({ translations: TRANSLATIONS });
+  if (ctx.search.get("translation") === "tags-changed") {
+    return {
+      async translate(request, signal) {
+        const result = await mock.translate(request, signal);
+        return {
+          fields: result.fields.map((field) =>
+            field.id === "languages-tagged/content"
+              ? { ...field, text: field.text.replace('<x id="1"/>', "") }
+              : field,
+          ),
+        };
+      },
+    };
+  }
+  if (ctx.search.get("translation") === "cancel") {
+    const delayed = createMockTranslationProvider({
+      translations: TRANSLATIONS,
+      delayMs: 10_000,
+    });
+    let calls = 0;
+    return {
+      translate(request, signal) {
+        if (request.fields.length > 2)
+          return Promise.reject(
+            Object.assign(
+              new Error("This demo translates at most two fields per call."),
+              { name: "SdkError", code: "content_too_large" },
+            ),
+          );
+        return (calls++ === 0 ? mock : delayed).translate(request, signal);
+      },
+    };
+  }
+  return mock;
+}
+
+function languagesCanvas(ctx: SceneContext) {
   const content = createDefaultTemplateContent(undefined, { locale: "en" });
   content.settings.locales = ["de", "ar"];
   content.settings.l10n = { ar: { set: { direction: "rtl" } } };
@@ -68,6 +133,13 @@ function languagesCanvas() {
       l10n: { de: { hidden: true } },
     }),
   ];
+  if (ctx.search.get("translation") === "tags-changed")
+    content.blocks.push(
+      createParagraphBlock({
+        id: "languages-tagged",
+        content: "<p>Hello {{first_name}}.</p>",
+      }),
+    );
   return content;
 }
 
@@ -77,7 +149,7 @@ export const languages: Scene = {
   job: "Language versions of one template",
   initKey: "localization",
   summary:
-    "init({ templates, localization }) enables language versions in one template. Switch to Deutsch for translated text, a different hero image, a hidden block and a stale value; Keep clears the stale marker. Add French or select Arabic for right-to-left content.",
+    "init({ templates, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.",
   catalog: "oss",
   group: "configure",
   docs: "/guide/localized-templates",
@@ -86,21 +158,41 @@ export const languages: Scene = {
     root: "editor",
     side: "below",
   },
-  content: () => languagesCanvas(),
+  content: languagesCanvas,
   config(ctx) {
     const localization = { locales: ["de", "fr", "ar"] };
+    const translation = translationFor(ctx);
+    const ai = createMockAiProvider({
+      ...AI_RECORDINGS,
+      rewrite: (request) =>
+        request.locale === "de"
+          ? [{ type: "done", html: GERMAN_REWRITE }]
+          : typeof AI_RECORDINGS.rewrite === "function"
+            ? AI_RECORDINGS.rewrite(request)
+            : [],
+    });
     if (ctx.search.get("collaboration") === "1") {
       const name = ctx.search.get("user")?.trim();
       const user = name ? { id: `user-${name.toLowerCase()}`, name } : null;
-      const shared = createSharedCollaboration({ user, seed: languagesCanvas });
+      const shared = createSharedCollaboration({
+        user,
+        seed: () => languagesCanvas(ctx),
+      });
       return {
         templates: shared.templates,
         collaboration: shared.collaboration,
         localization,
+        translation,
+        ai,
         ...(user ? { user } : {}),
       };
     }
-    return { templates: templatesProviderFor("languages"), localization };
+    return {
+      templates: templatesProviderFor("languages"),
+      localization,
+      translation,
+      ai,
+    };
   },
   async open(editor, ctx) {
     if (ctx.search.get("collaboration") === "1") {
@@ -111,10 +203,12 @@ export const languages: Scene = {
   },
   snippet: `import { init } from "@templatical/editor";
 import { createDefaultTemplateContent } from "@templatical/types";
+import { AI_RECORDINGS, createMockAiProvider, createMockTranslationProvider } from "@templatical/ai-kit/testing";
 import "@templatical/editor/style.css";
 
 // In-memory storage for this example; replace with your backend.
 let template = { id: "languages", content: createDefaultTemplateContent() };
+const translations = ${JSON.stringify(TRANSLATIONS, null, 2)};
 const editor = await init({
   container: document.getElementById("editor"),
   templates: {
@@ -123,10 +217,21 @@ const editor = await init({
     save: async (id, patch) => (template = { ...template, ...patch, id }),
   },
   localization: { locales: ["de", "fr", "ar"] },
+  translation: createMockTranslationProvider({ translations }),
+  ai: createMockAiProvider({
+    ...AI_RECORDINGS,
+    rewrite: (request) => request.locale === "de"
+      ? [{ type: "done", html: ${JSON.stringify(GERMAN_REWRITE)} }]
+      : typeof AI_RECORDINGS.rewrite === "function"
+        ? AI_RECORDINGS.rewrite(request)
+        : [],
+  }),
 });
 
 await editor.load("languages");`,
   variants: [
+    { name: "With a changed tag", query: { translation: "tags-changed" } },
+    { name: "Cancel a partial translation", query: { translation: "cancel" } },
     {
       name: "As Ada, with collaboration",
       query: { collaboration: "1", user: "Ada" },

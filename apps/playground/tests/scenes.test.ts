@@ -7,7 +7,12 @@ import {
   localeCoverage,
   resolveLocale,
 } from "@templatical/types";
-import { createStandInEditor } from "@templatical/ai-kit/testing";
+import {
+  AI_RECORDINGS,
+  createMockAiProvider,
+  createMockTranslationProvider,
+  createStandInEditor,
+} from "@templatical/ai-kit/testing";
 import { storageCanvas } from "../src/scenes/storage/canvas";
 import {
   SCENES,
@@ -366,6 +371,9 @@ describe("Languages scene", () => {
     const run = new Function(
       "init",
       "createDefaultTemplateContent",
+      "AI_RECORDINGS",
+      "createMockAiProvider",
+      "createMockTranslationProvider",
       "document",
       `return (async () => {
       ${scene!.snippet.replace(/^import .*;\n/gm, "")}
@@ -378,9 +386,14 @@ describe("Languages scene", () => {
         load: async () => {},
       }),
       createDefaultTemplateContent,
+      AI_RECORDINGS,
+      createMockAiProvider,
+      createMockTranslationProvider,
       { getElementById: () => ({}) },
     );
     expect(config.localization).toEqual({ locales: ["de", "fr", "ar"] });
+    expect(config.translation.translate).toBeTypeOf("function");
+    expect(config.ai.rewrite).toBeTypeOf("function");
     const template = await config.templates.load("languages");
     expect(template).toMatchObject({
       id: "languages",

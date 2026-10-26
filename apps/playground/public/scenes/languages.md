@@ -2,7 +2,7 @@
 
 Language versions of one template
 
-init({ templates, localization }) enables language versions in one template. Switch to Deutsch for translated text, a different hero image, a hidden block and a stale value; Keep clears the stale marker. Add French or select Arabic for right-to-left content.
+init({ templates, localization, translation, ai }) enables language versions, recorded translations and Rewrite in one template. Switch to Deutsch and use Translate from English to fill the gaps, or Re-translate on the stale block. Add French to translate a new version; Arabic shows right-to-left content. The variants demonstrate a changed tag, partial results on Cancel and collaboration locks.
 
 Contract: https://docs.templatical.com/guide/localized-templates
 Live: https://play.templatical.com/scenes/languages
@@ -12,10 +12,29 @@ Live: https://play.templatical.com/scenes/languages
 ```ts
 import { init } from "@templatical/editor";
 import { createDefaultTemplateContent } from "@templatical/types";
+import { AI_RECORDINGS, createMockAiProvider, createMockTranslationProvider } from "@templatical/ai-kit/testing";
 import "@templatical/editor/style.css";
 
 // In-memory storage for this example; replace with your backend.
 let template = { id: "languages", content: createDefaultTemplateContent() };
+const translations = {
+  "de": {
+    "languages-title/content": "<p>Willkommen zur Herbstkollektion</p>",
+    "languages-hero/alt": "Ein tragbarer Lautsprecher",
+    "languages-copy/content": "<p>Entdecken Sie unsere neue Kollektion.</p>",
+    "languages-stale/content": "<p>Das Angebot endet am Freitag.</p>",
+    "languages-us-only/content": "<p>Kostenloser Versand in den USA.</p>",
+    "languages-tagged/content": "<p>Hallo <x id=\"1\"/>.</p>"
+  },
+  "fr": {
+    "languages-title/content": "<p>Bienvenue dans la collection d’automne</p>",
+    "languages-hero/alt": "Une enceinte portable",
+    "languages-copy/content": "<p>Découvrez notre nouvelle collection.</p>",
+    "languages-stale/content": "<p>L’offre se termine vendredi.</p>",
+    "languages-us-only/content": "<p>Livraison gratuite aux États-Unis.</p>",
+    "languages-tagged/content": "<p>Bonjour <x id=\"1\"/>.</p>"
+  }
+};
 const editor = await init({
   container: document.getElementById("editor"),
   templates: {
@@ -24,6 +43,15 @@ const editor = await init({
     save: async (id, patch) => (template = { ...template, ...patch, id }),
   },
   localization: { locales: ["de", "fr", "ar"] },
+  translation: createMockTranslationProvider({ translations }),
+  ai: createMockAiProvider({
+    ...AI_RECORDINGS,
+    rewrite: (request) => request.locale === "de"
+      ? [{ type: "done", html: "<p>Entdecken Sie die Highlights unserer Herbstkollektion.</p>" }]
+      : typeof AI_RECORDINGS.rewrite === "function"
+        ? AI_RECORDINGS.rewrite(request)
+        : [],
+  }),
 });
 
 await editor.load("languages");
