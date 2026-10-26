@@ -366,6 +366,7 @@ describe("useAiFeature without collaboration", () => {
     expect(chat).toHaveBeenCalledWith(
       {
         templateId: "tpl-1",
+        locale: null,
         content: CONTENT,
         revision: null,
         sessionId: expect.any(String),

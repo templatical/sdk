@@ -8,6 +8,7 @@ const content = {
 } as never;
 const base = {
   templateId: "t-1",
+  locale: null,
   content,
   revision: null,
   sessionId: "s",

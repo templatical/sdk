@@ -29,9 +29,26 @@ export function replaceMergeTagSpans(
   return rewriteMergeTagSpans(html, replace, true);
 }
 
+/** Merge-tag chips with their original markup and end-exclusive offsets. */
+export function scanMergeTagSpans(
+  html: string,
+): { start: number; end: number; markup: string }[] {
+  const spans: { start: number; end: number; markup: string }[] = [];
+  rewriteMergeTagSpans(
+    html,
+    (_value, start, end) => {
+      const markup = html.slice(start, end);
+      spans.push({ start, end, markup });
+      return markup;
+    },
+    true,
+  );
+  return spans;
+}
+
 function rewriteMergeTagSpans(
   html: string,
-  replace: (value: string) => string,
+  replace: (value: string, start: number, end: number) => string,
   wholeElement: boolean,
 ): string {
   let out = "";
@@ -79,7 +96,7 @@ function rewriteMergeTagSpans(
       break;
     }
     out += html.substring(i, open);
-    out += replace(value);
+    out += replace(value, open, closeEnd);
     i = closeEnd;
   }
   return out;

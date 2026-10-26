@@ -24,6 +24,7 @@ afterEach(() => vi.unstubAllGlobals());
 const content = { blocks: [], settings: { width: 600 } } as never;
 const base = {
   templateId: "t-1",
+  locale: null,
   content,
   revision: 4,
   sessionId: "s-1",

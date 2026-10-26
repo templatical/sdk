@@ -146,6 +146,7 @@ export async function runAiProviderConformance(
   > = {};
   const base = (): AiRequestBase => ({
     templateId,
+    locale: null,
     content: safeClone(editor.content),
     revision: null,
     sessionId: editor.sessionId,

@@ -271,6 +271,24 @@ export {
   resolveContentDirection,
 } from "./direction";
 
+// Translation
+export type {
+  TranslationProvider,
+  TranslationRequest,
+  TranslationField,
+  TranslationResult,
+  TranslationErrorCode,
+} from "./translation";
+export { TRANSLATION_MAX_FIELDS, TRANSLATION_MAX_CHARS } from "./translation";
+export type { LocaleString } from "./locale-strings";
+export {
+  TRANSLATABLE_HTML_FIELDS,
+  maskTags,
+  unmaskTags,
+  localeStrings,
+  applyLocaleStrings,
+} from "./locale-strings";
+
 // Defaults
 export type { BlockDefaults, TemplateDefaults } from "./defaults";
 export {
@@ -371,6 +389,7 @@ export {
 export {
   convertMergeTagsToValues,
   replaceMergeTagSpans,
+  scanMergeTagSpans,
 } from "./merge-tag-html";
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {

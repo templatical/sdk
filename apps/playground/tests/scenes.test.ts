@@ -752,6 +752,7 @@ describe("AI scene", () => {
     const result = await provider.chat(
       {
         templateId: "ai",
+        locale: null,
         sessionId: "scene-test",
         revision: null,
         mergeTags: { syntax: "liquid", tags: [] },

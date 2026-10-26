@@ -570,6 +570,7 @@ export function useAiFeature(options: UseAiFeatureOptions): UseAiFeatureReturn {
       );
     return {
       templateId: id,
+      locale: null,
       content,
       revision: collaboration ? collaboration.core.revision.value : null,
       sessionId: collaboration ? collaboration.core.sessionId : localSessionId,
