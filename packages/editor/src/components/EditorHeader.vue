@@ -23,6 +23,10 @@ import PreviewToggle from "./PreviewToggle.vue";
 import TemplateNameField from "./TemplateNameField.vue";
 import TemplateTimestamp from "./TemplateTimestamp.vue";
 import TemplateSaveStatus from "./TemplateSaveStatus.vue";
+// Eager, unlike the panels it opens: lazy, it rendered one chunk fetch after
+// the rest of the header. The AI panels stay lazy in `Editor.vue`, so an editor
+// without an `ai` provider downloads only this button.
+import AiHeaderMenu from "./ai/AiHeaderMenu.vue";
 
 // Lazy: an editor with no `versionHistory` provider never downloads the control.
 const VersionHistoryMenu = defineAsyncComponent(
@@ -31,10 +35,6 @@ const VersionHistoryMenu = defineAsyncComponent(
 // Lazy: an editor with no collaboration provider never downloads it.
 const CollaboratorBar = defineAsyncComponent(
   () => import("./collaboration/CollaboratorBar.vue"),
-);
-// Lazy: an editor without an `ai` provider never downloads it.
-const AiHeaderMenu = defineAsyncComponent(
-  () => import("./ai/AiHeaderMenu.vue"),
 );
 
 /**

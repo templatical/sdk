@@ -38,7 +38,7 @@ await editor.load('tpl_123');
 
 `createHttpAiProvider` spricht ein dokumentiertes REST- und Server-Sent-Events-Protokoll. [Eigenes KI-Backend anbinden](/de/guide/bring-your-own-ai) baut die Serverseite mit `@templatical/ai-kit/server` auf; die [KI-API-Referenz](/de/api/ai-kit#das-protokoll) dokumentiert das Protokoll für Backends in jeder Sprache.
 
-**KI braucht ein geladenes Template.** Jede Anfrage benennt es, daher erscheinen die Einstiegspunkte, sobald `create()` oder `load()` abgeschlossen ist. **Lassen Sie `ai` weg, fehlt das Feature**: keine KI-Schaltfläche, keine Schaltfläche in der Werkzeugleiste, und kein Code seiner Oberfläche wird geladen.
+**KI braucht ein geladenes Template.** Jede Anfrage benennt es, daher erscheinen die Einstiegspunkte, sobald `create()` oder `load()` abgeschlossen ist. **Lassen Sie `ai` weg, fehlt das Feature**: keine KI-Schaltfläche, keine Schaltfläche in der Werkzeugleiste, und kein Code der KI-Panels und -Menüs wird geladen. Der Code der Schaltfläche im Header liegt im Haupt-Bundle, damit sie mit dem übrigen Header erscheint.
 
 ## Der Vertrag
 

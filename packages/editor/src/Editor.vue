@@ -329,7 +329,8 @@ const AiPanels = defineAsyncComponent(
 // --- AI (opt-in: an `ai` provider) ---
 // Built before `useEditorCore` so its capability is in the object core
 // provides. It reads core (the history and the merge tags) through
-// getters, at call time. Its UI is lazy: `AiPanels` and the header menu.
+// getters, at call time. Its panels are lazy (`AiPanels`); the header button
+// is not, so it renders with the rest of the header (`EditorHeader`).
 const ai = props.config.ai
   ? useAiFeature({
       provider: props.config.ai,

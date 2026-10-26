@@ -3034,7 +3034,7 @@ await editor.load('tpl_123');
 
 `createHttpAiProvider` speaks a documented REST and server-sent-events wire; [Bring your own AI backend](/guide/bring-your-own-ai) builds the server side with `@templatical/ai-kit/server` and the [AI API reference](/api/ai-kit#the-wire) documents the wire for a backend in any language.
 
-**AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no AI button, no toolbar button, and none of its UI is downloaded.
+**AI needs a loaded template.** Every request names it, so the entry points appear once `create()` or `load()` has resolved. **Omit `ai` and the feature is absent**: no AI button, no toolbar button, and none of the AI panels or menus is downloaded. The header button's own code is in the main bundle, so the button renders with the rest of the header.
 
 ## The contract
 
