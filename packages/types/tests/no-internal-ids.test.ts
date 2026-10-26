@@ -4,6 +4,8 @@ import { expect, it } from "vitest";
 
 const PACKAGES = join(import.meta.dirname, "../..");
 
+// Reading every package's source took 7.5 s under the full parallel run, past
+// Vitest's default 5 s test timeout.
 it("keeps internal tracker and slice ids out of package source and JSDoc", () => {
   const violations: string[] = [];
   let files = 0;
@@ -33,4 +35,4 @@ it("keeps internal tracker and slice ids out of package source and JSDoc", () =>
   }
   expect(files).toBeGreaterThan(0);
   expect(violations).toEqual([]);
-});
+}, 60_000);
