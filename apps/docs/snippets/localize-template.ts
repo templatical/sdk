@@ -28,4 +28,10 @@ const content = applyOperations(original, [
 ]);
 const german = resolveLocale(content, "de");
 const coverage = localeCoverage(content, "de");
+if (coverage.missing.length > 0 || coverage.stale.length > 0) {
+  throw new Error(
+    `German needs translating: ${[...coverage.missing, ...coverage.stale].join(", ")}`,
+  );
+}
 const mjml = await renderToMjml(content, { locale: "de" });
+console.log(german.settings.locale, mjml);

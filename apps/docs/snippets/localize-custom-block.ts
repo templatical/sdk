@@ -40,6 +40,12 @@ const issues = lintTemplate(content, {
   customBlocks: definitions,
   contentLocale: "de",
 });
+const localizationIssues = issues.filter((issue) =>
+  issue.ruleId.startsWith("localization."),
+);
+if (localizationIssues.length > 0) {
+  throw new Error(localizationIssues.map((issue) => issue.message).join("\n"));
+}
 const engine = new Liquid();
 const mjml = await renderToMjml(content, {
   locale: "de",
@@ -52,3 +58,4 @@ const mjml = await renderToMjml(content, {
     return engine.parseAndRender(definition.template, block.fieldValues);
   },
 });
+console.log(mjml);

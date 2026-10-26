@@ -11531,7 +11531,13 @@ const content = applyOperations(original, [
 ]);
 const german = resolveLocale(content, "de");
 const coverage = localeCoverage(content, "de");
+if (coverage.missing.length > 0 || coverage.stale.length > 0) {
+  throw new Error(
+    `German needs translating: ${[...coverage.missing, ...coverage.stale].join(", ")}`,
+  );
+}
 const mjml = await renderToMjml(content, { locale: "de" });
+console.log(german.settings.locale, mjml);
 ```
 
 `renderToMjml(content, { locale })` resolves that language before rendering. `editor.toMjml({ locale })` and `editor.toHtml({ locale })` accept the same optional selection. Omitting it renders the default, independently of the active editor view. Local MJML export needs the optional `@templatical/renderer` peer; HTML requires a `render.toHtml` or `render.compileMjml` provider. See [Rendering & Export](/backend/render).
@@ -11639,6 +11645,12 @@ const issues = lintTemplate(content, {
   customBlocks: definitions,
   contentLocale: "de",
 });
+const localizationIssues = issues.filter((issue) =>
+  issue.ruleId.startsWith("localization."),
+);
+if (localizationIssues.length > 0) {
+  throw new Error(localizationIssues.map((issue) => issue.message).join("\n"));
+}
 const engine = new Liquid();
 const mjml = await renderToMjml(content, {
   locale: "de",
@@ -11651,6 +11663,7 @@ const mjml = await renderToMjml(content, {
     return engine.parseAndRender(definition.template, block.fieldValues);
   },
 });
+console.log(mjml);
 ```
 
 Check `validation.valid`, inspect `issues`, and confirm the MJML contains `Willkommen` rather than the cached `Welcome`. See [Custom block rendering](/api/renderer-typescript#custom-blocks) and the [CLI library API](/api/template-tools#library-use).
