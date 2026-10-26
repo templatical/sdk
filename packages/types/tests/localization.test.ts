@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cloneBlock,
   createCustomBlock,
+  createParagraphBlock,
   createTableBlock,
   isLocaleTag,
   localeCoverage,
@@ -134,6 +135,57 @@ describe("sourceHash", () => {
     expect(sourceHash("a")).toBe("e40c292c");
     expect(sourceHash("foobar")).toBe("bf9cf968");
     expect(sourceHash("ü")).toMatch(/^[0-9a-f]{8}$/);
+  });
+});
+
+describe("overlapping locale overrides", () => {
+  it("resolves block overrides shallow to deep in either key order", () => {
+    const ancestor = { top: 20, right: 30, bottom: 6, left: 7 };
+    const entries: [string, unknown][] = [
+      ["styles.padding", ancestor],
+      ["styles.padding.top", 10],
+    ];
+    const padding = [];
+    for (const order of [entries, [...entries].reverse()]) {
+      const block = createParagraphBlock({ id: "paragraph" });
+      block.styles.padding = { top: 10, right: 5, bottom: 6, left: 7 };
+      block.l10n = { de: { set: Object.fromEntries(order) } };
+      const content = base();
+      content.blocks = [block];
+      const before = JSON.stringify(content);
+      padding.push(localizeBlock(block, "de", "en").styles.padding);
+      padding.push(resolveLocale(content, "de").blocks[0].styles.padding);
+      expect(JSON.stringify(content)).toBe(before);
+    }
+    expect(padding).toEqual([
+      { top: 10, right: 30, bottom: 6, left: 7 },
+      { top: 10, right: 30, bottom: 6, left: 7 },
+      { top: 10, right: 30, bottom: 6, left: 7 },
+      { top: 10, right: 30, bottom: 6, left: 7 },
+    ]);
+  });
+
+  it("resolves nested settings overrides shallow to deep in either key order", () => {
+    const entries: [string, unknown][] = [
+      ["nested", { value: "ancestor", sibling: "kept" }],
+      ["nested.value", "descendant"],
+    ];
+    const values = [];
+    for (const order of [entries, [...entries].reverse()]) {
+      const content = base();
+      // A nested fixture exercises generic paths without adding a public setting.
+      Object.assign(content.settings, {
+        nested: { value: "default", sibling: "base" },
+      });
+      content.settings.l10n = { de: { set: Object.fromEntries(order) } };
+      const before = JSON.stringify(content);
+      values.push(readPath(resolveLocale(content, "de").settings, "nested"));
+      expect(JSON.stringify(content)).toBe(before);
+    }
+    expect(values).toEqual([
+      { value: "descendant", sibling: "kept" },
+      { value: "descendant", sibling: "kept" },
+    ]);
   });
 });
 

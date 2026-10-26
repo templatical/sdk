@@ -270,10 +270,20 @@ function withoutL10n<T extends Json>(value: T): T {
   return rest as T;
 }
 
+function orderedSetEntries(
+  set: Record<string, unknown> = {},
+): [string, unknown][] {
+  // Stable sorting retains insertion order among paths at the same depth.
+  return Object.entries(set).sort(
+    ([left], [right]) => left.split(".").length - right.split(".").length,
+  );
+}
+
 /**
  * One block in one language, without its `l10n` and without recursing into
  * children: the editor renders each block through this. For the default
  * locale it only strips `l10n`. Paths that no longer resolve are skipped.
+ * Property overrides apply from shallow to deep paths.
  */
 export function localizeBlock(
   block: Block,
@@ -287,7 +297,7 @@ export function localizeBlock(
     locale
   ];
   if (!layer) return view as unknown as Block;
-  for (const [path, value] of Object.entries(layer.set ?? {}))
+  for (const [path, value] of orderedSetEntries(layer.set))
     writePath(view, path, value);
   for (const [path, text] of Object.entries(layer.text ?? {}))
     if (readPath(block, path) !== undefined) writePath(view, path, text.value);
@@ -353,7 +363,7 @@ export function resolveLocale(
   ) as unknown as Json;
   const layer = content.settings?.l10n?.[locale];
   if (locale !== fallback && layer) {
-    for (const [path, value] of Object.entries(layer.set ?? {}))
+    for (const [path, value] of orderedSetEntries(layer.set))
       writePath(settings, path, value);
     for (const [path, text] of Object.entries(layer.text ?? {}))
       if (readPath(content.settings, path) !== undefined)
